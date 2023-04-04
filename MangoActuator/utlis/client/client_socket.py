@@ -4,9 +4,9 @@ import time
 
 from utlis.client.api_socket import ExternalAPI
 import websockets
-
-IP_ADDR = "127.0.0.1"
-IP_PORT = "8000"
+from config.config import IP_ADDR, IP_PORT
+# IP_ADDR = "127.0.0.1"
+# IP_PORT = "8000"
 
 
 class ClientWebSocket:
