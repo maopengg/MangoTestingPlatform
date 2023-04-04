@@ -1,0 +1,10 @@
+pyinstaller==5.8.0
+DrissionPage==3.2.19
+diskcache==5.4.0
+uiautomator2 == 2.16.22
+weditor==0.6.4
+
+Faker==17.6.0
+colorlog==6.7.0
+
+websockets==10.4

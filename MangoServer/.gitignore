@@ -1,0 +1,6 @@
+# Created by .gitignore support plugin (hsz.mobi)
+.idea/
+*.pyc
+*.log
+.logs/*
+logs/*
