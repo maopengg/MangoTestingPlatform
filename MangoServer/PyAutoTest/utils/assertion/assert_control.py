@@ -14,7 +14,7 @@ from PyAutoTest.auto_test.auto_api.api_tools.enum import AssertMethod, load_modu
 # from utils.read_files_tools.regular_control import cache_regular
 from PyAutoTest.utils.assertion import assert_type
 from PyAutoTest.utils.log_utils.log_control import ERROR, WARNING
-from PyAutoTest.utils.other_utils.exceptions import JsonpathExtractionFailed, SqlNotFound, AssertTypeError
+from PyAutoTest.utils.exceptions.exceptions import JsonpathExtractionFailed, SqlNotFound, AssertTypeError
 
 
 # from utils import config # 判断是否开启断言

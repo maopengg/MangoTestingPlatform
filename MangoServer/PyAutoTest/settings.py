@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]  # 允许所有ip或域名'*'
-
+# USE_TZ = False
+# TIME_ZONE = 'Asia/Shanghai'
 # ************************ app注册 ************************ #
 # Application definition
 # 使用前后端分离时需要解开'rest_framework'的注释

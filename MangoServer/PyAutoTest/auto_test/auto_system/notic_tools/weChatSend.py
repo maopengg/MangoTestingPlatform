@@ -3,14 +3,15 @@
 # @Description: 企微通知封装
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
+import logging
 
 import requests
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject
 from PyAutoTest.auto_test.auto_system.system_tools.enum import Notice
-from PyAutoTest.utils.log_utils.log_control import ERROR
-from PyAutoTest.utils.other_utils.exceptions import SendMessageError, ValueTypeError
+from PyAutoTest.utils.exceptions.exceptions import SendMessageError, ValueTypeError
 from PyAutoTest.utils.other_utils.native_ip import get_host_ip
+logger = logging.getLogger('system')
 
 
 class WeChatSend:
@@ -41,7 +42,7 @@ class WeChatSend:
                     if isinstance(i, str):
                         res = requests.post(url=self.url, json=_data, headers=self.headers)
                         if res.json()['errcode'] != 0:
-                            ERROR.logger.error(res.json())
+                            logger.error(res.json())
                             raise SendMessageError("企业微信「文本类型」消息发送失败")
 
                     else:
@@ -58,7 +59,7 @@ class WeChatSend:
         _data = {"msgtype": "markdown", "markdown": {"content": content}}
         res = requests.post(url=self.url, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
-            ERROR.logger.error(res.json())
+            logger.error(res.json())
             raise SendMessageError("企业微信「MarkDown类型」消息发送失败")
 
     def _upload_file(self, file):

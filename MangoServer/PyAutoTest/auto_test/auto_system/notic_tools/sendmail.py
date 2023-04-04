@@ -3,13 +3,13 @@
 # @Description: 邮箱通知封装
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
-
+import logging
 import smtplib
 import socket
 from email.mime.text import MIMEText
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
-from PyAutoTest.utils.log_utils.log_control import INFO, ERROR
+logger = logging.getLogger('system')
 
 
 class SendEmail:
@@ -83,10 +83,10 @@ class SendEmail:
         """
         try:
             self.send_mail(send_list, sub, content)
-            INFO.logger.info(f"邮件发送成功{self.project},{self.send_user},{self.send_list},{self.stamp_key},"
+            logger.info(f"邮件发送成功{self.project},{self.send_user},{self.send_list},{self.stamp_key},"
                              f"{self.email_host}")
         except BaseException as e:
-            ERROR.logger.error(f"邮件发送失败，失败原因：{e},发送信息如下："
+            logger.error(f"邮件发送失败，失败原因：{e},发送信息如下："
                                f"用例id：{case_id},"
                                f"项目名称：{self.project},"
                                f"发送用户：{self.send_user},"

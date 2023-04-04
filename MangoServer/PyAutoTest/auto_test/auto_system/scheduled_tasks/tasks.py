@@ -41,6 +41,6 @@ def create_jobs():
             trigger = None
             logger.error('定时器数据错误，请检查time_tasks表数据')
         # 添加定时任务
-        scheduler.add_job(my_task, trigger=trigger, args=[timer.id])
+        scheduler.add_job(my_task, trigger=trigger, args=[timer.id], timezone='Asia/Shanghai')
     # 启动调度器
     scheduler.start()

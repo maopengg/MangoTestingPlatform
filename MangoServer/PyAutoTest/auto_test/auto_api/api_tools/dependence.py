@@ -3,16 +3,18 @@
 # @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
+import logging
 import re
 
 from PyAutoTest.auto_test.auto_api.api_tools.enum import End, PublicRelyType
 from PyAutoTest.auto_test.auto_api.case_run.login import Login
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
-from PyAutoTest.auto_test.auto_system.mysql_tools.mysql_control import MysqlDB
+from PyAutoTest.utils.mysql_tools.mysql_control import MysqlDB
 from PyAutoTest.utils.cache_utils.redis import Cache
 from PyAutoTest.utils.data_processing.json_data import DataFilePath
-from PyAutoTest.utils.log_utils.log_control import ERROR
 from PyAutoTest.utils.other_utils.random_data import RandomData
+
+logger = logging.getLogger('api')
 
 
 class Dependence:
@@ -61,7 +63,7 @@ class Dependence:
                 data = self.__replace_text(data)
                 return eval(data)
             except BaseException as e:
-                ERROR.logger.error("需要处理的请求头为空或请求头不为json导致处理失败！报错原因：{}".format(e))
+                logger.error("需要处理的请求头为空或请求头不为json导致处理失败！报错原因：{}".format(e))
         else:
             # 处理小程序请求头
             return {
@@ -79,7 +81,7 @@ class Dependence:
             if "${" in url:
                 url = self.__replace_text(url)
         except BaseException as e:
-            ERROR.logger.error("处理url请求的时候报错，请检查报错原因：{}".format(e))
+            logger.error("处理url请求的时候报错，请检查报错原因：{}".format(e))
         # 处理前置依赖
         pass
         # 处理请求体中的依赖
@@ -91,7 +93,7 @@ class Dependence:
                 value_ = self.__replace_text(self.case.body)
                 body = eval(value_)
             except BaseException as e:
-                ERROR.logger.error("需要处理的请求头为空或请求体不为json导致处理失败！报错原因：{}".format(e))
+                logger.error("需要处理的请求头为空或请求体不为json导致处理失败！报错原因：{}".format(e))
         return url, body
 
     def rely_rear(self):

@@ -5,8 +5,9 @@
 # @Author : 毛鹏
 
 import json
+import logging
 
-from PyAutoTest.utils.log_utils.log_control import ERROR
+logger = logging.getLogger('system')
 
 
 class DataFilePath:
@@ -36,7 +37,7 @@ class DataFilePath:
                     self.get_value(value, key, json_list)
             return json_list
         except BaseException as e:
-            ERROR.logger.error('get_json_value function: {}'.format(e))
+            logger.error('get_json_value function: {}'.format(e))
 
     def get_value(self, json_data, key, json_list):
         """
@@ -80,7 +81,7 @@ class DataFilePath:
                     self.set_value(value, key, target_value)
             return json_data
         except BaseException as e:
-            ERROR.logger.error('set_json_value function: {}'.format(e))
+            logger.error('set_json_value function: {}'.format(e))
 
     # 子方法：递归遍历json所有的key对应的value,通过key值修改value
     def set_value(self, json_data, key, target_value):
@@ -107,7 +108,7 @@ class DataFilePath:
                             new_json_data = self.set_json_value(new_json_data, key, value)
                     return new_json_data
         except BaseException as e:
-            ERROR.logger.error('set_json_value_batch function: {}'.format(e))
+            logger.error('set_json_value_batch function: {}'.format(e))
 
     @staticmethod
     def replace_str_value(input_data, *args):
@@ -129,7 +130,7 @@ class DataFilePath:
                 return eval(new_data)
             return new_data
         except BaseException as e:
-            ERROR.logger.error('replace_str_value function: {}'.format(e))
+            logger.error('replace_str_value function: {}'.format(e))
 
 
 if __name__ == '__main__':
