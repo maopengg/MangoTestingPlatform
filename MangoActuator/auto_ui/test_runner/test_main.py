@@ -3,17 +3,18 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from auto_ui.test_runner.web_run import ChromeRun
-from auto_ui.test_runner.android_run import AndroidRun
-from auto_ui.tools.enum import End
 from typing import Optional
+
+from auto_ui.test_runner.android_run import AppRun
+from auto_ui.test_runner.web_run import ChromeRun
+from auto_ui.tools.enum import End
 
 
 class MainTest:
 
     def __init__(self):
         self.chrome: Optional[ChromeRun] = None
-        self.android: Optional[AndroidRun] = None
+        self.android: Optional[AppRun] = None
 
     def new_case_obj(self, _type: int,
                      local_port: str = None,
@@ -25,7 +26,7 @@ class MainTest:
         if _type == End.Chrome.value:
             self.chrome = ChromeRun(local_port, browser_path)
         elif _type == End.Android.value:
-            self.android = AndroidRun(equipment, package)
+            self.android = AppRun(equipment, package)
         else:
             pass
 

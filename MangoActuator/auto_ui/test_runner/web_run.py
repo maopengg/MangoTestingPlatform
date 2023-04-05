@@ -3,15 +3,14 @@
 # @Description: 
 # @Time   : 2023/3/23 11:29
 # @Author : 毛鹏
-import os
 import time
 
 from auto_ui.chrome_auto_base.chrome_base import ChromeBase
 from auto_ui.tools.enum import OpeType, WebExp
 from auto_ui.tools.random_data import RandomData
 from auto_ui.tools.random_data import regular
-# from logs.path import ensure_path_sep
 from utlis.cache.cache import CacheDB
+from utlis.logs.nuw_logs import get_log_screenshot
 
 
 class ChromeRun(ChromeBase):
@@ -37,7 +36,7 @@ class ChromeRun(ChromeBase):
             # 获取元素的文本或元素下标进行断言
             if not ele:
                 self.get_screenshot(
-                    path=self.__nuw_dir() + r"\failure_screenshot\{}.jpg".format(
+                    path=get_log_screenshot() + r"\failure_screenshot\{}.jpg".format(
                         element['ele_name'] + RandomData().time_random()),
                     full_page=True
                 )
@@ -77,11 +76,11 @@ class ChromeRun(ChromeBase):
                 if key == ele_exp:
                     return value + ele
 
-    @staticmethod
-    def __nuw_dir():
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logs_dir = os.path.join(current_dir, "..", "..", "logs")
-        if not os.path.exists(logs_dir):
-            os.makedirs(logs_dir)
-        os.chdir(logs_dir)
-        return os.getcwd()
+    # @staticmethod
+    # def __nuw_dir():
+    #     current_dir = os.path.dirname(os.path.abspath(__file__))
+    #     logs_dir = os.path.join(current_dir, "..", "..", "logs")
+    #     if not os.path.exists(logs_dir):
+    #         os.makedirs(logs_dir)
+    #     os.chdir(logs_dir)
+    #     return os.getcwd()

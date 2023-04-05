@@ -2,9 +2,12 @@ import asyncio
 import json
 import time
 
-from utlis.client.api_socket import ExternalAPI
 import websockets
+
 from config.config import IP_ADDR, IP_PORT
+from utlis.client.api_socket import ExternalAPI
+
+
 # IP_ADDR = "127.0.0.1"
 # IP_PORT = "8000"
 

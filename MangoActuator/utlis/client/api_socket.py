@@ -3,10 +3,11 @@
 # @Description: 
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
-from auto_ui.test_runner.test_main import MainTest
-from utlis.ope_win.cmd import cmd
 from typing import Optional
+
+from auto_ui.test_runner.test_main import MainTest
 from auto_ui.tools.enum import End
+from utlis.ope_win.cmd import cmd
 
 
 class ExternalAPI:
@@ -25,12 +26,12 @@ class ExternalAPI:
         self.case = MainTest()
         if original_data['type'] == End.Chrome.value:
             self.case.new_case_obj(_type=original_data['type'],
-                                    local_port=original_data['local_port'],
-                                    browser_path=original_data['browser_path'])
+                                   local_port=original_data['local_port'],
+                                   browser_path=original_data['browser_path'])
         elif original_data['type'] == End.Android.value:
             self.case.new_case_obj(_type=original_data['type'],
-                                    equipment=original_data['equipment'],
-                                    package=original_data['package'])
+                                   equipment=original_data['equipment'],
+                                   package=original_data['package'])
 
     def web_case_run(self, original_data: list[dict]):
         if self.case is None:

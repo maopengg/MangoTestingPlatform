@@ -1,6 +1,4 @@
 # coding: utf-8
-import os
-import time
 
 from diskcache import Cache
 
@@ -46,6 +44,7 @@ class CacheDB:
 
     def delete_all_exceed(self):
         self.cache.expire()
+
 
 # def delete_all():
 #     time.sleep(3)
