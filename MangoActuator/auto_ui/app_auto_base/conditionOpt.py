@@ -2,12 +2,12 @@ import sys
 
 from uiautomator2 import UiObjectNotFoundError
 
-from auto_ui.app_auto_base import Operation
 from auto_ui.app_auto_base.assertion import LMAssert
 from utlis.logs.log_control import ERROR, INFO
+from .android_base import AndroidBase
 
 
-class Condition(Operation):
+class Condition(AndroidBase):
     """条件类操作"""
 
     def condition_ele_exists(self, element, assertion, expect):
@@ -103,7 +103,7 @@ class Condition(Operation):
     def condition_alert_exists(self, assertion, expect):
         """判断弹框存在 IOS专属"""
         try:
-            actual = self.device.alert.exists
+            actual = self.app.alert.exists
             INFO.logger.info("成功获取弹框exists:%s" % str(actual))
         except Exception as e:
             ERROR.logger.error("无法获取弹框exists")
@@ -115,7 +115,7 @@ class Condition(Operation):
     def condition_alert_text(self, assertion, expect):
         """判断弹框文本 IOS专属"""
         try:
-            actual = self.device.alert.text
+            actual = self.app.alert.text
             INFO.logger.info("成功获取弹框文本:%s" % str(actual))
         except Exception as e:
             ERROR.logger.error("无法获取弹框文本")
@@ -130,7 +130,7 @@ class Condition(Operation):
         names = locals()
         names["element"] = kwargs["element"]
         names["data"] = kwargs["data"]
-        names["device"] = self.device
+        names["device"] = self.app
         names["test"] = self.test
         try:
             """条件操作需要返回被判断的值 以sys_return(value)返回"""

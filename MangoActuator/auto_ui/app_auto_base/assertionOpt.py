@@ -2,7 +2,6 @@ import sys
 
 from uiautomator2 import UiObjectNotFoundError
 
-from auto_ui.app_auto_base import Operation
 from auto_ui.app_auto_base.assertion import LMAssert
 from utlis.logs.log_control import ERROR, INFO
 from .android_base import AndroidBase

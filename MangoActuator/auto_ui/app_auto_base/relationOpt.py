@@ -2,21 +2,21 @@ import sys
 
 from uiautomator2 import UiObjectNotFoundError
 
-from auto_ui.app_auto_base import Operation
 from utlis.logs.log_control import ERROR, INFO
+from .android_base import AndroidBase
 
 
-class Relation(Operation):
+class Relation(AndroidBase):
     """关联类操作"""
 
     def get_window_size(self, system, save_name):
         """提取屏幕尺寸"""
         try:
             if system == "android":
-                w, h = self.device.window_size()
+                w, h = self.app.window_size()
                 actual = (w, h)
             else:
-                size = self.device.window_size()
+                size = self.app.window_size()
                 actual = (size.width, size.height)
             INFO.logger.info("成功获取屏幕尺寸:%s" % str(actual))
         except Exception as e:
@@ -27,10 +27,10 @@ class Relation(Operation):
         """提取屏幕宽度"""
         try:
             if system == "android":
-                w, h = self.device.window_size()
+                w, h = self.app.window_size()
                 actual = w
             else:
-                size = self.device.window_size()
+                size = self.app.window_size()
                 actual = size.width
             INFO.logger.info("成功获取屏幕宽度:%s" % str(actual))
         except Exception as e:
@@ -43,10 +43,10 @@ class Relation(Operation):
         """提取屏幕高度"""
         try:
             if system == "android":
-                w, h = self.device.window_size()
+                w, h = self.app.window_size()
                 actual = h
             else:
-                size = self.device.window_size()
+                size = self.app.window_size()
                 actual = size.height
             INFO.logger.info("成功获取屏幕高度:%s" % str(actual))
         except Exception as e:
@@ -120,7 +120,7 @@ class Relation(Operation):
     def get_alert_text(self, save_name):
         """提取弹框文本 IOS专属"""
         try:
-            actual = self.device.alert.text
+            actual = self.app.alert.text
             INFO.logger.info("成功获取弹框文本:%s" % str(actual))
         except Exception as e:
             ERROR.logger.error("无法获取弹框文本")
@@ -134,7 +134,7 @@ class Relation(Operation):
         names = locals()
         names["element"] = kwargs["element"]
         names["data"] = kwargs["data"]
-        names["device"] = self.device
+        names["device"] = self.app
         names["test"] = self.test
         try:
             """关联操作需要返回被关联的值 以sys_return(value)返回"""

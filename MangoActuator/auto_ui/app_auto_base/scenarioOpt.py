@@ -2,11 +2,10 @@ import sys
 
 from uiautomator2 import UiObjectNotFoundError
 
-from auto_ui.app_auto_base import Operation
-from utlis.logs.log_control import ERROR, INFO
+from .android_base import AndroidBase
 
 
-class Scenario(Operation):
+class Scenario(AndroidBase):
     """场景类操作"""
 
     def custom(self, **kwargs):
@@ -15,7 +14,7 @@ class Scenario(Operation):
         names = locals()
         names["element"] = kwargs["element"]
         names["data"] = kwargs["data"]
-        names["device"] = self.device
+        names["device"] = self.app
         names["test"] = self.test
         try:
             def print(*args, sep=' ', end='\n', file=None, flush=False):

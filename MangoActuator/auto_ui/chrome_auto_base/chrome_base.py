@@ -16,3 +16,6 @@ class ChromeBase(WebPage):
             browser_path=browser_path)
         # do.set_argument('--remote-allow-origins=*')cls=None,
         super().__init__(driver_or_options=do, session_or_options=False)
+
+    def get(self, url, show_errmsg=False, retry=None, interval=None, timeout=None, **kwargs):
+        return super().get(url, show_errmsg=False, retry=None, interval=None, timeout=None, **kwargs)

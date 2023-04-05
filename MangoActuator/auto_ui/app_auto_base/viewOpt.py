@@ -4,9 +4,9 @@ from uiautomator2 import UiObjectNotFoundError
 from uiautomator2.xpath import XPath
 from wda import WDAElementNotFoundError
 
-from auto_ui.app_auto_base import Operation, ElementNotFoundError, ElementNotDisappearError
-from utlis.logs.log_control import ERROR, INFO
+from auto_ui.app_auto_base import ElementNotFoundError, ElementNotDisappearError
 from auto_ui.app_auto_base.android_base import AndroidBase
+from utlis.logs.log_control import ERROR, INFO
 
 
 class View(AndroidBase):
@@ -25,9 +25,9 @@ class View(AndroidBase):
         """双击"""
         try:
             if system == "android":
-                self.device.double_click(*self.find_element(element).center())
+                self.app.double_click(*self.find_element(element).center())
             else:
-                self.device.double_tap(*self.find_element(element).center())
+                self.app.double_tap(*self.find_element(element).center())
             INFO.logger.info("成功双击")
         except Exception as e:
             ERROR.logger.error("无法双击")
@@ -48,7 +48,7 @@ class View(AndroidBase):
     def click_coord(self, x, y):
         """坐标单击 百分比或坐标值"""
         try:
-            self.device.click(x, y)
+            self.app.click(x, y)
             INFO.logger.info("成功坐标单击")
         except Exception as e:
             ERROR.logger.error("无法坐标单击")
@@ -58,9 +58,9 @@ class View(AndroidBase):
         """坐标双击 百分比或坐标值"""
         try:
             if system == "android":
-                self.device.double_click(x, y)
+                self.app.double_click(x, y)
             else:
-                self.device.double_tap(x, y)
+                self.app.double_tap(x, y)
             INFO.logger.info("成功坐标双击")
         except Exception as e:
             ERROR.logger.error("无法坐标双击")
@@ -70,9 +70,9 @@ class View(AndroidBase):
         """坐标长按 百分比或坐标值"""
         try:
             if system == "android":
-                self.device.tap_hold(x, y, second)
+                self.app.tap_hold(x, y, second)
             else:
-                self.device.long_click(x, y, second)
+                self.app.long_click(x, y, second)
             INFO.logger.info("成功坐标长按%sS" % str(second))
         except Exception as e:
             ERROR.logger.error("无法坐标长按%sS" % str(second))
@@ -84,11 +84,11 @@ class View(AndroidBase):
             if system == "android":
                 if duration == "":
                     duration = None
-                self.device.swipe(fx, fy, tx, ty, duration)
+                self.app.swipe(fx, fy, tx, ty, duration)
             else:
                 if duration == "" or duration is None:
                     duration = 0
-                self.device.swipe(fx, fy, tx, ty, duration)
+                self.app.swipe(fx, fy, tx, ty, duration)
             INFO.logger.info("成功执行滑动")
         except Exception as e:
             ERROR.logger.error("无法执行滑动")
@@ -125,15 +125,15 @@ class View(AndroidBase):
         try:
             if system == "android":
                 if "xpath" in element:
-                    XPath(self.device).scroll_to(element["xpath"], direction)
+                    XPath(self.app).scroll_to(element["xpath"], direction)
                 elif direction == "up":
-                    self.device(scrollable=True).forward.to(**element)
+                    self.app(scrollable=True).forward.to(**element)
                 elif direction == "down":
-                    self.device(scrollable=True).backward.to(**element)
+                    self.app(scrollable=True).backward.to(**element)
                 elif direction == "left":
-                    self.device(scrollable=True).horiz.forward.to(**element)
+                    self.app(scrollable=True).horiz.forward.to(**element)
                 else:
-                    self.device(scrollable=True).horiz.backward.to(**element)
+                    self.app(scrollable=True).horiz.backward.to(**element)
             else:
                 self.find_element(element).scroll(direction)
             INFO.logger.info("成功滑动到元素出现")
@@ -218,7 +218,7 @@ class View(AndroidBase):
     def drag_coord(self, fx, fy, tx, ty):
         """坐标拖动 安卓专属"""
         try:
-            self.device.drag(fx, fy, tx, ty)
+            self.app.drag(fx, fy, tx, ty)
             INFO.logger.info("成功坐标拖动")
         except Exception as e:
             ERROR.logger.error("无法坐标拖动")
@@ -236,7 +236,7 @@ class View(AndroidBase):
     def alert_wait(self, second):
         """等待弹框出现 IOS专属"""
         try:
-            self.device.alert.wait(second)
+            self.app.alert.wait(second)
             INFO.logger.info("成功等待弹框出现")
         except Exception as e:
             ERROR.logger.error("无法等待弹框出现")
@@ -245,7 +245,7 @@ class View(AndroidBase):
     def alert_accept(self):
         """弹框确认 IOS专属"""
         try:
-            self.device.alert.accept()
+            self.app.alert.accept()
             INFO.logger.info("成功弹框确认")
         except Exception as e:
             ERROR.logger.error("无法弹框确认")
@@ -254,7 +254,7 @@ class View(AndroidBase):
     def alert_dismiss(self):
         """弹框取消 IOS专属"""
         try:
-            self.device.alert.dismiss()
+            self.app.alert.dismiss()
             INFO.logger.info("成功弹框取消")
         except Exception as e:
             ERROR.logger.error("无法弹框取消")
@@ -263,7 +263,7 @@ class View(AndroidBase):
     def alert_click(self, name):
         """弹框点击 IOS专属"""
         try:
-            self.device.alert.click(name)
+            self.app.alert.click(name)
             INFO.logger.info("成功弹框点击%s" % name)
         except Exception as e:
             ERROR.logger.error("无法弹框点击%s" % name)
@@ -275,13 +275,13 @@ class View(AndroidBase):
         names = locals()
         names["element"] = kwargs["element"]
         names["data"] = kwargs["data"]
-        names["device"] = self.device
+        names["device"] = self.app
         names["test"] = self.test
         try:
-            def print(*args, sep=' ', end='\n', file=None, flush=False):
+            def _print(*args, sep=' ', end='\n', file=None, flush=False):
                 if file is None or file in (sys.stdout, sys.stderr):
                     file = names["test"].stdout_buffer
-                self.print(*args, sep=sep, end=end, file=file, flush=flush)
+                print(*args, sep=sep, end=end, file=file, flush=flush)
 
             def sys_get(name):
                 if name in names["test"].context:

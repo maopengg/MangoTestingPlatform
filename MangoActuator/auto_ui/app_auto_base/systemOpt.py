@@ -4,17 +4,17 @@ from time import sleep
 from uiautomator2 import UiObjectNotFoundError
 from wda import WDAElementNotFoundError
 
-from auto_ui.app_auto_base import Operation
 from utlis.logs.log_control import ERROR, INFO
+from .android_base import AndroidBase
 
 
-class System(Operation):
+class System(AndroidBase):
     """系统操作"""
 
-    def     start_app(self, app_id):
+    def start_app(self, app_id):
         """启动应用"""
         try:
-            self.device.app_start(app_id)
+            self.app.app_start(app_id)
             INFO.logger.info("成功执行启动应用")
         except Exception as e:
             ERROR.logger.error("无法执行关闭应用")
@@ -23,7 +23,7 @@ class System(Operation):
     def close_app(self, app_id):
         """关闭应用"""
         try:
-            self.device.app_stop(app_id)
+            self.app.app_stop(app_id)
             INFO.logger.info("成功执行关闭应用")
         except Exception as e:
             ERROR.logger.error("无法执行关闭应用")
@@ -33,9 +33,9 @@ class System(Operation):
         """左滑"""
         try:
             if system == "android":
-                self.device.swipe_ext("left")
+                self.app.swipe_ext("left")
             else:
-                self.device.swipe_left()
+                self.app.swipe_left()
             INFO.logger.info("成功执行左滑")
         except Exception as e:
             ERROR.logger.error("无法执行左滑")
@@ -45,9 +45,9 @@ class System(Operation):
         """右滑"""
         try:
             if system == "android":
-                self.device.swipe_ext("right")
+                self.app.swipe_ext("right")
             else:
-                self.device.swipe_right()
+                self.app.swipe_right()
             INFO.logger.info("成功执行右滑")
         except Exception as e:
             ERROR.logger.error("无法执行右滑")
@@ -57,9 +57,9 @@ class System(Operation):
         """上滑"""
         try:
             if system == "android":
-                self.device.swipe_ext("up")
+                self.app.swipe_ext("up")
             else:
-                self.device.swipe_up()
+                self.app.swipe_up()
             INFO.logger.info("成功执行上滑")
         except Exception as e:
             ERROR.logger.error("无法执行上滑")
@@ -69,9 +69,9 @@ class System(Operation):
         """下滑"""
         try:
             if system == "android":
-                self.device.swipe_ext("down")
+                self.app.swipe_ext("down")
             else:
-                self.device.swipe_down()
+                self.app.swipe_down()
             INFO.logger.info("成功执行下滑")
         except Exception as e:
             ERROR.logger.error("无法执行下滑")
@@ -81,9 +81,9 @@ class System(Operation):
         """系统首页"""
         try:
             if system == "android":
-                self.device.keyevent("home")
+                self.app.keyevent("home")
             else:
-                self.device.home()
+                self.app.home()
             INFO.logger.info("成功执行返回系统首页")
         except Exception as e:
             ERROR.logger.error("无法执行返回系统首页")
@@ -92,7 +92,7 @@ class System(Operation):
     def back(self):
         """系统返回 安卓专用"""
         try:
-            self.device.keyevent("back")
+            self.app.keyevent("back")
             INFO.logger.info("成功执行返回")
         except Exception as e:
             ERROR.logger.error("无法执行返回")
@@ -101,7 +101,7 @@ class System(Operation):
     def press(self, keycode):
         """系统按键"""
         try:
-            self.device.press(keycode)
+            self.app.press(keycode)
             INFO.logger.info("成功执行按下系统键位: %s" % keycode)
         except Exception as e:
             ERROR.logger.error("无法执行按下系统键位: %s" % keycode)
@@ -110,7 +110,7 @@ class System(Operation):
     def screenshot(self, name):
         """屏幕截图"""
         try:
-            screenshot = self.device.screenshot(format='raw')
+            screenshot = self.app.screenshot(format='raw')
             self.test.saveScreenShot(name, screenshot)
             INFO.logger.info("成功执行屏幕截图")
         except Exception as e:
@@ -121,9 +121,9 @@ class System(Operation):
         """亮屏"""
         try:
             if system == "android":
-                self.device.screen_on()
+                self.app.screen_on()
             else:
-                self.device.unlock()
+                self.app.unlock()
             INFO.logger.info("成功执行亮屏")
         except Exception as e:
             ERROR.logger.error("无法执行亮屏")
@@ -133,9 +133,9 @@ class System(Operation):
         """息屏"""
         try:
             if system == "android":
-                self.device.screen_off()
+                self.app.screen_off()
             else:
-                self.device.lock()
+                self.app.lock()
             INFO.logger.info("成功执行息屏")
         except Exception as e:
             ERROR.logger.error("无法执行息屏")
@@ -153,7 +153,7 @@ class System(Operation):
     def implicitly_wait(self, second):
         """隐式等待"""
         try:
-            self.device.implicitly_wait(second)
+            self.app.implicitly_wait(second)
             INFO.logger.info("成功执行implicitly wait %ds" % second)
         except Exception as e:
             ERROR.logger.error("无法执行implicitly wait %ds" % second)
@@ -165,7 +165,7 @@ class System(Operation):
         names = locals()
         names["element"] = kwargs["element"]
         names["data"] = kwargs["data"]
-        names["device"] = self.device
+        names["device"] = self.app
         names["test"] = self.test
         try:
             def print(*args, sep=' ', end='\n', file=None, flush=False):
