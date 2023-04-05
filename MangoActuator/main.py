@@ -3,13 +3,6 @@
 # @Description: 
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
-# import asyncio
-#
-# from utlis.client.client_socket import ClientWebSocket
-#
-# print("======执行端正在启动======")
-# client = ClientWebSocket()
-# asyncio.get_event_loop().run_until_complete(client.client_run())  # 等价于asyncio.run(client_run())
 import asyncio
 
 from utlis.logs.nuw_logs import nuw_dir
