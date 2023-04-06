@@ -37,6 +37,15 @@ class WebExp(Enum):
     TEXT = 3
 
 
+class AppExp(Enum):
+    """ {0: "xpath:"}，{1: "#"}，{2: "BOUNDS"}，{3: "text="} """
+    XPATH = 0
+    ID = 1
+    BOUNDS = 2
+    TEXT = 3
+    DESCRIPTION = 4
+
+
 class State(Enum):
     """ 0 是未测试，1 是失败，2 是通过"""
     NOT = 0

@@ -10,6 +10,7 @@ from auto_ui.tools.enum import OpeType, WebExp
 from auto_ui.tools.random_data import RandomData
 from auto_ui.tools.random_data import regular
 from utlis.cache.cache import CacheDB
+from utlis.logs.log_control import ERROR
 from utlis.logs.nuw_logs import get_log_screenshot
 
 
@@ -24,34 +25,30 @@ class ChromeRun(ChromeBase):
         self.case_id = case_id
         self.get(url)
 
-    def case_along(self, case_data: list):
-        for i in case_data:
-            self.action_element(i)
-        return True
-
-    def action_element(self, element: dict):
-        if element['ele_loc']:
+    def action_element(self, case_obj: dict):
+        if case_obj['ele_loc']:
             # 处理元素并查找
-            ele = self.eles(self.__ele_add(element['ele_exp'], element['ele_loc']))
+            ele = self.eles(self.__ele_add(case_obj['ele_exp'], case_obj['ele_loc']))
             # 获取元素的文本或元素下标进行断言
             if not ele:
                 self.get_screenshot(
                     path=get_log_screenshot() + r"\failure_screenshot\{}.jpg".format(
-                        element['ele_name'] + RandomData().time_random()),
+                        case_obj['ele_name'] + RandomData().time_random()),
                     full_page=True
                 )
-                print(f"定位的元素 {element['ele_loc']} 不存在，请查看截图：{element['ele_name']}+{RandomData().time_random()}.jpg")
+                ERROR.logger.error(
+                    f"定位的元素 {case_obj['ele_loc']} 不存在，请查看截图：{case_obj['ele_name']}+{RandomData().time_random()}.jpg")
             # 不为空则是一个可操作元素
             else:
                 # 点击
-                el = ele[0 if element['ele_sub'] is None else element['ele_sub']]
-                if element['ope_type'] == OpeType.CLICK.value:
+                el = ele[0 if case_obj['ele_sub'] is None else case_obj['ele_sub']]
+                if case_obj['ope_type'] == OpeType.CLICK.value:
                     el.click()
                 # 输入
-                elif element['ope_type'] == OpeType.INPUT.value:
-                    el.input(self.case_input_data(element))
-                if element['ele_sleep']:
-                    time.sleep(element['ele_sleep'])
+                elif case_obj['ope_type'] == OpeType.INPUT.value:
+                    el.input(self.case_input_data(case_obj))
+                if case_obj['ele_sleep']:
+                    time.sleep(case_obj['ele_sleep'])
 
     def case_input_data(self, element: dict):
         """ 取出缓存 """
@@ -75,12 +72,3 @@ class ChromeRun(ChromeBase):
             for key, value in eval(i).items():
                 if key == ele_exp:
                     return value + ele
-
-    # @staticmethod
-    # def __nuw_dir():
-    #     current_dir = os.path.dirname(os.path.abspath(__file__))
-    #     logs_dir = os.path.join(current_dir, "..", "..", "logs")
-    #     if not os.path.exists(logs_dir):
-    #         os.makedirs(logs_dir)
-    #     os.chdir(logs_dir)
-    #     return os.getcwd()

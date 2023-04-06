@@ -6,6 +6,7 @@
 
 import uiautomator2
 
+from auto_ui.tools.enum import AppExp
 from utlis.logs.log_control import ERROR
 
 """
@@ -22,6 +23,16 @@ class AndroidBase:
         self.app = uiautomator2.connect(equipment)
         self.app.implicitly_wait(10)
 
+    def ele(self, ele: str, _type: int):
+        if _type == AppExp.XPATH.value:
+            return self.app.xpath(ele)
+        elif _type == AppExp.ID.value:
+            return self.app(resourceId=ele)
+        elif _type == AppExp.BOUNDS.value:
+            return self.app(text=ele)
+        elif _type == AppExp.DESCRIPTION.value:
+            return self.app(description=ele)
+
     def find_element(self, locator: str):
         """
         判断元素是否存在并定位该元素
@@ -30,5 +41,5 @@ class AndroidBase:
         """
         try:
             return self.app.xpath(locator)
-        except Exception:
-            ERROR.logger.error("元素表达式有误: {}".format(locator))
+        except Exception as e:
+            ERROR.logger.error(f"元素表达式有误，元素：{locator}，报错信息：{e}")

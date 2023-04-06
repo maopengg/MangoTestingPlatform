@@ -20,13 +20,12 @@ class MainTest:
                      local_port: str = None,
                      browser_path: str = None,
                      equipment: str = None,
-                     package: str = None
                      ) -> None:
         """ 实例化对象 """
         if _type == End.Chrome.value:
             self.chrome = ChromeRun(local_port, browser_path)
         elif _type == End.Android.value:
-            self.android = AppRun(equipment, package)
+            self.android = AppRun(equipment)
         else:
             pass
 
@@ -36,15 +35,25 @@ class MainTest:
                  equipment: str = None,
                  package: str = None):
         """ 分发用例 """
+        # 遍历list中的用例得到每个用例
         for case_obj in data:
+            # 判断用例类型
             if case_obj['type'] == End.Chrome.value:
+                # 如果没有实例化，则先实例化对象
                 if self.chrome is None:
                     self.new_case_obj(case_obj['type'], local_port, browser_path)
+                # 访问url
                 self.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
-                self.chrome.case_along(case_obj['case_data'])
+                # 循环遍历每个用例中的元素，获得元素对象
+                for case_dict in case_obj['case_data']:
+                    self.chrome.action_element(case_dict)
             elif case_obj['type'] == End.Android.value:
                 if self.android is None:
                     self.new_case_obj(case_obj['type'], equipment, package)
-                self.android.main(case_obj['case_data'])
+                # 访问app对象
+                self.android.start_app(case_obj['case_url'])
+                # 循环遍历每个用例中的元素，获得元素对象
+                for case_dict in case_obj['case_data']:
+                    self.chrome.action_element(case_dict)
             else:
                 pass
