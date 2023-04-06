@@ -5,14 +5,12 @@
 # @Author : 毛鹏
 
 from auto_ui.app_auto_base.assertionOpt import Assertion
-from auto_ui.app_auto_base.conditionOpt import Condition
-from auto_ui.app_auto_base.relationOpt import Relation
-from auto_ui.app_auto_base.scenarioOpt import Scenario
-from auto_ui.app_auto_base.systemOpt import System
-from auto_ui.app_auto_base.viewOpt import View
+from auto_ui.app_auto_base.element import ElementOperation
+from auto_ui.app_auto_base.device import EquipmentDevice
+from auto_ui.app_auto_base.page import Page
 
 
-class AppRun(Assertion, Condition, Relation, Scenario, System, View):
+class AppRun(Page, EquipmentDevice, ElementOperation, Assertion):
 
     def __init__(self, equipment: str = '8796a033'):
         super().__init__(equipment)
