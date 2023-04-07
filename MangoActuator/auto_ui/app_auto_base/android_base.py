@@ -24,14 +24,20 @@ class AndroidBase:
         self.app.implicitly_wait(10)
 
     def ele(self, ele: str, _type: int):
-        if _type == AppExp.XPATH.value:
-            return self.app.xpath(ele)
-        elif _type == AppExp.ID.value:
-            return self.app(resourceId=ele)
-        elif _type == AppExp.BOUNDS.value:
-            return self.app(text=ele)
-        elif _type == AppExp.DESCRIPTION.value:
-            return self.app(description=ele)
+        # if _type == AppExp.XPATH.value:
+        #     return self.app.xpath(ele)
+        # elif _type == AppExp.ID.value:
+        #     return self.app(resourceId=ele)
+        # elif _type == AppExp.BOUNDS.value:
+        #     return self.app(text=ele)
+        # elif _type == AppExp.DESCRIPTION.value:
+        #     return self.app(description=ele)
+        return {
+            AppExp.XPATH.value: self.app.xpath(ele),
+            AppExp.ID.value: self.app(resourceId=ele),
+            AppExp.BOUNDS.value: self.app(text=ele),
+            AppExp.DESCRIPTION.value: self.app(description=ele)
+        }.get(_type)
 
     def find_element(self, locator: str):
         """

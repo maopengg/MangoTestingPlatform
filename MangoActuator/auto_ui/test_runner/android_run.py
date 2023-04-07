@@ -21,9 +21,12 @@ class AppRun(Page, EquipmentDevice, ElementOperation, Assertion):
         return True
 
     def action_element(self, case_dict: dict):
-        pass
+        self.sleep(5)
+        print('每个元素对象：', case_dict)
 
 
 if __name__ == '__main__':
-    r = AppRun()
-    # r.start_app('com.tencent.mm')
+    r = AppRun(equipment='7de23fdd')
+    r.start_app('com.tencent.mm')
+    r.sleep(5)
+    r.close_app('com.tencent.mm')

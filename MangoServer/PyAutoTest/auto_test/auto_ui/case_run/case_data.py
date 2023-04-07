@@ -3,6 +3,8 @@
 # @Description: 处理所有用例的数据
 # @Time   : 2023-03-12 10:54
 # @Author : 毛鹏
+import json
+
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCase, RunSort, UiConfig
 from PyAutoTest.auto_test.auto_ui.ui_tools.enum import End

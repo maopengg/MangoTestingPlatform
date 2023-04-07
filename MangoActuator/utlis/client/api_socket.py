@@ -13,7 +13,7 @@ from utlis.ope_win.cmd import cmd
 class ExternalAPI:
 
     def __init__(self):
-        self.case: Optional[MainTest] = None
+        self.case = MainTest()
 
     def start_up(self, func, *args, **kwargs):
         getattr(self, func)(*args, **kwargs)
@@ -23,7 +23,7 @@ class ExternalAPI:
         return cmd(cmd_data)
 
     def new_web_obj(self, original_data: dict):
-        self.case = MainTest()
+        # self.case = MainTest()
         if original_data['type'] == End.Chrome.value:
             self.case.new_case_obj(_type=original_data['type'],
                                    local_port=original_data['local_port'],
@@ -34,8 +34,6 @@ class ExternalAPI:
                                    package=original_data['package'])
 
     def web_case_run(self, original_data: list[dict]):
-        if self.case is None:
-            self.new_web_obj(original_data[0])
         self.case.case_run(original_data)
 
 

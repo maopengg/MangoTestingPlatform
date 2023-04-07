@@ -51,9 +51,136 @@ class MainTest:
                 if self.android is None:
                     self.new_case_obj(case_obj['type'], equipment, package)
                 # 访问app对象
-                self.android.start_app(case_obj['case_url'])
+                self.android.start_app(case_obj['package'])
                 # 循环遍历每个用例中的元素，获得元素对象
                 for case_dict in case_obj['case_data']:
-                    self.chrome.action_element(case_dict)
+                    self.android.action_element(case_dict)
             else:
                 pass
+
+
+if __name__ == '__main__':
+    data1 = [
+        {
+            "case_id": "打开生产环境常规小程序",
+            "case_name": "打开生产环境常规小程序",
+            "case_url": "com.tencent.mm-",
+            "equipment": "8796a033",
+            "package": "com.tencent.mm",
+            "type": 1,
+            "case_data": [
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序",
+                    "ele_page_name": "微信",
+                    "ele_exp": None,
+                    "ele_loc": None,
+                    "ele_sleep": 3,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "微信首页搜索按钮",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/j5t\"]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": "卓尔数科常规生产",
+                    "ass_value": None,
+                    "ele_name": "微信首页搜索输入框",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/j4t\"]/android.widget.RelativeLayout[1]",
+                    "ele_sleep": 2,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "点击搜索到的小程序",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/a27\"]",
+                    "ele_sleep": 5,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序分类tab",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@text=\"分类\"]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序内容中心tab",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@text=\"内容中心\"]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序购物车tab",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@text=\"购物车\"]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序我的tab",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//*[@text=\"我的\"]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                },
+                {
+                    "ope_type": 1,
+                    "ass_type": 0,
+                    "ope_value": None,
+                    "ass_value": None,
+                    "ele_name": "小程序首页tab",
+                    "ele_page_name": "微信",
+                    "ele_exp": 0,
+                    "ele_loc": "//android.webkit.WebView/android.view.View[6]/android.view.View[1]/android.widget.TextView[1]",
+                    "ele_sleep": None,
+                    "ele_sub": None
+                }
+            ]
+        }
+    ]
+    equipment1 = '7de23fdd'
+    package1 = 'com.tencent.mm'
+    r = MainTest()
+    r.case_run(data1, equipment=equipment1)

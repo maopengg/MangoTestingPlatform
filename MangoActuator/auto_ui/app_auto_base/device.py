@@ -12,7 +12,7 @@ class EquipmentDevice(AndroidBase):
             self.app.app_start(app_name)
             INFO.logger.info("成功执行启动应用")
         except Exception as e:
-            ERROR.logger.error(f"无法执行关闭应用，包名：{app_name}，报错信息：{e}")
+            ERROR.logger.error(f"无法执行打开应用，包名：{app_name}，报错信息：{e}")
             return None
 
     def close_app(self, app_name):

@@ -42,13 +42,13 @@ class RunUiCase(ViewSet):
             return Response({
                 'code': 200,
                 'msg': '测试客户端已收到用例，正在执行中...',
-                'data': ''
+                'data': case_data_list
             })
         else:
             return Response({
                 'code': 300,
                 'msg': '执行失败，请确保执行端已连接服务器',
-                'data': ''
+                'data': case_data_list
             })
 
     @action(methods=['get'], detail=False)
