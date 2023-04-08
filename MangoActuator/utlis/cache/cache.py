@@ -1,20 +1,20 @@
 # coding: utf-8
 
 from diskcache import Cache
-
-file = r'D:\Tese_Case\PyClientAT\cache_flie'
+from utlis.logs.nuw_logs import get_cache
 
 
 class CacheDB:
 
     def __init__(self):
-        self.cache = Cache(file)
+        self.cache = Cache(get_cache())
 
     def set(self, key, value, expire=300):
         self.cache.set(key, value, expire=expire, read=True)
 
     def get(self, key):
-        return self.cache.get(key)
+        data = self.cache.get(key)
+        return data
 
     def touch(self, name, expire=300, ):
         """

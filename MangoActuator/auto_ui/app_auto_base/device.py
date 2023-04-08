@@ -20,6 +20,7 @@ class EquipmentDevice(AndroidBase):
         try:
             self.app.app_stop(app_name)
             INFO.logger.info("成功执行关闭应用")
+            sleep(1)
         except Exception as e:
             ERROR.logger.error(f"无法执行关闭应用，包名：{app_name}，报错信息：{e}")
             return None
@@ -90,7 +91,7 @@ class EquipmentDevice(AndroidBase):
     def screenshot(self, filepath):
         """屏幕截图"""
         try:
-            self.app.screenshot(filename=filepath, format='raw')
+            self.app.screenshot(filename=filepath)
             INFO.logger.info("成功执行屏幕截图")
         except Exception as e:
             ERROR.logger.error(f"无法执行屏幕截图，保存文件路径{filepath}，报错信息：{e}")

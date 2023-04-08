@@ -3,11 +3,13 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
+import time
 from typing import Optional
 
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
+from utlis.logs.log_control import ERROR
 
 
 class MainTest:
@@ -20,20 +22,20 @@ class MainTest:
                      local_port: str = None,
                      browser_path: str = None,
                      equipment: str = None,
-                     ) -> None:
+                     ) -> bool:
         """ 实例化对象 """
         if _type == End.Chrome.value:
             self.chrome = ChromeRun(local_port, browser_path)
         elif _type == End.Android.value:
-            self.android = AppRun(equipment)
+            self.android = AppRun(equipment=equipment)
+            return True
         else:
             pass
 
     def case_run(self, data: list[dict],
                  local_port: str = None,
                  browser_path: str = None,
-                 equipment: str = None,
-                 package: str = None):
+                 equipment: str = None):
         """ 分发用例 """
         # 遍历list中的用例得到每个用例
         for case_obj in data:
@@ -41,7 +43,10 @@ class MainTest:
             if case_obj['type'] == End.Chrome.value:
                 # 如果没有实例化，则先实例化对象
                 if self.chrome is None:
-                    self.new_case_obj(case_obj['type'], local_port, browser_path)
+                    print('之前')
+                    if not self.new_case_obj(case_obj['type'], local_port, browser_path):
+                        print('之后')
+                        break
                 # 访问url
                 self.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
                 # 循环遍历每个用例中的元素，获得元素对象
@@ -49,14 +54,23 @@ class MainTest:
                     self.chrome.action_element(case_dict)
             elif case_obj['type'] == End.Android.value:
                 if self.android is None:
-                    self.new_case_obj(case_obj['type'], equipment, package)
+                    if not self.new_case_obj(case_obj['type'], equipment=equipment):
+                        break
                 # 访问app对象
                 self.android.start_app(case_obj['package'])
                 # 循环遍历每个用例中的元素，获得元素对象
                 for case_dict in case_obj['case_data']:
-                    self.android.action_element(case_dict)
+                    res = self.android.case_along(case_dict)
+                    if not res:
+                        ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
+                        self.email_send()
+                        break
+
             else:
                 pass
+
+    def email_send(self):
+        print('执行发送邮件或者企微通知！')
 
 
 if __name__ == '__main__':
@@ -94,7 +108,7 @@ if __name__ == '__main__':
                     "ele_sub": None
                 },
                 {
-                    "ope_type": 1,
+                    "ope_type": 2,
                     "ass_type": 0,
                     "ope_value": "卓尔数科常规生产",
                     "ass_value": None,
@@ -125,7 +139,7 @@ if __name__ == '__main__':
                     "ele_name": "小程序分类tab",
                     "ele_page_name": "微信",
                     "ele_exp": 0,
-                    "ele_loc": "//*[@text=\"分类\"]",
+                    "ele_loc": "/html/body/wx-view/wx-z-tab-bar/wx-view/wx-view[2]/wx-view/wx-view[2]/wx-view/wx-view[1]/wx-view/wx-view/wx-view[1]/wx-image/div",
                     "ele_sleep": None,
                     "ele_sub": None
                 },

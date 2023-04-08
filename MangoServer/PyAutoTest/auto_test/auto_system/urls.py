@@ -22,7 +22,7 @@ urlpatterns = [
     path('project/test', TestObjectViews.test),
     #
     path('notice', NoticeConfigCRUD.as_view()),
-    path('notice/test', NoticeConfigViews.test),
+    path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
     #
     path('database', DatabaseCRUD.as_view()),
     path('database/test', DatabaseViews.test),

@@ -4,11 +4,10 @@
 # @Time   : 2023-03-11 17:25
 # @Author : 毛鹏
 
-import uiautomator2
+from uiautomator2 import Device
 
-from auto_ui.tools.enum import AppExp
-from utlis.logs.log_control import ERROR
-
+from auto_ui.tools.enum import EleExp
+from utlis.logs.log_control import ERROR, INFO
 """
 python -m uiautomator2 init
 python -m weditor
@@ -20,23 +19,19 @@ class AndroidBase:
     """app基类"""
 
     def __init__(self, equipment):
-        self.app = uiautomator2.connect(equipment)
+        self.app = Device(equipment)
+        try:
+            INFO.logger.info(f'设备信息：{self.app.info}')
+        except RuntimeError as e:
+            ERROR.logger.error(f'设备启动异常，请检查设备连接！报错内容：{e}')
         self.app.implicitly_wait(10)
 
     def ele(self, ele: str, _type: int):
-        # if _type == AppExp.XPATH.value:
-        #     return self.app.xpath(ele)
-        # elif _type == AppExp.ID.value:
-        #     return self.app(resourceId=ele)
-        # elif _type == AppExp.BOUNDS.value:
-        #     return self.app(text=ele)
-        # elif _type == AppExp.DESCRIPTION.value:
-        #     return self.app(description=ele)
         return {
-            AppExp.XPATH.value: self.app.xpath(ele),
-            AppExp.ID.value: self.app(resourceId=ele),
-            AppExp.BOUNDS.value: self.app(text=ele),
-            AppExp.DESCRIPTION.value: self.app(description=ele)
+            EleExp.XPATH.value: self.app.xpath(ele),
+            EleExp.ID.value: self.app(resourceId=ele),
+            EleExp.BOUNDS.value: self.app(text=ele),
+            EleExp.DESCRIPTION.value: self.app(description=ele)
         }.get(_type)
 
     def find_element(self, locator: str):

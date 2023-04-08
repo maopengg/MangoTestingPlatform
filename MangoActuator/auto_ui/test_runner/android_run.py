@@ -4,29 +4,69 @@
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 
-from auto_ui.app_auto_base.assertion import Assertion
-from auto_ui.app_auto_base.device import EquipmentDevice
-from auto_ui.app_auto_base.element import ElementOperation
-from auto_ui.app_auto_base.page import Page
+from auto_ui.app_auto_base.device_methods import DriverMerge
+from auto_ui.tools.data_cleaning import DataCleaning
+from auto_ui.tools.enum import EleExp, OpeType
+from utlis.logs.log_control import ERROR
+from utlis.logs.nuw_logs import get_log_screenshot
+
+data = {'ope_type': 1, 'ass_type': 0, 'ope_value': None, 'ass_value': None, 'ele_name': '小程序分类tab',
+        'ele_page_name': '微信', 'ele_exp': 0, 'ele_loc': '//*[@text="分类"]', 'ele_sleep': None, 'ele_sub': None}
 
 
-class AppRun(Page, EquipmentDevice, ElementOperation, Assertion):
+class AppRun(DriverMerge, DataCleaning):
 
     def __init__(self, equipment: str = '8796a033'):
         super().__init__(equipment)
+        self.case_id = 0
+        # self.ope_type=
+        # self.ass_type=
+        # self.ope_value=
+        # self.ass_value=
+        # self.ele_name=
+        # self.ele_page_name=
+        # self.ele_exp=
+        # self.ele_loc=
+        # self.ele_slee=
+        # self.ele_sub=
 
-    def case_along(self, case_list: list):
-        for case_dict in case_list:
-            self.action_element(case_dict)
-        return True
+    def __del__(self):
+        self.close_app('com.tencent.mm')
+        self.sleep(1)
 
-    def action_element(self, case_dict: dict):
-        self.sleep(5)
-        print('每个元素对象：', case_dict)
+    def case_along(self, case_dict: dict) -> bool:
+        for key, value in case_dict.items():
+            setattr(self, key, value)
+        try:
+            self.action_element()
+            return True
+        except Exception as e:
+            ERROR.logger.error(f'元素操作失败，请检查内容\n'
+                               f'报错信息：{e}\n'
+                               f'元素对象：{case_dict}\n')
+            self.screenshot(
+                rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png')
+            return False
+
+    def action_element(self):
+        # 如果是百分比坐标，则直接点击
+        if self.ele_exp == EleExp.CONSTANT_NAME.value:
+            x, y = self.ele_loc.split(',')
+            self.click_coord(float(x), float(y))
+        elif self.ele_loc is None:
+            pass
+        else:
+            if self.ope_type == OpeType.CLICK.value:
+                self.click(self.ele_loc, self.ele_exp)
+            elif self.ope_type == OpeType.INPUT.value:
+                input_value = self.case_input_data(self.case_id, self.ele_name, self.ope_value)
+                self.input_text(self.ele_loc, input_value)
 
 
 if __name__ == '__main__':
     r = AppRun(equipment='7de23fdd')
     r.start_app('com.tencent.mm')
+
+    r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
     r.sleep(5)
     r.close_app('com.tencent.mm')

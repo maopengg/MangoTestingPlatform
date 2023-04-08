@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import os
 
-file = ['log', 'failure_screenshot']
+file = ['log', 'failure_screenshot', 'cache']
 current_dir = os.path.dirname(os.path.abspath(__file__))
 current_dir = os.path.dirname(os.path.dirname(current_dir))
 logs_dir = os.path.join(current_dir, "logs")
@@ -28,5 +28,9 @@ def get_log_screenshot():
     return os.path.join(logs_dir, "failure_screenshot")
 
 
+def get_cache():
+    return os.path.join(logs_dir, 'cache')
+
+
 if __name__ == '__main__':
-    print(get_log())
+    nuw_dir()

@@ -29,12 +29,17 @@ class Assertions(Enum):
     SMALL = 3
 
 
-class WebExp(Enum):
+class EleExp(Enum):
     """ {0: "xpath:"}，{1: "#"}，{2: "@name"}，{3: "text="} """
     XPATH = 0
     ID = 1
     NAME = 2
     TEXT = 3
+    # 小程序特有
+    BOUNDS = 4
+    DESCRIPTION = 5
+    CONSTANT_NAME = 6
+    COORDINATE_CONSTANT = 7
 
 
 class AppExp(Enum):
