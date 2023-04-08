@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
-from typing import Optional
 
 from auto_ui.test_runner.test_main import MainTest
 from auto_ui.tools.enum import End
