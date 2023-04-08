@@ -35,6 +35,11 @@ class AppRun(DriverMerge, DataCleaning):
         self.sleep(1)
 
     def case_along(self, case_dict: dict) -> bool:
+        """
+        将数据设为变量，并对这个元素进行操作
+        @param case_dict: 被操作元素对象
+        @return: 返回是否操作成功
+        """
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
@@ -49,7 +54,10 @@ class AppRun(DriverMerge, DataCleaning):
             return False
 
     def action_element(self):
-        # 如果是百分比坐标，则直接点击
+        """
+        操作具体的元素对象
+        @return:
+        """
         if self.ele_exp == EleExp.CONSTANT_NAME.value:
             x, y = self.ele_loc.split(',')
             self.click_coord(float(x), float(y))
@@ -66,7 +74,6 @@ class AppRun(DriverMerge, DataCleaning):
 if __name__ == '__main__':
     r = AppRun(equipment='7de23fdd')
     r.start_app('com.tencent.mm')
-
     r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
     r.sleep(5)
     r.close_app('com.tencent.mm')
