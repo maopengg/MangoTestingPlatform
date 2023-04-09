@@ -8,18 +8,17 @@ from typing import Optional
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
-from utlis.logs.log_control import ERROR
-from utlis.client.server_enum_api import ServerEnumAPI
 from utlis import client
-# from main import client
+from utlis.client.server_enum_api import ServerEnumAPI
+from utlis.logs.log_control import ERROR
+
 
 class MainTest:
+    chrome: Optional[ChromeRun] = None
+    android: Optional[AppRun] = None
 
-    def __init__(self):
-        self.chrome: Optional[ChromeRun] = None
-        self.android: Optional[AppRun] = None
-
-    def new_case_obj(self, _type: int,
+    @classmethod
+    def new_case_obj(cls, _type: int,
                      local_port: str = None,
                      browser_path: str = None,
                      equipment: str = None,
@@ -33,16 +32,17 @@ class MainTest:
         @return:
         """
         if _type == End.Chrome.value:
-            if not self.chrome:
-                self.chrome = ChromeRun(local_port, browser_path)
+            if not cls.chrome:
+                cls.chrome = ChromeRun(local_port, browser_path)
         elif _type == End.Android.value:
-            if not self.android:
-                self.android = AppRun(equipment=equipment)
+            if not cls.android:
+                cls.android = AppRun(equipment=equipment)
             return True
         else:
             pass
 
-    def case_run(self, data: list[dict],
+    @classmethod
+    def case_run(cls, data: list[dict],
                  local_port: str = None,
                  browser_path: str = None,
                  equipment: str = None):
@@ -57,28 +57,29 @@ class MainTest:
         # 遍历list中的用例得到每个用例
         for case_obj in data:
             if case_obj['type'] == End.Chrome.value:
-                if self.chrome is None:
-                    self.new_case_obj(case_obj['type'], local_port, browser_path)
-                self.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
+                if cls.chrome is None:
+                    cls.new_case_obj(case_obj['type'], local_port, browser_path)
+                cls.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
                 for case_dict in case_obj['case_data']:
-                    self.chrome.action_element(case_dict)
+                    cls.chrome.action_element(case_dict)
             elif case_obj['type'] == End.Android.value:
-                if self.android is None:
-                    self.new_case_obj(case_obj['type'], equipment=equipment)
-                self.android.start_app(case_obj['package'])
+                if cls.android is None:
+                    cls.new_case_obj(case_obj['type'], equipment=equipment)
+                cls.android.start_app(case_obj['package'])
                 for case_dict in case_obj['case_data']:
-                    res = self.android.case_along(case_dict)
+                    res = cls.android.case_along(case_dict)
                     if not res:
                         ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
-                        self.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！')
+                        cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！')
                         break
                     else:
-                        self.email_send(code=200, msg='用例执行完成，请查看测试报告！')
+                        cls.email_send(code=200, msg='用例执行完成，请查看测试报告！')
 
             else:
                 pass
 
-    def email_send(self, code, msg):
+    @classmethod
+    def email_send(cls, code, msg):
         client.active_send(code=code,
                            func=ServerEnumAPI.NOTICE_MAIN.value,
                            msg=msg,

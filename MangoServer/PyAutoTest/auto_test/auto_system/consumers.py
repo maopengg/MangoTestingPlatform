@@ -37,7 +37,7 @@ class ChatConsumer(WebsocketConsumer):
                 'code': 200,
                 'func': None,
                 'user_info': None,
-                'msg': '与服务端建立连接成功!',
+                'msg': '与MangoServer建立连接成功!',
                 'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
             }))
         elif self.scope.get('path') == '/client/socket':
@@ -46,7 +46,7 @@ class ChatConsumer(WebsocketConsumer):
                     'code': 300,
                     'func': None,
                     'user_info': None,
-                    'msg': '您在控制端未登录，请登录后再重新打开执行端进行连接！',
+                    'msg': '您在MangoServer未登录，请登录后再重新打开MangoActuator进行连接！',
                     'data': ''
                 }))
                 self.websocket_disconnect(message)
@@ -58,14 +58,14 @@ class ChatConsumer(WebsocketConsumer):
                             'code': 200,
                             'func': None,
                             'user_info': None,
-                            'msg': '与服务端建立连接成功!',
+                            'msg': 'MangoActuator已连接上MangoServer！',
                             'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                         }))
                         self.active_send(
                             code=200,
                             func=None,
                             user=int(self.scope.get('query_string')),
-                            msg='执行端已连接！',
+                            msg='您的MangoActuator已连接上MangoServer！',
                             data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                             end='web_obj'
                         )
@@ -74,7 +74,7 @@ class ChatConsumer(WebsocketConsumer):
                             'code': 300,
                             'func': None,
                             'user_info': None,
-                            'msg': '您在控制端未登录，请登录后再重新打开执行端进行连接！',
+                            'msg': '您在mango-console未登录，请登录后再重新打开MangoActuator进行连接！',
                             'data': ''
                         }))
                         self.websocket_disconnect(message)
@@ -110,7 +110,7 @@ class ChatConsumer(WebsocketConsumer):
                         code=200,
                         func='break',
                         user=int(self.scope.get('query_string')),
-                        msg='控制端已断开！',
+                        msg='mango-console已断开！',
                         data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                         end='client_obj'
                     )
@@ -120,7 +120,7 @@ class ChatConsumer(WebsocketConsumer):
                         code=200,
                         func=None,
                         user=int(self.scope.get('query_string')),
-                        msg='执行端已断开！',
+                        msg='MangoActuator已断开！',
                         data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                         end='web_obj'
                     )
@@ -161,7 +161,7 @@ class ChatConsumer(WebsocketConsumer):
         for i in CONN_LIST:
             if i.get('user') == msg.get('data').get('user'):
                 i.get(msg.get('data').get('send_obj')).send(msg.get('msg'))
-                return True
+                # return True
 
     def __receive_console(self, message):
         self.__output_method(message.get('text'))

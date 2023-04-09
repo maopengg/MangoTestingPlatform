@@ -11,9 +11,6 @@ from utlis.ope_win.cmd import cmd
 
 class ExternalAPI:
 
-    def __init__(self):
-        self.case = MainTest()
-
     def start_up(self, func, *args, **kwargs):
         getattr(self, func)(*args, **kwargs)
 
@@ -24,16 +21,16 @@ class ExternalAPI:
     def new_web_obj(self, original_data: dict):
         # self.case = MainTest()
         if original_data['type'] == End.Chrome.value:
-            self.case.new_case_obj(_type=original_data['type'],
-                                   local_port=original_data['local_port'],
-                                   browser_path=original_data['browser_path'])
+            MainTest.new_case_obj(_type=original_data['type'],
+                                  local_port=original_data['local_port'],
+                                  browser_path=original_data['browser_path'])
         elif original_data['type'] == End.Android.value:
-            self.case.new_case_obj(_type=original_data['type'],
-                                   equipment=original_data['equipment'],
-                                   package=original_data['package'])
+            MainTest.new_case_obj(_type=original_data['type'],
+                                  equipment=original_data['equipment'],
+                                  package=original_data['package'])
 
     def ui_case_run(self, original_data: list[dict]):
-        self.case.case_run(original_data)
+        MainTest.case_run(original_data)
 
 
 if __name__ == '__main__':
