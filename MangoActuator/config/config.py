@@ -8,3 +8,4 @@
 IP_ADDR = "127.0.0.1"
 # websocket端口
 IP_PORT = "8000"
+USER = ''

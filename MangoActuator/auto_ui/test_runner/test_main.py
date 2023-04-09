@@ -9,7 +9,9 @@ from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
 from utlis.logs.log_control import ERROR
-
+from utlis.client.server_enum_api import ServerEnumAPI
+from utlis import client
+# from main import client
 
 class MainTest:
 
@@ -68,14 +70,20 @@ class MainTest:
                     res = self.android.case_along(case_dict)
                     if not res:
                         ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
-                        self.email_send()
+                        self.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！')
                         break
+                    else:
+                        self.email_send(code=200, msg='用例执行完成，请查看测试报告！')
 
             else:
                 pass
 
-    def email_send(self):
-        print('执行发送邮件或者企微通知！')
+    def email_send(self, code, msg):
+        client.active_send(code=code,
+                           func=ServerEnumAPI.NOTICE_MAIN.value,
+                           msg=msg,
+                           end=True,
+                           data='')
 
 
 if __name__ == '__main__':

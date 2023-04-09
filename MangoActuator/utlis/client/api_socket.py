@@ -32,7 +32,7 @@ class ExternalAPI:
                                    equipment=original_data['equipment'],
                                    package=original_data['package'])
 
-    def web_case_run(self, original_data: list[dict]):
+    def ui_case_run(self, original_data: list[dict]):
         self.case.case_run(original_data)
 
 

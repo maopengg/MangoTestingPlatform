@@ -89,15 +89,9 @@ class ChatConsumer(WebsocketConsumer):
         """
         print(CONN_LIST)
         if self.scope.get('path') == '/web/socket':
-            self.__output_method(message.get('text'))
+            self.__receive_console(message)
         elif self.scope.get('path') == '/client/socket':
-            self.__output_method(message.get('text'))
-            msg = message.get('text')
-            msg = json.loads(msg)
-            for i in CONN_LIST:
-                if i.get('user') == msg.get('data').get('user'):
-                    i.get(msg.get('data').get('send_obj')).send(msg.get('msg'))
-                    return True
+            self.__receive_actuator(message)
         else:
             return False
 
@@ -112,13 +106,6 @@ class ChatConsumer(WebsocketConsumer):
         else:
             for i in CONN_LIST:
                 if i.get('web_obj') == self:
-                    # self.active_send(int(self.scope.get('query_string')), 'client_obj', {
-                    #     'code': 200,
-                    #     'func': 'break',
-                    #     'user_info': None,
-                    #     'msg': '控制端已断开！',
-                    #     'data': f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
-                    # })
                     self.active_send(
                         code=200,
                         func='break',
@@ -129,13 +116,6 @@ class ChatConsumer(WebsocketConsumer):
                     )
                     CONN_LIST.remove(i)
                 elif i.get('client_obj') == self:
-                    # self.active_send(int(self.scope.get('query_string')), 'web_obj', {
-                    #     'code': 200,
-                    #     'func': None,
-                    #     'user_info': None,
-                    #     'msg': '执行端已断开！',
-                    #     'data': f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
-                    # })
                     self.active_send(
                         code=200,
                         func=None,
@@ -173,6 +153,18 @@ class ChatConsumer(WebsocketConsumer):
                     return True
                 except AttributeError:
                     return False
+
+    def __receive_actuator(self, message):
+        msg = self.__json_loads(message.get('text'))
+        print(msg)
+        logger.info(f'接受执行端发送的消息：{msg}')
+        for i in CONN_LIST:
+            if i.get('user') == msg.get('data').get('user'):
+                i.get(msg.get('data').get('send_obj')).send(msg.get('msg'))
+                return True
+
+    def __receive_console(self, message):
+        self.__output_method(message.get('text'))
 
     @staticmethod
     def __output_method(msg):

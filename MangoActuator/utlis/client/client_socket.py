@@ -1,4 +1,3 @@
-import asyncio
 import json
 import time
 
@@ -8,14 +7,9 @@ from config.config import IP_ADDR, IP_PORT
 from utlis.client.api_socket import ExternalAPI
 
 
-# IP_ADDR = "127.0.0.1"
-# IP_PORT = "8000"
-
-
 class ClientWebSocket:
 
     def __init__(self):
-        self.e = ExternalAPI()
         self.websocket = None
         self.username = input("请输入用户账号: ")
         self.user_info = '/client/socket?' + self.username
@@ -50,11 +44,11 @@ class ClientWebSocket:
                 self.__output_method(response_str)
                 return False
 
-    async def client_send(self, data: dict):
-        """ 向服务器端发送消息
-        """
-        data_str = json.dumps(data)
-        await self.websocket.send(data_str)
+    # async def client_send(self, data: dict):
+    #     """ 向服务器端发送消息
+    #     """
+    #     data_str = json.dumps(data)
+    #     await self.websocket.send(data_str)
 
     async def client_run(self):
         """ 进行websocket连接
@@ -77,11 +71,32 @@ class ClientWebSocket:
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
             if data['func']:
-                self.e.start_up(data['func'], data['data'])
+                ExternalAPI().start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await self.websocket.close()
                 print('服务已中断，5秒后自动关闭！')
                 time.sleep(5)
+
+    async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):
+        """
+        主动发送
+        :param data: 发送的数据
+        :param func: 需要执行的函数
+        :param code: code码
+        :param msg: 发送的提示消息
+        :param end: 发送给用户的那个端，是否发送给客户端
+        :return:
+        """
+        send_data = {
+            'code': code,
+            'msg': msg,
+            'end': end,
+            'func': func,
+            'user_info': self.username,
+            'data': data
+        }
+        data_str = self.__json_dumps(send_data)
+        await self.websocket.send(data_str)
 
     @staticmethod
     def __output_method(msg):
@@ -115,7 +130,7 @@ class ClientWebSocket:
         return json.dumps(msg)
 
 
-if __name__ == '__main__':
-    print("======客户端正在启动======")
-    client = ClientWebSocket()
-    asyncio.get_event_loop().run_until_complete(client.client_run())  # 等价于asyncio.run(client_run())
+# if __name__ == '__main__':
+#     print("======客户端正在启动======")
+#     client = ClientWebSocket()
+#     asyncio.get_event_loop().run_until_complete(client.client_run())  # 等价于asyncio.run(client_run())
