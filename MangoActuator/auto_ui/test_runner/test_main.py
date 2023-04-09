@@ -8,9 +8,9 @@ from typing import Optional
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
-from utlis import client
 from utlis.client.server_enum_api import ServerEnumAPI
 from utlis.logs.log_control import ERROR
+from utlis.client.obj import client
 
 
 class MainTest:
@@ -72,19 +72,23 @@ class MainTest:
                         ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
                         cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！')
                         break
-                    else:
-                        cls.email_send(code=200, msg='用例执行完成，请查看测试报告！')
+                cls.email_send(code=200, msg='用例执行完成，请查看测试报告！')
 
             else:
                 pass
 
     @classmethod
     def email_send(cls, code, msg):
+        if client is not None:
+            print('client已经被实例化')
+        else:
+            print('client还没有被实例化')
+
         client.active_send(code=code,
-                           func=ServerEnumAPI.NOTICE_MAIN.value,
-                           msg=msg,
-                           end=True,
-                           data='')
+                                    func=ServerEnumAPI.NOTICE_MAIN.value,
+                                    msg=msg,
+                                    end=True,
+                                    data='')
 
 
 if __name__ == '__main__':

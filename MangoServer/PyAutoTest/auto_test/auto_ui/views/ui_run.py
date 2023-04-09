@@ -8,7 +8,7 @@ import json
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-
+from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
 
@@ -32,7 +32,7 @@ class RunUiCase(ViewSet):
         server = ChatConsumer()
         f = server.active_send(
             code=200,
-            func='web_case_run',
+            func=ServerEnumAPI.UI_CASE_RUN.value,
             user=int(request.user.get('username')),
             msg=f'接收到用例：{case_data_}准备开始执行自动化任务！',
             data=case_data_list,

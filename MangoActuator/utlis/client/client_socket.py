@@ -9,9 +9,10 @@ from utlis.logs.log_control import DEBUG
 
 
 class ClientWebSocket:
+    websocket = None
 
     def __init__(self):
-        self.websocket = None
+        # self.websocket = None
         self.username = input("请输入用户账号: ")
         self.user_info = '/client/socket?' + self.username
 
@@ -31,7 +32,7 @@ class ClientWebSocket:
                                        data={'username': self.username,
                                              'password': password}, end=True)
                 # await self.websocket.send(json.dumps(user_data))
-            response_str = await self.websocket.recv()
+            response_str = await ClientWebSocket.websocket.recv()
             res = self.__json_loads(response_str)
             if res['code'] == 200:
                 self.__output_method(response_str)
@@ -50,10 +51,10 @@ class ClientWebSocket:
         """ 进行websocket连接
         """
         server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.user_info
-        DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
+        # DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
         try:
             async with websockets.connect(server_url) as websocket:
-                self.websocket = websocket
+                ClientWebSocket.websocket = websocket
                 # 下面两行同步进行
                 if await self.client_hands() is True:  # 握手
                     await self.client_recv()
@@ -63,17 +64,18 @@ class ClientWebSocket:
 
     async def client_recv(self):
         while True:
-            recv_json = await self.websocket.recv()
+            recv_json = await ClientWebSocket.websocket.recv()
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
             if data['func']:
                 ExternalAPI().start_up(data['func'], data['data'])
             elif data['func'] == 'break':
-                await self.websocket.close()
+                await ClientWebSocket.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
                 time.sleep(5)
 
-    async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):
+    @classmethod
+    async def active_send(cls, code: int, func: str or None, msg: str, data: list or str, end: bool):
         """
         主动发送
         :param data: 发送的数据
@@ -88,11 +90,11 @@ class ClientWebSocket:
             'msg': msg,
             'end': end,
             'func': func,
-            'user_info': self.username,
+            'user_info': None,
             'data': data
         }
-        data_str = self.__json_dumps(send_data)
-        await self.websocket.send(data_str)
+        data_str = cls.__json_dumps(send_data)
+        await cls.websocket.send(data_str)
 
     @staticmethod
     def __output_method(msg):
@@ -107,8 +109,8 @@ class ClientWebSocket:
                            f'接收的数据：{out["data"]}')
         return out
 
-    @staticmethod
-    def __json_loads(msg: str) -> dict:
+    @classmethod
+    def __json_loads(cls, msg: str) -> dict:
         """
         转换为字典对象
         :param msg:
@@ -116,8 +118,8 @@ class ClientWebSocket:
         """
         return json.loads(msg)
 
-    @staticmethod
-    def __json_dumps(msg: dict) -> str:
+    @classmethod
+    def __json_dumps(cls, msg: dict) -> str:
         """
         转换为字符串
         :param msg:

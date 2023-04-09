@@ -8,10 +8,9 @@ import asyncio
 from utlis.logs.nuw_logs import nuw_dir
 
 nuw_dir()
-from utlis import client
+from utlis.client.obj import client
 
 print("================执行端正在启动================")
-
 loop = asyncio.new_event_loop()  # 创建新的事件循环
 asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
 loop.run_until_complete(client.client_run())  # 运行事件循环

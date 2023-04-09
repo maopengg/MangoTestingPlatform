@@ -34,8 +34,13 @@ class CaseData:
         case_ = UiCase.objects.get(name=case_name)
         data = {'case_id': case_name,
                 'case_name': case_name,
-                'case_url': TestObject.objects.get(id=test_obj).value + RunSort.objects.filter(
-                    case_id=case_name).first().el_page.url}
+                'case_url': TestObject.objects.get(id=test_obj).value}
+        run_url = RunSort.objects.filter(
+            case_id=case_name).first().el_page.url
+        if run_url == '-':
+            pass
+        else:
+            data['case_url'] += run_url
         case_data = []
         run_sort = RunSort.objects.filter(case=case_name).order_by('run_sort')
         for i in run_sort:
