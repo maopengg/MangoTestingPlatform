@@ -3,18 +3,15 @@ import time
 
 import websockets
 
-from config.config import IP_ADDR, IP_PORT
+from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
 from utlis.client.api_socket import ExternalAPI
 from utlis.logs.log_control import DEBUG
 
 
 class ClientWebSocket:
     websocket = None
-
-    def __init__(self):
-        # self.websocket = None
-        self.username = input("请输入用户账号: ")
-        self.user_info = '/client/socket?' + self.username
+    username = input("请输入用户账号: ")
+    socket_url = '/client/socket?' + username
 
     async def client_hands(self):
         """
@@ -28,9 +25,9 @@ class ClientWebSocket:
             else:
                 await self.active_send(code=200,
                                        func='login',
-                                       msg='Hi, Mango Service, Mango Actuator Request Connection!',
+                                       msg=f'Hi, {SERVER}, {DRIVER} Request Connection!',
                                        data={'username': self.username,
-                                             'password': password}, end=True)
+                                             'password': password}, end=False)
                 # await self.websocket.send(json.dumps(user_data))
             response_str = await ClientWebSocket.websocket.recv()
             res = self.__json_loads(response_str)
@@ -50,7 +47,7 @@ class ClientWebSocket:
     async def client_run(self):
         """ 进行websocket连接
         """
-        server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.user_info
+        server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.socket_url
         # DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
         try:
             async with websockets.connect(server_url) as websocket:
@@ -90,7 +87,7 @@ class ClientWebSocket:
             'msg': msg,
             'end': end,
             'func': func,
-            'user_info': None,
+            'user': int(cls.username),
             'data': data
         }
         data_str = cls.__json_dumps(send_data)

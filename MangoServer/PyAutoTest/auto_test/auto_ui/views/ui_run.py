@@ -11,7 +11,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
-
+from PyAutoTest.settings import DRIVER
 
 class RunUiCase(ViewSet):
 
@@ -34,20 +34,20 @@ class RunUiCase(ViewSet):
             code=200,
             func=ServerEnumAPI.UI_CASE_RUN.value,
             user=int(request.user.get('username')),
-            msg=f'接收到用例：{case_data_}准备开始执行自动化任务！',
+            msg=f'{DRIVER}：{case_data_}准备开始执行自动化任务！',
             data=case_data_list,
             end='client_obj'
         )
         if f is True:
             return Response({
                 'code': 200,
-                'msg': '测试客户端已收到用例，正在执行中...',
+                'msg': f'{DRIVER}已收到用例，正在执行中...',
                 'data': case_data_list
             })
         else:
             return Response({
                 'code': 300,
-                'msg': '执行失败，请确保执行端已连接服务器',
+                'msg': f'执行失败，请确保{DRIVER}已连接服务器',
                 'data': case_data_list
             })
 
@@ -68,6 +68,6 @@ class RunUiCase(ViewSet):
         data = CaseData(case_id).data_ui_case(environment)
         return Response({
             'code': 200,
-            'msg': '测试客户端已收到用例，正在执行中...',
+            'msg': f'{DRIVER}已收到用例，正在执行中...',
             'data': data
         })

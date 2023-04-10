@@ -8,7 +8,7 @@ import logging
 
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
-
+from PyAutoTest.settings import DRIVER, SERVER, WEB
 logger = logging.getLogger('system')
 
 CONN_LIST = []
@@ -36,8 +36,8 @@ class ChatConsumer(WebsocketConsumer):
             self.send(self.__json_dumps({
                 'code': 200,
                 'func': None,
-                'user_info': None,
-                'msg': '与MangoServer建立连接成功!',
+                'user': None,
+                'msg': f'与{SERVER}建立连接成功!',
                 'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
             }))
         elif self.scope.get('path') == '/client/socket':
@@ -45,8 +45,8 @@ class ChatConsumer(WebsocketConsumer):
                 self.send(self.__json_dumps({
                     'code': 300,
                     'func': None,
-                    'user_info': None,
-                    'msg': '您在MangoServer未登录，请登录后再重新打开MangoActuator进行连接！',
+                    'user': None,
+                    'msg': f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
                     'data': ''
                 }))
                 self.websocket_disconnect(message)
@@ -57,15 +57,15 @@ class ChatConsumer(WebsocketConsumer):
                         self.send(self.__json_dumps({
                             'code': 200,
                             'func': None,
-                            'user_info': None,
-                            'msg': 'MangoActuator已连接上MangoServer！',
+                            'user': None,
+                            'msg': f'{DRIVER}已连接上{SERVER}！',
                             'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                         }))
                         self.active_send(
                             code=200,
                             func=None,
                             user=int(self.scope.get('query_string')),
-                            msg='您的MangoActuator已连接上MangoServer！',
+                            msg=f'您的{DRIVER}已连接上{SERVER}！',
                             data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                             end='web_obj'
                         )
@@ -73,8 +73,8 @@ class ChatConsumer(WebsocketConsumer):
                         self.send(self.__json_dumps({
                             'code': 300,
                             'func': None,
-                            'user_info': None,
-                            'msg': '您在mango-console未登录，请登录后再重新打开MangoActuator进行连接！',
+                            'user': None,
+                            'msg': f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
                             'data': ''
                         }))
                         self.websocket_disconnect(message)
@@ -110,7 +110,7 @@ class ChatConsumer(WebsocketConsumer):
                         code=200,
                         func='break',
                         user=int(self.scope.get('query_string')),
-                        msg='mango-console已断开！',
+                        msg=f'{WEB}已断开！',
                         data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                         end='client_obj'
                     )
@@ -120,7 +120,7 @@ class ChatConsumer(WebsocketConsumer):
                         code=200,
                         func=None,
                         user=int(self.scope.get('query_string')),
-                        msg='MangoActuator已断开！',
+                        msg=f'{DRIVER}已断开！',
                         data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
                         end='web_obj'
                     )
@@ -142,7 +142,7 @@ class ChatConsumer(WebsocketConsumer):
         send_data = {
             'code': code,
             'func': func,
-            'user_info': user,
+            'user': user,
             'msg': msg,
             'data': data
         }
@@ -156,12 +156,13 @@ class ChatConsumer(WebsocketConsumer):
 
     def __receive_actuator(self, message):
         msg = self.__json_loads(message.get('text'))
-        print(msg)
         logger.info(f'接受执行端发送的消息：{msg}')
-        for i in CONN_LIST:
-            if i.get('user') == msg.get('data').get('user'):
-                i.get(msg.get('data').get('send_obj')).send(msg.get('msg'))
-                # return True
+        # for i in CONN_LIST:
+        #     if i.get('user') == msg.get('user') and msg.get('end'):
+        #         i.get('web_obj').send()
+        if msg.get('end'):
+            self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')
+            # return True
 
     def __receive_console(self, message):
         self.__output_method(message.get('text'))
