@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
-from auto_ui.app_auto_base.android_base import AndroidBase
+from auto_ui.android_base.android_base import AndroidBase
 from utlis.logs.log_control import ERROR, INFO
 
 

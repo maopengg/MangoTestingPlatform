@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import time
 
-from auto_ui.chrome_auto_base.chrome_base import ChromeBase
+from auto_ui.chrome_base.chrome_base import ChromeBase
 from auto_ui.tools.data_cleaning import DataCleaning
 from auto_ui.tools.enum import OpeType, EleExp
 from utlis.logs.log_control import ERROR

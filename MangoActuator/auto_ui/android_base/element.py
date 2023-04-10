@@ -1,7 +1,7 @@
 from uiautomator2.xpath import XPath
 
-from auto_ui.app_auto_base import ElementNotFoundError, ElementNotDisappearError
-from auto_ui.app_auto_base.android_base import AndroidBase
+from auto_ui.android_base import ElementNotFoundError, ElementNotDisappearError
+from auto_ui.android_base.android_base import AndroidBase
 from utlis.logs.log_control import ERROR, INFO
 
 

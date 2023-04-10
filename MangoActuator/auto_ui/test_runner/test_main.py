@@ -10,7 +10,7 @@ from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
 from utlis.client.server_enum_api import ServerEnumAPI
 from utlis.logs.log_control import ERROR
-from utlis.client.obj import client
+from utlis.client import obj
 
 
 class MainTest:
@@ -79,16 +79,12 @@ class MainTest:
 
     @classmethod
     def email_send(cls, code, msg):
-        if client is not None:
-            print('client已经被实例化')
-        else:
-            print('client还没有被实例化')
-
-        client.active_send(code=code,
-                                    func=ServerEnumAPI.NOTICE_MAIN.value,
-                                    msg=msg,
-                                    end=True,
-                                    data='')
+        obj.active_send(
+            code=code,
+            func=ServerEnumAPI.NOTICE_MAIN.value,
+            msg=msg,
+            end=True,
+            data='')
 
 
 if __name__ == '__main__':
