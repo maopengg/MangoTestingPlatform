@@ -23,7 +23,7 @@ SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]  # 允许所有ip或域名'*'
 # USE_TZ = False
@@ -43,9 +43,9 @@ INSTALLED_APPS = [
     'PyAutoTest.auto_test.auto_system',
     'PyAutoTest.auto_test.auto_perf',
     'PyAutoTest.auto_test.auto_user',
-    'rest_framework',
+    'rest_framework', # 前后端分离
     'corsheaders',  # 跨域
-    'channels',
+    'channels',  # 验证
 
 ]
 
