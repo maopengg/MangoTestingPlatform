@@ -9,9 +9,9 @@ import re
 from PyAutoTest.auto_test.auto_api.api_tools.enum import End, PublicRelyType
 from PyAutoTest.auto_test.auto_api.case_run.login import Login
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
-from PyAutoTest.utils.mysql_tools.mysql_control import MysqlDB
 from PyAutoTest.utils.cache_utils.redis import Cache
 from PyAutoTest.utils.data_processing.json_data import DataFilePath
+from PyAutoTest.utils.mysql_tools.mysql_control import MysqlDB
 from PyAutoTest.utils.other_utils.random_data import RandomData
 
 logger = logging.getLogger('api')

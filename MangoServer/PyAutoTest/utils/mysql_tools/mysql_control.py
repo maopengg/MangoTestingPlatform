@@ -6,10 +6,10 @@
 import datetime
 import decimal
 import logging
-import pymysql
 from typing import Text
 from warnings import filterwarnings
 
+import pymysql
 
 from PyAutoTest.auto_test.auto_api.api_tools.data_model import Environment
 from PyAutoTest.auto_test.auto_system.models import Database

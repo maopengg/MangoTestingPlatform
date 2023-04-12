@@ -8,7 +8,9 @@ import logging
 
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
+
 from PyAutoTest.settings import DRIVER, SERVER, WEB
+
 logger = logging.getLogger('system')
 
 CONN_LIST = []

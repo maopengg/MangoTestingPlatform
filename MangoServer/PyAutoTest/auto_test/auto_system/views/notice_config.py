@@ -5,8 +5,9 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
+
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 

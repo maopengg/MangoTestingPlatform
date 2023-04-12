@@ -8,10 +8,12 @@ import json
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
+
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
 from PyAutoTest.settings import DRIVER
+
 
 class RunUiCase(ViewSet):
 

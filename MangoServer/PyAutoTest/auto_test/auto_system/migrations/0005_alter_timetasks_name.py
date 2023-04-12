@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0004_remove_timetasks_time_company_timetasks_day_and_more'),
     ]

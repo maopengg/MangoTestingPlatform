@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'PyAutoTest.auto_test.auto_system',
     'PyAutoTest.auto_test.auto_perf',
     'PyAutoTest.auto_test.auto_user',
-    'rest_framework', # 前后端分离
+    'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
 
