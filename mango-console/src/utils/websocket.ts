@@ -1,10 +1,7 @@
 // WebSocketService.ts
 import { reactive } from 'vue'
 import { Notification } from '@arco-design/web-vue'
-
-export const DRIVER = 'Mango Actuator'
-export const SERVER = 'Mango Server'
-export const WEB = 'mango-console'
+import { DRIVER, SERVER } from '@/setting'
 
 interface WebSocketServiceState {
   url: string

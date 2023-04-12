@@ -9,16 +9,23 @@ from auto_ui.chrome_base.chrome_base import ChromeBase
 from auto_ui.tools.data_cleaning import DataCleaning
 from auto_ui.tools.enum import OpeType, EleExp
 from utlis.logs.log_control import ERROR
-from utlis.logs.nuw_logs import get_log_screenshot
-from utlis.random_data import RandomData
 
 
 class ChromeRun(ChromeBase, DataCleaning):
 
     def __init__(self, local_port, browser_path):
         super().__init__(local_port, browser_path)
-        # self.cache = CacheDB()
         self.case_id = 0
+        self.ope_type = ''
+        self.ass_type = ''
+        self.ope_value = ''
+        self.ass_value = ''
+        self.ele_name = ''
+        self.ele_page_name = ''
+        self.ele_exp = 0
+        self.ele_loc = ''
+        self.ele_sleep = 0
+        self.ele_sub = ''
 
     def open_url(self, url: str, case_id):
         self.case_id = case_id
@@ -33,49 +40,62 @@ class ChromeRun(ChromeBase, DataCleaning):
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
-            self.action_element()
+            if self.ele_name != 'url':
+                ele_obj = self.__find_ele(case_dict)
+                if ele_obj:
+                    self.action_element(ele_obj)
+                else:
+                    return False
             return True
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            self.screenshot(
-                rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png')
+            self.screenshot(self.ele_name)
             return False
 
-    def action_element(self, ope_type, ass_type, ope_value, ass_value, ele_name, ele_page_name, ele_exp, ele_loc,
-                       ele_sleep, ele_sub):
-        if ele_loc:
+    def action_element(self, ele_obj: list):
+        """
+            处理元素的一些事件，包括点击，输入，移动
+        @param ele_obj:
+        @return:
+        """
+        # 查找到元素下标对应的元素
+        el = ele_obj[0 if self.ele_sub is None else self.ele_sub]
+        if self.ope_type == OpeType.CLICK.value:
+            el.click()
+        # 输入
+        elif self.ope_type == OpeType.INPUT.value:
+            el.input(self.case_input_data(self.case_id, self.ele_name, self.ope_value))
+        if self.ele_sleep:
+            time.sleep(self.ele_sleep)
+
+    def __find_ele(self, case_dict):
+        """
+        查找元素
+        @return:
+        """
+        if self.ele_loc:
             # 处理元素并查找
-            ele = self.eles(self.__ele_add(ele_exp, ele_loc))
+            ele = self.eles(self.__ele_add())
             # 获取元素的文本或元素下标进行断言
             if not ele:
-                self.get_screenshot(
-                    path=get_log_screenshot() + r"\failure_screenshot\{}.jpg".format(
-                        ele_name + RandomData().time_random()),
-                    full_page=True
-                )
-                ERROR.logger.error(
-                    f"定位的元素 {ele_loc} 不存在，请查看截图：{ele_name}+{RandomData().time_random()}.jpg")
-            # 不为空则是一个可操作元素
-            else:
-                # 点击
-                el = ele[0 if ele_sub is None else ele_sub]
-                if ope_type == OpeType.CLICK.value:
-                    el.click()
-                # 输入
-                elif ope_type == OpeType.INPUT.value:
-                    el.input(self.case_input_data(self.case_id, ele_name, ope_value))
-                if ele_sleep:
-                    time.sleep(ele_sleep)
+                ERROR.logger.error(f'元素操作失败，请检查内容\n'
+                                   f'元素对象：{case_dict}\n')
+                self.screenshot(self.ele_name)
+                return False
+            return ele
+        else:
+            ERROR.logger.error('元素为空，无法定位，请检查元素表达式是否为空！')
+            return False
 
-    @staticmethod
-    def __ele_add(ele_exp: int, ele: str):
+    def __ele_add(self):
         """
         修改ele元素
         :return:
         """
+        # exp_type = [{0: "xpath:"}, {1: "#"}, {2: "@name"}, {3: "text="}]
         for i in EleExp.__doc__.split('，'):
             for key, value in eval(i).items():
-                if key == ele_exp:
-                    return value + ele
+                if key == self.ele_exp:
+                    return value + self.ele_loc

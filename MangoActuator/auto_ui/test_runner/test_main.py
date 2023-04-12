@@ -3,15 +3,15 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from typing import Optional
 import asyncio
+from typing import Optional
 
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
+from utlis.client import client_socket
 from utlis.client.server_enum_api import ServerEnumAPI
 from utlis.logs.log_control import ERROR
-from utlis.client import client_socket
 
 
 class MainTest:
@@ -43,29 +43,26 @@ class MainTest:
             pass
 
     @classmethod
-    def case_run(cls, data: list[dict],
-                 local_port: str = None,
-                 browser_path: str = None,
-                 equipment: str = None):
+    def case_run(cls, data: list[dict]):
         """
         分发用例给不同的驱动进行执行
         @param data: 用例数据
-        @param local_port: 浏览器端口号
-        @param browser_path: 浏览器路径
-        @param equipment: 设备号
         @return:
         """
         # 遍历list中的用例得到每个用例
         for case_obj in data:
             if case_obj['type'] == End.Chrome.value:
                 if cls.chrome is None:
-                    cls.new_case_obj(case_obj['type'], local_port, browser_path)
+                    cls.new_case_obj(_type=case_obj['type'],
+                                     local_port=case_obj['local_port'],
+                                     browser_path=case_obj['browser_path'])
                 cls.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
                 for case_dict in case_obj['case_data']:
-                    cls.chrome.action_element(case_dict)
+                    cls.chrome.case_along(case_dict)
             elif case_obj['type'] == End.Android.value:
                 if cls.android is None:
-                    cls.new_case_obj(case_obj['type'], equipment=equipment)
+                    cls.new_case_obj(_type=case_obj['type'],
+                                     equipment=case_obj['equipment'])
                 cls.android.start_app(case_obj['package'])
                 for case_dict in case_obj['case_data']:
                     res = cls.android.case_along(case_dict)

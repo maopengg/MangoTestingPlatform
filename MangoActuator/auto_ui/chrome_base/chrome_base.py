@@ -6,16 +6,23 @@
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 
+from utlis.logs.nuw_logs import get_log_screenshot
+from utlis.random_data import RandomData
+
 
 class ChromeBase(WebPage):
     """实例化对象，以及对象方法重写"""
 
     def __init__(self, local_port, browser_path):
-        do = ChromiumOptions(read_file=False).set_paths(
+        super().__init__(driver_or_options=ChromiumOptions(read_file=False).set_paths(
             local_port=local_port,
-            browser_path=browser_path)
-        # do.set_argument('--remote-allow-origins=*')cls=None,
-        super().__init__(driver_or_options=do, session_or_options=False)
+            browser_path=browser_path), session_or_options=False)
 
-    def get(self, url, show_errmsg=False, retry=None, interval=None, timeout=None, **kwargs):
-        return super().get(url, show_errmsg=False, retry=None, interval=None, timeout=None, **kwargs)
+    def screenshot(self, ele_name: str, ):
+        """
+        重写截图方法
+        @return:
+        """
+        self.get_screenshot(
+            path=rf'{get_log_screenshot()}\{ele_name + RandomData.get_deta_hms()}.jpg',
+            full_page=True)

@@ -77,6 +77,7 @@ class RunSort(models.Model):
     ope_type = models.SmallIntegerField(verbose_name="对该元素的操作类型", null=True)
     ass_type = models.SmallIntegerField(verbose_name="断言类型", null=True)
     ope_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
+    ope_value_key = models.CharField(verbose_name="输入内容的key，用来保存变量", max_length=64, null=True)
     ass_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
     run_sort = models.IntegerField(verbose_name="执行顺序的展示", null=True)
 

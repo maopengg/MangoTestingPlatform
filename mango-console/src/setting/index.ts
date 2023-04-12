@@ -22,3 +22,7 @@ export default {
     isShowFullScreen: true
   }
 }
+
+export const DRIVER = 'Mango Actuator'
+export const SERVER = 'Mango Server'
+export const WEB = 'mango-console'

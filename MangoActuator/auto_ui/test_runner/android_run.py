@@ -10,25 +10,22 @@ from auto_ui.tools.enum import EleExp, OpeType
 from utlis.logs.log_control import ERROR
 from utlis.logs.nuw_logs import get_log_screenshot
 
-data = {'ope_type': 1, 'ass_type': 0, 'ope_value': None, 'ass_value': None, 'ele_name': '小程序分类tab',
-        'ele_page_name': '微信', 'ele_exp': 0, 'ele_loc': '//*[@text="分类"]', 'ele_sleep': None, 'ele_sub': None}
-
 
 class AppRun(DriverMerge, DataCleaning):
 
     def __init__(self, equipment: str = '8796a033'):
         super().__init__(equipment)
         self.case_id = 0
-        # self.ope_type=
-        # self.ass_type=
-        # self.ope_value=
-        # self.ass_value=
-        # self.ele_name=
-        # self.ele_page_name=
-        # self.ele_exp=
-        # self.ele_loc=
-        # self.ele_slee=
-        # self.ele_sub=
+        self.ope_type = ''
+        self.ass_type = ''
+        self.ope_value = ''
+        self.ass_value = ''
+        self.ele_name = ''
+        self.ele_page_name = ''
+        self.ele_exp = 0
+        self.ele_loc = ''
+        self.ele_sleep = 0
+        self.ele_sub = ''
 
     def __del__(self):
         self.close_app('com.tencent.mm')
@@ -73,7 +70,7 @@ class AppRun(DriverMerge, DataCleaning):
 
 if __name__ == '__main__':
     r = AppRun(equipment='7de23fdd')
-    r.start_app('com.tencent.mm')
-    r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
-    r.sleep(5)
-    r.close_app('com.tencent.mm')
+    # r.start_app('com.tencent.mm')
+    # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
+    # r.sleep(5)
+    # r.close_app('com.tencent.mm')
