@@ -11,7 +11,7 @@ from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
 from utlis.client.server_enum_api import ServerEnumAPI
 from utlis.logs.log_control import ERROR
-# from utlis.client import client_socket
+from utlis.client import client_socket
 
 
 class MainTest:
@@ -80,13 +80,14 @@ class MainTest:
 
     @staticmethod
     async def email_send(code, msg):
-        # await client_socket.ClientWebSocket.active_send(
-        #     code=code,
-        #     func=ServerEnumAPI.NOTICE_MAIN.value,
-        #     msg=msg,
-        #     end=True,
-        #     data='')
-        await print(2)
+        await client_socket.ClientWebSocket.active_send(
+            code=code,
+            func=ServerEnumAPI.NOTICE_MAIN.value,
+            msg=msg,
+            end=True,
+            data='')
+        # await print(2)
+
 
 if __name__ == '__main__':
     data1 = [

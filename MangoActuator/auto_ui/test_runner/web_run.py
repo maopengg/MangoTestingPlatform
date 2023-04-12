@@ -24,6 +24,25 @@ class ChromeRun(ChromeBase, DataCleaning):
         self.case_id = case_id
         self.get(url)
 
+    def case_along(self, case_dict: dict) -> bool:
+        """
+        将数据设为变量，并对这个元素进行操作
+        @param case_dict: 被操作元素对象
+        @return: 返回是否操作成功
+        """
+        for key, value in case_dict.items():
+            setattr(self, key, value)
+        try:
+            self.action_element()
+            return True
+        except Exception as e:
+            ERROR.logger.error(f'元素操作失败，请检查内容\n'
+                               f'报错信息：{e}\n'
+                               f'元素对象：{case_dict}\n')
+            self.screenshot(
+                rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png')
+            return False
+
     def action_element(self, ope_type, ass_type, ope_value, ass_value, ele_name, ele_page_name, ele_exp, ele_loc,
                        ele_sleep, ele_sub):
         if ele_loc:

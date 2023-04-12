@@ -512,7 +512,7 @@ export default defineComponent({
       router.push({
         path: '/uitest/pageel',
         query: {
-          id: record.id,
+          name: record.name,
           name: record.name,
           team: record.team
         }

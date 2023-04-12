@@ -4,11 +4,8 @@
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
 import logging
-
 from apscheduler.schedulers.background import BackgroundScheduler
-# from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
-
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
 
 logger = logging.getLogger('system')
@@ -23,7 +20,7 @@ def my_task(task_id):
 # 创建定时任务的函数
 def create_jobs():
     # 创建BlockingScheduler调度器
-    scheduler = BackgroundScheduler(timezone='Asia/Shanghai')
+    scheduler = BackgroundScheduler()
     # 查询所有的定时器数据
     queryset = TimeTasks.objects.all()
     # 添加定时任务
@@ -41,6 +38,4 @@ def create_jobs():
             trigger = None
             logger.error('定时器数据错误，请检查time_tasks表数据')
         # 添加定时任务
-        scheduler.add_job(my_task, trigger=trigger, args=[timer.id], timezone='Asia/Shanghai')
-    # 启动调度器
-    scheduler.start()
+        scheduler.add_job(my_task, trigger=trigger, args=[timer.id])

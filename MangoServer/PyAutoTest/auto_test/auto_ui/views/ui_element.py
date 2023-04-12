@@ -29,7 +29,7 @@ class UiElementCRUD(ModelCRUD):
 
     def get(self, request):
         try:
-            books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
+            books = self.model.objects.filter(page_id=request.query_params.get('page_name')).order_by('id')
             return Response({
                 "code": 200,
                 "msg": "获取数据成功~",

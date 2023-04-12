@@ -266,7 +266,7 @@ function getUiElement() {
     url: uiUiElement,
     data: () => {
       return {
-        page_id: route.query.id
+        page_name: route.query.name
       }
     }
   })
