@@ -8,10 +8,17 @@ from utlis.client.api_socket import ExternalAPI
 from utlis.logs.log_control import DEBUG
 
 
-class ClientWebSocket:
+class ClientWebSocket(object):
+    instance = None
+
     websocket = None
     username = input("请输入用户账号: ")
     socket_url = '/client/socket?' + username
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(ClientWebSocket, 'instance'):
+            cls.instance = super().__new__(cls)
+        return cls.instance
 
     async def client_hands(self):
         """
@@ -37,12 +44,6 @@ class ClientWebSocket:
             else:
                 self.__output_method(response_str)
                 return False
-
-    # async def client_send(self, data: dict):
-    #     """ 向服务器端发送消息
-    #     """
-    #     data_str = json.dumps(data)
-    #     await self.websocket.send(data_str)
 
     async def client_run(self):
         """ 进行websocket连接
@@ -82,15 +83,15 @@ class ClientWebSocket:
         :param end: 发送给用户的那个端，是否发送给客户端
         :return:
         """
-        send_data = {
+
+        data_str = cls.__json_dumps({
             'code': code,
             'msg': msg,
             'end': end,
             'func': func,
             'user': int(cls.username),
             'data': data
-        }
-        data_str = cls.__json_dumps(send_data)
+        })
         await cls.websocket.send(data_str)
 
     @staticmethod
