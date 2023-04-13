@@ -76,10 +76,8 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'state'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                <template v-else-if="item.key === 'team'" #cell="{ record }">
+                  {{ record.team.name }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -136,11 +134,8 @@ import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
-import { useEnvironment } from '@/store/modules/get-environment'
 
 const project = useProject()
-
-const environment = useEnvironment()
 
 interface TreeItem {
   title: string
@@ -513,8 +508,7 @@ export default defineComponent({
         path: '/uitest/pageel',
         query: {
           name: record.name,
-          name: record.name,
-          team: record.team
+          team: record.team.name
         }
       })
     }

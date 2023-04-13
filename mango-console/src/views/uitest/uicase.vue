@@ -83,6 +83,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'team'" #cell="{ record }">
+                  {{ record.team.name }}
+                </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>

@@ -7,10 +7,13 @@ from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
     class Meta:
         model = TestObject
         fields = '__all__'
@@ -18,7 +21,7 @@ class TestObjectSerializers(serializers.ModelSerializer):
 
 class TestObjectCRUD(ModelCRUD):
     model = TestObject
-    queryset = TestObject.objects.all()
+    queryset = TestObject.objects.select_related('team').all()
     serializer_class = TestObjectSerializers
 
 

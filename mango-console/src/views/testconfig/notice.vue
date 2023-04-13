@@ -73,6 +73,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'team'" #cell="{ record }">
+                  {{ record.team.name }}
+                </template>
                 <template v-else-if="item.key === 'name'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.name === '邮箱'">{{ record.name }}</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.name === '企微群'">{{ record.name }}</a-tag>

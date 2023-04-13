@@ -9,10 +9,13 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
     class Meta:
         model = NoticeConfig
         fields = '__all__'
@@ -20,7 +23,7 @@ class NoticeConfigSerializers(serializers.ModelSerializer):
 
 class NoticeConfigCRUD(ModelCRUD):
     model = NoticeConfig
-    queryset = NoticeConfig.objects.all()
+    queryset = NoticeConfig.objects.select_related('team').all()
     serializer_class = NoticeConfigSerializers
 
 

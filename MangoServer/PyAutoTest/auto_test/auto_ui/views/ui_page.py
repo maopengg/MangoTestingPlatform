@@ -7,12 +7,14 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD, ModelC
 
 
 class UiPageSerializers(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
     class Meta:
         model = UiPage
         fields = '__all__'
@@ -20,7 +22,7 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 class UiPageCRUD(ModelCRUD):
     model = UiPage
-    queryset = UiPage.objects.all()
+    queryset = UiPage.objects.select_related('team').all()
     serializer_class = UiPageSerializers
 
 
@@ -62,6 +64,7 @@ class UiPageViews(ViewSet):
             'msg': '获取数据成功~',
             'data': data
         })
+
 
 """
 

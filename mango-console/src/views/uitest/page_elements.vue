@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目组：' + uiElementData.team">
+      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目组：' + uiElementData.team_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
@@ -257,10 +257,9 @@ function doResetSearch() {
 
 const uiElementData: any = reactive({
   pageName: route.query.name,
-  team: route.query.team,
+  team_name: route.query.team,
   eleExp: []
 })
-
 function getUiElement() {
   get({
     url: uiUiElement,

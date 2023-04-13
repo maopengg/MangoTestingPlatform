@@ -43,10 +43,7 @@ class ChromeRun(ChromeBase, DataCleaning):
         try:
             if self.ele_name != 'url':
                 ele_obj = self.__find_ele(case_dict)
-                if ele_obj:
-                    self.action_element(ele_obj)
-                else:
-                    return False
+                return self.action_element(ele_obj) if ele_obj else False
             return True
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
@@ -63,11 +60,13 @@ class ChromeRun(ChromeBase, DataCleaning):
         """
         # 查找到元素下标对应的元素
         el = ele_obj[0 if self.ele_sub is None else self.ele_sub]
+        # 点击
         if self.ope_type == OpeType.CLICK.value:
             el.click()
         # 输入
         elif self.ope_type == OpeType.INPUT.value:
             el.input(self.__input_value())
+        # 等待
         if self.ele_sleep:
             time.sleep(self.ele_sleep)
 

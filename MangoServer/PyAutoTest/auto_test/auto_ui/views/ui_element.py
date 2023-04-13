@@ -10,11 +10,16 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiElement
 from PyAutoTest.auto_test.auto_ui.ui_tools.enum import WebExp
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import option_list, enum_list
 
 
 class UiElementSerializers(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+    page = UiPageSerializers(read_only=True)
+
     class Meta:
         model = UiElement
         fields = '__all__'  # 全部进行序列化
@@ -24,7 +29,7 @@ class UiElementSerializers(serializers.ModelSerializer):
 
 class UiElementCRUD(ModelCRUD):
     model = UiElement
-    queryset = UiElement.objects.all()
+    queryset = UiElement.objects.select_related('team', 'page').all()
     serializer_class = UiElementSerializers
 
     def get(self, request):

@@ -7,12 +7,16 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-
+from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+    time_name = TimeTasksSerializers(read_only=True)
+
     class Meta:
         model = UiCase
         fields = '__all__'
@@ -20,7 +24,7 @@ class UiCaseSerializers(serializers.ModelSerializer):
 
 class UiCaseCRUD(ModelCRUD):
     model = UiCase
-    queryset = UiCase.objects.all()
+    queryset = UiCase.objects.select_related('team', 'time_name').all()
     serializer_class = UiCaseSerializers
 
 

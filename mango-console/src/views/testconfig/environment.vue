@@ -73,6 +73,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'team'" #cell="{ record }">
+                  {{ record.team.name }}
+                </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
@@ -258,7 +261,7 @@ export default defineComponent({
         title: '项目名称',
         key: 'team',
         dataIndex: 'team',
-        width: 100
+        width: 150
       },
       {
         title: '域名/名称/对象',

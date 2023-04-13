@@ -14,12 +14,12 @@ from utlis.logs.log_control import ERROR
 
 
 class MainTest:
-    chrome: ChromeRun
-    android: AppRun
+    chrome: ChromeRun = None
+    android: AppRun = None
 
     def __init__(self):
         pass
-    
+
     def __new__(cls, *args, **kwargs):
         if not hasattr(MainTest, 'instance'):
             cls.instance = super().__new__(cls)

@@ -57,6 +57,7 @@ class UiCase(models.Model):
 
 class UiCaseGroup(models.Model):
     team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
+    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="用例组名称", unique=True, max_length=64)
     case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
     case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)

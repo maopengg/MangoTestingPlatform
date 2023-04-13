@@ -55,7 +55,8 @@ class CaseData:
                     'ele_exp': None,
                     'ele_loc': None,
                     'ele_sleep': 3,
-                    'ele_sub': None
+                    'ele_sub': None,
+                    'ope_value_key': i.ope_value_key
                 })
                 if case_.case_type == End.WEB.value:
                     data['local_port'], data['browser_path'] = self.__get_web_config()
@@ -74,7 +75,8 @@ class CaseData:
                     'ele_exp': i.el_name.exp,
                     'ele_loc': i.el_name.loc,
                     'ele_sleep': i.el_name.sleep,
-                    'ele_sub': i.el_name.sub
+                    'ele_sub': i.el_name.sub,
+                    'ope_value_key': i.ope_value_key
                 })
         data['case_data'] = case_data
         return data

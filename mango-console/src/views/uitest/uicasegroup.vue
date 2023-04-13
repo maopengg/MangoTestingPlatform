@@ -74,10 +74,16 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'environment'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
-                  <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.environment === 2">生产环境</a-tag>
+                <template v-else-if="item.key === 'team'" #cell="{ record }">
+                  {{ record.team.name }}
+                </template>
+                <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
+                  {{ record.test_obj.name }}
+                </template>
+                <template v-else-if="item.key === 'state'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>
+                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -129,7 +135,7 @@ import { uiCaseGroup } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick, reactive } from 'vue'
+import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 
 const project = useProject()
@@ -254,12 +260,6 @@ export default defineComponent({
         align: 'left'
       },
       {
-        title: '包含用例id',
-        key: 'case_id',
-        dataIndex: 'case_id',
-        width: 150
-      },
-      {
         title: '包含用例名称',
         key: 'case_name',
         dataIndex: 'case_name'
@@ -268,6 +268,16 @@ export default defineComponent({
         title: '定时任务',
         key: 'time_name',
         dataIndex: 'time_name'
+      },
+      {
+        title: '定时执行环境',
+        key: 'test_obj',
+        dataIndex: 'test_obj'
+      },
+      {
+        title: '最近一次结果',
+        key: 'state',
+        dataIndex: 'state'
       },
       {
         title: '操作',
