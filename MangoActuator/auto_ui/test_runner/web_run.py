@@ -15,7 +15,7 @@ class ChromeRun(ChromeBase, DataCleaning):
 
     def __init__(self, local_port, browser_path):
         super().__init__(local_port, browser_path)
-        self.case_id = 0
+        self.case_name = ''
         self.ope_type = ''
         self.ass_type = ''
         self.ope_value = ''
@@ -26,9 +26,10 @@ class ChromeRun(ChromeBase, DataCleaning):
         self.ele_loc = ''
         self.ele_sleep = 0
         self.ele_sub = ''
+        self.ope_value_key = ''
 
-    def open_url(self, url: str, case_id):
-        self.case_id = case_id
+    def open_url(self, url: str, case_name):
+        self.case_name = case_name
         self.get(url)
 
     def case_along(self, case_dict: dict) -> bool:
@@ -66,7 +67,7 @@ class ChromeRun(ChromeBase, DataCleaning):
             el.click()
         # 输入
         elif self.ope_type == OpeType.INPUT.value:
-            el.input(self.case_input_data(self.case_id, self.ele_name, self.ope_value))
+            el.input(self.__input_value())
         if self.ele_sleep:
             time.sleep(self.ele_sleep)
 
@@ -99,3 +100,6 @@ class ChromeRun(ChromeBase, DataCleaning):
             for key, value in eval(i).items():
                 if key == self.ele_exp:
                     return value + self.ele_loc
+
+    def __input_value(self):
+        self.case_input_data(self.case_name, self.ele_name, self.ope_value_key, self.ope_value)

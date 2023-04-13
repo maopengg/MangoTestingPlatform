@@ -4,7 +4,6 @@
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 import asyncio
-from typing import Optional
 
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
@@ -15,8 +14,16 @@ from utlis.logs.log_control import ERROR
 
 
 class MainTest:
-    chrome: Optional[ChromeRun] = None
-    android: Optional[AppRun] = None
+    chrome: ChromeRun
+    android: AppRun
+
+    def __init__(self):
+        pass
+    
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(MainTest, 'instance'):
+            cls.instance = super().__new__(cls)
+        return cls.instance
 
     @classmethod
     def new_case_obj(cls, _type: int,
