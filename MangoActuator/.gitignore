@@ -8,5 +8,5 @@ auto_ui/mini_ui/test_case/outputs/*
 logs/*
 cache_flie/*
 dist/*
-main.spec
+MangoActuator.spec
 build/*

@@ -15,7 +15,9 @@ from utlis.random_data import RandomData
 class ChromeBase(WebPage):
     """实例化对象，以及对象方法重写"""
 
-    def __init__(self, local_port, browser_path):
+    def __init__(self, local_port, browser_path=None):
+        if not browser_path:
+            browser_path = './Chrome109/chrome.exe'
         do = ChromiumOptions(read_file=False).set_paths(
             local_port=local_port,
             browser_path=browser_path)
@@ -34,6 +36,6 @@ class ChromeBase(WebPage):
 
 
 if __name__ == '__main__':
-    r = ChromeBase('9222', 'msedge.exe')
+    r = ChromeBase('9222')
     r.get('https://mall-admin-pre.zalldata.cn/#/mall/config/decorate/home/page/welfare')
     time.sleep(10)

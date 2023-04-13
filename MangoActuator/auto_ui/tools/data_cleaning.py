@@ -11,7 +11,10 @@ class DataCleaning(RandomData):
 
     def case_input_data(self, case_id: str, ele_name: str, key, ope_value: str):
         """ 取出缓存 """
-        key_value = case_id + ele_name + str(key)
+        if key:
+            key_value = case_id + ele_name + str(key)
+        else:
+            key_value = case_id + ele_name
         value = CacheDB.get(key_value)
         # 缓存为空的时候进行读取数据并写入缓存
         if value is None:
@@ -20,6 +23,7 @@ class DataCleaning(RandomData):
             elif ope_value:
                 value = ope_value
             CacheDB.set(key_value, value)
+        print(value)
         return value
 
 
