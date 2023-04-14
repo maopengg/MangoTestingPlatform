@@ -26,7 +26,7 @@ class ChromeRun(ChromeBase, DataCleaning):
         self.ele_loc = ''
         self.ele_sleep = 0
         self.ele_sub = ''
-        self.ope_value_key = ''
+        self.ope_value_key = None
 
     def open_url(self, url: str, case_name):
         self.case_name = case_name
@@ -101,4 +101,4 @@ class ChromeRun(ChromeBase, DataCleaning):
                     return value + self.ele_loc
 
     def __input_value(self):
-        self.case_input_data(self.case_name, self.ele_name, self.ope_value_key, self.ope_value)
+        return self.case_input_data(self.case_name, self.ele_name, self.ope_value_key, self.ope_value)

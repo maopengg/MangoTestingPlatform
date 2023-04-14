@@ -11,6 +11,7 @@ nuw_dir()
 
 from utlis.client.client_socket import ClientWebSocket
 
+# pyinstaller -F -c .\MangoActuator.py
 print("================执行端正在启动================")
 client = ClientWebSocket()
 loop = asyncio.new_event_loop()  # 创建新的事件循环
