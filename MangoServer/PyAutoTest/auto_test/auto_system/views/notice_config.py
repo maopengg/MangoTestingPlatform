@@ -21,10 +21,17 @@ class NoticeConfigSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class NoticeConfigSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = NoticeConfig
+        fields = '__all__'
+
+
 class NoticeConfigCRUD(ModelCRUD):
     model = NoticeConfig
-    queryset = NoticeConfig.objects.select_related('team').all()
+    queryset = NoticeConfig.objects.all()
     serializer_class = NoticeConfigSerializers
+    serializer = NoticeConfigSerializersC
 
 
 class NoticeConfigViews(ViewSet):

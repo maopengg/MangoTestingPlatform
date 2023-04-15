@@ -10,12 +10,12 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import RunSort
 from PyAutoTest.auto_test.auto_ui.ui_tools.enum import OpeType, Assertions
+from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
-from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 
 
 class RunSortSerializers(serializers.ModelSerializer):
@@ -29,6 +29,12 @@ class RunSortSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class RunSortSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = RunSort
+        fields = '__all__'
+
+
 class RunSortCRUD(ModelCRUD):
     """
         haha
@@ -36,6 +42,7 @@ class RunSortCRUD(ModelCRUD):
     model = RunSort
     queryset = RunSort.objects.select_related('team', 'el_page', 'el_name', 'case').all()
     serializer_class = RunSortSerializers
+    serializer = RunSortSerializersC
 
     def get(self, request):
         books = self.model.objects.filter(case_id=request.GET.get('case_id')).order_by('run_sort')

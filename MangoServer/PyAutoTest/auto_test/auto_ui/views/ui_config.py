@@ -19,10 +19,17 @@ class UiConfigSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UiConfigSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = UiConfig
+        fields = '__all__'
+
+
 class UiConfigCRUD(ModelCRUD):
     model = UiConfig
-    queryset = UiConfig.objects.select_related('user_id').all()
+    queryset = UiConfig.objects.all()
     serializer_class = UiConfigSerializers
+    serializer = UiConfigSerializersC
 
 
 class UiConfigViews(ViewSet):

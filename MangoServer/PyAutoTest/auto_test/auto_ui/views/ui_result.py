@@ -6,12 +6,12 @@
 from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.views.project_config import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiResult
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_case_group import UiCaseGroupSerializers
-from PyAutoTest.auto_test.auto_system.views.project_config import TestObjectSerializers
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class UiResultSerializers(serializers.ModelSerializer):
@@ -25,10 +25,17 @@ class UiResultSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UiResultSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = UiResult
+        fields = '__all__'
+
+
 class UiResultCRUD(ModelCRUD):
     model = UiResult
     queryset = UiResult.objects.select_related('team', 'case', 'test_obj', 'case_group').all()
     serializer_class = UiResultSerializers
+    serializer = UiResultSerializersC
 
 
 class UiResultViews(ViewSet):

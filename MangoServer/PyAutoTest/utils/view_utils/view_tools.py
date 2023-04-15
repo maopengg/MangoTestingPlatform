@@ -43,10 +43,11 @@ def enum_list(enum) -> list:
 def paging_list(size, current, books, serializer) -> list:
     """
     分页
-    :param size:
-    :param current:
-    :param books:
-    :return:
+    @param size:
+    @param current:
+    @param books:
+    @param serializer:
+    @return:
     """
     if int(books.count()) <= int(size):
         current = 1

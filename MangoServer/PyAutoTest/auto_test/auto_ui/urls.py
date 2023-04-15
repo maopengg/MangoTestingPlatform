@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD, UiCaseViews
 from PyAutoTest.auto_test.auto_ui.views.ui_case_group import UiCaseGroupCRUD, UiCaseGroupViews
 from PyAutoTest.auto_test.auto_ui.views.ui_config import UiConfigCRUD, UiConfigViews
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementCRUD, UiElementViews
-from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageCRUD, UiPageC, UiPageViews
+from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageCRUD, UiPageR, UiPageViews
 from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicCRUD, UiPublicViews
 from PyAutoTest.auto_test.auto_ui.views.ui_result import UiResultCRUD, UiResultViews
 from PyAutoTest.auto_test.auto_ui.views.ui_run import RunUiCase
@@ -18,7 +18,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_runsort import RunSortCRUD, RunSortVi
 urlpatterns = [
     #
     path("page", UiPageCRUD.as_view()),
-    path("page/query", UiPageC.as_view({'get': 'query_by'})),
+    path("page/query", UiPageR.as_view({'get': 'query_by'})),
     path("page/name1", UiPageViews.as_view({'get': 'get_page_name1'})),
     path("page/name", UiPageViews.as_view({'get': 'get_page_name'})),
     #

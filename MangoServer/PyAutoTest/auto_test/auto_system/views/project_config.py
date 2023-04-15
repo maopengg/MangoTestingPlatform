@@ -19,10 +19,17 @@ class TestObjectSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TestObjectSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = TestObject
+        fields = '__all__'
+
+
 class TestObjectCRUD(ModelCRUD):
     model = TestObject
-    queryset = TestObject.objects.select_related('team').all()
+    queryset = TestObject.objects.all()
     serializer_class = TestObjectSerializers
+    serializer = TestObjectSerializersC
 
 
 class TestObjectViews(ViewSet):

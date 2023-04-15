@@ -3,6 +3,8 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
+import logging
+
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -11,11 +13,13 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_user.models import Project
 from PyAutoTest.utils.view_utils.view_tools import paging_list
 
+logger = logging.getLogger('system')
+
 
 class ModelCRUD(GenericAPIView):
     model = None
-
-    # serializer = None
+    # post专用
+    serializer = None
 
     def get(self, request):
         data_type = request.query_params.get('type')
@@ -36,8 +40,7 @@ class ModelCRUD(GenericAPIView):
         })
 
     def post(self, request):
-        print(request.data)
-        serializer = self.get_serializer_class()(data=request.data)
+        serializer = self.serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -46,7 +49,7 @@ class ModelCRUD(GenericAPIView):
                 'data': serializer.data
             })
         else:
-            print(serializer.errors)
+            logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return Response({
                 'code': 300,
                 'msg': str(serializer.errors),
@@ -54,7 +57,6 @@ class ModelCRUD(GenericAPIView):
             })
 
     def put(self, request):
-        print(request.data)
         serializer = self.get_serializer_class()(
             instance=self.model.objects.get(pk=request.data.get('id')),
             data=request.data
@@ -67,7 +69,7 @@ class ModelCRUD(GenericAPIView):
                 'data': serializer.data
             })
         else:
-            print(serializer.errors)
+            logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return Response({
                 'code': 300,
                 'msg': str(serializer.errors),
@@ -97,7 +99,7 @@ class ModelCRUD(GenericAPIView):
         # })
 
 
-class ModelC(ViewSet):
+class ModelR(ViewSet):
     model = None
     serializer_class = None
 

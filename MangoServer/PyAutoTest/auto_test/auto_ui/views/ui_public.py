@@ -19,10 +19,17 @@ class UiPublicSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UiPublicSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = UiPublic
+        fields = '__all__'
+
+
 class UiPublicCRUD(ModelCRUD):
     model = UiPublic
     queryset = UiPublic.objects.select_related('team').all()
     serializer_class = UiPublicSerializers
+    serializer = UiPublicSerializersC
 
 
 class UiPublicViews(ViewSet):

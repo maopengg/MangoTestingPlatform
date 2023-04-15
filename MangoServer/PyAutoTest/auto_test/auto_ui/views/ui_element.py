@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Project: auto_test
-# @Description: 
+# @Description:
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
 from rest_framework import serializers
@@ -9,11 +9,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiElement
-from PyAutoTest.auto_test.auto_ui.models import UiPage
 from PyAutoTest.auto_test.auto_ui.ui_tools.enum import WebExp
-from PyAutoTest.auto_test.auto_user.models import Project
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import option_list, enum_list
 
@@ -24,15 +22,10 @@ class UiElementSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = UiElement
-        fields = '__all__'  # 全部进行序列化
-        # fields = ['project']  # 选中部分进行序列化
-        # exclude = ['name']  # 除了这个字段，其他全序列化
+        fields = '__all__'
 
 
-class UiElementSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers()
-    page = UiPageSerializers()
-
+class UiElementSerializersC(serializers.ModelSerializer):
     class Meta:
         model = UiElement
         fields = '__all__'  # 全部进行序列化
@@ -40,8 +33,9 @@ class UiElementSerializers(serializers.ModelSerializer):
 
 class UiElementCRUD(ModelCRUD):
     model = UiElement
-    queryset = UiElement.objects.select_related('team', 'page').all()
+    queryset = UiElement.objects.all()
     serializer_class = UiElementSerializers
+    serializer = UiElementSerializersC
 
     def get(self, request):
         try:
