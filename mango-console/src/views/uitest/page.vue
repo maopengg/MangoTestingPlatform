@@ -49,9 +49,10 @@
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
             </template>
-            <a-tab-pane key="0" title="web页面对象" />
-            <a-tab-pane key="1" title="app页面对象" />
-            <a-tab-pane key="2" title="mini页面对象" />
+            <a-tab-pane key="0" title="Web页面对象" />
+            <a-tab-pane key="1" title="Android页面对象" />
+            <a-tab-pane key="2" title="IOS页面对象" />
+            <a-tab-pane key="3" title="桌面页面对象" />
           </a-tabs>
           <a-table
             :bordered="false"
