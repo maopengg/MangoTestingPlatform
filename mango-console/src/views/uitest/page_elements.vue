@@ -203,16 +203,15 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let expValue = getExpValue(value.exp, uiElementData.eleExp)
     if (addUpdate.value === 1) {
       post({
         url: uiUiElement,
         data: () => {
           return {
             team: route.query.team,
-            page: route.query.id,
+            page: uiElementData.pageName,
             name: value.name,
-            exp: expValue,
+            exp: value.exp,
             loc: value.loc,
             sleep: value.sleep,
             sub: value.sub
@@ -232,9 +231,9 @@ function onDataForm() {
         data: () => {
           return {
             team: route.query.team,
-            page: route.query.id,
+            page: uiElementData.pageName,
             name: value.name,
-            exp: expValue,
+            exp: value.exp,
             loc: value.loc,
             sleep: value.sleep,
             sub: value.sub,

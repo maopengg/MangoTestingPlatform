@@ -23,7 +23,6 @@ class DataCleaning(RandomData):
             elif ope_value:
                 value = ope_value
             CacheDB.set(key_value, value)
-        print(value)
         return value
 
 

@@ -12,7 +12,11 @@ export function getExpValue(exp: string, options: Option[]) {
 export function transformData(data: any) {
   const result: any = {}
   data.forEach((item: any) => {
-    result[item.key] = item.value._value || null
+    if (item.value._value === 0) {
+      result[item.key] = 0
+    } else {
+      result[item.key] = item.value._value || null
+    }
   })
   return result
 }

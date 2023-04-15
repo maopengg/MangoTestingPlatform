@@ -37,7 +37,7 @@ class ModelCRUD(GenericAPIView):
 
     def post(self, request):
         print(request.data)
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer_class()(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -46,6 +46,7 @@ class ModelCRUD(GenericAPIView):
                 'data': serializer.data
             })
         else:
+            print(serializer.errors)
             return Response({
                 'code': 300,
                 'msg': str(serializer.errors),
