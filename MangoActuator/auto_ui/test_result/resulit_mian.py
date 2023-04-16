@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-04-15 23:07
 # @Author : 毛鹏
-import asyncio
 
 from auto_ui.test_result.notification_send import NotificationSend
 from auto_ui.test_result.test_report_return import TestReportReturn
@@ -135,18 +134,33 @@ class ResultMain(TestReportReturn, NotificationSend):
     # 第一个列表是用例组，套
 
     def res_collect(self):
-        self.res_data.append()
+        # self.res_data.append()
+        pass
 
-    async def res_dispatch(self):
-        await asyncio.gather(self.notification_send(),
-                             self.test_res_analysis())
+    #
+    # async def res_dispatch(self):
+    #     await asyncio.gather(self.notification_send(),
+    #                          self.test_res_analysis())
 
     async def notification_send(self):
         pass
 
-    async def test_res_analysis(self):
-        pass
+    @classmethod
+    def test_res_analysis(cls):
+        # sql = "INSERT INTO ui_result (ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture) VALUES ('新增商品按钮', 1, 0, '新建普通商品',null,'应用组', 'zshop预发环境', '元素不存在', 'www.baidu.com' );"
+        return cls.ele_res_insert(
+            ele_name='新增商品按钮',
+            existence=1,
+            state=0,
+            case_id='新建普通商品',
+            case_group_id=None,
+            team_id='应用组',
+            test_obj_id='zshop预发环境',
+            msg='元素不存在',
+            picture='www.baidu.com'
+        )
 
 
 if __name__ == '__main__':
-    pass
+    r = ResultMain.test_res_analysis()
+    print(r)

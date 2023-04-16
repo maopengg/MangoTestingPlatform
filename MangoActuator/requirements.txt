@@ -8,3 +8,4 @@ Faker==17.6.0
 colorlog==6.7.0
 websockets==10.4
 assertpy==1.1
+PyMySQL==1.0.3
