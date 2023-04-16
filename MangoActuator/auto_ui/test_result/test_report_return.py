@@ -10,21 +10,21 @@ class TestReportReturn:
     my = MysqlDB()
 
     @classmethod
-    def ele_res_insert(cls, ele_name: str or None = None,
-                       existence: int or None = None,
-                       state: int or None = None,
-                       case_id: str or None = None,
-                       case_group_id: str or None = None,
-                       team_id: str or None = None,
-                       test_obj_id: int or None = None,
-                       msg: str or None = None,
-                       picture: str or None = None):
+    async def ele_res_insert(cls, ele_name: str or None = None,
+                             existence: int or None = None,
+                             state: int or None = None,
+                             case_id: str or None = None,
+                             case_group_id: str = None,
+                             team_id: str or None = None,
+                             test_obj_id: int or None = None,
+                             msg: str or None = None,
+                             picture: str or None = None):
         sql = f"""
         INSERT INTO
         ui_result (ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture)
         VALUES 
-        ({ele_name}, {existence}, {state}, {case_id},{case_group_id},{team_id}, {test_obj_id}, {msg}, {picture});
+        ('{ele_name}', {existence}, {state}, '{case_id}',{case_group_id},'{team_id}', '{test_obj_id}', '{msg}', '{picture}');
           """
-        print(sql)
         res = cls.my.execute(sql)
+        print(True if res == 1 else False)
         return True if res == 1 else False

@@ -8,9 +8,10 @@ import asyncio
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
-from utlis.client import client_socket
-from utlis.client.server_enum_api import ServerEnumAPI
+# from utlis.client import client_socket
+# from utlis.client.server_enum_api import ServerEnumAPI
 from utlis.logs.log_control import ERROR
+from auto_ui.test_result.resulit_mian import ResultMain
 
 
 class MainTest:
@@ -75,22 +76,14 @@ class MainTest:
                     res = cls.android.case_along(case_dict)
                     if not res:
                         ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
-                        return asyncio.create_task(cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！'))
-
-                return asyncio.create_task(cls.email_send(code=200, msg='用例执行完成，请查看测试报告！'))
-
+                        # return asyncio.create_task(cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！'))
+                        result = ResultMain(code=200, msg='用例执行完成，请查看测试报告！')
+                        return result.res_dispatch()
+                # return asyncio.create_task(cls.email_send(code=200, msg='用例执行完成，请查看测试报告！'))
+                result = ResultMain(code=200, msg='用例执行完成，请查看测试报告！')
+                return result.res_dispatch()
             else:
                 pass
-
-    @staticmethod
-    async def email_send(code, msg):
-        await client_socket.ClientWebSocket.active_send(
-            code=code,
-            func=ServerEnumAPI.NOTICE_MAIN.value,
-            msg=msg,
-            end=True,
-            data='')
-        # await print(2)
 
 
 if __name__ == '__main__':
