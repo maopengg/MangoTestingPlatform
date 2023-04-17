@@ -4,7 +4,6 @@
 # @Time   : 2023-04-15 23:07
 # @Author : 毛鹏
 import asyncio
-import time
 
 import notification_send
 from auto_ui.test_result.test_report_return import TestReportReturn
