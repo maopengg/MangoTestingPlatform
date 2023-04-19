@@ -29,7 +29,13 @@
               :data-index="item.dataIndex"
               :fixed="item.fixed"
             >
-              <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
+              <template v-if="item.dataIndex === 'el_page'" #cell="{ record }">
+                {{ record.el_page.name }}
+              </template>
+              <template v-else-if="item.dataIndex === 'el_name'" #cell="{ record }">
+                {{ record.el_name == null ? '-' : record.el_name.name }}
+              </template>
+              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
               </template>

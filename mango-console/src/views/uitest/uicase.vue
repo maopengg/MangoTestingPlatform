@@ -548,7 +548,7 @@ export default defineComponent({
         query: {
           id: caseId,
           name: record.name,
-          team: record.team
+          team: record.team.name
         }
       })
     }

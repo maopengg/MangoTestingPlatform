@@ -75,3 +75,37 @@ class SystemViews(ViewSet):
                 'msg': '数据格式错误~',
                 "data": ''
             })
+
+    @action(methods=['get'], detail=False)
+    def shuyun_tag_mark_query(self, request):
+        tag_type = request.query_params.get('tagType')
+        plat_account = request.query_params.get('platAccount')
+        plat_code = request.query_params.get('platCode')
+        shop_id = request.query_params.get('shopId')
+        if tag_type and plat_code and plat_account and shop_id:
+            return Response({
+                "code": 10000,
+                "success": True,
+                "data": [
+                    {
+                        "tagId": 2,  # 标签ID
+                        "tagName": "已发放VIP4升级礼",  # 标签名称
+                        "tagType": 1,  # 标签类型（0：云标签, 1：自定义标签）
+                        "valueType": 4,  # 标签值类型(0：日期型, 1：字符输入型, 2:字符选择型, 3:数值输入型, 4:数值选择型)
+                        "optionType": 1,
+                        # 如果标签值类型为3:数值输入型或4:数值选择型, 代表（"0":"整数","1":"小数"）, 如果标签值类型为0：日期型,代表(0:年/月/日, 1:年/月)
+                        "valueNumberOption": 0,  # 可打标签值个数(0:单选，1：多选, null:没有单选多选)，只有在标签值类型为2：字符选择型或者4:数值选择型时才会返回该字段
+                        "validPeriod": 20,  # 标签值有效期,如果有有效期，为固定的一个整数。跟validPeriodType字段组合使用，表示多少天，多少月，多少年。-1:永久有效
+                        "validPeriodType": 0,  # 标签值有效期类型(0:天, 1:月, 2:年)
+                        "tagValue": [  # 打标值数组
+                            "打乒乓球"
+                        ]
+                    }
+                ]
+            })
+        else:
+            return Response({
+                "code": 10001,
+                "success": False,
+                "data": ""
+            })

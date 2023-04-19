@@ -77,7 +77,7 @@ class MainTest:
                     if not res:
                         ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
                         # return asyncio.create_task(cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！'))
-                        result = ResultMain(code=200, msg='用例执行完成，请查看测试报告！')
+                        result = ResultMain(code=200, msg='用例执行失败，请查看测试报告！')
                         return result.res_dispatch()
                 # return asyncio.create_task(cls.email_send(code=200, msg='用例执行完成，请查看测试报告！'))
                 result = ResultMain(code=200, msg='用例执行完成，请查看测试报告！')

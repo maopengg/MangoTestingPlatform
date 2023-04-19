@@ -10,7 +10,6 @@ from utlis.logs.log_control import DEBUG
 
 class ClientWebSocket(object):
     # instance = None
-
     websocket = None
     username = input("请输入用户账号: ")
     socket_url = '/client/socket?' + username

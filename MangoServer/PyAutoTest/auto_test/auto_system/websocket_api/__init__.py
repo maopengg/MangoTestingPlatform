@@ -6,9 +6,9 @@
 from PyAutoTest.auto_test.auto_system.notic_tools import notice_main
 
 
-class MergeApi(object, ):
+class MergeApi:
 
     @classmethod
     def notice_main_(cls, team_name, case=1):
         # return notice_main(team_name=None)
-        print('被执行了')
+        notice_main(team_name, case)

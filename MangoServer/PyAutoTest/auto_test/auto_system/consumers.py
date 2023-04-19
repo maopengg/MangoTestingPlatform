@@ -159,12 +159,11 @@ class ChatConsumer(WebsocketConsumer):
     def __receive_actuator(self, message):
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
-        # for i in CONN_LIST:
-        #     if i.get('user') == msg.get('user') and msg.get('end'):
-        #         i.get('web_obj').send()
+        if msg['func'] == "notice_main_":
+            from PyAutoTest.auto_test.auto_system.websocket_api.socket_api import SocketAPI
+            SocketAPI(msg['func'], "应用组")
         if msg.get('end'):
             self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')
-            # return True
 
     def __receive_console(self, message):
         self.__output_method(message.get('text'))

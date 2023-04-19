@@ -4,14 +4,14 @@
 # @Time   : 2023-04-15 23:07
 # @Author : 毛鹏
 import asyncio
-import time
 
-import notification_send
-from auto_ui.test_result.test_report_return import TestReportReturn
+from utlis.client import client_socket
+from utlis.client.server_enum_api import ServerEnumAPI
+from utlis.mysql.mysql_control import MysqlDB
 
 
-class ResultMain(TestReportReturn):
-    res_data = []
+class ResultMain:
+    my = MysqlDB()
 
     def __init__(self, code: int, msg: str):
         self.code = code
@@ -23,10 +23,16 @@ class ResultMain(TestReportReturn):
 
     async def res_dispatch(self):
         await asyncio.gather(self.notification_send(),
-                             self.test_res_analysis())
+                             self.test_res_analysis()
+                             )
 
     async def notification_send(self):
-        await notification_send.email_send(code=self.code, msg=self.msg)
+        await client_socket.ClientWebSocket.active_send(
+            code=code,
+            func=ServerEnumAPI.NOTICE_MAIN.value,
+            msg=msg,
+            end=True,
+            data='')
 
     @classmethod
     async def test_res_analysis(cls):
@@ -41,6 +47,25 @@ class ResultMain(TestReportReturn):
             msg='元素不存在',
             picture='www.baidu.com'
         )
+
+    @classmethod
+    async def ele_res_insert(cls, ele_name: str or None = None,
+                             existence: int or None = None,
+                             state: int or None = None,
+                             case_id: str or None = None,
+                             case_group_id: str = None,
+                             team_id: str or None = None,
+                             test_obj_id: int or None = None,
+                             msg: str or None = None,
+                             picture: str or None = None):
+        sql = f"""
+        INSERT INTO
+        ui_result (ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture)
+        VALUES
+        ('{ele_name}', {existence}, {state}, '{case_id}',{case_group_id},'{team_id}', '{test_obj_id}', '{msg}', '{picture}');
+          """
+        res = cls.my.execute(sql)
+        return True if res == 1 else False
 
 
 if __name__ == '__main__':

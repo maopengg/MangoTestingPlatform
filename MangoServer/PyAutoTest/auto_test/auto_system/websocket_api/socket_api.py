@@ -10,3 +10,7 @@ class SocketAPI(MergeApi):
 
     def __init__(self, func_name, *args, **kwargs):
         getattr(self, func_name, )(*args, **kwargs)
+
+
+if __name__ == '__main__':
+    r = SocketAPI('应用组', )
