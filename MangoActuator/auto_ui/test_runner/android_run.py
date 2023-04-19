@@ -26,12 +26,21 @@ class AppRun(DriverMerge, DataCleaning):
         self.ele_loc = ''
         self.ele_sleep = 0
         self.ele_sub = ''
+        self.ele_opt_res = {'ele_name': self.ele_name,
+                            'existence': '',
+                            'state': '',
+                            'case_id': '',
+                            'case_group_id': '',
+                            'team_id': '',
+                            'test_obj_id': '',
+                            'msg': '',
+                            'picture_path': ''}
 
     def __del__(self):
         self.close_app('com.tencent.mm')
         self.sleep(1)
 
-    def case_along(self, case_dict: dict) -> bool:
+    def case_along(self, case_dict: dict) -> dict:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
@@ -41,14 +50,14 @@ class AppRun(DriverMerge, DataCleaning):
             setattr(self, key, value)
         try:
             self.action_element()
-            return True
+            return self.ele_opt_res
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
             self.screenshot(
                 rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png')
-            return False
+            return self.ele_opt_res
 
     def action_element(self):
         """
@@ -67,10 +76,15 @@ class AppRun(DriverMerge, DataCleaning):
                 input_value = self.case_input_data(self.case_id, self.ele_name, self.ope_value)
                 self.input_text(self.ele_loc, input_value)
 
+    def find_ele():
+        pass
 
-if __name__ == '__main__':
-    r = AppRun(equipment='7de23fdd')
-    # r.start_app('com.tencent.mm')
-    # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
-    # r.sleep(5)
-    # r.close_app('com.tencent.mm')
+    def find_eles():
+        pass
+
+    if __name__ == '__main__':
+        r = AppRun(equipment='7de23fdd')
+        # r.start_app('com.tencent.mm')
+        # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
+        # r.sleep(5)
+        # r.close_app('com.tencent.mm')
