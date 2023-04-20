@@ -8,6 +8,7 @@ from uiautomator2 import Device
 
 from auto_ui.tools.enum import EleExp
 from utlis.logs.log_control import ERROR, INFO
+
 """
 python -m uiautomator2 init
 python -m weditor
@@ -26,12 +27,12 @@ class AndroidBase:
             ERROR.logger.error(f'设备启动异常，请检查设备连接！报错内容：{e}')
         self.app.implicitly_wait(10)
 
-    def ele(self, ele: str, _type: int):
+    def ele(self, locator: str, _type: int):
         return {
-            EleExp.XPATH.value: self.app.xpath(ele),
-            EleExp.ID.value: self.app(resourceId=ele),
-            EleExp.BOUNDS.value: self.app(text=ele),
-            EleExp.DESCRIPTION.value: self.app(description=ele)
+            EleExp.XPATH.value: self.app.xpath(locator),
+            EleExp.ID.value: self.app(resourceId=locator),
+            EleExp.BOUNDS.value: self.app(text=locator),
+            EleExp.DESCRIPTION.value: self.app(description=locator)
         }.get(_type)
 
     def find_element(self, locator: str):

@@ -29,7 +29,7 @@ class AppRun(DriverMerge, DataCleaning):
         self.ele_opt_res = {'ele_name': self.ele_name,
                             'existence': '',
                             'state': '',
-                            'case_id': '',
+                            'case_id': self.case_id,
                             'case_group_id': '',
                             'team_id': '',
                             'test_obj_id': '',
@@ -49,14 +49,20 @@ class AppRun(DriverMerge, DataCleaning):
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
-            self.action_element()
+            ele = self.find_ele()
+            self.ele_opt_res['existence'] = ele
+            if ele:
+                self.action_element()
+            else:
+                return self.ele_opt_res
             return self.ele_opt_res
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            self.screenshot(
-                rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png')
+            filepath = rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png'
+            self.screenshot(filepath)
+            self.ele_opt_res['picture_path'] = filepath
             return self.ele_opt_res
 
     def action_element(self):
@@ -76,15 +82,28 @@ class AppRun(DriverMerge, DataCleaning):
                 input_value = self.case_input_data(self.case_id, self.ele_name, self.ope_value)
                 self.input_text(self.ele_loc, input_value)
 
-    def find_ele():
+    def find_ele(self):
+        match self.ope_type:
+            case EleExp.XPATH.value:
+                return self.app.xpath(self.ele_loc)
+            case EleExp.ID.value:
+                return self.app(resourceId=self.ele_loc)
+            case EleExp.BOUNDS.value:
+                return self.app(text=self.ele_loc)
+            case EleExp.DESCRIPTION.value:
+                return self.app(description=self.ele_loc)
+            case _:
+                ERROR.logger.error(f'元素定位方式不存在，请检查元素定位方式。元素type：{self.ope_type}')
+                return None
+
+    def find_eles(self):
         pass
 
-    def find_eles():
-        pass
 
-    if __name__ == '__main__':
-        r = AppRun(equipment='7de23fdd')
-        # r.start_app('com.tencent.mm')
-        # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
-        # r.sleep(5)
-        # r.close_app('com.tencent.mm')
+if __name__ == '__main__':
+    # r = AppRun(equipment='7de23fdd')
+    # r.start_app('com.tencent.mm')
+    # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
+    # r.sleep(5)
+    # r.close_app('com.tencent.mm')
+    pass
