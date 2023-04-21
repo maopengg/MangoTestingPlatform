@@ -27,6 +27,11 @@ class AndroidBase:
             ERROR.logger.error(f'设备启动异常，请检查设备连接！报错内容：{e}')
         self.app.implicitly_wait(10)
 
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(AndroidBase, 'instance'):
+            cls.instance = super().__new__(cls)
+        return cls.instance
+
     def ele(self, locator: str, _type: int):
         return {
             EleExp.XPATH.value: self.app.xpath(locator),

@@ -4,7 +4,6 @@
 # @Time   : 2023/3/23 11:28
 # @Author : 毛鹏
 import time
-
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 
@@ -23,6 +22,11 @@ class ChromeBase(WebPage):
             browser_path=browser_path)
         # do.set_argument('--remote-allow-origins=*')cls=None,
         super().__init__(driver_or_options=do, session_or_options=False)
+
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(ChromeBase, 'instance'):
+            cls.instance = super().__new__(cls)
+        return cls.instance
 
     def screenshot(self, ele_name: str):
         """
