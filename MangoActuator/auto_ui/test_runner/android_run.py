@@ -49,13 +49,14 @@ class AppRun(DriverMerge, DataCleaning):
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
-            ele = self.find_ele()
-            self.ele_opt_res['existence'] = ele
-            if ele:
-                self.action_element()
-            else:
+            if self.ele_name != 'url':
+                ele = self.find_ele()
+                self.ele_opt_res['existence'] = ele
+                if ele:
+                    self.action_element()
+                else:
+                    return self.ele_opt_res
                 return self.ele_opt_res
-            return self.ele_opt_res
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'

@@ -3,11 +3,13 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
+import asyncio
+
+from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.android_run import AppRun
 from auto_ui.test_runner.web_run import ChromeRun
 from auto_ui.tools.enum import End
 from utlis.logs.log_control import ERROR
-from auto_ui.test_result.resulit_mian import ResultMain
 
 
 class MainTest:
@@ -50,36 +52,64 @@ class MainTest:
     def case_run(cls, data: list[dict]):
         """
         分发用例给不同的驱动进行执行
-        @param data: 用例数据
+        @param data: 用例列表
         @return:
         """
         # 遍历list中的用例得到每个用例
         for case_obj in data:
             if case_obj['type'] == End.Chrome.value:
-                if cls.chrome is None:
-                    cls.new_case_obj(_type=case_obj['type'],
-                                     local_port=case_obj['local_port'],
-                                     browser_path=case_obj['browser_path'])
-                cls.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
-                for case_dict in case_obj['case_data']:
-                    cls.chrome.case_along(case_dict)
+                if not cls.web_test(case_obj):
+                    break
             elif case_obj['type'] == End.Android.value:
-                if cls.android is None:
-                    cls.new_case_obj(_type=case_obj['type'],
-                                     equipment=case_obj['equipment'])
-                cls.android.start_app(case_obj['package'])
-                for case_dict in case_obj['case_data']:
-                    res = cls.android.case_along(case_dict)
-                    if not res:
-                        ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
-                        # return asyncio.create_task(cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！'))
-                        result = ResultMain()
-                        return result.res_dispatch(code=200, msg='用例执行失败，请查看测试报告！')
-                # return asyncio.create_task(cls.email_send(code=200, msg='用例执行完成，请查看测试报告！'))
-                result = ResultMain()
-                return result.res_dispatch(code=200, msg='用例执行完成，请查看测试报告！')
+                if not cls.android_test(case_obj):
+                    break
+            elif case_obj['type'] == End.IOS.value:
+                if not cls.ios_test():
+                    break
             else:
-                pass
+                ERROR.logger.error('设备类型不存在，请联系管理员检查！')
+
+    #     只有用例组不为空的时候，才发送邮件，其他调式不发送通知！逻辑还没写
+
+    @classmethod
+    def web_test(cls, case_obj):
+        if cls.chrome is None:
+            cls.new_case_obj(_type=case_obj['type'],
+                             local_port=case_obj['local_port'],
+                             browser_path=case_obj['browser_path'])
+        cls.chrome.open_url(case_obj['case_url'], case_obj['case_id'])
+        for case_dict in case_obj['case_data']:
+            cls.chrome.case_along(case_dict)
+
+        return False
+
+    @classmethod
+    def android_test(cls, case_obj):
+        if cls.android is None:
+            cls.new_case_obj(_type=case_obj['type'],
+                             equipment=case_obj['equipment'])
+        cls.android.start_app(case_obj['package'])
+        for case_dict in case_obj['case_data']:
+            res = cls.android.case_along(case_dict)
+            if not res:
+                ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
+                # return asyncio.create_task(cls.email_send(300, msg='用例执行失败，请检查日志或查看测试报告！'))
+                result = ResultMain()
+                return result.res_dispatch(code=200, msg='用例执行失败，请查看测试报告！')
+        # return asyncio.create_task(cls.email_send(code=200, msg='用例执行完成，请查看测试报告！'))
+        result = ResultMain()
+        return result.res_dispatch(code=200, msg='用例执行完成，请查看测试报告！')
+
+    @classmethod
+    def ios_test(cls):
+        pass
+
+    def ele_test_res(self, ele_res: dict):
+        """
+        测试结果返回
+        @return:
+        """
+        asyncio.create_task(ResultMain.ele_res_insert(ele_res))
 
 
 if __name__ == '__main__':

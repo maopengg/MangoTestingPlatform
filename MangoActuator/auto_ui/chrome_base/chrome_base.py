@@ -30,9 +30,11 @@ class ChromeBase(WebPage):
         @param ele_name: 元素名称
         @return:
         """
+        path = rf'{get_log_screenshot()}\{ele_name + RandomData.get_deta_hms()}.jpg'
         self.get_screenshot(
-            path=rf'{get_log_screenshot()}\{ele_name + RandomData.get_deta_hms()}.jpg',
+            path=path,
             full_page=True)
+        return path
 
 
 if __name__ == '__main__':

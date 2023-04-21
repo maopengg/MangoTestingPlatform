@@ -27,12 +27,22 @@ class ChromeRun(ChromeBase, DataCleaning):
         self.ele_sleep = 0
         self.ele_sub = ''
         self.ope_value_key = None
+        self.ele_opt_res = {'ele_name': self.ele_name,  #
+                            'existence': '',  #
+                            'state': 0,  #
+                            'case_id': self.case_name,  #
+                            'case_group_id': '',
+                            'team_id': '',
+                            'test_obj_id': '',  #
+                            'msg': '',  #
+                            'picture_path': ''}  #
 
     def open_url(self, url: str, case_name):
         self.case_name = case_name
         self.get(url)
+        self.ele_opt_res['test_obj_id'] = url
 
-    def case_along(self, case_dict: dict) -> bool:
+    def case_along(self, case_dict: dict) -> dict:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
@@ -43,14 +53,17 @@ class ChromeRun(ChromeBase, DataCleaning):
         try:
             if self.ele_name != 'url':
                 ele_obj = self.__find_ele(case_dict)
-                return self.action_element(ele_obj) if ele_obj else False
-            return True
+                if ele_obj:
+                    self.action_element(ele_obj)
+                else:
+                    return self.ele_opt_res
+            return self.ele_opt_res
         except Exception as e:
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            self.screenshot(self.ele_name)
-            return False
+            self.ele_opt_res['picture_path'] = self.screenshot(self.ele_name)
+            return self.ele_opt_res
 
     def action_element(self, ele_obj: list):
         """
@@ -63,9 +76,11 @@ class ChromeRun(ChromeBase, DataCleaning):
         # 点击
         if self.ope_type == OpeType.CLICK.value:
             el.click()
+            self.ele_opt_res['state'] = 1
         # 输入
         elif self.ope_type == OpeType.INPUT.value:
             el.input(self.__input_value())
+            self.ele_opt_res['state'] = 1
         # 等待
         if self.ele_sleep:
             time.sleep(self.ele_sleep)
@@ -83,9 +98,12 @@ class ChromeRun(ChromeBase, DataCleaning):
                 ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                    f'元素对象：{case_dict}\n')
                 self.screenshot(self.ele_name)
+                self.ele_opt_res['existence'] = '不存在'
                 return False
+            self.ele_opt_res['existence'] = str(len(ele))
             return ele
         else:
+            self.ele_opt_res['existence'] = '不存在'
             ERROR.logger.error('元素为空，无法定位，请检查元素表达式是否为空！')
             return False
 

@@ -12,9 +12,7 @@ from utlis.logs.log_control import ERROR
 
 
 class ResultMain:
-
-    def __init__(self):
-        self.my = MysqlDB()
+    my = MysqlDB()
 
     async def res_dispatch(self, code: int, mail_msg: str, ele_name: str,
                            existence: int,
@@ -30,8 +28,8 @@ class ResultMain:
                                                  test_obj_id, msg, picture_path)
                              )
 
-    @staticmethod
-    async def notification_send(code: int, mail_msg: str):
+    @classmethod
+    async def notification_send(cls, code: int, mail_msg: str):
         await client_socket.ClientWebSocket.active_send(
             code=code,
             func=ServerEnumAPI.NOTICE_MAIN.value,
@@ -39,7 +37,8 @@ class ResultMain:
             end=True,
             data='')
 
-    async def ele_res_insert(self, ele_name: str,
+    @classmethod
+    async def ele_res_insert(cls, ele_name: str,
                              existence: int,
                              state: int,
                              case_id: str,
@@ -55,7 +54,7 @@ class ResultMain:
         ('{ele_name}', {existence}, {state}, '{case_id}',{case_group_id},'{team_id}', '{test_obj_id}', '{msg}',
          '{picture_path}');
           """
-        res = self.my.execute(sql)
+        res = cls.my.execute(sql)
         True if res == 1 else ERROR.logger.error(
             f"""数据写入错误！请联系管理员检查写入数据
             {ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture_path}""")
