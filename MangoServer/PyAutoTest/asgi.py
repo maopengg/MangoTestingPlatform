@@ -15,7 +15,6 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
 from PyAutoTest.auto_test.auto_system.scheduled_tasks.tasks import create_jobs
-from script.nuw_logs import __nuw_dir
 from . import routing
 
 # django自带，处理路由
@@ -28,5 +27,3 @@ application = ProtocolTypeRouter({
 })
 # 定时任务
 create_jobs()
-# 处理日志文件
-__nuw_dir()
