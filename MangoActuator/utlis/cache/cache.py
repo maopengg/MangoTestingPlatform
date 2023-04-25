@@ -2,11 +2,11 @@
 
 from diskcache import Cache
 
-from utlis.logs.nuw_logs import get_cache
+from utlis.nuw_logs import NewLog
 
 
 class CacheDB:
-    cache = Cache(get_cache())
+    cache = Cache(NewLog.get_cache())
 
     @classmethod
     def set(cls, key, value, expire=300):

@@ -7,7 +7,7 @@ import time
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 
-from utlis.logs.nuw_logs import get_log_screenshot
+from utlis.nuw_logs import NewLog
 from utlis.random_data import RandomData
 
 
@@ -34,7 +34,7 @@ class ChromeBase(WebPage):
         @param ele_name: 元素名称
         @return:
         """
-        path = rf'{get_log_screenshot()}\{ele_name + RandomData.get_deta_hms()}.jpg'
+        path = rf'{NewLog.get_log_screenshot()}\{ele_name + RandomData.get_deta_hms()}.jpg'
         self.get_screenshot(
             path=path,
             full_page=True)

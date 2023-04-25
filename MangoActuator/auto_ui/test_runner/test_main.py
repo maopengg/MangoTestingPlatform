@@ -112,6 +112,10 @@ class MainTest:
         asyncio.create_task(ResultMain.ele_res_insert(ele_res))
 
 
+def dddd():
+    ERROR.logger.error('被调用了')
+
+
 if __name__ == '__main__':
     data1 = [
         {

@@ -8,7 +8,7 @@ from auto_ui.android_base.device_methods import DriverMerge
 from auto_ui.tools.data_cleaning import DataCleaning
 from auto_ui.tools.enum import EleExp, OpeType
 from utlis.logs.log_control import ERROR
-from utlis.logs.nuw_logs import get_log_screenshot
+from utlis.nuw_logs import NewLog
 
 
 class AppRun(DriverMerge, DataCleaning):
@@ -61,7 +61,7 @@ class AppRun(DriverMerge, DataCleaning):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            filepath = rf'{get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png'
+            filepath = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png'
             self.screenshot(filepath)
             self.ele_opt_res['picture_path'] = filepath
             return self.ele_opt_res

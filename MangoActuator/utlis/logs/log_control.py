@@ -9,7 +9,7 @@ from logging import handlers
 
 import colorlog
 
-from utlis.logs.nuw_logs import get_log
+from utlis.nuw_logs import NewLog
 
 
 class LogHandler:
@@ -52,7 +52,7 @@ class LogHandler:
         # 把对象加到logger里
         self.logger.addHandler(screen_output)
         self.logger.addHandler(time_rotating)
-        self.log_path = get_log() + r'\log.log'
+        self.log_path = NewLog.get_log() + r'\log.log'
 
     @classmethod
     def log_color(cls):
@@ -72,11 +72,11 @@ class LogHandler:
         return formatter
 
 
-DEBUG = LogHandler(get_log() + r"\debug-log.log", 'debug')
-INFO = LogHandler(get_log() + r"\info-log.log", 'info')
-WARNING = LogHandler(get_log() + r"\warning-log.log", 'warning')
-ERROR = LogHandler(get_log() + r"\error-log.log", 'error')
-CRITICAL = LogHandler(get_log() + r"\critical-log.log", 'critical')
+DEBUG = LogHandler(NewLog.get_log() + r"\debug-log.log", 'debug')
+INFO = LogHandler(NewLog.get_log() + r"\info-log.log", 'info')
+WARNING = LogHandler(NewLog.get_log() + r"\warning-log.log", 'warning')
+ERROR = LogHandler(NewLog.get_log() + r"\error-log.log", 'error')
+CRITICAL = LogHandler(NewLog.get_log() + r"\critical-log.log", 'critical')
 
 if __name__ == '__main__':
     DEBUG.logger.debug('DEBUG')
