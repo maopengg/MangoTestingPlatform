@@ -6,7 +6,6 @@
 import time
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
-
 from utlis.nuw_logs import NewLog
 from utlis.random_data import RandomData
 
