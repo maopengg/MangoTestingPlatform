@@ -17,7 +17,6 @@ const content = ref('')
 function sendMessage(msg = '执行失败') {
   const title = '用例执行结果'
   const msg1 = msg
-  console.log(msg1)
   if (Notification.permission != 'granted') {
     Notification.requestPermission()
   }
