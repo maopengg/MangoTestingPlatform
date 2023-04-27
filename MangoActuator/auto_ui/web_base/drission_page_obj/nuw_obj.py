@@ -8,8 +8,10 @@ from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 from utlis.nuw_logs import NewLog
 from utlis.random_data import RandomData
+from utlis.decorator.singleton import singleton
 
 
+@singleton
 class ChromeBase(WebPage):
     """实例化对象，以及对象方法重写"""
 
@@ -21,11 +23,6 @@ class ChromeBase(WebPage):
             browser_path=browser_path)
         # do.set_argument('--remote-allow-origins=*')cls=None,
         super().__init__(driver_or_options=do, session_or_options=False)
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(ChromeBase, 'instance'):
-            cls.instance = super().__new__(cls)
-        return cls.instance
 
     def screenshot(self, ele_name: str):
         """

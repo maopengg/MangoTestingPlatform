@@ -8,7 +8,7 @@ from playwright.async_api import Page
 from auto_ui.web_base.playwright_obj.operation_page import OperationPage
 from auto_ui.web_base.playwright_obj.assertion import Assertion
 from auto_ui.web_base.playwright_obj.operation_browser import OperationBrowser
-from auto_ui.web_base.playwright_obj.page_jump import PageJump
+from auto_ui.web_base.playwright_obj.element_operation import PageJump
 
 
 class WebDevice(OperationPage, Assertion, OperationBrowser, PageJump):

@@ -7,10 +7,11 @@
 
 from playwright.async_api import Page
 
-__all__ = []
-
 
 class Assertion:
+    """
+    页面断言
+    """
 
     def __init__(self, web_obj: Page):
         self.web = web_obj
