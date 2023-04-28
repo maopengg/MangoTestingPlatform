@@ -87,6 +87,7 @@
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
+                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
@@ -131,10 +132,10 @@
 
 <script lang="ts">
 import { get, post, put, deleted } from '@/api/http'
-import { uiCaseGroup } from '@/api/url'
+import { uiCaseGroup, UiRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
+import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 
@@ -417,6 +418,25 @@ export default defineComponent({
       })
     }
 
+    function onRunCase(record: any) {
+      Message.info('测试用例正在执行，请稍后')
+      console.log(record)
+      get({
+        url: UiRun,
+        data: () => {
+          return {
+            case_id: record.case_id,
+            team: record.team.name,
+            environment: record.test_obj.environment
+          }
+        }
+      })
+        .then((res) => {
+          Notification.success(res.msg)
+        })
+        .catch(console.log)
+    }
+
     function onDataForm() {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         modalDialogRef.value?.toggle()
@@ -493,7 +513,8 @@ export default defineComponent({
       onDataForm,
       onAddPage,
       onUpdate,
-      onDelete
+      onDelete,
+      onRunCase
     }
   }
 })

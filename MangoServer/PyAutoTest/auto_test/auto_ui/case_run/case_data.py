@@ -7,7 +7,7 @@ import json
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCase, RunSort, UiConfig
-from PyAutoTest.auto_test.auto_ui.ui_tools.enum import End
+from PyAutoTest.auto_test.auto_ui.ui_tools.enum import DevicePlatform, BrowserType
 
 
 class CaseData:
@@ -16,13 +16,18 @@ class CaseData:
         self.user = user
 
     def processing_use_cases(self, case_id: list or int, test_obj: int) -> list:
+        case_group = []
         a_use_case = []
+        case_id = [[1, 2, 3], [1, 2, 3]]
         if isinstance(case_id, int):
             a_use_case.append(self.data_ui_case(test_obj, UiCase.objects.get(id=case_id).name))
         elif isinstance(case_id, list):
-            for i in case_id:
-                a_use_case.append(self.data_ui_case(test_obj, UiCase.objects.get(id=i).name))
-        return a_use_case
+            for case_ in case_id:
+                for i in case_:
+                    a_use_case.append(self.data_ui_case(test_obj, UiCase.objects.get(id=i).name))
+                case_group.append(a_use_case)
+                a_use_case = []
+        return case_group
 
     def data_ui_case(self, test_obj: int, case_name: str) -> dict:
         """
@@ -32,15 +37,10 @@ class CaseData:
         @return: 返回一个数据处理好的测试对象
         """
         case_ = UiCase.objects.get(name=case_name)
-        data = {'case_id': case_name,
+        data = {'case_id': case_.id,
                 'case_name': case_name,
-                'case_url': TestObject.objects.get(id=test_obj).value}
-        run_url = RunSort.objects.filter(
-            case_id=case_name).first().el_page.url
-        if run_url == '-':
-            pass
-        else:
-            data['case_url'] += run_url
+                }
+
         case_data = []
         run_sort = RunSort.objects.filter(case=case_name).order_by('run_sort')
         for i in run_sort:
@@ -50,7 +50,7 @@ class CaseData:
                     'ass_type': i.ass_type,
                     'ope_value': i.ope_value,
                     'ass_value': i.ass_value,
-                    'ele_name': 'url' if case_.case_type == End.WEB.value else '小程序',
+                    'ele_name': 'url' if case_.case_type == DevicePlatform.WEB.value else '小程序',
                     'ele_page_name': i.el_page.name,
                     'ele_exp': None,
                     'ele_loc': None,
@@ -58,12 +58,20 @@ class CaseData:
                     'ele_sub': None,
                     'ope_value_key': i.ope_value_key
                 })
-                if case_.case_type == End.WEB.value:
+                if case_.case_type == DevicePlatform.WEB.value:
                     data['local_port'], data['browser_path'] = self.__get_web_config()
-                    data['type'] = End.WEB.value
-                elif case_.case_type == End.APP.value:
+                    data['type'] = DevicePlatform.WEB.value
+                    data['case_url'] = TestObject.objects.get(id=test_obj).value
+                    run_url = RunSort.objects.filter(
+                        case_id=case_name).first().el_page.url
+                    if run_url == '-':
+                        pass
+                    else:
+                        data['case_url'] += run_url
+                    data['browser_type'] = BrowserType.CHROMIUM.value
+                elif case_.case_type == DevicePlatform.ANDROID.value:
                     data['equipment'], data['package'] = self.__get_app_config()
-                    data['type'] = End.APP.value
+                    data['type'] = DevicePlatform.ANDROID.value
             else:
                 case_data.append({
                     'ope_type': i.ope_type,

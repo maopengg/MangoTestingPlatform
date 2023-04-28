@@ -6,11 +6,18 @@
 from enum import Enum
 
 
-class End(Enum):
+class DevicePlatform(Enum):
     """ 什么端 """
     WEB = 0
-    APP = 1
-    MINI = 2
+    ANDROID = 1
+    IOS = 2
+    DESKTOP = 3
+
+
+class BrowserType(Enum):
+    CHROMIUM = 0
+    FIREFOX = 1
+    WEBKIT = 2
 
 
 class OpeType(Enum):

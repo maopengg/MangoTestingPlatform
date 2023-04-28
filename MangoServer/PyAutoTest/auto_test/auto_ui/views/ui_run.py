@@ -24,12 +24,16 @@ class RunUiCase(ViewSet):
         @return:
         """
         environment = request.GET.get("environment")
-        case_id = int(request.GET.get("case_id"))
+        try:
+            case_id = int(request.GET.get("case_id"))
+        except ValueError:
+            case_id = eval(request.GET.get("case_id"))
         case_data_list = CaseData(request.user).processing_use_cases(case_id, environment)
         case_data_ = ''
-        for i in case_data_list:
-            case_data_ += i['case_name']
-            case_data_ += '，'
+        for case_ in case_data_list:
+            for i in case_:
+                case_data_ += i['case_name']
+                case_data_ += '，'
         server = ChatConsumer()
         f = server.active_send(
             code=200,

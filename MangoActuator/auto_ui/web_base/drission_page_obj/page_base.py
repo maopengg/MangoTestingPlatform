@@ -5,13 +5,13 @@
 # @Author : 毛鹏
 from playwright.async_api import Page
 
-from auto_ui.web_base.playwright_obj.operation_page import OperationPage
+from auto_ui.web_base.playwright_obj.operation_page import PageOperation
 from auto_ui.web_base.playwright_obj.assertion import Assertion
 from auto_ui.web_base.playwright_obj.operation_browser import OperationBrowser
-from auto_ui.web_base.playwright_obj.element_operation import PageJump
+from auto_ui.web_base.playwright_obj.element_operation import ElementOperation
 
 
-class WebDevice(OperationPage, Assertion, OperationBrowser, PageJump):
+class WebDevice(PageOperation, Assertion, OperationBrowser, ElementOperation):
 
     def __init__(self, web_obj: Page):
         super().__init__(web_obj)

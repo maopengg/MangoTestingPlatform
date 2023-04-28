@@ -22,7 +22,7 @@ class TestCaseDistribution(AndroidRun, WebRun, DesktopRun, IosRun):
         super().__init__()
 
     @classmethod
-    def case_run(cls, data: list[dict]):
+    def case_distribution(cls, data: list[list[dict]]):
         """
         分发用例给不同的驱动进行执行
         @param data: 用例列表
@@ -30,13 +30,13 @@ class TestCaseDistribution(AndroidRun, WebRun, DesktopRun, IosRun):
         """
         # 遍历list中的用例得到每个用例
         for case_obj in data:
-            if case_obj['type'] == End.Chrome.value:
+            if case_obj['type'] == DevicePlatform.WEB.value:
                 if not cls.web_test(case_obj):
                     break
-            elif case_obj['type'] == End.Android.value:
+            elif case_obj['type'] == DevicePlatform.ANDROID.value:
                 if not cls.android_test(case_obj):
                     break
-            elif case_obj['type'] == End.IOS.value:
+            elif case_obj['type'] == DevicePlatform.IOS.value:
                 if not cls.ios_test():
                     break
             else:
@@ -136,126 +136,1036 @@ class TestCaseDistribution(AndroidRun, WebRun, DesktopRun, IosRun):
 
 if __name__ == '__main__':
     data1 = [
-        {
-            "case_id": "打开生产环境常规小程序",
-            "case_name": "打开生产环境常规小程序",
-            "case_url": "com.tencent.mm-",
-            "equipment": "8796a033",
-            "package": "com.tencent.mm",
-            "type": 1,
-            "case_data": [
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序",
-                    "ele_page_name": "微信",
-                    "ele_exp": None,
-                    "ele_loc": None,
-                    "ele_sleep": 3,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "微信首页搜索按钮",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/j5t\"]",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 2,
-                    "ass_type": 0,
-                    "ope_value": "卓尔数科常规生产",
-                    "ass_value": None,
-                    "ele_name": "微信首页搜索输入框",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/j4t\"]/android.widget.RelativeLayout[1]",
-                    "ele_sleep": 2,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "点击搜索到的小程序",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@resource-id=\"com.tencent.mm:id/a27\"]",
-                    "ele_sleep": 5,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序分类tab",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "/html/body/wx-view/wx-z-tab-bar/wx-view/wx-view[2]/wx-view/wx-view[2]/wx-view/wx-view[1]/wx-view/wx-view/wx-view[1]/wx-image/div",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序内容中心tab",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@text=\"内容中心\"]",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序购物车tab",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@text=\"购物车\"]",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序我的tab",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//*[@text=\"我的\"]",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                },
-                {
-                    "ope_type": 1,
-                    "ass_type": 0,
-                    "ope_value": None,
-                    "ass_value": None,
-                    "ele_name": "小程序首页tab",
-                    "ele_page_name": "微信",
-                    "ele_exp": 0,
-                    "ele_loc": "//android.webkit.WebView/android.view.View[6]/android.view.View[1]/android.widget.TextView[1]",
-                    "ele_sleep": None,
-                    "ele_sub": None
-                }
-            ]
-        }
+        [
+            {
+                "case_id": 1,
+                "case_name": "后台登录",
+                "local_port": "9222",
+                "browser_path": "C:\\Users\\毛鹏\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe",
+                "type": 0,
+                "case_url": "https://mall-admin-test.zalldata.cn/#/login",
+                "browser_type": 0,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "url",
+                        "ele_page_name": "登录",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 1,
+                        "ope_value": "test1",
+                        "ass_value": None,
+                        "ele_name": "账号",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": ".el-input__inner",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 3,
+                        "ope_value": "123456",
+                        "ass_value": None,
+                        "ele_name": "密码",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": ".el-input__inner",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "登录按钮",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@type=\"button\"]//span",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "点击租户",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@readonly=\"readonly\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "切换租户",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"常规测试\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "进入后台",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@type=\"button\"]//span",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    }
+                ]
+            },
+            {
+                "case_id": 2,
+                "case_name": "新建普通商品",
+                "local_port": "9222",
+                "browser_path": "C:\\Users\\毛鹏\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe",
+                "type": 0,
+                "case_url": "https://mall-admin-test.zalldata.cn/#/mall/goods/goodsspu",
+                "browser_type": 0,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "url",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "新增商品",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//i[@class=\"el-icon-plus\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "店铺",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择店铺\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择店铺",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@x-placement=\"bottom-start\"]/div/div/ul/li/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品分类",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择商品类目\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择商品分类",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"美妆超级牛\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "运费模板",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择运费模板\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择运费模板",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"包邮\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品分组",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择商品分组\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择商品分组",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//ul[@class=\"el-scrollbar__view el-cascader-menu__list\"]/li/label/span/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "基本信息",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//h1[@class=\"avue-group__title\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "goods_name()",
+                        "ass_value": None,
+                        "ele_name": "商品名称",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入商品名称\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": "spu_name"
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "time_random()",
+                        "ass_value": None,
+                        "ele_name": "SPU编码",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入SPU编码\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品主图",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@disabled=\"disabled\" and @content=\"请输入商品主图\"]/div/div/ul/li",
+                        "ele_sleep": 2,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择图片",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@class=\"el-card__body\"]/div/label/span/span",
+                        "ele_sleep": None,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "确认选择的图片",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "/html[@class=' ']/body[@class='el-popup-parent--hidden']/div[@class='el-dialog__wrapper']/div[@class='el-dialog']/div[@class='el-dialog__footer']/span[@class='dialog-footer']/button[@class='el-button el-button--primary el-button--small']/span",
+                        "ele_sleep": None,
+                        "ele_sub": 4,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品属性",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//h1[@class=\"avue-group__title\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1",
+                        "ass_value": None,
+                        "ele_name": "销售价",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1",
+                        "ass_value": None,
+                        "ele_name": "市场价",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1000",
+                        "ass_value": None,
+                        "ele_name": "库存",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 2,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "time_random()",
+                        "ass_value": None,
+                        "ele_name": "SKU编码",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//form//div//div//div//input[@class=\"el-input__inner\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 3,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "保存商品",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//section[@class=\"el-drawer__body\"]/span/button/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "goods_name()",
+                        "ass_value": None,
+                        "ele_name": "搜索商品名称",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入商品名称\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": "spu_name"
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "搜索按钮",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"搜 索\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "审核",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@class=\"el-button el-button--text el-button--small\"]/span",
+                        "ele_sleep": None,
+                        "ele_sub": 2,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "审核通过",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@class=\"el-button el-button--primary el-button--mini\"]/span",
+                        "ele_sleep": None,
+                        "ele_sub": 3,
+                        "ope_value_key": None
+                    }
+                ]
+            },
+            {
+                "case_id": 3,
+                "case_name": "打开小程序",
+                "equipment": "8796a033",
+                "package": "com.tencent.mm",
+                "type": 1,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "小程序",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "发现",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//*[@text=\"发现\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "小程序",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//*[@text=\"小程序\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "搜索",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "0.44, 0.117",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    }
+                ]
+            }
+        ],
+        [
+            {
+                "case_id": 1,
+                "case_name": "后台登录",
+                "local_port": "9222",
+                "browser_path": "C:\\Users\\毛鹏\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe",
+                "type": 0,
+                "case_url": "https://mall-admin-test.zalldata.cn/#/login",
+                "browser_type": 0,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "url",
+                        "ele_page_name": "登录",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 1,
+                        "ope_value": "test1",
+                        "ass_value": None,
+                        "ele_name": "账号",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": ".el-input__inner",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 3,
+                        "ope_value": "123456",
+                        "ass_value": None,
+                        "ele_name": "密码",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": ".el-input__inner",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "登录按钮",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@type=\"button\"]//span",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "点击租户",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@readonly=\"readonly\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "切换租户",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"常规测试\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "进入后台",
+                        "ele_page_name": "登录",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@type=\"button\"]//span",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    }
+                ]
+            },
+            {
+                "case_id": 2,
+                "case_name": "新建普通商品",
+                "local_port": "9222",
+                "browser_path": "C:\\Users\\毛鹏\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe",
+                "type": 0,
+                "case_url": "https://mall-admin-test.zalldata.cn/#/mall/goods/goodsspu",
+                "browser_type": 0,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "url",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "新增商品",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//i[@class=\"el-icon-plus\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "店铺",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择店铺\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择店铺",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@x-placement=\"bottom-start\"]/div/div/ul/li/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品分类",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择商品类目\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择商品分类",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"美妆超级牛\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "运费模板",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择运费模板\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择运费模板",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"包邮\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品分组",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请选择商品分组\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择商品分组",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//ul[@class=\"el-scrollbar__view el-cascader-menu__list\"]/li/label/span/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "基本信息",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//h1[@class=\"avue-group__title\"]",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "goods_name()",
+                        "ass_value": None,
+                        "ele_name": "商品名称",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入商品名称\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": "spu_name"
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "time_random()",
+                        "ass_value": None,
+                        "ele_name": "SPU编码",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入SPU编码\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品主图",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@disabled=\"disabled\" and @content=\"请输入商品主图\"]/div/div/ul/li",
+                        "ele_sleep": 2,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "选择图片",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div[@class=\"el-card__body\"]/div/label/span/span",
+                        "ele_sleep": None,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "确认选择的图片",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "/html[@class=' ']/body[@class='el-popup-parent--hidden']/div[@class='el-dialog__wrapper']/div[@class='el-dialog']/div[@class='el-dialog__footer']/span[@class='dialog-footer']/button[@class='el-button el-button--primary el-button--small']/span",
+                        "ele_sleep": None,
+                        "ele_sub": 4,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "商品属性",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//h1[@class=\"avue-group__title\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1",
+                        "ass_value": None,
+                        "ele_name": "销售价",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 0,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1",
+                        "ass_value": None,
+                        "ele_name": "市场价",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 1,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "1000",
+                        "ass_value": None,
+                        "ele_name": "库存",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@max=\"Infinity\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 2,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "time_random()",
+                        "ass_value": None,
+                        "ele_name": "SKU编码",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//div//form//div//div//div//input[@class=\"el-input__inner\"]",
+                        "ele_sleep": None,
+                        "ele_sub": 3,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "保存商品",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//section[@class=\"el-drawer__body\"]/span/button/span",
+                        "ele_sleep": None,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 2,
+                        "ass_type": 0,
+                        "ope_value": "goods_name()",
+                        "ass_value": None,
+                        "ele_name": "搜索商品名称",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//input[@placeholder=\"请输入商品名称\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": "spu_name"
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "搜索按钮",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//span[text()=\"搜 索\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "审核",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@class=\"el-button el-button--text el-button--small\"]/span",
+                        "ele_sleep": None,
+                        "ele_sub": 2,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "审核通过",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//button[@class=\"el-button el-button--primary el-button--mini\"]/span",
+                        "ele_sleep": None,
+                        "ele_sub": 3,
+                        "ope_value_key": None
+                    }
+                ]
+            },
+            {
+                "case_id": 3,
+                "case_name": "打开小程序",
+                "equipment": "8796a033",
+                "package": "com.tencent.mm",
+                "type": 1,
+                "case_data": [
+                    {
+                        "ope_type": 0,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "小程序",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": None,
+                        "ele_loc": None,
+                        "ele_sleep": 3,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "发现",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//*[@text=\"发现\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "小程序",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "//*[@text=\"小程序\"]",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    },
+                    {
+                        "ope_type": 1,
+                        "ass_type": 0,
+                        "ope_value": None,
+                        "ass_value": None,
+                        "ele_name": "搜索",
+                        "ele_page_name": "全部商品",
+                        "ele_exp": 0,
+                        "ele_loc": "0.44, 0.117",
+                        "ele_sleep": 1,
+                        "ele_sub": None,
+                        "ope_value_key": None
+                    }
+                ]
+            }
+        ]
     ]
     equipment1 = '7de23fdd'
     package1 = 'com.tencent.mm'
-    r = MainTest()
+    r = TestCaseDistribution()
     r.case_run(data1, equipment=equipment1)
