@@ -6,6 +6,7 @@
 
 
 from playwright.async_api import Page
+from .page_base import WebObj
 
 
 class Assertion:
@@ -13,5 +14,4 @@ class Assertion:
     页面断言
     """
 
-    def __init__(self, web_obj: Page):
-        self.web = web_obj
+    web: Page = None

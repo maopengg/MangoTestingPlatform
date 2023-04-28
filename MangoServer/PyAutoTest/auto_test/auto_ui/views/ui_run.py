@@ -7,7 +7,7 @@
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-
+from PyAutoTest.auto_test.auto_ui.case_run.run_api import RunApi
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
@@ -15,11 +15,12 @@ from PyAutoTest.settings import DRIVER
 
 
 class RunUiCase(ViewSet):
+    run_data = RunApi()
 
     @action(methods=['get'], detail=False)
     def ui_run(self, request):
         """
-        执行用例接口
+        执行一条用例
         @param request:
         @return:
         """
@@ -28,38 +29,14 @@ class RunUiCase(ViewSet):
             case_id = int(request.GET.get("case_id"))
         except ValueError:
             case_id = eval(request.GET.get("case_id"))
-        case_data_list = CaseData(request.user).processing_use_cases(case_id, environment)
-        case_data_ = ''
-        for case_ in case_data_list:
-            for i in case_:
-                case_data_ += i['case_name']
-                case_data_ += '，'
-        server = ChatConsumer()
-        f = server.active_send(
-            code=200,
-            func=ServerEnumAPI.UI_CASE_RUN.value,
-            user=int(request.user.get('username')),
-            msg=f'{DRIVER}：{case_data_}准备开始执行自动化任务！',
-            data=case_data_list,
-            end='client_obj'
-        )
-        if f is True:
-            return Response({
-                'code': 200,
-                'msg': f'{DRIVER}已收到用例，正在执行中...',
-                'data': case_data_list
-            })
-        else:
-            return Response({
-                'code': 300,
-                'msg': f'执行失败，请确保{DRIVER}已连接服务器',
-                'data': case_data_list
-            })
+        case_json = self.run_data.case_run_batch(case_id, environment, request.user)
+        response = self.run_case_send(request, case_json)
+        return Response(response)
 
     @action(methods=['get'], detail=False)
     def ui_batch_run(self, request):
         """
-        多线程批量运行接口用例
+        批量执行多条用例
         @param request:
         @return:
         """
@@ -76,3 +53,57 @@ class RunUiCase(ViewSet):
             'msg': f'{DRIVER}已收到用例，正在执行中...',
             'data': data
         })
+
+    @action(methods=['get'], detail=False)
+    def ui_run_group(self, request):
+        """
+        执行单个用例组
+        @param request:
+        @return:
+        """
+        case_id = int(request.GET.get("group_id"))
+        case_json = self.run_data.group_batch(case_id, request.user)
+        response = self.run_case_send(request, case_json)
+        return Response(response)
+
+    @action(methods=['get'], detail=False)
+    def ui_run_group_batch(self, request):
+        """
+        批量执行多个用例组
+        @param request:
+        @return:
+        """
+        group_id_list = eval(request.GET.get("group_id"))
+        case_json = self.run_data.group_batch(group_id_list, request.user)
+        response = self.run_case_send(request, case_json)
+        return Response(response)
+
+    @classmethod
+    def run_case_send(cls, request, case_json) -> dict:
+        """
+        发送给第三方工具方法
+        @param request: 请求对象
+        @param case_json: 需要发送的json数据
+        @return:
+        """
+        server = ChatConsumer()
+        f = server.active_send(
+            code=200,
+            func=ServerEnumAPI.UI_CASE_RUN.value,
+            user=int(request.user.get('username')),
+            msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
+            data=case_json,
+            end='client_obj'
+        )
+        if f is True:
+            return {
+                'code': 200,
+                'msg': f'{DRIVER}已收到用例，正在执行中...',
+                'data': case_json
+            }
+        else:
+            return {
+                'code': 300,
+                'msg': f'执行失败，请确保{DRIVER}已连接服务器',
+                'data': case_json
+            }

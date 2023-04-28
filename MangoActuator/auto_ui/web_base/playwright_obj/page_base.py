@@ -12,6 +12,4 @@ from auto_ui.web_base.playwright_obj.element_operation import ElementOperation
 
 
 class WebDevice(PageOperation, Assertion, OperationBrowser, ElementOperation):
-
-    def __init__(self, web_obj: Page):
-        super().__init__(web_obj)
+    web: Page

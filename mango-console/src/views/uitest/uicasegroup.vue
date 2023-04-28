@@ -46,6 +46,9 @@
             <template #extra>
               <a-space>
                 <div>
+                  <a-button status="success" size="small" @click="onConcurrency('批量执行')">批量执行</a-button>
+                </div>
+                <div>
                   <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
                 </div>
               </a-space>
@@ -87,7 +90,7 @@
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
-                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
+                    <a-button type="text" size="mini" @click="onRunCaseGroup(record)">执行</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
@@ -132,7 +135,7 @@
 
 <script lang="ts">
 import { get, post, put, deleted } from '@/api/http'
-import { uiCaseGroup, UiRun } from '@/api/url'
+import { uiCaseGroup, uiCasePutType, uiRunCaseGroup, uiRunCaseGroupBatch } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
@@ -418,16 +421,13 @@ export default defineComponent({
       })
     }
 
-    function onRunCase(record: any) {
+    function onRunCaseGroup(record: any) {
       Message.info('测试用例正在执行，请稍后')
-      console.log(record)
       get({
-        url: UiRun,
+        url: uiRunCaseGroup,
         data: () => {
           return {
-            case_id: record.case_id,
-            team: record.team.name,
-            environment: record.test_obj.environment
+            group_id: record.id
           }
         }
       })
@@ -435,6 +435,35 @@ export default defineComponent({
           Notification.success(res.msg)
         })
         .catch(console.log)
+    }
+
+    function onConcurrency(name: string) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要' + name + '的用例数据')
+        return
+      }
+      Modal.confirm({
+        title: '提示',
+        content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
+        cancelText: '取消',
+        okText: '执行',
+        onOk: () => {
+          get({
+            url: uiRunCaseGroupBatch,
+            data: () => {
+              return {
+                group_id: JSON.stringify(selectedRowKeys.value)
+              }
+            }
+          })
+            .then((res) => {
+              Message.success(res.msg)
+              selectedRowKeys.value = []
+              doRefresh()
+            })
+            .catch(console.log)
+        }
+      })
     }
 
     function onDataForm() {
@@ -514,7 +543,8 @@ export default defineComponent({
       onAddPage,
       onUpdate,
       onDelete,
-      onRunCase
+      onRunCaseGroup,
+      onConcurrency
     }
   }
 })

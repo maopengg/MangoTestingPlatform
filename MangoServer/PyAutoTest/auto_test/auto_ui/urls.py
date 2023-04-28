@@ -48,5 +48,7 @@ urlpatterns = [
     #
     path("run", RunUiCase.as_view({'get': 'ui_run'})),
     path("batch/run", RunUiCase.as_view({'get': 'ui_batch_run'})),
+    path("run/group", RunUiCase.as_view({'get': 'ui_run_group'})),
+    path("run/group/batch", RunUiCase.as_view({'get': 'ui_run_group_batch'})),
 
 ]

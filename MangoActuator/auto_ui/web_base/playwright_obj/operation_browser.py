@@ -10,6 +10,4 @@ class OperationBrowser:
     """
     浏览器操作类
     """
-
-    def __init__(self, web_obj: Page):
-        self.web = web_obj
+    web: Page = None

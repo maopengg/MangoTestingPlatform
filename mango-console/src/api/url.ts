@@ -50,6 +50,8 @@ export const uiRunSort = '/ui/runsort'
 export const uiRunSortAss = '/ui/runsort/ass'
 export const uiRunSortOpe = '/ui/runsort/ope'
 export const UiRun = '/ui/run'
+export const uiRunCaseGroup = '/ui/run/group'
+export const uiRunCaseGroupBatch = '/ui/run/group/batch'
 
 // -
 export const getProjectConfig = '/system/project'

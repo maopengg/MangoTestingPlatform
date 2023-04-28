@@ -5,16 +5,17 @@
 # @Author : 毛鹏
 import time
 
-from auto_ui.web_base.drission_page_obj.page_base import ChromeBase
+# from auto_ui.web_base.drission_page_obj.page_base import WebDevice
+from auto_ui.web_base.playwright_obj.page_base import WebDevice
 from auto_ui.tools.data_cleaning import DataCleaning
 from auto_ui.tools.enum import OpeType, EleExp
 from utlis.logs.log_control import ERROR
 
 
-class WebRun(ChromeBase, DataCleaning):
+class WebRun(WebDevice, DataCleaning):
 
-    def __init__(self, local_port, browser_path):
-        super().__init__(local_port, browser_path)
+    def __init__(self):
+        super().__init__()
         self.case_name = ''
         self.ope_type = ''
         self.ass_type = ''
@@ -39,7 +40,7 @@ class WebRun(ChromeBase, DataCleaning):
 
     def open_url(self, url: str, case_name):
         self.case_name = case_name
-        self.get(url)
+        self.goto(url)
         self.ele_opt_res['test_obj_id'] = url
 
     def case_along(self, case_dict: dict) -> dict:

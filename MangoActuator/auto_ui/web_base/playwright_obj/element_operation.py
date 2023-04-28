@@ -10,10 +10,7 @@ class ElementOperation:
     """
     元素操作类
     """
-
-    def __init__(self, web_obj: Page):
-        self.web = web_obj
-
+    web: Page = None
 
     def click(self, locating: Locator):
         locating.click()

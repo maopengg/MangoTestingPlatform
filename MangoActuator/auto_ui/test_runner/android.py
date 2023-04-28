@@ -11,7 +11,8 @@ from utlis.logs.log_control import ERROR
 from utlis.nuw_logs import NewLog
 
 
-class AndroidRun(DriverMerge, DataCleaning):
+# DriverMerge
+class AndroidRun(DataCleaning):
 
     def __init__(self, equipment: str = '8796a033'):
         super().__init__(equipment)

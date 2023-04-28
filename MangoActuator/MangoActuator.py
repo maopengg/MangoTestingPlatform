@@ -28,7 +28,7 @@ if __name__ == '__main__':
     NewLog()
     # print(__file__)
     # print(os.path.dirname(sys.executable))
-    # with open('tests/test_cases.json', 'r') as f:
+    # with open('tests/debug_case.json', 'r') as f:
     #     test_cases_json = json.load(f)
     #     print(test_cases_json)
     import subprocess

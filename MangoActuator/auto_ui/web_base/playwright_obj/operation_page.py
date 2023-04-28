@@ -10,13 +10,16 @@ class PageOperation:
     """
     页面操作类
     """
+    web: Page = None
 
-    def __init__(self, web_obj: Page):
-        self.web = web_obj
-
-
-    def window_max(self):
-        self.web.goto('https://www.baidu.com')
+    @classmethod
+    def goto(cls, url: str):
+        """
+        打开url
+        @param url: 打开的指定url
+        @return:
+        """
+        cls.web.goto(url)
 
 
 if __name__ == '__main__':
@@ -24,5 +27,5 @@ if __name__ == '__main__':
 
     path = r'E:\Software\Chrome\Application\chrome.exe'
     r = NewChromium(path)
-    e = PageOperation(r.page)
-    e.window_max()
+    # e = PageOperation(r.page)
+    # e.window_max()
