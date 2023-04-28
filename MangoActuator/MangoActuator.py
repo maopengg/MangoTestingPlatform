@@ -22,12 +22,13 @@ def run():
 if __name__ == '__main__':
     # pyinstaller -F -c .\MangoActuator.py
     NewLog()
+    run()
     # print(__file__)
     # print(os.path.dirname(sys.executable))
     # with open('tests/debug_case.json', 'r') as f:
     #     test_cases_json = json.load(f)
     #     print(test_cases_json)
-    import subprocess
-
-    subprocess.run(["pytest", "tests/"])
-    time.sleep(5)
+    # import subprocess
+    #
+    # subprocess.run(["pytest", "tests/"])
+    # time.sleep(5)
