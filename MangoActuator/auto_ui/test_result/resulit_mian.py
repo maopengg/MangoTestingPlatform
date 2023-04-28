@@ -7,8 +7,8 @@ import asyncio
 
 from utlis.client import client_socket
 from utlis.client.server_enum_api import ServerEnumAPI
-from utlis.mysql.mysql_control import MysqlDB
 from utlis.logs.log_control import ERROR
+from utlis.mysql.mysql_control import MysqlDB
 
 
 class ResultMain:

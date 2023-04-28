@@ -53,6 +53,6 @@ class NewWebkit:
 
 
 if __name__ == '__main__':
-    path = r'E:\Software\Chrome\Application\chrome.exe'
+    path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
     r = NewChromium(path)
-    r.navigate('https://www.baidu.com')
+    r.page.goto('https://www.baidu.com/')

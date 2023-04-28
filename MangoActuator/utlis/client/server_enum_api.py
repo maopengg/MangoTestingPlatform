@@ -9,4 +9,3 @@ from enum import Enum
 class ServerEnumAPI(Enum):
     # 调用发送通知接口
     NOTICE_MAIN = 'notice_main_'
-

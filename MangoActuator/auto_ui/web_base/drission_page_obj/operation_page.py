@@ -17,6 +17,7 @@ class OperationPage:
 
 if __name__ == '__main__':
     from auto_ui.web_base.playwright_obj.new_obj import BasePage
+
     path = r'E:\Software\Chrome\Application\chrome.exe'
     r = BasePage(path)
     e = PageOpe(r.page)

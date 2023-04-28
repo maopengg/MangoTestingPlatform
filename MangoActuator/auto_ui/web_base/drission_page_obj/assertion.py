@@ -8,7 +8,6 @@
 from playwright.async_api import Page
 
 
-
 class Assertion:
 
     def __init__(self, web_obj: Page):

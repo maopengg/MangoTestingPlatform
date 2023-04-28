@@ -4,11 +4,13 @@
 # @Time   : 2023/3/23 11:28
 # @Author : 毛鹏
 import time
+
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
+
+from utlis.decorator.singleton import singleton
 from utlis.nuw_logs import NewLog
 from utlis.random_data import RandomData
-from utlis.decorator.singleton import singleton
 
 
 @singleton

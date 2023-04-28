@@ -3,29 +3,32 @@
 # @Description: 
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
-from playwright.sync_api import Page, Locator
+from playwright.sync_api import Page
 
 
 class PageOperation:
     """
     页面操作类
     """
-    web: Page = None
 
-    @classmethod
-    def goto(cls, url: str):
+    def __init__(self, web_obj: Page = None):
+        self.web = web_obj
+
+    def goto(self, url: str):
         """
         打开url
         @param url: 打开的指定url
         @return:
         """
-        cls.web.goto(url)
+        self.web.goto(url)
 
 
 if __name__ == '__main__':
     from auto_ui.web_base.playwright_obj.new_obj import NewChromium
 
-    path = r'E:\Software\Chrome\Application\chrome.exe'
+    path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
     r = NewChromium(path)
+    PageOperation.web = r.page
+    PageOperation.goto('https://www.baidu.com')
     # e = PageOperation(r.page)
     # e.window_max()

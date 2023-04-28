@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 import time
 
-# from auto_ui.web_base.drission_page_obj.page_base import WebDevice
-from auto_ui.web_base.playwright_obj.page_base import WebDevice
 from auto_ui.tools.data_cleaning import DataCleaning
 from auto_ui.tools.enum import OpeType, EleExp
+# from auto_ui.web_base.drission_page_obj.page_base import WebDevice
+from auto_ui.web_base.playwright_obj.page_base import WebDevice
 from utlis.logs.log_control import ERROR
 
 
