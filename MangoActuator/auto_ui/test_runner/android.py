@@ -4,8 +4,8 @@
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 
-from auto_ui.tools.data_cleaning import DataCleaning
-from auto_ui.tools.enum import EleExp, OpeType
+from utlis.cache.data_cleaning import DataCleaning
+from enum.api_enum import EleExp, OpeType
 from utlis.logs.log_control import ERROR
 from utlis.nuw_logs import NewLog
 

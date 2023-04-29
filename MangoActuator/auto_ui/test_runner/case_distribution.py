@@ -8,7 +8,7 @@ import json
 from typing import Optional
 
 from auto_ui.test_runner.web import WebRun
-from auto_ui.tools.enum import DevicePlatform, BrowserType
+from enum.api_enum import DevicePlatform, BrowserType
 from auto_ui.web_base.playwright_obj.new_obj import NewChromium, NewWebkit, NewFirefox
 from utlis.decorator.singleton import singleton
 from utlis.logs.log_control import ERROR

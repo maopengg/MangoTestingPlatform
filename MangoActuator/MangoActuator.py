@@ -5,9 +5,8 @@
 # @Author : 毛鹏
 import asyncio
 #
-import time
 
-from utlis.client.client_socket import ClientWebSocket
+from client.client_socket import ClientWebSocket
 from utlis.nuw_logs import NewLog
 
 

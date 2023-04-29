@@ -10,7 +10,7 @@ from DrissionPage.configs.chromium_options import ChromiumOptions
 
 from utlis.decorator.singleton import singleton
 from utlis.nuw_logs import NewLog
-from utlis.random_data import RandomData
+from utlis.cache.random_data import RandomData
 
 
 @singleton
