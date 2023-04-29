@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-04-09 11:49
 # @Author : 毛鹏
-from enum import Enum
+from enum_class import Enum
 
 
 class ServerEnumAPI(Enum):

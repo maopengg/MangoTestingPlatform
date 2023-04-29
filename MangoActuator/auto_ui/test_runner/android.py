@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from utlis.cache.data_cleaning import DataCleaning
-from enum.api_enum import EleExp, OpeType
+from enum_class.ui_enum import EleExp, OpeType
 from utlis.logs.log_control import ERROR
 from utlis.nuw_logs import NewLog
 

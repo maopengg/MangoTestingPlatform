@@ -6,7 +6,7 @@
 
 from uiautomator2 import Device
 
-from enum.api_enum import EleExp
+from enum_class.ui_enum import EleExp
 from utlis.logs.log_control import ERROR, INFO
 
 """

@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from auto_ui.test_runner.case_distribution import CaseDistribution
-from enum.api_enum import DevicePlatform
+from enum_class.ui_enum import DevicePlatform
 from utlis.ope_win.cmd import cmd
 
 

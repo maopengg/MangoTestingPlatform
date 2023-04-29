@@ -4,7 +4,7 @@
 # @Time   : 2022-12-06 21:05
 # @Author : 毛鹏
 import types
-from enum import Enum, unique
+from enum_class import Enum, unique
 from typing import Dict, Text, Callable
 
 

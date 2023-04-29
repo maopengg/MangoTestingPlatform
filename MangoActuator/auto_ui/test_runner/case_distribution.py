@@ -3,12 +3,11 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-# from ..test_result.resulit_mian import ResultMain
 import json
 from typing import Optional
 
 from auto_ui.test_runner.web import WebRun
-from enum.api_enum import DevicePlatform, BrowserType
+from enum_class.ui_enum import DevicePlatform, BrowserType
 from auto_ui.web_base.playwright_obj.new_obj import NewChromium, NewWebkit, NewFirefox
 from utlis.decorator.singleton import singleton
 from utlis.logs.log_control import ERROR
@@ -145,7 +144,7 @@ if __name__ == '__main__':
     # equipment1 = '7de23fdd'
     # package1 = 'com.tencent.mm'
     r = CaseDistribution()
-    with open(r'D:\GitCodeScript\MangoTestingPlatform\MangoActuator\tests\group_case.json', encoding='utf-8') as f:
+    with open(r'../../tests/group_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
 
         r.case_distribution(case_json.get('data'))
