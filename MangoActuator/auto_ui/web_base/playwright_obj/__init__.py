@@ -3,4 +3,17 @@
 # @Description: 
 # @Time   : 2023-04-26 22:16
 # @Author : 毛鹏
-__all__ = ['new_obj', 'page_base']
+from auto_ui.web_base.playwright_obj.assertion import PlaywrightAssertion
+from auto_ui.web_base.playwright_obj.element_operation import PlaywrightElementOperation
+from auto_ui.web_base.playwright_obj.input_device import PlaywrightInputDevice
+from auto_ui.web_base.playwright_obj.operation_browser import PlaywrightOperationBrowser
+from auto_ui.web_base.playwright_obj.operation_page import PlaywrightPageOperation
+
+
+class WebDevice(PlaywrightPageOperation,
+                PlaywrightAssertion,
+                PlaywrightOperationBrowser,
+                PlaywrightElementOperation,
+                PlaywrightInputDevice):
+    pass
+

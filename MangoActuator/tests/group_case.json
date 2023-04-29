@@ -33,8 +33,8 @@
               "ass_value": null,
               "ele_name": "账号",
               "ele_page_name": "登录",
-              "ele_exp": 0,
-              "ele_loc": ".el-input__inner",
+              "ele_exp": 4,
+              "ele_loc": "请输入账号",
               "ele_sleep": null,
               "ele_sub": null,
               "ope_value_key": null
@@ -46,10 +46,10 @@
               "ass_value": null,
               "ele_name": "密码",
               "ele_page_name": "登录",
-              "ele_exp": 0,
-              "ele_loc": ".el-input__inner",
+              "ele_exp": 4,
+              "ele_loc": "请输入密码",
               "ele_sleep": null,
-              "ele_sub": 1,
+              "ele_sub": null,
               "ope_value_key": null
             },
             {
@@ -318,9 +318,9 @@
               "ele_name": "确认选择的图片",
               "ele_page_name": "全部商品",
               "ele_exp": 0,
-              "ele_loc": "/html[@class=' ']/body[@class='el-popup-parent--hidden']/div[@class='el-dialog__wrapper']/div[@class='el-dialog']/div[@class='el-dialog__footer']/span[@class='dialog-footer']/button[@class='el-button el-button--primary el-button--small']/span",
+              "ele_loc": "//div[@class=\"el-dialog__footer\"]/span/button/span[text()=\"确 定\"]",
               "ele_sleep": null,
-              "ele_sub": 4,
+              "ele_sub": 5,
               "ope_value_key": null
             },
             {
@@ -834,9 +834,9 @@
               "ele_name": "确认选择的图片",
               "ele_page_name": "全部商品",
               "ele_exp": 0,
-              "ele_loc": "/html[@class=' ']/body[@class='el-popup-parent--hidden']/div[@class='el-dialog__wrapper']/div[@class='el-dialog']/div[@class='el-dialog__footer']/span[@class='dialog-footer']/button[@class='el-button el-button--primary el-button--small']/span",
+              "ele_loc": "//div[@class=\"el-dialog__footer\"]/span/button/span[text()=\"确 定\"]",
               "ele_sleep": null,
-              "ele_sub": 4,
+              "ele_sub": 5,
               "ope_value_key": null
             },
             {

@@ -11,7 +11,7 @@ from enum_class.ui_enum import DevicePlatform, BrowserType
 from auto_ui.web_base.playwright_obj.new_obj import NewChromium, NewWebkit, NewFirefox
 from utlis.decorator.singleton import singleton
 from utlis.logs.log_control import ERROR
-
+from playwright.sync_api import Error
 
 @singleton
 class CaseDistribution(WebRun):
@@ -53,13 +53,17 @@ class CaseDistribution(WebRun):
                             #     只有用例组不为空的时候，才发送邮件，其他调式不发送通知！逻辑还没写
 
     def web_test(self, case_obj: dict):
-        if not self.web_object:
-            self.web = self.__new_web_obj(case_obj['browser_type'], case_obj['browser_path']).page
-        self.open_url(case_obj['case_url'], case_obj['case_name'])
-        for case_ele in case_obj['case_data']:
-            self.case_along(case_ele)
-
-        return False
+        try:
+            if not self.web_object:
+                self.page = self.__new_web_obj(case_obj['browser_type'], case_obj['browser_path']).page
+                self.web_object = self.page
+            self.open_url(case_obj['case_url'], case_obj['case_name'])
+            for case_ele in case_obj['case_data']:
+                self.ele_along(case_ele)
+            return True
+        except Error as e:
+            ERROR.logger.error(e)
+            return False
 
     @classmethod
     def android_test(cls, case_obj):
@@ -86,29 +90,29 @@ class CaseDistribution(WebRun):
     #     """
     #     asyncio.create_task(ResultMain.ele_res_insert(ele_res))
 
-    @classmethod
-    def new_case_obj(cls, _type: int,
-                     browser_path: str
-                     ) -> bool:
-        """
-        实例化UI测试对象
-        @param _type: 需要实例的类型
-        @param local_port: 浏览器端口号
-        @param browser_path: 浏览器路径
-        @param equipment: 安卓设备号
-        @return:
-        """
-        match _type:
-            case DevicePlatform.WEB.value:
-                cls.__new_web_obj(browser_path)
-            case DevicePlatform.ANDROID.value:
-                cls.__new_android_obj()
-            case DevicePlatform.IOS.value:
-                cls.__new_ios_obj()
-            case DevicePlatform.DESKTOP.value:
-                cls.__new_desktop_obj()
-            case _:
-                ERROR.logger.error(f'没有对应的测试设备类型！，经检查{_type}')
+    # @classmethod
+    # def new_case_obj(cls, _type: int,
+    #                  browser_path: str
+    #                  ) -> bool:
+    #     """
+    #     实例化UI测试对象
+    #     @param _type: 需要实例的类型
+    #     @param local_port: 浏览器端口号
+    #     @param browser_path: 浏览器路径
+    #     @param equipment: 安卓设备号
+    #     @return:
+    #     """
+    #     match _type:
+    #         case DevicePlatform.WEB.value:
+    #             cls.__new_web_obj(browser_path)
+    #         case DevicePlatform.ANDROID.value:
+    #             cls.__new_android_obj()
+    #         case DevicePlatform.IOS.value:
+    #             cls.__new_ios_obj()
+    #         case DevicePlatform.DESKTOP.value:
+    #             cls.__new_desktop_obj()
+    #         case _:
+    #             ERROR.logger.error(f'没有对应的测试设备类型！，经检查{_type}')
 
     @classmethod
     def __new_web_obj(cls, browser_type: int, web_path: str) -> NewChromium or NewWebkit or NewFirefox:
@@ -146,5 +150,4 @@ if __name__ == '__main__':
     r = CaseDistribution()
     with open(r'../../tests/group_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
-
         r.case_distribution(case_json.get('data'))

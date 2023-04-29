@@ -6,13 +6,11 @@
 from playwright.sync_api import Page
 
 
-class PageOperation:
-    """
-    页面操作类
-    """
+class PlaywrightPageOperation:
+    """页面操作类"""
 
-    def __init__(self, web_obj: Page = None):
-        self.web = web_obj
+    def __init__(self, page: Page = None):
+        self.page = page
 
     def goto(self, url: str):
         """
@@ -20,15 +18,23 @@ class PageOperation:
         @param url: 打开的指定url
         @return:
         """
-        self.web.goto(url)
+        self.page.goto(url, timeout=50000)
+
+    def screenshot(self, path: str, full_page=True):
+        """整个页面截图"""
+        self.page.screenshot(path=path, full_page=full_page)
+
+    def ele_screenshot(self, selector: str, path: str):
+        """元素截图"""
+        self.page.locator(selector).screenshot(path=path)
 
 
 if __name__ == '__main__':
     from auto_ui.web_base.playwright_obj.new_obj import NewChromium
 
-    path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
-    r = NewChromium(path)
-    PageOperation.web = r.page
-    PageOperation.goto('https://www.baidu.com')
+    path1 = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
+    r = NewChromium(path1)
+    # PageOperation.web = r.page
+    # PageOperation.goto('https://www.baidu.com')
     # e = PageOperation(r.page)
     # e.window_max()

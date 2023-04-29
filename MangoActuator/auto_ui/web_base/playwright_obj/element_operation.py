@@ -6,14 +6,25 @@
 from playwright.async_api import Page, Locator
 
 
-class ElementOperation:
-    """
-    元素操作类
-    """
-    web: Page = None
+class PlaywrightElementOperation:
+    """元素操作类"""
 
-    def click(self, locating: Locator):
+    def __init__(self, page: Page = None):
+        self.page = page
+
+    @classmethod
+    def click(cls, locating: Locator):
+        """元素点击"""
         locating.click()
 
-    def input(self, locating: Locator, value: str):
+    @classmethod
+    def input(cls, locating: Locator, value: str):
+        """元素输入"""
         locating.fill(value)
+
+    def upload_files(self, locating: Locator, file_path: str):
+        """点击元素上传文件"""
+        with self.page.expect_file_chooser() as fc_info:
+            locating.click()
+        file_chooser = fc_info.value
+        file_chooser.set_files(file_path)

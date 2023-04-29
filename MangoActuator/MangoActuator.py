@@ -11,7 +11,7 @@ from utlis.nuw_logs import NewLog
 
 
 def run():
-    print(f"================{config.DRIVER}正在启动================")
+    print(f"========================={config.DRIVER}正在启动=========================")
     client = ClientWebSocket()
     loop = asyncio.new_event_loop()  # 创建新的事件循环
     asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环

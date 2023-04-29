@@ -6,10 +6,11 @@
 from playwright.async_api import Page
 
 
-class OperationBrowser:
-    """
-    浏览器操作类
-    """
+class PlaywrightOperationBrowser:
+    """浏览器操作类"""
 
-    def __init__(self, web_obj: Page = None):
-        self.web = web_obj
+    def __init__(self, page: Page = None):
+        self.page = page
+
+    def wait_for_timeout(self, sleep: int):
+        self.page.wait_for_timeout(sleep)

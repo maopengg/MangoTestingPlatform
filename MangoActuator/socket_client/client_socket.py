@@ -4,7 +4,7 @@ import time
 import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
-from client.api_collection.command_api import ExternalAPI
+from socket_client.api_collection.command_api import ExternalAPI
 from utlis.logs.log_control import DEBUG
 
 
