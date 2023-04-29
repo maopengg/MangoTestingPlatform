@@ -4,7 +4,7 @@
 # @Time   : 2023/3/23 11:29
 # @Author : 毛鹏
 from utlis.cache.data_cleaning import DataCleaning
-from enum_class.ui_enum import OpeType, WebEleExp
+from enum_class.ui_enum import OpeType, ElementExp
 from auto_ui.web_base.playwright_obj import WebDevice
 from utlis.logs.log_control import ERROR
 from playwright.sync_api import Locator
@@ -29,7 +29,7 @@ class WebRun(WebDevice, DataCleaning):
         self.ele_sub = 0
         self.ope_value_key = None
         self.ele_opt_res = {'ele_name': self.ele_name,  #
-                            'existence': str or bool,  #
+                            'existence': 0,  #
                             'state': 0,  #
                             'case_id': self.case_name,  #
                             'case_group_id': '',
@@ -100,15 +100,15 @@ class WebRun(WebDevice, DataCleaning):
         if self.ele_loc:
             # 处理元素并查找
             match self.ele_exp:
-                case WebEleExp.XPATH.value:
+                case ElementExp.XPATH.value:
                     ele = self.page.locator(f'xpath={self.ele_loc}')
-                case WebEleExp.PLACEHOLDER.value:
+                case ElementExp.PLACEHOLDER.value:
                     ele = self.page.get_by_placeholder(self.ele_loc)
-                case WebEleExp.TEXT.value:
+                case ElementExp.TEXT.value:
                     ele = self.page.get_by_text(self.ele_loc, exact=True)
-                case WebEleExp.CSS.value:
+                case ElementExp.CSS.value:
                     ele = self.page.locator(f'css={self.ele_loc}')
-                case WebEleExp.ID.value:
+                case ElementExp.ID.value:
                     ele = self.page.locator(f'id={self.ele_loc}')
                 case _:
                     ERROR.logger.error(f'没有更多元素，请先联系管理员增加元素定位方式！{self.ele_loc}')
@@ -118,13 +118,12 @@ class WebRun(WebDevice, DataCleaning):
                 ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                    f'元素对象：{case_dict}\n')
                 self.screenshot(self.ele_name)
-                self.ele_opt_res['existence'] = '不存在'
+                self.ele_opt_res['existence'] = ele.count()
                 return False
-            self.ele_opt_res['existence'] = True
-            print(ele.count(), self.ele_name)
+            self.ele_opt_res['existence'] = ele.count()
             return ele.nth(0 if self.ele_sub is None else self.ele_sub)
         else:
-            self.ele_opt_res['existence'] = '不存在'
+            self.ele_opt_res['existence'] = 0
             ERROR.logger.error(f'元素为空，无法定位，请检查元素表达式是否为空！元素对象：{case_dict}')
             return False
 
@@ -141,13 +140,13 @@ class WebRun(WebDevice, DataCleaning):
                 ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                    f'元素对象：{case_dict}\n')
                 self.screenshot(self.ele_name)
-                self.ele_opt_res['existence'] = '不存在'
+                self.ele_opt_res['existence'] = len(ele)
                 return False
-            self.ele_opt_res['existence'] = str(len(ele))
+            self.ele_opt_res['existence'] = len(ele)
             el = ele[0 if self.ele_sub is None else self.ele_sub]
             return el
         else:
-            self.ele_opt_res['existence'] = '不存在'
+            self.ele_opt_res['existence'] = 0
             ERROR.logger.error('元素为空，无法定位，请检查元素表达式是否为空！')
             return False
 
@@ -157,7 +156,7 @@ class WebRun(WebDevice, DataCleaning):
         :return:
         """
         # exp_type = [{0: "xpath:"}, {1: "#"}, {2: "@name"}, {3: "text="}]
-        for i in WebEleExp.__doc__.split('，'):
+        for i in ElementExp.__doc__.split('，'):
             for key, value in eval(i).items():
                 if key == self.ele_exp:
                     return value + self.ele_loc

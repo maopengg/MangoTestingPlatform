@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from utlis.cache.data_cleaning import DataCleaning
-from enum_class.ui_enum import EleExp, OpeType
+from enum_class.ui_enum import ElementExp, OpeType
 from utlis.logs.log_control import ERROR
 from utlis.nuw_logs import NewLog
 
@@ -71,7 +71,7 @@ class AndroidRun(DataCleaning):
         操作具体的元素对象
         @return:
         """
-        if self.ele_exp == EleExp.CONSTANT_NAME.value:
+        if self.ele_exp == ElementExp.CONSTANT_NAME.value:
             x, y = self.ele_loc.split(',')
             self.click_coord(float(x), float(y))
         elif self.ele_loc is None:
@@ -85,13 +85,13 @@ class AndroidRun(DataCleaning):
 
     def find_ele(self):
         match self.ope_type:
-            case EleExp.XPATH.value:
+            case ElementExp.XPATH.value:
                 return self.app.xpath(self.ele_loc)
-            case EleExp.ID.value:
+            case ElementExp.ID.value:
                 return self.app(resourceId=self.ele_loc)
-            case EleExp.BOUNDS.value:
+            case ElementExp.BOUNDS.value:
                 return self.app(text=self.ele_loc)
-            case EleExp.DESCRIPTION.value:
+            case ElementExp.DESCRIPTION.value:
                 return self.app(description=self.ele_loc)
             case _:
                 ERROR.logger.error(f'元素定位方式不存在，请检查元素定位方式。元素type：{self.ope_type}')

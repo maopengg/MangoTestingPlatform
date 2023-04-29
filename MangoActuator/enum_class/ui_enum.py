@@ -36,7 +36,7 @@ class Assertions(Enum):
     SMALL = 3
 
 
-class WebEleExp(Enum):
+class ElementExp(Enum):
     """ {0: "xpath:"}，{1: "#"}，{2: "@name"}，{3: "text="} """
     XPATH = 0
     ID = 1
@@ -44,16 +44,9 @@ class WebEleExp(Enum):
     TEXT = 3
     PLACEHOLDER = 4
     CSS = 5
-
-
-
-class AppExp(Enum):
-    """ {0: "xpath:"}，{1: "#"}，{2: "BOUNDS"}，{3: "text="} """
-    XPATH = 0
-    ID = 1
-    BOUNDS = 2
-    TEXT = 3
-    DESCRIPTION = 4
+    # APP专属
+    DESCRIPTION = 11
+    BOUNDS = 12
 
 
 class State(Enum):
