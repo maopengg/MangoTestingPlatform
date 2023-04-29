@@ -31,8 +31,8 @@
 #                 environment: Optional[dict] = None,
 #                 alert_action: Optional[AlertAction] = None):
 #         setattr(Client, 'find_element', AppleDevice.find_element)
-#         client = BaseClient.session(self, bundle_id, arguments, environment, alert_action)
-#         return client
+#         socket_client = BaseClient.session(self, bundle_id, arguments, environment, alert_action)
+#         return socket_client
 #
 #     def find_element(self, **kwargs):
 #         return BaseClient.__call__(self, **kwargs)
