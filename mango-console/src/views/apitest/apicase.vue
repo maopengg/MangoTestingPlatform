@@ -45,7 +45,7 @@
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="1">
             <template #extra>
               <a-space v-if="caseType === '0'">
-                <a-button type="primary" size="small" @click="onAddPage">批量上传</a-button>
+                <a-button type="primary" size="small" @click="onBatchUpload">批量上传</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('测试用例')">设为调试</a-button>
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
@@ -174,10 +174,10 @@
 <script lang="ts">
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { ApiCase, getAllItems } from '@/api/url'
+import { ApiCase, getAllItems, ApiCaseSynchronous } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
+import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -411,7 +411,7 @@ export default defineComponent({
     const updateId: any = ref('')
 
     function onAddPage() {
-      actionTitle.value = '添加页面'
+      actionTitle.value = '新建接口'
       modalDialogRef.value?.toggle()
       addUpdate.value = 1
       formItems.forEach((it) => {
@@ -421,6 +421,23 @@ export default defineComponent({
           it.value.value = ''
         }
       })
+    }
+
+    function onBatchUpload() {
+      get({
+        url: ApiCaseSynchronous,
+        data: () => {
+          return {
+            team_id: '应用组',
+            host: 'http://172.16.90.93:9999'
+          }
+        }
+      })
+        .then((res) => {
+          doRefresh()
+          Message.success(res.msg)
+        })
+        .catch(console.log)
     }
 
     function onDelete(data: any) {
@@ -670,7 +687,8 @@ export default defineComponent({
       onRunCase,
       onConcurrency,
       setCaseGroup,
-      onAssertion
+      onAssertion,
+      onBatchUpload
     }
   }
 })

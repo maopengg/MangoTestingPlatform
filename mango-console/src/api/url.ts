@@ -35,6 +35,7 @@ export const ApiRelyOn = '/api/relyon'
 export const ApiPublicEnd = '/api/public/end'
 export const ApiPublicPublic = '/api/public/public'
 export const ApiRun = '/api/run'
+export const ApiCaseSynchronous = '/api/case/synchronous'
 
 // -
 export const uiPage = '/ui/page'

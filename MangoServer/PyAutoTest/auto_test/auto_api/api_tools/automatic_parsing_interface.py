@@ -7,16 +7,17 @@
 import jsonpath
 import requests
 
-from enum_class.api_socket_api import ApiType, End, Method
-from utlis.mysql.mysql_control import MysqlDB
+from PyAutoTest.enum_class.api_socket_api import ApiType, End, Method, BodyType, State
+from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class ApiParameter:
 
-    def __init__(self, team_id: str = '应用组'):
+    def __init__(self, host: str, team_id: str):
         self.team_id = team_id
-        self.my = MysqlDB()
-        self.host = "http://172.16.90.93:9999"
+        self.my = ModelCRUD()
+        self.host = host
+        # self.host = "http://172.16.90.93:9999"
         self.route = ["/contentcenter/v2/api-docs",
                       "/goods/v2/api-docs",
                       "/market/v2/api-docs",
@@ -30,6 +31,7 @@ class ApiParameter:
             "Cookie": "Hm_lvt_7174bade1219f9cc272e7978f9523fc8 = 1670206668, 1670291142, 1670377239, 1670493630"
         }
         self.sum = 0
+        self.case_data = []
 
     def get_stage_api(self):
         for i in self.route:
@@ -58,15 +60,29 @@ class ApiParameter:
                                            url=url1, body=body1)
                         self.sum += 1
                         dic.clear()
+        return self.case_data
 
     def save_api_case(self, team_id: str, name: str, client: int, method: int, url: str,
-                      body: dict = 'NULL'):
-        sql = f"""insert into api_case
-        (`name`, `client`, `method`, `url`, `header`, `body`, `body_type`, `rely`, `ass`, `state`, `type`, `team_id`)
-        values ( '{name}', {client}, {method}, '{url}', NULL, "{body}"
-               , 0, NULL, NULL, 0, 0, '{team_id}');"""
-        res = self.my.execute(sql)
-        print(res)
+                      body: dict or None):
+        # sql = f"""insert into api_case
+        # (`name`, `client`, `method`, `url`, `header`, `body`, `body_type`, `rely`, `ass`, `state`, `type`, `team_id`)
+        # values ( '{name}', {client}, {method}, '{url}', NULL, "{body}"
+        #        , 0, NULL, NULL, {ApiType.stage.value}, 0, '{team_id}');"""
+        # res = self.my.execute(sql)
+        self.case_data.append({
+            'name': name,
+            'client': client,
+            'method': method,
+            'url': url,
+            'header': None,
+            'body': str(body),
+            'body_type': BodyType.JSON.value,
+            'rely': None,
+            'ass': None,
+            'state': State.NOTTEST.value,
+            'type': ApiType.stage.value,
+            'team': team_id
+        })
 
 
 if __name__ == '__main__':

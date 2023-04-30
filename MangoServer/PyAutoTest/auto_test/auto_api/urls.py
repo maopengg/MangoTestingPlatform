@@ -16,7 +16,7 @@ from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 urlpatterns = [
     #
     path("case", ApiCaseCRUD.as_view()),
-    path("case/test", ApiCaseViews.test),
+    path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),
     #
     path("public", ApiPublicCRUD.as_view()),
     # path("public/header", ApiPublicViews.get_header),
@@ -37,5 +37,7 @@ urlpatterns = [
     path("ass/test", ApiAssertionsViews.test),
 
     path("run", RunApiCase.api_run),
+    #
+    # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
 
 ]

@@ -3,7 +3,7 @@
 # from uiautomator2 import Device
 # from wda import Client, AlertAction, BaseClient
 #
-# from utlis.logs.log_control import ERROR
+# from utils.logs.log_control import ERROR
 #
 #
 # class AndroidDriver(Device):
