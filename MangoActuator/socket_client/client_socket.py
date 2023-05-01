@@ -4,7 +4,7 @@ import time
 import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
-from socket_client.api_collection.command_api import ExternalAPI
+from socket_client.api_collection import collection
 from utils.logs.log_control import DEBUG
 
 
@@ -65,7 +65,7 @@ class ClientWebSocket(object):
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
             if data['func']:
-                ExternalAPI().start_up(data['func'], data['data'])
+                collection.start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await ClientWebSocket.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
@@ -103,7 +103,7 @@ class ClientWebSocket(object):
         out = json.loads(msg)
         DEBUG.logger.debug(f'接收的消息提示:{out["msg"]}\n'
                            f'接收的执行函数：{out["func"]}\n'
-                           f'接收的数据：{out["data"]}')
+                           f'接收的数据：{None}')
         return out
 
     @classmethod

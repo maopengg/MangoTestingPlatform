@@ -265,6 +265,7 @@ function onDataForm() {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
     let opeValue = getExpValue(value.ope_type, uiRunSortData.ope)
+    console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
@@ -276,8 +277,8 @@ function onDataForm() {
             team: route.query.team,
             el_name: value.el_name,
             el_page: value.el_page,
-            ope_type: value.ope_type.value,
-            ass_type: value.ass_type.value,
+            ope_type: value.value,
+            ass_type: value.value,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }
@@ -388,7 +389,6 @@ function getPageName() {
 }
 
 function getEleName() {
-  console.log(formItems[0].value.value)
   get({
     url: uiUiElementName,
     data: () => {

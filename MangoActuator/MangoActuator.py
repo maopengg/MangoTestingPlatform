@@ -4,6 +4,7 @@
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
 import asyncio
+import time
 
 from config import config
 from socket_client.client_socket import ClientWebSocket
@@ -21,4 +22,8 @@ def run():
 if __name__ == '__main__':
     # pyinstaller -F -c .\MangoActuator.py
     NewLog()
-    run()
+    try:
+        run()
+    except KeyboardInterrupt as e:
+        print('=========================关闭成功=========================')
+        time.sleep(2)

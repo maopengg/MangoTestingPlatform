@@ -3,46 +3,52 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
+from auto_ui.test_runner.case_distribution import CaseDistribution
+
+
 class UiAutoApi:
 
-    def run_debug_case(self):
+    def run_debug_case(self, case_data: list[dict]):
         """
         执行调试用例对象浏览器对象
         @return:
         """
-        pass
+        CaseDistribution().case_distribution(case_data)
 
-    def run_debug_batch_case(self):
+
+    def run_debug_batch_case(self, case_data: dict):
         """
         执行调试用例对象浏览器对象
         @return:
         """
-        pass
+        print('执行调试用例对象浏览器对象')
+        print(case_data)
 
-    def run_group_case(self):
+    def run_group_case(self, case_data: dict):
         """
         执行并发对象浏览器对象
         @return:
         """
-        pass
+        print(case_data)
 
-    def run_group_batch_case(self):
+    def run_group_batch_case(self, case_data: dict):
         """
         执行并发对象浏览器对象
         @return:
         """
-        pass
+        print(case_data)
 
-    def new_chrome_browser_obj(self):
+    def new_chrome_browser_obj(self, case_data: dict):
         """
         实例化chrome浏览器对象
         @return:
         """
-        pass
+        print(case_data)
 
-    def new_firefox_browser_obj(self):
+    def new_firefox_browser_obj(self, case_data: dict):
         """
         实例化firefox浏览器对象
         @return:
         """
-        pass
+        print(case_data)
+

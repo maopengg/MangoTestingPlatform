@@ -9,8 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.case_run.run_api import RunApi
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.auto_test.auto_system.websocket_api.server_enum_api import ServerEnumAPI
-from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
+from PyAutoTest.socket_class.actuator_enum.ui_enum import UiEnum
 from PyAutoTest.settings import DRIVER
 
 
@@ -30,7 +29,7 @@ class RunUiCase(ViewSet):
         except ValueError:
             case_id = eval(request.GET.get("case_id"))
         case_json = self.run_data.case_run_batch(case_id, environment, request.user)
-        response = self.run_case_send(request, case_json)
+        response = self.run_case_send(request, case_json, UiEnum.run_debug_case.value)
         return Response(response)
 
     @action(methods=['get'], detail=False)
@@ -47,12 +46,9 @@ class RunUiCase(ViewSet):
         # r = UiCaseRun()
         # # try:
         # r.main(team, environment, case_id)
-        data = CaseData(case_id).data_ui_case(environment)
-        return Response({
-            'code': 200,
-            'msg': f'{DRIVER}已收到用例，正在执行中...',
-            'data': data
-        })
+        case_json = self.run_data.case_run_batch(case_id, environment, request.user)
+        response = self.run_case_send(request, case_json, UiEnum.run_debug_batch_case.value)
+        return Response(response)
 
     @action(methods=['get'], detail=False)
     def ui_run_group(self, request):
@@ -63,7 +59,7 @@ class RunUiCase(ViewSet):
         """
         case_id = int(request.GET.get("group_id"))
         case_json = self.run_data.group_batch(case_id, request.user)
-        response = self.run_case_send(request, case_json)
+        response = self.run_case_send(request, case_json, UiEnum.run_group_case.value)
         return Response(response)
 
     @action(methods=['get'], detail=False)
@@ -75,21 +71,22 @@ class RunUiCase(ViewSet):
         """
         group_id_list = eval(request.GET.get("group_id"))
         case_json = self.run_data.group_batch(group_id_list, request.user)
-        response = self.run_case_send(request, case_json)
+        response = self.run_case_send(request, case_json, UiEnum.run_group_batch_case.value)
         return Response(response)
 
     @classmethod
-    def run_case_send(cls, request, case_json) -> dict:
+    def run_case_send(cls, request, case_json, func_name: str) -> dict:
         """
         发送给第三方工具方法
         @param request: 请求对象
         @param case_json: 需要发送的json数据
+        @param func_name: 需要执行的函数
         @return:
         """
         server = ChatConsumer()
         f = server.active_send(
             code=200,
-            func=ServerEnumAPI.UI_CASE_RUN.value,
+            func=func_name,
             user=int(request.user.get('username')),
             msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
             data=case_json,

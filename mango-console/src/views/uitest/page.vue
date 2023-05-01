@@ -240,7 +240,7 @@ export default defineComponent({
         title: '项目名称',
         key: 'team',
         dataIndex: 'team',
-        width: 100
+        width: 150
       },
       {
         title: '页面名称',

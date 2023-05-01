@@ -13,6 +13,7 @@ from utils.decorator.singleton import singleton
 from utils.logs.log_control import ERROR
 from playwright.sync_api import Error
 
+
 @singleton
 class CaseDistribution(WebRun):
     """
@@ -33,6 +34,7 @@ class CaseDistribution(WebRun):
         # 遍历list中的用例得到每个用例
         for i in data:
             for group_name, group_value in i.items():
+                print(group_name, group_value)
                 for case_strip in group_value:
                     match case_strip['type']:
                         case DevicePlatform.WEB.value:

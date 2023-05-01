@@ -65,18 +65,20 @@ import { uiUiElement, getUiElementExp } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
-import { getExpValue, transformData } from '@/utils/datacleaning'
+import { transformData } from '@/utils/datacleaning'
 
 const route = useRoute()
 
 const columns = reactive([
   {
     title: '元素名称',
-    dataIndex: 'name'
+    dataIndex: 'name',
+    width: 150
   },
   {
     title: '表达式类型',
-    dataIndex: 'exp'
+    dataIndex: 'exp',
+    width: 150
   },
   {
     title: '元素表达式',
@@ -259,6 +261,7 @@ const uiElementData: any = reactive({
   team_name: route.query.team,
   eleExp: []
 })
+
 function getUiElement() {
   get({
     url: uiUiElement,
