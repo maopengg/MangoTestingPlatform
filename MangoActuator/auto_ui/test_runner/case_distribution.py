@@ -9,8 +9,8 @@ from typing import Optional
 from auto_ui.test_runner.web import WebRun
 from enum_class.ui_enum import DevicePlatform, BrowserType
 from auto_ui.web_base.playwright_obj.new_obj import NewChromium, NewWebkit, NewFirefox
-from utlis.decorator.singleton import singleton
-from utlis.logs.log_control import ERROR
+from utils.decorator.singleton import singleton
+from utils.logs.log_control import ERROR
 from playwright.sync_api import Error
 
 @singleton

@@ -9,7 +9,7 @@ from logging import handlers
 
 import colorlog
 
-from utlis.nuw_logs import NewLog
+from utils.nuw_logs import NewLog
 
 
 class LogHandler:

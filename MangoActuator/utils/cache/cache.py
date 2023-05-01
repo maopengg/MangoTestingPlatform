@@ -2,7 +2,7 @@
 
 from diskcache import Cache
 
-from utlis.nuw_logs import NewLog
+from utils.nuw_logs import NewLog
 
 
 class CacheDB:

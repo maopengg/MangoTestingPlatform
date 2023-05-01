@@ -119,15 +119,29 @@ def ad_routes():
                     "menuName": "测试报告",
                 },
             ],
-        }, {
+        },
+        {
+            "menuUrl": "/equipment",
+            "menuName": "设备中心",
+            "icon": "IconMobile",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/equipment",
+                    "menuUrl": "/equipment/actuator",
+                    "menuName": "执行器",
+                }
+            ],
+        },
+        {
             "menuUrl": "/testconfig",
             "menuName": "测试配置",
-            "icon": "icon-settings",
+            "icon": "IconCommand",
             "parentPath": "",
             "children": [
                 {
                     "parentPath": "/testconfig",
-                    "menuUrl": "/testconfig/environment",
+                    "menuUrl": "/testconfig/test_obj",
                     "menuName": "测试对象",
                 },
                 {
@@ -142,6 +156,7 @@ def ad_routes():
                 }
             ],
         },
+
         {
             "menuUrl": "/timing",
             "menuName": "定时任务",
@@ -160,36 +175,36 @@ def ad_routes():
             ],
         },
         {
-            "menuUrl": "/spm",
+            "menuUrl": "/system",
             "menuName": "系统管理",
-            "icon": "IconAlignLeft",
+            "icon": "IconSettings",
             "parentPath": "",
             "routeName": "system",
             "children": [
                 {
-                    "parentPath": "/spm",
-                    "menuUrl": "/spm/department",
+                    "parentPath": "/system",
+                    "menuUrl": "/system/department",
                     "menuName": "项目管理",
                     "badge": "new",
                     "routeName": "department",
-                    "localFilePath": "/spm/local-path/department",
+                    "localFilePath": "/system/local-path/department",
                 },
                 {
-                    "parentPath": "/spm",
-                    "menuUrl": "/spm/user",
+                    "parentPath": "/system",
+                    "menuUrl": "/system/user",
                     "menuName": "用户管理",
                     "badge": "dot",
                     "routeName": "user",
                 },
                 {
-                    "parentPath": "/spm",
-                    "menuUrl": "/spm/role",
+                    "parentPath": "/system",
+                    "menuUrl": "/system/role",
                     "menuName": "角色管理",
                     "badge": "12",
                 },
                 {
-                    "parentPath": "/spm",
-                    "menuUrl": "/spm/menu",
+                    "parentPath": "/system",
+                    "menuUrl": "/system/menu",
                     "menuName": "菜单管理",
                 },
             ],

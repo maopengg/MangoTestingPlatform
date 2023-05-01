@@ -5,14 +5,14 @@ import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
 from socket_client.api_collection.command_api import ExternalAPI
-from utlis.logs.log_control import DEBUG
+from utils.logs.log_control import DEBUG
 
 
 class ClientWebSocket(object):
     # instance = None
     websocket = None
     username = input("请输入用户账号: ")
-    socket_url = '/socket_client/socket?' + username
+    socket_url = '/client/socket?' + username
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(ClientWebSocket, 'instance'):

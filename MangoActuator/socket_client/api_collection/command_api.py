@@ -6,7 +6,7 @@
 
 from auto_ui.test_runner.case_distribution import CaseDistribution
 from enum_class.ui_enum import DevicePlatform
-from utlis.ope_win.cmd import cmd
+from utils.ope_win.cmd import cmd
 
 
 class ExternalAPI:

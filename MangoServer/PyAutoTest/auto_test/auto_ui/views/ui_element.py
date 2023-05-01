@@ -9,9 +9,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiElement
-from PyAutoTest.auto_test.auto_ui.ui_tools.enum import WebExp
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.enum_class.ui_enum import ElementExp
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import option_list, enum_list
 
@@ -79,5 +79,5 @@ class UiElementViews(ViewSet):
         return Response({
             'code': 200,
             'msg': '获取数据成功~',
-            'data': enum_list(WebExp)
+            'data': enum_list(ElementExp)
         })

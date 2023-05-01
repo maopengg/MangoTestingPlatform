@@ -81,6 +81,12 @@
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
                   <a-tag color="green" size="small" v-else-if="record.environment === 2">生产环境</a-tag>
                 </template>
+                <template v-else-if="item.key === 'test_type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.test_type === 0">WEB</a-tag>
+                  <a-tag color="cyan" size="small" v-else-if="record.test_type === 1">安卓</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.test_type === 2">IOS</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.test_type === 3">PC桌面</a-tag>
+                </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -107,9 +113,6 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'textarea'">
-                <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
-              </template>
               <template v-else-if="item.type === 'tree-select'">
                 <a-tree-select
                   v-model="item.value.value"
@@ -119,6 +122,16 @@
                   allow-clear
                   :data="treeData"
                 />
+              </template>
+              <template v-else-if="item.type === 'select'">
+                <a-select v-model="item.value.value" :placeholder="item.placeholder">
+                  <a-option
+                    v-for="optionItem of project.data"
+                    :value="optionItem.title"
+                    :key="optionItem.key"
+                    :label="optionItem.title"
+                  />
+                </a-select>
               </template>
             </a-form-item>
           </a-form>
@@ -136,6 +149,7 @@ import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
+import { transformData } from '@/utils/datacleaning'
 
 interface TreeItem {
   title: string
@@ -213,20 +227,36 @@ const conditionItems: Array<FormItem> = [
 conditionItems[2].optionItems = project.data
 const formItems = [
   {
-    label: '项目名称',
+    label: '项目组名称',
     key: 'team',
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'input'
+    type: 'select'
   },
   {
-    label: '对象',
+    label: '环境名称',
+    key: 'name',
+    value: ref(''),
+    type: 'input',
+    required: true,
+    placeholder: '请输入环境名称'
+  },
+  {
+    label: '测试对象',
     key: 'value',
     value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入域名/名称/对象'
+  },
+  {
+    label: '客户端类型',
+    key: 'test_type',
+    value: ref(''),
+    type: 'input',
+    required: true,
+    placeholder: '请输入客户端类型，0是web，1是安卓，2是ios，3是PC'
   },
   {
     label: '绑定环境',
@@ -264,10 +294,20 @@ export default defineComponent({
         width: 150
       },
       {
-        title: '域名/名称/对象',
+        title: '环境名称',
+        key: 'name',
+        dataIndex: 'name'
+      },
+      {
+        title: '域名/包名',
         key: 'value',
         dataIndex: 'value',
         align: 'left'
+      },
+      {
+        title: '客户端类型',
+        key: 'test_type',
+        dataIndex: 'test_type'
       },
       {
         title: '绑定环境',
@@ -421,21 +461,20 @@ export default defineComponent({
     function onDataForm() {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
+        let value = transformData(formItems)
+        console.log(value)
         if (addUpdate.value === 1) {
           addUpdate.value = 0
           post({
             url: getProjectConfig,
             data: () => {
               return {
-                project: value.project,
+                team: value.team,
                 name: value.name,
-                url: value.url,
+                value: value.value,
                 environment: value.environment,
-                executor_name: value.executor_name
+                executor_name: value.executor_name,
+                test_type: value.test_type
               }
             }
           })
@@ -453,11 +492,12 @@ export default defineComponent({
             data: () => {
               return {
                 id: value.id,
-                project: value.project,
+                team: value.team,
+                value: value.value,
                 name: value.name,
-                url: value.url,
                 environment: value.environment,
-                executor_name: value.executor_name
+                executor_name: value.executor_name,
+                test_type: value.test_type
               }
             }
           })
@@ -482,6 +522,7 @@ export default defineComponent({
       actionTitle,
       modalDialogRef,
       treeData,
+      project,
       onSearch,
       onResetSearch,
       onSelectionChange,

@@ -79,7 +79,9 @@
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj.name }}
                 </template>
-                <template v-else-if="item.key === 'password'"> ***** </template>
+                <template v-else-if="item.key === 'password'" #cell="{ record }">
+                  {{ record.password }}
+                </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>

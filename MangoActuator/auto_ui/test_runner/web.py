@@ -3,13 +3,13 @@
 # @Description: 
 # @Time   : 2023/3/23 11:29
 # @Author : 毛鹏
-from utlis.cache.data_cleaning import DataCleaning
+from utils.cache.data_cleaning import DataCleaning
 from enum_class.ui_enum import OpeType, ElementExp
 from auto_ui.web_base.playwright_obj import WebDevice
-from utlis.logs.log_control import ERROR
+from utils.logs.log_control import ERROR
 from playwright.sync_api import Locator
 
-from utlis.nuw_logs import NewLog
+from utils.nuw_logs import NewLog
 
 
 class WebRun(WebDevice, DataCleaning):

@@ -219,7 +219,7 @@ export default defineComponent({
             url: getDepartmentList,
             data: () => {
               return {
-                project: value.project,
+                team: value.team,
                 name: value.name,
                 url: value.url,
                 environment: value.environment,

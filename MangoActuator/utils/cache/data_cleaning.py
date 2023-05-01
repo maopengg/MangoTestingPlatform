@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2023-04-07 21:47
 # @Author : 毛鹏
-from utlis.cache.cache import CacheDB
-from utlis.cache.random_data import RandomData
+from utils.cache.cache import CacheDB
+from utils.cache.random_data import RandomData
 
 
 class DataCleaning(RandomData):

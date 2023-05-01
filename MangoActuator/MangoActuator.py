@@ -7,7 +7,7 @@ import asyncio
 
 from config import config
 from socket_client.client_socket import ClientWebSocket
-from utlis.nuw_logs import NewLog
+from utils.nuw_logs import NewLog
 
 
 def run():
