@@ -4,7 +4,7 @@ import time
 import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
-from socket_client.api_collection import collection
+from .api_collection import collection
 from utils.logs.log_control import DEBUG
 
 
@@ -103,7 +103,7 @@ class ClientWebSocket(object):
         out = json.loads(msg)
         DEBUG.logger.debug(f'接收的消息提示:{out["msg"]}\n'
                            f'接收的执行函数：{out["func"]}\n'
-                           f'接收的数据：{None}')
+                           f'接收的数据：{json.dumps(out["data"])}')
         return out
 
     @classmethod

@@ -16,4 +16,3 @@ class WebDevice(PlaywrightPageOperation,
                 PlaywrightElementOperation,
                 PlaywrightInputDevice):
     pass
-

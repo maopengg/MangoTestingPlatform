@@ -26,3 +26,4 @@ export default {
 export const DRIVER = 'Mango Actuator'
 export const SERVER = 'Mango Server'
 export const WEB = 'mango-console'
+export const environment = 8

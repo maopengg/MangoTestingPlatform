@@ -153,6 +153,7 @@ import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { transformData } from '@/utils/datacleaning'
+import { environment } from '@/setting'
 
 const project = useProject()
 const conditionItems: Array<FormItem> = [
@@ -529,7 +530,7 @@ export default defineComponent({
         data: () => {
           return {
             case_id: record.id,
-            environment: 2
+            environment: environment
           }
         }
       })

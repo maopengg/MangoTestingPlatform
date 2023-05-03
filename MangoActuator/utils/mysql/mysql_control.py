@@ -10,7 +10,7 @@ from typing import Text
 import pymysql
 
 from config.config import MYSQL_DB, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_USER
-from utlis.logs.log_control import ERROR
+from utils.logs.log_control import ERROR
 
 
 # from warnings import filterwarnings

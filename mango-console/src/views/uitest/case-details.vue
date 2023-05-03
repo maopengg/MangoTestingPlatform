@@ -248,6 +248,8 @@ function onUpdate(item: any) {
   nextTick(() => {
     formItems.forEach((it) => {
       const key = it.key
+      console.log(item[key].name)
+
       const propName = item[key]
       if (propName || propName === null) {
         it.value.value = propName
@@ -265,7 +267,7 @@ function onDataForm() {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
     let opeValue = getExpValue(value.ope_type, uiRunSortData.ope)
-    console.log(value)
+    let assValue = getExpValue(value.ass_type, uiRunSortData.ass)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
@@ -277,8 +279,8 @@ function onDataForm() {
             team: route.query.team,
             el_name: value.el_name,
             el_page: value.el_page,
-            ope_type: value.value,
-            ass_type: value.value,
+            ope_type: opeValue,
+            ass_type: assValue,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }
@@ -298,11 +300,13 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
+            case: route.query.name,
+            run_sort: uiRunSortData.data.length,
             team: route.query.team,
-            el_name: value.el_name.label,
-            el_page: value.el_page.label,
+            el_name: value.el_name,
+            el_page: value.el_page,
             ope_type: opeValue,
-            ass_type: value.ass_type.value,
+            ass_type: assValue,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }

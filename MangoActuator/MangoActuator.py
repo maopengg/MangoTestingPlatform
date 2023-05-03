@@ -7,13 +7,13 @@ import asyncio
 import time
 
 from config import config
-from socket_client.client_socket import ClientWebSocket
+from socket_client import client
 from utils.nuw_logs import NewLog
 
 
 def run():
     print(f"========================={config.DRIVER}正在启动=========================")
-    client = ClientWebSocket()
+    # client = ClientWebSocket()
     loop = asyncio.new_event_loop()  # 创建新的事件循环
     asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
     loop.run_until_complete(client.client_run())  # 运行事件循环

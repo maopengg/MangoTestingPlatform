@@ -40,7 +40,7 @@ class RunSortCRUD(ModelCRUD):
         haha
     """
     model = RunSort
-    queryset = RunSort.objects.select_related('team', 'el_page', 'el_name', 'case').all()
+    queryset = RunSort.objects.select_related('team', 'el_page', 'el_name', 'case').all().order_by('run_sort')
     serializer_class = RunSortSerializers
     serializer = RunSortSerializersC
 

@@ -5,10 +5,8 @@
 # @Author : 毛鹏
 import asyncio
 
-from client import client_socket
-from client.server_enum_api import ServerEnumAPI
-from utlis.logs.log_control import ERROR
-from utlis.mysql.mysql_control import MysqlDB
+from utils.logs.log_control import ERROR
+from utils.mysql.mysql_control import MysqlDB
 
 
 class ResultMain:
@@ -30,7 +28,9 @@ class ResultMain:
 
     @classmethod
     async def notification_send(cls, code: int, mail_msg: str):
-        await client_socket.ClientWebSocket.active_send(
+        from socket_client import client
+        from socket_client.server_enum_api import ServerEnumAPI
+        await client.active_send(
             code=code,
             func=ServerEnumAPI.NOTICE_MAIN.value,
             msg=mail_msg,

@@ -50,7 +50,7 @@ class WebRun(WebDevice, DataCleaning):
         self.goto(url)
         self.ele_opt_res['test_obj_id'] = url
 
-    def ele_along(self, case_dict: dict) -> dict:
+    def ele_along(self, case_dict: dict) -> dict and bool:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
@@ -71,7 +71,7 @@ class WebRun(WebDevice, DataCleaning):
                                f'元素对象：{case_dict}\n')
             path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
             self.ele_opt_res['picture_path'] = self.screenshot(path)
-        return self.ele_opt_res
+        return self.ele_opt_res, False
 
     def action_element(self, ele_obj: Locator) -> None:
         """

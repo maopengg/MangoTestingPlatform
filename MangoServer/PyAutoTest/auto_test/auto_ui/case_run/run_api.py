@@ -40,15 +40,15 @@ class RunApi:
     @classmethod
     def __case_run(cls, environment: int, case_id: int, user):
         data = CaseData(user)
-        case_data = data.data_ui_case(case_id, environment)
+        case_data = data.data_ui_case(environment, case_id)
         return case_data
 
     @classmethod
     def case_run_batch(cls, case_list: int or list, environment: int, user):
         case_data = []
         if isinstance(case_list, int):
-            case_data.append(cls.__case_run(case_list, environment, user))
+            case_data.append(cls.__case_run(environment, case_list, user))
         elif isinstance(case_list, list):
             for case_id in case_list:
-                case_data.append(cls.__case_run(case_id, environment, user))
+                case_data.append(cls.__case_run(environment, case_id, user))
         return case_data
