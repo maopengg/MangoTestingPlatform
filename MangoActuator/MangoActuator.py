@@ -9,6 +9,7 @@ import time
 from config import config
 from socket_client import client
 from utils.nuw_logs import NewLog
+from websocket import WebSocketConnectionClosedException
 
 
 def run():
@@ -27,3 +28,9 @@ if __name__ == '__main__':
     except KeyboardInterrupt as e:
         print('=========================关闭成功=========================')
         time.sleep(2)
+    except AttributeError as e:
+        print(f'========================={config.WEB}关闭，{config.DRIVER}同步关闭=========================')
+        time.sleep(5)
+    except WebSocketConnectionClosedException as e:
+        print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
+        time.sleep(5)

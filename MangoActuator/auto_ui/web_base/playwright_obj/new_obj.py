@@ -3,14 +3,14 @@
 # @Description: 
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 
 class NewChromium:
 
     def __init__(self, web_path: str, headless=False):
-        self.playwright = async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=False if headless is False else True,
+        self.playwright = sync_playwright().start()
+        self.browser = self.playwright.chromium.launch(headless=False if headless is False else True,
                                                        channel='chrome',
                                                        args=['--window-position=-5,-5'],
                                                        executable_path=web_path)
@@ -25,7 +25,7 @@ class NewChromium:
 class NewFirefox:
 
     def __init__(self, web_path: str, headless=False):
-        self.playwright = async_playwright().start()
+        self.playwright = sync_playwright().start()
         self.browser = self.playwright.firefox.launch(headless=False if headless is False else True,
                                                       channel='firefox',
                                                       args=['--window-position=-5,-5'],
@@ -40,7 +40,7 @@ class NewFirefox:
 class NewWebkit:
 
     def __init__(self, web_path: str, headless=False):
-        self.playwright = async_playwright().start()
+        self.playwright = sync_playwright().start()
         self.browser = self.playwright.webkit.launch(headless=False if headless is False else True,
                                                      channel='webkit',
                                                      args=['--window-position=-5,-5'],

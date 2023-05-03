@@ -8,22 +8,24 @@ import json
 from typing import Optional
 
 from auto_ui.test_result.resulit_mian import ResultMain
-from auto_ui.test_runner.web import WebRun
+from auto_ui.test_runner.element_runner.web import WebRun
 from enum_class.ui_enum import DevicePlatform, BrowserType
 from auto_ui.web_base.playwright_obj.new_obj import NewChromium, NewWebkit, NewFirefox
 from utils.decorator.singleton import singleton
 from utils.logs.log_control import ERROR
 from playwright.sync_api import Error
+from concurrent.futures.thread import ThreadPoolExecutor
 
 
 @singleton
-class CaseDistribution(WebRun):
+class CaseDistribution:
     """
     用例分发
     """
 
     def __init__(self):
         super().__init__()
+        self.group_th = ThreadPoolExecutor(50)
         self.web_object: Optional[NewChromium, NewWebkit, NewFirefox] = None
         # self.android: Optional[] = None
 
@@ -34,11 +36,11 @@ class CaseDistribution(WebRun):
         @return:
         """
         for case_one in data:
-            if self.distribute_to_drivers(case_one) is False:
-                break
-        self.page.close()
+            self.distribute_to_drivers(case_one, False)
+            # self.th.shutdown(True)
+        asyncio.create_task(ResultMain.web_notice(200, '调试用例执行完成，请检查用例执行结果！'))
 
-    def case_distribution(self, data: list[dict]):
+    def group_case_distribution(self, data: list[dict]):
         """
         分发用例给不同的驱动进行执行
         @param data: 用例列表
@@ -52,7 +54,8 @@ class CaseDistribution(WebRun):
                         break
                         #     只有用例组不为空的时候，才发送邮件，其他调式不发送通知！逻辑还没写
 
-    def distribute_to_drivers(self, case_one: dict):
+
+    def distribute_to_drivers(self, case_one: dict, group=True):
         """
         分发用例方法，根据用例对象，来发给不同的对象来执行用例
         @param case_one:
@@ -60,7 +63,7 @@ class CaseDistribution(WebRun):
         """
         match case_one['type']:
             case DevicePlatform.WEB.value:
-                if not self.web_test(case_one):
+                if not self.web_test(case_one, group):
                     return False
             case DevicePlatform.ANDROID.value:
                 if not self.android_test(case_one):
@@ -74,21 +77,22 @@ class CaseDistribution(WebRun):
             case _:
                 ERROR.logger.error('设备类型不存在，请联系管理员检查！')
 
-    def web_test(self, case_obj: dict):
+    def web_test(self, case_obj: dict, group=True):
         """
         接受一个web的用例对象，然后开始执行这个用例
         @param case_obj: 用例对象
+        @param group: 是否是用例组
         @return:
         """
         try:
-            if not self.web_object:
-                self.page = self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']).page
-                self.web_object = self.page
+            if group is False:
+                if not self.web_object:
+                    self.web_object = self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']).page
             for case_ele in case_obj['case_data']:
                 if case_ele['ele_name'] == 'url':
-                    self.open_url(case_obj['case_url'], case_obj['case_name'])
+                    WebRun().open_url(case_obj['case_url'], case_obj['case_name'])
                 else:
-                    res_data, res_ = self.ele_along(case_ele)
+                    res_data, res_ = WebRun().ele_along(case_ele)
                     if not res_:
                         print(res_data)
             return True

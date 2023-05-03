@@ -4,11 +4,12 @@
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
 from auto_ui.test_runner.case_distribution import CaseDistribution
-from threading import Thread
+from concurrent.futures.thread import ThreadPoolExecutor
 
 
 class UiAutoApi:
     case = CaseDistribution()
+    th = ThreadPoolExecutor(50)
 
     @classmethod
     def run_debug_case(cls, case_data: list[dict]):
@@ -16,10 +17,7 @@ class UiAutoApi:
         执行调试用例对象浏览器对象
         @return:
         """
-        t = Thread(target=cls.case.debug_case_distribution, args=(case_data,))
-        t.start()
-        print('主线程')
-        t.join()
+        cls.th.submit(cls.case.debug_case_distribution, case_data)
 
     @classmethod
     def run_debug_batch_case(cls, case_data: list[dict]):
@@ -27,7 +25,7 @@ class UiAutoApi:
         执行调试用例对象浏览器对象
         @return:
         """
-        cls.case.debug_case_distribution(case_data)
+        cls.th.submit(cls.case.debug_case_distribution, case_data)
 
     @classmethod
     def run_group_case(cls, case_data: list[dict]):
@@ -35,7 +33,7 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        print(case_data)
+        cls.th.submit(cls.case.debug_case_distribution, case_data)
 
     @classmethod
     def run_group_batch_case(cls, case_data: list[dict]):
@@ -43,7 +41,7 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        print(case_data)
+        cls.th.submit(cls.case.debug_case_distribution, case_data)
 
     @classmethod
     def new_chrome_browser_obj(cls, case_data: list[dict]):
@@ -60,3 +58,16 @@ class UiAutoApi:
         @return:
         """
         print(case_data)
+
+    @classmethod
+    def close_browser(cls):
+        cls.case.page.close()
+
+
+if __name__ == '__main__':
+    import json
+
+    r = UiAutoApi()
+    with open(r'../../tests/debug_case.json', encoding='utf-8') as f:
+        case_json = json.load(f)
+        r.run_debug_case(case_json)

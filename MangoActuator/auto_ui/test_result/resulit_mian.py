@@ -59,6 +59,16 @@ class ResultMain:
             f"""数据写入错误！请联系管理员检查写入数据
             {ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture_path}""")
 
+    @classmethod
+    async def web_notice(cls, code: int, web_msg: str):
+        from socket_client import client
+        await client.active_send(
+            code=code,
+            func=None,
+            msg=web_msg,
+            end=True,
+            data='')
+
 
 if __name__ == '__main__':
     # code = 200

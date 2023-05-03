@@ -14,7 +14,7 @@ DRIVER = 'Mango Actuator'
 SERVER = 'Mango Server'
 WEB = 'mango-console'
 
-# *************************** 平台mysql配置 *************************** #
+# *************************** 执行端mysql配置 *************************** #
 MYSQL_HOST = '43.139.104.105'
 MYSQL_PORT = 3306
 MYSQL_USER = 'test_auto'
