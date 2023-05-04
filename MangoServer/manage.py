@@ -3,7 +3,6 @@
 import os
 import sys
 from script.nuw_logs import __nuw_dir
-__nuw_dir()
 
 
 def main():
@@ -21,4 +20,5 @@ def main():
 
 
 if __name__ == '__main__':
+    __nuw_dir()
     main()
