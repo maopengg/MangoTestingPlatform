@@ -50,7 +50,6 @@
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
               <a-space v-else-if="caseType === '1'">
-                <a-button status="success" size="small" @click="onConcurrency('批量顺序执行')">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('调试用例')">设为调试用例</a-button>
                 <a-button status="warning" size="small" @click="setCaseGroup('用例组')">设为用例组</a-button>
               </a-space>
@@ -554,37 +553,6 @@ export default defineComponent({
       })
     }
 
-    function onConcurrency(name: string) {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要' + name + '的用例数据')
-        return
-      }
-      console.log(JSON.stringify(selectedRowKeys.value))
-      Modal.confirm({
-        title: '提示',
-        content: '确定要' + name + '这些用例吗？',
-        cancelText: '取消',
-        okText: '执行',
-        onOk: () => {
-          get({
-            url: UiRun,
-            data: () => {
-              return {
-                case_id: JSON.stringify(selectedRowKeys.value),
-                environment: 2
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
     function setCaseGroup() {
       Message.info('进入到设置用例组页面')
     }
@@ -621,7 +589,6 @@ export default defineComponent({
       switchType,
       setCase,
       onRunCase,
-      onConcurrency,
       setCaseGroup
     }
   }

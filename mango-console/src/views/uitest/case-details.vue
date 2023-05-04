@@ -344,7 +344,7 @@ function getUiRunSort() {
     url: uiRunSort,
     data: () => {
       return {
-        case_id: route.query.name
+        case_id: route.query.id
       }
     }
   })

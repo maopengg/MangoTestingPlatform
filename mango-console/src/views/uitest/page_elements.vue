@@ -86,11 +86,13 @@ const columns = reactive([
   },
   {
     title: '等待时间',
-    dataIndex: 'sleep'
+    dataIndex: 'sleep',
+    width: 150
   },
   {
     title: '元素下标',
-    dataIndex: 'sub'
+    dataIndex: 'sub',
+    width: 150
   },
 
   {
@@ -267,7 +269,7 @@ function getUiElement() {
     url: uiUiElement,
     data: () => {
       return {
-        page_name: route.query.name
+        page_id: route.query.id
       }
     }
   })

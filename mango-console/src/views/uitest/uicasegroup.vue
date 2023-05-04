@@ -138,7 +138,7 @@
 
 <script lang="ts">
 import { get, post, put, deleted } from '@/api/http'
-import { uiCaseGroup, uiCasePutType, uiRunCaseGroup, uiRunCaseGroupBatch } from '@/api/url'
+import { uiCaseGroup, uiRunCaseGroup, uiRunCaseGroupBatch } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
