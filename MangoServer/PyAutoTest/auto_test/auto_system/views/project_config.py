@@ -8,11 +8,13 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
     team = ProjectSerializers(read_only=True)
+    executor_name = UserSerializers(read_only=True)
 
     class Meta:
         model = TestObject

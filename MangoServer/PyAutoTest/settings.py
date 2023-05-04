@@ -94,9 +94,9 @@ ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'test_auto',
-        'USER': 'test_auto',
-        'PASSWORD': 'BxircHpfex83ZpfP',
+        'NAME': 'auto_test',
+        'USER': 'auto_test',
+        'PASSWORD': '729164035',
         'HOST': '43.139.104.105',
         'PORT': 3306,
         'OPTIONS': {

@@ -12,8 +12,8 @@ from PyAutoTest.auto_test.auto_user.models import Project
 
 class ApiCase(models.Model):
     """api用例表"""
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="用例名称", unique=True, max_length=64)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="用例名称", max_length=64)
     client = models.SmallIntegerField(verbose_name="什么端")
     method = models.SmallIntegerField(verbose_name="请求方法")
     url = models.CharField(verbose_name="请求url", max_length=1024)
@@ -32,13 +32,13 @@ class ApiCase(models.Model):
 
 
 class ApiCaseGroup(models.Model):
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="测试组名称", unique=True, max_length=64)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="测试组名称", max_length=64)
     case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
     case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)
     # 0失败，1成功，2警告
     state = models.SmallIntegerField(verbose_name="状态", null=True)
-    time_name = models.ForeignKey(to=TimeTasks, to_field="name", on_delete=models.SET_NULL, null=True)
+    time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'api_case_group'
@@ -47,9 +47,9 @@ class ApiCaseGroup(models.Model):
 
 class ApiRelyOn(models.Model):
     """api依赖表"""
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="name", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="前置需要处理的名称", unique=True, max_length=64)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="前置需要处理的名称", max_length=64)
     rely_type = models.SmallIntegerField(verbose_name="处理的类型", null=True)
     value = models.CharField(verbose_name="处理的值", max_length=1048, null=True)
     # 0是前置，1是后置
@@ -62,11 +62,11 @@ class ApiRelyOn(models.Model):
 
 class ApiPublic(models.Model):
     """api公共"""
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     end = models.SmallIntegerField(verbose_name="什么端", null=True)
     # 1等于自定义，2等于sql，3等于header
     public_type = models.SmallIntegerField(verbose_name="值的类型", null=True)
-    name = models.CharField(verbose_name="名称", unique=True, max_length=64)
+    name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
@@ -80,9 +80,9 @@ class ApiPublic(models.Model):
 
 class ApiAssertions(models.Model):
     """api断言表"""
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="name", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="依赖名称", unique=True, max_length=64)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="依赖名称", max_length=64)
     ass_type = models.SmallIntegerField(verbose_name="依赖类型", null=True)
     value = models.CharField(verbose_name="值", max_length=1048, null=True)
 
@@ -92,10 +92,10 @@ class ApiAssertions(models.Model):
 
 
 class ApiResult(models.Model):
-    team = models.ForeignKey(to=Project, to_field="name", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="name", on_delete=models.SET_NULL, null=True)
-    test_obj = models.ForeignKey(to=TestObject, to_field="name", on_delete=models.SET_NULL, null=True)
-    case_group = models.ForeignKey(to=ApiCaseGroup, to_field="name", on_delete=models.SET_NULL, null=True)
+    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_group = models.ForeignKey(to=ApiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
     request_url = models.CharField(verbose_name="请求的url", max_length=1048, null=True)
     request_header = models.TextField(verbose_name="请求头", null=True)
     request_body = models.TextField(verbose_name="请求体", null=True)
@@ -115,7 +115,7 @@ class ApiResult(models.Model):
 #     """
 #     mock model
 #     """
-#     relate_interface = models.CharField(max_length=255, unique=True, default='', verbose_name='关联接口')
+#     relate_interface = models.CharField(max_length=255, default='', verbose_name='关联接口')
 #     mock_data_id = models.IntegerField(default=-1, verbose_name="对应mock数据id")
 #     service = models.CharField(max_length=255, default="", verbose_name="服务方")
 #     origin_url = models.CharField(max_length=500, default="", verbose_name="正常url地址")
@@ -135,7 +135,7 @@ class ApiResult(models.Model):
 #     mock data model
 #     """
 #     # id = models.IntegerField(auto_created=True,unique=True, primary_key=True, verbose_name="id")
-#     mockName = models.CharField(max_length=255, null=False, default='', unique=True, verbose_name="mock名")
+#     mockName = models.CharField(max_length=255, null=False, default='', verbose_name="mock名")
 #     # interface = models.ForeignKey(to=InterfaceModel, to_field='interface', related_name='related_mock', on_delete=models.SET(''), verbose_name='接口名' )
 #     interface_name_id = models.CharField(max_length=255, default='', verbose_name="关联接口")
 #     data = models.TextField(verbose_name="mock数据")
@@ -162,7 +162,7 @@ class ApiResult(models.Model):
 #
 # # mock服务表
 # class MockServiceModel(models.Model):
-#     service = models.CharField(max_length=255, null=False, default='', unique=True, verbose_name="服务名")
+#     service = models.CharField(max_length=255, null=False, default='', verbose_name="服务名")
 #     status = models.CharField(max_length=255, default='1', verbose_name="状态")
 #     author = models.CharField(max_length=50, null=False, default='', verbose_name='创建者')
 #     remarks = models.CharField(max_length=500, default='', verbose_name="备注")

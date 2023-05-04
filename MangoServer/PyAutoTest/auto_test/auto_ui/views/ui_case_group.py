@@ -7,6 +7,7 @@ from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.views.project_config import TestObjectSerializers
+from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
@@ -15,6 +16,7 @@ from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 class UiCaseGroupSerializers(serializers.ModelSerializer):
     team = ProjectSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
+    time_name = TimeTasksSerializers(read_only=True)
 
     class Meta:
         model = UiCaseGroup

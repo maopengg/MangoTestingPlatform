@@ -83,6 +83,9 @@
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj.name }}
                 </template>
+                <template v-else-if="item.key === 'time_name'" #cell="{ record }">
+                  {{ record.time_name.name }}
+                </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>

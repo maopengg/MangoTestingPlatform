@@ -76,6 +76,9 @@
                 <template v-else-if="item.key === 'team'" #cell="{ record }">
                   {{ record.team.name }}
                 </template>
+                <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
+                  {{ record.executor_name.nickname }}
+                </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
