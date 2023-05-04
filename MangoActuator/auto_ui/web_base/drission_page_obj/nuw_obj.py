@@ -8,9 +8,9 @@ import time
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 
-from utlis.decorator.singleton import singleton
-from utlis.nuw_logs import NewLog
-from utlis.cache.random_data import RandomData
+from utils.decorator.singleton import singleton
+from utils.nuw_logs import NewLog
+from utils.cache.random_data import RandomData
 
 
 @singleton

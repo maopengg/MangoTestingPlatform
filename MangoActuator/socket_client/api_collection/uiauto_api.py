@@ -3,13 +3,16 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-from auto_ui.test_runner.case_distribution import CaseDistribution
 from concurrent.futures.thread import ThreadPoolExecutor
+import asyncio
+from auto_ui.test_runner.debug_case_run import CaseDistribution
 
 
 class UiAutoApi:
     case = CaseDistribution()
-    th = ThreadPoolExecutor(50)
+
+    # loop = asyncio.new_event_loop()  # 创建新的事件循环
+    # asyncio.set_event_loop(loop)
 
     @classmethod
     def run_debug_case(cls, case_data: list[dict]):
@@ -17,7 +20,8 @@ class UiAutoApi:
         执行调试用例对象浏览器对象
         @return:
         """
-        cls.th.submit(cls.case.debug_case_distribution, case_data)
+        # cls.th.submit(cls.case.debug_case_distribution, case_data)
+        asyncio.create_task(cls.case.debug_case_distribution(case_data))
 
     @classmethod
     def run_debug_batch_case(cls, case_data: list[dict]):
@@ -70,4 +74,8 @@ if __name__ == '__main__':
     r = UiAutoApi()
     with open(r'../../tests/debug_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
-        r.run_debug_case(case_json)
+        # import asyncio
+        #
+        # loop = asyncio.new_event_loop()  # 创建新的事件循环
+        # asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
+        # p = loop.run_until_complete(r.run_debug_case(case_json))  # 运行事件循环

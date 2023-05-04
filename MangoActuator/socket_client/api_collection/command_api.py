@@ -4,7 +4,7 @@
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
 
-from auto_ui.test_runner.case_distribution import CaseDistribution
+from auto_ui.test_runner.debug_case_run import CaseDistribution
 from enum_class.ui_enum import DevicePlatform
 from utils.ope_win.cmd import cmd
 

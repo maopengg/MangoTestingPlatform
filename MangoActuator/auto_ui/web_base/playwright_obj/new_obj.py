@@ -3,56 +3,56 @@
 # @Description: 
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
-from playwright.sync_api import sync_playwright
+import time
+
+import asyncio
+from playwright.async_api import async_playwright, Page
 
 
-class NewChromium:
+async def new_chromium(web_path: str, headless=False) -> Page:
+    playwright = await async_playwright().start()
+    browser = await playwright.chromium.launch(headless=False if headless is False else True,
+                                               executable_path=web_path)
 
-    def __init__(self, web_path: str, headless=False):
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.chromium.launch(headless=False if headless is False else True,
-                                                       channel='chrome',
-                                                       args=['--window-position=-5,-5'],
-                                                       executable_path=web_path)
-
-        self.context = self.browser.new_context(viewport={'width': 1440, 'height': 1080})
-        self.page = self.context.new_page()
-
-    def close(self):
-        self.browser.close()
+    page = await browser.new_page()
+    return page
 
 
-class NewFirefox:
+async def new_firefox(web_path: str, headless=False) -> Page:
+    playwright = await async_playwright().start()
+    browser = await playwright.firefox.launch(headless=False if headless is False else True,
+                                              channel='chrome',
+                                              args=['--window-position=-5,-5'],
+                                              executable_path=web_path)
 
-    def __init__(self, web_path: str, headless=False):
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.firefox.launch(headless=False if headless is False else True,
-                                                      channel='firefox',
-                                                      args=['--window-position=-5,-5'],
-                                                      executable_path=web_path)
-        self.context = self.browser.new_context(viewport={'width': 1440, 'height': 1080})
-        self.page = self.context.new_page()
-
-    def close(self):
-        self.browser.close()
+    page = await browser.new_page()
+    return page
 
 
-class NewWebkit:
+async def new_webkit(web_path: str, headless=False) -> Page:
+    playwright = await async_playwright().start()
+    browser = await playwright.webkit.launch(headless=False if headless is False else True,
+                                             channel='chrome',
+                                             args=['--window-position=-5,-5'],
+                                             executable_path=web_path)
 
-    def __init__(self, web_path: str, headless=False):
-        self.playwright = sync_playwright().start()
-        self.browser = self.playwright.webkit.launch(headless=False if headless is False else True,
-                                                     channel='webkit',
-                                                     args=['--window-position=-5,-5'],
-                                                     executable_path=web_path)
-        self.context = self.browser.new_context(viewport={'width': 1440, 'height': 1080})
-        self.page = self.context.new_page()
-
-    def close(self):
-        self.browser.close()
+    page = await browser.new_page()
+    return page
 
 
 if __name__ == '__main__':
-    path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
-    r = NewChromium(path)
-    r.page.goto('https://www.baidu.com/')
+    path = r'C:\Program Files\1Google\Chrome\Application\chrome.exe'
+
+
+    async def hh():
+        p = await new_chromium(path)
+        await p.goto('https://www.baidu.com')
+
+
+    loop = asyncio.new_event_loop()  # 创建新的事件循环
+    asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
+    p = loop.run_until_complete(hh())  # 运行事件循环
+    time.sleep(4)
+    # def hhh():
+    #     page = await new_chromium(path)
+    #     page.goto('https://www.baidu.com')

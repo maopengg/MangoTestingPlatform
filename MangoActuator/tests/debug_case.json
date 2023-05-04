@@ -3,7 +3,7 @@
     "case_id": 5,
     "case_name": "登录-",
     "local_port": "9222",
-    "browser_path": "E:\\Software\\Chrome\\Application\\chrome.exe",
+    "browser_path": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
     "type": 0,
     "case_url": "https://cdxpalb.growknows.cn/login",
     "browser_type": 0,
