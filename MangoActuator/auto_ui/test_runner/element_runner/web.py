@@ -3,12 +3,13 @@
 # @Description: 
 # @Time   : 2023/3/23 11:29
 # @Author : 毛鹏
-from utils.cache.data_cleaning import DataCleaning
-from enum_class.ui_enum import OpeType, ElementExp
-from auto_ui.web_base.playwright_obj import WebDevice
-from utils.logs.log_control import ERROR
-from playwright.sync_api import Locator
 from playwright.async_api import Page
+from playwright.sync_api import Locator
+
+from auto_ui.web_base.playwright_obj import WebDevice
+from enum_class.ui_enum import OpeType, ElementExp
+from utils.cache.data_cleaning import DataCleaning
+from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
 
 

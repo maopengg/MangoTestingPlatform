@@ -5,9 +5,10 @@
 # @Author : 毛鹏
 
 from utlis.cache.data_cleaning import DataCleaning
-from enum_class.ui_enum import ElementExp, OpeType
 from utlis.logs.log_control import ERROR
 from utlis.nuw_logs import NewLog
+
+from enum_class.ui_enum import ElementExp, OpeType
 
 
 # DriverMerge

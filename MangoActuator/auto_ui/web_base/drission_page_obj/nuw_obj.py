@@ -4,13 +4,12 @@
 # @Time   : 2023/3/23 11:28
 # @Author : 毛鹏
 import time
-
 from DrissionPage import WebPage
 from DrissionPage.configs.chromium_options import ChromiumOptions
 
+from utils.cache.random_data import RandomData
 from utils.decorator.singleton import singleton
 from utils.nuw_logs import NewLog
-from utils.cache.random_data import RandomData
 
 
 @singleton

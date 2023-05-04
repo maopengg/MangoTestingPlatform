@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 import logging
-
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 

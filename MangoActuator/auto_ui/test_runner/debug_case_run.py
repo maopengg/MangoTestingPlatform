@@ -5,13 +5,11 @@
 # @Author : 毛鹏
 import asyncio
 import json
-from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Optional
+
 from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.case_run_method import CaseRunMethod
 from auto_ui.test_runner.element_runner.web import WebRun
-from enum_class.ui_enum import DevicePlatform
-from utils.logs.log_control import ERROR
 
 
 class CaseDistribution(CaseRunMethod):

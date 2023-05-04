@@ -6,6 +6,7 @@
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
 
 logger = logging.getLogger('system')

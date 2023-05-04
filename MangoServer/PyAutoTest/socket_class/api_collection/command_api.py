@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
-from PyAutoTest.auto_test.auto_system.notic_tools import notice_main
 
 
 class CommandApi:

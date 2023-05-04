@@ -4,8 +4,8 @@
 # @Time   : 2023-04-29 11:19
 # @Author : 毛鹏
 import apiauto_api
-import uiauto_api
 import command_api
+import uiauto_api
 from PyAutoTest.socket_class.actuator_enum.self_test_class import SelfTestClass
 
 

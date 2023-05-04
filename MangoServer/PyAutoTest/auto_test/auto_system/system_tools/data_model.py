@@ -3,9 +3,8 @@
 # @Description: 
 # @Time   : 2022-12-04 17:14
 # @Author : 毛鹏
-from typing import Dict
-
 from pydantic import BaseModel
+from typing import Dict
 
 
 class WebRequestsData(BaseModel):

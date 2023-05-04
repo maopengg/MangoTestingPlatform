@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 from uiautomator2 import Device
+from utlis.logs.log_control import ERROR, INFO
 
 from enum_class.ui_enum import EleExp
-from utlis.logs.log_control import ERROR, INFO
 
 """
 python -m uiautomator2 init

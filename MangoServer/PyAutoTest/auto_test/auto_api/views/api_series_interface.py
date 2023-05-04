@@ -4,9 +4,7 @@
 # @Time   : 2023-04-30 10:02
 # @Author : 毛鹏
 from rest_framework.decorators import action
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from PyAutoTest.auto_test.auto_api.api_tools.automatic_parsing_interface import ApiParameter
 
 
 class ApiAutoInterface(ViewSet):

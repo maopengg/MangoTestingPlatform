@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-from concurrent.futures.thread import ThreadPoolExecutor
 import asyncio
+
 from auto_ui.test_runner.debug_case_run import CaseDistribution
 
 

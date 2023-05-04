@@ -6,10 +6,9 @@
 
 import ast
 import json
-from typing import Text, Dict, Any, Union
-
 from PyAutoTest.utils.log_utils.log_control import ERROR, WARNING
 from jsonpath import jsonpath
+from typing import Text, Dict, Any, Union
 
 from PyAutoTest.auto_test.auto_api.api_tools.enum import AssertMethod, load_module_functions
 # from utils.read_files_tools.regular_control import cache_regular

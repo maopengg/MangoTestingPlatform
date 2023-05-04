@@ -5,9 +5,8 @@
 
 import datetime
 import decimal
-from typing import Text
-
 import pymysql
+from typing import Text
 
 from config.config import MYSQL_DB, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_USER
 from utils.logs.log_control import ERROR

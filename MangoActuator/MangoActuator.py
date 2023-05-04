@@ -5,11 +5,11 @@
 # @Author : 毛鹏
 import asyncio
 import time
+from websocket import WebSocketConnectionClosedException
 
 from config import config
 from socket_client import client
 from utils.nuw_logs import NewLog
-from websocket import WebSocketConnectionClosedException
 
 
 def run():

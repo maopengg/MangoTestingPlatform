@@ -4,7 +4,6 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import logging
-
 import requests
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject

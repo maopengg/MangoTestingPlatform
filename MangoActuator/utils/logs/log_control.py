@@ -4,10 +4,10 @@
 # # @Time   : 2022-11-04 22:05
 # # @Author : 毛鹏
 
-import logging
 from logging import handlers
 
 import colorlog
+import logging
 
 from utils.nuw_logs import NewLog
 
