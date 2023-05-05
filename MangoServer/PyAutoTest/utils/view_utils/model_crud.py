@@ -56,7 +56,7 @@ class ModelCRUD(GenericAPIView):
             })
 
     def put(self, request):
-        serializer = self.get_serializer_class()(
+        serializer = self.serializer(
             instance=self.model.objects.get(pk=request.data.get('id')),
             data=request.data
         )

@@ -22,8 +22,6 @@ class CaseRunMethod:
         @param case_one:
         @return:
         """
-        print('执行了吗？')
-
         match case_one['type']:
             case DevicePlatform.WEB.value:
                 if not await self.web_test(case_one):

@@ -41,15 +41,22 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'cascader'">
-                <a-cascader
-                  :options="uiElementData.eleExp"
-                  :style="{ width: '400px' }"
-                  :placeholder="item.placeholder"
-                  v-model="item.value.value"
-                  allow-clear
-                  allow-search
-                />
+              <!--              <template v-else-if="item.type === 'cascader'">-->
+              <!--                <a-cascader-->
+              <!--                  :options="uiElementData.eleExp"-->
+              <!--                  :style="{ width: '400px' }"-->
+              <!--                  :placeholder="item.placeholder"-->
+              <!--                  v-model="item.value.value"-->
+              <!--                  allow-clear-->
+              <!--                  allow-search-->
+              <!--                />-->
+              <!--              </template>-->
+              <template v-else-if="item.type === 'select'">
+                <a-select v-model="item.value.value" :placeholder="item.placeholder">
+                  <a-option v-for="optionItem of uiElementData.eleExp" :key="optionItem.key" :value="optionItem.title">
+                    {{ optionItem.title }}
+                  </a-option>
+                </a-select>
               </template>
             </a-form-item>
           </a-form>
@@ -65,7 +72,7 @@ import { uiUiElement, getUiElementExp } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
-import { transformData } from '@/utils/datacleaning'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 
 const route = useRoute()
 
@@ -120,7 +127,7 @@ const formItems = [
     label: '表达式类型',
     key: 'exp',
     value: ref(''),
-    type: 'cascader',
+    type: 'select',
     required: true,
     placeholder: '请选择元素表达式类型'
   },
@@ -212,8 +219,8 @@ function onDataForm() {
         url: uiUiElement,
         data: () => {
           return {
-            team: route.query.team,
-            page: uiElementData.pageName,
+            team: route.query.team_id,
+            page: route.query.id,
             name: value.name,
             exp: value.exp,
             loc: value.loc,
@@ -230,12 +237,13 @@ function onDataForm() {
     } else if (addUpdate.value === 0) {
       value['id'] = updateId.value
       updateId.value = 0
+      console.log('走了吗', route.query.team_id)
       put({
         url: uiUiElement,
         data: () => {
           return {
-            team: route.query.team,
-            page: uiElementData.pageName,
+            team: route.query.team_id,
+            page: route.query.id,
             name: value.name,
             exp: value.exp,
             loc: value.loc,
@@ -295,6 +303,7 @@ function getEleExp() {
   })
     .then((res) => {
       uiElementData.eleExp = res.data
+      console.log(res.data)
     })
     .catch(console.log)
 }

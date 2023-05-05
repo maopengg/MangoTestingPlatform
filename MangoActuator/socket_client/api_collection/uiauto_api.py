@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
+import asyncio
 
 from auto_ui.test_runner.debug_case_run import CaseDistribution
 from auto_ui.test_runner.group_case_run import GroupCaseRun
@@ -17,7 +18,7 @@ class UiAutoApi:
         执行调试用例对象浏览器对象
         @return:
         """
-        asyncio.create_task(cls.case.debug_case_distribution(case_data))
+        asyncio.gather(cls.case.debug_case_distribution(case_data))
 
     @classmethod
     def run_group_case(cls, case_data: list[dict]):
@@ -67,7 +68,6 @@ if __name__ == '__main__':
     r = UiAutoApi()
     with open(r'../../tests/group_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
-        import asyncio
 
         loop = asyncio.new_event_loop()  # 创建新的事件循环
         asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环

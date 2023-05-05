@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-import asyncio
 import json
 from typing import Optional
 
@@ -30,7 +29,7 @@ class CaseDistribution(CaseRunMethod):
         for case_one in data:
             await self.distribute_to_drivers(case_one)
             # self.th.shutdown(True)
-        asyncio.create_task(ResultMain.web_notice(200, '调试用例执行完成，请检查用例执行结果！'))
+        await ResultMain.web_notice(200, '调试用例执行完成，请检查用例执行结果！')
 
     async def close(self):
         await self.web.page.close()

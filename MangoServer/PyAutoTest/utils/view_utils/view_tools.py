@@ -34,8 +34,8 @@ def enum_list(enum) -> list:
     for i in enum.__doc__.split('，'):
         for key, value in eval(i).items():
             ope.append({
-                'value': int(key),
-                'label': value
+                'title': value,
+                'key': int(key)
             })
     return ope
 

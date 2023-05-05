@@ -135,6 +135,7 @@ import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
+import { transformData, getKeyByTitle } from '@/utils/datacleaning'
 
 const project = useProject()
 
@@ -416,18 +417,15 @@ export default defineComponent({
     function onDataForm() {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        console.log(value)
+        let value = transformData(formItems)
+        let teamId = getKeyByTitle(project.data, value.team)
         if (addUpdate.value === 1) {
           addUpdate.value = 0
           post({
             url: uiPage,
             data: () => {
               return {
-                team: value.team,
+                team: teamId,
                 name: value.name,
                 url: value.url,
                 type: pageType.value
@@ -448,7 +446,7 @@ export default defineComponent({
             data: () => {
               return {
                 id: value.id,
-                team: value.team,
+                team: teamId,
                 name: value.name,
                 url: value.url,
                 type: pageType.value
@@ -510,7 +508,7 @@ export default defineComponent({
         query: {
           id: record.id,
           name: record.name,
-          team: record.team.name
+          team_id: record.team.id
         }
       })
     }
