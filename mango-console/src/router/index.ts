@@ -16,7 +16,7 @@ export const extraRoutes = [
     children: [
       {
         path: 'details',
-        component: () => import('@/views/uitest/case-details.vue'),
+        component: () => import('@/views/uitest/ui-case-debug-details.vue'),
         meta: {
           title: '用例详情'
         }
@@ -40,14 +40,14 @@ export const extraRoutes = [
     children: [
       {
         path: 'group',
-        component: () => import('@/views/apitest/apicasegroup.vue'),
+        component: () => import('@/views/apitest/api-case-group.vue'),
         meta: {
           title: '用例组'
         }
       },
       {
         path: 'details',
-        component: () => import('@/views/apitest/apicasedetails.vue'),
+        component: () => import('@/views/apitest/api-case-debug-details.vue'),
         meta: {
           title: '接口用例详情'
         }

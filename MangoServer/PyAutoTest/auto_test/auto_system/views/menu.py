@@ -42,22 +42,22 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/apicase",
+                    "menuUrl": "/apitest/api-case-debug",
                     "menuName": "调试用例",
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/apicasegroup",
+                    "menuUrl": "/apitest/api-case-group",
                     "menuName": "测试用例组",
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/pub",
+                    "menuUrl": "/apitest/api-public",
                     "menuName": "公共方法",
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/rep",
+                    "menuUrl": "/apitest/api-test-result",
                     "menuName": "测试报告",
                 },
             ],
@@ -70,34 +70,34 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/page",
+                    "menuUrl": "/uitest/page-obj",
                     "menuName": "页面对象",
                     "cacheable": True,
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/uicase",
+                    "menuUrl": "/uitest/ui-case-debug",
                     "menuName": "调试用例",
                     "cacheable": True,
                 }, {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/uicasegroup",
+                    "menuUrl": "/uitest/ui-case-group",
                     "menuName": "测试用例组",
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/public",
+                    "menuUrl": "/uitest/ui-public",
                     "menuName": "公共方法",
                     "cacheable": True,
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/repor",
+                    "menuUrl": "/uitest/ui-test-result",
                     "menuName": "测试报告",
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/uiconfig",
+                    "menuUrl": "/uitest/ui-config",
                     "menuName": "配置与元素收集",
                 }
             ],

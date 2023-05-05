@@ -58,8 +58,8 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -111,13 +111,6 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
-              <!--              <template v-else-if="item.type === 'select'">-->
-              <!--                <a-select v-model="item.value.value" :placeholder="item.placeholder">-->
-              <!--                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.key" :value="optionItem.title">-->
-              <!--                    {{ optionItem.title }}-->
-              <!--                  </a-option>-->
-              <!--                </a-select>-->
-              <!--              </template>-->
               <template v-else-if="item.type === 'select'">
                 <a-select
                   v-model="item.value.value"
@@ -134,14 +127,14 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
 import { uiPage, uiPageQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { transformData, getKeyByTitle } from '@/utils/datacleaning'
@@ -229,286 +222,257 @@ const formItems = [
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目名称',
-        key: 'team',
-        dataIndex: 'team',
-        width: 150
-      },
-      {
-        title: '页面名称',
-        key: 'name',
-        dataIndex: 'name',
-        width: 150
-      },
-      {
-        title: '页面地址',
-        key: 'url',
-        dataIndex: 'url',
-        align: 'left'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'team',
+    dataIndex: 'team',
+    width: 150
+  },
+  {
+    title: '页面名称',
+    key: 'name',
+    dataIndex: 'name',
+    width: 150
+  },
+  {
+    title: '页面地址',
+    key: 'url',
+    dataIndex: 'url',
+    align: 'left'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+const pageType: any = ref('0')
+
+function switchType(key: any) {
+  pageType.value = key
+  doRefresh()
+}
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: uiPage,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        type: pageType.value
       }
-    ])
-    const pageType: any = ref('0')
-
-    function switchType(key: any) {
-      pageType.value = key
-      doRefresh()
     }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  console.log(data)
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else {
+    get({
+      url: uiPageQuery,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          type: pageType.value,
+          id: data.id,
+          name: data.name,
+          team: data.team
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    function doRefresh() {
-      get({
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '添加页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: uiPage,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize,
+            id: '[' + data.id + ']'
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    }
+  })
+}
+
+function onDeleteItems() {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要删除的数据')
+    return
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要删除此数据吗？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
+        url: uiPage,
+        data: () => {
+          return {
+            id: JSON.stringify(selectedRowKeys.value)
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
+        })
+        .catch(console.log)
+    }
+  })
+}
+
+function onUpdate(item: any) {
+  actionTitle.value = '编辑页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (propName) {
+        it.value.value = propName
+      }
+    })
+  })
+}
+
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = transformData(formItems)
+    let teamId = getKeyByTitle(project.data, value.team)
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: uiPage,
+        data: () => {
+          return {
+            team: teamId,
+            name: value.name,
+            url: value.url,
             type: pageType.value
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: uiPage,
+        data: () => {
+          return {
+            id: value.id,
+            team: teamId,
+            name: value.name,
+            url: value.url,
+            type: pageType.value
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
-
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      console.log(data)
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else {
-        get({
-          url: uiPageQuery,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              type: pageType.value,
-              id: data.id,
-              name: data.name,
-              team: data.team
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      }
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: uiPage,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onDeleteItems() {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要删除的数据')
-        return
-      }
-      Modal.confirm({
-        title: '提示',
-        content: '确定要删除此数据吗？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: uiPage,
-            data: () => {
-              return {
-                id: JSON.stringify(selectedRowKeys.value)
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
-          }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value = transformData(formItems)
-        let teamId = getKeyByTitle(project.data, value.team)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: uiPage,
-            data: () => {
-              return {
-                team: teamId,
-                name: value.name,
-                url: value.url,
-                type: pageType.value
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: uiPage,
-            data: () => {
-              return {
-                id: value.id,
-                team: teamId,
-                name: value.name,
-                url: value.url,
-                type: pageType.value
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      }
-    }
-
-    const router = useRouter()
-
-    function onClick(record: any) {
-      console.log(record)
-      router.push({
-        path: '/uitest/pageel',
-        query: {
-          id: record.id,
-          name: record.name,
-          team_id: record.team.id,
-          team_name: record.team.name
-        }
-      })
-    }
-
-    onMounted(() => {
-      nextTick(async () => {
-        doRefresh()
-      })
-    })
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      conditionItems,
-      selectedRowKeys,
-      showCheckedAll,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      fieldNames,
-      onClick,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete,
-      onDeleteItems,
-      switchType
-    }
   }
+}
+
+const router = useRouter()
+
+function onClick(record: any) {
+  console.log(record)
+  router.push({
+    path: '/uitest/pageel',
+    query: {
+      id: record.id,
+      name: record.name,
+      team_id: record.team.id,
+      team_name: record.team.name
+    }
+  })
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+  })
 })
 </script>

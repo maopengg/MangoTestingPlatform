@@ -22,7 +22,6 @@
           <template #columns>
             <a-table-column
               v-for="item of columns"
-              :key="item.key"
               :align="item.align"
               :title="item.title"
               :width="item.width"

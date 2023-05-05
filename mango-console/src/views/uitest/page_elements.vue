@@ -14,7 +14,6 @@
           <template #columns>
             <a-table-column
               v-for="item of columns"
-              :key="item.key"
               :align="item.align"
               :title="item.title"
               :width="item.width"
@@ -41,16 +40,6 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <!--              <template v-else-if="item.type === 'cascader'">-->
-              <!--                <a-cascader-->
-              <!--                  :options="uiElementData.eleExp"-->
-              <!--                  :style="{ width: '400px' }"-->
-              <!--                  :placeholder="item.placeholder"-->
-              <!--                  v-model="item.value.value"-->
-              <!--                  allow-clear-->
-              <!--                  allow-search-->
-              <!--                />-->
-              <!--              </template>-->
               <template v-else-if="item.type === 'select'">
                 <a-select v-model="item.value.value" :placeholder="item.placeholder" allow-clear>
                   <a-option v-for="optionItem of uiElementData.eleExp" :key="optionItem.value" :value="optionItem.title">
