@@ -112,7 +112,7 @@
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.value" :value="optionItem.title">
+                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.key" :value="optionItem.title">
                     {{ optionItem.title }}
                   </a-option>
                 </a-select>
