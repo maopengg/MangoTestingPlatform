@@ -12,16 +12,12 @@ from auto_ui.test_runner.group_case_run import GroupCaseRun
 class UiAutoApi:
     case = CaseDistribution()
 
-    # loop = asyncio.new_event_loop()  # 创建新的事件循环
-    # asyncio.set_event_loop(loop)
-
     @classmethod
     def run_debug_case(cls, case_data: list[dict]):
         """
         执行调试用例对象浏览器对象
         @return:
         """
-        # cls.th.submit(cls.case.debug_case_distribution, case_data)
         asyncio.create_task(cls.case.debug_case_distribution(case_data))
 
     @classmethod
@@ -30,7 +26,7 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        asyncio.create_task(GroupCaseRun().group_case_decompose(case_data))
+        GroupCaseRun().group_case_decompose(case_data)
 
     @classmethod
     def run_group_batch_case(cls, case_data: list[dict]):
@@ -38,7 +34,7 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        asyncio.create_task(GroupCaseRun().group_case_decompose(case_data))
+        GroupCaseRun().group_case_decompose(case_data)
 
     @classmethod
     def new_chrome_browser_obj(cls, case_data: list[dict]):

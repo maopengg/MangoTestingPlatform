@@ -102,7 +102,7 @@ class ClientWebSocket(object):
         out = json.loads(msg)
         DEBUG.logger.debug(f'接收的消息提示:{out["msg"]}\n'
                            f'接收的执行函数：{out["func"]}\n'
-                           f'接收的数据：{json.dumps(out["data"])}')
+                           f'接收的数据：{out["data"]}')
         return out
 
     @classmethod
