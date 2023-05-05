@@ -14,12 +14,13 @@
                     <template v-if="item.type === 'input'">
                       <a-input v-model="item.value.value" :placeholder="item.placeholder" />
                     </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
+                    <template v-else-if="item.type === 'select'">
+                      <a-select
+                        v-model="item.value.value"
+                        :placeholder="item.placeholder"
+                        :options="item.optionItems"
+                        :field-names="fieldNames"
+                      />
                     </template>
                     <template v-if="item.type === 'date'">
                       <a-date-picker v-model="item.value.value" />
@@ -110,12 +111,20 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
+              <!--              <template v-else-if="item.type === 'select'">-->
+              <!--                <a-select v-model="item.value.value" :placeholder="item.placeholder">-->
+              <!--                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.key" :value="optionItem.title">-->
+              <!--                    {{ optionItem.title }}-->
+              <!--                  </a-option>-->
+              <!--                </a-select>-->
+              <!--              </template>-->
               <template v-else-if="item.type === 'select'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.key" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="conditionItems[2].optionItems"
+                  :field-names="fieldNames"
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -136,14 +145,9 @@ import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { transformData, getKeyByTitle } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
 
 const project = useProject()
-
-interface TreeItem {
-  title: string
-  key: string
-  children?: TreeItem[]
-}
 
 const conditionItems: Array<FormItem> = [
   {
@@ -228,7 +232,6 @@ const formItems = [
 export default defineComponent({
   name: 'TableWithSearch',
   setup() {
-    const searchForm = ref()
     const actionTitle = ref('添加页面')
     const modalDialogRef = ref<ModalDialogType | null>(null)
     const pagination = usePagination(doRefresh)
@@ -462,43 +465,6 @@ export default defineComponent({
       }
     }
 
-    // 获取所有项目
-    const treeData = ref<Array<TreeItem>>([])
-
-    // function getItems() {
-    //   get({
-    //     url: getAllItems,
-    //     data: {}
-    //   })
-    //     .then((res) => {
-    //       for (let value of conditionItems) {
-    //         if (value.key === 'project') {
-    //           value.optionItems = res.data
-    //         }
-    //       }
-    //       treeData.value = transformRoutes(res.data)
-    //     })
-    //     .catch(console.log)
-    // }
-    //
-    // function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
-    //   const list: TreeItem[] = []
-    //   routes
-    //     .filter((it) => it.hidden !== true && it.fullPath !== parentPath)
-    //     .forEach((it) => {
-    //       const searchItem: TreeItem = {
-    //         // 可以控制是取id还是取名称
-    //         key: it.title,
-    //         title: it.title
-    //       }
-    //       if (it.children && it.children.length > 0) {
-    //         searchItem.children = transformRoutes(it.children, it.fullPath)
-    //       }
-    //       list.push(searchItem)
-    //     })
-    //   return list
-    // }
-
     const router = useRouter()
 
     function onClick(record: any) {
@@ -508,7 +474,8 @@ export default defineComponent({
         query: {
           id: record.id,
           name: record.name,
-          team_id: record.team.id
+          team_id: record.team.id,
+          team_name: record.team.name
         }
       })
     }
@@ -522,7 +489,6 @@ export default defineComponent({
       ...table,
       rowKey,
       pagination,
-      searchForm,
       tableColumns,
       conditionItems,
       selectedRowKeys,
@@ -531,7 +497,7 @@ export default defineComponent({
       formModel,
       actionTitle,
       modalDialogRef,
-      treeData,
+      fieldNames,
       onClick,
       onSearch,
       onResetSearch,

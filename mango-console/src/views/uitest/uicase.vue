@@ -151,7 +151,7 @@ import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
-import { transformData } from '@/utils/datacleaning'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 import { environment } from '@/setting'
 
 const project = useProject()
@@ -480,13 +480,14 @@ export default defineComponent({
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         modalDialogRef.value?.toggle()
         let value = transformData(formItems)
+        let teamId = getKeyByTitle(project.data, value.team)
         if (addUpdate.value === 1) {
           addUpdate.value = 0
           post({
             url: uiCase,
             data: () => {
               return {
-                team: value.team,
+                team: teamId,
                 name: value.name,
                 type: 0
               }
@@ -506,7 +507,7 @@ export default defineComponent({
             data: () => {
               return {
                 id: value.id,
-                team: value.team,
+                team: teamId,
                 name: value.name,
                 type: 0,
                 state: 0

@@ -214,6 +214,7 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
+    let exp = getKeyByTitle(uiElementData.eleExp, value.exp)
     if (addUpdate.value === 1) {
       post({
         url: uiUiElement,
@@ -222,7 +223,7 @@ function onDataForm() {
             team: route.query.team_id,
             page: route.query.id,
             name: value.name,
-            exp: value.exp,
+            exp: exp,
             loc: value.loc,
             sleep: value.sleep,
             sub: value.sub
@@ -237,7 +238,6 @@ function onDataForm() {
     } else if (addUpdate.value === 0) {
       value['id'] = updateId.value
       updateId.value = 0
-      console.log('走了吗', route.query.team_id)
       put({
         url: uiUiElement,
         data: () => {
@@ -245,7 +245,7 @@ function onDataForm() {
             team: route.query.team_id,
             page: route.query.id,
             name: value.name,
-            exp: value.exp,
+            exp: exp,
             loc: value.loc,
             sleep: value.sleep,
             sub: value.sub,
@@ -268,7 +268,7 @@ function doResetSearch() {
 
 const uiElementData: any = reactive({
   pageName: route.query.name,
-  team_name: route.query.team,
+  team_name: route.query.team_name,
   eleExp: []
 })
 
@@ -284,9 +284,8 @@ function getUiElement() {
     .then((res) => {
       uiElementData.data = res.data
       uiElementData.data.forEach((i: any) => {
-        let typeOpe = uiElementData.eleExp.find((obj: any) => obj.value === i.exp)
-        let decOpe = typeOpe.label
-        i.exp = decOpe
+        let typeOpe = uiElementData.eleExp.find((obj: any) => obj.key === i.exp)
+        i.exp = typeOpe.title
       })
     })
     .catch(console.log)
