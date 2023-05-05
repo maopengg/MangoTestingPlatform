@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-import asyncio
 
 from auto_ui.test_runner.debug_case_run import CaseDistribution
 from auto_ui.test_runner.group_case_run import GroupCaseRun
@@ -26,6 +25,11 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
+        # p = Thread(target=GroupCaseRun().group_case_decompose, args=(case_data,))
+        # p.start()
+        # print('主线程')
+        # p.join()
+        # print('主线程')
         GroupCaseRun().group_case_decompose(case_data)
 
     @classmethod
@@ -64,6 +68,7 @@ if __name__ == '__main__':
     with open(r'../../tests/group_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
         import asyncio
+
         loop = asyncio.new_event_loop()  # 创建新的事件循环
         asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
         p = loop.run_until_complete(r.run_group_case(case_json))  # 运行事件循环
