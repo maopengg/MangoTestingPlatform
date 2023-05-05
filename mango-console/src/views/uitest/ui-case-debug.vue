@@ -431,7 +431,9 @@ export default defineComponent({
         formItems.forEach((it) => {
           const key = it.key
           const propName = item[key]
-          if (propName) {
+          if (typeof propName === 'object' && propName !== null) {
+            it.value.value = propName.name
+          } else {
             it.value.value = propName
           }
         })
@@ -549,7 +551,8 @@ export default defineComponent({
         query: {
           id: caseId,
           name: record.name,
-          team: record.team.name
+          team_name: record.team.name,
+          team_id: record.team.id
         }
       })
     }

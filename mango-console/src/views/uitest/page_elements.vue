@@ -192,7 +192,9 @@ function onUpdate(record: any) {
     formItems.forEach((it) => {
       const key = it.key
       const propName = record[key]
-      if (propName) {
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
         it.value.value = propName
       }
     })

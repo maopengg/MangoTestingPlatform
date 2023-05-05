@@ -6,24 +6,6 @@
 from django.core.paginator import Paginator
 
 
-def option_list(data_list) -> list:
-    """
-    对应web的下拉选项
-    :param data_list: model对象
-    :return: 返回列表套字典格式的对象
-    """
-    data = []
-    for i in data_list:
-        da = {'label': '', 'value': ''}
-        for key, value in vars(i).items():
-            if key == "id":
-                da['value'] = value
-            elif key == 'name':
-                da['label'] = value
-                data.append(da)
-    return data
-
-
 def enum_list(enum) -> list:
     """
     将枚举生成为下拉框列表返回

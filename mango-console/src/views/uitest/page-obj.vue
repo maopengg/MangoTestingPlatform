@@ -117,6 +117,8 @@
                   :placeholder="item.placeholder"
                   :options="conditionItems[2].optionItems"
                   :field-names="fieldNames"
+                  allow-clear
+                  allow-search
                 />
               </template>
             </a-form-item>
@@ -400,7 +402,9 @@ function onUpdate(item: any) {
     formItems.forEach((it) => {
       const key = it.key
       const propName = item[key]
-      if (propName) {
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
         it.value.value = propName
       }
     })

@@ -13,7 +13,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enum_class.ui_enum import ElementExp
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.utils.view_utils.view_tools import option_list, enum_list
+from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class UiElementSerializers(serializers.ModelSerializer):
@@ -63,10 +63,12 @@ class UiElementViews(ViewSet):
         :param request:
         :return:
         """
+        res = UiElement.objects.filter(page=request.query_params.get('name')).values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,
             'msg': '获取数据成功~',
-            'data': option_list(UiElement.objects.filter(page=request.query_params.get('name')))
+            'data': data
         })
 
     @action(methods=['get'], detail=False)

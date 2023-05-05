@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目组：' + route.query.team">
+      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目组：' + route.query.team_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
@@ -22,6 +22,7 @@
           <template #columns>
             <a-table-column
               v-for="item of columns"
+              :key="item.key"
               :align="item.align"
               :title="item.title"
               :width="item.width"
@@ -54,46 +55,46 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-
               <template v-else-if="item.type === 'select' && item.key === 'el_page'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder" @change="getEleName" allow-clear>
-                  <a-option
-                    v-for="optionItem of uiRunSortData.pageName"
-                    :value="optionItem.label"
-                    :key="optionItem.value"
-                    :label="optionItem.label"
-                  />
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiRunSortData.pageName"
+                  :field-names="fieldNames"
+                  @change="getEleName"
+                  allow-clear
+                  allow-search
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'el_name'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder" allow-clear>
-                  <a-option
-                    v-for="optionItem of uiRunSortData.eleName"
-                    :value="optionItem.label"
-                    :key="optionItem.value"
-                    :label="optionItem.label"
-                  />
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiRunSortData.eleName"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'ope_type'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder" allow-clear>
-                  <a-option
-                    v-for="optionItem of uiRunSortData.ope"
-                    :value="optionItem.label"
-                    :key="optionItem.value"
-                    :label="optionItem.label"
-                  />
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiRunSortData.ope"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'ass_type'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder" allow-clear>
-                  <a-option
-                    v-for="optionItem of uiRunSortData.ass"
-                    :value="optionItem.label"
-                    :key="optionItem.value"
-                    :label="optionItem.label"
-                  />
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiRunSortData.ass"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -110,7 +111,8 @@ import { uiRunSort, uiRunSortAss, uiRunSortOpe, uiPageName, uiUiElementName } fr
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
-import { getExpValue, transformData } from '@/utils/datacleaning'
+import { getExpValue, getKeyByTitle, transformData } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
 
 const route = useRoute()
 
@@ -247,10 +249,10 @@ function onUpdate(item: any) {
   nextTick(() => {
     formItems.forEach((it) => {
       const key = it.key
-      console.log(item[key].name)
-
       const propName = item[key]
-      if (propName || propName === null) {
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
         it.value.value = propName
       }
     })
@@ -265,21 +267,20 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let opeValue = getExpValue(value.ope_type, uiRunSortData.ope)
-    let assValue = getExpValue(value.ass_type, uiRunSortData.ass)
+
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
         url: uiRunSort,
         data: () => {
           return {
-            case: route.query.name,
+            case: route.query.id,
             run_sort: uiRunSortData.data.length,
-            team: route.query.team,
+            team: route.query.team_id,
             el_name: value.el_name,
             el_page: value.el_page,
-            ope_type: opeValue,
-            ass_type: assValue,
+            ope_type: value.ope_type,
+            ass_type: value.ass_type,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }
@@ -299,13 +300,13 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            case: route.query.name,
+            case: route.query.id,
             run_sort: uiRunSortData.data.length,
-            team: route.query.team,
+            team: route.query.team_id,
             el_name: value.el_name,
             el_page: value.el_page,
-            ope_type: opeValue,
-            ass_type: assValue,
+            ope_type: value.ope_type,
+            ass_type: value.ass_type,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }
@@ -349,13 +350,11 @@ function getUiRunSort() {
   })
     .then((res) => {
       uiRunSortData.data = res.data
+      const arrOpe = uiRunSortData.ope.map((item: any) => item.title)
+      const arrAss = uiRunSortData.ass.map((item: any) => item.title)
       uiRunSortData.data.forEach((i: any) => {
-        let typeOpe = uiRunSortData.ope.find((obj: any) => obj.value === i.ope_type)
-        let decOpe = typeOpe.label
-        i.ope_type = decOpe
-        let typeAss = uiRunSortData.ass.find((obj: any) => obj.value === i.ass_type)
-        let decAss = typeAss.label
-        i.ass_type = decAss
+        i.ope_type = arrOpe[i.ope_type]
+        i.ass_type = arrAss[i.ass_type]
       })
     })
     .catch(console.log)
