@@ -16,6 +16,7 @@ urlpatterns = [
     path('test/object', TestObjectCRUD.as_view()),
     path('get/environment/enum', TestObjectViews.as_view({'get': 'get_environment_enum'})),
     path('get/platform/enum', TestObjectViews.as_view({'get': 'get_platform_enum'})),
+    path('get/test/obj/name', TestObjectViews.as_view({'get': 'get_test_obj_name'})),
     #
     path('notice', NoticeConfigCRUD.as_view()),
     path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),

@@ -293,7 +293,6 @@ function getEleExp() {
   })
     .then((res) => {
       uiElementData.eleExp = res.data
-      console.log(res.data)
     })
     .catch(console.log)
 }

@@ -46,9 +46,7 @@ class RunSortCRUD(ModelCRUD):
 
     def get(self, request):
         books = self.model.objects.filter(case_id=request.GET.get('case_id')).order_by('run_sort')
-        data = []
-        for i in books:
-            data.append(self.serializer_class(i).data)
+        data = [self.serializer_class(i).data for i in books]
         return Response({
             "code": 200,
             "msg": "获取数据成功~",

@@ -58,6 +58,7 @@ export const uiRunCaseGroupBatch = '/ui/run/group/batch'
 // -
 export const getProjectConfig = '/system/test/object'
 export const getEnvironmentEnum = '/system/get/environment/enum'
+export const getTestObjName = '/system/get/test/obj/name'
 export const getPlatformEnum = '/system/get/platform/enum'
 export const getNoticeConfig = '/system/notice'
 export const getDatabase = '/system/database'

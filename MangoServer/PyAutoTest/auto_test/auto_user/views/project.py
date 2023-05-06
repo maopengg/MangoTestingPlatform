@@ -20,7 +20,7 @@ class ProjectSerializers(serializers.ModelSerializer):
 
 class ProjectCRUD(ModelCRUD):
     model = Project
-    queryset = Project.objects.all().order_by('id')
+    queryset = Project.objects.all()
     serializer_class = ProjectSerializers
 
 
@@ -28,11 +28,8 @@ class ProjectViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_all_items(self, request):
-        items = Project.objects.all().order_by('id')
-        data = []
-        for i in items:
-            data.append({'title': i.name,
-                         'key': i.pk})
+        items = Project.objects.all()
+        data = [{'title': i.name, 'key': i.pk} for i in items]
         return Response({
             'code': 200,
             'data': data,

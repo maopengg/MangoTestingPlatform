@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { get } from '@/api/http'
-import { getEnvironmentEnum } from '@/api/url'
+import { getTestObjName } from '@/api/url'
 // 1.定义容器
-export const useEnvironment = defineStore('get-environment', {
+export const useTestObj = defineStore('get-test-obj', {
   // 类似于data，用来存储全局状态，必须是箭头函数
   state: () => {
     return {
@@ -15,7 +15,7 @@ export const useEnvironment = defineStore('get-environment', {
   actions: {
     getEnvironment() {
       get({
-        url: getEnvironmentEnum
+        url: getTestObjName
       })
         .then((res) => {
           this.data = res.data

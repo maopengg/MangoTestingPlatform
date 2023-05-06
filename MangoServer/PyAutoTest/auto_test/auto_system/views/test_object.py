@@ -65,3 +65,18 @@ class TestObjectViews(ViewSet):
             'msg': '获取数据成功~',
             'data': enum_list(DevicePlatform)
         })
+
+    @action(methods=['get'], detail=False)
+    def get_test_obj_name(self, request):
+        """
+         获取平台枚举
+         :param request:
+         :return:
+         """
+        res = TestObject.objects.values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in res]
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功~',
+            'data': data
+        })

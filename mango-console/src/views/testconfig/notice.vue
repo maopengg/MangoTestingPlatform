@@ -14,26 +14,30 @@
                     <template v-if="item.type === 'input'">
                       <a-input v-model="item.value.value" :placeholder="item.placeholder" />
                     </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
+                    <template v-else-if="item.type === 'select'">
+                      <a-select
+                        style="width: 150px"
+                        v-model="item.value.value"
+                        :placeholder="item.placeholder"
+                        :options="project.data"
+                        :field-names="fieldNames"
+                        allow-clear
+                        allow-search
+                      />
                     </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                    <!--                    <template v-if="item.type === 'date'">-->
+                    <!--                      <a-date-picker v-model="item.value.value" />-->
+                    <!--                    </template>-->
+                    <!--                    <template v-if="item.type === 'time'">-->
+                    <!--                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />-->
+                    <!--                    </template>-->
+                    <!--                    <template v-if="item.type === 'check-group'">-->
+                    <!--                      <a-checkbox-group v-model="item.value.value">-->
+                    <!--                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">-->
+                    <!--                          {{ item.label }}-->
+                    <!--                        </a-checkbox>-->
+                    <!--                      </a-checkbox-group>-->
+                    <!--                    </template>-->
                   </template>
                 </a-form-item>
               </a-form>
@@ -53,8 +57,8 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -114,24 +118,24 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 5, maxRows: 9 }" />
               </template>
-              <template v-else-if="item.type === 'tree-select' && item.key === 'team'">
-                <a-tree-select
+              <template v-else-if="item.type === 'select' && item.key === 'team'">
+                <a-select
                   v-model="item.value.value"
-                  style="width: 100%"
-                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
                   :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
                   allow-clear
-                  :data="treeData"
+                  allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'tree-select' && item.key === 'type'">
-                <a-tree-select
+              <template v-else-if="item.type === 'select' && item.key === 'name'">
+                <a-select
                   v-model="item.value.value"
-                  style="width: 100%"
-                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
                   :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
                   allow-clear
-                  :data="noticeData"
+                  allow-search
                 />
               </template>
             </a-form-item>
@@ -142,51 +146,16 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getAllItems, getNoticeConfig } from '@/api/url'
+import { getNoticeConfig } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
+import { fieldNames } from '@/setting'
 
-interface TreeItem {
-  title: string
-  key: string
-  children?: TreeItem[]
-}
-
-// 环境枚举
-const treeData = ref<Array<TreeItem>>([
-  {
-    title: '测试环境',
-    key: '0'
-  },
-  {
-    title: '预发环境',
-    key: '1'
-  },
-  {
-    title: '生产环境',
-    key: '2'
-  }
-])
-
-const noticeData = ref<Array<TreeItem>>([
-  {
-    title: '邮箱通知',
-    key: '0'
-  },
-  {
-    title: '企业微信群',
-    key: '1'
-  },
-  {
-    title: '钉钉',
-    key: '2'
-  }
-])
 const project = useProject()
 const conditionItems: Array<FormItem> = [
   {
@@ -247,13 +216,13 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'tree-select'
+    type: 'select'
   },
   {
     label: '通知类型',
     key: 'name',
     value: ref(''),
-    type: 'tree-select',
+    type: 'select',
     required: true,
     placeholder: '请选择通知类型'
   },
@@ -267,285 +236,227 @@ const formItems = [
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { onSelectionChange } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目名称',
-        key: 'team',
-        dataIndex: 'team',
-        width: 100
-      },
-      {
-        title: '通知类型',
-        key: 'name',
-        dataIndex: 'name',
-        width: 150
-      },
-      {
-        title: '配置详情',
-        key: 'config',
-        dataIndex: 'config',
-        align: 'left'
-      },
-      {
-        title: '状态',
-        key: 'state',
-        dataIndex: 'state',
-        width: 80
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'team',
+    dataIndex: 'team',
+    width: 100
+  },
+  {
+    title: '通知类型',
+    key: 'name',
+    dataIndex: 'name',
+    width: 150
+  },
+  {
+    title: '配置详情',
+    key: 'config',
+    dataIndex: 'config',
+    align: 'left'
+  },
+  {
+    title: '状态',
+    key: 'state',
+    dataIndex: 'state',
+    width: 80
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: getNoticeConfig,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize
       }
-    ])
+    }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  console.log(data)
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: getNoticeConfig,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: getNoticeConfig,
+      data: () => {
+        return {
+          id: data.caseid,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    function doRefresh() {
-      get({
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '添加页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: getNoticeConfig,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      console.log(data)
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: getNoticeConfig,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: getNoticeConfig,
-          data: () => {
-            return {
-              id: data.caseid,
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
+function onUpdate(item: any) {
+  actionTitle.value = '编辑页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
+        it.value.value = propName
       }
-    }
+    })
+  })
+}
 
-    function getItems() {
-      get({
-        url: getAllItems,
-        data: {}
-      })
-        .then((res) => {
-          for (let value of conditionItems) {
-            if (value.key === 'project') {
-              value.optionItems = res.data
-            }
-          }
-          treeData.value = transformRoutes(res.data)
-        })
-        .catch(console.log)
-    }
-
-    function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
-      const list: TreeItem[] = []
-      routes
-        .filter((it) => it.hidden !== true && it.fullPath !== parentPath)
-        .forEach((it) => {
-          const searchItem: TreeItem = {
-            // 可以控制是取id还是取名称
-            key: it.title,
-            title: it.title
-          }
-          if (it.children && it.children.length > 0) {
-            searchItem.children = transformRoutes(it.children, it.fullPath)
-          }
-          list.push(searchItem)
-        })
-      return list
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: getNoticeConfig,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑页面'
-      modalDialogRef.value?.toggle()
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value: { [key: string]: string } = {}
+    formItems.forEach((it) => {
+      value[it.key] = it.value.value
+    })
+    console.log(value)
+    if (addUpdate.value === 1) {
       addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
+      post({
+        url: getNoticeConfig,
+        data: () => {
+          return {
+            project: value.project,
+            type: value.type,
+            config: value.config,
+            state: 0
           }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        console.log(value)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: getNoticeConfig,
-            data: () => {
-              return {
-                project: value.project,
-                type: value.type,
-                config: value.config,
-                state: 0
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: getNoticeConfig,
-            data: () => {
-              return {
-                id: value.id,
-                project: value.project,
-                type: value.type,
-                config: value.config,
-                state: 0
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
         }
-      }
-    }
-
-    onMounted(doRefresh)
-    onMounted(getItems)
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      conditionItems,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      treeData,
-      noticeData,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: getNoticeConfig,
+        data: () => {
+          return {
+            id: value.id,
+            project: value.project,
+            type: value.type,
+            config: value.config,
+            state: 0
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
-})
+}
+
+onMounted(doRefresh)
 </script>

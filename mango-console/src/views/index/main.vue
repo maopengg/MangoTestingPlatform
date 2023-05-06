@@ -64,8 +64,8 @@ import Bg3 from '@/assets/bg_item_3.png'
 import WeekSalesChart from './components/chart/WeekSalesChart.vue'
 import HotProductChart from './components/chart/HotProductChart.vue'
 import OrderChart from './components/chart/OrderChart.vue'
-import { useEnvironment } from '@/store/modules/get-environment'
 import { useProject } from '@/store/modules/get-project'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 export default defineComponent({
   name: 'Home',
@@ -108,11 +108,11 @@ export default defineComponent({
       onResize()
     })
     const Project = useProject()
-    const environment = useEnvironment()
+    const testObj = useTestObj()
     onMounted(() => {
       nextTick(async () => {
         Project.getItems()
-        environment.getEnvironment()
+        testObj.getEnvironment()
       })
     })
 

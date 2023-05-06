@@ -14,12 +14,16 @@
                     <template v-if="item.type === 'input'">
                       <a-input v-model="item.value.value" :placeholder="item.placeholder" />
                     </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
+                    <template v-else-if="item.type === 'select'">
+                      <a-select
+                        style="width: 150px"
+                        v-model="item.value.value"
+                        :placeholder="item.placeholder"
+                        :options="project.data"
+                        :field-names="fieldNames"
+                        allow-clear
+                        allow-search
+                      />
                     </template>
                     <template v-if="item.type === 'date'">
                       <a-date-picker v-model="item.value.value" />
@@ -53,8 +57,8 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -116,18 +120,7 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <!--              <template v-else-if="item.type === 'tree-select'">-->
-              <!--                <a-tree-select-->
-              <!--                  v-model="item.value.value"-->
-              <!--                  style="width: 100%"-->
-              <!--                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"-->
-              <!--                  :placeholder="item.placeholder"-->
-              <!--                  allow-clear-->
-              <!--                  :data="treeData"-->
-              <!--                />-->
-              <!--              </template>-->
-
-              <template v-else-if="item.type === 'select' && item.type === 'team'">
+              <template v-else-if="item.type === 'select' && item.key === 'team'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
@@ -137,7 +130,7 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.type === 'environment'">
+              <template v-else-if="item.type === 'select' && item.key === 'environment'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
@@ -147,21 +140,21 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.type === 'executor_name'">
+              <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="treeData"
+                  :options="testObjData.nickname"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.type === 'test_type'">
+              <template v-else-if="item.type === 'select' && item.key === 'test_type'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="treeData"
+                  :options="testObjData.platformEnum"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -175,13 +168,13 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
 import { getProjectConfig, getNickname, getPlatformEnum } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useEnvironment } from '@/store/modules/get-environment'
 import { transformData } from '@/utils/datacleaning'
@@ -273,7 +266,7 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请输入客户端类型，0是web，1是安卓，2是ios，3是PC'
+    placeholder: '请选择客户端类型'
   },
   {
     label: '绑定环境',
@@ -293,266 +286,278 @@ const formItems = [
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { onSelectionChange } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目名称',
-        key: 'team',
-        dataIndex: 'team',
-        width: 150
-      },
-      {
-        title: '环境名称',
-        key: 'name',
-        dataIndex: 'name'
-      },
-      {
-        title: '域名/包名',
-        key: 'value',
-        dataIndex: 'value',
-        align: 'left'
-      },
-      {
-        title: '客户端类型',
-        key: 'test_type',
-        dataIndex: 'test_type'
-      },
-      {
-        title: '绑定环境',
-        key: 'environment',
-        dataIndex: 'environment',
-        width: 150
-      },
-      {
-        title: '项目负责人',
-        key: 'executor_name',
-        dataIndex: 'executor_name'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'team',
+    dataIndex: 'team',
+    width: 150
+  },
+  {
+    title: '环境名称',
+    key: 'name',
+    dataIndex: 'name'
+  },
+  {
+    title: '域名/包名',
+    key: 'value',
+    dataIndex: 'value',
+    align: 'left'
+  },
+  {
+    title: '客户端类型',
+    key: 'test_type',
+    dataIndex: 'test_type'
+  },
+  {
+    title: '绑定环境',
+    key: 'environment',
+    dataIndex: 'environment',
+    width: 150
+  },
+  {
+    title: '项目负责人',
+    key: 'executor_name',
+    dataIndex: 'executor_name'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+
+const formModel = ref({})
+
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: getProjectConfig,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
       }
-    ])
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: getProjectConfig,
+      data: () => {
+        return {
+          id: data.caseid,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    const formModel = ref({})
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
 
-    function doRefresh() {
-      get({
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '添加页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: getProjectConfig,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      console.log(data)
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: getProjectConfig,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: getProjectConfig,
-          data: () => {
-            return {
-              id: data.caseid,
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      }
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
+function onUpdate(item: any) {
+  actionTitle.value = '编辑页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (typeof propName === 'object' && propName !== null) {
+        if (propName.name) {
+          it.value.value = propName.name
         } else {
-          it.value.value = ''
+          it.value.value = propName.nickname
         }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: getProjectConfig,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
-          }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value = transformData(formItems)
-        console.log(value)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: getProjectConfig,
-            data: () => {
-              return {
-                team: value.team,
-                name: value.name,
-                value: value.value,
-                environment: value.environment,
-                executor_name: value.executor_name,
-                test_type: value.test_type
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: getProjectConfig,
-            data: () => {
-              return {
-                id: value.id,
-                team: value.team,
-                value: value.value,
-                name: value.name,
-                environment: value.environment,
-                executor_name: value.executor_name,
-                test_type: value.test_type
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
+      } else {
+        it.value.value = propName
       }
-    }
+    })
+  })
+}
 
-    onMounted(doRefresh)
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      conditionItems,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      project,
-      uEnvironment,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete
-    }
-  },
-  computed: {
-    fieldNames() {
-      return fieldNames
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = transformData(formItems)
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: getProjectConfig,
+        data: () => {
+          return {
+            team: value.team,
+            name: value.name,
+            value: value.value,
+            environment: value.environment,
+            executor_name: value.executor_name,
+            test_type: value.test_type
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: getProjectConfig,
+        data: () => {
+          return {
+            id: value.id,
+            team: value.team,
+            value: value.value,
+            name: value.name,
+            environment: value.environment,
+            executor_name: value.executor_name,
+            test_type: value.test_type
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
+}
+
+function doRefresh() {
+  get({
+    url: getProjectConfig,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      }
+    }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
+
+const testObjData = reactive({
+  nickname: [],
+  platformEnum: []
+})
+
+function getNickName() {
+  get({
+    url: getNickname,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      testObjData.nickname = res.data
+    })
+    .catch(console.log)
+}
+
+function getPlatform() {
+  get({
+    url: getPlatformEnum,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      testObjData.platformEnum = res.data
+    })
+    .catch(console.log)
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+    getNickName()
+    getPlatform()
+    uEnvironment.getEnvironment()
+  })
 })
 </script>

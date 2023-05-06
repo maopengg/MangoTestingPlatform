@@ -33,7 +33,7 @@ class UserViews(ViewSet):
         :param request:
         :return:
         """
-        res = User.objects.filter(page=request.query_params.get('name')).values_list('id', 'nickname')
+        res = User.objects.values_list('id', 'nickname')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,
