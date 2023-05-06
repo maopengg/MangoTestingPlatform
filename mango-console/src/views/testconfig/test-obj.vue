@@ -177,7 +177,7 @@ import { Input, Message, Modal } from '@arco-design/web-vue'
 import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useEnvironment } from '@/store/modules/get-environment'
-import { transformData } from '@/utils/datacleaning'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
 
 const project = useProject()
@@ -478,6 +478,12 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      let executor_name = value.executor_name
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+        executor_name = getKeyByTitle(testObjData.nickname, value.executor_name)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -486,11 +492,11 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            team: value.team,
+            team: teamId,
             value: value.value,
             name: value.name,
             environment: value.environment,
-            executor_name: value.executor_name,
+            executor_name: executor_name,
             test_type: value.test_type
           }
         }

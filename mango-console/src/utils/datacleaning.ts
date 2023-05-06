@@ -38,11 +38,11 @@ export function getKeyByTitle(groups: Group[], title: string): number {
 
 // 根据key的值获取title
 
-export function getKeyByKey(groups: Group[], title: string): number {
-  const group = groups.find((group) => group.title === title)
+export function getKeyByKey(groups: Group[], key: number): string {
+  const group = groups.find((group) => group.key === key)
   if (group) {
-    return group.key
+    return group.title
   } else {
-    throw new Error(`找不到title为${title}的group`)
+    throw new Error(`找不到key为${key}的group`)
   }
 }

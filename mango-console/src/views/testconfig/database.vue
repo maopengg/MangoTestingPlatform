@@ -155,7 +155,7 @@ import { h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useTestObj } from '@/store/modules/get-test-obj'
 import { fieldNames } from '@/setting'
-import { transformData } from '@/utils/datacleaning'
+import { getKeyByKey, getKeyByTitle, transformData } from '@/utils/datacleaning'
 
 const project = useProject()
 const testObj = useTestObj()
@@ -460,6 +460,7 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
+    console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
@@ -468,9 +469,11 @@ function onDataForm() {
           return {
             team: value.team,
             name: value.name,
-            url: value.url,
-            environment: value.environment,
-            executor_name: value.executor_name
+            host: value.host,
+            password: value.password,
+            post: value.post,
+            test_obj: value.test_obj,
+            user: value.user
           }
         }
       })
@@ -480,6 +483,12 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      let testOb = value.test_obj
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+        testOb = getKeyByTitle(testObj.data, value.test_obj)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -488,11 +497,13 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            project: value.project,
+            team: teamId,
             name: value.name,
-            url: value.url,
-            environment: value.environment,
-            executor_name: value.executor_name
+            host: value.host,
+            password: value.password,
+            post: value.post,
+            test_obj: testOb,
+            user: value.user
           }
         }
       })
