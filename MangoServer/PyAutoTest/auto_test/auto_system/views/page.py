@@ -4,8 +4,6 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.utils.cache_utils.redis import Cache
 from PyAutoTest.utils.other_utils.random_data import RandomData
-from PyAutoTest.utils.view_utils.view_tools import enum_list
-from ..system_tools.enum import Environment
 from ...auto_ui.case_run.case_data import CaseData
 
 
@@ -16,14 +14,6 @@ class SystemViews(ViewSet):
         r = CaseData(2)
         data = r.data_ui_case(1)
         return Response(data)
-
-    @action(methods=['get'], detail=False)
-    def get_test_environment(self, request, *args, **kwargs):
-        return Response({
-            'code': 200,
-            'msg': '获取环境信息成功',
-            'data': enum_list(Environment)
-        })
 
     @action(methods=['get'], detail=False)
     def common_variable(self, request):

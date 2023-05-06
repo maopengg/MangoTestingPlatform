@@ -4,6 +4,7 @@
 # @Time   : 2023-01-16 20:48
 # @Author : 毛鹏
 import json
+
 from django.http.response import JsonResponse
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -11,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.api_tools.data_model import Response
 from PyAutoTest.auto_test.auto_api.api_tools.enum import OpeType, Method
 from PyAutoTest.auto_test.auto_api.case_run.case_run import ApiCaseRun
-from PyAutoTest.auto_test.auto_system.system_tools.enum import Environment
+from PyAutoTest.enum_class.ui_enum import EnvironmentEnum
 
 
 class RunApiCase(ViewSet):
@@ -34,7 +35,7 @@ class RunApiCase(ViewSet):
             'response_time': Response.response_time,
             'code': response.status_code,
             'body_type': [x.name if x.value == case.body_type else 'null' for x in OpeType][0],
-            'environment': [x.name for x in Environment if x.value == int(environment)][0],
+            'environment': [x.name for x in EnvironmentEnum if x.value == int(environment)][0],
             'assertion': '成功',
             'body': json.dumps(Response.body),
             'response': response.json()}

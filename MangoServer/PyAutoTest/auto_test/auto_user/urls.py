@@ -19,5 +19,6 @@ urlpatterns = [
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
     #
     path("user", UserCRUD.as_view()),
-    path("user/test", UserViews.test),
+    path("get/nickname/", UserViews.as_view({'get': 'get_nickname'})),
+
 ]

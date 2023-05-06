@@ -7,7 +7,7 @@ from enum import Enum
 
 
 class DevicePlatform(Enum):
-    """ 什么端 """
+    """ {"0": "web"}，{"1": "安卓"}，{"2": "IOS"}，{"3": "桌面PC"} """
     WEB = 0
     ANDROID = 1
     IOS = 2
@@ -18,6 +18,13 @@ class BrowserType(Enum):
     CHROMIUM = 0
     FIREFOX = 1
     WEBKIT = 2
+
+
+class EnvironmentEnum(Enum):
+    """ {"0": "测试环境"}，{"1": "预发环境"}，{"2": "生产环境"} """
+    TEST = 0
+    PRE = 1
+    PRO = 2
 
 
 class OpeType(Enum):

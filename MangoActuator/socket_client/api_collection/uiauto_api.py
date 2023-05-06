@@ -26,11 +26,6 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        # p = Thread(target=GroupCaseRun().group_case_decompose, args=(case_data,))
-        # p.start()
-        # print('主线程')
-        # p.join()
-        # print('主线程')
         GroupCaseRun().group_case_decompose(case_data)
 
     @classmethod
@@ -56,10 +51,6 @@ class UiAutoApi:
         @return:
         """
         print(case_data)
-
-    @classmethod
-    def close_browser(cls):
-        cls.case.page.close()
 
 
 if __name__ == '__main__':

@@ -116,25 +116,56 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'tree-select'">
-                <a-tree-select
+              <!--              <template v-else-if="item.type === 'tree-select'">-->
+              <!--                <a-tree-select-->
+              <!--                  v-model="item.value.value"-->
+              <!--                  style="width: 100%"-->
+              <!--                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"-->
+              <!--                  :placeholder="item.placeholder"-->
+              <!--                  allow-clear-->
+              <!--                  :data="treeData"-->
+              <!--                />-->
+              <!--              </template>-->
+
+              <template v-else-if="item.type === 'select' && item.type === 'team'">
+                <a-select
                   v-model="item.value.value"
-                  style="width: 100%"
-                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
                   :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
                   allow-clear
-                  :data="treeData"
+                  allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option
-                    v-for="optionItem of project.data"
-                    :value="optionItem.title"
-                    :key="optionItem.key"
-                    :label="optionItem.title"
-                  />
-                </a-select>
+              <template v-else-if="item.type === 'select' && item.type === 'environment'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uEnvironment.data"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.type === 'executor_name'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="treeData"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.type === 'test_type'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="treeData"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -146,36 +177,19 @@
 
 <script lang="ts">
 import { get, post, put, deleted } from '@/api/http'
-import { getProjectConfig } from '@/api/url'
+import { getProjectConfig, getNickname, getPlatformEnum } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
+import { useEnvironment } from '@/store/modules/get-environment'
 import { transformData } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
 
-interface TreeItem {
-  title: string
-  key: string
-  children?: TreeItem[]
-}
-
-// 环境枚举
-const treeData = ref<Array<TreeItem>>([
-  {
-    title: '测试环境',
-    key: '0'
-  },
-  {
-    title: '预发环境',
-    key: '1'
-  },
-  {
-    title: '生产环境',
-    key: '2'
-  }
-])
 const project = useProject()
+const uEnvironment = useEnvironment()
+
 const conditionItems: Array<FormItem> = [
   {
     key: 'executor_name',
@@ -257,7 +271,7 @@ const formItems = [
     label: '客户端类型',
     key: 'test_type',
     value: ref(''),
-    type: 'input',
+    type: 'select',
     required: true,
     placeholder: '请输入客户端类型，0是web，1是安卓，2是ios，3是PC'
   },
@@ -265,7 +279,7 @@ const formItems = [
     label: '绑定环境',
     key: 'environment',
     value: ref(''),
-    type: 'tree-select',
+    type: 'select',
     required: true,
     placeholder: '请选择对应环境'
   },
@@ -273,7 +287,7 @@ const formItems = [
     label: '负责人名称',
     key: 'executor_name',
     value: ref(''),
-    type: 'input',
+    type: 'select',
     required: true,
     placeholder: '请输入负责人名称'
   }
@@ -524,8 +538,8 @@ export default defineComponent({
       formModel,
       actionTitle,
       modalDialogRef,
-      treeData,
       project,
+      uEnvironment,
       onSearch,
       onResetSearch,
       onSelectionChange,
@@ -533,6 +547,11 @@ export default defineComponent({
       onAddPage,
       onUpdate,
       onDelete
+    }
+  },
+  computed: {
+    fieldNames() {
+      return fieldNames
     }
   }
 })

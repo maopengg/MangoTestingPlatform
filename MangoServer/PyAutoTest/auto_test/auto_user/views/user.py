@@ -26,9 +26,20 @@ class UserCRUD(ModelCRUD):
 
 class UserViews(ViewSet):
 
-    @staticmethod
-    def test(request):
-        pass
+    @action(methods=['get'], detail=False)
+    def get_nickname(self, request):
+        """
+        获取用户名称
+        :param request:
+        :return:
+        """
+        res = User.objects.filter(page=request.query_params.get('name')).values_list('id', 'nickname')
+        data = [{'key': _id, 'title': name} for _id, name in res]
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功~',
+            'data': data
+        })
 
 
 class LoginViews(ViewSet):

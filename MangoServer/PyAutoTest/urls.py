@@ -32,28 +32,3 @@ urlpatterns = [
     path('perf/', include("PyAutoTest.auto_test.auto_perf.urls")),
     path('user/', include("PyAutoTest.auto_test.auto_user.urls")),
 ]
-
-# # This class provides a way to replace text with values from a Redis client
-# class RedisReplace:
-#     # Initialize the class with a Redis client
-#     def __init__(self, redis_client):
-#         self.redis_client = redis_client
-#
-#     # Replace text with values from the Redis client
-#     def replace(self, text):
-#         while True:
-#             # Find the start index of the key
-#             start_index = text.find('${')
-#             # If no key is found, break out of the loop
-#             if start_index == -1:
-#                 break
-#             # Find the end index of the key
-#             end_index = text.find('}', start_index)
-#             # Get the key from the text
-#             key = text[start_index + 2:end_index]
-#             # Get the value from the Redis client
-#             value = self.redis_client.get(key)
-#             # Replace the key with the value in the text
-#             text = text[:start_index] + value + text[end_index + 1:]
-#         # Return the replaced text
-#         return text

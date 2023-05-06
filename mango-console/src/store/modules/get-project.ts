@@ -19,7 +19,6 @@ export const useProject = defineStore('get-project', {
       })
         .then((res) => {
           this.data = res.data
-          console.log(res.data)
         })
         .catch(console.log)
     }

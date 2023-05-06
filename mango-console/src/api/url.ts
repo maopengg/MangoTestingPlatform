@@ -25,6 +25,7 @@ export const getAllRole = '/user/role/all'
 
 export const getUserList = '/user/user'
 export const getAllItems = '/user/project/all'
+export const getNickname = '/user/get/nickname/'
 
 // -
 export const ApiCase = '/api/case'
@@ -55,8 +56,9 @@ export const uiRunCaseGroup = '/ui/run/group'
 export const uiRunCaseGroupBatch = '/ui/run/group/batch'
 
 // -
-export const getProjectConfig = '/system/project'
-export const getEnvironment = '/system/environment'
+export const getProjectConfig = '/system/test/object'
+export const getEnvironmentEnum = '/system/get/environment/enum'
+export const getPlatformEnum = '/system/get/platform/enum'
 export const getNoticeConfig = '/system/notice'
 export const getDatabase = '/system/database'
 export const getRandomList = 'system/variable/random/list'

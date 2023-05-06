@@ -24,7 +24,6 @@ class GroupCaseRun:
         for i in data:
             task_list.append(asyncio.create_task(GroupCaseRunR().group_obj(i)))
         res = asyncio.wait(task_list, timeout=None)
-        # res = await asyncio.gather(i for i in task_list)
         print(res)
 
 
@@ -34,7 +33,7 @@ class GroupCaseRunR(CaseRunMethod):
         self.web: Optional[WebRun] = None
 
     async def group_obj(self, group_case: dict):
-        print(id(self))
+        print(f'GroupCaseRunR内存地址是：{id(self)}')
         # 获取组用例名称和组用例对象
         for group_name, group_value in group_case.items():
             # 获取每个用例

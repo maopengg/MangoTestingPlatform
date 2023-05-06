@@ -6,7 +6,7 @@
 from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.views.project_config import TestObjectSerializers
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiResult
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_case_group import UiCaseGroupSerializers

@@ -4,12 +4,16 @@
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
 from rest_framework import serializers
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.enum_class.ui_enum import EnvironmentEnum, DevicePlatform
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
@@ -36,6 +40,28 @@ class TestObjectCRUD(ModelCRUD):
 
 class TestObjectViews(ViewSet):
 
-    @staticmethod
-    def test(request):
-        pass
+    @action(methods=['get'], detail=False)
+    def get_environment_enum(self, request):
+        """
+         获取环境信息
+         :param request:
+         :return:
+         """
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功~',
+            'data': enum_list(EnvironmentEnum)
+        })
+
+    @action(methods=['get'], detail=False)
+    def get_platform_enum(self, request):
+        """
+         获取平台枚举
+         :param request:
+         :return:
+         """
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功~',
+            'data': enum_list(DevicePlatform)
+        })
