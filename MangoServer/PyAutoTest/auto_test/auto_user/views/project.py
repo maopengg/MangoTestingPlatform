@@ -22,6 +22,7 @@ class ProjectCRUD(ModelCRUD):
     model = Project
     queryset = Project.objects.all()
     serializer_class = ProjectSerializers
+    serializer = ProjectSerializers
 
 
 class ProjectViews(ViewSet):

@@ -95,16 +95,6 @@
               <template v-else-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'month'">
-                <a-select
-                  v-model="item.value.value"
-                  :placeholder="item.placeholder"
-                  :options="timeDataR.month"
-                  :field-names="fieldNames"
-                  allow-clear
-                  allow-search
-                />
-              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -115,13 +105,12 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getTimeList, getTimeData } from '@/api/url'
+import { getTimeList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { transformData } from '@/utils/datacleaning'
-import { fieldNames } from '@/setting'
 
 const conditionItems: Array<FormItem> = [
   {
@@ -488,12 +477,12 @@ function onDataForm() {
   }
 }
 
-const timeDataR = reactive({
-  month: [],
-  day: [],
-  hour: [],
-  minute: []
-})
+// const timeDataR = reactive({
+//   month: [],
+//   day: [],
+//   hour: [],
+//   minute: []
+// })
 
 // function timeData() {
 //   get({

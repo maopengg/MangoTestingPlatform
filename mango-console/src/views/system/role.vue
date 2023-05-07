@@ -16,8 +16,8 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -73,13 +73,13 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
 import { getRoleList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick } from 'vue'
 
 const formItems = [
   {
@@ -88,7 +88,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请输入角色名称',
     required: true,
-    type: 'input'
+    type: 'input',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '角色描述',
@@ -96,178 +103,171 @@ const formItems = [
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请输入橘色描述'
+    placeholder: '请输入橘色描述',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { onSelectionChange } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '角色名称',
-        key: 'name',
-        dataIndex: 'name'
-      },
-      {
-        title: '角色描述',
-        key: 'description',
-        dataIndex: 'description'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '角色名称',
+    key: 'name',
+    dataIndex: 'name'
+  },
+  {
+    title: '角色描述',
+    key: 'description',
+    dataIndex: 'description'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: getRoleList,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize
       }
-    ])
+    }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+const addUpdate = ref(0)
+const updateId: any = ref('')
 
-    function doRefresh() {
-      get({
+function onAddPage() {
+  actionTitle.value = '添加页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: getRoleList,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: getRoleList,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
-          }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        console.log(value)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: getRoleList,
-            data: () => {
-              return {
-                description: value.description,
-                name: value.name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: getRoleList,
-            data: () => {
-              return {
-                id: value.id,
-                description: value.description,
-                name: value.name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
+function onUpdate(item: any) {
+  actionTitle.value = '编辑页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
+        it.value.value = propName
       }
-    }
+    })
+  })
+}
 
-    onMounted(doRefresh)
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value: { [key: string]: string } = {}
+    formItems.forEach((it) => {
+      value[it.key] = it.value.value
+    })
+    console.log(value)
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: getRoleList,
+        data: () => {
+          return {
+            description: value.description,
+            name: value.name
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: getRoleList,
+        data: () => {
+          return {
+            id: value.id,
+            description: value.description,
+            name: value.name
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+  })
 })
 </script>

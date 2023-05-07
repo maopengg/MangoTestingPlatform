@@ -13,6 +13,7 @@
         <a-table :columns="columns" :data="uiElementData.data" :pagination="false" :bordered="false">
           <template #columns>
             <a-table-column
+              :key="item.key"
               v-for="item of columns"
               :align="item.align"
               :title="item.title"
@@ -41,11 +42,14 @@
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
               <template v-else-if="item.type === 'select'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder" allow-clear>
-                  <a-option v-for="optionItem of uiElementData.eleExp" :key="optionItem.value" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiElementData.eleExp"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -62,6 +66,7 @@ import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
 import { getKeyByTitle, transformData } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
 
 const route = useRoute()
 
@@ -110,7 +115,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请输入元素名称',
     required: true,
-    type: 'input'
+    type: 'input',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '表达式类型',
@@ -118,7 +130,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择元素表达式类型'
+    placeholder: '请选择元素表达式类型',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '元素表达式',
@@ -126,7 +145,14 @@ const formItems = [
     value: ref(),
     type: 'input',
     required: true,
-    placeholder: '请输入元素表达式'
+    placeholder: '请输入元素表达式',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '等待时间',

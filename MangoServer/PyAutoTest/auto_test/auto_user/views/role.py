@@ -20,8 +20,9 @@ class RoleSerializers(serializers.ModelSerializer):
 
 class RoleCRUD(ModelCRUD):
     model = Role
-    queryset = Role.objects.all().order_by('id')
+    queryset = Role.objects.all()
     serializer_class = RoleSerializers
+    serializer = RoleSerializers
 
 
 class RoleViews(ViewSet):

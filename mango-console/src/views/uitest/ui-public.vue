@@ -14,25 +14,16 @@
                     <template v-if="item.type === 'input'">
                       <a-input v-model="item.value.value" :placeholder="item.placeholder" />
                     </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
+                    <template v-else-if="item.type === 'select'">
+                      <a-select
+                        style="width: 150px"
+                        v-model="item.value.value"
+                        :placeholder="item.placeholder"
+                        :options="project.data"
+                        :field-names="fieldNames"
+                        allow-clear
+                        allow-search
+                      />
                     </template>
                   </template>
                 </a-form-item>
@@ -55,8 +46,8 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -148,36 +139,16 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
 import { ApiPublic, ApiPublicEnd, ApiPublicPublic } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick, reactive } from 'vue'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
+import { fieldNames } from '@/setting'
 
-interface TreeItem {
-  title: string
-  key: string
-  children?: TreeItem[]
-}
-
-// 环境枚举
-const treeData = ref<Array<TreeItem>>([
-  {
-    title: '测试环境',
-    key: '0'
-  },
-  {
-    title: '预发环境',
-    key: '1'
-  },
-  {
-    title: '生产环境',
-    key: '2'
-  }
-])
 const conditionItems: Array<FormItem> = [
   {
     key: 'executor_name',
@@ -239,7 +210,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目组',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '客户端',
@@ -247,7 +225,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择客户端'
+    placeholder: '请选择客户端',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '类型',
@@ -255,7 +240,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择对应类型，注意不同类型的加载顺序'
+    placeholder: '请选择对应类型，注意不同类型的加载顺序',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '名称',
@@ -263,7 +255,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入名称'
+    placeholder: '请输入名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: 'key',
@@ -271,7 +270,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入缓存的key'
+    placeholder: '请输入缓存的key',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: 'value',
@@ -279,312 +285,291 @@ const formItems = [
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请根据规则输入value值'
+    placeholder: '请根据规则输入value值',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('新增参数')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目名称',
-        key: 'team',
-        dataIndex: 'team',
-        width: 100
-      },
-      {
-        title: '客户端',
-        key: 'end',
-        dataIndex: 'end',
-        width: 150
-      },
-      {
-        title: '类型',
-        key: 'public_type',
-        dataIndex: 'public_type'
-      },
-      {
-        title: '名称',
-        key: 'name',
-        dataIndex: 'name',
-        width: 150
-      },
-      {
-        title: 'key',
-        key: 'key',
-        dataIndex: 'key',
-        width: 150
-      },
-      {
-        title: 'value',
-        key: 'value',
-        dataIndex: 'value',
-        align: 'left'
-      },
-      {
-        title: '状态',
-        key: 'state',
-        dataIndex: 'state'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('新增参数')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'team',
+    dataIndex: 'team',
+    width: 100
+  },
+  {
+    title: '客户端',
+    key: 'end',
+    dataIndex: 'end',
+    width: 150
+  },
+  {
+    title: '类型',
+    key: 'public_type',
+    dataIndex: 'public_type'
+  },
+  {
+    title: '名称',
+    key: 'name',
+    dataIndex: 'name',
+    width: 150
+  },
+  {
+    title: 'key',
+    key: 'key',
+    dataIndex: 'key',
+    width: 150
+  },
+  {
+    title: 'value',
+    key: 'value',
+    dataIndex: 'value',
+    align: 'left'
+  },
+  {
+    title: '状态',
+    key: 'state',
+    dataIndex: 'state'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+
+const formModel = ref({})
+const caseType: any = ref('0')
+
+function switchType(key: any) {
+  caseType.value = key
+  doRefresh()
+}
+
+function doRefresh() {
+  get({
+    url: ApiPublic,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        type: caseType.value
       }
-    ])
-
-    const formModel = ref({})
-    const caseType: any = ref('0')
-
-    function switchType(key: any) {
-      caseType.value = key
-      doRefresh()
     }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    function doRefresh() {
-      get({
+const selectValue: any = reactive({
+  apiPublicPublic: [],
+  apiPublicEnd: []
+})
+
+function doPublic() {
+  get({
+    url: ApiPublicPublic
+  })
+    .then((res) => {
+      selectValue.apiPublicPublic = res.data
+    })
+    .catch(console.log)
+}
+
+function doEnd() {
+  get({
+    url: ApiPublicEnd
+  })
+    .then((res) => {
+      selectValue.apiPublicEnd = res.data
+    })
+    .catch(console.log)
+}
+
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: ApiPublic,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: ApiPublic,
+      data: () => {
+        return {
+          id: data.caseid,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
+
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '新增参数'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: ApiPublic,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize,
-            type: caseType.value
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    const selectValue: any = reactive({
-      apiPublicPublic: [],
-      apiPublicEnd: []
-    })
-
-    function doPublic() {
-      get({
-        url: ApiPublicPublic
-      })
-        .then((res) => {
-          selectValue.apiPublicPublic = res.data
-        })
-        .catch(console.log)
-    }
-
-    function doEnd() {
-      get({
-        url: ApiPublicEnd
-      })
-        .then((res) => {
-          selectValue.apiPublicEnd = res.data
-        })
-        .catch(console.log)
-    }
-
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: ApiPublic,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: ApiPublic,
-          data: () => {
-            return {
-              id: data.caseid,
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
+function onUpdate(item: any) {
+  actionTitle.value = '编辑参数'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (propName) {
+        it.value.value = propName
       }
-    }
+    })
+  })
+}
 
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '新增参数'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: ApiPublic,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑参数'
-      modalDialogRef.value?.toggle()
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value: { [key: string]: string } = {}
+    formItems.forEach((it) => {
+      value[it.key] = it.value.value
+    })
+    if (addUpdate.value === 1) {
       addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
+      post({
+        url: ApiPublic,
+        data: () => {
+          return {
+            project: value.project,
+            name: value.name,
+            url: value.url,
+            environment: value.environment,
+            executor_name: value.executor_name
           }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: ApiPublic,
-            data: () => {
-              return {
-                project: value.project,
-                name: value.name,
-                url: value.url,
-                environment: value.environment,
-                executor_name: value.executor_name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: ApiPublic,
-            data: () => {
-              return {
-                id: value.id,
-                project: value.project,
-                name: value.name,
-                url: value.url,
-                environment: value.environment,
-                executor_name: value.executor_name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
         }
-      }
-    }
-
-    onMounted(() => {
-      nextTick(async () => {
-        doRefresh()
-        doPublic()
-        doEnd()
       })
-    })
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      conditionItems,
-      selectedRowKeys,
-      showCheckedAll,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      treeData,
-      selectValue,
-      switchType,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: ApiPublic,
+        data: () => {
+          return {
+            id: value.id,
+            project: value.project,
+            name: value.name,
+            url: value.url,
+            environment: value.environment,
+            executor_name: value.executor_name
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+    doPublic()
+    doEnd()
+  })
 })
 </script>

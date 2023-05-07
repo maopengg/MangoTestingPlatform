@@ -16,10 +16,13 @@
                     </template>
                     <template v-else-if="item.type === 'select'">
                       <a-select
+                        style="width: 150px"
                         v-model="item.value.value"
                         :placeholder="item.placeholder"
-                        :options="item.optionItems"
+                        :options="project.data"
                         :field-names="fieldNames"
+                        allow-clear
+                        allow-search
                       />
                     </template>
                     <template v-if="item.type === 'date'">
@@ -204,7 +207,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '页面名称',
@@ -212,7 +222,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入页面名称'
+    placeholder: '请输入页面名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '页面地址',
@@ -220,7 +237,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入页面名称'
+    placeholder: '请输入页面名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 

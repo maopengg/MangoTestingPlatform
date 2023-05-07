@@ -14,12 +14,16 @@
                     <template v-if="item.type === 'input'">
                       <a-input v-model="item.value.value" :placeholder="item.placeholder" />
                     </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
+                    <template v-else-if="item.type === 'select'">
+                      <a-select
+                        style="width: 150px"
+                        v-model="item.value.value"
+                        :placeholder="item.placeholder"
+                        :options="project.data"
+                        :field-names="fieldNames"
+                        allow-clear
+                        allow-search
+                      />
                     </template>
                     <template v-if="item.type === 'date'">
                       <a-date-picker v-model="item.value.value" />
@@ -62,8 +66,8 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -124,14 +128,14 @@
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
               <template v-else-if="item.type === 'select'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option
-                    v-for="optionItem of project.data"
-                    :value="optionItem.title"
-                    :key="optionItem.key"
-                    :label="optionItem.title"
-                  />
-                </a-select>
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -141,18 +145,18 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
 import { uiCase, uiCasePutType, UiRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { getKeyByTitle, transformData } from '@/utils/datacleaning'
-import { environment } from '@/setting'
+import { environment, fieldNames } from '@/setting'
 
 const project = useProject()
 const conditionItems: Array<FormItem> = [
@@ -215,7 +219,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '用例名称',
@@ -223,379 +234,351 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入页面名称'
+    placeholder: '请输入页面名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const searchForm = ref()
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
 
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目组',
-        key: 'team',
-        dataIndex: 'team',
-        width: 100
-      },
-      {
-        title: '用例名称',
-        key: 'name',
-        dataIndex: 'name',
-        align: 'left',
-        width: 230
-      },
-      {
-        title: '用例执行顺序',
-        key: 'run_flow',
-        dataIndex: 'run_flow',
-        align: 'left'
-      },
-      {
-        title: '状态',
-        key: 'state',
-        dataIndex: 'state'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 200
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目组',
+    key: 'team',
+    dataIndex: 'team',
+    width: 100
+  },
+  {
+    title: '用例名称',
+    key: 'name',
+    dataIndex: 'name',
+    align: 'left',
+    width: 230
+  },
+  {
+    title: '用例执行顺序',
+    key: 'run_flow',
+    dataIndex: 'run_flow',
+    align: 'left'
+  },
+  {
+    title: '状态',
+    key: 'state',
+    dataIndex: 'state'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 200
+  }
+])
+const caseType: any = ref('0')
+
+function switchType(key: any) {
+  caseType.value = key
+  doRefresh()
+}
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: uiCase,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        type: caseType.value
       }
-    ])
-    const caseType: any = ref('0')
-
-    function switchType(key: any) {
-      caseType.value = key
-      doRefresh()
     }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  console.log(data)
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: uiCase,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          project: data.project,
+          type: caseType.value
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: uiCase,
+      data: () => {
+        return {
+          id: data.caseid,
+          name: data.name,
+          type: caseType.value
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    function doRefresh() {
-      get({
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '添加页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: uiCase,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize,
-            type: caseType.value
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      console.log(data)
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: uiCase,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              project: data.project,
-              type: caseType.value
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: uiCase,
-          data: () => {
-            return {
-              id: data.caseid,
-              name: data.name,
-              type: caseType.value
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      }
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: uiCase,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onDeleteItems() {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要删除的数据')
-        return
-      }
-      Modal.confirm({
-        title: '提示',
-        content: '确定要删除此数据吗？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: uiCase,
-            data: () => {
-              return {
-                id: JSON.stringify(selectedRowKeys.value)
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑页面'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (typeof propName === 'object' && propName !== null) {
-            it.value.value = propName.name
-          } else {
-            it.value.value = propName
-          }
-        })
-      })
-    }
-
-    function setCase(name: string) {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要设为' + name + '的数据')
-        return
-      }
-      let type = 0
-      if (name === '调试完成') {
-        type = 1
-      } else if (name === '用例组') {
-        type = 5
-        //   用例组需要单独设置一个字段来表示
-      }
-      Modal.confirm({
-        title: '提示',
-        content: '确定要把这些设为' + name + '的吗？',
-        cancelText: '取消',
-        okText: '确定',
-        onOk: () => {
-          put({
-            url: uiCasePutType,
-            data: () => {
-              return {
-                id: JSON.stringify(selectedRowKeys.value),
-                type: type,
-                name: name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value = transformData(formItems)
-        let teamId = getKeyByTitle(project.data, value.team)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: uiCase,
-            data: () => {
-              return {
-                team: teamId,
-                name: value.name,
-                type: 0
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: uiCase,
-            data: () => {
-              return {
-                id: value.id,
-                team: teamId,
-                name: value.name,
-                type: 0,
-                state: 0
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      }
-    }
-
-    function onRunCase(record: any) {
-      // Message.info('测试用例正在执行，请稍后')
-      get({
-        url: UiRun,
+function onDeleteItems() {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要删除的数据')
+    return
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要删除此数据吗？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
+        url: uiCase,
         data: () => {
           return {
-            case_id: record.id,
-            environment: environment
+            id: JSON.stringify(selectedRowKeys.value)
           }
         }
       })
         .then((res) => {
-          Notification.success(res.msg)
+          Message.success(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    const router = useRouter()
+function onUpdate(item: any) {
+  actionTitle.value = '编辑页面'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
+        it.value.value = propName
+      }
+    })
+  })
+}
 
-    function onClick(record: any) {
-      let caseId = parseInt(record.id, 10)
-      router.push({
-        path: '/uitest/details',
-        query: {
-          id: caseId,
-          name: record.name,
-          team_name: record.team.name,
-          team_id: record.team.id
+function setCase(name: string) {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要设为' + name + '的数据')
+    return
+  }
+  let type = 0
+  if (name === '调试完成') {
+    type = 1
+  } else if (name === '用例组') {
+    type = 5
+    //   用例组需要单独设置一个字段来表示
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要把这些设为' + name + '的吗？',
+    cancelText: '取消',
+    okText: '确定',
+    onOk: () => {
+      put({
+        url: uiCasePutType,
+        data: () => {
+          return {
+            id: JSON.stringify(selectedRowKeys.value),
+            type: type,
+            name: name
+          }
         }
       })
+        .then((res) => {
+          Message.success(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
+        })
+        .catch(console.log)
     }
+  })
+}
 
-    function setCaseGroup() {
-      Message.info('进入到设置用例组页面')
-    }
-
-    onMounted(() => {
-      nextTick(async () => {
-        doRefresh()
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = transformData(formItems)
+    let teamId = getKeyByTitle(project.data, value.team)
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: uiCase,
+        data: () => {
+          return {
+            team: teamId,
+            name: value.name,
+            type: 0
+          }
+        }
       })
-    })
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      searchForm,
-      tableColumns,
-      conditionItems,
-      selectedRowKeys,
-      showCheckedAll,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      caseType,
-      project,
-      onClick,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete,
-      onDeleteItems,
-      switchType,
-      setCase,
-      onRunCase,
-      setCaseGroup
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: uiCase,
+        data: () => {
+          return {
+            id: value.id,
+            team: teamId,
+            name: value.name,
+            type: 0,
+            state: 0
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
+}
+
+function onRunCase(record: any) {
+  // Message.info('测试用例正在执行，请稍后')
+  get({
+    url: UiRun,
+    data: () => {
+      return {
+        case_id: record.id,
+        environment: environment
+      }
+    }
+  })
+    .then((res) => {
+      Notification.success(res.msg)
+    })
+    .catch(console.log)
+}
+
+const router = useRouter()
+
+function onClick(record: any) {
+  let caseId = parseInt(record.id, 10)
+  router.push({
+    path: '/uitest/details',
+    query: {
+      id: caseId,
+      name: record.name,
+      team_name: record.team.name,
+      team_id: record.team.id
+    }
+  })
+}
+
+function setCaseGroup() {
+  Message.info('进入到设置用例组页面')
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+  })
 })
 </script>
 

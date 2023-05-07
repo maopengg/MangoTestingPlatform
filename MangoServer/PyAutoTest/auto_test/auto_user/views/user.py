@@ -7,21 +7,32 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.views.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class UserSerializers(serializers.ModelSerializer):
+    department = ProjectSerializers(read_only=True)
+    role = RoleSerializers(read_only=True)
+
     class Meta:
         model = User
         exclude = ['password']
 
 
+class UserSerializersC(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+
 class UserCRUD(ModelCRUD):
     model = User
-    # serializer = UserSerializers
     queryset = User.objects.all()
     serializer_class = UserSerializers
+    serializer = UserSerializersC
 
 
 class UserViews(ViewSet):

@@ -111,7 +111,7 @@ import { uiRunSort, uiRunSortAss, uiRunSortOpe, uiPageName, uiUiElementName } fr
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
-import { getExpValue, getKeyByTitle, transformData } from '@/utils/datacleaning'
+import { transformData } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
 
 const route = useRoute()
@@ -160,7 +160,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择元素页面',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '元素名称',
@@ -176,7 +183,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择对元素的操作类型'
+    placeholder: '请选择对元素的操作类型',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '元素操作值',
