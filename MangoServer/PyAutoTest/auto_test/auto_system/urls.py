@@ -20,12 +20,13 @@ urlpatterns = [
     #
     path('notice', NoticeConfigCRUD.as_view()),
     path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
+    path('notice/type', NoticeConfigViews.as_view({'get': 'get_notice_type'})),
     #
     path('database', DatabaseCRUD.as_view()),
     path('database/test', DatabaseViews.test),
     #
     path('time', TimeTasksCRUD.as_view()),
-    path('time/test', TimeTasksViews.test),
+    path('time/data', TimeTasksViews.as_view({'get': 'get_time_data'})),
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),

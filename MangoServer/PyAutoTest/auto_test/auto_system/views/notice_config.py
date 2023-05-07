@@ -10,7 +10,9 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.enum_class.system_enum import NoticeEnum
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
@@ -44,4 +46,12 @@ class NoticeConfigViews(ViewSet):
             'code': 0,
             'msg': '通知发送成功',
             'data': None
+        })
+
+    @action(methods=['get'], detail=False)
+    def get_notice_type(self, request):
+        return Response({
+            'code': 200,
+            'msg': '获取通知类型成功',
+            'data': enum_list(NoticeEnum)
         })

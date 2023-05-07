@@ -11,7 +11,6 @@ from PyAutoTest.auto_test.auto_user.models import User
 
 class TestObject(models.Model):
     """测试对象"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     environment = models.SmallIntegerField(verbose_name="环境备注")
     name = models.CharField(verbose_name="被测试的对象", max_length=64)
     value = models.CharField(verbose_name="被测试的对象", max_length=1024)
@@ -27,7 +26,7 @@ class TestObject(models.Model):
 class NoticeConfig(models.Model):
     """通知配置表"""
     team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="通知名称", max_length=64)
+    type = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
     config = models.CharField(verbose_name="通知配置", max_length=1028)
     state = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
 

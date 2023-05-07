@@ -242,7 +242,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '环境名称',
@@ -250,7 +257,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入环境名称'
+    placeholder: '请输入环境名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '测试对象',
@@ -258,7 +272,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入域名/名称/对象'
+    placeholder: '请输入域名/名称/对象',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '客户端类型',
@@ -266,7 +287,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择客户端类型'
+    placeholder: '请选择客户端类型',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '绑定环境',
@@ -274,7 +302,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择对应环境'
+    placeholder: '请选择对应环境',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '负责人名称',
@@ -282,7 +317,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请输入负责人名称'
+    placeholder: '请输入负责人名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 

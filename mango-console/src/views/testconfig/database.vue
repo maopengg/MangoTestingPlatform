@@ -155,7 +155,7 @@ import { h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useTestObj } from '@/store/modules/get-test-obj'
 import { fieldNames } from '@/setting'
-import { getKeyByKey, getKeyByTitle, transformData } from '@/utils/datacleaning'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 
 const project = useProject()
 const testObj = useTestObj()
@@ -218,7 +218,14 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '绑定环境',
@@ -226,7 +233,14 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择对应环境'
+    placeholder: '请选择对应环境',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '域名',
@@ -234,15 +248,29 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入数据库域名'
+    placeholder: '请输入数据库域名',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '端口',
     key: 'post',
-    value: ref(''),
+    value: ref('3306'),
     type: 'input',
     required: true,
-    placeholder: '请输入数据库端口'
+    placeholder: '请输入数据库端口',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '主库',
@@ -250,7 +278,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入主库名称'
+    placeholder: '请输入主库名称',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '用户名',
@@ -258,7 +293,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入用户名'
+    placeholder: '请输入用户名',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '密码',
@@ -266,7 +308,14 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入密码'
+    placeholder: '请输入密码',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
@@ -460,7 +509,6 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({

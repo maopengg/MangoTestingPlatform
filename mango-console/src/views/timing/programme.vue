@@ -46,8 +46,8 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -89,15 +89,21 @@
               v-for="item of formItems"
               :key="item.key"
             >
-              <template v-if="item.type === 'input'">
+              <template v-if="item.type === 'input' && item.key === 'trigger_type'">
+                <a-input :placeholder="item.placeholder" v-model="item.value.value" disabled />
+              </template>
+              <template v-else-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'select'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of company" :key="optionItem.value" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
+              <template v-else-if="item.type === 'select' && item.key === 'month'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="timeDataR.month"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -107,56 +113,15 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getAllRole, geTimeList } from '@/api/url'
+import { getTimeList, getTimeData } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref, nextTick, reactive } from 'vue'
-
-const company = [
-  {
-    value: '每天',
-    title: '每天'
-  },
-  {
-    value: ' 每周一',
-    title: '每周一'
-  },
-  {
-    value: '每周二',
-    title: '每周二'
-  },
-  {
-    value: '每周三',
-    title: '每周三'
-  },
-  {
-    value: '每周四',
-    title: '每周四'
-  },
-  {
-    value: '每周五',
-    title: '每周五'
-  },
-  {
-    value: '每周六',
-    title: '每周六'
-  },
-  {
-    value: '每周日',
-    title: '每周日'
-  },
-  {
-    value: '每月1号',
-    title: '每月1号'
-  },
-  {
-    value: '每月15号',
-    title: '每月15号'
-  }
-]
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { transformData } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
 
 const conditionItems: Array<FormItem> = [
   {
@@ -203,7 +168,7 @@ const formItems = [
     label: '定时器类型',
     key: 'trigger_type',
     value: ref('cron'),
-    placeholder: '请输入定时器类型',
+    placeholder: 'cron',
     required: true,
     type: 'input'
   },
@@ -213,314 +178,340 @@ const formItems = [
     value: ref(''),
     placeholder: '请输入定时器的介绍',
     required: true,
-    type: 'input'
+    type: 'input',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '月',
     key: 'month',
     value: ref(''),
-    type: 'select',
+    type: 'input',
     required: false,
-    placeholder: '请选择时间单位'
+    placeholder: '请输入月份',
+    validator: function () {
+      // 判断value是否为1-12之间的数字
+      const value = parseInt(this.value.value)
+      if (isNaN(value) || value < 1 || value > 12) {
+        Message.error('月份请输入1-12之间的数字')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '天',
     key: 'day',
     value: ref(''),
-    type: 'select',
+    type: 'input',
     required: false,
-    placeholder: '请选择时间单位'
+    placeholder: '请输入天',
+    validator: function () {
+      // 判断value是否为1-12之间的数字
+      const value = parseInt(this.value.value)
+      if (isNaN(value) || value < 1 || value > 31) {
+        Message.error('天数请输入1-31之间的数字')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '小时',
     key: 'hour',
     value: ref(''),
-    type: 'select',
+    type: 'input',
     required: false,
-    placeholder: '请选择时间单位'
+    placeholder: '请输入小时',
+    validator: function () {
+      // 判断value是否为1-12之间的数字
+      const value = parseInt(this.value.value)
+      if (isNaN(value) || value < 1 || value > 24) {
+        Message.error('小时请输入1-24之间的数字')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '分钟',
     key: 'minute',
     value: ref(''),
-    type: 'select',
+    type: 'input',
     required: false,
-    placeholder: '请选择时间单位'
+    placeholder: '请输入分钟',
+    validator: function () {
+      // 判断value是否为1-12之间的数字
+      const value = parseInt(this.value.value)
+      if (isNaN(value) || value < 1 || value > 60) {
+        Message.error('分钟请输入1-60之间的数字')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const actionTitle = ref('添加定时器')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { onSelectionChange } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '定时器类型',
-        key: 'trigger_type',
-        dataIndex: 'trigger_type'
-      },
-      {
-        title: '定时器介绍',
-        key: 'name',
-        dataIndex: 'name',
-        align: 'left'
-      },
-      {
-        title: '月',
-        key: 'month',
-        dataIndex: 'month'
-      },
-      {
-        title: '天',
-        key: 'day',
-        dataIndex: 'day'
-      },
-      {
-        title: '小时',
-        key: 'hour',
-        dataIndex: 'hour'
-      },
-      {
-        title: '分钟',
-        key: 'minute',
-        dataIndex: 'minute'
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 150
+const actionTitle = ref('添加定时器')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '定时器类型',
+    key: 'trigger_type',
+    dataIndex: 'trigger_type'
+  },
+  {
+    title: '定时器介绍',
+    key: 'name',
+    dataIndex: 'name',
+    align: 'left'
+  },
+  {
+    title: '月',
+    key: 'month',
+    dataIndex: 'month'
+  },
+  {
+    title: '天',
+    key: 'day',
+    dataIndex: 'day'
+  },
+  {
+    title: '小时',
+    key: 'hour',
+    dataIndex: 'hour'
+  },
+  {
+    title: '分钟',
+    key: 'minute',
+    dataIndex: 'minute'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
+  }
+])
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: getTimeList,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize
       }
-    ])
+    }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  console.log(data)
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: getTimeList,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: getTimeList,
+      data: () => {
+        return {
+          id: data.caseid,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          executor_name: data.executor_name
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    function doRefresh() {
-      get({
-        url: geTimeList,
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '添加定时器'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
+        url: getTimeList,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    const allRole: any = reactive([])
-
-    function getRole() {
-      get({
-        url: getAllRole
-      })
-        .then((res) => {
-          allRole.value = res.data
-          console.log(allRole.value)
-        })
-        .catch(console.log)
-    }
-
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      console.log(data)
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: geTimeList,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: geTimeList,
-          data: () => {
-            return {
-              id: data.caseid,
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              executor_name: data.executor_name
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
+function onUpdate(item: any) {
+  actionTitle.value = '编辑定时器'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 0
+  updateId.value = item.id
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (typeof propName === 'object' && propName !== null) {
+        it.value.value = propName.name
+      } else {
+        it.value.value = propName
       }
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '添加定时器'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: geTimeList,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onUpdate(item: any) {
-      actionTitle.value = '编辑定时器'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 0
-      updateId.value = item.id
-      nextTick(() => {
-        formItems.forEach((it) => {
-          const key = it.key
-          const propName = item[key]
-          if (propName) {
-            it.value.value = propName
-          }
-        })
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        console.log(value)
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: geTimeList,
-            data: () => {
-              return {
-                nickname: value.nickname,
-                username: value.username,
-                password: value.password,
-                role: value.role,
-                department: value.department
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: geTimeList,
-            data: () => {
-              return {
-                id: value.id,
-                nickname: value.nickname,
-                username: value.username,
-                password: value.password,
-                role: value.role,
-                department: value.department
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      }
-    }
-
-    onMounted(() => {
-      nextTick(async () => {
-        doRefresh()
-        getRole()
-      })
     })
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      tableColumns,
-      conditionItems,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      company,
-      allRole,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      onUpdate,
-      onDelete
+  })
+}
+
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = transformData(formItems)
+    console.log(value)
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: getTimeList,
+        data: () => {
+          return {
+            name: value.name,
+            trigger_type: 'cron',
+            month: value.month,
+            day: value.day,
+            hour: value.hour,
+            minute: value.minute
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: getTimeList,
+        data: () => {
+          return {
+            id: value.id,
+            name: value.name,
+            trigger_type: 'cron',
+            month: value.month,
+            day: value.day,
+            hour: value.hour,
+            minute: value.minute
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
+}
+
+const timeDataR = reactive({
+  month: [],
+  day: [],
+  hour: [],
+  minute: []
+})
+
+// function timeData() {
+//   get({
+//     url: getTimeData
+//   })
+//     .then((res) => {
+//       timeDataR.month = res.data[0].month
+//       console.log(timeDataR.month)
+//       timeDataR.day = res.data[1].day
+//       timeDataR.hour = res.data[2].hour
+//       timeDataR.minute = res.data[3].minute
+//     })
+//     .catch(console.log)
+// }
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+  })
 })
 </script>

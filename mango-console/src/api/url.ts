@@ -61,10 +61,12 @@ export const getEnvironmentEnum = '/system/get/environment/enum'
 export const getTestObjName = '/system/get/test/obj/name'
 export const getPlatformEnum = '/system/get/platform/enum'
 export const getNoticeConfig = '/system/notice'
+export const getNoticeType = '/system/notice/type'
 export const getDatabase = '/system/database'
 export const getRandomList = 'system/variable/random/list'
 export const getRandomData = 'system/variable/value'
-export const geTimeList = 'system/time'
+export const getTimeList = 'system/time'
+export const getTimeData = 'system/time/data'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {

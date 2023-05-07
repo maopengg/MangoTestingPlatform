@@ -7,6 +7,7 @@ from enum import Enum
 
 
 class NoticeEnum(Enum):
-    """ 1是邮件，2是企微 """
+    """ {"0": "邮件"}，{"1": "企微"}，{"2": "钉钉-未测试"} """
     MAIL = 0
     WECOM = 1
+    NAILING = 2

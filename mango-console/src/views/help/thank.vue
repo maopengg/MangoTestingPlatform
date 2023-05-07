@@ -2,9 +2,9 @@
   <a-card title="请填写会议基本信息">
     <template #extra>
       <a-space>
-        <a-button status="danger" @click="resetForm"> 重置 </a-button>
-        <a-button @click="valideForm"> 校验 </a-button>
-        <a-button :loading="submitLoading" type="primary" @click="submit"> 提交 </a-button>
+        <a-button status="danger" @click="resetForm"> 重置</a-button>
+        <a-button @click="valideForm"> 校验</a-button>
+        <a-button :loading="submitLoading" type="primary" @click="submit"> 提交</a-button>
       </a-space>
     </template>
     <div class="form-wrapper">
@@ -59,6 +59,7 @@ import { FormItem } from '@/types/components'
 import { Message } from '@arco-design/web-vue'
 import { defineComponent, ref } from 'vue'
 import type { Dayjs } from 'dayjs'
+
 export default defineComponent({
   name: 'BaseFormView',
   setup() {
@@ -250,6 +251,7 @@ export default defineComponent({
       }
     ] as FormItem[]
     const submitLoading = ref(false)
+
     function submit() {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         submitLoading.value = true
@@ -267,16 +269,19 @@ export default defineComponent({
         }, 3000)
       }
     }
+
     function resetForm() {
       formItems.forEach((it) => {
         it.reset ? it.reset() : (it.value.value = '')
       })
     }
+
     function valideForm() {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
         Message.success('所有表单都合法')
       }
     }
+
     return {
       dataForm,
       formItems,

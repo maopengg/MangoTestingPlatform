@@ -25,6 +25,7 @@
                         allow-search
                       />
                     </template>
+                    <!--                    保留-->
                     <!--                    <template v-if="item.type === 'date'">-->
                     <!--                      <a-date-picker v-model="item.value.value" />-->
                     <!--                    </template>-->
@@ -80,10 +81,10 @@
                 <template v-else-if="item.key === 'team'" #cell="{ record }">
                   {{ record.team.name }}
                 </template>
-                <template v-else-if="item.key === 'name'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.name === '邮箱'">{{ record.name }}</a-tag>
-                  <a-tag color="cyan" size="small" v-else-if="record.name === '企微群'">{{ record.name }}</a-tag>
-                  <a-tag color="cyan" size="small" v-else-if="record.name === '钉钉'">{{ record.name }}</a-tag>
+                <template v-else-if="item.key === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 0">邮箱</a-tag>
+                  <a-tag color="cyan" size="small" v-else-if="record.type === 1">企微群</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
                 </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.state === 1">启用</a-tag>
@@ -128,11 +129,11 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'name'">
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="noticeData.noticeType"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -148,13 +149,14 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNoticeConfig } from '@/api/url'
+import { getNoticeConfig, getNoticeType } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 
 const project = useProject()
 const conditionItems: Array<FormItem> = [
@@ -216,15 +218,29 @@ const formItems = [
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select'
+    type: 'select',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '通知类型',
-    key: 'name',
+    key: 'type',
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择通知类型'
+    placeholder: '请选择通知类型',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
     label: '配置详情',
@@ -232,7 +248,14 @@ const formItems = [
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请输入配置详情'
+    placeholder: '请输入配置详情',
+    validator: function () {
+      if (!this.value.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   }
 ] as FormItem[]
 
@@ -252,8 +275,8 @@ const tableColumns = useTableColumn([
   },
   {
     title: '通知类型',
-    key: 'name',
-    dataIndex: 'name',
+    key: 'type',
+    dataIndex: 'type',
     width: 150
   },
   {
@@ -410,10 +433,7 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
+    let value = transformData(formItems)
     console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
@@ -421,7 +441,7 @@ function onDataForm() {
         url: getNoticeConfig,
         data: () => {
           return {
-            project: value.project,
+            team: value.team,
             type: value.type,
             config: value.config,
             state: 0
@@ -434,6 +454,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -442,7 +466,7 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            project: value.project,
+            team: teamId,
             type: value.type,
             config: value.config,
             state: 0
@@ -458,5 +482,31 @@ function onDataForm() {
   }
 }
 
+const noticeData = reactive({
+  noticeType: []
+})
+
+function getNoticeTpyeF() {
+  get({
+    url: getNoticeType,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      }
+    }
+  })
+    .then((res) => {
+      noticeData.noticeType = res.data
+    })
+    .catch(console.log)
+}
+
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+    getNoticeTpyeF()
+  })
+})
 onMounted(doRefresh)
 </script>
