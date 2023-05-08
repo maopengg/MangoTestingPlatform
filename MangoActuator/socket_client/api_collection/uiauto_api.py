@@ -26,7 +26,7 @@ class UiAutoApi:
         执行并发对象浏览器对象
         @return:
         """
-        GroupCaseRun().group_case_decompose(case_data)
+        GroupCaseRun.group_case_decompose(case_data)
 
     @classmethod
     def run_group_batch_case(cls, case_data: list[dict]):

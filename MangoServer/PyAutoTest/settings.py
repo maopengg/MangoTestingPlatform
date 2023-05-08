@@ -248,11 +248,12 @@ LOGGING = {
 }
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['PyAutoTest.middleware.auth.JwtQueryParamsAuthentication', ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
 }
 # 'EXCEPTION_HANDLER': 'PyAutoTest.utils.exceptions.exception.custom_exception_handler',
 # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 # 'PAGE_SIZE': 10,
-# 'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
+
 
 # ************************ 接口文档 ************************ #
 APPEND_SLASH = False
