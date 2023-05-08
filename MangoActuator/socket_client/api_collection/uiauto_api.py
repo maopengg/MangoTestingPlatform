@@ -59,7 +59,7 @@ if __name__ == '__main__':
     r = UiAutoApi()
     with open(r'../../tests/group_case.json', encoding='utf-8') as f:
         case_json = json.load(f)
-
         loop = asyncio.new_event_loop()  # 创建新的事件循环
         asyncio.set_event_loop(loop)  # 设置新的事件循环为当前事件循环
         p = loop.run_until_complete(r.run_group_case(case_json))  # 运行事件循环
+        r.run_group_case(case_json.get('data'))

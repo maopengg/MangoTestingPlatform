@@ -29,4 +29,5 @@ class DataCleaning(RandomData):
 if __name__ == '__main__':
     func = 'goods_name_int()'
     r = DataCleaning()
+    e = DataCleaning()
     print(r.case_input_data('新建普通商品', '商品名称', 'spu_name', func))

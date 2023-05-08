@@ -24,7 +24,7 @@ class GroupCaseRun:
         for i in data:
             task_list.append(asyncio.create_task(GroupCaseRunR().group_obj(i)))
         res = asyncio.wait(task_list, timeout=None)
-        print(res)
+        print('用例的执行结果：', res)
 
 
 class GroupCaseRunR(CaseRunMethod):
