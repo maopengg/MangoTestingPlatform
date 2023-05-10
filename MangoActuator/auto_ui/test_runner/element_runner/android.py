@@ -3,19 +3,21 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
+from uiautomator2 import Device
 
-from utlis.cache.data_cleaning import DataCleaning
-from utlis.logs.log_control import ERROR
-from utlis.nuw_logs import NewLog
-
+from auto_ui.android_base import DriverMerge
 from enum_class.ui_enum import ElementExp, OpeType
+from utils.cache.data_cleaning import DataCleaning
+from utils.logs.log_control import ERROR
+from utils.nuw_logs import NewLog
 
 
 # DriverMerge
-class AndroidRun(DataCleaning):
+class AndroidRun(DriverMerge, DataCleaning):
 
-    def __init__(self, equipment: str = '8796a033'):
-        super().__init__(equipment)
+    def __init__(self, android: Device):
+        super().__init__()
+        self.android = android
         self.case_id = 0
         self.ope_type = ''
         self.ass_type = ''
@@ -27,6 +29,7 @@ class AndroidRun(DataCleaning):
         self.ele_loc = ''
         self.ele_sleep = 0
         self.ele_sub = ''
+        self.ope_value_key = ''
         self.ele_opt_res = {'ele_name': self.ele_name,
                             'existence': '',
                             'state': '',
@@ -50,8 +53,9 @@ class AndroidRun(DataCleaning):
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
-            if self.ele_name != 'url':
+            if self.ele_name != '小程序':
                 ele = self.find_ele()
+                print(f'元素的类型是：{ele}')
                 self.ele_opt_res['existence'] = ele
                 if ele:
                     self.action_element()
@@ -72,40 +76,41 @@ class AndroidRun(DataCleaning):
         操作具体的元素对象
         @return:
         """
-        if self.ele_exp == ElementExp.CONSTANT_NAME.value:
+        if self.ele_exp == ElementExp.PERCENTAGE.value:
             x, y = self.ele_loc.split(',')
             self.click_coord(float(x), float(y))
         elif self.ele_loc is None:
-            pass
+            ERROR.logger.error(f'元素内容为null，请检查{self.ele_loc}')
         else:
             if self.ope_type == OpeType.CLICK.value:
                 self.click(self.ele_loc, self.ele_exp)
             elif self.ope_type == OpeType.INPUT.value:
-                input_value = self.case_input_data(self.case_id, self.ele_name, self.ope_value)
-                self.input_text(self.ele_loc, input_value)
+                # self.input(ele_obj, value=self.__input_value())
+                pass
 
     def find_ele(self):
         match self.ope_type:
             case ElementExp.XPATH.value:
-                return self.app.xpath(self.ele_loc)
+                return self.android.xpath(self.ele_loc)
             case ElementExp.ID.value:
-                return self.app(resourceId=self.ele_loc)
+                return self.android(resourceId=self.ele_loc)
             case ElementExp.BOUNDS.value:
-                return self.app(text=self.ele_loc)
+                return self.android(text=self.ele_loc)
             case ElementExp.DESCRIPTION.value:
-                return self.app(description=self.ele_loc)
+                return self.android(description=self.ele_loc)
+            case ElementExp.PERCENTAGE.value:
+                return '百分比'
             case _:
                 ERROR.logger.error(f'元素定位方式不存在，请检查元素定位方式。元素type：{self.ope_type}')
                 return None
 
-    def find_eles(self):
-        pass
+    def __input_value(self):
+        """
+        输入依赖解决
+        @return:
+        """
+        return self.case_input_data(self.case_id, self.ele_name, self.ope_value_key, self.ope_value)
 
 
 if __name__ == '__main__':
-    # r = AppRun(equipment='7de23fdd')
-    # r.start_app('com.tencent.mm')
-    # r.click('//*[@resource-id="com.tencent.mm:id/j5t"]')
-    # r.sleep(5)
-    # r.close_app('com.tencent.mm')
     pass

@@ -64,3 +64,7 @@ class UiCaseViews(ViewSet):
             'msg': f'设置为{request.data.get("name")}成功',
             'data': data
         })
+
+    # @action(methods=['get'], detail=False)
+    # def up_case_run_order(self):
+

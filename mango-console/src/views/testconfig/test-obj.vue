@@ -244,7 +244,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -259,7 +259,7 @@ const formItems = [
     required: true,
     placeholder: '请输入环境名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -274,7 +274,7 @@ const formItems = [
     required: true,
     placeholder: '请输入域名/名称/对象',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -289,7 +289,7 @@ const formItems = [
     required: true,
     placeholder: '请选择客户端类型',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -304,7 +304,7 @@ const formItems = [
     required: true,
     placeholder: '请选择对应环境',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -319,7 +319,7 @@ const formItems = [
     required: true,
     placeholder: '请输入负责人名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

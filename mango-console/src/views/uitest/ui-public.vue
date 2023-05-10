@@ -212,7 +212,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -227,7 +227,7 @@ const formItems = [
     required: true,
     placeholder: '请选择客户端',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -242,7 +242,7 @@ const formItems = [
     required: true,
     placeholder: '请选择对应类型，注意不同类型的加载顺序',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -257,7 +257,7 @@ const formItems = [
     required: true,
     placeholder: '请输入名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -272,7 +272,7 @@ const formItems = [
     required: true,
     placeholder: '请输入缓存的key',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -287,7 +287,7 @@ const formItems = [
     required: true,
     placeholder: '请根据规则输入value值',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

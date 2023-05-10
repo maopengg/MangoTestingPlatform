@@ -117,7 +117,7 @@ const formItems = [
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -132,7 +132,7 @@ const formItems = [
     required: true,
     placeholder: '请选择元素表达式类型',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -147,7 +147,7 @@ const formItems = [
     required: true,
     placeholder: '请输入元素表达式',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -231,7 +231,6 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let exp = getKeyByTitle(uiElementData.eleExp, value.exp)
     if (addUpdate.value === 1) {
       post({
         url: uiUiElement,
@@ -240,7 +239,7 @@ function onDataForm() {
             team: route.query.team_id,
             page: route.query.id,
             name: value.name,
-            exp: exp,
+            exp: value.exp,
             loc: value.loc,
             sleep: value.sleep,
             sub: value.sub
@@ -253,6 +252,8 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let exp = getKeyByTitle(uiElementData.eleExp, value.exp)
+
       value['id'] = updateId.value
       updateId.value = 0
       put({

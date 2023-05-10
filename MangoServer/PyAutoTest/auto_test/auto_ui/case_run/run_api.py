@@ -51,4 +51,5 @@ class RunApi:
         elif isinstance(case_list, list):
             for case_id in case_list:
                 case_data.append(cls.__case_run(environment, case_id, user))
+        print(case_data)
         return case_data

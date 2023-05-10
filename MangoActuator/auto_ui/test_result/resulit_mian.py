@@ -29,7 +29,7 @@ class ResultMain:
     @classmethod
     async def notification_send(cls, code: int, mail_msg: str):
         from socket_client import client
-        from socket_client.server_enum_api import ServerEnumAPI
+        from socket_client.queue_ import ServerEnumAPI
         await client.active_send(
             code=code,
             func=ServerEnumAPI.NOTICE_MAIN.value,

@@ -4,6 +4,7 @@
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
 import logging
+from threading import Thread
 
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
@@ -43,6 +44,9 @@ class ModelCRUD(GenericAPIView):
         serializer = self.serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
+            if hasattr(self, 'callback'):
+                th = Thread(target=self.callback, args=(serializer.data.get('case'),))
+                th.start()
             return Response({
                 'code': 200,
                 'msg': '新增一条记录成功~',
@@ -63,6 +67,9 @@ class ModelCRUD(GenericAPIView):
         )
         if serializer.is_valid():
             serializer.save()
+            if hasattr(self, 'callback'):
+                th = Thread(target=self.callback, args=(request.data.get('id'),))
+                th.start()
             return Response({
                 'code': 200,
                 'msg': '修改一条记录成功~',

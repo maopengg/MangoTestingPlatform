@@ -3,13 +3,16 @@
 # @Description: 
 # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
-from utlis.logs.log_control import ERROR, INFO
+from uiautomator2 import Device
 
-from auto_ui.android_base.android_base import AndroidBase
+from utils.logs.log_control import ERROR, INFO
 
 
-class Page(AndroidBase):
+class UiautomatorPage:
     """页面操作"""
+
+    def __init__(self, android: Device = None):
+        self.android = android
 
     def get_ele_text(self, element):
         """提取元素文本"""

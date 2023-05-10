@@ -1,10 +1,11 @@
 import json
+
 import time
 import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
 from utils.logs.log_control import DEBUG
-from .api_collection import collection
+from .socket_product import collection
 
 
 class ClientWebSocket(object):

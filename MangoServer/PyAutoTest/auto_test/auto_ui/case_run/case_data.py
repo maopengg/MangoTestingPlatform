@@ -34,42 +34,25 @@ class CaseData:
         @return: 返回一个数据处理好的测试对象
         """
         case_ = UiCase.objects.get(id=case_id)
-        case_strip = {'case_id': case_.id,
-                      'case_name': case_.name,
-                      }
-
-        case_data = []
         run_sort = RunSort.objects.filter(case=case_.id).order_by('run_sort')
+        case_strip = {'case_id': case_.id, 'case_name': case_.name, }
+        if case_.case_type == DevicePlatform.WEB.value:
+            # 如果是web用例，则写入浏览器的端口，浏览器打开地址，type 执行用例url和浏览器的类型
+            case_strip['local_port'], case_strip['browser_path'] = self.__get_web_config()
+            case_strip['type'] = DevicePlatform.WEB.value
+            case_strip['case_url'] = TestObject.objects.get(id=test_obj).value + run_sort[0].el_page.url
+            case_strip['browser_type'] = BrowserType.CHROMIUM.value
+        elif case_.case_type == DevicePlatform.ANDROID.value:
+            # 如果是安卓用例，则写入设备，app和type
+            case_strip['equipment'], case_strip['package'] = self.__get_app_config()
+            case_strip['type'] = DevicePlatform.ANDROID.value
+        elif case_.case_type == DevicePlatform.IOS.value:
+            pass
+        elif case_.case_type == DevicePlatform.DESKTOP.value:
+            pass
+        case_data = []
         for i in run_sort:
-            if i.el_name is None:
-                case_data.append({
-                    'ope_type': i.ope_type,
-                    'ass_type': i.ass_type,
-                    'ope_value': i.ope_value,
-                    'ass_value': i.ass_value,
-                    'ele_name': 'url' if case_.case_type == DevicePlatform.WEB.value else '小程序',
-                    'ele_page_name': i.el_page.name,
-                    'ele_exp': None,
-                    'ele_loc': None,
-                    'ele_sleep': 3,
-                    'ele_sub': None,
-                    'ope_value_key': i.ope_value_key
-                })
-                if case_.case_type == DevicePlatform.WEB.value:
-                    case_strip['local_port'], case_strip['browser_path'] = self.__get_web_config()
-                    case_strip['type'] = DevicePlatform.WEB.value
-                    case_strip['case_url'] = TestObject.objects.get(id=test_obj).value
-                    run_url = RunSort.objects.filter(
-                        case=case_.id).first().el_page.url
-                    if run_url == '-':
-                        pass
-                    else:
-                        case_strip['case_url'] += run_url
-                    case_strip['browser_type'] = BrowserType.CHROMIUM.value
-                elif case_.case_type == DevicePlatform.ANDROID.value:
-                    case_strip['equipment'], case_strip['package'] = self.__get_app_config()
-                    case_strip['type'] = DevicePlatform.ANDROID.value
-            else:
+            if i.el_name is not None:
                 case_data.append({
                     'ope_type': i.ope_type,
                     'ass_type': i.ass_type,

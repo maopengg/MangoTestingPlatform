@@ -4,6 +4,7 @@
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
 import asyncio
+
 import time
 from websocket import WebSocketConnectionClosedException
 
@@ -23,14 +24,20 @@ def run():
 if __name__ == '__main__':
     # pyinstaller -F -c .\MangoActuator.py
     NewLog()
+    import threading
+    from socket_client import socket_consume
+
+    t3 = threading.Thread(target=socket_consume.consume)
+    t3.start()
     try:
         run()
+
     except KeyboardInterrupt as e:
         print('=========================关闭成功=========================')
         time.sleep(2)
-    except AttributeError as e:
-        print(f'========================={config.WEB}关闭，{config.DRIVER}同步关闭=========================')
-        time.sleep(5)
+    # except AttributeError as e:
+    #     print(f'========================={config.WEB}关闭，{config.DRIVER}同步关闭=========================')
+    #     time.sleep(5)
     except WebSocketConnectionClosedException as e:
         print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
         time.sleep(5)

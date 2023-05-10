@@ -91,7 +91,7 @@ const formItems = [
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

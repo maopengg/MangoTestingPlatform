@@ -48,7 +48,7 @@ class RunUiCase(ViewSet):
         # # try:
         # r.main(team, environment, case_id)
         case_json = self.run_data.case_run_batch(case_id, environment, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_debug_batch_case.value)
+        response = self.run_case_send(request, case_json, UiEnum.run_debug_case.value)
         return Response(response)
 
     @action(methods=['get'], detail=False)
@@ -72,7 +72,7 @@ class RunUiCase(ViewSet):
         """
         group_id_list = eval(request.GET.get("group_id"))
         case_json = self.run_data.group_batch(group_id_list, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_group_batch_case.value)
+        response = self.run_case_send(request, case_json, UiEnum.run_group_case.value)
         return Response(response)
 
     @classmethod

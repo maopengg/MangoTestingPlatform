@@ -2,7 +2,19 @@
 #
 # from uiautomator2 import Device
 # from wda import Client, AlertAction, BaseClient
-#
+from auto_ui.android_base.assertion import UiautomatorAssertion
+from auto_ui.android_base.device import UiautomatorEquipmentDevice
+from auto_ui.android_base.element import UiautomatorElementOperation
+from auto_ui.android_base.page import UiautomatorPage
+
+
+class DriverMerge(UiautomatorAssertion,
+                  UiautomatorEquipmentDevice,
+                  UiautomatorElementOperation,
+                  UiautomatorPage):
+    pass
+
+
 # from utils.logs.log_control import ERROR
 #
 #

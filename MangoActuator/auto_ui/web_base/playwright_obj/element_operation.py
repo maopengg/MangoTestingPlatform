@@ -13,14 +13,14 @@ class PlaywrightElementOperation:
         self.page = page
 
     @classmethod
-    async def click(cls, locating: Locator):
+    def click(cls, locating: Locator):
         """元素点击"""
-        await locating.click()
+        locating.click()
 
     @classmethod
-    async def input(cls, locating: Locator, value: str):
+    def input(cls, locating: Locator, value: str):
         """元素输入"""
-        await locating.fill(value)
+        locating.fill(value)
 
     async def upload_files(self, locating: Locator, file_path: str):
         """点击元素上传文件"""

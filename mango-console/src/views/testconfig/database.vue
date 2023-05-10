@@ -220,7 +220,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -235,7 +235,7 @@ const formItems = [
     required: true,
     placeholder: '请选择对应环境',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -250,7 +250,7 @@ const formItems = [
     required: true,
     placeholder: '请输入数据库域名',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -265,7 +265,7 @@ const formItems = [
     required: true,
     placeholder: '请输入数据库端口',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -280,7 +280,7 @@ const formItems = [
     required: true,
     placeholder: '请输入主库名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -295,7 +295,7 @@ const formItems = [
     required: true,
     placeholder: '请输入用户名',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -310,7 +310,7 @@ const formItems = [
     required: true,
     placeholder: '请输入密码',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

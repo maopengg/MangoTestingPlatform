@@ -94,6 +94,12 @@
                   <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>
                   <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
+                <template v-else-if="item.key === 'case_type'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.case_type === 0">WEB</a-tag>
+                  <a-tag color="arcoblue" size="small" v-else-if="record.case_type === 1">安卓</a-tag>
+                  <a-tag color="pinkpurple" size="small" v-else-if="record.case_type === 2">IOS</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.case_type === 3">桌面PC</a-tag>
+                </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space v-if="caseType === '0'">
                     <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
@@ -221,7 +227,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -236,7 +242,7 @@ const formItems = [
     required: true,
     placeholder: '请输入页面名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -266,6 +272,12 @@ const tableColumns = useTableColumn([
     dataIndex: 'name',
     align: 'left',
     width: 230
+  },
+  {
+    title: '客户端',
+    key: 'case_type',
+    dataIndex: 'case_type',
+    align: 'left'
   },
   {
     title: '用例执行顺序',

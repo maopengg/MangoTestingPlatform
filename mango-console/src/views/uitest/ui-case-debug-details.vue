@@ -111,7 +111,7 @@ import { uiRunSort, uiRunSortAss, uiRunSortOpe, uiPageName, uiUiElementName } fr
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
-import { transformData } from '@/utils/datacleaning'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
 
 const route = useRoute()
@@ -162,7 +162,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -185,7 +185,7 @@ const formItems = [
     required: true,
     placeholder: '请选择对元素的操作类型',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -306,6 +306,13 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      console.log(value)
+      let pageName = getKeyByTitle(uiRunSortData.pageName, value.el_page)
+      console.log(uiRunSortData.eleName)
+      let ele = getKeyByTitle(uiRunSortData.eleName, value.el_name)
+      let ope = getKeyByTitle(uiRunSortData.ope, value.ope_type)
+      let ass = getKeyByTitle(uiRunSortData.ass, value.ass_type)
+
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -316,11 +323,10 @@ function onDataForm() {
             id: value.id,
             case: route.query.id,
             run_sort: uiRunSortData.data.length,
-            team: route.query.team_id,
-            el_name: value.el_name,
-            el_page: value.el_page,
-            ope_type: value.ope_type,
-            ass_type: value.ass_type,
+            el_name: ele,
+            el_page: pageName,
+            ope_type: ope,
+            ass_type: ass,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }

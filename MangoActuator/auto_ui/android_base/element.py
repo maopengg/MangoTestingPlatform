@@ -1,12 +1,14 @@
+from uiautomator2 import Device
 from uiautomator2.xpath import XPath
-from utlis.logs.log_control import ERROR, INFO
 
-from auto_ui.android_base import ElementNotFoundError, ElementNotDisappearError
-from auto_ui.android_base.android_base import AndroidBase
+from utils.logs.log_control import ERROR, INFO
 
 
-class ElementOperation(AndroidBase):
+class UiautomatorElementOperation:
     """元素操作类"""
+
+    def __init__(self, android: Device = None):
+        self.android = android
 
     def click(self, element, ele_exp):
         """单击"""

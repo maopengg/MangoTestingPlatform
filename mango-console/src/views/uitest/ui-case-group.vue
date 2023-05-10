@@ -247,7 +247,7 @@ const formItems = [
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -262,7 +262,7 @@ const formItems = [
     required: true,
     placeholder: '请输入用例名称',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -277,7 +277,7 @@ const formItems = [
     required: true,
     placeholder: '请选择需要组成用例组的用例',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -292,7 +292,7 @@ const formItems = [
     required: true,
     placeholder: '请选择定时触发时间',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -307,7 +307,7 @@ const formItems = [
     required: true,
     placeholder: '请选择定时执行环境',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

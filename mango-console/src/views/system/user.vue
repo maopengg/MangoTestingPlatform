@@ -203,7 +203,7 @@ const formItems = [
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -218,7 +218,7 @@ const formItems = [
     required: true,
     placeholder: '请输入用户账号',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -255,7 +255,7 @@ const formItems = [
     required: true,
     placeholder: '请选择角色项目组',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -270,7 +270,7 @@ const formItems = [
     required: true,
     placeholder: '请选择用户角色，角色不同权限不同',
     validator: function () {
-      if (!this.value.value) {
+      if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

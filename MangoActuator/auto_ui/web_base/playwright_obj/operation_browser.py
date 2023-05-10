@@ -12,21 +12,21 @@ class PlaywrightOperationBrowser:
     def __init__(self, page: Page = None):
         self.page = page
 
-    async def wait_for_timeout(self, sleep: int):
-        await self.page.wait_for_timeout(sleep)
+    def wait_for_timeout(self, sleep: int):
+        self.page.wait_for_timeout(sleep)
 
-    async def goto(self, url: str):
+    def goto(self, url: str):
         """
         打开url
         @param url: 打开的指定url
         @return:
         """
-        await self.page.goto(url, timeout=50000)
+        self.page.goto(url, timeout=50000)
 
-    async def screenshot(self, path: str, full_page=True):
+    def screenshot(self, path: str, full_page=True):
         """整个页面截图"""
-        await self.page.screenshot(path=path, full_page=full_page)
+        self.page.screenshot(path=path, full_page=full_page)
 
-    async def ele_screenshot(self, selector: str, path: str):
+    def ele_screenshot(self, selector: str, path: str):
         """元素截图"""
-        await self.page.locator(selector).screenshot(path=path)
+        self.page.locator(selector).screenshot(path=path)

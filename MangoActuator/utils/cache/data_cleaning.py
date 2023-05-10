@@ -9,12 +9,13 @@ from utils.cache.random_data import RandomData
 
 class DataCleaning(RandomData):
 
-    def case_input_data(self, case_id: str, ele_name: str, key, ope_value: str):
+    def case_input_data(self, case_id: int, ele_name: str, key: str, ope_value: str):
         """ 取出缓存 """
+        print(f'当前写入缓存的对象是：{id(self)}')
         if key:
-            key_value = case_id + ele_name + str(key)
+            key_value = str(id(self)) + str(case_id) + ele_name + str(key)
         else:
-            key_value = case_id + ele_name
+            key_value = str(id(self)) + str(case_id) + ele_name
         value = CacheDB.get(key_value)
         # 缓存为空的时候进行读取数据并写入缓存
         if value is None:

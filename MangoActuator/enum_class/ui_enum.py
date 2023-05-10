@@ -47,6 +47,7 @@ class ElementExp(Enum):
     # APP专属
     DESCRIPTION = 11
     BOUNDS = 12
+    PERCENTAGE = 13
 
 
 class State(Enum):

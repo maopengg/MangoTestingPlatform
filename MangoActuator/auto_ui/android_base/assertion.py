@@ -1,16 +1,19 @@
-from utlis.assertion.assertion import LMAssert
-from utlis.logs.log_control import ERROR, INFO
+from uiautomator2 import Device
 
-from .android_base import AndroidBase
+from utils.assertion.assertion import LMAssert
+from utils.logs.log_control import ERROR, INFO
 
 
-class Assertion(AndroidBase):
+class UiautomatorAssertion:
     """断言类操作"""
+
+    def __init__(self, android: Device = None):
+        self.android = android
 
     def assert_ele_exists(self, element, assertion, expect):
         """断言元素存在"""
         try:
-            actual = self.find_element(element).exists
+            actual = find_element(element).exists
             INFO.logger.info("成功获取元素exists:%s" % str(actual))
         except Exception as e:
             ERROR.logger.error("无法获取元素exists")

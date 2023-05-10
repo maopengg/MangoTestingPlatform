@@ -44,7 +44,7 @@ class Assertions(Enum):
 
 
 class ElementExp(Enum):
-    """ {0: "XPATH"}，{1: "ID"}，{2: "NAME"}，{3: "TEXT"}，{4: "PLACEHOLDER"}，{5: "CSS"}，{11: "DESCRIPTION"}，{12: "BOUNDS"} """
+    """ {0: "XPATH"}，{1: "ID"}，{2: "NAME"}，{3: "TEXT"}，{4: "占位符"}，{5: "CSS"}，{11: "DESCRIPTION"}，{12: "BOUNDS"}，{13: "百分比坐标点击"} """
     XPATH = 0
     ID = 1
     NAME = 2
@@ -54,6 +54,7 @@ class ElementExp(Enum):
     # APP专属
     DESCRIPTION = 11
     BOUNDS = 12
+    PERCENTAGE = 13
 
 
 class State(Enum):
