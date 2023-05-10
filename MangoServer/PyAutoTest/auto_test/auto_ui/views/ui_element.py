@@ -61,7 +61,7 @@ class UiElementViews(ViewSet):
         :param request:
         :return:
         """
-        res = UiElement.objects.filter(page=request.query_params.get('name')).values_list('id', 'name')
+        res = UiElement.objects.filter(page=request.query_params.get('id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,

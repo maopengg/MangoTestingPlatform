@@ -61,7 +61,7 @@
                   :placeholder="item.placeholder"
                   :options="uiRunSortData.pageName"
                   :field-names="fieldNames"
-                  @change="getEleName"
+                  @change="getEleName(item.value.value)"
                   allow-clear
                   allow-search
                 />
@@ -258,6 +258,7 @@ function onDelete(record: any) {
 function onUpdate(item: any) {
   actionTitle.value = '编辑元素'
   modalDialogRef.value?.toggle()
+  getEleName(item.el_name.page.id)
   addUpdate.value = 0
   updateId.value = item.id
   nextTick(() => {
@@ -307,12 +308,23 @@ function onDataForm() {
         .catch(console.log)
     } else if (addUpdate.value === 0) {
       console.log(value)
-      let pageName = getKeyByTitle(uiRunSortData.pageName, value.el_page)
-      console.log(uiRunSortData.eleName)
-      let ele = getKeyByTitle(uiRunSortData.eleName, value.el_name)
-      let ope = getKeyByTitle(uiRunSortData.ope, value.ope_type)
-      let ass = getKeyByTitle(uiRunSortData.ass, value.ass_type)
-
+      let pageName = value.el_page
+      if (typeof pageName === 'string') {
+        pageName = getKeyByTitle(uiRunSortData.pageName, pageName)
+      }
+      let ele = value.el_name
+      console.log(uiRunSortData.eleName, ele)
+      if (typeof ele === 'string') {
+        ele = getKeyByTitle(uiRunSortData.eleName, ele)
+      }
+      let ope = value.ope_type
+      if (typeof ope === 'string') {
+        ope = getKeyByTitle(uiRunSortData.ope, value.ope_type)
+      }
+      let ass = value.ass_type
+      if ((ass !== null && typeof ass !== 'number') || typeof ass === 'string') {
+        ass = getKeyByTitle(uiRunSortData.ass, value.ass_type)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -410,12 +422,12 @@ function getPageName() {
     .catch(console.log)
 }
 
-function getEleName() {
+function getEleName(pageId: any) {
   get({
     url: uiUiElementName,
     data: () => {
       return {
-        name: formItems[0].value.value
+        id: pageId
       }
     }
   })
@@ -429,8 +441,8 @@ onMounted(() => {
   nextTick(async () => {
     await getUiRunSortAss()
     await getUiRunSortOpe()
+    await getPageName()
     getUiRunSort()
-    getPageName()
   })
 })
 </script>
