@@ -9,26 +9,28 @@ from utils.cache.random_data import RandomData
 
 class DataCleaning(RandomData):
 
-    def case_input_data(self, case_id: int, ele_name: str, key: str, ope_value: str):
+    def case_input_data(self, case_id: int, ele_name: str, ope_value: str, key: str = None):
         """ 取出缓存 """
-        print(f'当前写入缓存的对象是：{id(self)}')
         if key:
             key_value = str(id(self)) + str(case_id) + ele_name + str(key)
+            value = CacheDB.get(key_value)
+            print(f'设置缓存key：{key_value}')
         else:
             key_value = str(id(self)) + str(case_id) + ele_name
-        value = CacheDB.get(key_value)
+            print(f'不设置缓存key：{key_value}')
+            value = None
         # 缓存为空的时候进行读取数据并写入缓存
         if value is None:
             if "()" in ope_value:
                 value = self.regular(ope_value)
             elif ope_value:
                 value = ope_value
-            CacheDB.set(key_value, value)
+            if key:
+                CacheDB.set(key_value, value)
         return value
 
 
 if __name__ == '__main__':
     func = 'goods_name_int()'
     r = DataCleaning()
-    e = DataCleaning()
-    print(r.case_input_data('新建普通商品', '商品名称', 'spu_name', func))
+    print(r.case_input_data(1, '商品名称', func, 'spu_name'))

@@ -37,11 +37,11 @@ class CaseRunMethod:
             case DevicePlatform.ANDROID.value:
                 if not self.android_test(case_one):
                     return False
-            case DevicePlatform.ANDROID.value:
-                if not self.android_test(case_one):
-                    return False
             case DevicePlatform.IOS.value:
                 if not self.ios_test():
+                    return False
+            case DevicePlatform.DESKTOP.value:
+                if not self.desktop_test(case_one):
                     return False
             case _:
                 ERROR.logger.error('设备类型不存在，请联系管理员检查！')
@@ -57,11 +57,12 @@ class CaseRunMethod:
         print('web当前的对象被实例化的值：', type(self.web))
         if not self.web:
             self.web = WebRun(self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']))
-        self.web.open_url(case_obj['case_url'], case_obj['case_name'])
+        self.web.open_url(case_obj['case_url'], case_obj['case_id'])
         for case_ele in case_obj['case_data']:
             res_data, res_ = self.web.ele_along(case_ele)
-            print(f'元素的测试结果是：{res_data}')
-            if res_ is False:
+            print(f'元素的测试结果是：正确')
+            if res_ is not False:
+                print(f'元素的测试结果是：失败。数据：{res_data}')
                 break
         return True
         # except Error as e:

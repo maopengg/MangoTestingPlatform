@@ -33,21 +33,21 @@ class WebRun(WebDevice, DataCleaning):
         self.ele_opt_res = {'ele_name': self.ele_name,  #
                             'existence': 0,  #
                             'state': 0,  #
-                            'case_id': self.case_name,  #
+                            'case_id': self.case_id,  #
                             'case_group_id': '',
                             'team_id': '',
                             'test_obj_id': '',  #
                             'msg': '',  #
                             'picture_path': ''}  #
 
-    def open_url(self, url: str, case_name):
+    def open_url(self, url: str, case_id):
         """
         记录用例名称，并且打开url
         @param url: url
         @param case_name: 用例名称
         @return:
         """
-        self.case_name = case_name
+        self.case_id = case_id
         self.wait_for_timeout(1 * 1000)
         self.goto(url)
         self.ele_opt_res['test_obj_id'] = url
@@ -64,6 +64,7 @@ class WebRun(WebDevice, DataCleaning):
             ele_obj = self.__find_ele(case_dict)
             if ele_obj:
                 self.action_element(ele_obj)
+                return self.ele_opt_res, False
             else:
                 return self.ele_opt_res
         except Exception as e:
@@ -72,7 +73,6 @@ class WebRun(WebDevice, DataCleaning):
                                f'元素对象：{case_dict}\n')
             path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
             self.ele_opt_res['picture_path'] = self.screenshot(path)
-        return self.ele_opt_res, False
 
     def action_element(self, ele_obj: Locator) -> None:
         """
@@ -167,4 +167,4 @@ class WebRun(WebDevice, DataCleaning):
         输入依赖解决
         @return:
         """
-        return self.case_input_data(self.case_id, self.ele_name, self.ope_value_key, self.ope_value)
+        return self.case_input_data(self.case_id, self.ele_name, self.ope_value, self.ope_value_key)
