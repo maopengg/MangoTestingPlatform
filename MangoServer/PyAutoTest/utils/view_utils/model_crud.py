@@ -68,7 +68,7 @@ class ModelCRUD(GenericAPIView):
         if serializer.is_valid():
             serializer.save()
             if hasattr(self, 'callback'):
-                th = Thread(target=self.callback, args=(request.data.get('id'),))
+                th = Thread(target=self.callback, args=(request.data.get('case'),))
                 th.start()
             return Response({
                 'code': 200,

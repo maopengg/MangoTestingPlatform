@@ -84,6 +84,12 @@ class CaseRunMethod:
             if not res:
                 ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
 
+    def ios_test(self):
+        pass
+
+    def desktop_test(self):
+        pass
+
     @classmethod
     def ele_test_res(cls, ele_res: dict):
         """

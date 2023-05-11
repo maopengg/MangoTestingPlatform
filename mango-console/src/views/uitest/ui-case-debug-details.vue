@@ -104,7 +104,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { nextTick, onMounted, reactive, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
 
 import { uiRunSort, uiRunSortAss, uiRunSortOpe, uiPageName, uiUiElementName } from '@/api/url'
@@ -166,6 +166,7 @@ const formItems = [
         Message.error(this.placeholder || '')
         return false
       }
+      console.log(this)
       return true
     }
   },
@@ -217,6 +218,19 @@ const formItems = [
     placeholder: '请输入断言内容'
   }
 ] as FormItem[]
+// const elPageRef = ref(formItems[0].value) // 第一个value
+// const elNameRef = ref(formItems[1].value) // 第二个value
+// watch(elPageRef, (newValue) => {
+//   if (!newValue && newValue !== 0) {
+//     console.error('页面名称不能为空')
+//     return false
+//   }
+//   if (actionTitle.value !== '添加元素') {
+//     // 在选择值之后手动将第二个value清空
+//   } else {
+//     elNameRef.value = ''
+//   }
+// })
 
 function doAppend() {
   actionTitle.value = '添加元素'

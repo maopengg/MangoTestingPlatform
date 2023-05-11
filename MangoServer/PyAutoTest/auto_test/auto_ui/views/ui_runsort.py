@@ -70,6 +70,7 @@ class RunSortCRUD(ModelCRUD):
 
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
         ui_case = UiCaseCRUD()
+
         res = ui_case.serializer(instance=UiCase.objects.get(pk=_id), data=data)
         if res.is_valid():
             res.save()
