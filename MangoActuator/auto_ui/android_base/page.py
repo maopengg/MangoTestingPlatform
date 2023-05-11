@@ -3,43 +3,73 @@
 # @Description: 
 # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
-from uiautomator2 import Device
 
-from utils.logs.log_control import ERROR, INFO
+from auto_ui.android_base.android_base import AndroidBase
 
 
-class UiautomatorPage:
+class UiautomatorPage(AndroidBase):
     """页面操作"""
 
-    def __init__(self, android: Device = None):
-        self.android = android
+    def swipe_right(self):
+        """右滑"""
+        self.android.swipe_ext("right")
 
-    def get_ele_text(self, element):
-        """提取元素文本"""
-        try:
-            actual = self.find_element(element).get_text()
-            INFO.logger.info("成功获取元素文本:%s" % str(actual))
-            return actual
-        except Exception as e:
-            ERROR.logger.error(f"无法获取元素文本，元素：{element}，报错信息：{e}")
-            return None
+    def swipe_up(self):
+        """上滑"""
+        self.android.swipe_ext("up")
 
-    def get_ele_center(self, element):
-        """提取元素位置"""
-        try:
-            x, y = self.find_element(element).center()
-            INFO.logger.info("成功获取元素位置:%s" % str(x, y))
-            return x, y
-        except Exception as e:
-            ERROR.logger.error(f"无法获取元素位置，元素：{element}，报错信息：{e}")
-            return None
+    def swipe_down(self):
+        """下滑"""
+        self.android.swipe_ext("down")
 
-    def get_ele_x(self, element):
-        """提取元素X Y坐标"""
-        try:
-            x, y = self.find_element(element).center()
-            INFO.logger.info("成功获取元素X坐标:%s" % str(x, y))
-            return x, y
-        except Exception as e:
-            ERROR.logger.error(f"无法获取元素X坐标，元素：{element}，报错信息：{e}")
-            return None
+    def screenshot(self, filepath):
+        """屏幕截图"""
+        self.android.screenshot(filename=filepath)
+
+    def long_click(self, x, y, time_=3):
+        """长按屏幕3秒"""
+        self.android.long_click(x, y, time_)
+
+    def swipe(self, sx, sy, ex, ey, time_=0.5):
+        """坐标滑动"""
+        self.android.swipe(sx, sy, ex, ey, time_)
+
+    def drag_to_ele(self, sx, sy, ex, ey):
+        """坐标拖动"""
+        self.android.drag(sx, sy, ex, ey)
+
+    def set_orientation_natural(self):
+        """设置为natural"""
+        self.android.set_orientation("natural")
+
+    def set_orientation_left(self):
+        """设置为natural"""
+        self.android.set_orientation("left")
+
+    def set_orientation_right(self):
+        """设置为right"""
+        self.android.set_orientation("right")
+
+    def set_orientation_upsidedown(self):
+        """设置为upsidedown"""
+        self.android.set_orientation("upsidedown")
+
+    def freeze_rotation(self):
+        """冻结旋转"""
+        self.android.freeze_rotation()
+
+    def freeze_rotation_false(self):
+        """取消冻结旋转"""
+        self.android.freeze_rotation(False)
+
+    def dump_hierarchy(self):
+        """获取转储的内容"""
+        return self.android.dump_hierarchy()
+
+    def open_notification(self):
+        """打开通知"""
+        return self.android.dump_hierarchy()
+
+    def open_quick_settings(self):
+        """打开快速设置"""
+        return self.android.dump_hierarchy()

@@ -1,14 +1,11 @@
-from uiautomator2 import Device, UiObject
-from uiautomator2.xpath import XPath
+from uiautomator2 import UiObject
 
+from auto_ui.android_base.android_base import AndroidBase, ElementNotFoundError, ElementNotDisappearError
 from utils.logs.log_control import ERROR, INFO
 
 
-class UiautomatorElementOperation:
+class UiautomatorElementOperation(AndroidBase):
     """元素操作类"""
-
-    def __init__(self, android: Device = None):
-        self.android = android
 
     def click(self, element: UiObject):
         """单击"""
@@ -16,63 +13,53 @@ class UiautomatorElementOperation:
 
     def double_click(self, element: UiObject):
         """双击"""
-        self.android.double_click(element.center())
-
-    def long_click(self, element: UiObject, second):
-        """长按"""
-        element.long_click(second)
+        element.center()
 
     def click_coord(self, x, y):
-        """坐标单击 百分比或坐标值"""
-        self.app.click(x, y)
+        """单击坐标"""
+        self.android.click(x, y)
 
     def double_click_coord(self, x, y):
-        """坐标双击 百分比或坐标值"""
-        self.app.double_click(x, y)
+        """双击坐标"""
+        self.android.double_click(x, y)
 
-    def long_click_coord(self, x, y, second):
-        """坐标长按 百分比或坐标值"""
-        self.app.tap_hold(x, y, second)
+    def long_click_coord(self, element: UiObject, time_):
+        """长按元素"""
+        element.long_click(duration=time_)
 
-    def swipe(self, fx, fy, tx, ty, duration=None):
-        """坐标滑动 百分比或坐标值"""
-        if duration == "":
-            duration = None
-        self.app.swipe(fx, fy, tx, ty, duration)
-
-    def input_text(self, element, text):
+    def input_text(self, element: UiObject, text):
         """输入"""
-        self.find_element(element).set_text(text)
+        element.set_text(text)
 
-    def clear_text(self, element):
+    def clear_text(self, element: UiObject):
         """清空输入框"""
-        self.find_element(element).clear_text()
+        element.clear_text()
 
-    def scroll_to_ele(self, element, direction):
-        """滑动到元素出现"""
-        if "xpath" in element:
-            XPath(self.app).scroll_to(element["xpath"], direction)
-        elif direction == "up":
-            self.app(scrollable=True).forward.to(**element)
-        elif direction == "down":
-            self.app(scrollable=True).backward.to(**element)
-        elif direction == "left":
-            self.app(scrollable=True).horiz.forward.to(**element)
-        else:
-            self.app(scrollable=True).horiz.backward.to(**element)
+    # def scroll_to_ele(self, element: UiObject, direction):
+    #     """滑动到元素出现"""
+    #     if "xpath" in element:
+    #         XPath(self.android).scroll_to(element, direction)
+    #     elif direction == "up":
+    #         self.android(scrollable=True).forward.to(element)
+    #     elif direction == "down":
+    #         self.android(scrollable=True).backward.to(element)
+    #     elif direction == "left":
+    #         self.android(scrollable=True).horiz.forward.to(element)
+    #     else:
+    #         self.android(scrollable=True).horiz.backward.to(element)
 
-    def pinch_in(self, element):
-        """缩小 安卓仅支持属性定位"""
-        self.find_element(element).pinch_in()
+    def pinch_in(self, element: UiObject):
+        """缩小"""
+        element.pinch_in()
 
-    def pinch_out(self, element):
-        """放大 安卓仅支持属性定位"""
-        self.find_element(element).pinch_out()
+    def pinch_out(self, element: UiObject):
+        """放大"""
+        element.pinch_out()
 
-    def wait(self, element, second):
+    def wait(self, element: UiObject, time_):
         """等待元素出现"""
         try:
-            if self.find_element(element).wait(timeout=second):
+            if element.wait(timeout=time_):
                 INFO.logger.info("成功等待元素出现")
             else:
                 ERROR.logger.error("等待元素出现失败 元素不存在")
@@ -84,10 +71,10 @@ class UiautomatorElementOperation:
             ERROR.logger.error(f"无法等待元素出现，元素：{element}，报错信息：{e}")
             return False
 
-    def wait_gone(self, element, second):
+    def wait_gone(self, element: UiObject, time_):
         """等待元素消失"""
         try:
-            res = self.find_element(element).wait_gone(timeout=second)
+            res = element.wait_gone(timeout=time_)
             if res:
                 INFO.logger.info("成功等待元素消失")
             else:
@@ -100,23 +87,33 @@ class UiautomatorElementOperation:
             ERROR.logger.error(f"无法等待元素消失，元素：{element}，报错信息：{e}")
             return False
 
-    def drag_to_ele(self, start_element, end_element):
-        """拖动到元素 只支持属性定位"""
+    def drag_to_ele(self, start_element: UiObject, end_element: UiObject):
+        """拖动A元素到达B元素上"""
         try:
-            self.find_element(start_element).drag_to(**end_element)
+            start_element.drag_to(end_element)
             INFO.logger.info("成功拖动到元素")
         except Exception as e:
             ERROR.logger.error(f"无法拖动到元素，拖拽元素：{start_element}，到达元素：{end_element}，报错信息：{e}")
             return False
 
-    def drag_to_coord(self, element, x, y):
-        """拖动到坐标 只支持属性定位"""
-        self.find_element(element).drag_to(x, y)
+    def drag_to_coord(self, element: UiObject, x, y):
+        """拖动元素到坐标上"""
+        element.drag_to(x, y)
 
-    def drag_coord(self, fx, fy, tx, ty):
-        """坐标拖动"""
-        self.app.drag(fx, fy, tx, ty)
-
-    def swipe_ele(self, element, direction):
+    def swipe_ele(self, element: UiObject, direction):
         """元素内滑动"""
-        self.find_element(element).swipe(direction)
+        element.swipe(direction)
+
+    def get_ele_text(self, element: UiObject):
+        """提取元素文本"""
+        return element.get_text()
+
+    def get_ele_center(self, element: UiObject):
+        """提取元素位置"""
+        x, y = element.center()
+        return x, y
+
+    def get_ele_x(self, element: UiObject):
+        """提取元素X Y坐标"""
+        x, y = element.center()
+        return x, y
