@@ -14,6 +14,7 @@ class UiautomatorEquipmentDevice:
         """启动应用"""
         try:
             self.android.app_start(app_name)
+            self.sleep(5)
             INFO.logger.info("成功执行启动应用")
         except Exception as e:
             ERROR.logger.error(f"无法执行打开应用，包名：{app_name}，报错信息：{e}")
@@ -24,6 +25,25 @@ class UiautomatorEquipmentDevice:
         try:
             self.android.app_stop(app_name)
             INFO.logger.info("成功执行关闭应用")
+            sleep(1)
+        except Exception as e:
+            ERROR.logger.error(f"无法执行关闭应用，包名：{app_name}，报错信息：{e}")
+            return None
+
+    def clear_app(self, app_name):
+        """清除app数据"""
+        try:
+            self.android.app_clear(app_name)
+            INFO.logger.info("成功执行关闭应用")
+            sleep(1)
+        except Exception as e:
+            ERROR.logger.error(f"无法执行清除app数据，包名：{app_name}，报错信息：{e}")
+            return None
+
+    def screen_on(self, app_name):
+        """清除app数据"""
+        try:
+            self.android.screen_on()
             sleep(1)
         except Exception as e:
             ERROR.logger.error(f"无法执行关闭应用，包名：{app_name}，报错信息：{e}")

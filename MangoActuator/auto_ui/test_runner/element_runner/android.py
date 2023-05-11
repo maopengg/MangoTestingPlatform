@@ -3,7 +3,8 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from uiautomator2 import Device
+from uiautomator2 import Device, UiObject
+from uiautomator2.xpath import XPathSelector
 
 from auto_ui.android_base import DriverMerge
 from enum_class.ui_enum import ElementExp, OpeType
@@ -42,36 +43,38 @@ class AndroidRun(DriverMerge, DataCleaning):
 
     def __del__(self):
         self.close_app('com.tencent.mm')
-        self.sleep(1)
+        self.sleep(5)
 
-    def case_along(self, case_dict: dict) -> dict:
+    def case_along(self, case_dict: dict) -> dict and bool:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
         @return: 返回是否操作成功
         """
-        for key, value in case_dict.items():
-            setattr(self, key, value)
-        try:
-            if self.ele_name != '小程序':
-                ele = self.find_ele()
-                print(f'元素的类型是：{ele}')
-                self.ele_opt_res['existence'] = ele
-                if ele:
-                    self.action_element()
-                else:
-                    return self.ele_opt_res
-                return self.ele_opt_res
-        except Exception as e:
+
+        def element_exception_handling(e, case_dict):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
             filepath = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png'
             self.screenshot(filepath)
             self.ele_opt_res['picture_path'] = filepath
-            return self.ele_opt_res
+            return self.ele_opt_res, False
 
-    def action_element(self):
+        for key, value in case_dict.items():
+            setattr(self, key, value)
+        try:
+            ele = self.find_ele()
+            self.ele_opt_res['existence'] = ele
+            if ele:
+                self.action_element(ele)
+                return self.ele_opt_res, True
+            else:
+                element_exception_handling('', case_dict)
+        except Exception as e:
+            element_exception_handling(e, case_dict)
+
+    def action_element(self, ele: UiObject or str or XPathSelector):
         """
         操作具体的元素对象
         @return:
@@ -83,13 +86,13 @@ class AndroidRun(DriverMerge, DataCleaning):
             ERROR.logger.error(f'元素内容为null，请检查{self.ele_loc}')
         else:
             if self.ope_type == OpeType.CLICK.value:
-                self.click(self.ele_loc, self.ele_exp)
+                self.click(ele)
             elif self.ope_type == OpeType.INPUT.value:
                 # self.input(ele_obj, value=self.__input_value())
                 pass
 
-    def find_ele(self):
-        match self.ope_type:
+    def find_ele(self) -> UiObject or str or XPathSelector:
+        match self.ele_exp:
             case ElementExp.XPATH.value:
                 return self.android.xpath(self.ele_loc)
             case ElementExp.ID.value:

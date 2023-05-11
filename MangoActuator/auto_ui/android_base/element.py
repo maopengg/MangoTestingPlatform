@@ -1,4 +1,4 @@
-from uiautomator2 import Device
+from uiautomator2 import Device, UiObject
 from uiautomator2.xpath import XPath
 
 from utils.logs.log_control import ERROR, INFO
@@ -10,17 +10,17 @@ class UiautomatorElementOperation:
     def __init__(self, android: Device = None):
         self.android = android
 
-    def click(self, element, ele_exp):
+    def click(self, element: UiObject):
         """单击"""
-        self.ele(element, ele_exp).click()
+        element.click()
 
-    def double_click(self, element):
+    def double_click(self, element: UiObject):
         """双击"""
-        self.app.double_click(*self.find_element(element).center())
+        self.android.double_click(element.center())
 
-    def long_click(self, element, second):
+    def long_click(self, element: UiObject, second):
         """长按"""
-        self.find_element(element).long_click(second)
+        element.long_click(second)
 
     def click_coord(self, x, y):
         """坐标单击 百分比或坐标值"""
