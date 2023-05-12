@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
-import asyncio
+from threading import Thread
 from typing import Optional
 
 from playwright.sync_api import Page
@@ -38,7 +38,7 @@ class CaseRunMethod:
                 if not self.android_test(case_one):
                     return False
             case DevicePlatform.IOS.value:
-                if not self.ios_test():
+                if not self.ios_test(case_one):
                     return False
             case DevicePlatform.DESKTOP.value:
                 if not self.desktop_test(case_one):
@@ -50,7 +50,6 @@ class CaseRunMethod:
         """
         接受一个web的用例对象，然后开始执行这个用例
         @param case_obj: 用例对象
-        @param group: 是否是用例组
         @return:
         """
         # try:
@@ -59,7 +58,7 @@ class CaseRunMethod:
             self.web = WebRun(self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']))
         self.web.open_url(case_obj['case_url'], case_obj['case_id'])
         for case_ele in case_obj['case_data']:
-            res_data, res_ = self.web.ele_along(case_ele)
+            res_data, res_ = self.web.ele_main(case_ele)
             print(f'元素的测试结果是：正确')
             if res_ is not False:
                 print(f'元素的测试结果是：失败。数据：{res_data}')
@@ -80,17 +79,17 @@ class CaseRunMethod:
             self.android = AndroidRun(self.new_android_obj(case_obj['equipment']))
         self.android.start_app(case_obj['package'])
         for case_dict in case_obj['case_data']:
-            res_data, res_ = self.android.case_along(case_dict)
+            res_data, res_ = self.android.ele_main(case_dict)
             print(f'元素的测试结果是：正确')
             if not res_:
                 ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
                 break
         self.android.close_app(case_obj['package'])
 
-    def ios_test(self):
+    def ios_test(self, case_one):
         pass
 
-    def desktop_test(self):
+    def desktop_test(self, case_one):
         pass
 
     @classmethod
@@ -99,7 +98,8 @@ class CaseRunMethod:
         测试结果处理
         @return:
         """
-        asyncio.create_task(ResultMain.ele_res_insert(ele_res))
+        th = Thread(target=ResultMain.ele_res_insert, args=(ele_res,))
+        th.start()
 
     @classmethod
     def new_web_obj(cls, browser_type: int, web_path: str) -> Page:

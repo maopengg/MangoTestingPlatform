@@ -13,7 +13,6 @@ from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
 
 
-# DriverMerge
 class AndroidRun(DriverMerge, DataCleaning):
 
     def __init__(self, android: Device):
@@ -45,14 +44,14 @@ class AndroidRun(DriverMerge, DataCleaning):
         self.close_app('com.tencent.mm')
         self.sleep(5)
 
-    def case_along(self, case_dict: dict) -> dict and bool:
+    def ele_main(self, case_dict: dict) -> dict and bool:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
         @return: 返回是否操作成功
         """
 
-        def element_exception_handling(e, case_dict):
+        def element_exception_handling(e):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
@@ -64,15 +63,15 @@ class AndroidRun(DriverMerge, DataCleaning):
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
-            ele = self.find_ele()
+            ele = self.__find_ele()
             self.ele_opt_res['existence'] = ele
             if ele:
                 self.action_element(ele)
                 return self.ele_opt_res, True
             else:
-                element_exception_handling('', case_dict)
+                element_exception_handling('')
         except Exception as e:
-            element_exception_handling(e, case_dict)
+            element_exception_handling(e)
 
     def action_element(self, ele: UiObject or str or XPathSelector):
         """
@@ -92,7 +91,7 @@ class AndroidRun(DriverMerge, DataCleaning):
                 self.input(ele, self.__input_value())
                 self.ele_opt_res['state'] = 1
 
-    def find_ele(self) -> UiObject or str or XPathSelector:
+    def __find_ele(self) -> UiObject or str or XPathSelector:
         match self.ele_exp:
             case ElementExp.XPATH.value:
                 return self.android.xpath(self.ele_loc)

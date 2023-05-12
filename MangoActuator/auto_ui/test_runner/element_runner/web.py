@@ -44,7 +44,7 @@ class WebRun(WebDevice, DataCleaning):
         """
         记录用例名称，并且打开url
         @param url: url
-        @param case_name: 用例名称
+        @param case_id: 用例名称
         @return:
         """
         self.case_id = case_id
@@ -52,14 +52,14 @@ class WebRun(WebDevice, DataCleaning):
         self.goto(url)
         self.ele_opt_res['test_obj_id'] = url
 
-    def ele_along(self, case_dict: dict) -> dict and bool:
+    def ele_main(self, case_dict: dict) -> dict and bool:
         """
         将数据设为变量，并对这个元素进行操作
         @param case_dict: 被操作元素对象
         @return: 返回是否操作成功
         """
 
-        def element_exception_handling(e, case_dict):
+        def element_exception_handling(e):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
@@ -75,9 +75,9 @@ class WebRun(WebDevice, DataCleaning):
                 self.action_element(ele_obj)
                 return self.ele_opt_res, True
             else:
-                element_exception_handling('', case_dict)
+                element_exception_handling('')
         except Exception as e:
-            element_exception_handling(e, case_dict)
+            element_exception_handling(e)
 
     def action_element(self, ele_obj: Locator) -> None:
         """

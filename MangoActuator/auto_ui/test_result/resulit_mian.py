@@ -28,9 +28,9 @@ class ResultMain:
 
     @classmethod
     async def notification_send(cls, code: int, mail_msg: str):
-        from socket_client import client
-        from queue_ import ServerEnumAPI
-        await client.active_send(
+        from socket_client.client_socket import ClientWebSocket
+        from enum_class.command_socket_api import ServerEnumAPI
+        await ClientWebSocket().active_send(
             code=code,
             func=ServerEnumAPI.NOTICE_MAIN.value,
             msg=mail_msg,
@@ -61,8 +61,8 @@ class ResultMain:
 
     @classmethod
     async def web_notice(cls, code: int, web_msg: str):
-        from socket_client import client
-        await client.active_send(
+        from socket_client.client_socket import ClientWebSocket
+        await ClientWebSocket().active_send(
             code=code,
             func=None,
             msg=web_msg,
