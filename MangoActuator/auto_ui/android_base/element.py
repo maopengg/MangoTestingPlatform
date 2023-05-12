@@ -27,7 +27,7 @@ class UiautomatorElementOperation(AndroidBase):
         """长按元素"""
         element.long_click(duration=time_)
 
-    def input_text(self, element: UiObject, text):
+    def input(self, element: UiObject, text):
         """输入"""
         element.set_text(text)
 

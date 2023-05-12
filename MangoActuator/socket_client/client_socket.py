@@ -1,23 +1,23 @@
 import json
+import multiprocessing
 
 import time
 import websockets
 
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
+from utils.decorator.singleton import singleton
 from utils.logs.log_control import DEBUG
-from .socket_product import collection
+from .socket_product import Collection
 
 
-class ClientWebSocket(object):
+@singleton
+class ClientWebSocket:
     # instance = None
-    websocket = None
-    username = input("请输入用户账号: ")
-    socket_url = '/client/socket?' + username
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(ClientWebSocket, 'instance'):
-            cls.instance = super().__new__(cls)
-        return cls.instance
+    def __init__(self, qu: multiprocessing.Queue):
+        self.websocket = None
+        self.username = input("请输入用户账号: ")
+        self.socket_url = '/client/socket?' + self.username
+        self.qu = qu
 
     async def client_hands(self):
         """
@@ -35,7 +35,7 @@ class ClientWebSocket(object):
                                        data={'username': self.username,
                                              'password': password}, end=False)
                 # await self.websocket.send(json.dumps(user_data))
-            response_str = await ClientWebSocket.websocket.recv()
+            response_str = await self.websocket.recv()
             res = self.__json_loads(response_str)
             if res['code'] == 200:
                 self.__output_method(response_str)
@@ -51,7 +51,7 @@ class ClientWebSocket(object):
         # DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
         try:
             async with websockets.connect(server_url) as websocket:
-                ClientWebSocket.websocket = websocket
+                self.websocket = websocket
                 # 下面两行同步进行
                 if await self.client_hands() is True:  # 握手
                     await self.client_recv()
@@ -61,18 +61,17 @@ class ClientWebSocket(object):
 
     async def client_recv(self):
         while True:
-            recv_json = await ClientWebSocket.websocket.recv()
+            recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
             if data['func']:
-                collection.start_up(data['func'], data['data'])
+                Collection(self.qu).start_up(data['func'], data['data'])
             elif data['func'] == 'break':
-                await ClientWebSocket.websocket.close()
+                await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
                 time.sleep(5)
 
-    @classmethod
-    async def active_send(cls, code: int, func: str or None, msg: str, data: list or str, end: bool):
+    async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):
         """
         主动发送
         :param data: 发送的数据
@@ -83,15 +82,15 @@ class ClientWebSocket(object):
         :return:
         """
 
-        data_str = cls.__json_dumps({
+        data_str = self.__json_dumps({
             'code': code,
             'msg': msg,
             'end': end,
             'func': func,
-            'user': int(cls.username),
+            'user': int(self.username),
             'data': data
         })
-        await cls.websocket.send(data_str)
+        await self.websocket.send(data_str)
 
     @staticmethod
     def __output_method(msg):

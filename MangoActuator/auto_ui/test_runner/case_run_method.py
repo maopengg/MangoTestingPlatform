@@ -80,9 +80,12 @@ class CaseRunMethod:
             self.android = AndroidRun(self.new_android_obj(case_obj['equipment']))
         self.android.start_app(case_obj['package'])
         for case_dict in case_obj['case_data']:
-            res = self.android.case_along(case_dict)
-            if not res:
+            res_data, res_ = self.android.case_along(case_dict)
+            print(f'元素的测试结果是：正确')
+            if not res_:
                 ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
+                break
+        self.android.close_app(case_obj['package'])
 
     def ios_test(self):
         pass

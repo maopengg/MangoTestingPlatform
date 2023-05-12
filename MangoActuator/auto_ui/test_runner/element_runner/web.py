@@ -58,21 +58,26 @@ class WebRun(WebDevice, DataCleaning):
         @param case_dict: 被操作元素对象
         @return: 返回是否操作成功
         """
+
+        def element_exception_handling(e, case_dict):
+            ERROR.logger.error(f'元素操作失败，请检查内容\n'
+                               f'报错信息：{e}\n'
+                               f'元素对象：{case_dict}\n')
+            path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
+            self.ele_opt_res['picture_path'] = self.screenshot(path)
+            return self.ele_opt_res, False
+
         for key, value in case_dict.items():
             setattr(self, key, value)
         try:
             ele_obj = self.__find_ele(case_dict)
             if ele_obj:
                 self.action_element(ele_obj)
-                return self.ele_opt_res, False
+                return self.ele_opt_res, True
             else:
-                return self.ele_opt_res
+                element_exception_handling('', case_dict)
         except Exception as e:
-            ERROR.logger.error(f'元素操作失败，请检查内容\n'
-                               f'报错信息：{e}\n'
-                               f'元素对象：{case_dict}\n')
-            path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
-            self.ele_opt_res['picture_path'] = self.screenshot(path)
+            element_exception_handling(e, case_dict)
 
     def action_element(self, ele_obj: Locator) -> None:
         """

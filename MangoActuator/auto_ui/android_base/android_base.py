@@ -26,9 +26,9 @@ def new_android(equipment='8796a033') -> Device:
 
 class AndroidBase:
 
-    # def __init__(self, android: Device = None):
-    #     self.android = android
-    #     self.android.implicitly_wait(10)
+    def __init__(self, android: Device = None):
+        self.android = android
+        self.android.implicitly_wait(10)
 
     def sleep(self, second):
         """强制等待"""

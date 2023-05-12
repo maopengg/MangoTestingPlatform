@@ -17,8 +17,7 @@ from utils.nuw_logs import NewLog
 class AndroidRun(DriverMerge, DataCleaning):
 
     def __init__(self, android: Device):
-        super().__init__()
-        self.android = android
+        super().__init__(android)
         self.case_id = 0
         self.ope_type = ''
         self.ass_type = ''
@@ -33,7 +32,7 @@ class AndroidRun(DriverMerge, DataCleaning):
         self.ope_value_key = ''
         self.ele_opt_res = {'ele_name': self.ele_name,
                             'existence': '',
-                            'state': '',
+                            'state': 0,
                             'case_id': self.case_id,
                             'case_group_id': '',
                             'team_id': '',
@@ -87,9 +86,10 @@ class AndroidRun(DriverMerge, DataCleaning):
         else:
             if self.ope_type == OpeType.CLICK.value:
                 self.click(ele)
+                self.ele_opt_res['state'] = 1
             elif self.ope_type == OpeType.INPUT.value:
-                # self.input(ele_obj, value=self.__input_value())
-                pass
+                self.input(ele, self.__input_value())
+                self.ele_opt_res['state'] = 1
 
     def find_ele(self) -> UiObject or str or XPathSelector:
         match self.ele_exp:
@@ -117,3 +117,5 @@ class AndroidRun(DriverMerge, DataCleaning):
 
 if __name__ == '__main__':
     pass
+    # import gc
+    # referrers = gc.get_referrers(obj)
