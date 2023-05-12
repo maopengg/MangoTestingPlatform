@@ -41,6 +41,7 @@ class AndroidRun(DriverMerge, DataCleaning):
                             'picture_path': ''}
 
     def __del__(self):
+        print('被销毁了吗？')
         self.close_app('com.tencent.mm')
         self.sleep(5)
 

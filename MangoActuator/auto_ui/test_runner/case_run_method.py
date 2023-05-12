@@ -75,7 +75,7 @@ class CaseRunMethod:
         @param case_obj: 用例对象
         @return:
         """
-        print('android当前的对象被实例化的值：', type(self.web))
+        print('android当前的对象被实例化的值：', type(self.android))
         if not self.android:
             self.android = AndroidRun(self.new_android_obj(case_obj['equipment']))
         self.android.start_app(case_obj['package'])
