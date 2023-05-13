@@ -29,7 +29,7 @@ class UiAutoApi:
         @return:
         """
         for i in case_data:
-            self.qu.put({'web_group_case': i})
+            self.qu.put({'group_case': i})
 
 
 if __name__ == '__main__':

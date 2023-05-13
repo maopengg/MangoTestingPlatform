@@ -4,18 +4,23 @@
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
 import logging
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
+from PyAutoTest.auto_test.auto_ui.case_run.run_api import RunApi
+from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup
 
 logger = logging.getLogger('system')
 
 
 def my_task(task_id):
-    # task = UiCase.objects.f(id=task_id)
-    # 执行任务的代码
-    print(task_id)
+    case_group = UiCaseGroup.objects.filter(time_name=task_id).values('id')
+    case_list = [i['id'] for i in case_group]
+    # for i in case_group:
+    #     print(i['id'])
+    return RunApi.group_batch(group_id_list=case_list, time=True)
 
 
 # 创建定时任务的函数

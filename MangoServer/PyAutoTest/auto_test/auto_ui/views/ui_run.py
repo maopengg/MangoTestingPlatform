@@ -8,10 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_ui.case_run.run_api import RunApi
-from PyAutoTest.settings import DRIVER
-from PyAutoTest.socket_class.actuator_enum.ui_enum import UiEnum
+from PyAutoTest.settings import DRIVER, SERVER
 
 
 class RunUiCase(ViewSet):
@@ -25,31 +23,45 @@ class RunUiCase(ViewSet):
         @return:
         """
         environment = request.GET.get("environment")
-        try:
-            case_id = int(request.GET.get("case_id"))
-        except ValueError:
-            case_id = eval(request.GET.get("case_id"))
-        case_json = self.run_data.case_run_batch(case_id, environment, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_debug_case.value)
-        return Response(response)
+        case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
+                                                      environment=environment,
+                                                      username=int(request.user.get('id')))
+        if res:
+            return Response({
+                'code': 200,
+                'msg': f'{DRIVER}已收到全部用例，正在执行中...',
+                'data': case_json
+            })
+        else:
+            return Response({
+                'code': 300,
+                'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
+                'data': case_json
+            })
 
-    @action(methods=['get'], detail=False)
-    def ui_batch_run(self, request):
-        """
-        批量执行多条用例
-        @param request:
-        @return:
-        """
-        # team = request.GET.get("team")
-        environment = request.GET.get("environment")
-        case_id = int(request.GET.get("case_id"))
-        # case_name = UiCase.objects.get(id=case_id).name
-        # r = UiCaseRun()
-        # # try:
-        # r.main(team, environment, case_id)
-        case_json = self.run_data.case_run_batch(case_id, environment, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_debug_case.value)
-        return Response(response)
+    # @action(methods=['get'], detail=False)
+    # def ui_batch_run(self, request):
+    #     """
+    #     批量执行多条用例
+    #     @param request:
+    #     @return:
+    #     """
+    #     environment = request.GET.get("environment")
+    #     case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
+    #                                                   environment=environment,
+    #                                                   username=int(request.user.get('username')))
+    #     if res:
+    #         return Response({
+    #             'code': 200,
+    #             'msg': f'{DRIVER}已收到全部用例，正在执行中...',
+    #             'data': case_json
+    #         })
+    #     else:
+    #         return Response({
+    #             'code': 300,
+    #             'msg': f'执行失败，请确保{DRIVER}已连接服务器',
+    #             'data': case_json
+    #         })
 
     @action(methods=['get'], detail=False)
     def ui_run_group(self, request):
@@ -58,10 +70,20 @@ class RunUiCase(ViewSet):
         @param request:
         @return:
         """
-        case_id = int(request.GET.get("group_id"))
-        case_json = self.run_data.group_batch(case_id, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_group_case.value)
-        return Response(response)
+        case_json, res = self.run_data.group_batch(group_id_list=int(request.GET.get("group_id")),
+                                                   username=int(request.user.get('username')))
+        if res:
+            return Response({
+                'code': 200,
+                'msg': f'{DRIVER}已收到全部用例，正在执行中...',
+                'data': case_json
+            })
+        else:
+            return Response({
+                'code': 300,
+                'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
+                'data': case_json
+            })
 
     @action(methods=['get'], detail=False)
     def ui_run_group_batch(self, request):
@@ -71,37 +93,17 @@ class RunUiCase(ViewSet):
         @return:
         """
         group_id_list = eval(request.GET.get("group_id"))
-        case_json = self.run_data.group_batch(group_id_list, request.user)
-        response = self.run_case_send(request, case_json, UiEnum.run_group_case.value)
-        return Response(response)
-
-    @classmethod
-    def run_case_send(cls, request, case_json, func_name: str) -> dict:
-        """
-        发送给第三方工具方法
-        @param request: 请求对象
-        @param case_json: 需要发送的json数据
-        @param func_name: 需要执行的函数
-        @return:
-        """
-        server = ChatConsumer()
-        f = server.active_send(
-            code=200,
-            func=func_name,
-            user=int(request.user.get('username')),
-            msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
-            data=case_json,
-            end='client_obj'
-        )
-        if f is True:
-            return {
+        case_json, res = self.run_data.group_batch(group_id_list=group_id_list,
+                                                   username=int(request.user.get('username')))
+        if res:
+            return Response({
                 'code': 200,
-                'msg': f'{DRIVER}已收到用例，正在执行中...',
+                'msg': f'{DRIVER}已收到全部用例，正在执行中...',
                 'data': case_json
-            }
+            })
         else:
-            return {
+            return Response({
                 'code': 300,
-                'msg': f'执行失败，请确保{DRIVER}已连接服务器',
+                'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
                 'data': case_json
-            }
+            })

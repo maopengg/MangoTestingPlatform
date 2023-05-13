@@ -17,7 +17,7 @@ class ConsumeUI:
         CaseDistribution().debug_case_distribution(data)
 
     @classmethod
-    def web_group_case(cls, data: dict):
+    def group_case(cls, data: dict):
         def run():
             GroupCaseRun.group_case_decompose(data)
 

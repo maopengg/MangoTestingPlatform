@@ -9,6 +9,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
+from PyAutoTest.auto_test.auto_system.scheduled_tasks.tasks import my_task
+from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
@@ -43,3 +45,19 @@ class TimeTasksViews(ViewSet):
             'msg': '获取日期信息成功',
             'data': data
         })
+
+    @action(methods=['get'], detail=False)
+    def trigger_timing(self, request):
+        case_json, res = my_task(request.query_params.get('id'))
+        if res:
+            return Response({
+                'code': 200,
+                'msg': '触发定时任务成功',
+                'data': case_json
+            })
+        else:
+            return Response({
+                'code': 300,
+                'msg': f'触发定时任务失败，请确保{DRIVER}已连接{SERVER}',
+                'data': case_json
+            })

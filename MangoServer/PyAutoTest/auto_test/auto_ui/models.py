@@ -63,6 +63,10 @@ class UiCaseGroup(models.Model):
     # 0失败，1成功，2警告
     state = models.SmallIntegerField(verbose_name="状态", null=True)
     time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
+    timing_actuator = models.ForeignKey(to=User, to_field="id", related_name='related_timing_actuator',
+                                        verbose_name='定时执行的设备', on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', related_name='related_case_people',
+                                    on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'ui_case_group'

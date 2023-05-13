@@ -27,6 +27,7 @@ urlpatterns = [
     #
     path('time', TimeTasksCRUD.as_view()),
     path('time/data', TimeTasksViews.as_view({'get': 'get_time_data'})),
+    path('trigger/timing', TimeTasksViews.as_view({'get': 'trigger_timing'})),
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),

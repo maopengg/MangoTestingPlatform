@@ -44,7 +44,8 @@ class CaseData:
             case_strip['browser_type'] = BrowserType.CHROMIUM.value
         elif case_.case_type == DevicePlatform.ANDROID.value:
             # 如果是安卓用例，则写入设备，app和type
-            case_strip['equipment'], case_strip['package'] = self.__get_app_config()
+            case_strip['equipment'] = self.__get_app_config()
+            case_strip['package'] = TestObject.objects.get(id=test_obj).value
             case_strip['type'] = DevicePlatform.ANDROID.value
         elif case_.case_type == DevicePlatform.IOS.value:
             pass
@@ -70,9 +71,9 @@ class CaseData:
         return case_strip
 
     def __get_web_config(self) -> tuple:
-        user_ui_config = UiConfig.objects.get(user_id=self.user.get('id'))
+        user_ui_config = UiConfig.objects.get(user_id=self.user)
         return user_ui_config.local_port, user_ui_config.browser_path
 
     def __get_app_config(self) -> tuple:
-        user_ui_config = UiConfig.objects.get(user_id=self.user.get('id'))
-        return user_ui_config.equipment, user_ui_config.package
+        user_ui_config = UiConfig.objects.get(user_id=self.user)
+        return user_ui_config.equipment

@@ -67,6 +67,7 @@ export const getRandomList = 'system/variable/random/list'
 export const getRandomData = 'system/variable/value'
 export const getTimeList = 'system/time'
 export const getTimeData = 'system/time/data'
+export const triggerTiming = 'system/trigger/timing'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {

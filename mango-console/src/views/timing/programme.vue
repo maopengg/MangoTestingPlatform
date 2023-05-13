@@ -68,6 +68,7 @@
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
+                    <a-button type="text" size="mini" @click="onTrigger(record)">触发</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
@@ -105,7 +106,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getTimeList } from '@/api/url'
+import { getTimeList, triggerTiming } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -497,6 +498,18 @@ function onDataForm() {
 //     })
 //     .catch(console.log)
 // }
+function onTrigger(record: any) {
+  get({
+    url: triggerTiming,
+    data: () => {
+      return {
+        id: record.id
+      }
+    }
+  }).then((res) => {
+    Message.success(res.msg)
+  })
+}
 
 onMounted(() => {
   nextTick(async () => {

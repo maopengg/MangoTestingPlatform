@@ -90,6 +90,12 @@
                 <template v-else-if="item.key === 'time_name'" #cell="{ record }">
                   {{ record.time_name.name }}
                 </template>
+                <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+                  {{ record.case_people.nickname }}
+                </template>
+                <template v-else-if="item.key === 'timing_actuator'" #cell="{ record }">
+                  {{ record.timing_actuator.nickname }}
+                </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>
@@ -347,9 +353,19 @@ const tableColumns = useTableColumn([
     dataIndex: 'time_name'
   },
   {
-    title: '定时执行环境',
+    title: '定时环境',
     key: 'test_obj',
     dataIndex: 'test_obj'
+  },
+  {
+    title: '执行器',
+    key: 'timing_actuator',
+    dataIndex: 'timing_actuator'
+  },
+  {
+    title: '用例负责人',
+    key: 'case_people',
+    dataIndex: 'case_people'
   },
   {
     title: '最近一次结果',
