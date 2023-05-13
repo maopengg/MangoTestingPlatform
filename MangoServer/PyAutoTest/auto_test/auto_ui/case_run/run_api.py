@@ -4,10 +4,10 @@
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.websocket_.socket_class.actuator_enum.ui_enum import UiEnum
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup
 from PyAutoTest.settings import DRIVER
-from PyAutoTest.socket_class.actuator_enum.ui_enum import UiEnum
 
 
 class RunApi:

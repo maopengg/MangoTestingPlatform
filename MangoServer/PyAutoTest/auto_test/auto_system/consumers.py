@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import json
 import logging
+
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
@@ -160,7 +161,7 @@ class ChatConsumer(WebsocketConsumer):
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
         if msg['func'] == "notice_main_":
-            from PyAutoTest.socket_class import SocketAPI
+            from PyAutoTest.auto_test.auto_system.websocket_.socket_class import SocketAPI
             SocketAPI(msg['func'], "应用组")
         if msg.get('end'):
             self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')

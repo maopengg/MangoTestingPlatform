@@ -7,7 +7,6 @@ import websockets
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
 from utils.decorator.singleton import singleton
 from utils.logs.log_control import DEBUG
-from .socket_product import Collection
 
 
 @singleton
@@ -65,7 +64,8 @@ class ClientWebSocket:
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
             if data['func']:
-                Collection(self.qu).start_up(data['func'], data['data'])
+                self.qu.put({data['func']: data['data']})
+                # Collection(self.qu).start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')

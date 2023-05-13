@@ -54,6 +54,7 @@ export const uiRunSortOpe = '/ui/runsort/ope'
 export const UiRun = '/ui/run'
 export const uiRunCaseGroup = '/ui/run/group'
 export const uiRunCaseGroupBatch = '/ui/run/group/batch'
+export const uiConfig = '/ui/config'
 
 // -
 export const getProjectConfig = '/system/test/object'

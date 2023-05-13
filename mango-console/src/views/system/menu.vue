@@ -15,9 +15,9 @@
               v-for="item of tableColumns"
               :key="item.key"
               :align="item.align"
-              :title="(item.title as string)"
+              :title="item.title"
               :width="item.width"
-              :data-index="(item.key as string)"
+              :data-index="item.key"
               :fixed="item.fixed"
             >
               <template v-if="item.key === 'index'" #cell="{ rowIndex }">
@@ -100,7 +100,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, h, onMounted, ref, Ref } from 'vue'
+import { defineComponent, onMounted, ref, Ref } from 'vue'
 import { post } from '@/api/http'
 import { getMenuList } from '@/api/url'
 import { useRowKey, useTable, useTableColumn } from '@/hooks/table'
@@ -289,6 +289,7 @@ export default defineComponent({
     }
 
     function doRefresh() {
+      console.log(table.tableLoading)
       post({
         url: getMenuList,
         data: {}

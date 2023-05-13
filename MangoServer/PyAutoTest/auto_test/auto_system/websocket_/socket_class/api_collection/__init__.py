@@ -6,7 +6,7 @@
 import apiauto_api
 import command_api
 import uiauto_api
-from PyAutoTest.socket_class.actuator_enum.self_test_class import SelfTestClass
+from PyAutoTest.auto_test.auto_system.websocket_.socket_class.actuator_enum.self_test_class import SelfTestClass
 
 
 class Collection(apiauto_api.ApiAutoApi, uiauto_api.UiAutoApi, command_api.CommandApi):

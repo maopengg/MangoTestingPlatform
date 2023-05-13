@@ -6,6 +6,7 @@
 from django.urls import path
 
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
+from .views.socket_api import SocketApiViews
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
 from ..auto_system.views.page import SystemViews
@@ -34,4 +35,5 @@ urlpatterns = [
     path("test/func", SystemViews.as_view({'get': 'test_func'})),
     # zshop测试接口
     path("shuyun/tag/mark/query", SystemViews.as_view({'get': 'shuyun_tag_mark_query'})),
+    path("test/socket", SocketApiViews.as_view({'get': 'test_socket'})),
 ]
