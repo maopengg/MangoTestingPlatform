@@ -107,6 +107,7 @@ export default defineComponent({
 <style lang="less" scoped>
 .chart-item-container {
   width: 100%;
+
   .chart-item {
     height: 30vh;
   }

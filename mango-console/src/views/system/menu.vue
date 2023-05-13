@@ -46,7 +46,7 @@
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
-                  <a-button status="success" @click="onUpdateItem(record)" size="mini"> 编辑 </a-button>
+                  <a-button status="success" @click="onUpdateItem(record)" size="mini"> 编辑</a-button>
                   <a-button status="danger" size="mini" @click="onDeleteItem(record)">删除</a-button>
                 </a-space>
               </template>
@@ -106,11 +106,13 @@ import { getMenuList } from '@/api/url'
 import { useRowKey, useTable, useTableColumn } from '@/hooks/table'
 import { ModalDialogType, FormItem } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
+
 interface TreeItem {
   title: string
   key: string
   children?: TreeItem[]
 }
+
 export default defineComponent({
   name: 'Menu',
   setup() {
@@ -285,6 +287,7 @@ export default defineComponent({
         })
       return list
     }
+
     function doRefresh() {
       post({
         url: getMenuList,
@@ -296,6 +299,7 @@ export default defineComponent({
         })
         .catch(console.log)
     }
+
     function onAddItem() {
       actionModel.value = 'add'
       itemFormOptions.forEach((it) => {
@@ -306,6 +310,7 @@ export default defineComponent({
       })
       modalDialog.value?.show()
     }
+
     function onUpdateItem(item: any) {
       actionModel.value = 'edit'
       tempItem = item
@@ -317,6 +322,7 @@ export default defineComponent({
       })
       modalDialog.value?.show()
     }
+
     function onConfirm() {
       if (actionModel.value === 'add') {
         if (itemFormOptions.every((it) => (it.validator ? it.validator() : true))) {
@@ -346,6 +352,7 @@ export default defineComponent({
         }
       }
     }
+
     function onDeleteItem(item: any) {
       Modal.confirm({
         title: '提示',
@@ -357,6 +364,7 @@ export default defineComponent({
         }
       })
     }
+
     onMounted(doRefresh)
     return {
       rowKey,

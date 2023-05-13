@@ -92,6 +92,7 @@ export default defineComponent({
   width: 100%;
   height: 90%;
   height: 250px;
+
   .chart-item {
     height: 100%;
   }
