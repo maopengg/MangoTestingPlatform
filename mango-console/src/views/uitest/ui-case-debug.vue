@@ -133,11 +133,21 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'team'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'case_type'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="testObjData.platformEnum"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -154,11 +164,11 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { uiCase, uiCasePutType, UiRun } from '@/api/url'
+import { getPlatformEnum, uiCase, uiCasePutType, UiRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { getKeyByTitle, transformData } from '@/utils/datacleaning'
@@ -224,6 +234,21 @@ const formItems = [
     key: 'team',
     value: ref(''),
     placeholder: '请选择项目名称',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '用例客户端',
+    key: 'case_type',
+    value: ref(''),
+    placeholder: '请选择用例类型',
     required: true,
     type: 'select',
     validator: function () {
@@ -583,6 +608,23 @@ function onClick(record: any) {
   })
 }
 
+const testObjData = reactive({
+  platformEnum: []
+})
+
+function getPlatform() {
+  get({
+    url: getPlatformEnum,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      testObjData.platformEnum = res.data
+    })
+    .catch(console.log)
+}
+
 function setCaseGroup() {
   Message.info('进入到设置用例组页面')
 }
@@ -590,6 +632,7 @@ function setCaseGroup() {
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    getPlatform()
   })
 })
 </script>

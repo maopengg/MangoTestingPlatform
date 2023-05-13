@@ -37,6 +37,10 @@ class NoticeConfigCRUD(ModelCRUD):
 
 
 class NoticeConfigViews(ViewSet):
+    model = NoticeConfig
+    queryset = NoticeConfig.objects.all()
+    serializer_class = NoticeConfigSerializers
+    serializer = NoticeConfigSerializersC
 
     @action(methods=['get'], detail=False)
     def test(self, request):
@@ -55,3 +59,7 @@ class NoticeConfigViews(ViewSet):
             'msg': '获取通知类型成功',
             'data': enum_list(NoticeEnum)
         })
+
+    # @action(methods=['get'], detail=False)
+    # def up_notice_state(self, request):
+    #     state = {request.query_params.get('state')}

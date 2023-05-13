@@ -87,8 +87,7 @@
                   <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
                 </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.state === 1">启用</a-tag>
-                  <a-tag color="orangered" size="small" v-else-if="record.state === 0">未启用</a-tag>
+                  <a-switch :default-checked="record.state === 0" :loading="loading" @change="upState(record.id, record.state)" />
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -498,6 +497,28 @@ function getNoticeTpyeF() {
   })
     .then((res) => {
       noticeData.noticeType = res.data
+    })
+    .catch(console.log)
+}
+
+const loading = ref(false)
+
+function upState(id: number, state: number) {
+  loading.value = true
+  put({
+    url: getNoticeConfig,
+    data: () => {
+      return {
+        id: id,
+        state: state
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      setTimeout(function () {
+        loading.value = false
+      }, 300)
     })
     .catch(console.log)
 }

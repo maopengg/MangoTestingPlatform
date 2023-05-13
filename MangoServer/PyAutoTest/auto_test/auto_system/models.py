@@ -28,7 +28,7 @@ class NoticeConfig(models.Model):
     """通知配置表"""
     team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
-    config = models.CharField(verbose_name="通知配置", max_length=1028)
+    config = models.CharField(verbose_name="通知配置", max_length=1028, null=True)
     state = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
 
     class Meta:

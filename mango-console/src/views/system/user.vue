@@ -69,7 +69,7 @@
                   {{ record.department === null ? '-' : record.department.name }}
                 </template>
                 <template v-else-if="item.key === 'role'" #cell="{ record }">
-                  {{ record.role.name }}
+                  {{ record.role === null ? '-' : record.role.name }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -268,7 +268,22 @@ const formItems = [
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择用户角色，角色不同权限不同',
+    placeholder: '请选择角色',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '邮箱',
+    key: 'mailbox',
+    value: ref(''),
+    type: 'input',
+    required: true,
+    placeholder: '请输入邮箱',
     validator: function () {
       if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
@@ -291,7 +306,7 @@ const tableColumns = useTableColumn([
     title: '昵称',
     key: 'nickname',
     dataIndex: 'nickname',
-    width: 100
+    width: 150
   },
   {
     title: '账号',
@@ -319,6 +334,11 @@ const tableColumns = useTableColumn([
     title: '登录IP',
     key: 'ip',
     dataIndex: 'ip'
+  },
+  {
+    title: '邮箱',
+    key: 'mailbox',
+    dataIndex: 'mailbox'
   },
   {
     title: '操作',
