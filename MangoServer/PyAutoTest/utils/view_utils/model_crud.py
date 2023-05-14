@@ -61,10 +61,16 @@ class ModelCRUD(GenericAPIView):
             })
 
     def put(self, request):
-        serializer = self.serializer(
-            instance=self.model.objects.get(pk=request.data.get('id')),
-            data=request.data
-        )
+        if isinstance(request, dict):
+            serializer = self.serializer(
+                instance=self.model.objects.get(pk=request.get('id')),
+                data=request
+            )
+        else:
+            serializer = self.serializer(
+                instance=self.model.objects.get(pk=request.data.get('id')),
+                data=request.data
+            )
         if serializer.is_valid():
             serializer.save()
             if hasattr(self, 'callback'):
@@ -76,7 +82,10 @@ class ModelCRUD(GenericAPIView):
                 'data': serializer.data
             })
         else:
-            logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            if isinstance(request, dict):
+                logger.error(f'执行修改时报错，请检查！数据：{request}, 报错信息：{str(serializer.errors)}')
+            else:
+                logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return Response({
                 'code': 300,
                 'msg': str(serializer.errors),

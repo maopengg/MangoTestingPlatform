@@ -13,10 +13,15 @@ from PyAutoTest.settings import DRIVER, SERVER, WEB
 
 logger = logging.getLogger('system')
 
-CONN_LIST = []
 
-
-class ChatConsumer(WebsocketConsumer):
+class ChatConsumer(WebsocketConsumer, ):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from PyAutoTest.auto_test.auto_system.websocket_.socket_user_redis import SocketUserRedis
+        self.user_redis = SocketUserRedis()
+        from PyAutoTest.auto_test.auto_user.views.user import UserCRUD
+        self.user_crud = UserCRUD()
+        self.user = ''
 
     def websocket_connect(self, message):
         """
@@ -24,64 +29,45 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        # for i in CONN_LIST:
-        #     if int(self.scope.get('query_string')) == i.get('user'):
-        #         return
-        #     else:
-        print(CONN_LIST)
+        self.user = self.scope.get('query_string').decode()
         self.accept()
         if self.scope.get('path') == '/web/socket':
-            CONN_LIST.append({
-                'user': int(self.scope.get('query_string')),
-                'web_obj': self
-            })
-            self.send(self.__json_dumps({
-                'code': 200,
-                'func': None,
-                'user': None,
-                'msg': f'与{SERVER}建立连接成功!',
-                'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
-            }))
+            self.user_redis.set_user_conn_obj(self.user, 'web_obj', self)
+            self.send(self.__json_dumps(200,
+                                        f'与{SERVER}建立连接成功!',
+                                        f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"))
         elif self.scope.get('path') == '/client/socket':
-            if not CONN_LIST:
-                self.send(self.__json_dumps({
-                    'code': 300,
-                    'func': None,
-                    'user': None,
-                    'msg': f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
-                    'data': ''
-                }))
+            if not self.user_redis.get_user_web_obj(self.user) and self.user != 'admin':
+                self.send(self.__json_dumps(300,
+                                            f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
+                                            ''))
                 self.websocket_disconnect(message)
+            elif self.user == 'admin':
+                self.user_redis.set_user_conn_obj(self.user, 'client_obj', self)
+                self.send(self.__json_dumps(200,
+                                            f'{DRIVER}已连接上{SERVER}！',
+                                            f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"))
+                self.user_crud.put(
+                    request={'id': self.user_crud.model.objects.get(username=self.user).id,
+                             'ip': str(self.scope.get('client')[0]) + ':' + str(self.scope.get('client')[1])})
             else:
-                for i in CONN_LIST:
-                    if i.get('user') == int(self.scope.get('query_string')):
-                        i['client_obj'] = self
-                        self.send(self.__json_dumps({
-                            'code': 200,
-                            'func': None,
-                            'user': None,
-                            'msg': f'{DRIVER}已连接上{SERVER}！',
-                            'data': f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
-                        }))
-                        self.active_send(
-                            code=200,
-                            func=None,
-                            user=int(self.scope.get('query_string')),
-                            msg=f'您的{DRIVER}已连接上{SERVER}！',
-                            data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
-                            end='web_obj'
-                        )
-                    else:
-                        self.send(self.__json_dumps({
-                            'code': 300,
-                            'func': None,
-                            'user': None,
-                            'msg': f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
-                            'data': ''
-                        }))
-                        self.websocket_disconnect(message)
+                self.user_redis.set_user_conn_obj(self.user, 'client_obj', self)
+                self.send(self.__json_dumps(200,
+                                            f'{DRIVER}已连接上{SERVER}！',
+                                            f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"))
+                self.active_send(
+                    code=200,
+                    func=None,
+                    user=self.user,
+                    msg=f'您的{DRIVER}已连接上{SERVER}！',
+                    data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
+                    end='web_obj'
+                )
+                self.user_crud.put(
+                    request={'id': self.user_crud.model.objects.get(username=self.user).id,
+                             'ip': str(self.scope.get('client')[0]) + ':' + str(self.scope.get('client')[1])})
         else:
-            return '请使用正确的链接域名访问！'
+            logger.error('请使用正确的链接域名访问！')
 
     def websocket_receive(self, message):
         """
@@ -89,13 +75,11 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        print(CONN_LIST)
+        self.user = self.scope.get('query_string').decode()
         if self.scope.get('path') == '/web/socket':
             self.__receive_console(message)
         elif self.scope.get('path') == '/client/socket':
             self.__receive_actuator(message)
-        else:
-            return False
 
     def websocket_disconnect(self, message):
         """
@@ -103,31 +87,28 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        if not CONN_LIST:
+        self.user = self.scope.get('query_string').decode()
+        if self.scope.get('path') == '/web/socket':
+            self.active_send(
+                code=200,
+                func='break',
+                user=self.user,
+                msg=f'{WEB}已断开！',
+                data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
+                end='client_obj'
+            )
+            self.user_redis.delete_all(self.user)
             raise StopConsumer()
-        else:
-            for i in CONN_LIST:
-                if i.get('web_obj') == self:
-                    self.active_send(
-                        code=200,
-                        func='break',
-                        user=int(self.scope.get('query_string')),
-                        msg=f'{WEB}已断开！',
-                        data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
-                        end='client_obj'
-                    )
-                    CONN_LIST.remove(i)
-                elif i.get('client_obj') == self:
-                    self.active_send(
-                        code=200,
-                        func=None,
-                        user=int(self.scope.get('query_string')),
-                        msg=f'{DRIVER}已断开！',
-                        data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
-                        end='web_obj'
-                    )
-                    del i['client_obj']
-            print(CONN_LIST)
+        elif self.scope.get('path') == '/client/socket':
+            self.user_redis.hdel(self.user, 'client_obj')
+            self.active_send(
+                code=200,
+                func=None,
+                user=self.user,
+                msg=f'{DRIVER}已断开！',
+                data=f"执行端IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}",
+                end='web_obj'
+            )
             raise StopConsumer()
 
     def active_send(self, code: int, func: str or None, user: int or None, msg: str, data: list or str, end: str):
@@ -141,28 +122,22 @@ class ChatConsumer(WebsocketConsumer):
         :param end: 发送给用户的那个端
         :return:
         """
-        send_data = {
-            'code': code,
-            'func': func,
-            'user': user,
-            'msg': msg,
-            'data': data
-        }
-        for i in CONN_LIST:
-            if i.get('user') == user:
-                try:
-                    i.get(end).send(self.__json_dumps(send_data))
-                    return True
-                except AttributeError:
-                    return False
+        if end == 'web_obj':
+            obj = self.user_redis.get_user_web_obj(user)
+            if obj and type(obj) == type(self):
+                obj.send(self.__json_dumps(code=code, func=func, user=user, msg=msg, data=data))
+        elif end == 'client_obj':
+            obj = self.user_redis.get_user_client_obj(user)
+            if obj and type(obj) == type(self):
+                obj.send(self.__json_dumps(code=code, func=func, user=user, msg=msg, data=data))
 
     def __receive_actuator(self, message):
         """！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！需要优化"""
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
-        if msg['func'] == "notice_main_":
-            from PyAutoTest.auto_test.auto_system.websocket_.socket_class import SocketAPI
-            SocketAPI(msg['func'], "应用组")
+        if msg['func']:
+            from PyAutoTest.auto_test.auto_system.websocket_.socket_class.api_collection import Collection
+            Collection().start_up(msg['func'], "应用组")
         if msg.get('end'):
             self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')
 
@@ -189,10 +164,17 @@ class ChatConsumer(WebsocketConsumer):
         return json.loads(msg)
 
     @staticmethod
-    def __json_dumps(msg: dict) -> str:
+    def __json_dumps(code: int, msg: str, data: str, func: str or None = None, user: int or None = None) -> str:
         """
         转换为字符串
         :param msg:
         :return:
         """
-        return json.dumps(msg)
+        print(code, func, user, msg, data)
+        return json.dumps({
+            'code': code,
+            'func': func,
+            'user': user,
+            'msg': msg,
+            'data': data
+        })

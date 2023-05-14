@@ -28,9 +28,9 @@ class Role(models.Model):
 
 class User(models.Model):
     """用户表"""
-    nickname = models.CharField(verbose_name="昵称", max_length=64)
-    username = models.CharField(verbose_name="登录账号", max_length=64)
-    password = models.CharField(verbose_name="登录密码", max_length=64)
+    nickname = models.CharField(verbose_name="昵称", max_length=64, null=True)
+    username = models.CharField(verbose_name="登录账号", max_length=64, null=True)
+    password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     role = models.ForeignKey(to=Role, to_field="id", on_delete=models.SET_NULL, null=True)
     department = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)

@@ -155,7 +155,17 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 1000,
-                "encoding": 'utf-8'}
+                "decode_responses": True}
+        }
+    },
+    "socket": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://:729164035@43.139.104.105:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 1000,
+                "decode_responses": True}
         }
     }
 }

@@ -33,15 +33,28 @@
                 :data-index="item.key"
                 :fixed="item.fixed"
               >
-                <template v-if="item.key === 'index'" #cell="{ record }">
+                <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-                  </a-space>
+                  <template v-if="record.username === 'admin'">
+                    <a-space>
+                      <a-button type="text" size="mini" @click="onUpdate(record)">领取</a-button>
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled>下线 </a-button>
+                    </a-space>
+                  </template>
+                  <template v-if="record.username !== 'admin'">
+                    <a-space>
+                      <!--                      <a-button type="text" size="mini" @click="onUpdate(record)">领取</a-button>-->
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled>下线 </a-button>
+                    </a-space>
+                  </template>
                 </template>
+                <!--                <template v-else-if="item.key === 'actions' && record.username !== 'admin'" #cell="{ record }">-->
+                <!--                  <a-space>-->
+                <!--                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled>删除</a-button>-->
+                <!--                  </a-space>-->
+                <!--                </template>-->
               </a-table-column>
             </template>
           </a-table>
@@ -75,7 +88,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getRoleList } from '@/api/url'
+import { SocketUserList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -123,14 +136,19 @@ const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '角色名称',
-    key: 'name',
-    dataIndex: 'name'
+    title: '所有者',
+    key: 'nickname',
+    dataIndex: 'nickname'
   },
   {
-    title: '角色描述',
-    key: 'description',
-    dataIndex: 'description'
+    title: '账号',
+    key: 'username',
+    dataIndex: 'username'
+  },
+  {
+    title: 'IP端口',
+    key: 'ip',
+    dataIndex: 'ip'
   },
   {
     title: '操作',
@@ -145,7 +163,7 @@ const formModel = ref({})
 
 function doRefresh() {
   get({
-    url: getRoleList,
+    url: SocketUserList,
     data: () => {
       return {
         page: pagination.page,
@@ -184,7 +202,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getRoleList,
+        url: SocketUserList,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -229,7 +247,7 @@ function onDataForm() {
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
-        url: getRoleList,
+        url: SocketUserList,
         data: () => {
           return {
             description: value.description,
@@ -247,7 +265,7 @@ function onDataForm() {
       value['id'] = updateId.value
       updateId.value = 0
       put({
-        url: getRoleList,
+        url: SocketUserList,
         data: () => {
           return {
             id: value.id,

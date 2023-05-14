@@ -35,5 +35,5 @@ urlpatterns = [
     path("test/func", SystemViews.as_view({'get': 'test_func'})),
     # zshop测试接口
     path("shuyun/tag/mark/query", SystemViews.as_view({'get': 'shuyun_tag_mark_query'})),
-    path("test/socket", SocketApiViews.as_view({'get': 'test_socket'})),
+    path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
 ]

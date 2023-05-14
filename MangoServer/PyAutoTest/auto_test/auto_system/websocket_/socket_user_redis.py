@@ -3,14 +3,45 @@
 # @Description: 
 # @Time   : 2023-05-13 22:39
 # @Author : 毛鹏
-from PyAutoTest.utils.cache_utils.redis import Cache
+import _ctypes
+
+from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.utils.cache_utils.redis_base import RedisBase
 
 
-class SocketUserRedis(Cache):
+class SocketUserRedis(RedisBase):
 
-    def set_user(self):
-        self.write_data_to_cache(key='person:1', value={'user': 18071710220})
+    def __init__(self, library='socket'):
+        super().__init__(library)
 
+    def set_user_conn_obj(self, user, key, value):
+        self.set_hset(name=user, key=key, value=id(value))
 
-if __name__ == '__main__':
-    SocketUserRedis().set_user()
+    def get_user_web_obj(self, user) -> ChatConsumer:
+        """ 获取web端对象"""
+        obj_id = self.get_hgetall(name=user).get('web_obj')
+        return _ctypes.PyObj_FromPtr(int(obj_id)) if obj_id else None
+
+    def get_user_client_obj(self, user) -> ChatConsumer:
+        """获取执行端对象"""
+        obj_id = self.get_hgetall(name=user).get('client_obj')
+        return _ctypes.PyObj_FromPtr(int(obj_id)) if obj_id else None
+
+    def delete_all(self, user):
+        """web端断开则删除所有"""
+        self.delete(user)
+
+    def delete_key(self, user, key):
+        """删除redis中的key"""
+        self.hdel(user, key)
+
+    def all_delete(self):
+        self.delete_all_()
+
+    def get_all_user(self):
+        result = []
+        for key in self.all_keys():
+            data = self.get_hget(key, 'client_obj')
+            if data:
+                result.append(key)
+        return result

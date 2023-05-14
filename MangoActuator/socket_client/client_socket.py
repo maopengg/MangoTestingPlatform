@@ -4,6 +4,7 @@ import multiprocessing
 import time
 import websockets
 
+from config import config
 from config.config import IP_ADDR, IP_PORT, SERVER, DRIVER
 from utils.decorator.singleton import singleton
 from utils.logs.log_control import DEBUG
@@ -29,10 +30,10 @@ class ClientWebSocket:
                 return False
             else:
                 await self.active_send(code=200,
-                                       func='login',
+                                       func=None,
                                        msg=f'Hi, {SERVER}, {DRIVER} Request Connection!',
-                                       data={'username': self.username,
-                                             'password': password}, end=False)
+                                       data='',
+                                       end=False)
                 # await self.websocket.send(json.dumps(user_data))
             response_str = await self.websocket.recv()
             res = self.__json_loads(response_str)
@@ -63,13 +64,15 @@ class ClientWebSocket:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
             #  可以在这里处理接受的数据
-            if data['func']:
+            if data['func'] and data['func'] != 'break':
                 self.qu.put({data['func']: data['data']})
                 # Collection(self.qu).start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
+                print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
                 time.sleep(5)
+                break
 
     async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):
         """
@@ -87,7 +90,7 @@ class ClientWebSocket:
             'msg': msg,
             'end': end,
             'func': func,
-            'user': int(self.username),
+            'user': self.username,
             'data': data
         })
         await self.websocket.send(data_str)
