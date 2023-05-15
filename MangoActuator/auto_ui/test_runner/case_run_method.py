@@ -52,21 +52,20 @@ class CaseRunMethod:
         @param case_obj: 用例对象
         @return:
         """
-        # try:
-        print('web当前的对象被实例化的值：', type(self.web))
         if not self.web:
             self.web = WebRun(self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']))
-        self.web.open_url(case_obj['case_url'], case_obj['case_id'])
-        for case_ele in case_obj['case_data']:
-            res_data, res_ = self.web.ele_main(case_ele)
-            print(f'元素的测试结果是：正确')
-            if res_ is not False:
-                print(f'元素的测试结果是：失败。数据：{res_data}')
-                break
-        return True
-        # except Error as e:
-        #     ERROR.logger.error(e)
-        #     return False
+        if self.web:
+            print('web当前的对象被实例化的值：', type(self.web))
+            self.web.open_url(case_obj['case_url'], case_obj['case_id'])
+            for case_ele in case_obj['case_data']:
+                res_ = self.web.ele_main(case_ele)
+                print(f'元素的测试结果是：{res_}')
+                if not res_:
+                    ERROR.logger.error(f'元素的测试结果是：{res_}。数据：{self.web.ele_opt_res}')
+                    break
+            return True
+        else:
+            ERROR.logger.error('web对象没有实例化，请联系管理员排查问题！')
 
     def android_test(self, case_obj):
         """
@@ -74,17 +73,21 @@ class CaseRunMethod:
         @param case_obj: 用例对象
         @return:
         """
-        print('android当前的对象被实例化的值：', type(self.android))
         if not self.android:
             self.android = AndroidRun(self.new_android_obj(case_obj['equipment']))
-        self.android.start_app(case_obj['package'])
-        for case_dict in case_obj['case_data']:
-            res_data, res_ = self.android.ele_main(case_dict)
-            print(f'元素的测试结果是：正确')
-            if not res_:
-                ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！")
-                break
-        self.android.close_app(case_obj['package'])
+        if self.android:
+            print('android当前的对象被实例化的值：', type(self.android))
+            self.android.start_app(case_obj['package'])
+            for case_dict in case_obj['case_data']:
+                res_ = self.android.ele_main(case_dict)
+                print(f'元素的测试结果是：{res_}')
+                if not res_:
+                    ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！{self.android.ele_opt_res}")
+                    break
+            self.android.close_app(case_obj['package'])
+            return True
+        else:
+            ERROR.logger.error('安卓对象没有实例化，请联系管理员排查问题！')
 
     def ios_test(self, case_one):
         pass

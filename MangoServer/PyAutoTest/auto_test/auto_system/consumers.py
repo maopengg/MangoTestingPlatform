@@ -122,14 +122,19 @@ class ChatConsumer(WebsocketConsumer, ):
         :param end: 发送给用户的那个端
         :return:
         """
+        logger.info(f'发送的用户：{user}，函数{func}')
         if end == 'web_obj':
             obj = self.user_redis.get_user_web_obj(user)
             if obj and type(obj) == type(self):
                 obj.send(self.__json_dumps(code=code, func=func, user=user, msg=msg, data=data))
+                return True
+            return False
         elif end == 'client_obj':
             obj = self.user_redis.get_user_client_obj(user)
             if obj and type(obj) == type(self):
                 obj.send(self.__json_dumps(code=code, func=func, user=user, msg=msg, data=data))
+                return True
+            return False
 
     def __receive_actuator(self, message):
         """！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！需要优化"""

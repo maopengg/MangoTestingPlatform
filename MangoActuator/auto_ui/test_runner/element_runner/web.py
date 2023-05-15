@@ -65,7 +65,7 @@ class WebRun(WebDevice, DataCleaning):
                                f'元素对象：{case_dict}\n')
             path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
             self.ele_opt_res['picture_path'] = self.screenshot(path)
-            return self.ele_opt_res, False
+            return False
 
         for key, value in case_dict.items():
             setattr(self, key, value)
@@ -73,7 +73,7 @@ class WebRun(WebDevice, DataCleaning):
             ele_obj = self.__find_ele(case_dict)
             if ele_obj:
                 self.action_element(ele_obj)
-                return self.ele_opt_res, True
+                return True
             else:
                 element_exception_handling('')
         except Exception as e:

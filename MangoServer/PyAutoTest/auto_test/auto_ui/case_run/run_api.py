@@ -57,35 +57,35 @@ class RunApi:
         return case_group, True
 
     @classmethod
-    def __case_run(cls, environment: int, case_id: int, username):
+    def __case_run(cls, environment: int, case_id: int, user):
         """
         调试用例单个执行
         """
-        data = CaseData(username)
+        data = CaseData(user.get('id'))
         case_data = data.data_ui_case(environment, case_id)
-        send_res = cls.run_case_send(username=username,
+        send_res = cls.run_case_send(username=user.get('username'),
                                      case_json=case_data,
                                      func_name=UiEnum.run_debug_case.value)
         return send_res
 
     @classmethod
-    def case_run_batch(cls, case_list: int or list, environment: int, username):
+    def case_run_batch(cls, case_list: int or list, environment: int, user):
         """
         调试用例批量执行
         @param case_list: 用例id列表或者一个
         @param environment: 测试环境
-        @param username: websocket发送给的用户
+        @param user: websocket发送给的用户
         @return:
         """
         case_data = []
         if isinstance(case_list, int):
-            res = cls.__case_run(environment, case_list, username)
+            res = cls.__case_run(environment, case_list, user)
             case_data.append(res)
             if not res.get('result'):
                 return case_data, False
         elif isinstance(case_list, list):
             for case_id in case_list:
-                res = cls.__case_run(environment, case_id, username)
+                res = cls.__case_run(environment, case_id, user)
                 case_data.append(res)
                 if not res.get('result'):
                     return case_data, False

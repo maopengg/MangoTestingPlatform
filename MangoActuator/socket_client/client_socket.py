@@ -12,11 +12,11 @@ from utils.logs.log_control import DEBUG
 
 @singleton
 class ClientWebSocket:
-    # instance = None
-    def __init__(self, qu: multiprocessing.Queue):
+
+    def __init__(self, qu: multiprocessing.Queue, username: str):
         self.websocket = None
-        self.username = input("请输入用户账号: ")
-        self.socket_url = '/client/socket?' + self.username
+        self.username = username
+        self.socket_url = f'/client/socket?{username}'
         self.qu = qu
 
     async def client_hands(self):
@@ -24,17 +24,17 @@ class ClientWebSocket:
         建立连接
         """
         while True:
-            password = input("请输入用户密码: \n")
-            if password == '退出':
-                DEBUG.logger.debug('退出成功！')
-                return False
-            else:
-                await self.active_send(code=200,
-                                       func=None,
-                                       msg=f'Hi, {SERVER}, {DRIVER} Request Connection!',
-                                       data='',
-                                       end=False)
-                # await self.websocket.send(json.dumps(user_data))
+            # password = input("请输入用户密码: \n")
+            # if password == '退出':
+            #     DEBUG.logger.debug('退出成功！')
+            #     return False
+            # else:
+            await self.active_send(code=200,
+                                   func=None,
+                                   msg=f'Hi, {SERVER}, {DRIVER} Request Connection!',
+                                   data='',
+                                   end=False)
+            # await self.websocket.send(json.dumps(user_data))
             response_str = await self.websocket.recv()
             res = self.__json_loads(response_str)
             if res['code'] == 200:

@@ -74,12 +74,11 @@ const columns = reactive([
   {
     title: '元素名称',
     dataIndex: 'name',
-    width: 150
+    width: 200
   },
   {
     title: '表达式类型',
-    dataIndex: 'exp',
-    width: 150
+    dataIndex: 'exp'
   },
   {
     title: '元素表达式',
@@ -87,13 +86,11 @@ const columns = reactive([
   },
   {
     title: '等待时间',
-    dataIndex: 'sleep',
-    width: 150
+    dataIndex: 'sleep'
   },
   {
     title: '元素下标',
-    dataIndex: 'sub',
-    width: 150
+    dataIndex: 'sub'
   },
 
   {

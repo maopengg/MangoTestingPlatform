@@ -45,7 +45,7 @@ class CaseData:
         elif case_.case_type == DevicePlatform.ANDROID.value:
             # 如果是安卓用例，则写入设备，app和type
             case_strip['equipment'] = self.__get_app_config()
-            case_strip['package'] = TestObject.objects.get(id=test_obj).value
+            case_strip['package'] = run_sort[0].el_page.url
             case_strip['type'] = DevicePlatform.ANDROID.value
         elif case_.case_type == DevicePlatform.IOS.value:
             pass

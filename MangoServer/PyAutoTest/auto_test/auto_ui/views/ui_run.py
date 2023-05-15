@@ -25,7 +25,7 @@ class RunUiCase(ViewSet):
         environment = request.GET.get("environment")
         case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
                                                       environment=environment,
-                                                      username=int(request.user.get('id')))
+                                                      user=request.user)
         if res:
             return Response({
                 'code': 200,

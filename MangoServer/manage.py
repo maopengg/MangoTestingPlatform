@@ -4,12 +4,12 @@ import os
 
 import sys
 
+from PyAutoTest.auto_test.auto_system.websocket_.socket_user_redis import SocketUserRedis
 from script.nuw_logs import __nuw_dir
 
 __nuw_dir()
 
-
-# SocketUserRedis().all_delete()
+SocketUserRedis().all_delete()
 
 
 def main():
