@@ -3,10 +3,11 @@
 # @Description: 
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 from auto_ui.test_runner.debug_case_run import CaseDistribution
-from auto_ui.test_runner.group_case_run import GroupCaseRun
+from auto_ui.test_runner.group_case_run import GroupCaseRunR
 
 
 class ConsumeUI:
@@ -18,7 +19,8 @@ class ConsumeUI:
 
     @classmethod
     def group_case(cls, data: dict):
-        def run():
-            GroupCaseRun.group_case_decompose(data)
+        async def run():
+            # GroupCaseRun.group_case_decompose(data)
+            await GroupCaseRunR().group_obj(data)
 
-        cls.th.submit(run)
+        sem = asyncio.Semaphore(5)

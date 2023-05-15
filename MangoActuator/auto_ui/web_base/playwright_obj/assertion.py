@@ -5,14 +5,13 @@
 # @Author : 毛鹏
 import re
 
-from playwright.async_api import Page, Locator, expect
+from playwright.async_api import Locator, expect
+
+from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
 
 
-class PlaywrightAssertion:
+class PlaywrightAssertion(PlaywrightBase):
     """页面断言"""
-
-    def __init__(self, page: Page = None):
-        self.page = page
 
     @classmethod
     def not_to_be_disabled(cls, locator: Locator, **kwargs):
