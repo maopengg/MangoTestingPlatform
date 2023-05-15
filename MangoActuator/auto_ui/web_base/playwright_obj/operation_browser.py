@@ -3,30 +3,28 @@
 # @Description: 
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
-from playwright.async_api import Page
+
+from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
 
 
-class PlaywrightOperationBrowser:
+class PlaywrightOperationBrowser(PlaywrightBase):
     """浏览器操作类"""
 
-    def __init__(self, page: Page = None):
-        self.page = page
+    async def wait_for_timeout(self, sleep: int):
+        await self.page.wait_for_timeout(sleep)
 
-    def wait_for_timeout(self, sleep: int):
-        self.page.wait_for_timeout(sleep)
-
-    def goto(self, url: str):
+    async def goto(self, url: str):
         """
         打开url
         @param url: 打开的指定url
         @return:
         """
-        self.page.goto(url, timeout=50000)
+        await self.page.goto(url, timeout=50000)
 
-    def screenshot(self, path: str, full_page=True):
+    async def screenshot(self, path: str, full_page=True):
         """整个页面截图"""
-        self.page.screenshot(path=path, full_page=full_page)
+        await self.page.screenshot(path=path, full_page=full_page)
 
-    def ele_screenshot(self, selector: str, path: str):
+    async def ele_screenshot(self, selector: str, path: str):
         """元素截图"""
-        self.page.locator(selector).screenshot(path=path)
+        await self.page.locator(selector).screenshot(path=path)

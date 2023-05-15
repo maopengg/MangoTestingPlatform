@@ -6,14 +6,14 @@
 from threading import Thread
 from typing import Optional
 
-from playwright.sync_api import Page
+from playwright.async_api import Page
 from uiautomator2 import Device
 
 from auto_ui.android_base.android_base import new_android
 from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
 from auto_ui.test_runner.element_runner.web import WebRun
-from auto_ui.web_base.playwright_obj.new_obj import new_chromium, new_webkit, new_firefox
+from auto_ui.web_base.playwright_obj.playwright_base import new_chromium, new_webkit, new_firefox
 from enum_class.ui_enum import BrowserType, DevicePlatform
 from utils.logs.log_control import ERROR
 
@@ -24,7 +24,7 @@ class CaseRunMethod:
         self.web: Optional[WebRun] = None
         self.android: Optional[AndroidRun] = None
 
-    def distribute_to_drivers(self, case_one: dict):
+    async def distribute_to_drivers(self, case_one: dict):
         """
         分发用例方法，根据用例对象，来发给不同的对象来执行用例
         @param case_one:
@@ -32,7 +32,7 @@ class CaseRunMethod:
         """
         match case_one['type']:
             case DevicePlatform.WEB.value:
-                if not self.web_test(case_one):
+                if not await self.web_test(case_one):
                     return False
             case DevicePlatform.ANDROID.value:
                 if not self.android_test(case_one):
@@ -46,19 +46,19 @@ class CaseRunMethod:
             case _:
                 ERROR.logger.error('设备类型不存在，请联系管理员检查！')
 
-    def web_test(self, case_obj: dict):
+    async def web_test(self, case_obj: dict):
         """
         接受一个web的用例对象，然后开始执行这个用例
         @param case_obj: 用例对象
         @return:
         """
         if not self.web:
-            self.web = WebRun(self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']))
+            self.web = WebRun(await self.new_web_obj(case_obj['browser_type'], case_obj['browser_path']))
         if self.web:
             print('web当前的对象被实例化的值：', type(self.web))
-            self.web.open_url(case_obj['case_url'], case_obj['case_id'])
+            await self.web.open_url(case_obj['case_url'], case_obj['case_id'])
             for case_ele in case_obj['case_data']:
-                res_ = self.web.ele_main(case_ele)
+                res_ = await self.web.ele_main(case_ele)
                 print(f'元素的测试结果是：{res_}')
                 if not res_:
                     ERROR.logger.error(f'元素的测试结果是：{res_}。数据：{self.web.ele_opt_res}')
@@ -105,20 +105,20 @@ class CaseRunMethod:
         th.start()
 
     @classmethod
-    def new_web_obj(cls, browser_type: int, web_path: str) -> Page:
+    async def new_web_obj(cls, browser_type: int, web_path: str) -> Page:
         """
         实例化不同的浏览器对象
         @param browser_type: 浏览器类型
         @param web_path: 浏览器路径
-        @return:
+        @return:a
         """
         match browser_type:
             case BrowserType.CHROMIUM.value:
-                return new_chromium(web_path)
+                return await new_chromium(web_path)
             case BrowserType.FIREFOX.value:
-                return new_firefox(web_path)
+                return await new_firefox(web_path)
             case BrowserType.WEBKIT.value:
-                return new_webkit(web_path)
+                return await new_webkit(web_path)
             case _:
                 ERROR.logger.error(f'没有可定义的浏览器类型，请检查类型：{browser_type}')
 

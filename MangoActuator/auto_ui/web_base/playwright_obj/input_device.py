@@ -3,19 +3,18 @@
 # @Description: 
 # @Time   : 2023-04-29 12:11
 # @Author : 毛鹏
-from playwright.sync_api import Page, Locator
+from playwright.async_api import Locator
+
+from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
 
 
-class PlaywrightInputDevice:
+class PlaywrightInputDevice(PlaywrightBase):
     """输入设备，键盘和鼠标"""
 
-    def __init__(self, page: Page = None):
-        self.page = page
-
-    def hover(self, selector):
+    async def hover(self, selector):
         """鼠标悬停"""
-        self.page.hover(selector)
+        await self.page.hover(selector)
 
-    def keys(self, locator: Locator, keyboard: str):
+    async def keys(self, locator: Locator, keyboard: str):
         """按键"""
-        locator.press(keyboard)
+        await locator.press(keyboard)
