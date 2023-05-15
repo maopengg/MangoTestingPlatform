@@ -16,6 +16,7 @@ class ClientWebSocket:
     def __init__(self, qu: multiprocessing.Queue, username: str):
         self.websocket = None
         self.username = username
+
         self.socket_url = f'/client/socket?{username}'
         self.qu = qu
 
@@ -47,6 +48,7 @@ class ClientWebSocket:
     async def client_run(self):
         """ 进行websocket连接
         """
+
         server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.socket_url
         # DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
         try:

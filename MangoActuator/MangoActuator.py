@@ -6,6 +6,7 @@
 
 import asyncio
 import multiprocessing
+from multiprocessing import freeze_support
 
 import time
 from websocket import WebSocketConnectionClosedException
@@ -37,12 +38,13 @@ def main():
     username = input("请输入用户账号: ")
     client = ClientWebSocket(qu, username)
     asyncio.run(client.client_run())
+    t2.join()
 
 
 if __name__ == '__main__':
     # pyinstaller -F -c .\MangoActuator.py -i .\图标.ico
-
     try:
+        freeze_support()
         main()
     except KeyboardInterrupt as e:
         print('=========================关闭成功=========================')

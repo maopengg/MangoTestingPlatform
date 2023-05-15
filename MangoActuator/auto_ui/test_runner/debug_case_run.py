@@ -23,7 +23,6 @@ class CaseDistribution(CaseRunMethod):
         @param data:
         @return:
         """
-        print('走了吗？')
         self.distribute_to_drivers(data)
         # ResultMain.web_notice(200, '调试用例执行完成，请检查用例执行结果！')
 
