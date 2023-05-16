@@ -2,159 +2,70 @@
 # @Description:
 # @Time   : 2022-11-17 20:27
 # @Author : 毛鹏
+import asyncio
+from typing import Optional
 
-import datetime
-import decimal
-import pymysql
-from typing import Text
+import aiomysql
 
-from config.config import MYSQL_DB, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_USER
-from utils.logs.log_control import ERROR
-
-
-# from warnings import filterwarnings
+from config.config import MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB
+from utils.decorator.singleton import singleton
 
 
-# 忽略 Mysql 告警信息
-# filterwarnings("ignore", category=pymysql.Warning)
-
-
+@singleton
 class MysqlDB:
-    """ mysql 封装 """
 
     def __init__(self):
-        # 建立数据库连接
-        try:
-            self.conn = pymysql.connect(
-                host=MYSQL_HOST,
-                port=MYSQL_PORT,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DB
-            )
+        self.pool: Optional[aiomysql.pool.Pool] = None
 
-            # 使用 cursor 方法获取操作游标，得到一个可以执行sql语句，并且操作结果为字典返回的游标
-            self.cur = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
-        except AttributeError as e:
-            ERROR.logger.error(f'数据库链接失败，请检查数据库配置！报错信息：{e}')
+    async def connect(self):
+        self.pool = await aiomysql.create_pool(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            db=MYSQL_DB,
+            autocommit=True
+        )
 
-    def __del__(self):
-        # 关闭游标
-        self.cur.close()
-        # 关闭连接
-        self.conn.close()
+    async def disconnect(self):
+        self.pool.close()
+        await self.pool.wait_closed()
 
-    def query(self, sql: Text, state="all"):
-        """
-            查询
-            :param sql:
-            :param state:  all 是默认查询全部
-            :return:
-            """
-        self.cur.execute(sql)
+    async def execute(self, query, *args):
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cur:
+                return await cur.execute(query, args)
 
-        if state == "all":
-            # 查询全部
-            data = self.cur.fetchall()
-        else:
-            # 查询单条
-            data = self.cur.fetchone()
-        return data
+    async def select(self, query, *args) -> dict:
+        async with self.pool.acquire() as conn:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute(query, args)
+                return await cur.fetchall()
 
-    def execute(self, sql: Text):
-        """
-            更新 、 删除、 新增
-            :param sql:
-            :return:
-            """
-        # 使用 execute 操作 sql
-        rows = self.cur.execute(sql)
-        # 提交事务
-        self.conn.commit()
-        return rows
+    async def insert(self, table, data):
+        keys = ','.join(data.keys())
+        values = ','.join(['%s'] * len(data))
+        query = f'INSERT INTO {table} ({keys}) VALUES ({values})'
+        await self.execute(query, *data.values())
 
-    @classmethod
-    def sql_data_handler(cls, query_data, data):
-        """
-        处理部分类型sql查询出来的数据格式
-        @param query_data: 查询出来的sql数据
-        @param data: 数据池
-        @return:
-        """
-        # 将sql 返回的所有内容全部放入对象中
-        for key, value in query_data.items():
-            if isinstance(value, decimal.Decimal):
-                data[key] = float(value)
-            elif isinstance(value, datetime.datetime):
-                data[key] = str(value)
-            else:
-                data[key] = value
-        return data
+    async def update(self, table, data, condition):
+        key_values = ','.join([f'{key}=%s' for key in data.keys()])
+        query = f'UPDATE {table} SET {key_values} WHERE {condition}'
+        await self.execute(query, *data.values())
+
+    async def delete(self, table, condition):
+        query = f'DELETE FROM {table} WHERE {condition}'
+        await self.execute(query)
 
 
-# class SetUpMySQL(MysqlDB):
-#     """ 处理前置sql """
-#
-#     def setup_sql_data(self, sql: Union[List, None]) -> Dict:
-#         """
-#             处理前置请求sql
-#             :param sql:
-#             :return:
-#             """
-#         sql = ast.literal_eval(cache_regular(str(sql)))
-#         try:
-#             data = {}
-#             if sql is not None:
-#                 for i in sql:
-#                     # 判断断言类型为查询类型的时候，
-#                     if i[0:6].upper() == 'SELECT':
-#                         sql_date = self.query(sql=i)[0]
-#                         for key, value in sql_date.items():
-#                             data[key] = value
-#                     else:
-#                         self.execute(sql=i)
-#             return data
-#         except IndexError as exc:
-#             raise DataAcquisitionFailed("sql 数据查询失败，请检查setup_sql语句是否正确") from exc
-#
-#
-# class AssertExecution(MysqlDB):
-#     """ 处理断言sql数据 """
-#
-#     def assert_execution(self, sql: list, resp) -> dict:
-#         """
-#          执行 sql, 负责处理 yaml 文件中的断言需要执行多条 sql 的场景，最终会将所有数据以对象形式返回
-#         :param resp: 接口响应数据
-#         :param sql: sql
-#         :return:
-#         """
-#         try:
-#             if isinstance(sql, list):
-#
-#                 data = {}
-#                 _sql_type = ['UPDATE', 'update', 'DELETE', 'delete', 'INSERT', 'insert']
-#                 if any(i in sql for i in _sql_type) is False:
-#                     for i in sql:
-#                         # 判断sql中是否有正则，如果有则通过jsonpath提取相关的数据
-#                         sql = sql_regular(i, resp)
-#                         if sql is not None:
-#                             # for 循环逐条处理断言 sql
-#                             query_data = self.query(sql)[0]
-#                             data = self.sql_data_handler(query_data, data)
-#                         else:
-#                             raise DataAcquisitionFailed(f"该条sql未查询出任何数据, {sql}")
-#                 else:
-#                     raise DataAcquisitionFailed("断言的 sql 必须是查询的 sql")
-#             else:
-#                 raise ValueTypeError("sql数据类型不正确，接受的是list")
-#             return data
-#         except Exception as error_data:
-#             ERROR.logger.error("数据库连接失败，失败原因 %s", error_data)
-#             raise error_data
+async def main():
+    my = MysqlDB()
+    await my.connect()
+    data = await my.select("SELECT * FROM ui_case")
+    for i in data:
+        print(i)
+    await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
-    a = MysqlDB()
-    b = a.query(sql="select * from `ui_ele`")
-    print(b)
-    pass
+    asyncio.run(main())
