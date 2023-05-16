@@ -7,7 +7,7 @@ from uiautomator2 import Device, UiObject
 from uiautomator2.xpath import XPathSelector
 
 from auto_ui.android_base import DriverMerge
-from enum_class.ui_enum import ElementExp, OpeType
+from enum_class.socket_client_ui import ElementExp, OpeType
 from utils.cache.data_cleaning import DataCleaning
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog

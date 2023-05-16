@@ -5,12 +5,17 @@
 # @Author : 毛鹏
 import asyncio
 
+from enum_class.socket_server_comm import System
+from socket_client.client_socket import ClientWebSocket
 from utils.logs.log_control import ERROR
 from utils.mysql.mysql_control import MysqlDB
 
 
 class ResultMain:
-    my = MysqlDB()
+
+    def __init__(self):
+        self.my = MysqlDB()
+        self.my.connect()
 
     async def res_dispatch(self, code: int, mail_msg: str, ele_name: str,
                            existence: int,
@@ -28,17 +33,14 @@ class ResultMain:
 
     @classmethod
     async def notification_send(cls, code: int, mail_msg: str):
-        from socket_client.client_socket import ClientWebSocket
-        from enum_class.command_socket_api import ServerEnumAPI
         await ClientWebSocket().active_send(
             code=code,
-            func=ServerEnumAPI.NOTICE_MAIN.value,
+            func=System.NOTICE_MAIN.value,
             msg=mail_msg,
             end=True,
             data='')
 
-    @classmethod
-    async def ele_res_insert(cls, ele_name: str,
+    async def ele_res_insert(self, ele_name: str,
                              existence: int,
                              state: int,
                              case_id: str,
@@ -54,7 +56,7 @@ class ResultMain:
         ('{ele_name}', {existence}, {state}, '{case_id}',{case_group_id},'{team_id}', '{test_obj_id}', '{msg}',
          '{picture_path}');
           """
-        res = cls.my.execute(sql)
+        res = self.my.execute(sql)
         True if res == 1 else ERROR.logger.error(
             f"""数据写入错误！请联系管理员检查写入数据
             {ele_name, existence, state, case_id, case_group_id, team_id, test_obj_id, msg, picture_path}""")
