@@ -17,17 +17,13 @@ class ClientWebSocket:
         self.username = username
         self.socket_url = f'/client/socket?{username}'
         self.qu = qu
+        self.res = bool
 
     async def client_hands(self):
         """
         建立连接
         """
         while True:
-            # password = input("请输入用户密码: \n")
-            # if password == '退出':
-            #     DEBUG.logger.debug('退出成功！')
-            #     return False
-            # else:
             await self.active_send(code=200,
                                    func=None,
                                    msg=f'Hi, {SERVER}, {DRIVER} Request Connection!',
@@ -55,16 +51,17 @@ class ClientWebSocket:
                 # 下面两行同步进行
                 if await self.client_hands() is True:  # 握手
                     await self.client_recv()
-                    return True
+                    self.res = True
+                else:
+                    self.res = False
         except ConnectionRefusedError as e:
             DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
-            return
+            self.res = False
 
     async def client_recv(self):
         while True:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
-            await asyncio.sleep(1)
             #  可以在这里处理接受的数据
             if data['func'] and data['func'] != 'break':
                 await self.qu.put({data['func']: data['data']})
@@ -75,6 +72,7 @@ class ClientWebSocket:
                 print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
                 await asyncio.sleep(5)
                 break
+            await asyncio.sleep(1)
 
     async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):
         """
