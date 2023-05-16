@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from playwright.async_api import Locator
 
-from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
+from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightElementOperation(PlaywrightBase):

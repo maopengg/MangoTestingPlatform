@@ -7,7 +7,7 @@ import re
 
 from playwright.async_api import Locator, expect
 
-from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
+from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightAssertion(PlaywrightBase):

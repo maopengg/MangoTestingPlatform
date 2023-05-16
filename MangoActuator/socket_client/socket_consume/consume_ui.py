@@ -23,4 +23,5 @@ class ConsumeUI:
             # GroupCaseRun.group_case_decompose(data)
             await GroupCaseRunR().group_obj(data)
 
+        asyncio.run(run())
         sem = asyncio.Semaphore(5)

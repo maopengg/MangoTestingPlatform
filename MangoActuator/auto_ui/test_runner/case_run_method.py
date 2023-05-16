@@ -13,7 +13,7 @@ from auto_ui.android_base.android_base import new_android
 from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
 from auto_ui.test_runner.element_runner.web import WebRun
-from auto_ui.web_base.playwright_obj.playwright_base import new_chromium, new_webkit, new_firefox
+from auto_ui.web_base.playwright_base import new_chromium, new_webkit, new_firefox
 from enum_class.ui_enum import BrowserType, DevicePlatform
 from utils.logs.log_control import ERROR
 

@@ -4,7 +4,7 @@
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
 
-from auto_ui.web_base.playwright_obj.playwright_base import PlaywrightBase
+from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightOperationBrowser(PlaywrightBase):
