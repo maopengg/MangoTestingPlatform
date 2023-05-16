@@ -189,8 +189,10 @@ import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
 import { h, onMounted, ref, nextTick } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 const project = useProject()
+const testObj = useTestObj()
 
 const conditionItems: Array<FormItem> = [
   {
@@ -511,7 +513,6 @@ function onUpdate(item: any) {
 }
 
 function onRunCaseGroup(record: any) {
-  Message.info('测试用例正在执行，请稍后')
   get({
     url: uiRunCaseGroup,
     data: () => {
@@ -531,6 +532,7 @@ function onConcurrency(name: string) {
     Message.error('请选择要' + name + '的用例数据')
     return
   }
+
   Modal.confirm({
     title: '提示',
     content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',

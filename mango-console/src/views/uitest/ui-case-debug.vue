@@ -172,7 +172,8 @@ import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { getKeyByTitle, transformData } from '@/utils/datacleaning'
-import { environment, fieldNames } from '@/setting'
+import { fieldNames } from '@/setting'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 const project = useProject()
 const conditionItems: Array<FormItem> = [
@@ -282,6 +283,7 @@ const pagination = usePagination(doRefresh)
 const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
 const table = useTable()
 const rowKey = useRowKey('id')
+const testObj = useTestObj()
 
 const tableColumns = useTableColumn([
   table.indexColumn,
@@ -577,13 +579,17 @@ function onDataForm() {
 }
 
 function onRunCase(record: any) {
+  if (testObj.te == null) {
+    Message.error('请先选择用例执行的环境')
+    return
+  }
   // Message.info('测试用例正在执行，请稍后')
   get({
     url: UiRun,
     data: () => {
       return {
         case_id: record.id,
-        environment: environment
+        te: testObj.te
       }
     }
   })

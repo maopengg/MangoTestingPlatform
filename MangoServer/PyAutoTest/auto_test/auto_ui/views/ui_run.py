@@ -22,9 +22,8 @@ class RunUiCase(ViewSet):
         @param request:
         @return:
         """
-        environment = request.GET.get("environment")
         case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
-                                                      environment=environment,
+                                                      te=request.GET.get("te"),
                                                       user=request.user)
         if res:
             return Response({
