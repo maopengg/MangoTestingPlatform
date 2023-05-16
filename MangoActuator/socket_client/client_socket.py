@@ -1,7 +1,6 @@
+import asyncio
 import json
-import multiprocessing
 
-import time
 import websockets
 
 from config import config
@@ -13,10 +12,9 @@ from utils.logs.log_control import DEBUG
 @singleton
 class ClientWebSocket:
 
-    def __init__(self, qu: multiprocessing.Queue, username: str):
+    def __init__(self, qu, username: str):
         self.websocket = None
         self.username = username
-
         self.socket_url = f'/client/socket?{username}'
         self.qu = qu
 
@@ -57,6 +55,7 @@ class ClientWebSocket:
                 # 下面两行同步进行
                 if await self.client_hands() is True:  # 握手
                     await self.client_recv()
+                    return True
         except ConnectionRefusedError as e:
             DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
             return
@@ -65,15 +64,16 @@ class ClientWebSocket:
         while True:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
+            await asyncio.sleep(1)
             #  可以在这里处理接受的数据
             if data['func'] and data['func'] != 'break':
-                self.qu.put({data['func']: data['data']})
+                await self.qu.put({data['func']: data['data']})
                 # Collection(self.qu).start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
                 print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
-                time.sleep(5)
+                await asyncio.sleep(5)
                 break
 
     async def active_send(self, code: int, func: str or None, msg: str, data: list or str, end: bool):

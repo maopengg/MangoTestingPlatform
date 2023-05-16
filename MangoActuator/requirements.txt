@@ -1,5 +1,4 @@
 pyinstaller==5.8.0
-DrissionPage==3.2.26
 diskcache==5.4.0
 uiautomator2 == 2.16.22
 weditor==0.6.4
