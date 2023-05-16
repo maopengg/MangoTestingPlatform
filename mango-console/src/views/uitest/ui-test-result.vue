@@ -100,12 +100,6 @@ const treeData = reactive([
   width: 33.33%;
 }
 
-.deds {
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-}
-
 .flex-24 {
   width: 66.67%;
 }

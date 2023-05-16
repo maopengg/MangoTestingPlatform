@@ -6,7 +6,8 @@ export const useTestObj = defineStore('get-test-obj', {
   // 类似于data，用来存储全局状态，必须是箭头函数
   state: () => {
     return {
-      data: []
+      data: [],
+      te: null as number | null
     }
   },
   // 类似于computed，用来封装计算属性

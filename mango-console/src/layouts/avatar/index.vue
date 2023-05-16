@@ -54,9 +54,11 @@ export default defineComponent({
       }
     ]
     const router = useRouter()
+
     function personalCenter() {
       router.push('/personal/info')
     }
+
     function logout() {
       Modal.confirm({
         title: '提示',
@@ -66,11 +68,13 @@ export default defineComponent({
         onOk: () => {
           userStore.logout().then(() => {
             websocket(13213, false)
+            window.localStorage.removeItem('visited-routes')
             window.location.reload()
           })
         }
       })
     }
+
     function handleSelect(key: string) {
       console.log(key)
       switch (key) {
@@ -82,6 +86,7 @@ export default defineComponent({
           break
       }
     }
+
     return {
       userStore,
       options,
@@ -96,9 +101,11 @@ export default defineComponent({
   .action-wrapper {
     display: flex;
     align-items: center;
+
     .avatar {
       display: flex;
       align-items: center;
+
       & > img {
         border: 1px solid #f6f6f6;
         width: 100%;
@@ -107,8 +114,10 @@ export default defineComponent({
         border-radius: 50%;
       }
     }
+
     .nick-name {
       margin: 0 5px;
+
       .tip {
         transform: rotate(0);
         transition: transform @transitionTime;
@@ -117,9 +126,11 @@ export default defineComponent({
     }
   }
 }
+
 .vaw-avatar-container:hover {
   cursor: pointer;
   color: var(--primary-color);
+
   .tip {
     transform: rotate(180deg);
     transition: transform @transitionTime;

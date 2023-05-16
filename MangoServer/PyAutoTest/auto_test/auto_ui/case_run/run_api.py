@@ -7,6 +7,7 @@ from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.websocket_.socket_class.actuator_enum.ui_enum import UiEnum
 from PyAutoTest.auto_test.auto_ui.case_run.case_data import CaseData
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.settings import DRIVER
 
 
@@ -20,14 +21,16 @@ class RunApi:
         @return:
         """
         case_group_data = UiCaseGroup.objects.get(pk=group_id)
-        data = CaseData(case_group_data.timing_actuator.id)
-        case_json = data.group_cases(case_group_data)
         if time:
+            data = CaseData(case_group_data.timing_actuator.id)
+            case_json = data.group_cases(case_group_data)
             send_res = cls.run_case_send(username=case_group_data.timing_actuator.username,
                                          case_json=case_json,
                                          func_name=UiEnum.run_group_case.value)
             return send_res
         else:
+            data = CaseData(User.objects.get(username=username).id)
+            case_json = data.group_cases(case_group_data)
             send_res = cls.run_case_send(username=username,
                                          case_json=case_json,
                                          func_name=UiEnum.run_group_case.value)
@@ -57,35 +60,35 @@ class RunApi:
         return case_group, True
 
     @classmethod
-    def __case_run(cls, environment: int, case_id: int, user):
+    def __case_run(cls, te: int, case_id: int, user):
         """
         调试用例单个执行
         """
         data = CaseData(user.get('id'))
-        case_data = data.data_ui_case(environment, case_id)
+        case_data = data.data_ui_case(te, case_id)
         send_res = cls.run_case_send(username=user.get('username'),
                                      case_json=case_data,
                                      func_name=UiEnum.run_debug_case.value)
         return send_res
 
     @classmethod
-    def case_run_batch(cls, case_list: int or list, environment: int, user):
+    def case_run_batch(cls, case_list: int or list, te: int, user):
         """
         调试用例批量执行
         @param case_list: 用例id列表或者一个
-        @param environment: 测试环境
+        @param te: 测试环境
         @param user: websocket发送给的用户
         @return:
         """
         case_data = []
         if isinstance(case_list, int):
-            res = cls.__case_run(environment, case_list, user)
+            res = cls.__case_run(te, case_list, user)
             case_data.append(res)
             if not res.get('result'):
                 return case_data, False
         elif isinstance(case_list, list):
             for case_id in case_list:
-                res = cls.__case_run(environment, case_id, user)
+                res = cls.__case_run(te, case_id, user)
                 case_data.append(res)
                 if not res.get('result'):
                     return case_data, False

@@ -1,5 +1,15 @@
 <template>
   <div class="action-items-wrapper">
+    <span class="action-item">
+      <a-space size="large">
+        <a-dropdown trigger="hover">
+          <a-button class="garden">{{ te }}</a-button>
+          <template #content>
+            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item.key)">{{ item.title }}</a-doption>
+          </template>
+        </a-dropdown>
+      </a-space>
+    </span>
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
@@ -41,6 +51,7 @@ import {
 import { useDebounceFn, useFullscreen } from '@vueuse/core'
 import useEmit from '@/hooks/useEmit'
 import useAppConfigStore from '@/store/modules/app-config'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 export default defineComponent({
   name: 'ActionItems',
@@ -60,6 +71,8 @@ export default defineComponent({
     const router = useRouter()
     const route = useRoute()
     const emitter = useEmit()
+    const testObj = useTestObj()
+    const te: any = ref('TE')
 
     function onShowSearch() {
       emitter?.emit('show-search')
@@ -87,6 +100,11 @@ export default defineComponent({
       debouncedFn()
     }
 
+    function onSelect(key: number) {
+      te.value = key
+      testObj.te = key
+    }
+
     function onShowSetting() {
       emitter?.emit('show-setting')
     }
@@ -97,6 +115,9 @@ export default defineComponent({
       searchContent,
       badgeValue,
       appStore,
+      testObj,
+      te,
+      onSelect,
       onShowSearch,
       onScreenFull,
       onRefrehRoute,
@@ -131,5 +152,11 @@ export default defineComponent({
       transform: translate(10%, 20%);
     }
   }
+}
+
+.garden {
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
 }
 </style>
