@@ -6,7 +6,7 @@
 from playwright.async_api import Locator
 from playwright.async_api import Page
 
-from auto_ui.web_base.playwright_obj import WebDevice
+from auto_ui.web_base import WebDevice
 from enum_class.ui_enum import OpeType, ElementExp
 from utils.cache.data_cleaning import DataCleaning
 from utils.logs.log_control import ERROR

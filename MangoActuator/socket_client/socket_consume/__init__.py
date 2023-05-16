@@ -10,5 +10,5 @@ from utils.decorator.singleton import singleton
 @singleton
 class ConsumeDistribute(ConsumeUI):
 
-    def start_up(self, func, *args, **kwargs):
-        getattr(self, func)(*args, **kwargs)
+    async def start_up(self, func, *args, **kwargs):
+        await getattr(self, func)(*args, **kwargs)

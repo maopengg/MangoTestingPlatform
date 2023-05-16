@@ -26,7 +26,11 @@ class MangoActuator(asyncio.Protocol):
     async def socket(self, username):
         print(f"========================={config.DRIVER}正在启动=========================")
         client = ClientWebSocket(self.q, username)
-        await client.client_run()
+        socket_task = asyncio.create_task(client.client_run())
+        await asyncio.sleep(1)
+        if client.res:
+            await self.ui_consume()
+        socket_task.cancel()
 
     async def ui_consume(self):
         consume = ConsumeDistribute()
@@ -36,14 +40,14 @@ class MangoActuator(asyncio.Protocol):
                 for key, value in data.items():
                     # await self.loop.run_in_executor(self.executor, consume.start_up, key, value)
                     await consume.start_up(key, value)
-                await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
     user_name = input("请输入用户账号: ")
     main = MangoActuator()
     asyncio.run(main.main(user_name))
-
+    print('主线程走了吗？')
 # async def ui_consume(qu: multiprocessing.Queue):
 #     consume = ConsumeDistribute()
 #     while True:
