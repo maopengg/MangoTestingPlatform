@@ -20,8 +20,9 @@ def get_class_methods(cls):
                 if name == '__doc__':
                     doc = value
                     break
-            # 将方法名称和注释组成一个字典
-            methods[attr] = doc
+            if attr != '__init__':
+                # 将方法名称和注释组成一个字典
+                methods[attr] = doc
     # 遍历父类，重复上述步骤
     for base in cls.__bases__:
         base_methods = get_class_methods(base)
@@ -30,8 +31,9 @@ def get_class_methods(cls):
 
 
 if __name__ == '__main__':
-    from auto_ui.web_base import WebDevice
+    from auto_ui.android_base import DriverMerge
     import json
 
-    data = get_class_methods(WebDevice)
+    data = get_class_methods(DriverMerge)
     print(json.dumps(data, ensure_ascii=False).encode('utf-8').decode())
+    print(len(data))
