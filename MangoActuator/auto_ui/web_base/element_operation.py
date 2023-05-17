@@ -27,3 +27,7 @@ class PlaywrightElementOperation(PlaywrightBase):
             await locating.click()
         file_chooser = fc_info.value
         file_chooser.set_files(file_path)
+
+    async def drag_to(self, locating1: Locator, locating2: Locator):
+        """拖动A元素到达B"""
+        await locating1.drag_to(locating2)
