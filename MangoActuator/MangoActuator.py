@@ -27,10 +27,11 @@ class MangoActuator(asyncio.Protocol):
         print(f"========================={config.DRIVER}正在启动=========================")
         client = ClientWebSocket(self.q, username)
         socket_task = asyncio.create_task(client.client_run())
-        await asyncio.sleep(3)
+        await asyncio.sleep(1)
         if client.res:
             await self.ui_consume()
         socket_task.cancel()
+        await asyncio.sleep(3)
 
     async def ui_consume(self):
         consume = ConsumeDistribute()
