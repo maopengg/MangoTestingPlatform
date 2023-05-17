@@ -102,6 +102,8 @@ class WebRun(WebDevice, DataCleaning):
         @param case_dict:
         @return:
         """
+        # 这里要处理iframe
+        # self.page.frame_locator()
         if self.ele_loc:
             # 处理元素并查找
             match self.ele_exp:

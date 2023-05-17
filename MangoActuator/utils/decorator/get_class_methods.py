@@ -30,6 +30,8 @@ def get_class_methods(cls):
 
 
 if __name__ == '__main__':
-    from auto_ui.android_base import DriverMerge
+    from auto_ui.web_base import WebDevice
+    import json
 
-    print(get_class_methods(DriverMerge))
+    data = get_class_methods(WebDevice)
+    print(json.dumps(data, ensure_ascii=False).encode('utf-8').decode())
