@@ -11,6 +11,7 @@ class PlaywrightOperationBrowser(PlaywrightBase):
     """浏览器操作类"""
 
     async def wait_for_timeout(self, sleep: int):
+        """强制等待"""
         await self.page.wait_for_timeout(sleep)
 
     async def goto(self, url: str):
@@ -30,6 +31,7 @@ class PlaywrightOperationBrowser(PlaywrightBase):
         self.page.on("dialog", lambda dialog: dialog.accept())
 
     async def download(self, save_path):
+        """下载文件"""
         # Start waiting for the download
         async with self.page.expect_download() as download_info:
             # Perform the action that initiates download
