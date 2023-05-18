@@ -5,7 +5,7 @@ import re
 from assertpy import assertpy
 
 
-class LMAssert:
+class PublicAssertion:
     """断言"""
 
     def __init__(self, position, actual_result, expected_result):
@@ -20,16 +20,16 @@ class LMAssert:
                 assertpy.assert_that(str(self.actual_result)).is_equal_to(self.expected_result)
             elif self.comparator in ["equalsList", "数组相等"]:  # 列表相同，包括列表顺序也相同
                 assFailMsg = '实际值({})与预期值({}) 数组相等，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2list(self.actual_result)).is_equal_to(
-                    LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2list(self.actual_result)).is_equal_to(
+                    PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["equalsDict", "对象相等"]:  # 字典相同
                 assFailMsg = '实际值({})与预期值({}) 对象相等，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2dict(self.actual_result)).is_equal_to(
-                    LMAssert.str2dict(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2dict(self.actual_result)).is_equal_to(
+                    PublicAssertion.str2dict(self.expected_result))
             elif self.comparator in ["equalsNumber", "数字相等", "数值相等"]:  # 数字等于
                 assFailMsg = '实际值({})与预期值({}) 数值相等，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_equal_to(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_equal_to(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["equalIgnoreCase", "相等(忽略大小写)"]:  # 忽略大小写等于
                 assFailMsg = '实际值({})与预期值({}) 相等(忽略大小写)，条件为否：'.format(self.actual_result, self.expected_result)
                 assertpy.assert_that(str(self.actual_result)).is_equal_to_ignoring_case(self.expected_result)
@@ -38,16 +38,17 @@ class LMAssert:
                 assertpy.assert_that(self.actual_result).is_not_equal_to(self.expected_result)
             elif self.comparator in ["contains", "包含"]:  # 字符串包含该字符
                 assFailMsg = '实际值({}) 包含 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.to_str(self.actual_result)).contains((self.expected_result))
+                assertpy.assert_that(PublicAssertion.to_str(self.actual_result)).contains((self.expected_result))
             elif self.comparator in ["notContains", "does no contains", "不包含"]:  # 字符串不包含该字符
                 assFailMsg = '实际值({}) 不包含 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(self.actual_result).does_not_contain(*LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(self.actual_result).does_not_contain(
+                    *PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["containsOnly", "仅包含"]:  # 字符串仅包含该字符
                 assFailMsg = '实际值({}) 仅包含 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(self.actual_result).contains_only(*LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(self.actual_result).contains_only(*PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["isNone", "none/null"]:  # 为none或null
                 assFailMsg = '实际值({}) 为none或null，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2none(self.actual_result)).is_none()
+                assertpy.assert_that(PublicAssertion.str2none(self.actual_result)).is_none()
             elif self.comparator in ["notEmpty", "is not empty", "不为空"]:  # 不为空
                 assFailMsg = '实际值({}) 不为空，条件为否：'.format(self.actual_result, self.expected_result)
                 assertpy.assert_that(self.actual_result).is_not_empty()
@@ -56,11 +57,13 @@ class LMAssert:
                 assertpy.assert_that(self.actual_result).is_empty()
             elif self.comparator in ["isTrue", "true"]:  # 是true
                 assFailMsg = '实际值({}) 是true，条件为否：'.format(self.actual_result, self.expected_result)
-                res = False if LMAssert.str2bool(self.actual_result) is None else LMAssert.str2bool(self.actual_result)
+                res = False if PublicAssertion.str2bool(self.actual_result) is None else PublicAssertion.str2bool(
+                    self.actual_result)
                 assertpy.assert_that(res).is_true()
             elif self.comparator in ["isFalse", "false"]:  # 是false
                 assFailMsg = '实际值({}) 是false，条件为否：'.format(self.actual_result, self.expected_result)
-                res = True if LMAssert.str2bool(self.actual_result) is None else LMAssert.str2bool(self.actual_result)
+                res = True if PublicAssertion.str2bool(self.actual_result) is None else PublicAssertion.str2bool(
+                    self.actual_result)
                 assertpy.assert_that(res).is_false()
             elif self.comparator in ["isStrType", "字符串"]:  # 是str的类型
                 assFailMsg = '实际值({}) 是字符串，条件为否：'.format(self.actual_result, self.expected_result)
@@ -91,16 +94,16 @@ class LMAssert:
                 assertpy.assert_that(self.actual_result).ends_with(self.expected_result)
             elif self.comparator in ["isIn", "has item", "包含对象", "被包含"]:  # 在这几个字符串中
                 assFailMsg = '实际值({}) 被包含在 预期值({}) 列表中，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(self.actual_result).is_in(*LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(self.actual_result).is_in(*PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["isNotIn", "不被包含"]:  # 不在这几个字符串中
                 assFailMsg = '实际值({}) 不被包含在 预期值({}) 列表中，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(self.actual_result).is_not_in(*LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(self.actual_result).is_not_in(*PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["isNotZero", "非0"]:  # 不是0
                 assFailMsg = '实际值({}) 不是0，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_not_zero()
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_not_zero()
             elif self.comparator in ["isZero", "为0"]:  # 是0
                 assFailMsg = '实际值({}) 是0，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_zero()
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_zero()
             elif self.comparator in ["isPositive", "正数"]:  # 是正数
                 assFailMsg = '实际值({}) 是正数，条件为否：'.format(self.actual_result, self.expected_result)
                 assertpy.assert_that(self.actual_result).is_positive()
@@ -109,40 +112,40 @@ class LMAssert:
                 assertpy.assert_that(self.actual_result).is_negative()
             elif self.comparator in ["isGreaterThan", " 大于"]:  # 大于
                 assFailMsg = '实际值({}) 大于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_greater_than(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_greater_than(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["isGreaterThanOrEqualTo", "greater than or equal", ">=", " 大于等于"]:  # 大于等于
                 assFailMsg = '实际值({}) 大于等于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_greater_than_or_equal_to(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_greater_than_or_equal_to(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["isLessThan", " 小于"]:  # 小于
                 assFailMsg = '实际值({}) 小于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_less_than(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_less_than(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["isLessThanOrEqualTo", "less than or equal", "<=", " 小于等于"]:  # 小于等于
                 assFailMsg = '实际值({}) 小于等于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_less_than_or_equal_to(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_less_than_or_equal_to(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["isBetween", " 在...之间"]:  # 在...之间
                 assFailMsg = '实际值({}) 在 预期值({}) 之间，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_between(
-                    *LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_between(
+                    *PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["isCloseTo", " 接近于"]:  # 接近于
                 assFailMsg = '实际值({}) 接近于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.str2num(self.actual_result)).is_close_to(
-                    *LMAssert.str2list(self.expected_result))
+                assertpy.assert_that(PublicAssertion.str2num(self.actual_result)).is_close_to(
+                    *PublicAssertion.str2list(self.expected_result))
             elif self.comparator in ["listLenEqual", "列表长度相等"]:  # 列表长度相等
                 assFailMsg = '实际值({}) 列表长度相等 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.list_len(self.actual_result)).is_equal_to(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.list_len(self.actual_result)).is_equal_to(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["listLenGreaterThan", "列表长度大于"]:  # 列表长度大于
                 assFailMsg = '实际值({}) 列表长度大于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.list_len(self.actual_result)).is_greater_than(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.list_len(self.actual_result)).is_greater_than(
+                    PublicAssertion.str2num(self.expected_result))
             elif self.comparator in ["listLenLessThan", "列表长度小于"]:  # 列表长度小于
                 assFailMsg = '实际值({}) 列表长度小于 预期值({})，条件为否：'.format(self.actual_result, self.expected_result)
-                assertpy.assert_that(LMAssert.list_len(self.actual_result)).is_less_than_or_equal_to(
-                    LMAssert.str2num(self.expected_result))
+                assertpy.assert_that(PublicAssertion.list_len(self.actual_result)).is_less_than_or_equal_to(
+                    PublicAssertion.str2num(self.expected_result))
             else:
                 raise AssertionTypeNotExist('没有{}该断言类型'.format(self.comparator))
             return True, 'success'
@@ -229,7 +232,7 @@ class LMAssert:
 
     @staticmethod
     def list_len(value):
-        value2list = LMAssert.str2list(value)
+        value2list = PublicAssertion.str2list(value)
         if type(value2list) != list:
             raise AssertionTypeNotExist('传入实际值({}) 不是列表格式'.format(value))
         else:
