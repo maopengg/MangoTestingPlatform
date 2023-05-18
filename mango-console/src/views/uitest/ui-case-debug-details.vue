@@ -76,26 +76,50 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'ope_type'">
-                <a-select
-                  v-model="item.value.value"
-                  :placeholder="item.placeholder"
-                  :options="uiRunSortData.ope"
-                  :field-names="fieldNames"
-                  allow-clear
-                  allow-search
-                />
+              <!--              <template v-else-if="item.type === 'select' && item.key === 'ope_type'">-->
+              <!--                <a-select-->
+              <!--                  v-model="item.value.value"-->
+              <!--                  :placeholder="item.placeholder"-->
+              <!--                  :options="uiRunSortData.ope"-->
+              <!--                  :field-names="fieldNames"-->
+              <!--                  allow-clear-->
+              <!--                  allow-search-->
+              <!--                />-->
+              <!--              </template>-->
+              <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
+                <a-space direction="vertical">
+                  <a-cascader
+                    :options="uiRunSortData.ope"
+                    :default-value="item.value"
+                    expand-trigger="hover"
+                    :placeholder="item.placeholder"
+                    allow-search
+                    allow-clear
+                  />
+                </a-space>
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'ass_type'">
-                <a-select
-                  v-model="item.value.value"
-                  :placeholder="item.placeholder"
-                  :options="uiRunSortData.ass"
-                  :field-names="fieldNames"
-                  allow-clear
-                  allow-search
-                />
+              <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
+                <a-space direction="vertical">
+                  <a-cascader
+                    :options="uiRunSortData.ass"
+                    :default-value="item.value"
+                    expand-trigger="hover"
+                    :placeholder="item.placeholder"
+                    allow-search
+                    allow-clear
+                  />
+                </a-space>
               </template>
+              <!--              <template v-else-if="item.type === 'select' && item.key === 'ass_type'">-->
+              <!--                <a-select-->
+              <!--                    v-model="item.value.value"-->
+              <!--                    :placeholder="item.placeholder"-->
+              <!--                    :options="uiRunSortData.ass"-->
+              <!--                    :field-names="fieldNames"-->
+              <!--                    allow-clear-->
+              <!--                    allow-search-->
+              <!--                />-->
+              <!--              </template>-->
             </a-form-item>
           </a-form>
         </template>
@@ -182,7 +206,7 @@ const formItems = [
     label: '操作类型',
     key: 'ope_type',
     value: ref(''),
-    type: 'select',
+    type: 'cascader',
     required: true,
     placeholder: '请选择对元素的操作类型',
     validator: function () {
@@ -205,7 +229,7 @@ const formItems = [
     label: '断言类型',
     key: 'ass_type',
     value: ref(''),
-    type: 'select',
+    type: 'cascader',
     required: false,
     placeholder: '请选择断言类型'
   },
@@ -296,7 +320,7 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-
+    console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({

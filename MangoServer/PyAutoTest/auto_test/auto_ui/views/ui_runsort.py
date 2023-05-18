@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
+import json
 import logging
 
 from rest_framework import serializers
@@ -15,9 +16,8 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enum_class.ui_enum import OpeType, Assertions
+from PyAutoTest.utils.cache_utils.redis_base import RedisBase
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 logger = logging.getLogger('ui')
 
@@ -84,30 +84,30 @@ class RunSortView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ope_type(self, request):
-        # redis = RedisBase('default')
-        # data = redis.get('PageElementOperations')
-        # return Response({
-        #     'code': 200,
-        #     'msg': '获取操作类型成功',
-        #     'data': json.loads(data)
-        # })
+        redis = RedisBase('default')
+        data = redis.get('PageElementOperations')
         return Response({
             'code': 200,
             'msg': '获取操作类型成功',
-            'data': enum_list(OpeType)
+            'data': json.loads(data)
         })
+        # return Response({
+        #     'code': 200,
+        #     'msg': '获取操作类型成功',
+        #     'data': enum_list(OpeType)
+        # })
 
     @action(methods=['get'], detail=False)
     def get_ass_type(self, request):
-        # redis = RedisBase('default')
-        # data = redis.get('PageElementAssertion')
-        # return Response({
-        #     'code': 200,
-        #     'msg': '获取断言类型成功',
-        #     'data': json.loads(data)
-        # })
+        redis = RedisBase('default')
+        data = redis.get('PageElementAssertion')
         return Response({
             'code': 200,
             'msg': '获取断言类型成功',
-            'data': enum_list(Assertions)
+            'data': json.loads(data)
         })
+        # return Response({
+        #     'code': 200,
+        #     'msg': '获取断言类型成功',
+        #     'data': enum_list(Assertions)
+        # })
