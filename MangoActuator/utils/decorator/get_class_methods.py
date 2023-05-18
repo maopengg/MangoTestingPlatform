@@ -7,7 +7,7 @@ import inspect
 
 
 def get_class_methods(cls):
-    methods = {}
+    methods = []
     # 获取类中的所有属性和方法
     for attr in dir(cls):
         obj = getattr(cls, attr)
@@ -21,12 +21,24 @@ def get_class_methods(cls):
                     doc = value
                     break
             if attr != '__init__':
-                # 将方法名称和注释组成一个字典
-                methods[attr] = doc
+                # 获取方法的参数信息
+                signature = inspect.signature(obj)
+                parameters = signature.parameters
+                param_dict = {}
+                for param in parameters.values():
+                    if param.name != 'self':
+                        param_dict[param.name] = str(param.annotation)
+                # 将方法名称、注释和参数信息组成一个字典
+                method_dict = {
+                    '方法名': attr,
+                    '函数介绍': doc,
+                    '函数参数': param_dict
+                }
+                methods.append(method_dict)
     # 遍历父类，重复上述步骤
     for base in cls.__bases__:
         base_methods = get_class_methods(base)
-        methods.update(base_methods)
+        methods.extend(base_methods)
     return methods
 
 
