@@ -6,7 +6,7 @@ from utils.logs.log_control import ERROR, INFO
 
 
 class UiautomatorAssertion(AndroidBase):
-    """断言类操作"""
+    """安卓断言"""
 
     def assert_ele_exists(self, element: UiObject, assertion, expect):
         """断言元素存在"""

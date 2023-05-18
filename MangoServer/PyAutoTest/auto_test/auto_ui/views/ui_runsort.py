@@ -11,11 +11,11 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import RunSort, UiCase
-from PyAutoTest.auto_test.auto_ui.ui_tools.enum import OpeType, Assertions
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.enum_class.ui_enum import OpeType, Assertions
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
 
@@ -84,6 +84,13 @@ class RunSortView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ope_type(self, request):
+        # redis = RedisBase('default')
+        # data = redis.get('PageElementOperations')
+        # return Response({
+        #     'code': 200,
+        #     'msg': '获取操作类型成功',
+        #     'data': json.loads(data)
+        # })
         return Response({
             'code': 200,
             'msg': '获取操作类型成功',
@@ -92,6 +99,13 @@ class RunSortView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ass_type(self, request):
+        # redis = RedisBase('default')
+        # data = redis.get('PageElementAssertion')
+        # return Response({
+        #     'code': 200,
+        #     'msg': '获取断言类型成功',
+        #     'data': json.loads(data)
+        # })
         return Response({
             'code': 200,
             'msg': '获取断言类型成功',

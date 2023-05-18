@@ -3,12 +3,15 @@
 # @Description: 
 # @Time   : 2023-05-14 9:28
 # @Author : 毛鹏
-from django_redis import get_redis_connection
+import redis
+
+from config.config import REDIS_PASSWORD, REDIS_HOST, REDIS_PORT
 
 
 class RedisSting:
-    def __init__(self, library: str):
-        self.conn = get_redis_connection(library)
+    def __init__(self, db: int):
+        self.conn = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=db, password=REDIS_PASSWORD)
+        self.conn.json()
 
     def set_key(self, key, value):
         """写入一个key"""
@@ -33,9 +36,6 @@ class RedisSting:
     def getset(self, key, value):
         """设置新值并获取原来的值"""
         return self.conn.getset(key, value)
-
-    def get(self, key):
-        return self.conn.get(key)
 
     def get_range(self, key, start, end):
         """获取子序列 start起始位置 end结束位置"""
@@ -204,3 +204,7 @@ class RedisBase(RedisSting, RedisList, RedisDict):
 
     def all_keys(self):
         return self.conn.keys('*')
+
+
+if __name__ == '__main__':
+    r = RedisSting()

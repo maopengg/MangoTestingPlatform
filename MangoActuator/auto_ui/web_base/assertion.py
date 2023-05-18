@@ -11,7 +11,7 @@ from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightAssertion(PlaywrightBase):
-    """页面断言"""
+    """web断言"""
 
     @classmethod
     def not_to_be_disabled(cls, locator: Locator, **kwargs):

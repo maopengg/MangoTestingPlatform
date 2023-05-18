@@ -10,6 +10,7 @@ from auto_ui.android_base import UiautomatorApplication, UiautomatorElementOpera
     UiautomatorEquipmentDevice, UiautomatorAssertion, UiautomatorPage
 from auto_ui.web_base import PlaywrightPageOperation, PlaywrightInputDevice, PlaywrightElementOperation, \
     PlaywrightOperationBrowser, PlaywrightAssertion
+from utils.assertion.public_args import RandomData
 from utils.assertion.public_assertion import PublicAssertion
 
 
@@ -23,18 +24,39 @@ class GetClassMethod:
                         PlaywrightPageOperation]
         self.web_ass = [PlaywrightAssertion, ]
         self.public_ass = [PublicAssertion, ]
+        self.public_data = [RandomData, ]
 
-    def main(self):
-        def json_(data):
-            res = json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
-            print(res)
+    def get_all_ope(self):
+        android_ope_list = self.get_android()
+        web_ope_list = self.get_web()
+        data = [{'value': 'android',
+                 'label': '安卓',
+                 'children': android_ope_list},
+                {'value': 'web',
+                 'label': 'WEB',
+                 'children': web_ope_list}
+                ]
+        self.json_(data)
 
-        android = self.get_android()
-        web = self.get_web()
+    def get_all_ass(self):
+        web_ass = self.get_web_ass()
         public_ass = self.get_public_ass()
-        json_(android)
-        json_(web)
-        json_(public_ass)
+        android_ass = self.get_android_ass()
+        data = [{'value': 'web_ass',
+                 'label': 'WEB断言',
+                 'children': web_ass},
+                {'value': 'android_ass',
+                 'label': '安卓断言',
+                 'children': android_ass},
+                {'value': 'public_ass',
+                 'label': '公共断言',
+                 'children': public_ass}
+                ]
+        self.json_(data)
+
+    def json_(self, data):
+        res = json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
+        print(res)
 
     def get_class_methods(self, cls):
         methods = []
@@ -60,9 +82,9 @@ class GetClassMethod:
                             param_dict[param.name] = str(param.annotation)
                     # 将方法名称、注释和参数信息组成一个字典
                     method_dict = {
-                        '方法名': attr,
-                        '函数介绍': doc,
-                        '函数参数': param_dict
+                        'value': attr,
+                        'label': doc,
+                        'parameter': param_dict
                     }
                     methods.append(method_dict)
         # 遍历父类，重复上述步骤
@@ -74,26 +96,54 @@ class GetClassMethod:
     def get_android(self):
         data = []
         for cls in self.android_ope:
-            data.append({'android_ope': self.get_class_methods(cls)})
-        for cls in self.android_ass:
-            data.append({'android_ass': self.get_class_methods(cls)})
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
         return data
 
     def get_web(self):
         data = []
         for cls in self.web_ope:
-            data.append({'web_ope': self.get_class_methods(cls)})
-        for cls in self.web_ass:
-            data.append({'web_ass': self.get_class_methods(cls)})
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
+
         return data
 
     def get_public_ass(self):
         data = []
         for cls in self.public_ass:
-            data.append({'public_ass': self.get_class_methods(cls)})
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
+        return data
+
+    def get_web_ass(self):
+        data = []
+        for cls in self.web_ass:
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
+        return data
+
+    def get_android_ass(self):
+        data = []
+        for cls in self.android_ass:
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
+        return data
+
+    def get_public_method(self):
+        data = []
+        for cls in self.public_data:
+            data.append({'value': str(cls.__name__),
+                         'label': str(cls.__doc__),
+                         'children': self.get_class_methods(cls)})
         return data
 
 
 if __name__ == '__main__':
     r = GetClassMethod()
-    r.main()
+    r.get_all_ope()
+    r.get_all_ass()
