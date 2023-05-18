@@ -132,14 +132,13 @@ class UiConfig(models.Model):
         db_table = 'ui_config'
         ordering = ['-id']
 
-
-class UiMethod(models.Model):
-    type = models.SmallIntegerField(verbose_name="设备类型", null=True)
-    method = models.CharField(verbose_name="函数名称", max_length=64, null=True)
-    introduce = models.CharField(verbose_name="介绍", max_length=64, null=True)
-    parameter = models.JSONField(verbose_name="参数", max_length=1024, null=True)
-    is_ass = models.SmallIntegerField(verbose_name="是否是断言", null=True)
-
-    class Meta:
-        db_table = 'ui_method'
-        ordering = ['-id']
+# class UiMethod(models.Model):
+#     type = models.SmallIntegerField(verbose_name="设备类型", null=True)
+#     method = models.CharField(verbose_name="函数名称", max_length=64, null=True)
+#     introduce = models.CharField(verbose_name="介绍", max_length=64, null=True)
+#     parameter = models.JSONField(verbose_name="参数", max_length=1024, null=True)
+#     is_ass = models.SmallIntegerField(verbose_name="是否是断言", null=True)
+#
+#     class Meta:
+#         db_table = 'ui_method'
+#         ordering = ['-id']
