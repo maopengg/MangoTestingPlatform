@@ -1,7 +1,7 @@
 from uiautomator2 import UiObject
 
 from auto_ui.android_base.android_base import AndroidBase
-from utils.assertion.assertion import LMAssert
+from utils.assertion.public_assertion import PublicAssertion
 from utils.logs.log_control import ERROR, INFO
 
 
@@ -17,7 +17,7 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素exists")
             raise e
         else:
-            result, msg = LMAssert(assertion, actual, expect).compare()
+            result, msg = PublicAssertion(assertion, actual, expect).compare()
             return result, msg
 
     def assert_ele_text(self, element: UiObject, assertion, expect):
@@ -29,7 +29,7 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素text")
             raise e
         else:
-            result, msg = LMAssert(assertion, actual, expect).compare()
+            result, msg = PublicAssertion(assertion, actual, expect).compare()
             return result, msg
 
     def assert_ele_attribute(self, element: UiObject, attribute, assertion, expect):
@@ -41,7 +41,7 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素%s属性" % attribute)
             raise e
         else:
-            result, msg = LMAssert(assertion, actual, expect).compare()
+            result, msg = PublicAssertion(assertion, actual, expect).compare()
             return result, msg
 
     def assert_ele_center(self, element: UiObject, assertion, expect):
@@ -54,7 +54,7 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素位置")
             raise e
         else:
-            result, msg = LMAssert(assertion, str(actual), expect).compare()
+            result, msg = PublicAssertion(assertion, str(actual), expect).compare()
             return result, msg
 
     def assert_ele_x(self, element: UiObject, assertion, expect):
@@ -67,7 +67,7 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素X坐标")
             raise e
         else:
-            result, msg = LMAssert(assertion, actual, expect).compare()
+            result, msg = PublicAssertion(assertion, actual, expect).compare()
             return result, msg
 
     def assert_ele_y(self, element: UiObject, assertion, expect):
@@ -80,5 +80,5 @@ class UiautomatorAssertion(AndroidBase):
             ERROR.logger.error("无法获取元素Y坐标")
             raise e
         else:
-            result, msg = LMAssert(assertion, actual, expect).compare()
+            result, msg = PublicAssertion(assertion, actual, expect).compare()
             return result, msg
