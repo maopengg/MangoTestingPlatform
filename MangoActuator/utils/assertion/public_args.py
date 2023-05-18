@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 import random
-import time
 from datetime import date, timedelta, datetime
 
+import time
 from faker import Faker
 
 """
@@ -16,6 +16,7 @@ from faker import Faker
 
 
 class RandomData:
+    """公共方法"""
 
     def __init__(self):
         self.faker = Faker(locale='zh_CN')
