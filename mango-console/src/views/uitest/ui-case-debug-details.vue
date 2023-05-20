@@ -15,7 +15,7 @@
           :columns="columns"
           :data="uiRunSortData.data"
           @change="handleChange"
-          :draggable="{}"
+          :draggable="{ type: 'handle', width: 40 }"
           :pagination="false"
           :bordered="false"
         >
@@ -34,6 +34,9 @@
               </template>
               <template v-else-if="item.dataIndex === 'el_name'" #cell="{ record }">
                 {{ record.el_name == null ? '-' : record.el_name.name }}
+              </template>
+              <template v-else-if="item.dataIndex === 'el_name_b'" #cell="{ record }">
+                {{ record.el_name_b == null ? '-' : record.el_name_b.name }}
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -55,7 +58,7 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'el_page'">
+              <template v-if="item.type === 'select' && item.key === 'el_page'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
@@ -76,16 +79,16 @@
                   allow-search
                 />
               </template>
-              <!--              <template v-else-if="item.type === 'select' && item.key === 'ope_type'">-->
-              <!--                <a-select-->
-              <!--                  v-model="item.value.value"-->
-              <!--                  :placeholder="item.placeholder"-->
-              <!--                  :options="uiRunSortData.ope"-->
-              <!--                  :field-names="fieldNames"-->
-              <!--                  allow-clear-->
-              <!--                  allow-search-->
-              <!--                />-->
-              <!--              </template>-->
+              <template v-else-if="item.type === 'select' && item.key === 'el_name_b'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiRunSortData.eleName"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
               <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
                 <a-space direction="vertical">
                   <a-cascader
@@ -93,6 +96,8 @@
                     :default-value="item.value"
                     expand-trigger="hover"
                     :placeholder="item.placeholder"
+                    @change="upDataOpeValue(item.value.value)"
+                    style="width: 380px"
                     allow-search
                     allow-clear
                   />
@@ -105,21 +110,31 @@
                     :default-value="item.value"
                     expand-trigger="hover"
                     :placeholder="item.placeholder"
+                    @change="upDataAssValue(item.value.value)"
+                    style="width: 380px"
                     allow-search
                     allow-clear
                   />
                 </a-space>
               </template>
-              <!--              <template v-else-if="item.type === 'select' && item.key === 'ass_type'">-->
-              <!--                <a-select-->
-              <!--                    v-model="item.value.value"-->
-              <!--                    :placeholder="item.placeholder"-->
-              <!--                    :options="uiRunSortData.ass"-->
-              <!--                    :field-names="fieldNames"-->
-              <!--                    allow-clear-->
-              <!--                    allow-search-->
-              <!--                />-->
-              <!--              </template>-->
+              <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+                <a-textarea
+                  :auto-size="{ minRows: 4, maxRows: 7 }"
+                  :placeholder="item.placeholder"
+                  :default-value="item.value.value"
+                  v-model="item.value.value"
+                  allow-clear
+                />
+              </template>
+              <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
+                <a-textarea
+                  :auto-size="{ minRows: 4, maxRows: 7 }"
+                  :placeholder="item.placeholder"
+                  :default-value="item.value.value"
+                  v-model="item.value.value"
+                  allow-clear
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -145,17 +160,26 @@ const columns = reactive([
     title: '页面名称',
     dataIndex: 'el_page'
   },
-  {
-    title: '页面元素',
-    dataIndex: 'el_name'
-  },
+
   {
     title: '操作类型',
     dataIndex: 'ope_type'
   },
   {
+    title: '页面元素A',
+    dataIndex: 'el_name'
+  },
+  {
+    title: '页面元素B-未测试',
+    dataIndex: 'el_name_b'
+  },
+  {
     title: '元素操作值',
     dataIndex: 'ope_value'
+  },
+  {
+    title: '输入值key',
+    dataIndex: 'ope_value_key'
   },
   {
     title: '断言类型',
@@ -190,18 +214,10 @@ const formItems = [
         Message.error(this.placeholder || '')
         return false
       }
-      console.log(this)
       return true
     }
   },
-  {
-    label: '元素名称',
-    key: 'el_name',
-    value: ref(''),
-    placeholder: '请选择元素页面',
-    required: false,
-    type: 'select'
-  },
+
   {
     label: '操作类型',
     key: 'ope_type',
@@ -218,12 +234,43 @@ const formItems = [
     }
   },
   {
+    label: '元素A',
+    key: 'el_name',
+    value: ref(''),
+    placeholder: '请选择locating',
+    required: false,
+    type: 'select'
+  },
+  {
+    label: '元素B',
+    key: 'el_name_b',
+    value: ref(''),
+    placeholder: '请在元素操作值有第二个locating再选择',
+    required: false,
+    type: 'select'
+  },
+  {
     label: '元素操作值',
     key: 'ope_value',
     value: ref(''),
+    type: 'textarea',
+    required: true,
+    placeholder: '请输入对元素的操作内容',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '元素操作值',
+    key: 'ope_value_key',
+    value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入对元素的操作内容'
+    placeholder: '如果后续需要使用，请输入key'
   },
   {
     label: '断言类型',
@@ -237,24 +284,11 @@ const formItems = [
     label: '断言值',
     key: 'ass_value',
     value: ref(''),
-    type: 'input',
+    type: 'textarea',
     required: false,
     placeholder: '请输入断言内容'
   }
 ] as FormItem[]
-// const elPageRef = ref(formItems[0].value) // 第一个value
-// const elNameRef = ref(formItems[1].value) // 第二个value
-// watch(elPageRef, (newValue) => {
-//   if (!newValue && newValue !== 0) {
-//     console.error('页面名称不能为空')
-//     return false
-//   }
-//   if (actionTitle.value !== '添加元素') {
-//     // 在选择值之后手动将第二个value清空
-//   } else {
-//     elNameRef.value = ''
-//   }
-// })
 
 function doAppend() {
   actionTitle.value = '添加元素'
@@ -314,11 +348,13 @@ function onUpdate(item: any) {
 
 const handleChange = (_data: any) => {
   uiRunSortData.data = _data
+  Message.info('测试拖动成功')
 }
 
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
+    console.log(formItems)
     let value = transformData(formItems)
     console.log(value)
     if (addUpdate.value === 1) {
@@ -331,6 +367,7 @@ function onDataForm() {
             run_sort: uiRunSortData.data.length,
             team: route.query.team_id,
             el_name: value.el_name,
+            el_name_b: value.el_name_b,
             el_page: value.el_page,
             ope_type: value.ope_type,
             ass_type: value.ass_type,
@@ -345,23 +382,17 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
-      console.log(value)
       let pageName = value.el_page
       if (typeof pageName === 'string') {
         pageName = getKeyByTitle(uiRunSortData.pageName, pageName)
       }
       let ele = value.el_name
-      console.log(uiRunSortData.eleName, ele)
       if (typeof ele === 'string') {
         ele = getKeyByTitle(uiRunSortData.eleName, ele)
       }
-      let ope = value.ope_type
-      if (typeof ope === 'string') {
-        ope = getKeyByTitle(uiRunSortData.ope, value.ope_type)
-      }
-      let ass = value.ass_type
-      if ((ass !== null && typeof ass !== 'number') || typeof ass === 'string') {
-        ass = getKeyByTitle(uiRunSortData.ass, value.ass_type)
+      let ele1 = value.el_name_b
+      if (typeof ele === 'string') {
+        ele = getKeyByTitle(uiRunSortData.eleName, ele)
       }
       addUpdate.value = 0
       value['id'] = updateId.value
@@ -372,11 +403,11 @@ function onDataForm() {
           return {
             id: value.id,
             case: route.query.id,
-            run_sort: uiRunSortData.data.length,
             el_name: ele,
+            el_name_b: ele1,
             el_page: pageName,
-            ope_type: ope,
-            ass_type: ass,
+            ope_type: value.ope_type,
+            ass_type: value.ass_type,
             ope_value: value.ope_value,
             ass_value: value.ass_value
           }
@@ -420,12 +451,12 @@ function getUiRunSort() {
   })
     .then((res) => {
       uiRunSortData.data = res.data
-      const arrOpe = uiRunSortData.ope.map((item: any) => item.title)
-      const arrAss = uiRunSortData.ass.map((item: any) => item.title)
-      uiRunSortData.data.forEach((i: any) => {
-        i.ope_type = arrOpe[i.ope_type]
-        i.ass_type = arrAss[i.ass_type]
-      })
+      // const arrOpe = uiRunSortData.ope.map((item: any) => item.title)
+      // const arrAss = uiRunSortData.ass.map((item: any) => item.title)
+      // uiRunSortData.data.forEach((i: any) => {
+      //   i.ope_type = arrOpe[i.ope_type]
+      //   i.ass_type = arrAss[i.ass_type]
+      // })
     })
     .catch(console.log)
 }
@@ -473,6 +504,61 @@ function getEleName(pageId: any) {
       uiRunSortData.eleName = res.data
     })
     .catch(console.log)
+}
+
+function upDataAssValue(value: string) {
+  const inputItem = findItemByValue(uiRunSortData.ass, value)
+  if (inputItem) {
+    const parameter: any = inputItem.parameter
+    Object.keys(parameter).forEach((key) => {
+      parameter[key] = ''
+    })
+    formItems.forEach((item: any) => {
+      if (item.key === 'ass_value') {
+        item.value.value = JSON.stringify(parameter)
+      }
+    })
+  }
+}
+
+function upDataOpeValue(value: string) {
+  const inputItem = findItemByValue(uiRunSortData.ope, value)
+  if (inputItem) {
+    const parameter: any = inputItem.parameter
+    Object.keys(parameter).forEach((key) => {
+      parameter[key] = ''
+    })
+    formItems.forEach((item: any) => {
+      if (item.key === 'ope_value') {
+        item.value.value = JSON.stringify(parameter)
+      }
+    })
+  }
+}
+
+interface Item {
+  value: string
+  label: string
+  parameter?: {
+    [key: string]: any
+  }
+  children?: Item[]
+}
+
+function findItemByValue(data: Item[], value: string): Item | undefined {
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i]
+    if (item.value === value) {
+      return item
+    }
+    if (item.children) {
+      const childItem = findItemByValue(item.children, value)
+      if (childItem) {
+        return childItem
+      }
+    }
+  }
+  return undefined
 }
 
 onMounted(() => {

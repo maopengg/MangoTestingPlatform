@@ -27,14 +27,6 @@ class EnvironmentEnum(Enum):
     PRO = 2
 
 
-class OpeType(Enum):
-    """ {"0": "打开url"}，{"1": "点击"}，{"2": "输入"}，{"3": "截图"} """
-    get = 0
-    CLICK = 1
-    INPUT = 2
-    CHART = 3
-
-
 class Assertions(Enum):
     """ {"0": "-"}，{"1": "相等"}，{"2": "比元素大"}，{"3": "比元素小"} """
     NULL = 0

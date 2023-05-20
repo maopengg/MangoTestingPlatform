@@ -7,7 +7,8 @@ from playwright.async_api import async_playwright, Page, BrowserContext
 
 
 class PlaywrightBase:
-    def __init__(self, page: Page, context: BrowserContext):
+
+    def __init__(self, page: Page, context: BrowserContext = None):
         self.page = page
         self.context = context
 

@@ -29,12 +29,12 @@ class GetClassMethod:
     def get_all_ope(self):
         android_ope_list = self.get_android()
         web_ope_list = self.get_web()
-        data = [{'value': 'android',
-                 'label': '安卓',
-                 'children': android_ope_list},
-                {'value': 'web',
+        data = [{'value': 'web',
                  'label': 'WEB',
-                 'children': web_ope_list}
+                 'children': web_ope_list},
+                {'value': 'android',
+                 'label': '安卓',
+                 'children': android_ope_list}
                 ]
         self.json_(data)
 
@@ -144,6 +144,7 @@ class GetClassMethod:
 
 
 if __name__ == '__main__':
+    # 第0个必须是web
     r = GetClassMethod()
     r.get_all_ope()
     r.get_all_ass()

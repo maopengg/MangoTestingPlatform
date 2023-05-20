@@ -75,10 +75,13 @@ class UiCaseGroup(models.Model):
 
 class RunSort(models.Model):
     el_page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
-    el_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
+    el_name = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_a',
+                                on_delete=models.SET_NULL, null=True)
+    el_name_b = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_b',
+                                  on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    ope_type = models.SmallIntegerField(verbose_name="对该元素的操作类型", null=True)
-    ass_type = models.SmallIntegerField(verbose_name="断言类型", null=True)
+    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
+    ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
     ope_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
     ope_value_key = models.CharField(verbose_name="输入内容的key，用来保存变量", max_length=64, null=True)
     ass_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
@@ -131,14 +134,3 @@ class UiConfig(models.Model):
     class Meta:
         db_table = 'ui_config'
         ordering = ['-id']
-
-# class UiMethod(models.Model):
-#     type = models.SmallIntegerField(verbose_name="设备类型", null=True)
-#     method = models.CharField(verbose_name="函数名称", max_length=64, null=True)
-#     introduce = models.CharField(verbose_name="介绍", max_length=64, null=True)
-#     parameter = models.JSONField(verbose_name="参数", max_length=1024, null=True)
-#     is_ass = models.SmallIntegerField(verbose_name="是否是断言", null=True)
-#
-#     class Meta:
-#         db_table = 'ui_method'
-#         ordering = ['-id']

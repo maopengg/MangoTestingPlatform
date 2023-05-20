@@ -61,3 +61,18 @@ class TimeTasksViews(ViewSet):
                 'msg': f'触发定时任务失败，请确保{DRIVER}已连接{SERVER}',
                 'data': case_json
             })
+
+    @action(methods=['get'], detail=False)
+    def get_time_obj_name(self, request):
+        """
+         获取平台枚举
+         :param request:
+         :return:
+         """
+        res = TimeTasks.objects.values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in res]
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功~',
+            'data': data
+        })

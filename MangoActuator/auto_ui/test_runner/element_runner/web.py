@@ -7,7 +7,7 @@ from playwright.async_api import Locator
 from playwright.async_api import Page
 
 from auto_ui.web_base import WebDevice
-from enum_class.socket_client_ui import OpeType, ElementExp
+from enum_class.socket_client_ui import ElementExp
 from utils.cache.data_cleaning import DataCleaning
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
@@ -18,21 +18,23 @@ class WebRun(WebDevice, DataCleaning):
     def __init__(self, page: Page):
         super().__init__(page)
         self.case_id = 0
-        self.ope_type = ''
-        self.ass_type = ''
-        self.ope_value = ''
-        self.ass_value = ''
-        self.ele_name = ''
-        self.ele_page_name = ''
-        self.ele_exp = 0
-        self.ele_loc = ''
-        self.ele_sleep = 0
-        self.ele_sub = 0
+        self.ope_type = None
+        self.ass_type = None
+        self.ope_value = None
+        self.ass_value = None
+        self.ele_name_a = None
+        self.ele_name_b = None
+        self.ele_page_name = None
+        self.ele_exp = None
+        self.ele_loc = None
+        self.ele_loc_b = None
+        self.ele_sleep = None
+        self.ele_sub = None
         self.ope_value_key = None
-        self.ele_opt_res = {'ele_name': self.ele_name,  #
+        self.ele_opt_res = {'ele_name_a': self.ele_name_a,
+                            'ele_name_b': self.ele_name_b,  #
                             'existence': 0,  #
                             'state': 0,  #
-                            'case_id': self.case_id,  #
                             'case_group_id': '',
                             'team_id': '',
                             'test_obj_id': '',  #
@@ -43,12 +45,11 @@ class WebRun(WebDevice, DataCleaning):
         """
         记录用例名称，并且打开url
         @param url: url
-        @param case_id: 用例名称
         @return:
         """
         self.case_id = case_id
-        await self.wait_for_timeout(1 * 1000)
-        await self.goto(url)
+        await self.w_wait_for_timeout(1 * 1000)
+        await self.w_goto(url)
         self.ele_opt_res['test_obj_id'] = url
 
     async def ele_main(self, case_dict: dict) -> dict and bool:
@@ -62,39 +63,50 @@ class WebRun(WebDevice, DataCleaning):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            path = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.jpg'
-            self.ele_opt_res['picture_path'] = await self.screenshot(path)
+            path = rf'{NewLog.get_log_screenshot()}\{self.ele_name_a + self.get_deta_hms()}.jpg'
+            self.ele_opt_res['picture_path'] = await self.w_screenshot(path)
             return False
 
         for key, value in case_dict.items():
-            setattr(self, key, value)
-        try:
-            ele_obj = await self.__find_ele(case_dict)
-            if ele_obj:
-                await self.action_element(ele_obj)
-                return True
+            if key == 'ope_value' and value:
+                print(key, value)
+                setattr(self, key, eval(value))
             else:
-                await element_exception_handling('')
-        except Exception as e:
-            await element_exception_handling(e)
+                setattr(self, key, value)
+        # try:
+        if self.ope_value:
+            for key, value in self.ope_value.items():
+                if key == 'locating':
+                    self.ope_value['locating'] = await self.__find_ele(case_dict)
+                elif key == 'input_value':
+                    self.ope_value['input_value'] = await self.__input_value()
+            await self.action_element()
+            return True
+        else:
+            await element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
+        # except Exception as e:
+        #     await element_exception_handling(e)
 
-    async def action_element(self, ele_obj: Locator) -> None:
+    async def action_element(self) -> None:
         """
             处理元素的一些事件，包括点击，输入，移动
         @param ele_obj: 元素对象，只能是一个
         @return:
         """
-        # 点击
-        if self.ope_type == OpeType.CLICK.value:
-            await self.click(ele_obj)
-            self.ele_opt_res['state'] = 1
-        # 输入
-        elif self.ope_type == OpeType.INPUT.value:
-            await self.input(ele_obj, value=self.__input_value())
-            self.ele_opt_res['state'] = 1
+        # # 点击
+        # if self.ope_type == OpeType.CLICK.value:
+        #     await self.click(ele_obj)
+        #     self.ele_opt_res['state'] = 1
+        # # 输入
+        # elif self.ope_type == OpeType.INPUT.value:
+        #     await self.input(ele_obj, value=self.__input_value())
+        #     self.ele_opt_res['state'] = 1
+        # else:
+        #     return None
+        await getattr(self, self.ope_type)(**self.ope_value)
         # 等待
         if self.ele_sleep:
-            await self.wait_for_timeout(self.ele_sleep * 1000)
+            await self.w_wait_for_timeout(self.ele_sleep * 1000)
 
     async def __find_ele(self, case_dict: dict) -> Locator:
         """
@@ -124,7 +136,7 @@ class WebRun(WebDevice, DataCleaning):
             if not ele:
                 ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                    f'元素对象：{case_dict}\n')
-                await self.screenshot(self.ele_name)
+                await self.w_screenshot(self.ele_name_a)
                 self.ele_opt_res['existence'] = await ele.count()
             self.ele_opt_res['existence'] = await ele.count()
             return ele.nth(0 if self.ele_sub is None else self.ele_sub)
@@ -132,12 +144,13 @@ class WebRun(WebDevice, DataCleaning):
             self.ele_opt_res['existence'] = 0
             ERROR.logger.error(f'元素为空，无法定位，请检查元素表达式是否为空！元素对象：{case_dict}')
 
-    def __input_value(self):
+    async def __input_value(self):
         """
         输入依赖解决
         @return:
         """
-        return self.case_input_data(self.case_id, self.ele_name, self.ope_value, self.ope_value_key)
+        print(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
+        return self.case_input_data(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
 
     # def __find_ele1(self, case_dict):
     #     """

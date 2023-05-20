@@ -12,22 +12,22 @@ class PlaywrightElementOperation(PlaywrightBase):
     """元素操作类"""
 
     @classmethod
-    async def click(cls, locating: Locator):
+    async def w_click(cls, locating: Locator):
         """元素点击"""
         await locating.click()
 
     @classmethod
-    async def input(cls, locating: Locator, value: str):
+    async def w_input(cls, locating: Locator, input_value: str):
         """元素输入"""
-        await locating.fill(value)
+        await locating.fill(input_value)
 
-    async def upload_files(self, locating: Locator, file_path: str):
+    async def w_upload_files(self, locating: Locator, file_path: str):
         """点击元素上传文件"""
         with self.page.expect_file_chooser() as fc_info:
             await locating.click()
         file_chooser = fc_info.value
         file_chooser.set_files(file_path)
 
-    async def drag_to(self, locating1: Locator, locating2: Locator):
+    async def w_drag_to(self, locating1: Locator, locating2: Locator):
         """拖动A元素到达B"""
         await locating1.drag_to(locating2)

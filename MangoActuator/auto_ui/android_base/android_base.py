@@ -30,12 +30,12 @@ class AndroidBase:
         self.android = android
         self.android.implicitly_wait(10)
 
-    def sleep(self, second):
+    def a_sleep(self, time_: int):
         """强制等待"""
         try:
-            sleep(second)
+            sleep(time_)
         except Exception as e:
-            ERROR.logger.error(f"无法执行sleep，时间：{second}，报错信息：{e}")
+            ERROR.logger.error(f"无法执行sleep，时间：{time_}，报错信息：{e}")
             return None
 
 

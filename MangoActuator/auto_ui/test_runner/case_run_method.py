@@ -77,14 +77,14 @@ class CaseRunMethod:
             self.android = AndroidRun(self.new_android_obj(case_obj['equipment']))
         if self.android:
             print('android当前的对象被实例化的值：', type(self.android))
-            self.android.start_app(case_obj['package'])
+            self.android.a_start_app(case_obj['package'])
             for case_dict in case_obj['case_data']:
                 res_ = self.android.ele_main(case_dict)
                 print(f'元素的测试结果是：{res_}')
                 if not res_:
                     ERROR.logger.error(f"用例：{case_obj['case_name']}，执行失败！请检查执行结果！{self.android.ele_opt_res}")
                     break
-            self.android.close_app(case_obj['package'])
+            self.android.a_close_app(case_obj['package'])
             return True
         else:
             ERROR.logger.error('安卓对象没有实例化，请联系管理员排查问题！')

@@ -20,11 +20,11 @@ class MangoActuator(asyncio.Protocol):
         self.executor = ThreadPoolExecutor()
 
     async def main(self, username):
-        if await self.socket(username):
-            await self.ui_consume()
-
+        # if await self.socket(username):
+        #     await self.ui_consume()
+        await self.socket(username)
+        
     async def socket(self, username):
-        print(f"========================={config.DRIVER}正在启动=========================")
         client = ClientWebSocket(self.q, username)
         socket_task = asyncio.create_task(client.client_run())
         await asyncio.sleep(1)
@@ -34,6 +34,7 @@ class MangoActuator(asyncio.Protocol):
         await asyncio.sleep(3)
 
     async def ui_consume(self):
+        print(f"========================={config.DRIVER}启动成功=========================")
         consume = ConsumeDistribute()
         while True:
             data = await self.q.get()
@@ -46,6 +47,7 @@ class MangoActuator(asyncio.Protocol):
 
 if __name__ == '__main__':
     # pyinstaller -F -c .\MangoActuator.py -i .\图标.ico
+    print(f"========================={config.DRIVER}正在启动=========================")
     user_name = input("请输入用户账号: ")
     main = MangoActuator()
     asyncio.run(main.main(user_name))

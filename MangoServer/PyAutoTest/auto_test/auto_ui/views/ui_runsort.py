@@ -15,7 +15,6 @@ from PyAutoTest.auto_test.auto_ui.models import RunSort, UiCase
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.cache_utils.redis_base import RedisBase
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
@@ -23,9 +22,9 @@ logger = logging.getLogger('ui')
 
 
 class RunSortSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
     el_page = UiPageSerializers(read_only=True)
     el_name = UiElementSerializers(read_only=True)
+    el_name_b = UiElementSerializers(read_only=True)
     case = UiCaseSerializers(read_only=True)
 
     class Meta:
@@ -61,16 +60,11 @@ class RunSortCRUD(ModelCRUD):
         data = {'id': _id, 'run_flow': '', 'name': ''}
         run = self.model.objects.filter(case_id=_id).order_by('run_sort')
         for i in run:
-            if i.el_name is None:
-                data['run_flow'] += 'url'
-                data['name'] = i.case.name
-            else:
-                data['run_flow'] += '->'
-                data['run_flow'] += i.el_name.name
-
+            data['run_flow'] += '->'
+            data['run_flow'] += i.el_name.name
+        data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
         ui_case = UiCaseCRUD()
-
         res = ui_case.serializer(instance=UiCase.objects.get(pk=_id), data=data)
         if res.is_valid():
             res.save()

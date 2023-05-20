@@ -145,7 +145,7 @@
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="caseGroup.caseName"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -156,7 +156,7 @@
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="caseGroup.timingList"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -166,7 +166,27 @@
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="testObj.data"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'timing_actuator'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="caseGroup.userList"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'case_people'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="caseGroup.userList"
                   :field-names="fieldNames"
                   allow-clear
                   allow-search
@@ -182,18 +202,18 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { uiCaseGroup, uiRunCaseGroup, uiRunCaseGroupBatch } from '@/api/url'
+import { getNickname, uiCaseGroup, uiRunCaseGroup, uiRunCaseGroupBatch, getTimingList, getCaseNaneList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal, Notification } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick } from 'vue'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { useTestObj } from '@/store/modules/get-test-obj'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 
-const project = useProject()
 const testObj = useTestObj()
-
+const project = useProject()
 const conditionItems: Array<FormItem> = [
   {
     key: 'name',
@@ -251,7 +271,7 @@ const formItems = [
     label: '项目组',
     key: 'team',
     value: ref(''),
-    placeholder: '请输入用户昵称',
+    placeholder: '请选择项目组',
     required: true,
     type: 'select',
     validator: function () {
@@ -268,7 +288,7 @@ const formItems = [
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入用例名称',
+    placeholder: '请输入用例组名称',
     validator: function () {
       if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
@@ -314,6 +334,36 @@ const formItems = [
     type: 'select',
     required: true,
     placeholder: '请选择定时执行环境',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '执行器',
+    key: 'timing_actuator',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请选择定时执行器',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '用例负责人',
+    key: 'case_people',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请设置用例负责人',
     validator: function () {
       if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
@@ -409,7 +459,6 @@ function onSearch() {
       data[it.key] = it.value.value
     }
   })
-  console.log(data)
   if (JSON.stringify(data) === '{}') {
     doRefresh()
   } else if (data.project) {
@@ -505,7 +554,13 @@ function onUpdate(item: any) {
     formItems.forEach((it) => {
       const key = it.key
       const propName = item[key]
-      if (propName) {
+      if (typeof propName === 'object' && propName !== null) {
+        if (propName.name) {
+          it.value.value = propName.name
+        } else {
+          it.value.value = propName.nickname
+        }
+      } else {
         it.value.value = propName
       }
     })
@@ -560,22 +615,21 @@ function onConcurrency(name: string) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
-    console.log(value)
+    let value = transformData(formItems)
+    let caseId = value.case_name.filter((item: any) => typeof item === 'number')
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
         url: uiCaseGroup,
         data: () => {
           return {
-            nickname: value.nickname,
-            username: value.username,
-            password: value.password,
-            role: value.role,
-            department: value.department
+            team: value.team,
+            name: value.name,
+            case_id: JSON.stringify(caseId),
+            time_name: value.time_name,
+            test_obj: value.test_obj,
+            timing_actuator: value.timing_actuator,
+            case_people: value.case_people
           }
         }
       })
@@ -585,6 +639,27 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      let timeName = value.time_name
+      let testObject = value.test_obj
+      let timingActuator = value.timing_actuator
+      let casePeople = value.case_people
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+      }
+      if (typeof value.time_name === 'string') {
+        timeName = getKeyByTitle(caseGroup.timingList, value.time_name)
+      }
+      console.log(testObj.data, value.test_obj)
+      if (typeof value.test_obj === 'string') {
+        testObject = getKeyByTitle(testObj.data, value.test_obj)
+      }
+      if (typeof value.timing_actuator === 'string') {
+        timingActuator = getKeyByTitle(caseGroup.userList, value.timing_actuator)
+      }
+      if (typeof value.case_people === 'string') {
+        casePeople = getKeyByTitle(caseGroup.userList, value.case_people)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -593,11 +668,13 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            nickname: value.nickname,
-            username: value.username,
-            password: value.password,
-            role: value.role,
-            department: value.department
+            team: teamId,
+            name: value.name,
+            case_id: JSON.stringify(caseId),
+            time_name: timeName,
+            test_obj: testObject,
+            timing_actuator: timingActuator,
+            case_people: casePeople
           }
         }
       })
@@ -610,9 +687,57 @@ function onDataForm() {
   }
 }
 
+const caseGroup = reactive({
+  userList: [],
+  timingList: [],
+  caseName: []
+})
+
+function getNickName() {
+  get({
+    url: getNickname,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      caseGroup.userList = res.data
+    })
+    .catch(console.log)
+}
+
+function getTiming() {
+  get({
+    url: getTimingList,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      caseGroup.timingList = res.data
+    })
+    .catch(console.log)
+}
+
+function getCaseName() {
+  get({
+    url: getCaseNaneList,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      caseGroup.caseName = res.data
+    })
+    .catch(console.log)
+}
+
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    getNickName()
+    getTiming()
+    getCaseName()
   })
 })
 </script>

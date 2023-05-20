@@ -11,7 +11,7 @@ from auto_ui.web_base.playwright_base import PlaywrightBase
 class PlaywrightPageOperation(PlaywrightBase):
     """浏览器操作类"""
 
-    async def switch_tabs(self, individual: int):
+    async def w_switch_tabs(self, individual: int):
         """切换页签"""
         pages = self.context.pages
         await pages[individual].bring_to_front()

@@ -104,7 +104,7 @@
                   <a-space v-if="caseType === '0'">
                     <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">设置顺序</a-button>
+                    <a-button type="text" size="mini" @click="onClick(record)">添加步骤</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
                   <a-space v-else-if="caseType === '1'">
@@ -535,15 +535,17 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let teamId = getKeyByTitle(project.data, value.team)
     if (addUpdate.value === 1) {
+      // let case_type = getKeyByTitle(testObjData.platformEnum, value.case_type)
+
       addUpdate.value = 0
       post({
         url: uiCase,
         data: () => {
           return {
-            team: teamId,
+            team: value.team,
             name: value.name,
+            case_type: value.case_type,
             type: 0
           }
         }
@@ -554,6 +556,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -609,7 +615,8 @@ function onClick(record: any) {
       id: caseId,
       name: record.name,
       team_name: record.team.name,
-      team_id: record.team.id
+      team_id: record.team.id,
+      type: parseInt(record.type)
     }
   })
 }

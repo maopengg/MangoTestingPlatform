@@ -65,6 +65,17 @@ class UiCaseViews(ViewSet):
             'data': data
         })
 
-    # @action(methods=['get'], detail=False)
-    # def up_case_run_order(self):
-
+    @action(methods=['get'], detail=False)
+    def get_case_obj_name(self, request):
+        """
+         获取所有用例id和名称
+         :param request:
+         :return:
+         """
+        res = self.model.objects.values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in res]
+        return Response({
+            'code': 200,
+            'msg': '获取数据成功',
+            'data': data
+        })

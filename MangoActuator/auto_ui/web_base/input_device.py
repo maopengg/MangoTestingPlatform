@@ -11,10 +11,10 @@ from auto_ui.web_base.playwright_base import PlaywrightBase
 class PlaywrightInputDevice(PlaywrightBase):
     """输入设备，键盘和鼠标"""
 
-    async def hover(self, selector):
+    async def w_hover(self, locator: Locator):
         """鼠标悬停"""
-        await self.page.hover(selector)
+        await locator.hover()
 
-    async def keys(self, locator: Locator, keyboard: str):
+    async def w_keys(self, locator: Locator, keyboard: str):
         """按键"""
         await locator.press(keyboard)

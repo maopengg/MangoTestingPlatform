@@ -42,9 +42,8 @@ class ClientWebSocket:
     async def client_run(self):
         """ 进行websocket连接
         """
-
         server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.socket_url
-        # DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
+        DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
         try:
             async with websockets.connect(server_url) as websocket:
                 self.websocket = websocket
@@ -103,9 +102,10 @@ class ClientWebSocket:
         :return:
         """
         out = json.loads(msg)
+        out1 = json.dumps(out['data'], ensure_ascii=False).encode('utf-8').decode()
         DEBUG.logger.debug(f'接收的消息提示:{out["msg"]}\n'
                            f'接收的执行函数：{out["func"]}\n'
-                           f'接收的数据：{out["data"]}')
+                           f'接收的数据：{out1}')
         return out
 
     @classmethod

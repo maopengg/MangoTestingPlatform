@@ -28,6 +28,7 @@ urlpatterns = [
     #
     path("case", UiCaseCRUD.as_view()),
     path("case/put/type", UiCaseViews.as_view({'put': 'put_type'})),
+    path("get/case/name/list", UiCaseViews.as_view({'get': 'get_case_obj_name'})),
     #
     path("runsort", RunSortCRUD.as_view()),
     # path("runsort/detail", RunSortView.ui_case_detail),

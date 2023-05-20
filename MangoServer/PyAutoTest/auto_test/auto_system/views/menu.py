@@ -98,7 +98,7 @@ def ad_routes():
                 {
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/ui-config",
-                    "menuName": "配置与元素收集",
+                    "menuName": "配置与调试",
                 }
             ],
         },
