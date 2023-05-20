@@ -55,6 +55,7 @@ export const UiRun = '/ui/run'
 export const uiRunCaseGroup = '/ui/run/group'
 export const uiRunCaseGroupBatch = '/ui/run/group/batch'
 export const uiConfig = '/ui/config'
+export const getCaseNaneList = '/ui/get/case/name/list'
 
 // -
 export const getProjectConfig = '/system/test/object'
@@ -70,6 +71,7 @@ export const getTimeList = 'system/time'
 export const getTimeData = 'system/time/data'
 export const triggerTiming = 'system/trigger/timing'
 export const SocketUserList = 'system/socket/user/list'
+export const getTimingList = 'system/get/timing/list'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
