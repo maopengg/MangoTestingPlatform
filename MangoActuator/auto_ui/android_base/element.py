@@ -5,7 +5,7 @@ from utils.logs.log_control import ERROR, INFO
 
 
 class UiautomatorElementOperation(AndroidBase):
-    """元素操作类"""
+    """元素操作"""
 
     def a_click(self, locating: UiObject):
         """单击"""

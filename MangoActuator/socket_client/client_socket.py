@@ -17,7 +17,7 @@ class ClientWebSocket:
         self.username = username
         self.socket_url = f'/client/socket?{username}'
         self.qu = qu
-        self.res = bool
+        self.res = False
 
     async def client_hands(self):
         """
@@ -34,28 +34,25 @@ class ClientWebSocket:
             res = self.__json_loads(response_str)
             if res['code'] == 200:
                 self.__output_method(response_str)
+                self.res = True
                 return True
-            else:
+            elif '未登录' not in res['msg']:
                 self.__output_method(response_str)
-                return False
+                print(f'========================={DRIVER}启动失败正在重试=========================')
 
     async def client_run(self):
         """ 进行websocket连接
         """
         server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.socket_url
         DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
-        try:
-            async with websockets.connect(server_url) as websocket:
-                self.websocket = websocket
-                # 下面两行同步进行
-                if await self.client_hands() is True:  # 握手
-                    await self.client_recv()
-                    self.res = True
-                else:
-                    self.res = False
-        except ConnectionRefusedError as e:
-            DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
-            self.res = False
+        # try:
+        async with websockets.connect(server_url) as websocket:
+            self.websocket = websocket
+            # 下面两行同步进行
+            if await self.client_hands() is True:  # 握手
+                await self.client_recv()
+        # except ConnectionRefusedError as e:
+        #     DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
 
     async def client_recv(self):
         while True:
@@ -64,7 +61,6 @@ class ClientWebSocket:
             #  可以在这里处理接受的数据
             if data['func'] and data['func'] != 'break':
                 await self.qu.put({data['func']: data['data']})
-                # Collection(self.qu).start_up(data['func'], data['data'])
             elif data['func'] == 'break':
                 await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')

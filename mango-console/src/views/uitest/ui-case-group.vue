@@ -397,7 +397,8 @@ const tableColumns = useTableColumn([
   {
     title: '包含用例名称',
     key: 'case_name',
-    dataIndex: 'case_name'
+    dataIndex: 'case_name',
+    width: 350
   },
   {
     title: '定时任务',
@@ -616,7 +617,10 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let caseId = value.case_name.filter((item: any) => typeof item === 'number')
+    let caseId = value.case_name
+    if (typeof value.case_name !== 'string') {
+      caseId = value.case_name.filter((item: any) => typeof item === 'number')
+    }
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({

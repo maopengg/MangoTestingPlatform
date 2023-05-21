@@ -5,10 +5,13 @@
 # @Author : 毛鹏
 from playwright.async_api import async_playwright, Page, BrowserContext
 
+from utils.cache.data_cleaning import DataCleaning
 
-class PlaywrightBase:
+
+class PlaywrightBase(DataCleaning):
 
     def __init__(self, page: Page, context: BrowserContext = None):
+        super().__init__()
         self.page = page
         self.context = context
 

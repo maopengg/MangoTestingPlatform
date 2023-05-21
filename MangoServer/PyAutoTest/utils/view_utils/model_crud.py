@@ -133,7 +133,7 @@ class ModelR(ViewSet):
         books = None
         if team is not None and name is not None:
             books = self.model.objects.filter(
-                team=Project.objects.get(name=team).id,
+                team=Project.objects.get(id=team).id,
                 name=name,
                 type=request.query_params.get('type')
             ).order_by('id')
@@ -178,7 +178,7 @@ class ModelR(ViewSet):
         books = None
         if team is not None and name is not None:
             books = self.model.objects.filter(
-                team=Project.objects.get(name=team).id,
+                team=Project.objects.get(id=team).id,
                 name=name
             ).order_by('id')
         elif name is not None and id_ is not None:

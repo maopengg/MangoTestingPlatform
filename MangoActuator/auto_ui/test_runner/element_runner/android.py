@@ -110,4 +110,4 @@ class AndroidRun(DriverMerge, DataCleaning):
         输入依赖解决
         @return:
         """
-        return self.case_input_data(self.case_id, self.ele_name_a, self.ope_value, self.ope_value_key)
+        return self.case_input_data(self.case_id, self.ope_value, self.ope_value_key)

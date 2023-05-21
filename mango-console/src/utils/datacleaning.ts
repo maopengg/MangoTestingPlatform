@@ -38,7 +38,7 @@ export function getKeyByTitle(groups: Group[], title: string): number {
 
 // 根据key的值获取title
 
-export function getKeyByKey(groups: Group[], key: number): string {
+export function getTitleByKey(groups: Group[], key: number): string {
   const group = groups.find((group) => group.key === key)
   if (group) {
     return group.title

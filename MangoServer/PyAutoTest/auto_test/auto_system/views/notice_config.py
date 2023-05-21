@@ -45,9 +45,11 @@ class NoticeConfigViews(ViewSet):
     @action(methods=['get'], detail=False)
     def test(self, request):
         from ..notic_tools import notice_main
-        notice_main(request.query_params.get('name'))
+        _id = request.query_params.get('id')
+        team_id = request.query_params.get('team_id')
+        notice_main(team_id, _id)
         return Response({
-            'code': 0,
+            'code': 200,
             'msg': '通知发送成功',
             'data': None
         })

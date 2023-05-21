@@ -9,7 +9,7 @@ from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightPageOperation(PlaywrightBase):
-    """浏览器操作类"""
+    """页面操作"""
 
     async def w_switch_tabs(self, individual: int):
         """切换页签"""

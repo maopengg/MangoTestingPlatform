@@ -61,7 +61,10 @@ class RunSortCRUD(ModelCRUD):
         run = self.model.objects.filter(case_id=_id).order_by('run_sort')
         for i in run:
             data['run_flow'] += '->'
-            data['run_flow'] += i.el_name.name
+            if i.el_name:
+                data['run_flow'] += i.el_name.name
+            else:
+                data['run_flow'] += i.ope_type
         data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
         ui_case = UiCaseCRUD()

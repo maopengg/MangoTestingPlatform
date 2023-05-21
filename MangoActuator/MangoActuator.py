@@ -23,11 +23,11 @@ class MangoActuator(asyncio.Protocol):
         # if await self.socket(username):
         #     await self.ui_consume()
         await self.socket(username)
-        
+
     async def socket(self, username):
         client = ClientWebSocket(self.q, username)
         socket_task = asyncio.create_task(client.client_run())
-        await asyncio.sleep(1)
+        await asyncio.sleep(2)
         if client.res:
             await self.ui_consume()
         socket_task.cancel()
@@ -40,7 +40,6 @@ class MangoActuator(asyncio.Protocol):
             data = await self.q.get()
             if isinstance(data, dict):
                 for key, value in data.items():
-                    # await self.loop.run_in_executor(self.executor, consume.start_up, key, value)
                     await consume.start_up(key, value)
             await asyncio.sleep(1)
 

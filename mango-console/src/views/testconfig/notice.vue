@@ -91,6 +91,7 @@
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
+                    <a-button type="text" size="mini" @click="onTest(record)">测试一下</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
@@ -148,7 +149,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNoticeConfig, getNoticeType } from '@/api/url'
+import { getNoticeConfig, getNoticeTest, getNoticeType } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -519,6 +520,22 @@ function upState(id: number, state: number) {
       setTimeout(function () {
         loading.value = false
       }, 300)
+    })
+    .catch(console.log)
+}
+
+function onTest(record: any) {
+  get({
+    url: getNoticeTest,
+    data: () => {
+      return {
+        id: record.id,
+        team_id: record.team.id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
     })
     .catch(console.log)
 }

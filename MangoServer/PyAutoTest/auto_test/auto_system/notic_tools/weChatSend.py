@@ -4,6 +4,7 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import logging
+
 import requests
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject
@@ -27,10 +28,10 @@ class WeChatSend:
         发送企业微信通知
         :return:
         """
-        t = TestObject.objects.filter(team=self.config.team.name).first()
+        t = TestObject.objects.filter(team=self.config.team.id).first()
         text = f"""【{self.config.team.name}自动化通知】
                                     >测试环境：<font color=\"info\">{t.name}</font>
-                                    >测试负责人：@{t.executor_name}
+                                    >测试负责人：@{t.executor_name.nickname}
                                     >
                                     > **执行结果**
                                     ><font color=\"info\">成  功  率  : {1}%</font>

@@ -249,8 +249,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
-      let exp = getKeyByTitle(uiElementData.eleExp, value.exp)
-
+      let exp = value.exp
+      if (typeof value.exp === 'string') {
+        exp = getKeyByTitle(uiElementData.eleExp, value.exp)
+      }
       value['id'] = updateId.value
       updateId.value = 0
       put({

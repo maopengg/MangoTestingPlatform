@@ -63,16 +63,12 @@ class GetClassMethod:
         # 获取类中的所有属性和方法
         for attr in dir(cls):
             obj = getattr(cls, attr)
-            # 判断对象是否为方法或函数
-            if inspect.ismethod(obj) or inspect.isfunction(obj):
-                # 获取方法的所有属性和方法
-                members = inspect.getmembers(obj)
-                # 遍历方法的所有属性和方法，获取方法的注释
-                for name, value in members:
-                    if name == '__doc__':
-                        doc = value
-                        break
+            # 判断对象是否为方法或函数，并且所属类是传入的类
+            if (inspect.ismethod(obj) or inspect.isfunction(obj)) and obj.__qualname__.split('.')[
+                0] == cls.__name__:
                 if attr != '__init__':
+                    # 获取方法的注释
+                    doc = inspect.getdoc(obj)
                     # 获取方法的参数信息
                     signature = inspect.signature(obj)
                     parameters = signature.parameters
@@ -87,10 +83,6 @@ class GetClassMethod:
                         'parameter': param_dict
                     }
                     methods.append(method_dict)
-        # 遍历父类，重复上述步骤
-        for base in cls.__bases__:
-            base_methods = self.get_class_methods(base)
-            methods.extend(base_methods)
         return methods
 
     def get_android(self):

@@ -168,7 +168,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'caseid',
+    key: 'id',
     label: '页面ID',
     type: 'input',
     placeholder: '请输入页面ID',
@@ -439,14 +439,14 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = transformData(formItems)
-    let teamId = getKeyByTitle(project.data, value.team)
+    // let teamId = getKeyByTitle(project.data, value.team)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
         url: uiPage,
         data: () => {
           return {
-            team: teamId,
+            team: value.team,
             name: value.name,
             url: value.url,
             type: pageType.value
@@ -459,6 +459,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let teamId = value.team
+      if (typeof value.team === 'string') {
+        teamId = getKeyByTitle(project.data, value.team)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0

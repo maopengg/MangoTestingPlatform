@@ -14,94 +14,94 @@ class PlaywrightAssertion(PlaywrightBase):
     """web断言"""
 
     @classmethod
-    def w_not_to_be_disabled(cls, locator: Locator, **kwargs):
+    def w_not_to_be_disabled(cls, locating: Locator, **kwargs):
         """元素不可禁用"""
-        expect(locator).not_to_be_disabled(**kwargs)
+        expect(locating).not_to_be_disabled(**kwargs)
 
     @classmethod
-    def w_not_to_be_editable(cls, locator: Locator, **kwargs):
+    def w_not_to_be_editable(cls, locating: Locator, **kwargs):
         """元素不可禁用"""
-        expect(locator).not_to_be_disabled(**kwargs)
+        expect(locating).not_to_be_disabled(**kwargs)
 
     @classmethod
-    def w_not_to_be_empty(cls, locator: Locator):
+    def w_not_to_be_empty(cls, locating: Locator):
         """元素不为空"""
-        expect(locator).not_to_be_empty()
+        expect(locating).not_to_be_empty()
 
     @classmethod
-    def w_not_to_be_enabled(cls, locator: Locator):
+    def w_not_to_be_enabled(cls, locating: Locator):
         """元素不启用"""
-        expect(locator).not_to_be_enabled()
+        expect(locating).not_to_be_enabled()
 
     @classmethod
-    def w_not_to_be_focused(cls, locator: Locator):
+    def w_not_to_be_focused(cls, locating: Locator):
         """元素不聚焦"""
-        expect(locator).not_to_be_focused()
+        expect(locating).not_to_be_focused()
 
     @classmethod
-    def w_not_to_be_hidden(cls, locator: Locator):
+    def w_not_to_be_hidden(cls, locating: Locator):
         """元素不可隐藏"""
-        expect(locator).not_to_be_hidden()
+        expect(locating).not_to_be_hidden()
 
     @classmethod
-    def w_not_to_be_in_viewport(cls, locator: Locator):
+    def w_not_to_be_in_viewport(cls, locating: Locator):
         """元素不在视口中"""
-        expect(locator).not_to_be_in_viewport()
+        expect(locating).not_to_be_in_viewport()
 
     @classmethod
-    def w_not_to_be_visible(cls, locator: Locator):
+    def w_not_to_be_visible(cls, locating: Locator):
         """元素不可见"""
-        expect(locator).not_to_be_visible()
+        expect(locating).not_to_be_visible()
 
     @classmethod
-    def w_not_to_contain_text(cls, locator: Locator, expected: str):
+    def w_not_to_contain_text(cls, locating: Locator, expected: str):
         """元素不包含文本"""
-        expect(locator).not_to_contain_text(expected)
+        expect(locating).not_to_contain_text(expected)
 
     @classmethod
-    def w_not_to_have_attribute(cls, locator: Locator, name: str, value: str):
+    def w_not_to_have_attribute(cls, locating: Locator, name: str, value: str):
         """元素不具有属性"""
-        expect(locator).not_to_have_attribute(name, value)
+        expect(locating).not_to_have_attribute(name, value)
 
     @classmethod
-    def w_not_to_have_class(cls, locator: Locator, expected: str):
+    def w_not_to_have_class(cls, locating: Locator, expected: str):
         """元素没有阶级"""
-        expect(locator).not_to_have_class(expected)
+        expect(locating).not_to_have_class(expected)
 
     @classmethod
-    def w_not_to_have_count(cls, locator: Locator, count: int):
+    def w_not_to_have_count(cls, locating: Locator, count: int):
         """元素计数"""
-        expect(locator).not_to_have_count(count)
+        expect(locating).not_to_have_count(count)
 
     @classmethod
-    def w_not_to_have_css(cls, locator: Locator, name: str, value: str):
+    def w_not_to_have_css(cls, locating: Locator, name: str, value: str):
         """元素不使用CSS"""
-        expect(locator).not_to_have_css(name, value)
+        expect(locating).not_to_have_css(name, value)
 
     @classmethod
-    def w_not_to_have_id(cls, locator: Locator, _id: str):
+    def w_not_to_have_id(cls, locating: Locator, _id: str):
         """元素没有ID"""
-        expect(locator).not_to_have_id(_id)
+        expect(locating).not_to_have_id(_id)
 
     @classmethod
-    def w_not_to_have_js_property(cls, locator: Locator, name: str, value):
+    def w_not_to_have_js_property(cls, locating: Locator, name: str, value):
         """元素不具有js属性"""
-        expect(locator).not_to_have_js_property(name, value)
+        expect(locating).not_to_have_js_property(name, value)
 
     @classmethod
-    def w_not_to_have_text(cls, locator: Locator, expected: str):
+    def w_not_to_have_text(cls, locating: Locator, expected: str):
         """元素没有文本"""
-        expect(locator).not_to_have_text(expected)
+        expect(locating).not_to_have_text(expected)
 
     @classmethod
-    def w_not_to_have_value(cls, locator: Locator, value: str):
+    def w_not_to_have_value(cls, locating: Locator, value: str):
         """元素无价值"""
-        expect(locator).not_to_have_value(value)
+        expect(locating).not_to_have_value(value)
 
     @classmethod
-    def w_not_to_have_values(cls, locator: Locator, values: list):
+    def w_not_to_have_values(cls, locating: Locator, values: list):
         """元素不具有值"""
-        expect(locator).not_to_have_values(values)
+        expect(locating).not_to_have_values(values)
 
     def w_to_be_attached(self, hidden_text: str):
         """待连接"""

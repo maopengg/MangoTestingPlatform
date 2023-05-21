@@ -18,8 +18,7 @@ class SendEmail:
     """ 发送邮箱 """
 
     def __init__(self, notice_obj: NoticeConfig):
-        self.team = notice_obj.team.name
-        self.name = notice_obj.name
+        self.team = notice_obj.team.id
         config = json.loads(notice_obj.config)
         self.send_user = config['send_user']
         self.send_list = config['send_list']

@@ -291,7 +291,7 @@ const tableColumns = useTableColumn([
     title: '项目组',
     key: 'team',
     dataIndex: 'team',
-    width: 100
+    width: 130
   },
   {
     title: '用例名称',

@@ -8,12 +8,11 @@ from playwright.async_api import Page
 
 from auto_ui.web_base import WebDevice
 from enum_class.socket_client_ui import ElementExp
-from utils.cache.data_cleaning import DataCleaning
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
 
 
-class WebRun(WebDevice, DataCleaning):
+class WebRun(WebDevice):
 
     def __init__(self, page: Page):
         super().__init__(page)
@@ -45,10 +44,11 @@ class WebRun(WebDevice, DataCleaning):
         """
         记录用例名称，并且打开url
         @param url: url
+        @param case_id:
         @return:
         """
         self.case_id = case_id
-        await self.w_wait_for_timeout(1 * 1000)
+        await self.w_wait_for_timeout(1)
         await self.w_goto(url)
         self.ele_opt_res['test_obj_id'] = url
 
@@ -90,7 +90,6 @@ class WebRun(WebDevice, DataCleaning):
     async def action_element(self) -> None:
         """
             处理元素的一些事件，包括点击，输入，移动
-        @param ele_obj: 元素对象，只能是一个
         @return:
         """
         # # 点击
@@ -106,7 +105,7 @@ class WebRun(WebDevice, DataCleaning):
         await getattr(self, self.ope_type)(**self.ope_value)
         # 等待
         if self.ele_sleep:
-            await self.w_wait_for_timeout(self.ele_sleep * 1000)
+            await self.w_wait_for_timeout(self.ele_sleep)
 
     async def __find_ele(self, case_dict: dict) -> Locator:
         """
@@ -139,6 +138,9 @@ class WebRun(WebDevice, DataCleaning):
                 await self.w_screenshot(self.ele_name_a)
                 self.ele_opt_res['existence'] = await ele.count()
             self.ele_opt_res['existence'] = await ele.count()
+            print('元素个数:', await ele.count())
+            print('当前选中：', self.ele_sub)
+            print(f'元素名称{self.ele_name_a}：', ele.nth(0 if self.ele_sub is None else self.ele_sub))
             return ele.nth(0 if self.ele_sub is None else self.ele_sub)
         else:
             self.ele_opt_res['existence'] = 0
@@ -150,7 +152,7 @@ class WebRun(WebDevice, DataCleaning):
         @return:
         """
         print(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
-        return self.case_input_data(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
+        return self.case_input_data(self.case_id, self.ope_value['input_value'], self.ope_value_key)
 
     # def __find_ele1(self, case_dict):
     #     """

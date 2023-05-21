@@ -3,17 +3,19 @@
 # @Description: 
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
+import asyncio
+
 from playwright.async_api import Locator
 
 from auto_ui.web_base.playwright_base import PlaywrightBase
 
 
 class PlaywrightOperationBrowser(PlaywrightBase):
-    """浏览器操作类"""
+    """浏览器操作"""
 
     async def w_wait_for_timeout(self, time_: int):
         """强制等待"""
-        await self.page.wait_for_timeout(time_)
+        await asyncio.sleep(time_)
 
     async def w_goto(self, url: str):
         """打开url"""
@@ -23,9 +25,9 @@ class PlaywrightOperationBrowser(PlaywrightBase):
         """整个页面截图"""
         await self.page.screenshot(path=path, full_page=full_page)
 
-    async def w_ele_screenshot(self, locator: Locator, path: str):
+    async def w_ele_screenshot(self, locating: Locator, path: str):
         """元素截图"""
-        await locator.screenshot(path=path)
+        await locating.screenshot(path=path)
 
     async def w_alert(self):
         """设置弹窗不予处理"""

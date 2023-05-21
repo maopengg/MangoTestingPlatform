@@ -73,6 +73,16 @@ class UiCaseGroup(models.Model):
         ordering = ['-id']
 
 
+class UiCaseGroupEnvironment(models.Model):
+    team = models.ForeignKey(to=UiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    sort = models.IntegerField(verbose_name="执行顺序的展示", null=True)
+
+    class Meta:
+        db_table = 'ui_case_group_environment'
+
+
 class RunSort(models.Model):
     el_page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
     el_name = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_a',

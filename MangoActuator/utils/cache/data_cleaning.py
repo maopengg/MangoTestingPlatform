@@ -7,16 +7,16 @@ from utils.cache.cache import CacheDB
 from utils.cache.random_data import RandomData
 
 
-class DataCleaning(RandomData):
+class DataCleaning(RandomData, CacheDB):
 
-    def case_input_data(self, case_id: int, ele_name: str, ope_value: str, key: str = None):
+    def case_input_data(self, case_id: int, ope_value: str, key: str = None):
         """ 取出缓存 """
         if key:
-            key_value = str(id(self)) + str(case_id) + ele_name + str(key)
-            value = CacheDB.get(key_value)
+            key_value = str(id(self)) + str(case_id) + str(key)
+            value = self.get(key_value)
             print(f'设置缓存key：{key_value}')
         else:
-            key_value = str(id(self)) + str(case_id) + ele_name
+            key_value = str(id(self)) + str(case_id)
             print(f'不设置缓存key：{key_value}')
             value = None
         # 缓存为空的时候进行读取数据并写入缓存
@@ -26,7 +26,7 @@ class DataCleaning(RandomData):
             elif ope_value:
                 value = ope_value
             if key:
-                CacheDB.set(key_value, value)
+                self.set(key_value, value)
         return value
 
 

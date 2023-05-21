@@ -14,6 +14,8 @@ class CaseData:
 
     def __init__(self, user):
         self.user = user
+        self.group_id = 0
+        self.sum = 0
 
     def group_cases(self, group: UiCaseGroup) -> dict:
         """
@@ -21,6 +23,7 @@ class CaseData:
         @param group: UiCaseGroup对象，一条数据
         @return:
         """
+        self.group_id = group.id
         case_single = {group.name: []}
         for case_id in eval(group.case_id):
             case_single.get(group.name).append(self.data_ui_case(group.test_obj.id, case_id))
@@ -40,7 +43,12 @@ class CaseData:
             # 如果是web用例，则写入浏览器的端口，浏览器打开地址，type 执行用例url和浏览器的类型
             case_strip['local_port'], case_strip['browser_path'] = self.__get_web_config()
             case_strip['type'] = DevicePlatform.WEB.value
-            case_strip['case_url'] = TestObject.objects.get(id=test_obj).value + run_sort[0].el_page.url
+            if self.group_id == 4 and case_.name == 'shop商城使用管理员登录并切换到妮维雅租户' or case_.name == '获取首页周日数据':
+                case_strip['case_url'] = 'http://mall-tenant.zalldata.cn' + run_sort[0].el_page.url
+            elif self.group_id == 4 and case_.name == '登录GrowKnows租户：妮维雅' or case_.name == '查询昨日支付订单的支付订单金额':
+                case_strip['case_url'] = 'https://cdxp.growknows.cn' + run_sort[0].el_page.url
+            else:
+                case_strip['case_url'] = TestObject.objects.get(id=test_obj).value + run_sort[0].el_page.url
             case_strip['browser_type'] = BrowserType.CHROMIUM.value
         elif case_.case_type == DevicePlatform.ANDROID.value:
             # 如果是安卓用例，则写入设备，app和type
@@ -73,6 +81,7 @@ class CaseData:
         return case_strip
 
     def __get_web_config(self) -> tuple:
+
         user_ui_config = UiConfig.objects.get(user_id=self.user)
         return user_ui_config.local_port, user_ui_config.browser_path
 
