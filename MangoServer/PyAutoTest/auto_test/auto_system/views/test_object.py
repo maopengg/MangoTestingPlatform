@@ -49,7 +49,7 @@ class TestObjectViews(ViewSet):
          """
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': enum_list(EnvironmentEnum)
         })
 
@@ -62,7 +62,7 @@ class TestObjectViews(ViewSet):
          """
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': enum_list(DevicePlatform)
         })
 
@@ -77,6 +77,6 @@ class TestObjectViews(ViewSet):
         data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': data
         })

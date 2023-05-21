@@ -7,7 +7,7 @@ from uiautomator2 import Device, UiObject
 from uiautomator2.xpath import XPathSelector
 
 from auto_ui.android_base import DriverMerge
-from enum_class.socket_client_ui import ElementExp, OpeType
+from enum_class.socket_client_ui import ElementExp
 from utils.cache.data_cleaning import DataCleaning
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
@@ -18,18 +18,20 @@ class AndroidRun(DriverMerge, DataCleaning):
     def __init__(self, android: Device):
         super().__init__(android)
         self.case_id = 0
-        self.ope_type = ''
-        self.ass_type = ''
-        self.ope_value = ''
-        self.ass_value = ''
-        self.ele_name = ''
-        self.ele_page_name = ''
-        self.ele_exp = 0
-        self.ele_loc = ''
-        self.ele_sleep = 0
-        self.ele_sub = ''
-        self.ope_value_key = ''
-        self.ele_opt_res = {'ele_name': self.ele_name,
+        self.ope_type = None
+        self.ass_type = None
+        self.ope_value = None
+        self.ass_value = None
+        self.ele_name_a = None
+        self.ele_name_b = None
+        self.ele_page_name = None
+        self.ele_exp = None
+        self.ele_loc = None
+        self.ele_loc_b = None
+        self.ele_sleep = None
+        self.ele_sub = None
+        self.ope_value_key = None
+        self.ele_opt_res = {'ele_name': self.ele_name_a,
                             'existence': '',
                             'state': 0,
                             'case_id': self.case_id,
@@ -40,9 +42,8 @@ class AndroidRun(DriverMerge, DataCleaning):
                             'picture_path': ''}
 
     def __del__(self):
-        print('被销毁了吗？')
-        self.close_app('com.tencent.mm')
-        self.sleep(5)
+        self.a_close_app('com.tencent.mm')
+        self.a_sleep(5)
 
     def ele_main(self, case_dict: dict) -> dict and bool:
         """
@@ -55,41 +56,38 @@ class AndroidRun(DriverMerge, DataCleaning):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            filepath = rf'{NewLog.get_log_screenshot()}\{self.ele_name + self.get_deta_hms()}.png'
-            self.screenshot(filepath)
+            filepath = rf'{NewLog.get_log_screenshot()}\{self.ele_name_a + self.get_deta_hms()}.png'
+            self.a_screenshot(filepath)
             self.ele_opt_res['picture_path'] = filepath
             return self.ele_opt_res, False
 
         for key, value in case_dict.items():
-            setattr(self, key, value)
-        try:
-            ele = self.__find_ele()
-            self.ele_opt_res['existence'] = ele
-            if ele:
-                self.action_element(ele)
-                return self.ele_opt_res, True
+            if key == 'ope_value' and value:
+                print(key, value)
+                setattr(self, key, eval(value))
             else:
-                element_exception_handling('')
-        except Exception as e:
-            element_exception_handling(e)
+                setattr(self, key, value)
+        # try:
+        if self.ope_value:
+            for key, value in self.ope_value.items():
+                if key == 'locating':
+                    self.ope_value['locating'] = self.__find_ele()
+                elif key == 'input_value':
+                    self.ope_value['input_value'] = self.__input_value()
+            self.action_element()
+            return True
+        else:
+            element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
 
-    def action_element(self, ele: UiObject or str or XPathSelector):
+    def action_element(self) -> None:
         """
         操作具体的元素对象
         @return:
         """
-        if self.ele_exp == ElementExp.PERCENTAGE.value:
-            x, y = self.ele_loc.split(',')
-            self.click_coord(float(x), float(y))
-        elif self.ele_loc is None:
-            ERROR.logger.error(f'元素内容为null，请检查{self.ele_loc}')
-        else:
-            if self.ope_type == OpeType.CLICK.value:
-                self.click(ele)
-                self.ele_opt_res['state'] = 1
-            elif self.ope_type == OpeType.INPUT.value:
-                self.input(ele, self.__input_value())
-                self.ele_opt_res['state'] = 1
+        getattr(self, self.ope_type)(**self.ope_value)
+        # 等待
+        if self.ele_sleep:
+            self.a_sleep(self.ele_sleep)
 
     def __find_ele(self) -> UiObject or str or XPathSelector:
         match self.ele_exp:
@@ -112,10 +110,4 @@ class AndroidRun(DriverMerge, DataCleaning):
         输入依赖解决
         @return:
         """
-        return self.case_input_data(self.case_id, self.ele_name, self.ope_value, self.ope_value_key)
-
-
-if __name__ == '__main__':
-    pass
-    # import gc
-    # referrers = gc.get_referrers(obj)
+        return self.case_input_data(self.case_id, self.ele_name_a, self.ope_value, self.ope_value_key)

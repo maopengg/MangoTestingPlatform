@@ -40,14 +40,14 @@ class UiElementCRUD(ModelCRUD):
             books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
             return Response({
                 "code": 200,
-                "msg": "获取数据成功~",
+                "msg": "获取数据成功",
                 "data": self.get_serializer_class()(instance=books, many=True).data,
                 'totalSize': len(books)
             })
         except:
             return Response({
                 'code': 300,
-                'msg': '您查询的数据不存在~',
+                'msg': '您查询的数据不存在',
                 'data': ''
             })
 
@@ -65,7 +65,7 @@ class UiElementViews(ViewSet):
         data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': data
         })
 
@@ -78,6 +78,6 @@ class UiElementViews(ViewSet):
         """
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': enum_list(ElementExp)
         })

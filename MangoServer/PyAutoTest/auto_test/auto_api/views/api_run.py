@@ -42,7 +42,7 @@ class RunApiCase(ViewSet):
         return JsonResponse({
             'code': 200,
             'data': data,
-            'msg': '测试成功~'
+            'msg': '测试成功'
         })
 
     @staticmethod

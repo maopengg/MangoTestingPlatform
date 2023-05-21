@@ -24,7 +24,7 @@ class SystemViews(ViewSet):
         """
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             "data": RandomData().get_methods()
         })
 
@@ -35,13 +35,13 @@ class SystemViews(ViewSet):
             try:
                 return Response({
                     'code': 200,
-                    'msg': '获取数据成功~',
+                    'msg': '获取数据成功',
                     "data": str(RandomData().regular(name))
                 })
             except:
                 return Response({
                     'code': 300,
-                    'msg': '函数数据格式错误~',
+                    'msg': '函数数据格式错误',
                     "data": ''
                 })
         elif '${' in name and '}' in name:
@@ -50,19 +50,19 @@ class SystemViews(ViewSet):
             if Cache().read_data_from_cache(name):
                 return Response({
                     'code': 200,
-                    'msg': '获取数据成功~',
+                    'msg': '获取数据成功',
                     "data": Cache().read_data_from_cache(name)
                 })
             else:
                 return Response({
                     'code': 300,
-                    'msg': 'Redis缓存中不存在~',
+                    'msg': 'Redis缓存中不存在',
                     "data": ''
                 })
         else:
             return Response({
                 'code': 300,
-                'msg': '数据格式错误~',
+                'msg': '数据格式错误',
                 "data": ''
             })
 

@@ -73,6 +73,6 @@ class TimeTasksViews(ViewSet):
         data = [{'key': _id, 'title': name} for _id, name in res]
         return Response({
             'code': 200,
-            'msg': '获取数据成功~',
+            'msg': '获取数据成功',
             'data': data
         })

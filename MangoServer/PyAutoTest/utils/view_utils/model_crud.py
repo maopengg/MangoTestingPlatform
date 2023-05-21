@@ -30,7 +30,7 @@ class ModelCRUD(GenericAPIView):
             books = self.get_queryset()
         return Response({
             "code": 200,
-            "msg": "获取数据成功~",
+            "msg": "获取数据成功",
             "data": paging_list(
                 request.query_params.get("pageSize"),
                 request.query_params.get("page"),
@@ -49,7 +49,7 @@ class ModelCRUD(GenericAPIView):
                 th.start()
             return Response({
                 'code': 200,
-                'msg': '新增一条记录成功~',
+                'msg': '新增一条记录成功',
                 'data': serializer.data
             })
         else:
@@ -78,7 +78,7 @@ class ModelCRUD(GenericAPIView):
                 th.start()
             return Response({
                 'code': 200,
-                'msg': '修改一条记录成功~',
+                'msg': '修改一条记录成功',
                 'data': serializer.data
             })
         else:
@@ -149,13 +149,13 @@ class ModelR(ViewSet):
                                               type=request.query_params.get('type')).order_by('id')
         elif team:
             books = self.model.objects.filter(
-                team=Project.objects.get(name=team).id,
+                team=Project.objects.get(id=team).id,
                 type=request.query_params.get('type')
             ).order_by('id')
         if books is not None:
             return Response({
                 "code": 200,
-                "msg": "获取数据成功~",
+                "msg": "获取数据成功",
                 "data": paging_list(
                     request.query_params.get("pageSize"),
                     request.query_params.get("page"),
@@ -195,7 +195,7 @@ class ModelR(ViewSet):
         if books is not None:
             return Response({
                 "code": 200,
-                "msg": "获取数据成功~",
+                "msg": "获取数据成功",
                 "data": paging_list(
                     request.query_params.get("pageSize"),
                     request.query_params.get("page"),

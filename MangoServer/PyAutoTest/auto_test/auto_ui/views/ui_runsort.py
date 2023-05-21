@@ -52,7 +52,7 @@ class RunSortCRUD(ModelCRUD):
         data = [self.serializer_class(i).data for i in books]
         return Response({
             "code": 200,
-            "msg": "获取数据成功~",
+            "msg": "获取数据成功",
             "data": data
         })
 

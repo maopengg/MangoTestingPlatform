@@ -3,5 +3,5 @@
 # @Description: 
 # @Time   : 2023-04-27 20:30
 # @Author : 毛鹏
-class DesktopRun():
+class DesktopRun:
     pass
