@@ -252,30 +252,16 @@ const formItems = [
     key: 'department',
     value: ref(''),
     type: 'select',
-    required: true,
-    placeholder: '请选择角色项目组',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
+    required: false,
+    placeholder: '请选择用户项目组'
   },
   {
     label: '绑定角色',
     key: 'role',
     value: ref(''),
     type: 'select',
-    required: true,
-    placeholder: '请选择角色',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
+    required: false,
+    placeholder: '请选择用户角色'
   },
   {
     label: '邮箱',

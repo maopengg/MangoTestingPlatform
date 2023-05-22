@@ -74,7 +74,7 @@ class LoginViews(ViewSet):
                 "nickName": user_info.nickname,
                 "userName": user_info.username,
                 "userId": user_info.id,
-                "roleId": user_info.role.id,
+                "roleId": user_info.role.id if user_info.role else None,
                 "token": token,
                 "roles": [
                     {

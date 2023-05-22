@@ -31,13 +31,14 @@ class MangoActuator(asyncio.Protocol):
         if client.res:
             await self.ui_consume()
         socket_task.cancel()
-        await asyncio.sleep(3)
+        await asyncio.sleep(1)
 
     async def ui_consume(self):
         print(f"========================={config.DRIVER}启动成功=========================")
         consume = ConsumeDistribute()
         while True:
             data = await self.q.get()
+            print(f'队列取到的值{data}')
             if isinstance(data, dict):
                 for key, value in data.items():
                     await consume.start_up(key, value)

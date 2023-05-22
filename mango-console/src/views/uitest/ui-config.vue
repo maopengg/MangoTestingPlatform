@@ -36,7 +36,7 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-if="item.key === 'user_id'" #cell="{ record }">
+                <template v-else-if="item.key === 'user_id'" #cell="{ record }">
                   {{ record.user_id.nickname }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -68,6 +68,16 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'user_id'">
+                <a-select
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :options="uiConfigData.userList"
+                  :field-names="fieldNames"
+                  allow-clear
+                  allow-search
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -78,16 +88,33 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { uiConfig } from '@/api/url'
+import { getNickname, uiConfig } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
+import { fieldNames } from '@/setting'
+import { getKeyByTitle, transformData } from '@/utils/datacleaning'
 
 const formItems = [
   {
-    label: '角色名称',
-    key: 'name',
+    label: '浏览器路径',
+    key: 'browser_path',
+    value: ref(''),
+    type: 'textarea',
+    required: true,
+    placeholder: '请输入浏览器路径',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '浏览器端口',
+    key: 'local_port',
     value: ref(''),
     placeholder: '请输入角色名称',
     required: true,
@@ -101,12 +128,27 @@ const formItems = [
     }
   },
   {
-    label: '角色描述',
-    key: 'description',
+    label: '安卓设备号',
+    key: 'equipment',
     value: ref(''),
-    type: 'textarea',
+    placeholder: '请输入角色名称',
     required: true,
-    placeholder: '请输入橘色描述',
+    type: 'input',
+    validator: function () {
+      if (!this.value.value && this.value.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '所属用户',
+    key: 'user_id',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请设置用例负责人',
     validator: function () {
       if (!this.value.value && this.value.value !== 0) {
         Message.error(this.placeholder || '')
@@ -240,19 +282,18 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
-    console.log(value)
+    let value = transformData(formItems)
+
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
         url: uiConfig,
         data: () => {
           return {
-            description: value.description,
-            name: value.name
+            user_id: value.user_id,
+            browser_path: value.browser_path,
+            equipment: value.equipment,
+            local_port: value.local_port
           }
         }
       })
@@ -262,6 +303,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
+      let userID = value.user_id
+      if (typeof value.user_id === 'string') {
+        userID = getKeyByTitle(uiConfigData.userList, value.user_id)
+      }
       addUpdate.value = 0
       value['id'] = updateId.value
       updateId.value = 0
@@ -270,8 +315,10 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            description: value.description,
-            name: value.name
+            user_id: userID,
+            browser_path: value.browser_path,
+            equipment: value.equipment,
+            local_port: value.local_port
           }
         }
       })
@@ -284,9 +331,27 @@ function onDataForm() {
   }
 }
 
+const uiConfigData = reactive({
+  userList: []
+})
+
+function getNickName() {
+  get({
+    url: getNickname,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      uiConfigData.userList = res.data
+    })
+    .catch(console.log)
+}
+
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    getNickName()
   })
 })
 </script>

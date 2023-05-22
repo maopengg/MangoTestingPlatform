@@ -14,7 +14,7 @@ from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
 from auto_ui.test_runner.element_runner.web import WebRun
 from auto_ui.web_base.playwright_base import new_chromium, new_webkit, new_firefox
-from enum_class.socket_client_ui import BrowserType, DevicePlatform
+from enum_class.socket_client_ui import BrowserType
 from utils.logs.log_control import ERROR
 
 
@@ -30,21 +30,25 @@ class CaseRunMethod:
         @param case_one:
         @return:
         """
-        match case_one['type']:
-            case DevicePlatform.WEB.value:
-                if not await self.web_test(case_one):
-                    return False
-            case DevicePlatform.ANDROID.value:
-                if not self.android_test(case_one):
-                    return False
-            case DevicePlatform.IOS.value:
-                if not self.ios_test(case_one):
-                    return False
-            case DevicePlatform.DESKTOP.value:
-                if not self.desktop_test(case_one):
-                    return False
-            case _:
-                ERROR.logger.error('设备类型不存在，请联系管理员检查！')
+        print(f'type{case_one["type"]}')
+        # match case_one['type']:
+        #     case DevicePlatform.WEB.value:
+        #         await self.web_test(case_one)
+        #     case DevicePlatform.ANDROID.value:
+        #         loop = asyncio.get_event_loop()
+        #         with ThreadPoolExecutor() as pool:
+        #             new_func = partial(self.android_test, case_one)
+        #             result = await loop.run_in_executor(pool, new_func)
+        #         # if not self.android_test(case_one):
+        #         #     return False
+        #     case DevicePlatform.IOS.value:
+        #         if not self.ios_test(case_one):
+        #             return False
+        #     case DevicePlatform.DESKTOP.value:
+        #         if not self.desktop_test(case_one):
+        #             return False
+        #     case _:
+        #         ERROR.logger.error('设备类型不存在，请联系管理员检查！')
 
     async def web_test(self, case_obj: dict):
         """
@@ -62,7 +66,7 @@ class CaseRunMethod:
                 print(f'元素的测试结果是：{res_}')
                 if not res_:
                     ERROR.logger.error(f'元素的测试结果是：{res_}。数据：{self.web.ele_opt_res}')
-                    break
+                    # break
             return True
         else:
             ERROR.logger.error('web对象没有实例化，请联系管理员排查问题！')

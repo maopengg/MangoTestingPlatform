@@ -36,9 +36,8 @@ class ClientWebSocket:
                 self.__output_method(response_str)
                 self.res = True
                 return True
-            elif '未登录' not in res['msg']:
+            else:
                 self.__output_method(response_str)
-                print(f'========================={DRIVER}启动失败正在重试=========================')
 
     async def client_run(self):
         """ 进行websocket连接

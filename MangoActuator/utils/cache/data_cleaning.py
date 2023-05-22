@@ -14,10 +14,10 @@ class DataCleaning(RandomData, CacheDB):
         if key:
             key_value = str(id(self)) + str(case_id) + str(key)
             value = self.get(key_value)
-            print(f'设置缓存key：{key_value}')
+            # print(f'设置缓存key：{key_value}')
         else:
             key_value = str(id(self)) + str(case_id)
-            print(f'不设置缓存key：{key_value}')
+            # print(f'不设置缓存key：{key_value}')
             value = None
         # 缓存为空的时候进行读取数据并写入缓存
         if value is None:

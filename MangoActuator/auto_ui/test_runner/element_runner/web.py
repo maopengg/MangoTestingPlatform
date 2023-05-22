@@ -69,7 +69,7 @@ class WebRun(WebDevice):
 
         for key, value in case_dict.items():
             if key == 'ope_value' and value:
-                print(key, value)
+                # print(key, value)
                 setattr(self, key, eval(value))
             else:
                 setattr(self, key, value)
@@ -138,9 +138,9 @@ class WebRun(WebDevice):
                 await self.w_screenshot(self.ele_name_a)
                 self.ele_opt_res['existence'] = await ele.count()
             self.ele_opt_res['existence'] = await ele.count()
-            print('元素个数:', await ele.count())
-            print('当前选中：', self.ele_sub)
-            print(f'元素名称{self.ele_name_a}：', ele.nth(0 if self.ele_sub is None else self.ele_sub))
+            # print('元素个数:', await ele.count())
+            # print('当前选中：', self.ele_sub)
+            # print(f'元素名称{self.ele_name_a}：', ele.nth(0 if self.ele_sub is None else self.ele_sub))
             return ele.nth(0 if self.ele_sub is None else self.ele_sub)
         else:
             self.ele_opt_res['existence'] = 0
@@ -151,7 +151,7 @@ class WebRun(WebDevice):
         输入依赖解决
         @return:
         """
-        print(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
+        # print(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
         return self.case_input_data(self.case_id, self.ope_value['input_value'], self.ope_value_key)
 
     # def __find_ele1(self, case_dict):
