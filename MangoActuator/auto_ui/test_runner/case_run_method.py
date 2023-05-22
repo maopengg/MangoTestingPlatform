@@ -3,6 +3,9 @@
 # @Description: 
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from threading import Thread
 from typing import Optional
 
@@ -14,7 +17,7 @@ from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
 from auto_ui.test_runner.element_runner.web import WebRun
 from auto_ui.web_base.playwright_base import new_chromium, new_webkit, new_firefox
-from enum_class.socket_client_ui import BrowserType
+from enum_class.socket_client_ui import BrowserType, DevicePlatform
 from utils.logs.log_control import ERROR
 
 
@@ -30,25 +33,24 @@ class CaseRunMethod:
         @param case_one:
         @return:
         """
-        print(f'type{case_one["type"]}')
-        # match case_one['type']:
-        #     case DevicePlatform.WEB.value:
-        #         await self.web_test(case_one)
-        #     case DevicePlatform.ANDROID.value:
-        #         loop = asyncio.get_event_loop()
-        #         with ThreadPoolExecutor() as pool:
-        #             new_func = partial(self.android_test, case_one)
-        #             result = await loop.run_in_executor(pool, new_func)
-        #         # if not self.android_test(case_one):
-        #         #     return False
-        #     case DevicePlatform.IOS.value:
-        #         if not self.ios_test(case_one):
-        #             return False
-        #     case DevicePlatform.DESKTOP.value:
-        #         if not self.desktop_test(case_one):
-        #             return False
-        #     case _:
-        #         ERROR.logger.error('设备类型不存在，请联系管理员检查！')
+        match case_one['type']:
+            case DevicePlatform.WEB.value:
+                await self.web_test(case_one)
+            case DevicePlatform.ANDROID.value:
+                loop = asyncio.get_event_loop()
+                with ThreadPoolExecutor() as pool:
+                    new_func = partial(self.android_test, case_one)
+                    result = await loop.run_in_executor(pool, new_func)
+                # if not self.android_test(case_one):
+                #     return False
+            case DevicePlatform.IOS.value:
+                if not self.ios_test(case_one):
+                    return False
+            case DevicePlatform.DESKTOP.value:
+                if not self.desktop_test(case_one):
+                    return False
+            case _:
+                ERROR.logger.error('设备类型不存在，请联系管理员检查！')
 
     async def web_test(self, case_obj: dict):
         """

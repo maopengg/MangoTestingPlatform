@@ -92,16 +92,6 @@ class WebRun(WebDevice):
             处理元素的一些事件，包括点击，输入，移动
         @return:
         """
-        # # 点击
-        # if self.ope_type == OpeType.CLICK.value:
-        #     await self.click(ele_obj)
-        #     self.ele_opt_res['state'] = 1
-        # # 输入
-        # elif self.ope_type == OpeType.INPUT.value:
-        #     await self.input(ele_obj, value=self.__input_value())
-        #     self.ele_opt_res['state'] = 1
-        # else:
-        #     return None
         await getattr(self, self.ope_type)(**self.ope_value)
         # 等待
         if self.ele_sleep:

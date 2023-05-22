@@ -63,7 +63,6 @@ class AndroidRun(DriverMerge, DataCleaning):
 
         for key, value in case_dict.items():
             if key == 'ope_value' and value:
-                print(key, value)
                 setattr(self, key, eval(value))
             else:
                 setattr(self, key, value)

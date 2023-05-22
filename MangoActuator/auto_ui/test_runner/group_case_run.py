@@ -4,7 +4,6 @@
 # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
 import collections
-import json
 
 from auto_ui.test_runner.case_run_method import CaseRunMethod
 
@@ -30,18 +29,16 @@ class GroupCaseRun(CaseRunMethod):
 
         for group_name, group_value in group_case.items():
             # 获取每个用例
-            print(json.dumps(group_value))
             for case_one in group_value:
                 # 分给用例分发去执行
-                print(f'循环取出的用例：{case_one}')
                 await self.distribute_to_drivers(case_one)
-        # await self.close()
+        await self.close()
 
     async def test_res(self, response):
         print('用例执行结果', response)
 
-    # async def close(self):
-    #     await self.web.page.close()
+    async def close(self):
+        await self.web.page.close()
 
 
 if __name__ == '__main__':
