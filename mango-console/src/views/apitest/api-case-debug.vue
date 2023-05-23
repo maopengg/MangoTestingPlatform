@@ -89,6 +89,7 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'team'" #cell="{ record }"> 应用组 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
                   <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>
@@ -428,7 +429,7 @@ export default defineComponent({
         url: ApiCaseSynchronous,
         data: () => {
           return {
-            team_id: '应用组',
+            team_id: '1',
             host: 'http://172.16.90.93:9999'
           }
         }

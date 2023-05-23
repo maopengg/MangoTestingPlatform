@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
-import collections
 
 from auto_ui.test_runner.case_run_method import CaseRunMethod
 
@@ -13,8 +12,7 @@ class GroupCaseRun(CaseRunMethod):
     async def group_obj(self, group_case: dict):
         print(f'GroupCaseRun内存地址是：{id(self)}')
         # 获取组用例名称和组用例对象
-        group_case = collections.OrderedDict(group_case)
-
+        # group_case = collections.OrderedDict(group_case)
         for group_name, group_value in group_case.items():
             # 获取每个用例
             for case_one in group_value:
