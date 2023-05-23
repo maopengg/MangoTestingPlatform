@@ -41,9 +41,10 @@ class AndroidRun(DriverMerge, DataCleaning):
                             'msg': '',
                             'picture_path': ''}
 
-    def __del__(self):
-        self.a_close_app('com.tencent.mm')
-        self.a_sleep(5)
+    #
+    # def __del__(self):
+    #     self.a_close_app('com.tencent.mm')
+    #     self.a_sleep(5)
 
     def ele_main(self, case_dict: dict) -> dict and bool:
         """
@@ -66,17 +67,19 @@ class AndroidRun(DriverMerge, DataCleaning):
                 setattr(self, key, eval(value))
             else:
                 setattr(self, key, value)
-        # try:
-        if self.ope_value:
-            for key, value in self.ope_value.items():
-                if key == 'locating':
-                    self.ope_value['locating'] = self.__find_ele()
-                elif key == 'input_value':
-                    self.ope_value['input_value'] = self.__input_value()
-            self.action_element()
-            return True
-        else:
-            element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
+        try:
+            if self.ope_value:
+                for key, value in self.ope_value.items():
+                    if key == 'locating':
+                        self.ope_value['locating'] = self.__find_ele()
+                    elif key == 'input_value':
+                        self.ope_value['input_value'] = self.__input_value()
+                self.action_element()
+                return True
+            else:
+                element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
+        except Exception as e:
+            element_exception_handling(e)
 
     def action_element(self) -> None:
         """

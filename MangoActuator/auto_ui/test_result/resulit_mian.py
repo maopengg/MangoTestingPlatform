@@ -8,13 +8,16 @@ import asyncio
 from enum_class.socket_server_comm import System
 from socket_client.client_socket import ClientWebSocket
 from utils.logs.log_control import ERROR
-from utils.mysql.mysql_control import MysqlDB
+
+
+# from utils.mysql.mysql_control import MysqlDB
 
 
 class ResultMain:
 
     def __init__(self):
-        self.my = MysqlDB()
+        # self.my = MysqlDB()
+        self.my = None
         self.my.connect()
 
     async def res_dispatch(self, code: int, mail_msg: str, ele_name: str,

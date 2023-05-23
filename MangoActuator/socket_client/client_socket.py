@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 import websockets
 
@@ -44,14 +45,14 @@ class ClientWebSocket:
         """
         server_url = "ws://" + IP_ADDR + ":" + IP_PORT + self.socket_url
         DEBUG.logger.debug(str(f"websockets server url:{server_url}"))
-        # try:
-        async with websockets.connect(server_url) as websocket:
-            self.websocket = websocket
-            # 下面两行同步进行
-            if await self.client_hands() is True:  # 握手
-                await self.client_recv()
-        # except ConnectionRefusedError as e:
-        #     DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
+        try:
+            async with websockets.connect(server_url) as websocket:
+                self.websocket = websocket
+                # 下面两行同步进行
+                if await self.client_hands() is True:  # 握手
+                    await self.client_recv()
+        except ConnectionRefusedError as e:
+            DEBUG.logger.error("连接错误！请联系管理员检查！错误信息：", e)
 
     async def client_recv(self):
         while True:
@@ -64,7 +65,7 @@ class ClientWebSocket:
                 await self.websocket.close()
                 DEBUG.logger.debug('服务已中断，5秒后自动关闭！')
                 print(f'========================={config.SERVER}关闭，{config.DRIVER}同步关闭=========================')
-                await asyncio.sleep(5)
+                os._exit(0)
                 break
             await asyncio.sleep(1)
 

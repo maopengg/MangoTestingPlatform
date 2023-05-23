@@ -73,19 +73,19 @@ class WebRun(WebDevice):
                 setattr(self, key, eval(value))
             else:
                 setattr(self, key, value)
-        # try:
-        if self.ope_value:
-            for key, value in self.ope_value.items():
-                if key == 'locating':
-                    self.ope_value['locating'] = await self.__find_ele(case_dict)
-                elif key == 'input_value':
-                    self.ope_value['input_value'] = await self.__input_value()
-            await self.action_element()
-            return True
-        else:
-            await element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
-        # except Exception as e:
-        #     await element_exception_handling(e)
+        try:
+            if self.ope_value:
+                for key, value in self.ope_value.items():
+                    if key == 'locating':
+                        self.ope_value['locating'] = await self.__find_ele(case_dict)
+                    elif key == 'input_value':
+                        self.ope_value['input_value'] = await self.__input_value()
+                await self.action_element()
+                return True
+            else:
+                await element_exception_handling('ope_value没有值，请检查用例步骤中的元素操作值')
+        except Exception as e:
+            await element_exception_handling(e)
 
     async def action_element(self) -> None:
         """

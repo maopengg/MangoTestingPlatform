@@ -8,18 +8,6 @@ import collections
 from auto_ui.test_runner.case_run_method import CaseRunMethod
 
 
-# class GroupCaseRun:
-#
-#     @classmethod
-#     def group_case_decompose(cls, data: dict):
-#         """
-#         分发用例给不同的驱动进行执行
-#         @param data: 用例列表
-#         @return:
-#         """
-#         GroupCaseRunR().group_obj(data)
-
-
 class GroupCaseRun(CaseRunMethod):
 
     async def group_obj(self, group_case: dict):
@@ -35,11 +23,7 @@ class GroupCaseRun(CaseRunMethod):
         await self.close()
 
     async def test_res(self, response):
-        print('用例执行结果', response)
+        print('用例执行结果,结果处理')
 
     async def close(self):
         await self.web.page.close()
-
-
-if __name__ == '__main__':
-    pass

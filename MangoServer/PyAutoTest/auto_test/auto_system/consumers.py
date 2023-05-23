@@ -137,7 +137,7 @@ class ChatConsumer(WebsocketConsumer, ):
             return False
 
     def __receive_actuator(self, message):
-        """！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！需要优化"""
+        """"""
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
         if msg['func']:
