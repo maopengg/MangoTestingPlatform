@@ -9,10 +9,10 @@ from utils.test_data_cache.memory_cache import MemoryCache
 from utils.test_data_cache.random_data import RandomData
 
 
-class TextDataProcessing(MemoryCache, RandomData):
+class AsyncTextUtils(MemoryCache, RandomData):
 
     @classmethod
-    async def __replace_text(cls, data: str) -> str:
+    async def replace_text(cls, data: str) -> str:
         """
         用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
         @param data: 需要替换的文本

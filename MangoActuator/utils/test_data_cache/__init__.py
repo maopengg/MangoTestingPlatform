@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2023-03-07 8:24
 # @Author : 毛鹏
-from utils.test_data_cache.json_data_processing import JsonDataProcessing
-from utils.test_data_cache.text_data_processing import TextDataProcessing
+from utils.test_data_cache.async_json_utils import AsyncJsonUtils
+from utils.test_data_cache.async_text_utils import AsyncTextUtils
 
 
-class GetOrSetTestData(JsonDataProcessing, TextDataProcessing):
+class GetOrSetTestData(AsyncJsonUtils, AsyncTextUtils):
     pass
