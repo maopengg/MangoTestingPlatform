@@ -3,11 +3,8 @@
 # @Description: 
 # @Time   : 2023-01-03 21:35
 # @Author : 毛鹏
-import logging
 import time
 from functools import wraps
-
-logger = logging.getLogger('api')
 
 
 def overtime():
@@ -20,10 +17,10 @@ def overtime():
             t = time.time() - t
             # 响应时间存起来
 
-            # ??
-            if t > 1:
-                logger.warning(f"接口名称：{name}-->响应时间超过1秒，请测试人员关注此接口响应时间！！！")
-            return res
+            # # ??
+            # if t > 1:
+            #     logger.warning(f"接口名称：{name}-->响应时间超过1秒，请测试人员关注此接口响应时间！！！")
+            # return res
 
         return wrapper
 

@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from playwright.async_api import async_playwright, Page, BrowserContext
 
-from utils.cache.data_cleaning import DataCleaning
+from utils.test_data_cache.data_cleaning import DataCleaning
 
 
 class PlaywrightBase(DataCleaning):

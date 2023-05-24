@@ -61,7 +61,7 @@ class PublicAssertion:
 
     @classmethod
     def is_upper(cls, value):
-        """"""
+        """在什么上面"""
         assert_that(value).is_upper()
 
     @classmethod

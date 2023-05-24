@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 import random
+import time
 from datetime import date, timedelta, datetime
 
-import time
 from faker import Faker
 
 """
@@ -16,7 +16,6 @@ from faker import Faker
 
 
 class RandomData:
-    """公共方法"""
 
     def __init__(self):
         self.faker = Faker(locale='zh_CN')
@@ -238,8 +237,3 @@ class RandomData:
 
         _time_after_week = (date.today() + timedelta(days=+30)).strftime("%Y-%m-%d") + " 00:00:00"
         return _time_after_week
-
-
-if __name__ == '__main__':
-    r = RandomData()
-    print(r.get_time())

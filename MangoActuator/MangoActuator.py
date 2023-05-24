@@ -5,15 +5,15 @@
 # @Author : 毛鹏
 
 import asyncio
+import time
 from concurrent.futures import ThreadPoolExecutor
 
-import time
 from websocket import WebSocketConnectionClosedException
 from websockets.exceptions import ConnectionClosedError
 
 from config import config
-from socket_client.client_socket import ClientWebSocket
-from socket_client.socket_consume import ConsumeDistribute
+from utils.socket_client.client_socket import ClientWebSocket
+from utils.socket_client.socket_consume import ConsumeDistribute
 
 
 class MangoActuator(asyncio.Protocol):

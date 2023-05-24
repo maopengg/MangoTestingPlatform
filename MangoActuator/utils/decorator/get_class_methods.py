@@ -10,7 +10,6 @@ from auto_ui.android_base import UiautomatorApplication, UiautomatorElementOpera
     UiautomatorEquipmentDevice, UiautomatorAssertion, UiautomatorPage
 from auto_ui.web_base import PlaywrightPageOperation, PlaywrightInputDevice, PlaywrightElementOperation, \
     PlaywrightOperationBrowser, PlaywrightAssertion
-from utils.assertion.public_args import RandomData
 from utils.assertion.public_assertion import PublicAssertion
 
 
@@ -24,7 +23,6 @@ class GetClassMethod:
                         PlaywrightPageOperation]
         self.web_ass = [PlaywrightAssertion, ]
         self.public_ass = [PublicAssertion, ]
-        self.public_data = [RandomData, ]
 
     def get_all_ope(self):
         android_ope_list = self.get_android()
@@ -121,14 +119,6 @@ class GetClassMethod:
     def get_android_ass(self):
         data = []
         for cls in self.android_ass:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
-        return data
-
-    def get_public_method(self):
-        data = []
-        for cls in self.public_data:
             data.append({'value': str(cls.__name__),
                          'label': str(cls.__doc__),
                          'children': self.get_class_methods(cls)})

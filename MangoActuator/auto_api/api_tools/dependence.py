@@ -3,24 +3,11 @@
 # @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
-import logging
-import re
-
-from PyAutoTest.auto_test.auto_api.api_tools.enum import End, PublicRelyType
-from PyAutoTest.auto_test.auto_api.case_run.login import Login
-from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
-from PyAutoTest.utils.cache_utils.redis import Cache
-from PyAutoTest.utils.data_processing.json_data import DataFilePath
-from PyAutoTest.utils.mysql_tools.mysql_control import MysqlDB
-from PyAutoTest.utils.other_utils.random_data import RandomData
-
-logger = logging.getLogger('api')
 
 
 class Dependence:
 
     def __init__(self, case_id: int, case=None):
-        self.replace = DataFilePath()
         self.cache = Cache()
         self.case_id = case_id
         self.case = case
@@ -102,30 +89,6 @@ class Dependence:
         @return:
         """
         pass
-
-    @staticmethod
-    def __replace_text(data: str) -> str:
-        """
-        用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
-        @param data: 需要替换的文本
-        @return: 返回替换完成的文本
-        """
-        data1 = data
-        while True:
-            rrr = re.findall(r"\${.*?}", data1)
-            if not rrr:
-                return data1
-            res1 = rrr[0].replace("${", "")
-            res2 = res1.replace("}", "")
-            # 获取随机数据，完成替换
-            if "()" in res2:
-                value = RandomData().regular(res2)
-                res3 = res2.replace("()", "")
-                data1 = re.sub(pattern=r"\${}".format("{" + res3 + r"\(\)" + "}"), repl=value, string=data1)
-            # 获取缓存数据，完成替换
-            else:
-                value = Cache().read_data_from_cache(res2)
-                data1 = re.sub(pattern=r"\${}".format("{" + res2 + "}"), repl=value, string=data1)
 
     @staticmethod
     def __replace_json(data: str, key: str) -> str:

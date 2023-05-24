@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 import asyncio
 
-from enum_class.socket_server_comm import System
-from socket_client.client_socket import ClientWebSocket
+from utils.enum_class.socket_server_comm import System
 from utils.logs.log_control import ERROR
+from utils.socket_client.client_socket import ClientWebSocket
 
 
 # from utils.mysql.mysql_control import MysqlDB
@@ -66,7 +66,7 @@ class ResultMain:
 
     @classmethod
     async def web_notice(cls, code: int, web_msg: str):
-        from socket_client.client_socket import ClientWebSocket
+        from utils.socket_client import ClientWebSocket
         await ClientWebSocket().active_send(
             code=code,
             func=None,

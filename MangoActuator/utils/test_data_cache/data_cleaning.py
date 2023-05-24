@@ -3,21 +3,19 @@
 # @Description: 
 # @Time   : 2023-04-07 21:47
 # @Author : 毛鹏
-from utils.cache.cache import CacheDB
-from utils.cache.random_data import RandomData
+from utils.test_data_cache.memory_cache import MemoryCache
+from utils.test_data_cache.random_data import RandomData
 
 
-class DataCleaning(RandomData, CacheDB):
+class DataCleaning(RandomData, MemoryCache):
 
     def case_input_data(self, case_id: int, ope_value: str, key: str = None):
         """ 取出缓存 """
         if key:
             key_value = str(id(self)) + str(case_id) + str(key)
             value = self.get(key_value)
-            # print(f'设置缓存key：{key_value}')
         else:
             key_value = str(id(self)) + str(case_id)
-            # print(f'不设置缓存key：{key_value}')
             value = None
         # 缓存为空的时候进行读取数据并写入缓存
         if value is None:

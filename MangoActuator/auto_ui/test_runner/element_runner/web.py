@@ -7,7 +7,7 @@ from playwright.async_api import Locator
 from playwright.async_api import Page
 
 from auto_ui.web_base import WebDevice
-from enum_class.socket_client_ui import ElementExp
+from utils.enum_class.socket_client_ui import ElementExp
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
 

@@ -17,7 +17,7 @@ from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
 from auto_ui.test_runner.element_runner.web import WebRun
 from auto_ui.web_base.playwright_base import new_chromium, new_webkit, new_firefox
-from enum_class.socket_client_ui import BrowserType, DevicePlatform
+from utils.enum_class.socket_client_ui import BrowserType, DevicePlatform
 from utils.logs.log_control import ERROR
 
 
