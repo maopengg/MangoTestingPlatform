@@ -4,16 +4,14 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.utils.cache_utils.redis import Cache
 from PyAutoTest.utils.other_utils.random_data import RandomData
-from ...auto_ui.case_run.case_data import CaseData
 
 
 class SystemViews(ViewSet):
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['post'], detail=False)
     def test_func(self, request):
-        r = CaseData(2)
-        data = r.data_ui_case(1)
-        return Response(data)
+        print(request.data)
+        return Response(request.data)
 
     @action(methods=['get'], detail=False)
     def common_variable(self, request):
