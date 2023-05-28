@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 import json
 
+import jsonpath
+
 
 class AsyncJsonUtils:
     @classmethod
@@ -71,5 +73,6 @@ class AsyncJsonUtils:
                 result[new_key] = value
         return result
 
-    async def get_json_path_value(self):
-        pass
+    @classmethod
+    async def get_json_path_value(cls, obj, expr):
+        return jsonpath.jsonpath(obj, expr)

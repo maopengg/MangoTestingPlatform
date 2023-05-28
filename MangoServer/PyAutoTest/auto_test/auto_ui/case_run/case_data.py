@@ -24,9 +24,11 @@ class CaseData:
         @return:
         """
         self.group_id = group.id
-        case_single = {group.name: []}
+        case_single = {'group_name': group.name,
+                       'case_group': []}
         for case_id in eval(group.case_id):
-            case_single.get(group.name).append(self.data_ui_case(group.test_obj.id, case_id))
+            case_single['case_group'].append(self.data_ui_case(group.test_obj.id, case_id))
+            # case_single.get(group.name).append()
         return case_single
 
     def data_ui_case(self, test_obj: int, case_id: int) -> dict:
@@ -65,8 +67,8 @@ class CaseData:
                 case_data.append({
                     'ope_type': i.ope_type,
                     'ass_type': i.ass_type,
-                    'ope_value': i.ope_value,
-                    'ass_value': i.ass_value,
+                    'ope_value': eval(i.ope_value) if i.ope_value else None,
+                    'ass_value': eval(i.ass_value) if i.ass_value else None,
                     'ele_name_a': i.el_name.name if i.el_name else None,
                     'ele_name_b': i.el_name_b.name if i.el_name_b else None,
                     'ele_page_name': i.el_page.name,

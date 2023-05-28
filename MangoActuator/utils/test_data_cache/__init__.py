@@ -4,8 +4,8 @@
 # @Time   : 2023-03-07 8:24
 # @Author : 毛鹏
 from utils.test_data_cache.async_json_utils import AsyncJsonUtils
-from utils.test_data_cache.async_text_utils import AsyncTextUtils
+from utils.test_data_cache.data_cleaning import DataCleaning
 
 
-class GetOrSetTestData(AsyncJsonUtils, AsyncTextUtils):
+class GetOrSetTestData(AsyncJsonUtils, DataCleaning):
     pass

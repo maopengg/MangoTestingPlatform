@@ -104,7 +104,7 @@ class Dependence:
         pass
 
     @staticmethod
-    def __replace_text(data: str) -> str:
+    def replace_text(data: str) -> str:
         """
         用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
         @param data: 需要替换的文本

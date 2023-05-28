@@ -37,7 +37,7 @@ class RunApi:
             return send_res
 
     @classmethod
-    def group_batch(cls, group_id_list: list or int, username=None, time=False) -> object:
+    def group_batch(cls, group_id_list: list or int, username=None, time=False):
         """
         处理批量的请求
         @param group_id_list: 用例组的list或int
