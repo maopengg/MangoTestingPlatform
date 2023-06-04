@@ -5,24 +5,19 @@
 # @Author : 毛鹏
 
 import asyncio
+import json
 
 from auto_api.api_tools.async_http_client import AsyncHttpClient
 
 
-async def main():
-    url = 'https://httpbin.org/get'
-    params = {'name': 'Alice'}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    # 发送GET请求
-    response = await AsyncHttpClient.get(url, params=params, headers=headers)
-    print(response)
-    url = 'https://httpbin.org/post'
-    data = {'name': 'Alice'}
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-    # 发送POST请求
-    response = await AsyncHttpClient.post(url, data=data, headers=headers)
-    print(response)
+class ApiCaseRun(AsyncHttpClient):
+
+    async def http_(self, data):
+        data = await self.get(data.get('case_url') + data.get('case_data').get('url'), )
+        print(data)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    with open(r'E:\GitCode\MangoTestingPlatform\MangoActuator\tests\api.json', 'r') as f:
+        data = json.load(f)
+    asyncio.run(ApiCaseRun().http_(data.get('group_case')[0]))

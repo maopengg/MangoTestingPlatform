@@ -36,7 +36,8 @@ urlpatterns = [
     path("ass", ApiAssertionsCRUD.as_view()),
     path("ass/test", ApiAssertionsViews.test),
 
-    path("run", RunApiCase.api_run),
+    # path("run1", RunApiCase.api_run),
+    path("run", RunApiCase.as_view({'get': 'api_run_'})),
     #
     # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
 

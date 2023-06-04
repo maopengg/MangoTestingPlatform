@@ -1,0 +1,24 @@
+{
+  "is_group": false,
+  "group_name": "",
+  "group_case": [
+    {
+      "case_url": "https://mall-admin-pre.zalldata.cn",
+      "case_data": {
+        "id": 1,
+        "name": "\u67e5\u770b\u7d20\u6750\u5e93\u5217\u8868",
+        "client": 0,
+        "method": 0,
+        "url": "/contentcenter/admin/materialgroup/page?total=0¤t=1&size=10&descs=create_timee&shopId=${shop_id}",
+        "header": null,
+        "body": null,
+        "body_type": 0,
+        "rely": "0,",
+        "ass": null,
+        "state": 1,
+        "type": 1,
+        "team": 1
+      }
+    }
+  ]
+}

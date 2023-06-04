@@ -67,8 +67,8 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="tableLoading"
-            :data="dataList"
+            :loading="table.tableLoading"
+            :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
             :rowKey="rowKey"
@@ -89,7 +89,7 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'team'" #cell="{ record }"> 应用组 </template>
+                <template v-else-if="item.key === 'team'" #cell="{ record }"> 应用组</template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
                   <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>
@@ -172,15 +172,16 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { ApiCase, getAllItems, ApiCaseSynchronous } from '@/api/url'
+import { ApiCase, getAllItems, ApiCaseSynchronous, ApiRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
 import { defineComponent, h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 interface TreeItem {
   title: string
@@ -258,441 +259,416 @@ const formItems = [
   }
 ] as FormItem[]
 
-export default defineComponent({
-  name: 'TableWithSearch',
-  setup() {
-    const searchForm = ref()
-    const actionTitle = ref('添加页面')
-    const modalDialogRef = ref<ModalDialogType | null>(null)
-    const pagination = usePagination(doRefresh)
-    const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-    const table = useTable()
-    const rowKey = useRowKey('id')
-    const tableColumns = useTableColumn([
-      table.indexColumn,
-      {
-        title: '项目名称',
-        key: 'team',
-        dataIndex: 'team',
-        width: 100
-      },
-      {
-        title: '用例名称',
-        key: 'name',
-        dataIndex: 'name',
-        width: 150
-      },
-      {
-        title: '客户端',
-        key: 'client',
-        dataIndex: 'client',
-        width: 80
-      },
-      {
-        title: '方法',
-        key: 'method',
-        dataIndex: 'method',
-        width: 80
-      },
-      {
-        title: '请求体',
-        key: 'body',
-        dataIndex: 'body',
-        align: 'left',
-        ellipsis: true,
-        tooltip: true
-      },
-      {
-        title: '依赖',
-        key: 'rely',
-        dataIndex: 'rely',
-        width: 80
-      },
-      {
-        title: '断言',
-        key: 'ass',
-        dataIndex: 'ass',
-        width: 80
-      },
-      {
-        title: '状态',
-        key: 'state',
-        dataIndex: 'state',
-        width: 80
-      },
-      {
-        title: '操作',
-        key: 'actions',
-        dataIndex: 'actions',
-        fixed: 'right',
-        width: 250
+const testObj = useTestObj()
+const actionTitle = ref('添加页面')
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'team',
+    dataIndex: 'team',
+    width: 100
+  },
+  {
+    title: '用例名称',
+    key: 'name',
+    dataIndex: 'name',
+    width: 150
+  },
+  {
+    title: '客户端',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80
+  },
+  {
+    title: '方法',
+    key: 'method',
+    dataIndex: 'method',
+    width: 80
+  },
+  {
+    title: '请求体',
+    key: 'body',
+    dataIndex: 'body',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
+  },
+  {
+    title: '依赖',
+    key: 'rely',
+    dataIndex: 'rely',
+    width: 80
+  },
+  {
+    title: '断言',
+    key: 'ass',
+    dataIndex: 'ass',
+    width: 80
+  },
+  {
+    title: '状态',
+    key: 'state',
+    dataIndex: 'state',
+    width: 80
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 250
+  }
+])
+const caseType: any = ref('1')
+
+function switchType(key: any) {
+  caseType.value = key
+  doRefresh()
+}
+
+const formModel = ref({})
+
+function doRefresh() {
+  get({
+    url: ApiCase,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        type: caseType.value
       }
-    ])
-    const caseType: any = ref('1')
-
-    function switchType(key: any) {
-      caseType.value = key
-      doRefresh()
     }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
 
-    const formModel = ref({})
+function onSearch() {
+  let data: { [key: string]: string } = {}
+  conditionItems.forEach((it) => {
+    if (it.value.value) {
+      data[it.key] = it.value.value
+    }
+  })
+  if (JSON.stringify(data) === '{}') {
+    doRefresh()
+  } else if (data.project) {
+    get({
+      url: ApiCase,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          project: data.project,
+          type: caseType.value
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  } else if (data) {
+    get({
+      url: ApiCase,
+      data: () => {
+        return {
+          id: data.caseid,
+          name: data.name,
+          type: caseType.value
+        }
+      }
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize(res.totalSize || 10)
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+}
 
-    function doRefresh() {
-      get({
+function onResetSearch() {
+  conditionItems.forEach((it) => {
+    it.reset ? it.reset() : (it.value.value = '')
+  })
+}
+
+const addUpdate = ref(0)
+const updateId: any = ref('')
+
+function onAddPage() {
+  actionTitle.value = '新建接口'
+  modalDialogRef.value?.toggle()
+  addUpdate.value = 1
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value.value = ''
+    }
+  })
+}
+
+function onBatchUpload() {
+  get({
+    url: ApiCaseSynchronous,
+    data: () => {
+      return {
+        team_id: '1',
+        host: 'http://172.16.90.93:9999'
+      }
+    }
+  })
+    .then((res) => {
+      doRefresh()
+      Message.success(res.msg)
+    })
+    .catch(console.log)
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此页面？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
         url: ApiCase,
         data: () => {
           return {
-            page: pagination.page,
-            pageSize: pagination.pageSize,
-            type: caseType.value
+            id: '[' + data.id + ']'
           }
         }
       })
         .then((res) => {
-          table.handleSuccess(res)
-          pagination.setTotalSize((res as any).totalSize)
+          Message.success(res.msg)
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function onSearch() {
-      let data: { [key: string]: string } = {}
-      conditionItems.forEach((it) => {
-        if (it.value.value) {
-          data[it.key] = it.value.value
-        }
-      })
-      if (JSON.stringify(data) === '{}') {
-        doRefresh()
-      } else if (data.project) {
-        get({
-          url: ApiCase,
-          data: () => {
-            return {
-              page: pagination.page,
-              pageSize: pagination.pageSize,
-              project: data.project,
-              type: caseType.value
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else if (data) {
-        get({
-          url: ApiCase,
-          data: () => {
-            return {
-              id: data.caseid,
-              name: data.name,
-              type: caseType.value
-            }
-          }
-        })
-          .then((res) => {
-            table.handleSuccess(res)
-            pagination.setTotalSize(res.totalSize || 10)
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      }
-    }
-
-    function onResetSearch() {
-      conditionItems.forEach((it) => {
-        it.reset ? it.reset() : (it.value.value = '')
-      })
-    }
-
-    const addUpdate = ref(0)
-    const updateId: any = ref('')
-
-    function onAddPage() {
-      actionTitle.value = '新建接口'
-      modalDialogRef.value?.toggle()
-      addUpdate.value = 1
-      formItems.forEach((it) => {
-        if (it.reset) {
-          it.reset()
-        } else {
-          it.value.value = ''
-        }
-      })
-    }
-
-    function onBatchUpload() {
-      get({
-        url: ApiCaseSynchronous,
+function onDeleteItems() {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要删除的数据')
+    return
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要删除此数据吗？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
+        url: ApiCase,
         data: () => {
           return {
-            team_id: '1',
-            host: 'http://172.16.90.93:9999'
+            id: JSON.stringify(selectedRowKeys.value)
           }
         }
       })
         .then((res) => {
-          doRefresh()
           Message.success(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function onDelete(data: any) {
-      Modal.confirm({
-        title: '提示',
-        content: '是否要删除此页面？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: ApiCase,
-            data: () => {
-              return {
-                id: '[' + data.id + ']'
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
+// function onUpdate(item: any) {
+//   actionTitle.value = '编辑页面'
+//   modalDialogRef.value?.toggle()
+//   addUpdate.value = 0
+//   updateId.value = item.id
+//   nextTick(() => {
+//     formItems.forEach((it) => {
+//       const key = it.key
+//       const propName = item[key]
+//       if (propName) {
+//         it.value.value = propName
+//       }
+//     })
+//   })
+// }
+
+function setCase(name: any) {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要设为' + name + '的数据')
+    return
+  }
+  let type: any = 1
+  if (name) {
+    type = 5
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要把这些设为' + name + '的吗？',
+    cancelText: '取消',
+    okText: '确定',
+    onOk: () => {
+      put({
+        url: ApiCase,
+        data: () => {
+          return {
+            id: JSON.stringify(selectedRowKeys.value),
+            type: type
+          }
         }
-      })
-    }
-
-    function onDeleteItems() {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要删除的数据')
-        return
-      }
-      Modal.confirm({
-        title: '提示',
-        content: '确定要删除此数据吗？',
-        cancelText: '取消',
-        okText: '删除',
-        onOk: () => {
-          deleted({
-            url: ApiCase,
-            data: () => {
-              return {
-                id: JSON.stringify(selectedRowKeys.value)
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    // function onUpdate(item: any) {
-    //   actionTitle.value = '编辑页面'
-    //   modalDialogRef.value?.toggle()
-    //   addUpdate.value = 0
-    //   updateId.value = item.id
-    //   nextTick(() => {
-    //     formItems.forEach((it) => {
-    //       const key = it.key
-    //       const propName = item[key]
-    //       if (propName) {
-    //         it.value.value = propName
-    //       }
-    //     })
-    //   })
-    // }
-
-    function setCase(name: any) {
-      if (selectedRowKeys.value.length === 0) {
-        Message.error('请选择要设为' + name + '的数据')
-        return
-      }
-      let type: any = 1
-      if (name) {
-        type = 5
-      }
-      Modal.confirm({
-        title: '提示',
-        content: '确定要把这些设为' + name + '的吗？',
-        cancelText: '取消',
-        okText: '确定',
-        onOk: () => {
-          put({
-            url: ApiCase,
-            data: () => {
-              return {
-                id: JSON.stringify(selectedRowKeys.value),
-                type: type
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              selectedRowKeys.value = []
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      })
-    }
-
-    function onDataForm() {
-      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
-        let value: { [key: string]: string } = {}
-        formItems.forEach((it) => {
-          value[it.key] = it.value.value
-        })
-        if (addUpdate.value === 1) {
-          addUpdate.value = 0
-          post({
-            url: ApiCase,
-            data: () => {
-              return {
-                project: value.project,
-                name: value.name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        } else if (addUpdate.value === 0) {
-          addUpdate.value = 0
-          value['id'] = updateId.value
-          updateId.value = 0
-          put({
-            url: ApiCase,
-            data: () => {
-              return {
-                id: value.id,
-                project: value.project,
-                name: value.name
-              }
-            }
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        }
-      }
-    }
-
-    // 获取所有项目
-    const treeData = ref<Array<TreeItem>>([])
-
-    function getItems() {
-      get({
-        url: getAllItems,
-        data: {}
       })
         .then((res) => {
-          for (let value of conditionItems) {
-            if (value.key === 'project') {
-              value.optionItems = res.data
-            }
-          }
-          treeData.value = transformRoutes(res.data)
+          Message.success(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
         })
         .catch(console.log)
     }
+  })
+}
 
-    function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
-      const list: TreeItem[] = []
-      routes
-        .filter((it) => it.hidden !== true && it.fullPath !== parentPath)
-        .forEach((it) => {
-          const searchItem: TreeItem = {
-            // 可以控制是取id还是取名称
-            key: it.title,
-            title: it.title
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value: { [key: string]: string } = {}
+    formItems.forEach((it) => {
+      value[it.key] = it.value.value
+    })
+    if (addUpdate.value === 1) {
+      addUpdate.value = 0
+      post({
+        url: ApiCase,
+        data: () => {
+          return {
+            project: value.project,
+            name: value.name
           }
-          if (it.children && it.children.length > 0) {
-            searchItem.children = transformRoutes(it.children, it.fullPath)
-          }
-          list.push(searchItem)
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
         })
-      return list
-    }
-
-    function onRunCase() {
-      Message.info('测试用例正在执行，请稍后~')
-      Message.success('用例执行完成，请前往查看~')
-    }
-
-    const router = useRouter()
-
-    function onConcurrency() {
-      Message.info('调用了并发按钮')
-    }
-
-    function setCaseGroup(record: any) {
-      router.push({
-        path: '/apitest/group',
-        query: {
-          id: record.id
+        .catch(console.log)
+    } else if (addUpdate.value === 0) {
+      addUpdate.value = 0
+      value['id'] = updateId.value
+      updateId.value = 0
+      put({
+        url: ApiCase,
+        data: () => {
+          return {
+            id: value.id,
+            project: value.project,
+            name: value.name
+          }
         }
       })
-    }
-
-    function onAssertion(record: any) {
-      console.log(record.project)
-      router.push({
-        path: '/apitest/details',
-        query: {
-          id: record.id,
-          project: record.project
-        }
-      })
-    }
-
-    onMounted(doRefresh)
-    onMounted(getItems)
-    return {
-      ...table,
-      rowKey,
-      pagination,
-      searchForm,
-      tableColumns,
-      conditionItems,
-      selectedRowKeys,
-      showCheckedAll,
-      formItems,
-      formModel,
-      actionTitle,
-      modalDialogRef,
-      treeData,
-      caseType,
-      onSearch,
-      onResetSearch,
-      onSelectionChange,
-      onDataForm,
-      onAddPage,
-      // onUpdate,
-      onDelete,
-      onDeleteItems,
-      switchType,
-      setCase,
-      onRunCase,
-      onConcurrency,
-      setCaseGroup,
-      onAssertion,
-      onBatchUpload
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
     }
   }
-})
+}
+
+// 获取所有项目
+const treeData = ref<Array<TreeItem>>([])
+
+function getItems() {
+  get({
+    url: getAllItems,
+    data: {}
+  })
+    .then((res) => {
+      for (let value of conditionItems) {
+        if (value.key === 'project') {
+          value.optionItems = res.data
+        }
+      }
+      treeData.value = transformRoutes(res.data)
+    })
+    .catch(console.log)
+}
+
+function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
+  const list: TreeItem[] = []
+  routes
+    .filter((it) => it.hidden !== true && it.fullPath !== parentPath)
+    .forEach((it) => {
+      const searchItem: TreeItem = {
+        // 可以控制是取id还是取名称
+        key: it.title,
+        title: it.title
+      }
+      if (it.children && it.children.length > 0) {
+        searchItem.children = transformRoutes(it.children, it.fullPath)
+      }
+      list.push(searchItem)
+    })
+  return list
+}
+
+function onRunCase(record: any) {
+  get({
+    url: ApiRun,
+    data: () => {
+      return {
+        case_id_list: '[' + record.id + ',]',
+        test_obj: testObj.te
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+    })
+    .catch(console.log)
+}
+
+const router = useRouter()
+
+function onConcurrency() {
+  Message.info('调用了并发按钮')
+}
+
+function setCaseGroup(record: any) {
+  router.push({
+    path: '/apitest/group',
+    query: {
+      id: record.id
+    }
+  })
+}
+
+function onAssertion(record: any) {
+  console.log(record.project)
+  router.push({
+    path: '/apitest/details',
+    query: {
+      id: record.id,
+      project: record.project
+    }
+  })
+}
+
+onMounted(doRefresh)
+onMounted(getItems)
 </script>
 
 <style lang="less" scoped>

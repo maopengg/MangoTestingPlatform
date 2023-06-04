@@ -9,7 +9,7 @@ from utils.test_data_cache import GetOrSetTestData
 
 class Dependence(GetOrSetTestData):
 
-    def public_variable(self):
+    async def public_variable(self):
         """
         把公共依赖存入缓存
         :return:
@@ -18,7 +18,7 @@ class Dependence(GetOrSetTestData):
         api = ApiPublic.objects.filter(type=PublicRelyType.CUSTOM.value)
         if api is not None:
             for i in api:
-                self.set(i.key, i.value)
+                await self.set(i.key, i.value)
         # sql数据写入缓存
         api = ApiPublic.objects.filter(type=PublicRelyType.SQL.value)
         if api is not None:
@@ -26,7 +26,7 @@ class Dependence(GetOrSetTestData):
                 value = self.replace_text(i.value)
                 sql = MysqlDB().query(value)
                 res = [item[key] for item in sql for key in item]
-                self.set(i.key, res[0])
+                await self.set(i.key, res[0])
         # 处理请求头中的依赖项，并写入缓存
         if self.case.client == End.WEB.value:  # 处理web请求头
             try:
@@ -36,31 +36,31 @@ class Dependence(GetOrSetTestData):
             except BaseException as e:
                 ERROR.logger.error("需要处理的请求头为空或请求头不为json导致处理失败！报错原因：{}".format(e))
 
-    def ago_dependency(self):
+    async def ago_dependency(self):
         """
         前置依赖
         @return:
         """
 
-    def after_dependency(self):
+    async def after_dependency(self):
         """
         后置处理
         @return:
         """
 
-    def result_ass(self):
+    async def result_ass(self):
         """
         结果断言
         @return:
         """
 
-    def after_empty(self):
+    async def after_empty(self):
         """
         后置数据清除
         @return:
         """
 
-    def rely_url_front_body(self, url):
+    async def rely_url_front_body(self, url):
         # 处理url中的依赖，并存入到model中
         try:
             if "${" in url:
