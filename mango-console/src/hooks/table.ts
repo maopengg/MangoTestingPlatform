@@ -20,7 +20,6 @@ interface Table {
     key: string
     width: number
     dataIndex: string
-    // align: string
   }
 }
 
