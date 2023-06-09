@@ -99,6 +99,11 @@ DATABASES = {
         'PASSWORD': '729164035',
         'HOST': '43.139.104.105',
         'PORT': 3306,
+        'TEST': {
+            'NAME': 'auto_test',
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_general_ci'
+        },
         'OPTIONS': {
             "init_command": "SET foreign_key_checks = 0;",
         }

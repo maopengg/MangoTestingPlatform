@@ -68,3 +68,7 @@ class RunApiSend:
         else:
             return {'result': False,
                     "case_data": case_json}
+
+
+if __name__ == '__main__':
+    print(RunApiSend.get_api_case_data(1))
