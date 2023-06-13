@@ -3,31 +3,24 @@
 # @Description: 
 # @Time   : 2023/3/23 11:29
 # @Author : 毛鹏
-from playwright.async_api import Locator
-from playwright.async_api import Page
+from typing import Optional
 
-from auto_ui.ui_tools.base_model import ElementModel
+from playwright.async_api import Locator
+
+from auto_ui.ui_tools.base_model import CaseResult, ElementModel
 from auto_ui.web_base import WebDevice
 from utils.enum_class.socket_client_ui import ElementExp
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
+from utils.test_data_cache import DataCleaning
 
 
 class WebRun(WebDevice):
 
-    def __init__(self, page: Page, case_dict: ElementModel):
-        super().__init__(page)
-        self.element = case_dict
-        self.case_id = 0
-        self.ele_opt_res = {'ele_name_a': self.ele_name_a,
-                            'ele_name_b': self.ele_name_b,  #
-                            'existence': 0,  #
-                            'state': 0,  #
-                            'case_group_id': '',
-                            'team_id': '',
-                            'test_obj_id': '',  #
-                            'msg': '',  #
-                            'picture_path': ''}  #
+    def __init__(self):
+        super().__init__()
+        self.ele_opt_res = CaseResult()
+        self.element: Optional[ElementModel] = None
 
     async def open_url(self, url: str, case_id):
         """
@@ -36,10 +29,10 @@ class WebRun(WebDevice):
         @param case_id:
         @return:
         """
-        self.case_id = case_id
+
         await self.w_wait_for_timeout(1)
         await self.w_goto(url)
-        self.ele_opt_res['test_obj_id'] = url
+        self.ele_opt_res.test_obj_id = url
 
     async def ele_main(self) -> dict and bool:
         """
@@ -51,16 +44,10 @@ class WebRun(WebDevice):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{self.element.dict()}\n')
-            path = rf'{NewLog.get_log_screenshot()}\{self.element.ele_name_a + self.get_deta_hms()}.jpg'
-            self.ele_opt_res['picture_path'] = await self.w_screenshot(path)
+            path = rf'{NewLog.get_log_screenshot()}\{self.element.ele_name_a + DataCleaning.get_deta_hms()}.jpg'
+            self.ele_opt_res.picture_path = await self.w_screenshot(path)
             return False
 
-        # for key, value in case_dict.items():
-        #     if key == 'ope_value' and value:
-        #         # print(key, value)
-        #         setattr(self, key, eval(value))
-        #     else:
-        #         setattr(self, key, value)
         try:
             if self.element.ope_value:
                 self.element.ope_value.locating = await self.__find_ele()
@@ -78,7 +65,6 @@ class WebRun(WebDevice):
         @return:
         """
         await getattr(self, self.element.ope_type)(**self.element.ope_value.dict())
-        # 等待
         if self.element.ele_sleep:
             await self.w_wait_for_timeout(self.element.ele_sleep)
 
@@ -88,7 +74,6 @@ class WebRun(WebDevice):
         @return:
         """
         # 这里要处理iframe
-        # self.page.frame_locator()
         if self.element.ele_loc:
             # 处理元素并查找
             match self.element.ele_exp:
@@ -110,14 +95,11 @@ class WebRun(WebDevice):
                 ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                    f'元素对象：{self.element.dict()}\n')
                 await self.w_screenshot(self.element.ele_name_a)
-                self.ele_opt_res['existence'] = await ele.count()
-            self.ele_opt_res['existence'] = await ele.count()
-            # print('元素个数:', await ele.count())
-            # print('当前选中：', self.ele_sub)
-            # print(f'元素名称{self.ele_name_a}：', ele.nth(0 if self.ele_sub is None else self.ele_sub))
+                self.ele_opt_res.existence = await ele.count()
+            self.ele_opt_res.existence = await ele.count()
             return ele.nth(0 if self.element.ele_sub is None else self.element.ele_sub)
         else:
-            self.ele_opt_res['existence'] = 0
+            self.ele_opt_res.existence = 0
             ERROR.logger.error(f'元素为空，无法定位，请检查元素表达式是否为空！元素对象：{self.element.dict()}')
 
     async def __input_value(self):
@@ -125,5 +107,5 @@ class WebRun(WebDevice):
         输入依赖解决
         @return:
         """
-        # print(self.case_id, self.ele_name_a, self.ope_value['input_value'], self.ope_value_key)
-        return self.case_input_data(self.case_id, self.element.ope_value.input_value, self.element.ope_value_key)
+        return DataCleaning.case_input_data(self, self.element.ope_value.input_value,
+                                            self.element.ope_value_key)

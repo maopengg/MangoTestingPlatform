@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 from auto_ui.test_runner.case_run_method import CaseRunMethod
+from auto_ui.ui_tools.base_model import CaseModel
 from utils.decorator.singleton import singleton
 
 
@@ -14,7 +15,7 @@ class CaseDistribution(CaseRunMethod):
     用例分发
     """
 
-    async def debug_case_distribution(self, data: dict):
+    async def debug_case_distribution(self, data: CaseModel):
         """
         处理调试用例，开始用例对象，并调用分发用例方法
         @param data:

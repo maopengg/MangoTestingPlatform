@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023-03-11 17:25
 # @Author : 毛鹏
+from typing import Optional
+
 from time import sleep
 from uiautomator2 import Device
 
@@ -15,19 +17,10 @@ python -m weditor
 """
 
 
-def new_android(equipment='8796a033') -> Device:
-    app = Device(equipment)
-    try:
-        INFO.logger.info(f'设备信息：{app.info}')
-    except RuntimeError as e:
-        ERROR.logger.error(f'设备启动异常，请检查设备连接！报错内容：{e}')
-    return app
-
-
 class AndroidBase:
 
-    def __init__(self, android: Device = None):
-        self.android = android
+    def __init__(self):
+        self.android: Optional[Device] = None
         self.android.implicitly_wait(10)
 
     def a_sleep(self, time_: int):
@@ -38,6 +31,14 @@ class AndroidBase:
             ERROR.logger.error(f"无法执行sleep，时间：{time_}，报错信息：{e}")
             return None
 
+    def new_android(self, equipment='8796a033'):
+        app = Device(equipment)
+        try:
+            INFO.logger.info(f'设备信息：{app.info}')
+        except RuntimeError as e:
+            ERROR.logger.error(f'设备启动异常，请检查设备连接！报错内容：{e}')
+        self.android = app
+
 
 class ElementNotFoundError(Exception):
     """元素获取失败"""
@@ -45,9 +46,3 @@ class ElementNotFoundError(Exception):
 
 class ElementNotDisappearError(Exception):
     """元素消失失败"""
-
-
-if __name__ == '__main__':
-    r = new_android()
-    r.app_start('com.tencent.mm')
-    print(type(r))

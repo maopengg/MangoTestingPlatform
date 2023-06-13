@@ -3,10 +3,13 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from uiautomator2 import Device, UiObject
+from typing import Optional
+
+from uiautomator2 import UiObject
 from uiautomator2.xpath import XPathSelector
 
 from auto_ui.android_base import DriverMerge
+from auto_ui.ui_tools.base_model import CaseResult, ElementModel
 from utils.enum_class.socket_client_ui import ElementExp
 from utils.logs.log_control import ERROR
 from utils.nuw_logs import NewLog
@@ -15,36 +18,10 @@ from utils.test_data_cache.data_cleaning import DataCleaning
 
 class AndroidRun(DriverMerge, DataCleaning):
 
-    def __init__(self, android: Device):
-        super().__init__(android)
-        self.case_id = 0
-        self.ope_type = None
-        self.ass_type = None
-        self.ope_value = None
-        self.ass_value = None
-        self.ele_name_a = None
-        self.ele_name_b = None
-        self.ele_page_name = None
-        self.ele_exp = None
-        self.ele_loc = None
-        self.ele_loc_b = None
-        self.ele_sleep = None
-        self.ele_sub = None
-        self.ope_value_key = None
-        self.ele_opt_res = {'ele_name': self.ele_name_a,
-                            'existence': '',
-                            'state': 0,
-                            'case_id': self.case_id,
-                            'case_group_id': '',
-                            'team_id': '',
-                            'test_obj_id': '',
-                            'msg': '',
-                            'picture_path': ''}
-
-    #
-    # def __del__(self):
-    #     self.a_close_app('com.tencent.mm')
-    #     self.a_sleep(5)
+    def __init__(self):
+        super().__init__()
+        self.ele_opt_res = CaseResult()
+        self.element: Optional[ElementModel] = None
 
     def ele_main(self, case_dict: dict) -> dict and bool:
         """
@@ -57,9 +34,9 @@ class AndroidRun(DriverMerge, DataCleaning):
             ERROR.logger.error(f'元素操作失败，请检查内容\n'
                                f'报错信息：{e}\n'
                                f'元素对象：{case_dict}\n')
-            filepath = rf'{NewLog.get_log_screenshot()}\{self.ele_name_a + self.get_deta_hms()}.png'
+            filepath = rf'{NewLog.get_log_screenshot()}\{self.element.ele_name_a + self.get_deta_hms()}.png'
             self.a_screenshot(filepath)
-            self.ele_opt_res['picture_path'] = filepath
+            self.ele_opt_res.picture_path = filepath
             return self.ele_opt_res, False
 
         for key, value in case_dict.items():
@@ -68,12 +45,9 @@ class AndroidRun(DriverMerge, DataCleaning):
             else:
                 setattr(self, key, value)
         try:
-            if self.ope_value:
-                for key, value in self.ope_value.items():
-                    if key == 'locating':
-                        self.ope_value['locating'] = self.__find_ele()
-                    elif key == 'input_value':
-                        self.ope_value['input_value'] = self.__input_value()
+            if self.element.ope_value:
+                self.element.ope_value.locating = await self.__find_ele()
+                self.element.ope_value.input_value = await self.__input_value()
                 self.action_element()
                 return True
             else:
@@ -86,25 +60,25 @@ class AndroidRun(DriverMerge, DataCleaning):
         操作具体的元素对象
         @return:
         """
-        getattr(self, self.ope_type)(**self.ope_value)
+        getattr(self, self.element.ope_type)(**self.element.ope_value.dict())
         # 等待
-        if self.ele_sleep:
-            self.a_sleep(self.ele_sleep)
+        if self.element.ele_sleep:
+            self.a_sleep(self.element.ele_sleep)
 
     def __find_ele(self) -> UiObject or str or XPathSelector:
-        match self.ele_exp:
+        match self.element.ele_exp:
             case ElementExp.XPATH.value:
-                return self.android.xpath(self.ele_loc)
+                return self.android.xpath(self.element.ele_loc)
             case ElementExp.ID.value:
-                return self.android(resourceId=self.ele_loc)
+                return self.android(resourceId=self.element.ele_loc)
             case ElementExp.BOUNDS.value:
-                return self.android(text=self.ele_loc)
+                return self.android(text=self.element.ele_loc)
             case ElementExp.DESCRIPTION.value:
-                return self.android(description=self.ele_loc)
+                return self.android(description=self.element.ele_loc)
             case ElementExp.PERCENTAGE.value:
                 return '百分比'
             case _:
-                ERROR.logger.error(f'元素定位方式不存在，请检查元素定位方式。元素type：{self.ope_type}')
+                ERROR.logger.error(f'元素定位方式不存在，请检查元素定位方式。元素type：{self.element.ope_type}')
                 return None
 
     def __input_value(self):
@@ -112,4 +86,5 @@ class AndroidRun(DriverMerge, DataCleaning):
         输入依赖解决
         @return:
         """
-        return self.case_input_data(self.case_id, self.ope_value, self.ope_value_key)
+        return DataCleaning.case_input_data(self, self.element.ope_value.input_value,
+                                            self.element.ope_value_key)

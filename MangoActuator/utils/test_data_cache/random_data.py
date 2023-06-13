@@ -5,38 +5,21 @@
 # @Author : 毛鹏
 
 import random
-import time
 from datetime import date, timedelta, datetime
 
+import time
 from faker import Faker
-
-"""
-当前类的注释必须是 “”“中间写值”“”
-"""
 
 
 class RandomData:
+    faker = Faker(locale='zh_CN')
 
-    def __init__(self):
-        self.faker = Faker(locale='zh_CN')
-
-    def regular(self, func: str):
+    @classmethod
+    def regular(cls, func: str):
         """ 不包含 """
         func = func.strip()
         func = func.replace("()", "")
-        return getattr(self, func)()
-
-    def get_methods(self):
-        func = []
-        for k, y in RandomData.__dict__.items():
-            if k not in "__module____init____dict____weakref____doc__" \
-                    and k != 'regular' and k != 'get_methods':
-                dic = {
-                    'label': k + '()',
-                    'value': y.__doc__
-                }
-                func.append(dic)
-        return func
+        return getattr(cls, func)()
 
     @staticmethod
     def time_random():
@@ -101,109 +84,133 @@ class RandomData:
                  "润唇膏", "唇蜜", "唇膏", "唇笔", "唇彩", "眉笔", "眉粉", "眼线笔", "睫毛膏", "指甲油", "眼唇部卸妆油", "脸部卸妆油", "洗甲油"]
         return goods[random.randint(0, 104)] + str(random.randint(0, 1000))
 
-    def get_phone(self) -> int:
+    @classmethod
+    def get_phone(cls) -> int:
         """随机生成手机号码"""
-        phone = self.faker.phone_number()
+        phone = cls.faker.phone_number()
         return phone
 
-    def get_id_number(self) -> int:
+    @classmethod
+    def get_id_number(cls) -> int:
         """随机生成身份证号码"""
 
-        id_number = self.faker.ssn()
+        id_number = cls.faker.ssn()
         return id_number
 
-    def get_female_name(self) -> str:
+    @classmethod
+    def get_female_name(cls) -> str:
         """女生姓名"""
-        female_name = self.faker.name_female()
+        female_name = cls.faker.name_female()
         return female_name
 
-    def get_male_name(self) -> str:
+    @classmethod
+    def get_male_name(cls) -> str:
         """男生姓名"""
-        male_name = self.faker.name_male()
+        male_name = cls.faker.name_male()
         return male_name
 
-    def get_simple_profile(self):
+    @classmethod
+    def get_simple_profile(cls):
         """获取简单的人物信息"""
-        res = self.faker.simple_profile()
+        res = cls.faker.simple_profile()
         return str(res)
 
-    def get_profile(self):
+    @classmethod
+    def get_profile(cls):
         """获取带公司的人物信息"""
-        res = self.faker.profile()
+        res = cls.faker.profile()
         return str(res)
 
-    def get_email(self) -> str:
+    @classmethod
+    def get_email(cls) -> str:
         """生成邮箱"""
-        email = self.faker.email()
+        email = cls.faker.email()
         return email
 
-    def get_bank_card(self):
+    @classmethod
+    def get_bank_card(cls):
         """银行卡"""
-        return self.faker.credit_card_number()
+        return cls.faker.credit_card_number()
 
-    def get_address(self):
+    @classmethod
+    def get_address(cls):
         """带邮政编码的地址"""
-        return self.faker.address()
+        return cls.faker.address()
 
-    def get_job(self):
+    @classmethod
+    def get_job(cls):
         """获取职称"""
-        return self.faker.job()
+        return cls.faker.job()
 
-    def get_company(self):
+    @classmethod
+    def get_company(cls):
         """获取公司名称"""
-        return self.faker.company()
+        return cls.faker.company()
 
-    def get_city(self):
+    @classmethod
+    def get_city(cls):
         """获取城市"""
-        return self.faker.city()
+        return cls.faker.city()
 
-    def get_country(self):
+    @classmethod
+    def get_country(cls):
         """获取国家"""
-        return self.faker.country()
+        return cls.faker.country()
 
-    def get_province(self):
+    @classmethod
+    def get_province(cls):
         """获取国家"""
-        return self.faker.province()
+        return cls.faker.province()
 
-    def get_pystr(self):
+    @classmethod
+    def get_pystr(cls):
         """生成英文的字符串"""
-        return self.faker.pystr()
+        return cls.faker.pystr()
 
-    def get_word(self):
+    @classmethod
+    def get_word(cls):
         """生成词语"""
-        return self.faker.word()
+        return cls.faker.word()
 
-    def get_text(self):
+    @classmethod
+    def get_text(cls):
         """生成一篇文章"""
-        return self.faker.text()
+        return cls.faker.text()
 
-    def get_year(self):
+    @classmethod
+    def get_year(cls):
         """获取年份"""
-        return self.faker.year()
+        return cls.faker.year()
 
-    def get_month(self):
+    @classmethod
+    def get_month(cls):
         """获取月份"""
-        return self.faker.month()
+        return cls.faker.month()
 
-    def get_date(self):
+    @classmethod
+    def get_date(cls):
         """获取日期"""
-        return self.faker.date()
+        return cls.faker.date()
 
-    def get_date_this_year(self):
+    @classmethod
+    def get_date_this_year(cls):
         """获取当前年份:年月日"""
-        return self.faker.date_this_year()
+        return cls.faker.date_this_year()
 
-    def get_date_time(self):
+    @classmethod
+    def get_date_time(cls):
         """获取：年月日时分秒"""
-        return self.faker.date_time()
+        return cls.faker.date_time()
 
-    def get_future_datetime(self):
+    @classmethod
+    def get_future_datetime(cls):
         """获取未来时间，年月日 时分秒"""
-        return self.faker.future_datetime()
+        return cls.faker.future_datetime()
 
-    def get_future_date(self):
+    @classmethod
+    def get_future_date(cls):
         """获取未来时间 年月日"""
-        return self.faker.future_date()
+        return cls.faker.future_date()
 
     @classmethod
     def get_deta_hms(cls):

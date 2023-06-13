@@ -7,7 +7,7 @@ import asyncio
 
 from auto_ui.test_runner.debug_case_run import CaseDistribution
 from auto_ui.test_runner.group_case_run import GroupCaseRun
-from auto_ui.ui_tools.base_model import CaseGroupModel
+from auto_ui.ui_tools.base_model import CaseGroupModel, CaseModel
 
 
 class ConsumeUI:
@@ -15,7 +15,11 @@ class ConsumeUI:
 
     @staticmethod
     async def debug_case(data: dict):
-        await CaseDistribution().debug_case_distribution(data)
+        async def run(case: CaseModel):
+            await CaseDistribution().debug_case_distribution(case)
+
+        case_group_obj = CaseModel(**data)
+        await run(case_group_obj)
 
     @classmethod
     async def group_case(cls, data: dict):
