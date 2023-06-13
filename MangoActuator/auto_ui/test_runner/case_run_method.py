@@ -20,6 +20,10 @@ from utils.logs.log_control import ERROR
 
 class CaseRunMethod(WebRun, AndroidRun):
 
+    def __init__(self):
+        super().__init__()
+        self.case_one_res = None
+
     async def distribute_to_drivers(self, case_one: CaseModel):
         """
         分发用例方法，根据用例对象，来发给不同的对象来执行用例
