@@ -79,7 +79,6 @@ class ClientWebSocket:
         :param end: 发送给用户的那个端，是否发送给客户端
         :return:
         """
-
         data_str = self.__json_dumps({
             'code': code,
             'msg': msg,

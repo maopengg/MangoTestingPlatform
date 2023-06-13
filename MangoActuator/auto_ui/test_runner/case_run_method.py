@@ -7,7 +7,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from threading import Thread
-
+from typing import Optional
 from auto_ui.android_base.android_base import AndroidBase
 from auto_ui.test_result.resulit_mian import ResultMain
 from auto_ui.test_runner.element_runner.android import AndroidRun
@@ -22,7 +22,7 @@ class CaseRunMethod(WebRun, AndroidRun):
 
     def __init__(self):
         super().__init__()
-        self.case_one_res = None
+        self.case_one_res: Optional[]= None
 
     async def distribute_to_drivers(self, case_one: CaseModel):
         """
