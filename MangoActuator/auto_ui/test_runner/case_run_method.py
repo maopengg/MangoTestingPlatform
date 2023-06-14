@@ -57,7 +57,6 @@ class CaseRunMethod(WebRun, AndroidRun):
         if not self.page:
             await self.new_web_obj(case_obj.browser_type, case_obj.browser_path)
         if self.page:
-            print(type(self.page))
             await self.open_url(case_obj.case_url, case_obj.case_id)
             for case_ele in case_obj.case_data:
                 self.element = case_ele
