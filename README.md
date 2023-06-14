@@ -49,6 +49,22 @@
 ![img_5.png](img_5.png)
 ![img_6.png](img_6.png)
 
+## 前端-控制器部署
+1. 前提准备知识：本项目需要一定前端基础知识，请确保掌握 Vue 的基础知识，以便能处理一些常见的问题。 建议在开发前先学一下以下内容，提前了解和学习这些知识，会对项目理解非常有帮助:Vue3 TypeScript VueRouter4 ArcoDesign ES6 Vitejs Pinia
+2. 环境准备：Node 版本: v16.13.1 npm 版本: v6.14.5
+3. 开发工具配置： Vetur - vue 开发必备 （也可以选择 Volar） ESLint - 脚本代码检查 Prettier - 代码格式化
+4. cd mango-console
+5. npm install
+6. npm run dev
+
+## 后端-服务器部署
+1. python >=3.10.4 django == 4.1.5
+2. pip install -r requirements.txt
+3. python manage.py runserver 0.0.0.0:8000
+
+## 执行器-下载
+* 阿里网盘共享下载链接地址
+
 #### 加作者微信，进芒果自动化测试群
 ![img_8.png](img_8.png)
 
