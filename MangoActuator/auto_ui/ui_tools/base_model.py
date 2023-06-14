@@ -61,6 +61,20 @@ class CaseResult(BaseModel):
     # 错误截图路径
     picture_path: str
 
+    @classmethod
+    def create_empty(cls):
+        return cls(ele_name_a="", ele_name_b="", ele_quantity="", state="", case_group_id="", test_obj_id="", msg="",
+                   picture_path="")
+
+
+class OneCaseResult(BaseModel):
+    test_result: bool
+    ele_res_list: list[CaseResult]
+
+    @classmethod
+    def create_empty(cls):
+        return cls(test_result=False, ele_res_list=[])
+
 
 if __name__ == '__main__':
     # with open(r'E:\GitCode\MangoTestingPlatform\MangoActuator\tests\test.json', 'r', encoding='utf-8') as f:

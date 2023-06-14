@@ -27,7 +27,7 @@ class CaseDistribution:
         @return:
         """
         if not self.run:
-            with CaseRunMethod() as run:
+            async with CaseRunMethod() as run:
                 self.run = run
         await self.run.distribute_to_drivers(data)
 

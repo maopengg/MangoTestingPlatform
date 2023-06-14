@@ -20,7 +20,7 @@ class AndroidRun(DriverMerge, DataCleaning):
 
     def __init__(self):
         super().__init__()
-        self.ele_opt_res = CaseResult()
+        self.ele_opt_res = CaseResult.create_empty()
         self.element: Optional[ElementModel] = None
 
     def ele_main(self, case_dict: dict) -> dict and bool:
@@ -46,8 +46,8 @@ class AndroidRun(DriverMerge, DataCleaning):
                 setattr(self, key, value)
         try:
             if self.element.ope_value:
-                self.element.ope_value.locating = await self.__find_ele()
-                self.element.ope_value.input_value = await self.__input_value()
+                self.element.ope_value.locating = self.__find_ele()
+                self.element.ope_value.input_value = self.__input_value()
                 self.action_element()
                 return True
             else:

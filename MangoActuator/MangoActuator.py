@@ -5,13 +5,14 @@
 # @Author : 毛鹏
 
 import asyncio
-import time
 from concurrent.futures import ThreadPoolExecutor
 
+import time
 from websocket import WebSocketConnectionClosedException
 from websockets.exceptions import ConnectionClosedError
 
 from config import config
+from utils.logs.log_control import ERROR
 from utils.socket_client.client_socket import ClientWebSocket
 from utils.socket_client.socket_consume import ConsumeDistribute
 
@@ -40,10 +41,11 @@ class MangoActuator(asyncio.Protocol):
         consume = ConsumeDistribute()
         while True:
             data = await self.q.get()
-            print(f'队列取到的值{data}')
             if isinstance(data, dict):
                 for key, value in data.items():
                     await consume.start_up(key, value)
+            else:
+                ERROR.logger.error(f'服务器传递数据错误，请联系管理员查询服务器数据！数据：{data}')
             await asyncio.sleep(1)
 
 

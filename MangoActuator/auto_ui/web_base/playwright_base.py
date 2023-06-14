@@ -20,11 +20,6 @@ class PlaywrightBase:
                                                        executable_path=web_path)
             self.context = await browser.new_context()
             self.page = await self.context.new_page()
-            print(type(self.page))
-            await self.page.goto('https://www.baidu.com/')
-            await self.page.wait_for_selector('#su')
-
-            await asyncio.sleep(5)
 
     async def new_firefox(self, web_path: str, headless=False):
         async with async_playwright() as playwright:
@@ -43,7 +38,7 @@ class PlaywrightBase:
 
 if __name__ == '__main__':
     r = PlaywrightBase()
-    path = r'E:\Software\Chrome\Application\chrome.exe'
+    path = r'C:\Program Files\Google\Chrome\Application\chrome.exe'
     import asyncio
 
-    asyncio.run(main(path))
+    asyncio.run(r.new_chromium(path))
