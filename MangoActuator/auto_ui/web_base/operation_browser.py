@@ -19,6 +19,7 @@ class PlaywrightOperationBrowser(PlaywrightBase):
 
     async def w_goto(self, url: str):
         """打开url"""
+        print(self.page)
         await self.page.goto(url, timeout=50000)
 
     async def w_screenshot(self, path: str, full_page=True):

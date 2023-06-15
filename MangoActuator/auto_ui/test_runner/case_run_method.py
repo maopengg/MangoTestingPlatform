@@ -57,6 +57,7 @@ class CaseRunMethod(WebRun, AndroidRun):
         if not self.page:
             await self.new_web_obj(case_obj.browser_type, case_obj.browser_path)
         if self.page:
+            print(type(self.page))
             await self.open_url(case_obj.case_url, case_obj.case_id)
             for case_ele in case_obj.case_data:
                 self.element = case_ele
@@ -126,12 +127,12 @@ class CaseRunMethod(WebRun, AndroidRun):
     def new_pc_obj(cls):
         return
 
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        print(exc_type)
-        print(exc_value)
-        print(traceback)
-        # ERROR.logger.error(exc_type, exc_value, traceback)
-        await self.close()
+    # async def __aenter__(self):
+    #     return self
+    #
+    # async def __aexit__(self, exc_type, exc_value, traceback):
+    #     print(exc_type)
+    #     print(exc_value)
+    #     print(traceback)
+    #     # ERROR.logger.error(exc_type, exc_value, traceback)
+    #     await self.close()
