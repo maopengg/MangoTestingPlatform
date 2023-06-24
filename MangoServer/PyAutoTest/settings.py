@@ -95,9 +95,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'auto_test',
-        'USER': 'auto_test',
-        'PASSWORD': '729164035',
-        'HOST': '43.139.104.105',
+        'USER': 'root',
+        'PASSWORD': 'root',
+        'HOST': 'localhost',
         'PORT': 3306,
         'TEST': {
             'NAME': 'auto_test',
@@ -155,22 +155,26 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://:729164035@43.139.104.105:6379/0",
+        "LOCATION": "redis://127.0.0.1:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 1000,
-                "decode_responses": True}
+                "decode_responses": True,
+                "encoding": 'utf-8'
+            }
         }
     },
     "socket": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://:729164035@43.139.104.105:6379/1",
+        "LOCATION": "redis://127.0.0.1:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 1000,
-                "decode_responses": True}
+                "decode_responses": True,
+                "encoding": 'utf-8'
+            }
         }
     }
 }
