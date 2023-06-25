@@ -19,7 +19,7 @@ class WebRun(WebDevice):
 
     def __init__(self):
         super().__init__()
-        self.ele_opt_res: Optional[CaseResult] = None
+        self.ele_opt_res: Optional[CaseResult] = CaseResult.create_empty()
         self.element: Optional[ElementModel] = None
 
     async def open_url(self, url: str, case_id):
