@@ -56,10 +56,10 @@
 2. pip install -r requirements.txt
 3. python manage.py runserver 0.0.0.0:8000
 
-## 执行器-下载
+## 桌面-执行器下载与使用
 * https://www.aliyundrive.com/s/2MT4bgKEojG
 * 注意：请保留config.yml配置文件，并放在与芒果执行器同级目录中，以便读取配置！
-* 注意：执行在运行时，会自动在当前目录下创建logs目录，并在其中创建运行日志和异常截图，方便排查出现得问题。
+* 注意：执行器在运行时，会自动在当前目录下创建logs目录，并在其中创建运行日志和异常截图，方便排查出现得问题。
 
 ## 产品截图
 ![img_7.png](img_7.png)
