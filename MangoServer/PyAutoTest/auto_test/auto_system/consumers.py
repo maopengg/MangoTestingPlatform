@@ -39,7 +39,7 @@ class ChatConsumer(WebsocketConsumer, ):
         elif self.scope.get('path') == '/client/socket':
             if not self.user_redis.get_user_web_obj(self.user) and self.user != 'admin':
                 self.send(self.__json_dumps(300,
-                                            f'您在{WEB}未登录，请登录后再重新打开{DRIVER}进行连接！',
+                                            f'您在{WEB}未登录，请先登录！',
                                             ''))
                 self.websocket_disconnect(message)
             elif self.user == 'admin':

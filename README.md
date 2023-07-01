@@ -38,18 +38,11 @@
 ##### 执行端：暂不开源，提供exe可执行文件包
 
 ## 视频介绍&演示功能
-##### B站视频链接
-
-## 产品截图
-![img_7.png](img_7.png)
-![img.png](img.png)
-![img_2.png](img_2.png)
-![img_1.png](img_1.png)
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
-
+* 演示地址：http://www.mangoautotest.club/
+* 账号：admin
+* 密码：123456
+* 线上地址后端未上线，后续会上线
+##### B站视频教程：https://space.bilibili.com/266410261?spm_id_from=333.1007.0.0
 ## 前端-控制器部署
 1. 前提准备知识：本项目需要一定前端基础知识，请确保掌握 Vue 的基础知识，以便能处理一些常见的问题。 建议在开发前先学一下以下内容，提前了解和学习这些知识，会对项目理解非常有帮助:Vue3 TypeScript VueRouter4 ArcoDesign ES6 Vitejs Pinia
 2. 环境准备：Node 版本: v16.13.1 npm 版本: v6.14.5
@@ -64,7 +57,21 @@
 3. python manage.py runserver 0.0.0.0:8000
 
 ## 执行器-下载
-* 阿里网盘共享下载链接地址
+* https://www.aliyundrive.com/s/2MT4bgKEojG
+* 注意：请保留config.yml配置文件，并放在与芒果执行器同级目录中，以便读取配置！
+* 注意：执行在运行时，会自动在当前目录下创建logs目录，并在其中创建运行日志和异常截图，方便排查出现得问题。
+
+## 产品截图
+![img_7.png](img_7.png)
+![img.png](img.png)
+![img_2.png](img_2.png)
+![img_1.png](img_1.png)
+![img_3.png](img_3.png)
+![img_4.png](img_4.png)
+![img_5.png](img_5.png)
+![img_6.png](img_6.png)
+
+
 
 #### 加作者微信，进芒果自动化测试群
 ![img_8.png](img_8.png)

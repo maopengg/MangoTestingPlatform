@@ -22,7 +22,7 @@ export default class WebSocketService {
     this.state.socket = new WebSocket(this.state.url)
 
     this.state.socket.onopen = () => {
-      Notification.success(`Socket服务已启动，开始接收${SERVER}消息和发送指令给${DRIVER}！`)
+      // Notification.success(`Socket服务已启动，开始接收${SERVER}消息和发送指令给${DRIVER}！`)
       // 发送消息
       const message = {
         code: 200,
@@ -42,6 +42,10 @@ export default class WebSocketService {
 
     this.state.socket.onclose = () => {
       Notification.error('Socket连接已关闭！')
+      // 尝试重连
+      setTimeout(() => {
+        this.connect()
+      }, 3000)
     }
 
     this.state.socket.onerror = (error) => {
