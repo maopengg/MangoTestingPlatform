@@ -13,7 +13,7 @@ class Cache:
     @staticmethod
     def exist_cache(key):
         """
-        判断缓存数据是否存在
+        判断缓存数据是否存在1
         :param key: 唯一标识
         :return: 存在结果
         """
