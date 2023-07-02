@@ -1,7 +1,7 @@
 // WebSocketService.ts
 import { reactive } from 'vue'
 import { Notification } from '@arco-design/web-vue'
-import { DRIVER, SERVER } from '@/setting'
+import { SERVER } from '@/setting'
 
 interface WebSocketServiceState {
   url: string
@@ -37,12 +37,13 @@ export default class WebSocketService {
 
     this.state.socket.onmessage = (event) => {
       const res = JSON.parse(event.data)
-      Notification.info('Socket消息：' + res.msg)
+      Notification.success('Socket消息：' + res.msg)
     }
 
     this.state.socket.onclose = () => {
-      Notification.error('Socket连接已关闭！')
+      Notification.error('Socket连接关闭，正在尝试重连！')
       // 尝试重连
+
       setTimeout(() => {
         this.connect()
       }, 3000)
