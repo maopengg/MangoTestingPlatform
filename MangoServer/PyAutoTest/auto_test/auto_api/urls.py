@@ -22,6 +22,7 @@ urlpatterns = [
     # path("public/header", ApiPublicViews.get_header),
     path("public/public", ApiPublicViews.as_view({'get': 'get_public_type'})),
     path("public/end", ApiPublicViews.as_view({'get': 'get_end_type'})),
+    path("public/client/refresh", ApiPublicViews.as_view({'get': 'client_refresh'})),
     #
     path("relyon", ApiRelyOnCRUD.as_view()),
     path("relyon/test", ApiRelyOnViews.test),
@@ -37,8 +38,10 @@ urlpatterns = [
     path("ass/test", ApiAssertionsViews.test),
 
     # path("run1", RunApiCase.api_run),
-    path("run", RunApiCase.as_view({'get': 'api_run_'})),
-    #
+    path("run", RunApiCase.as_view({'get': 'api_run'})),
+    path("run/batch", RunApiCase.as_view({'get': 'api_batch_run'})),
+    path("run/group", RunApiCase.as_view({'get': 'api_group_run'})),
+
     # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
 
 ]

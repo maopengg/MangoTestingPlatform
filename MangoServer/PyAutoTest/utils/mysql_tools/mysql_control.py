@@ -10,7 +10,6 @@ import pymysql
 from typing import Text
 from warnings import filterwarnings
 
-from PyAutoTest.auto_test.auto_api.api_tools.data_model import Environment
 from PyAutoTest.auto_test.auto_system.models import Database
 
 logger = logging.getLogger('system')
@@ -23,7 +22,8 @@ class MysqlDB:
 
     def __init__(self, environment=None):
         if environment is None:
-            database = Database.objects.get(project=Environment.environment)
+            pass
+            # database = Database.objects.get(project=Environment.environment)
         else:
             database = Database.objects.get(project=environment)
 

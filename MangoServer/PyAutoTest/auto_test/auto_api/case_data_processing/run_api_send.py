@@ -3,51 +3,73 @@
 # @Description: 
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.websocket_.socket_class.actuator_enum.api_enum import ApiEnum
+from PyAutoTest.enum_class.api_enum import ApiEnum
 from PyAutoTest.settings import DRIVER
+from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiCase
+from PyAutoTest.auto_test.auto_api.api_tools.base_model import PublicModel, CaseGroupModel, RequestModel
 
 
 class RunApiSend:
+    def __init__(self, username: str, test_obj: int = None):
+        self.username = username
+        if test_obj:
+            self.host = TestObject.objects.get(id=int(test_obj)).value
 
-    @classmethod
-    def get_api_case_data(cls, case_id: int) -> dict:
-        case_data = ApiCase.objects.get(id=case_id)
-        return ApiCaseSerializers(case_data).data
+    def public_args_data(self):
+        """
+        处理公共数据
+        """
+        objects_filter = ApiPublic.objects.filter(state=1, type=0)
+        public_args_list = []
+        for obj in objects_filter:
+            public_args_model = PublicModel(
+                end=obj.end,
+                public_type=obj.public_type,
+                name=obj.name,
+                key=obj.key,
+                value=obj.value
+            )
+            public_args_dict = public_args_model.dict()
+            public_args_list.append(public_args_dict)
+        return public_args_list, self.case_send(public_args_list, ApiEnum.refresh_cache.value)
 
-    @classmethod
-    def get_api_case_url(cls, run_obj: int) -> str:
-        return TestObject.objects.get(id=run_obj).value
+    def request_data(self, case_id: int, send: bool = False):
+        """
+        处理一个用力请求数据
+        """
+        case = ApiCase.objects.get(id=case_id)
+        case_json = RequestModel(case_id=case.id,
+                                 case_name=case.name,
+                                 url=self.host + case.url,
+                                 method=case.method,
+                                 header=case.header,
+                                 body_type=case.body_type,
+                                 body=case.body).dict()
+        if self.username and send:
+            return case_json, self.case_send(case_json, ApiEnum.api_debug_case.value)
+        return case_json, False
 
-    @classmethod
-    def use_group_case(cls, case_id: int, run_obj: int) -> dict:
-        case_dict = cls.get_api_case_data(case_id)
-        url = cls.get_api_case_url(run_obj)
-        return {
-            'case_url': url,
-            'case_data': case_dict,
-        }
+    def batch_requests_data(self, case_list: list):
+        """
+        批量请求
+        """
+        case_json = [self.request_data(i)[0] for i in case_list]
+        return case_json, self.case_send(case_json, ApiEnum.api_batch_case.value)
 
-    @classmethod
-    def group_case_list(cls, case_list: list, run_obj: int, username: int) -> dict or bool:
-        send_res = cls.run_case_send(username=username,
-                                     case_json={
-                                         'is_group': False,
-                                         'group_name': '',
-                                         'group_case': [cls.use_group_case(case_id, run_obj)
-                                                        for case_id in case_list]
-                                     },
-                                     func_name=ApiEnum.api_case_run.value)
-        return send_res, send_res.get('result')
+    def group_case_data(self, group_name, case_list: list):
+        """
+        用例组数据
+        """
+        case_json = CaseGroupModel(
+            group_name=group_name,
+            case_group_list=[self.request_data(i)[0] for i in case_list]).dict()
+        return case_json, self.case_send(case_json, ApiEnum.api_group_case.value)
 
-    @classmethod
-    def run_case_send(cls, username, case_json, func_name: str) -> dict:
+    def case_send(self, case_json, func_name: str):
         """
         发送给第三方工具方法
-        @param username: 发送给执行器的用户
         @param case_json: 需要发送的json数据
         @param func_name: 需要执行的函数
         @return:
@@ -56,19 +78,9 @@ class RunApiSend:
         f = server.active_send(
             code=200,
             func=func_name,
-            user=username,
+            user=self.username,
             msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
             data=case_json,
             end='client_obj'
         )
-        if f is True:
-            return {'result': True,
-                    "case_data": case_json}
-
-        else:
-            return {'result': False,
-                    "case_data": case_json}
-
-
-if __name__ == '__main__':
-    print(RunApiSend.get_api_case_data(1))
+        return True if f else False
