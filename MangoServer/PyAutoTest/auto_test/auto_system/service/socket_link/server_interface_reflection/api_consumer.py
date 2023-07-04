@@ -4,8 +4,6 @@
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
 class APIConsumer:
-    def __init__(self):
-        pass
 
     def api_test(self):
         pass

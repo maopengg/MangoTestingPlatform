@@ -26,3 +26,18 @@ class DevicePlatformEnum(Enum):
     ANDROID = 1
     IOS = 2
     DESKTOP = 3
+
+
+class SocketEnum(Enum):
+    web_path = '/web/socket'
+    client_path = '/client/socket'
+    common_actuator_name = 'admin'
+    client_conn_obj = 'client_obj'
+    web_conn_obj = 'web_obj'
+
+
+class ClientTypeEnum(str, Enum):
+    ACTUATOR = "actuator"
+    WEB = "web"
+    SERVER = "server"
+

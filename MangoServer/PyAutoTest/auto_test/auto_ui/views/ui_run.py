@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -13,18 +14,17 @@ from PyAutoTest.settings import DRIVER, SERVER
 
 
 class RunUiCase(ViewSet):
-    run_data = RunApi()
 
     @action(methods=['get'], detail=False)
-    def ui_run(self, request):
+    def ui_run(self, request: Request):
         """
         执行一条用例
         @param request:
         @return:
         """
-        case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
-                                                      te=request.GET.get("te"),
-                                                      user=request.user)
+        case_json, res = RunApi(request.user.get("username")).case_run_batch(case_list=int(request.GET.get("case_id")),
+                                                                             te=request.GET.get("te"),
+                                                                             user_id=request.user.get("id"))
         if res:
             return Response({
                 'code': 200,
@@ -63,14 +63,13 @@ class RunUiCase(ViewSet):
     #         })
 
     @action(methods=['get'], detail=False)
-    def ui_run_group(self, request):
+    def ui_run_group(self, request: Request):
         """
         执行单个用例组
         @param request:
         @return:
         """
-        case_json, res = self.run_data.group_batch(group_id_list=int(request.GET.get("group_id")),
-                                                   username=int(request.user.get('username')))
+        case_json, res = RunApi(request.user.get("username")).group_batch(group_id_list=int(request.GET.get("group_id")))
         if res:
             return Response({
                 'code': 200,
@@ -85,15 +84,14 @@ class RunUiCase(ViewSet):
             })
 
     @action(methods=['get'], detail=False)
-    def ui_run_group_batch(self, request):
+    def ui_run_group_batch(self, request: Request):
         """
         批量执行多个用例组
         @param request:
         @return:
         """
         group_id_list = eval(request.GET.get("group_id"))
-        case_json, res = self.run_data.group_batch(group_id_list=group_id_list,
-                                                   username=int(request.user.get('username')))
+        case_json, res = RunApi(request.user.get("username")).group_batch(group_id_list=group_id_list)
         if res:
             return Response({
                 'code': 200,
