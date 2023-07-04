@@ -6,11 +6,12 @@
 
 import ast
 import json
-from PyAutoTest.utils.log_utils.log_control import ERROR, WARNING
-from jsonpath import jsonpath
 from typing import Text, Dict, Any, Union
 
-from PyAutoTest.auto_test.auto_api.api_tools.enum import AssertMethod, load_module_functions
+from PyAutoTest.auto_test.auto_api.service.enum import AssertMethod, load_module_functions
+from PyAutoTest.utils.log_utils.log_control import ERROR, WARNING
+from jsonpath import jsonpath
+
 # from utils.read_files_tools.regular_control import cache_regular
 from PyAutoTest.utils.assertion import assert_type
 from PyAutoTest.utils.exceptions.exceptions import JsonpathExtractionFailed, SqlNotFound, AssertTypeError

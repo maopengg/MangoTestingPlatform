@@ -3,9 +3,10 @@
 # @Description: redis缓存装饰器
 # @Time   : 2022-11-22 8:34
 # @Author : 毛鹏
+from functools import wraps
+
 import requests
 from django.core.cache import cache
-from functools import wraps
 
 
 # 创建缓存

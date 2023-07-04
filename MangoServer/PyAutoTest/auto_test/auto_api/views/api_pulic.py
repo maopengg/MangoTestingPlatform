@@ -5,15 +5,16 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from rest_framework.request import Request
-from PyAutoTest.auto_test.auto_api.api_tools.enum import PublicRelyType, End
+
+from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
+from PyAutoTest.enums.api_enum import PublicTypeEnum, ClientEnum
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
-from PyAutoTest.auto_test.auto_api.case_data_processing.run_api_send import RunApiSend
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
@@ -34,14 +35,14 @@ class ApiPublicViews(ViewSet):
     def client_refresh(self, request: Request):
         data, res = RunApiSend(request.query_params.get("username")).public_args_data()
         return Response({
-                'code': 200,
-                'msg': f'刷新{DRIVER}api自动化数据成功',
-                'data': data
-            }) if res else Response({
-                'code': 300,
-                'msg': f'刷新失败，请确保{DRIVER}已连接{SERVER}',
-                'data': data
-            })
+            'code': 200,
+            'msg': f'刷新{DRIVER}api自动化数据成功',
+            'data': data
+        }) if res else Response({
+            'code': 300,
+            'msg': f'刷新失败，请确保{DRIVER}已连接{SERVER}',
+            'data': data
+        })
 
     @action(methods=['get'], detail=False)
     def get_public_type(self, request):
@@ -53,7 +54,7 @@ class ApiPublicViews(ViewSet):
         return Response({
             'code': 200,
             'msg': '获取类型成功',
-            'data': enum_list(PublicRelyType)
+            'data': enum_list(PublicTypeEnum)
         })
 
     @action(methods=['get'], detail=False)
@@ -66,5 +67,5 @@ class ApiPublicViews(ViewSet):
         return Response({
             'code': 200,
             'msg': '获取类型成功',
-            'data': enum_list(End)
+            'data': enum_list(ClientEnum)
         })

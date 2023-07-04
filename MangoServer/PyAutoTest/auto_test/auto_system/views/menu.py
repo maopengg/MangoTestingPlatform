@@ -103,19 +103,19 @@ def ad_routes():
             ],
         },
         {
-            "menuUrl": "/perf",
+            "menuUrl": "/data_producer",
             "menuName": "性能测试",
             "icon": "IconMinus",
             "parentPath": "",
             "children": [
                 {
-                    "parentPath": "/perf",
-                    "menuUrl": "/perf/prepare",
+                    "parentPath": "/data_producer",
+                    "menuUrl": "/data_producer/prepare",
                     "menuName": "接口准备",
                 },
                 {
-                    "parentPath": "/perf",
-                    "menuUrl": "/perf/report",
+                    "parentPath": "/data_producer",
+                    "menuUrl": "/data_producer/report",
                     "menuName": "测试报告",
                 },
             ],

@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0003_remove_noticeconfig_name_noticeconfig_type'),
     ]

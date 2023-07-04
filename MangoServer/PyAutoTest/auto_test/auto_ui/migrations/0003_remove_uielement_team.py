@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0002_remove_runsort_team'),
     ]

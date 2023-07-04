@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0002_alter_testobject_executor_name'),
     ]

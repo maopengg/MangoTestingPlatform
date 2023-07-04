@@ -1,7 +1,7 @@
 # Create your tests here.
 from django.test import TestCase
 
-from PyAutoTest.auto_test.auto_api.case_data_processing.run_api_send import RunApiSend
+from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 
 
 def add(a, b):

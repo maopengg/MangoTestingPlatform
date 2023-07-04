@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enum_class.system_enum import NoticeEnum
+from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
 
@@ -44,7 +44,7 @@ class NoticeConfigViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test(self, request):
-        from ..notic_tools import notice_main
+        from PyAutoTest.auto_test.auto_system.service.notic_tools import notice_main
         _id = request.query_params.get('id')
         team_id = request.query_params.get('team_id')
         notice_main(team_id, _id)

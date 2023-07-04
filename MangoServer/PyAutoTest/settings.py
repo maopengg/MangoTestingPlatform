@@ -227,7 +227,7 @@ LOGGING = {
             'backupCount': 30,
             'encoding': 'utf-8',
         },
-        'perf': {
+        'data_producer': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_perf/log.log',
@@ -258,8 +258,8 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'perf': {
-            'handlers': ['perf', 'console'],
+        'data_producer': {
+            'handlers': ['data_producer', 'console'],
             'level': 'INFO',
             'propagate': True,
         }

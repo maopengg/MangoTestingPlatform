@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.auto_test.auto_system.scheduled_tasks.tasks import my_task
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import my_task
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
