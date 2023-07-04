@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0004_uicasegroup_case_people_uicasegroup_timing_actuator'),
     ]

@@ -11,7 +11,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enum_class.ui_enum import EnvironmentEnum, DevicePlatform
+from PyAutoTest.enums.system_enum import EnvironmentEnum, DevicePlatformEnum
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
 
@@ -63,7 +63,7 @@ class TestObjectViews(ViewSet):
         return Response({
             'code': 200,
             'msg': '获取数据成功',
-            'data': enum_list(DevicePlatform)
+            'data': enum_list(DevicePlatformEnum)
         })
 
     @action(methods=['get'], detail=False)

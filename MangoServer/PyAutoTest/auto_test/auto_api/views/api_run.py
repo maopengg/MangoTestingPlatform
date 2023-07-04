@@ -7,7 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from PyAutoTest.auto_test.auto_api.case_data_processing.run_api_send import RunApiSend
+
+from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 from PyAutoTest.settings import DRIVER, SERVER
 
 

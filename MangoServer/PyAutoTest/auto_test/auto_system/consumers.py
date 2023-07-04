@@ -17,7 +17,7 @@ logger = logging.getLogger('system')
 class ChatConsumer(WebsocketConsumer, ):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from PyAutoTest.auto_test.auto_system.websocket_.socket_user_redis import SocketUserRedis
+        from PyAutoTest.auto_test.auto_system.service.websocket_ import SocketUserRedis
         self.user_redis = SocketUserRedis()
         from PyAutoTest.auto_test.auto_user.views.user import UserCRUD
         self.user_crud = UserCRUD()
@@ -141,7 +141,7 @@ class ChatConsumer(WebsocketConsumer, ):
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
         if msg['func']:
-            from PyAutoTest.auto_test.auto_system.websocket_.socket_class.api_collection import Collection
+            from PyAutoTest.auto_test.auto_system.service.websocket_.server_interface_reflection import Collection
             Collection().start_up(msg['func'], "应用组")
         if msg.get('end'):
             self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')

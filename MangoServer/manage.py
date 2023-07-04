@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
 import os
-
 import sys
 
-from PyAutoTest.auto_test.auto_system.websocket_.socket_user_redis import SocketUserRedis
+from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
 from script.nuw_logs import __nuw_dir
 
 __nuw_dir()

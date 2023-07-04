@@ -4,13 +4,14 @@
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
 import logging
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.api_tools.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_api.models import ApiCase
+from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 logger = logging.getLogger('api')
