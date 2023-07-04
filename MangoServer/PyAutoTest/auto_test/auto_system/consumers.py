@@ -17,9 +17,10 @@ logger = logging.getLogger('system')
 class ChatConsumer(WebsocketConsumer, ):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from PyAutoTest.auto_test.auto_system.service.websocket_ import SocketUserRedis
-        self.user_redis = SocketUserRedis()
+        from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
         from PyAutoTest.auto_test.auto_user.views.user import UserCRUD
+
+        self.user_redis = SocketUserRedis()
         self.user_crud = UserCRUD()
         self.user = ''
 
@@ -157,7 +158,6 @@ class ChatConsumer(WebsocketConsumer, ):
         :return:
         """
         out = json.loads(msg)
-        print(out['msg'])
 
     @staticmethod
     def __json_loads(msg: str) -> dict:
@@ -175,7 +175,6 @@ class ChatConsumer(WebsocketConsumer, ):
         :param msg:
         :return:
         """
-        print(code, func, user, msg, data)
         return json.dumps({
             'code': code,
             'func': func,
