@@ -6,6 +6,7 @@
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
@@ -30,7 +31,7 @@ class TimeTasksCRUD(ModelCRUD):
 class TimeTasksViews(ViewSet):
 
     @action(methods=['get'], detail=False)
-    def get_time_data(self, request):
+    def get_time_data(self, request: Request):
         data = [{'month': []}, {'day': []}, {'hour': []}, {'minute': []}]
         for i in range(1, 13):
             data[0].get('month').append({'key': i, 'title': i})
@@ -47,8 +48,8 @@ class TimeTasksViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def trigger_timing(self, request):
-        case_json, res = my_task(request.query_params.get('id'))
+    def trigger_timing(self, request: Request):
+        case_json, res = my_task(request.query_params.get('id'), request.user)
         if res:
             return Response({
                 'code': 200,

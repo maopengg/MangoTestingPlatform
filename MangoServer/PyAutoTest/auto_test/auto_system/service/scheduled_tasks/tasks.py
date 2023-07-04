@@ -16,11 +16,10 @@ logger = logging.getLogger('system')
 
 
 def my_task(task_id):
-    case_group = UiCaseGroup.objects.filter(time_name=task_id).values('id')
-    case_list = [i['id'] for i in case_group]
-    # for i in case_group:
-    #     print(i['id'])
-    return RunApi.group_batch(group_id_list=case_list, time=True)
+    case_group = UiCaseGroup.objects.filter(time_name=task_id)
+    case_list = [i['id'] for i in case_group.values('id')]
+
+    return RunApi().group_batch(case_list, True)
 
 
 # 创建定时任务的函数

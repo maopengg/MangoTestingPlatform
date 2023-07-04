@@ -57,17 +57,23 @@ class CaseModel(BaseModel):
     type: int
     case_url: str
     browser_type: int
+    equipment: str
+    package: str
     case_data: list[ElementModel]
 
     @classmethod
     def create_empty(cls) -> "CaseModel":
         return cls(case_id=0, case_name="", local_port="", browser_path="", type=0, case_url="",
-                   browser_type=0, case_data=[])
+                   browser_type=0, equipment="", package="", case_data=[])
 
 
 class CaseGroupModel(BaseModel):
     group_name: str
     case_group: list[CaseModel]
+
+
+class CaseGroupListModel(BaseModel):
+    list: list[CaseGroupModel]
 
 
 class CaseResult(BaseModel):
