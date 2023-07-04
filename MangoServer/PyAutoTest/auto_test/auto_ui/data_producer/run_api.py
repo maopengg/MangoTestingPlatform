@@ -6,94 +6,79 @@
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
-from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel
+from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel, CaseGroupListModel
 from PyAutoTest.enums.actuator_api_enum import UiApiEnum
-from PyAutoTest.enums.system_enum import SocketEnum, DevicePlatformEnum
+from PyAutoTest.enums.system_enum import SocketEnum, DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
 from PyAutoTest.settings import DRIVER
 
 
 class RunApi:
 
-    def __init__(self, user: dict):
+    def __init__(self, user: dict = None):
         self.username = user.get("username")
-        self.user_id = user.get("user_id")
+        self.user_id = user.get("id")
 
-    def group_run(self, group_id: int, time=False):
+    def group_one(self, group_id: int, send: bool) -> tuple[CaseGroupModel, bool] or bool:
         """
         执行一个用例组
         @param group_id: 用例组的ID
+        @param send: 用例组的ID
         @return:
         """
         case_group_data = UiCaseGroup.objects.get(pk=group_id)
-        if time:
-            data = CaseData(case_group_data.timing_actuator.id)
-            case_json = data.group_cases(case_group_data)
-            send_res = self.run_case_send(case_json=case_json,
-                                          func_name=UiApiEnum.run_group_case.value)
-        else:
-            data = CaseData(User.objects.get(username=self.username).id)
-            case_json = data.group_cases(case_group_data)
-            send_res = self.run_case_send(case_json=case_json,
-                                          func_name=UiApiEnum.run_group_case.value)
-        return case_json, send_res
+        if send:
+            self.username = case_group_data.timing_actuator.username
+            self.user_id = case_group_data.case_people.id
+        case_json = self.__group_cases(case_group_data)
+        if self.username and send:
+            return case_json, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+                                                 case_json=case_json)
+        return case_json
 
-    def group_batch(self, group_id_list: list or int, time=False):
+    def group_batch(self, group_id_list: list or int, time: bool = False) -> tuple[CaseGroupListModel, bool]:
         """
         批量执行用例组用例
         @param group_id_list: 用例组的list或int
-        @param time: 用来标识是不是定时任务
+        @param time: 定时
         @return:
         """
-        case_group = []
+        case_group_list = CaseGroupListModel(list=[])
         if isinstance(group_id_list, int):
-            case_json, send_res = self.__group_run(group_id_list, time)
-            case_group.append(case_json)
-            if send_res:
-                return case_group, True
+            case_group_list.list.append(self.group_one(group_id_list, time))
         elif isinstance(group_id_list, list):
             for group_id in group_id_list:
-                case_json, send_res = self.__group_run(group_id, time)
-                case_group.append(case_json)
-                if send_res:
-                    return case_group, True
-        return case_group, False
+                case_group_list.list.append(self.group_one(group_id, time))
+        return case_group_list, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+                                                   case_json=case_group_list)
 
-    def case_run(self, te: int, case_id: int, user_id):
+    def case_noe(self, case_id: int, test_obj: int, send: bool = False) -> tuple[CaseModel, bool] or bool:
         """
         调试用例单个执行
         """
-        data = CaseData(user_id)
-        case_data = data.data_ui_case(te, case_id)
-        send_res = self.run_case_send(case_json=case_data,
-                                      func_name=UiApiEnum.run_debug_case.value)
-        return case_data, send_res
+        case_json = self.__data_ui_case(test_obj, case_id)
+        if self.username and send:
+            return case_json, self.__socket_send(func_name=UiApiEnum.run_debug_case.value, case_json=case_json)
+        return case_json
 
-    def case_run_batch(self, case_list: int or list, te: int, user_id):
+    def case_batch(self, case_list: int or list, test_obj: int) -> tuple[list[CaseModel], bool]:
         """
         调试用例批量执行
         @param case_list: 用例id列表或者一个
-        @param te: 测试环境
-        @param user_id: user_id
+        @param test_obj: 测试环境
         @return:
         """
         case_data = []
         if isinstance(case_list, int):
-            case_json, send_res = self.__case_run(te, case_list, user_id)
-            case_data.append(case_json)
-            if send_res:
-                return case_data, False
+            case_data.append(self.case_noe(test_obj, case_list))
         elif isinstance(case_list, list):
             for case_id in case_list:
-                case_json, send_res = self.__case_run(te, case_id, user_id)
-                case_data.append(case_json)
-                if send_res:
-                    return case_data, False
-        return case_data, True
+                case_data.append(self.case_noe(test_obj, case_id))
+        return case_data, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+                                             case_json=case_data)
 
-    def __run_case_send(self, case_json, func_name: str) -> bool:
+    def __socket_send(self, case_json, func_name: str) -> bool:
         """
         发送给第三方工具方法
         @param case_json: 需要发送的json数据
@@ -105,8 +90,7 @@ class RunApi:
             code=200,
             msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
             user=self.username,
-            client=SocketEnum.client_path.value,
-            func=func_name,
+            is_notice=ClientTypeEnum.ACTUATOR.value,
             data=QueueModel(func_name=func_name, func_args=case_json),
         ))
 
@@ -118,7 +102,7 @@ class RunApi:
         """
         case_single = CaseGroupModel(group_name=group.name, case_group=[])
         for case_id in eval(group.case_id):
-            case_single.case_group.append(self.data_ui_case(group.test_obj.id, case_id))
+            case_single.case_group.append(self.__data_ui_case(group.test_obj.id, case_id))
         return case_single
 
     def __data_ui_case(self, test_obj: int, case_id: int) -> CaseModel:
