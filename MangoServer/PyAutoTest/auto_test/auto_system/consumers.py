@@ -123,7 +123,7 @@ class ChatConsumer(WebsocketConsumer, ):
         :param end: 发送给用户的那个端
         :return:
         """
-        logger.info(f'发送的用户：{user}，函数{func}')
+        logger.info(f'发送的用户：{user}，函数：{func}')
         if end == 'web_obj':
             obj = self.user_redis.get_user_web_obj(user)
             if obj and type(obj) == type(self):
@@ -142,8 +142,9 @@ class ChatConsumer(WebsocketConsumer, ):
         msg = self.__json_loads(message.get('text'))
         logger.info(f'接受执行端发送的消息：{msg}')
         if msg['func']:
-            from PyAutoTest.auto_test.auto_system.service.websocket_.server_interface_reflection import Collection
-            Collection().start_up(msg['func'], "应用组")
+            from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import \
+                ServerInterfaceReflection
+            ServerInterfaceReflection().start_up(msg['func'], "应用组")
         if msg.get('end'):
             self.active_send(code=200, func=None, user=msg.get('user'), msg=msg.get('msg'), data='', end='web_obj')
 
