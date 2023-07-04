@@ -38,29 +38,29 @@ class RunUiCase(ViewSet):
                 'data': case_json
             })
 
-    # @action(methods=['get'], detail=False)
-    # def ui_batch_run(self, request):
-    #     """
-    #     批量执行多条用例
-    #     @param request:
-    #     @return:
-    #     """
-    #     environment = request.GET.get("environment")
-    #     case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
-    #                                                   environment=environment,
-    #                                                   username=int(request.user.get('username')))
-    #     if res:
-    #         return Response({
-    #             'code': 200,
-    #             'msg': f'{DRIVER}已收到全部用例，正在执行中...',
-    #             'data': case_json
-    #         })
-    #     else:
-    #         return Response({
-    #             'code': 300,
-    #             'msg': f'执行失败，请确保{DRIVER}已连接服务器',
-    #             'data': case_json
-    #         })
+    @action(methods=['get'], detail=False)
+    def ui_batch_run(self, request):
+        """
+        批量执行多条用例
+        @param request:
+        @return:
+        """
+        environment = request.GET.get("environment")
+        case_json, res = self.run_data.case_run_batch(case_list=int(request.GET.get("case_id")),
+                                                      environment=environment,
+                                                      username=int(request.user.get('username')))
+        if res:
+            return Response({
+                'code': 200,
+                'msg': f'{DRIVER}已收到全部用例，正在执行中...',
+                'data': case_json
+            })
+        else:
+            return Response({
+                'code': 300,
+                'msg': f'执行失败，请确保{DRIVER}已连接服务器',
+                'data': case_json
+            })
 
     @action(methods=['get'], detail=False)
     def ui_run_group(self, request: Request):
