@@ -7,13 +7,13 @@ from typing import Dict,Union
 
 from pydantic import BaseModel
 
-from PyAutoTest.base_data_model.ui_data_model import CaseGroupModel
+from PyAutoTest.base_data_model.ui_data_model import CaseGroupModel, CaseModel
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 
 
 class QueueModel(BaseModel):
     func_name: str
-    func_args: None | list[CaseGroupModel] | CaseGroupModel
+    func_args: None | list[CaseGroupModel] | CaseGroupModel | CaseModel
 
 
 class SocketDataModel(BaseModel):
