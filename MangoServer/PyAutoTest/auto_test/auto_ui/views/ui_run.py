@@ -90,10 +90,10 @@ class RunUiCase(ViewSet):
         return Response({
             'code': 200,
             'msg': f'{DRIVER}已收到全部用例，正在执行中...',
-            'data': case_json.dict()
+            'data': case_json
         }) if res else Response({
             'code': 300,
             'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
-            'data': case_json.dict()
+            'data': case_json
         })
 

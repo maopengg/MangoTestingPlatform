@@ -3,13 +3,15 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
+from typing import Union
+
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel, CaseGroupListModel
 from PyAutoTest.enums.actuator_api_enum import UiApiEnum
-from PyAutoTest.enums.system_enum import SocketEnum, DevicePlatformEnum, ClientTypeEnum
+from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
 from PyAutoTest.settings import DRIVER
 
@@ -20,7 +22,7 @@ class RunApi:
         self.username = user.get("username")
         self.user_id = user.get("id")
 
-    def group_one(self, group_id: int, send: bool) -> tuple[CaseGroupModel, bool] or bool:
+    def group_one(self, group_id: int, send: bool) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
         """
         执行一个用例组
         @param group_id: 用例组的ID
@@ -37,23 +39,23 @@ class RunApi:
                                                  case_json=case_json)
         return case_json
 
-    def group_batch(self, group_id_list: list or int, time: bool = False) -> tuple[CaseGroupListModel, bool]:
+    def group_batch(self, group_id_list: list or int, time: bool = False) -> tuple[list[CaseGroupModel], bool]:
         """
         批量执行用例组用例
         @param group_id_list: 用例组的list或int
         @param time: 定时
         @return:
         """
-        case_group_list = CaseGroupListModel(list=[])
+        case_group_list = []
         if isinstance(group_id_list, int):
-            case_group_list.list.append(self.group_one(group_id_list, time))
+            case_group_list.append(self.group_one(group_id_list, time))
         elif isinstance(group_id_list, list):
             for group_id in group_id_list:
-                case_group_list.list.append(self.group_one(group_id, time))
+                case_group_list.append(self.group_one(group_id, time))
         return case_group_list, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
                                                    case_json=case_group_list)
 
-    def case_noe(self, case_id: int, test_obj: int, send: bool = False) -> tuple[CaseModel, bool] or bool:
+    def case_noe(self, case_id: int, test_obj: int, send: bool = False) -> tuple[CaseModel, bool] or CaseModel:
         """
         调试用例单个执行
         """
@@ -85,13 +87,13 @@ class RunApi:
         @param func_name: 需要执行的函数
         @return:
         """
-
+        data = QueueModel(func_name=func_name, func_args=case_json)
         return socket_conn.active_send(SocketDataModel(
             code=200,
             msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
             user=self.username,
             is_notice=ClientTypeEnum.ACTUATOR.value,
-            data=QueueModel(func_name=func_name, func_args=case_json),
+            data=data,
         ))
 
     def __group_cases(self, group: UiCaseGroup) -> CaseGroupModel:
