@@ -73,7 +73,8 @@ class CaseGroupModel(BaseModel):
 
 
 class CaseGroupListModel(BaseModel):
-    list: list[CaseGroupModel]
+
+    list_data: list[CaseGroupModel]
 
 
 class CaseResult(BaseModel):
