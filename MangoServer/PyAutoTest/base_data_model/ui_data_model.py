@@ -73,11 +73,10 @@ class CaseGroupModel(BaseModel):
 
 
 class CaseGroupListModel(BaseModel):
-
     list_data: list[CaseGroupModel]
 
 
-class CaseResult(BaseModel):
+class EleResult(BaseModel):
     # 元素的名称
     ele_name_a: str
     ele_name_b: str
@@ -100,10 +99,19 @@ class CaseResult(BaseModel):
                    picture_path="")
 
 
-class OneCaseResult(BaseModel):
+class CaseResult(BaseModel):
     test_result: bool
-    ele_res_list: list[CaseResult]
+    ele_res_list: list[EleResult]
 
     @classmethod
     def create_empty(cls):
         return cls(test_result=False, ele_res_list=[])
+
+
+class GroupCaseResult(BaseModel):
+    test_result: bool
+    case_res_list: list[CaseResult]
+
+    @classmethod
+    def create_empty(cls):
+        return cls(test_result=False, case_res_list=[])

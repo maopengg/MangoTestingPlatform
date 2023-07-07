@@ -21,7 +21,7 @@ function sendMessage(msg = '执行失败') {
     Notification.requestPermission()
   }
   if (Notification.permission === 'granted') {
-    const notification = new Notification(title, { body: msg1 })
+    const notification = new Notification(title)
     notification.addEventListener('click', () => {
       Message.success('请点击确认按钮，给浏览器授权发送消息到windows桌面！')
     })

@@ -76,7 +76,7 @@ class RunUiCase(ViewSet):
         }) if res else Response({
             'code': 300,
             'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
-            'data': case_json.dict()
+            'data': [case_json.dict()]
         })
 
     @action(methods=['get'], detail=False)

@@ -3,17 +3,16 @@
 # @Description: 
 # @Time   : 2023-07-04 13:25
 # @Author : 毛鹏
-from typing import Dict,Union
 
 from pydantic import BaseModel
 
-from PyAutoTest.base_data_model.ui_data_model import CaseGroupModel, CaseModel
+from PyAutoTest.base_data_model.ui_data_model import CaseGroupModel, CaseModel, CaseResult, GroupCaseResult
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 
 
 class QueueModel(BaseModel):
     func_name: str
-    func_args: None | list[CaseGroupModel] | CaseGroupModel | CaseModel
+    func_args: None | list[CaseGroupModel] | CaseGroupModel | CaseModel | CaseResult | GroupCaseResult
 
 
 class SocketDataModel(BaseModel):
