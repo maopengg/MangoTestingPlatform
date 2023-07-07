@@ -10,7 +10,6 @@ from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.interface_reflection import ServerInterfaceReflection
-
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
 from PyAutoTest.settings import DRIVER, SERVER, WEB
@@ -77,10 +76,13 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         self.user = self.scope.get('query_string').decode()
-        if self.scope.get('path') == SocketEnum.web_path.value:
-            logger.info(json.loads(message.get('text')))
-        elif self.scope.get('path') == SocketEnum.client_path.value:
-            logger.info(json.loads(message.get('text')))
+        msg = SocketDataModel(**json.loads(message.get('text')))
+        logger.info(f'接受的消息：{msg}')
+        if msg.data:
+            if msg.data.func_name:
+                self.s.q.put(msg.data)
+        if msg.is_notice:
+            self.active_send(msg)
 
     def websocket_disconnect(self, message):
         """
@@ -125,22 +127,6 @@ class ChatConsumer(WebsocketConsumer):
                 obj.send(send_data.json())
                 return True
         return False
-
-    def __receive_actuator(self, message):
-        """
-        接受消息
-        @param message:
-        @return:
-        """
-        msg = SocketDataModel(**json.loads(message.get('text')))
-        logger.info(f'接受执行端发送的消息：{msg}')
-        if msg.data.func_name:
-            self.s.q.put(msg.data)
-        if msg.is_notice:
-            self.active_send(SocketDataModel(code=200,
-                                             msg=msg.msg,
-                                             user=msg.user,
-                                             is_notice=msg.is_notice))
 
 
 socket_conn = ChatConsumer()

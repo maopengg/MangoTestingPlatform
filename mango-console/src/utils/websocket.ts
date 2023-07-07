@@ -37,11 +37,15 @@ export default class WebSocketService {
 
     this.state.socket.onmessage = (event) => {
       const res = JSON.parse(event.data)
-      Notification.success('Socket消息：' + res.msg)
+      if (res.code == 200) {
+        Notification.success('socket：' + res.msg)
+      } else {
+        Notification.error('socket:' + res.msg)
+      }
     }
 
     this.state.socket.onclose = () => {
-      Notification.error('Socket连接关闭，正在尝试重连！')
+      Notification.error('socket连接关闭，正在尝试重连！')
       // 尝试重连
 
       setTimeout(() => {
@@ -50,7 +54,7 @@ export default class WebSocketService {
     }
 
     this.state.socket.onerror = (error) => {
-      console.log('Socket发生错误：', error)
+      console.log('socket发生错误：', error)
     }
   }
 

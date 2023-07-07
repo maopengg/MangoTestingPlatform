@@ -3,13 +3,12 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
-from typing import Union
 
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel, CaseGroupListModel
+from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel
 from PyAutoTest.enums.actuator_api_enum import UiApiEnum
 from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
@@ -22,15 +21,16 @@ class RunApi:
         self.username = user.get("username")
         self.user_id = user.get("id")
 
-    def group_one(self, group_id: int, send: bool) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
+    def group_one(self, group_id: int, send: bool, time: bool=False) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
         """
         执行一个用例组
         @param group_id: 用例组的ID
         @param send: 用例组的ID
+        @param time: 用例组的ID
         @return:
         """
         case_group_data = UiCaseGroup.objects.get(pk=group_id)
-        if send:
+        if send and time:
             self.username = case_group_data.timing_actuator.username
             self.user_id = case_group_data.case_people.id
         case_json = self.__group_cases(case_group_data)
@@ -48,10 +48,10 @@ class RunApi:
         """
         case_group_list = []
         if isinstance(group_id_list, int):
-            case_group_list.append(self.group_one(group_id_list, time))
+            case_group_list.append(self.group_one(group_id_list, time, time))
         elif isinstance(group_id_list, list):
             for group_id in group_id_list:
-                case_group_list.append(self.group_one(group_id, time))
+                case_group_list.append(self.group_one(group_id, time, time))
         return case_group_list, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
                                                    case_json=case_group_list)
 
