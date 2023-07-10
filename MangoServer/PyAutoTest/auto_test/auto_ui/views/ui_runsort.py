@@ -8,6 +8,7 @@ import logging
 
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -22,17 +23,17 @@ logger = logging.getLogger('ui')
 
 
 class RunSortSerializers(serializers.ModelSerializer):
-    el_page = UiPageSerializers(read_only=True)
-    el_name = UiElementSerializers(read_only=True)
-    el_name_b = UiElementSerializers(read_only=True)
-    case = UiCaseSerializers(read_only=True)
-
     class Meta:
         model = RunSort
         fields = '__all__'
 
 
 class RunSortSerializersC(serializers.ModelSerializer):
+    el_page = UiPageSerializers(read_only=True)
+    el_name = UiElementSerializers(read_only=True)
+    el_name_b = UiElementSerializers(read_only=True)
+    case = UiCaseSerializers(read_only=True)
+
     class Meta:
         model = RunSort
         fields = '__all__'
@@ -44,10 +45,10 @@ class RunSortCRUD(ModelCRUD):
     """
     model = RunSort
     queryset = RunSort.objects.all().order_by('run_sort')
-    serializer_class = RunSortSerializers
-    serializer = RunSortSerializersC
+    serializer_class = RunSortSerializersC
+    serializer = RunSortSerializers
 
-    def get(self, request):
+    def get(self, request: Request):
         books = self.model.objects.filter(case_id=request.GET.get('case_id')).order_by('run_sort')
         data = [self.serializer_class(i).data for i in books]
         return Response({
@@ -80,7 +81,7 @@ class RunSortView(ViewSet):
     serializer_class = RunSortSerializers
 
     @action(methods=['get'], detail=False)
-    def get_ope_type(self, request):
+    def get_ope_type(self, request: Request):
         redis = RedisBase('default')
         data = redis.get('PageElementOperations')
         return Response({
@@ -95,7 +96,7 @@ class RunSortView(ViewSet):
         # })
 
     @action(methods=['get'], detail=False)
-    def get_ass_type(self, request):
+    def get_ass_type(self, request: Request):
         redis = RedisBase('default')
         data = redis.get('PageElementAssertion')
         return Response({

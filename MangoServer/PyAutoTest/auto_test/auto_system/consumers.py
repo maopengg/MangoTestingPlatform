@@ -115,7 +115,7 @@ class ChatConsumer(WebsocketConsumer):
         :param send_data: 发送的数据
         :return:
         """
-        logger.info(f'发送的用户：{send_data.user}，发送的数据：{send_data.data.json() if send_data.data else None}')
+        logger.info(f'发送的用户：{send_data.user}，发送的数据：{json.dumps(send_data.data.dict(), ensure_ascii=False) if send_data.data else None}')
         if send_data.is_notice == ClientTypeEnum.WEB.value:
             obj = self.user_redis.get_user_web_obj(send_data.user)
             if obj and isinstance(obj, type(self)):

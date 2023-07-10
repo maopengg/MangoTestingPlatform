@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -17,6 +18,12 @@ from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = TestObject
+        fields = '__all__'
+
+
+class TestObjectSerializersC(serializers.ModelSerializer):
     team = ProjectSerializers(read_only=True)
     executor_name = UserSerializers(read_only=True)
 
@@ -25,23 +32,19 @@ class TestObjectSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class TestObjectSerializersC(serializers.ModelSerializer):
-    class Meta:
-        model = TestObject
-        fields = '__all__'
-
-
 class TestObjectCRUD(ModelCRUD):
     model = TestObject
     queryset = TestObject.objects.all()
-    serializer_class = TestObjectSerializers
-    serializer = TestObjectSerializersC
+    serializer_class = TestObjectSerializersC
+    serializer = TestObjectSerializers
 
 
 class TestObjectViews(ViewSet):
+    model = TestObject
+    serializer_class = TestObjectSerializers
 
     @action(methods=['get'], detail=False)
-    def get_environment_enum(self, request):
+    def get_environment_enum(self, request: Request):
         """
          获取环境信息
          :param request:
@@ -54,7 +57,7 @@ class TestObjectViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_platform_enum(self, request):
+    def get_platform_enum(self, request: Request):
         """
          获取平台枚举
          :param request:
@@ -67,7 +70,7 @@ class TestObjectViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_test_obj_name(self, request):
+    def get_test_obj_name(self, request: Request):
         """
          获取平台枚举
          :param request:

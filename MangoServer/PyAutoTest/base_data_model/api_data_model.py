@@ -18,7 +18,7 @@ class RequestModel(BaseModel):
     body: dict | str = None
 
 
-class CaseGroupModel(BaseModel):
+class ApiCaseGroupModel(BaseModel):
     group_name: str
     case_group_list: list[RequestModel]
 

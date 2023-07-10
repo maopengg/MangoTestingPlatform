@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -26,9 +27,10 @@ class ProjectCRUD(ModelCRUD):
 
 
 class ProjectViews(ViewSet):
-
+    model = Project
+    serializer_class = ProjectSerializers
     @action(methods=['get'], detail=False)
-    def get_all_items(self, request):
+    def get_all_items(self, request: Request):
         items = Project.objects.all()
         data = [{'title': i.name, 'key': i.pk} for i in items]
         return Response({

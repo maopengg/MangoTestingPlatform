@@ -49,7 +49,7 @@ class TimeTasksViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def trigger_timing(self, request: Request):
-        case_json, res = my_task(request.query_params.get('id'), request.user)
+        case_json, res = my_task(request.query_params.get('id'))
         if res:
             return Response({
                 'code': 200,

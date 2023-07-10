@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -16,14 +17,14 @@ from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
-
     class Meta:
         model = NoticeConfig
         fields = '__all__'
 
 
 class NoticeConfigSerializersC(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
     class Meta:
         model = NoticeConfig
         fields = '__all__'
@@ -32,18 +33,18 @@ class NoticeConfigSerializersC(serializers.ModelSerializer):
 class NoticeConfigCRUD(ModelCRUD):
     model = NoticeConfig
     queryset = NoticeConfig.objects.all()
-    serializer_class = NoticeConfigSerializers
-    serializer = NoticeConfigSerializersC
+    serializer_class = NoticeConfigSerializersC
+    serializer = NoticeConfigSerializers
 
 
 class NoticeConfigViews(ViewSet):
     model = NoticeConfig
     queryset = NoticeConfig.objects.all()
-    serializer_class = NoticeConfigSerializers
-    serializer = NoticeConfigSerializersC
+    serializer_class = NoticeConfigSerializersC
+    serializer = NoticeConfigSerializers
 
     @action(methods=['get'], detail=False)
-    def test(self, request):
+    def test(self, request: Request):
         from PyAutoTest.auto_test.auto_system.service.notic_tools import notice_main
         _id = request.query_params.get('id')
         team_id = request.query_params.get('team_id')
@@ -55,7 +56,7 @@ class NoticeConfigViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_notice_type(self, request):
+    def get_notice_type(self, request: Request):
         return Response({
             'code': 200,
             'msg': '获取通知类型成功',

@@ -1,4 +1,5 @@
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -9,12 +10,12 @@ from PyAutoTest.utils.other_utils.random_data import RandomData
 class SystemViews(ViewSet):
 
     @action(methods=['post'], detail=False)
-    def test_func(self, request):
+    def test_func(self, request: Request):
         print(request.data)
         return Response(request.data)
 
     @action(methods=['get'], detail=False)
-    def common_variable(self, request):
+    def common_variable(self, request: Request):
         """
         返回公共变量页
         @param request:
@@ -27,7 +28,7 @@ class SystemViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def random_data(self, request):
+    def random_data(self, request: Request):
         name = request.GET.get("name")
         if '()' in name:
             try:
@@ -65,7 +66,7 @@ class SystemViews(ViewSet):
             })
 
     @action(methods=['get'], detail=False)
-    def shuyun_tag_mark_query(self, request):
+    def shuyun_tag_mark_query(self, request: Request):
         tag_type = request.query_params.get('tagType')
         plat_account = request.query_params.get('platAccount')
         plat_code = request.query_params.get('platCode')
