@@ -626,11 +626,15 @@ function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
 }
 
 function onRunCase(record: any) {
+  if (testObj.te == null) {
+    Message.error('请先选择用例执行的环境')
+    return
+  }
   get({
     url: ApiRun,
     data: () => {
       return {
-        case_id_list: '[' + record.id + ',]',
+        case_id: record.id,
         test_obj: testObj.te
       }
     }

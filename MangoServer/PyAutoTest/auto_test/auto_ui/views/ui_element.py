@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -16,14 +17,14 @@ from PyAutoTest.utils.view_utils.view_tools import enum_list
 
 
 class UiElementSerializers(serializers.ModelSerializer):
-    page = UiPageSerializers()
-
     class Meta:
         model = UiElement
         fields = '__all__'
 
 
 class UiElementSerializersC(serializers.ModelSerializer):
+    page = UiPageSerializers(read_only=True)
+
     class Meta:
         model = UiElement
         fields = '__all__'  # 全部进行序列化
@@ -32,8 +33,8 @@ class UiElementSerializersC(serializers.ModelSerializer):
 class UiElementCRUD(ModelCRUD):
     model = UiElement
     queryset = UiElement.objects.all()
-    serializer_class = UiElementSerializers
-    serializer = UiElementSerializersC
+    serializer_class = UiElementSerializersC
+    serializer = UiElementSerializers
 
     def get(self, request):
         try:
@@ -53,9 +54,11 @@ class UiElementCRUD(ModelCRUD):
 
 
 class UiElementViews(ViewSet):
+    model = UiElement
+    serializer_class = UiElementSerializers
 
     @action(methods=['get'], detail=False)
-    def get_ele_name(self, request):
+    def get_ele_name(self, request: Request):
         """
         获取
         :param request:

@@ -11,6 +11,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.api_enum import PublicTypeEnum, ClientEnum
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
@@ -23,13 +24,24 @@ class ApiPublicSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ApiPublicSerializersC(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
+    class Meta:
+        model = ApiPublic
+        fields = '__all__'
+
+
 class ApiPublicCRUD(ModelCRUD):
     model = ApiPublic
     queryset = ApiPublic.objects.all()
-    serializer_class = ApiPublicSerializers
+    serializer_class = ApiPublicSerializersC
+    serializer = ApiPublicSerializers
 
 
 class ApiPublicViews(ViewSet):
+    model = ApiPublic
+    serializer_class = ApiPublicSerializers
 
     @action(methods=['get'], detail=False)
     def client_refresh(self, request: Request):
@@ -45,7 +57,7 @@ class ApiPublicViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_public_type(self, request):
+    def get_public_type(self, request: Request):
         """
         获取公共类型
         :param request:
@@ -58,7 +70,7 @@ class ApiPublicViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_end_type(self, request):
+    def get_end_type(self, request: Request):
         """
         获取客户端类型
         :param request:

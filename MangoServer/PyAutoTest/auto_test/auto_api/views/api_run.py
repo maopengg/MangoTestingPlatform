@@ -16,22 +16,22 @@ class RunApiCase(ViewSet):
 
     @action(methods=['get'], detail=False)
     def api_run(self, request: Request):
-        case_json, res = RunApiSend(request.query_params.get("username"),
+        case_json, res = RunApiSend(request.user.get("username"),
                                     request.query_params.get("test_obj")).request_data(
             request.query_params.get("case_id"), True)
         return Response({
             'code': 200,
             'msg': f'{DRIVER}已收到全部用例，正在执行中...',
-            'data': case_json
+            'data': case_json.dict()
         }) if res else Response({
             'code': 300,
             'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
-            'data': case_json
+            'data': case_json.dict()
         })
 
     @action(methods=['get'], detail=False)
     def api_batch_run(self, request: Request):
-        case_json, res = RunApiSend(request.query_params.get("username"),
+        case_json, res = RunApiSend(request.user.get("username"),
                                     request.query_params.get("test_obj")).batch_requests_data(
             eval(request.query_params.get("case_list")))
         return Response({
@@ -46,16 +46,16 @@ class RunApiCase(ViewSet):
 
     @action(methods=['get'], detail=False)
     def api_group_run(self, request: Request):
-        case_json, res = RunApiSend(request.query_params.get("username"),
+        case_json, res = RunApiSend(request.user.get("username"),
                                     request.query_params.get("test_obj")).group_case_data(
             request.query_params.get("group_name"),
             eval(request.query_params.get("case_list")))
         return Response({
             'code': 200,
             'msg': f'{DRIVER}已收到全部用例，正在执行中...',
-            'data': case_json
+            'data': case_json.dict()
         }) if res else Response({
             'code': 300,
             'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
-            'data': case_json
+            'data': case_json.dict()
         })

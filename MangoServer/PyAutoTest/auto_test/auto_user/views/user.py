@@ -2,6 +2,7 @@
 
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -14,6 +15,12 @@ from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class UserSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        exclude = ['password']
+
+
+class UserSerializersC(serializers.ModelSerializer):
     department = ProjectSerializers(read_only=True)
     role = RoleSerializers(read_only=True)
 
@@ -22,23 +29,17 @@ class UserSerializers(serializers.ModelSerializer):
         exclude = ['password']
 
 
-class UserSerializersC(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = '__all__'
-
-
 class UserCRUD(ModelCRUD):
     model = User
     queryset = User.objects.all()
-    serializer_class = UserSerializers
-    serializer = UserSerializersC
+    serializer_class = UserSerializersC
+    serializer = UserSerializers
 
 
 class UserViews(ViewSet):
 
     @action(methods=['get'], detail=False)
-    def get_nickname(self, request):
+    def get_nickname(self, request: Request):
         """
         获取用户名称
         :param request:
@@ -57,7 +58,7 @@ class LoginViews(ViewSet):
     authentication_classes = []
 
     @action(methods=['post'], detail=False)
-    def login(self, request):
+    def login(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
         user_info = User.objects.filter(username=username, password=password).first()
@@ -88,7 +89,7 @@ class LoginViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def menu(self, request):
+    def menu(self, request: Request):
         dic = ad_routes()
         return Response({
             'code': 200,

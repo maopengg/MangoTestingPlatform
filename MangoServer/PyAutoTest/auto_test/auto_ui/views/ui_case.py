@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -15,6 +16,12 @@ from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = UiCase
+        fields = '__all__'
+
+
+class UiCaseSerializersC(serializers.ModelSerializer):
     team = ProjectSerializers(read_only=True)
     time_name = TimeTasksSerializers(read_only=True)
 
@@ -23,17 +30,11 @@ class UiCaseSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class UiCaseSerializersC(serializers.ModelSerializer):
-    class Meta:
-        model = UiCase
-        fields = '__all__'
-
-
 class UiCaseCRUD(ModelCRUD):
     model = UiCase
     queryset = UiCase.objects.all()
-    serializer_class = UiCaseSerializers
-    serializer = UiCaseSerializersC
+    serializer_class = UiCaseSerializersC
+    serializer = UiCaseSerializers
 
 
 class UiCaseViews(ViewSet):
@@ -41,7 +42,7 @@ class UiCaseViews(ViewSet):
     serializer_class = UiCaseSerializers
 
     @action(methods=['put'], detail=False)
-    def put_type(self, request):
+    def put_type(self, request: Request):
         ser = []
         data = []
         for i in eval(request.data.get('id')):
@@ -66,7 +67,7 @@ class UiCaseViews(ViewSet):
         })
 
     @action(methods=['get'], detail=False)
-    def get_case_obj_name(self, request):
+    def get_case_obj_name(self, request: Request):
         """
          获取所有用例id和名称
          :param request:

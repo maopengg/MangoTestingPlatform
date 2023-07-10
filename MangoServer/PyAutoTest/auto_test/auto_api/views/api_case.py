@@ -7,12 +7,14 @@ import logging
 
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 
 logger = logging.getLogger('api')
 
@@ -23,19 +25,27 @@ class ApiCaseSerializers(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ApiCaseSerializersC(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
+    class Meta:
+        model = ApiCase
+        fields = '__all__'
+
+
 class ApiCaseCRUD(ModelCRUD):
     model = ApiCase
     queryset = ApiCase.objects.all()
-    serializer_class = ApiCaseSerializers
+    serializer_class = ApiCaseSerializersC
+    serializer = ApiCaseSerializers
 
 
 class ApiCaseViews(ViewSet):
     model = ApiCase
-    queryset = ApiCase.objects.all()
     serializer_class = ApiCaseSerializers
 
     @action(methods=['get'], detail=False)
-    def api_synchronous_interface(self, request):
+    def api_synchronous_interface(self, request: Request):
         """
         同步接口
         @param request:

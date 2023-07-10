@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -14,8 +15,6 @@ from PyAutoTest.utils.view_utils.model_crud import ModelCRUD, ModelR
 
 
 class UiPageSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
-
     class Meta:
         model = UiPage
         fields = '__all__'  # 全部进行序列化
@@ -24,6 +23,8 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 
 class UiPageSerializersC(serializers.ModelSerializer):
+    team = ProjectSerializers(read_only=True)
+
     class Meta:
         model = UiPage
         fields = '__all__'
@@ -40,15 +41,17 @@ class UiPageR(ModelR):
 class UiPageCRUD(ModelCRUD):
     model = UiPage
     queryset = UiPage.objects.all()
-    serializer_class = UiPageSerializers
+    serializer_class = UiPageSerializersC
     # post专用序列化器
-    serializer = UiPageSerializersC
+    serializer = UiPageSerializers
 
 
 class UiPageViews(ViewSet):
+    model = UiPage
+    serializer_class = UiPageSerializers
 
     @action(methods=['GET'], detail=False)
-    def get_page_name(self, request):
+    def get_page_name(self, request: Request):
         """
         获取所有的页面名称
         """

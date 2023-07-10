@@ -29,13 +29,13 @@ urlpatterns = [
     #
     #
     path("case/group", ApiCaseGroupCRUD.as_view()),
-    path("case/group/test", ApiCaseGroupViews.test),
+    path("case/group/test", ApiCaseGroupViews.as_view({'get': 'test'})),
     #
     path("result", ApiResultCRUD.as_view()),
-    path("result/test", ApiResultViews.test),
+    path("result/test", ApiResultViews.as_view({'get': 'test'})),
     #
     path("ass", ApiAssertionsCRUD.as_view()),
-    path("ass/test", ApiAssertionsViews.test),
+    path("ass/test", ApiAssertionsViews.as_view({'get': 'test'})),
 
     # path("run1", RunApiCase.api_run),
     path("run", RunApiCase.as_view({'get': 'api_run'})),
