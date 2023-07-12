@@ -4,13 +4,12 @@
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_system.service.notic_tools import notice_main
+from PyAutoTest.utils.other_utils.decorator import convert_args
 
 
 class SystemConsumer:
 
-    def __init__(self):
-        pass
-
+    @convert_args
     def system_notice_main(self, team_name, case=1):
         """ 启动通知消息，自动进行通知 """
         notice_main(team_name, case)

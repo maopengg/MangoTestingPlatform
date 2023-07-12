@@ -24,24 +24,27 @@ class SystemViews(ViewSet):
     @action(methods=['get'], detail=False)
     def send_common_parameters(self, request: Request):
         data: list[ApiPublicModel] = GetCommonParameters.get_args(request.query_params.get('test_obj_id'))
-        de = SocketDataModel(code=200,
-                             msg="接收公共参数成功，正在写入缓存",
-                             user=request.user.get('username'),
-                             is_notice=ClientTypeEnum.ACTUATOR.value,
-                             data=QueueModel(func_name=ApiApiEnum.api_common_parameters.value,
-                                             func_args=data))
-        de3 = SocketDataModel(**de.dict())
-        res = socket_conn.active_send(de3)
 
-        return Response({
+        socket_data = SocketDataModel(
+            code=200,
+            msg="接收公共参数成功，正在写入缓存",
+            user=request.user.get('username'),
+            is_notice=ClientTypeEnum.ACTUATOR.value,
+            data=QueueModel(
+                func_name=ApiApiEnum.api_common_parameters.value,
+                func_args=data
+            )
+        )
+        res = socket_conn.active_send(socket_data)
+        response_data = {
             'code': 200,
             'msg': f'公共参数已同步给{DRIVER}',
             "data": data
-        }) if res else Response({
-            'code': 300,
-            'msg': '发送公共参数失败，请检查执行器是否连接',
-            "data": data
-        })
+        }
+        if not res:
+            response_data['code'] = 300
+            response_data['msg'] = '发送公共参数失败，请检查执行器是否连接'
+        return Response(response_data)
 
     @action(methods=['get'], detail=False)
     def common_variable(self, request: Request):

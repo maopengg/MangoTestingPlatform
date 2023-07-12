@@ -31,10 +31,11 @@ class MethodEnum(Enum):
 
 
 class ApiPublicTypeEnum(Enum):
-    """ {"0": "CUSTOM"}，{"1": "SQL"}，{"2": "HEAD"} """
-    CUSTOM = 0
-    SQL = 1
-    HEAD = 2
+    """ {"0": "登录"}，{"1": "自定义"}，{"2": "SQL"}，{"2": "请求头"} """
+    LOGIN = 0
+    CUSTOM = 1
+    SQL = 2
+    HEADER = 3
 
 
 class StateEnum(Enum):
