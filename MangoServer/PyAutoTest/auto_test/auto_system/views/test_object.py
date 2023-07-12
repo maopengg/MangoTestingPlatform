@@ -83,3 +83,4 @@ class TestObjectViews(ViewSet):
             'msg': '获取数据成功',
             'data': data
         })
+

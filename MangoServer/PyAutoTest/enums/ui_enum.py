@@ -12,6 +12,12 @@ class BrowserTypeEnum(Enum):
     WEBKIT = 2
 
 
+class UiPublicTypeEnum(Enum):
+    """ {"0": "CUSTOM"}，{"1": "SQL"}，{"2": "HEAD"} """
+    CUSTOM = 0
+    SQL = 1
+
+
 class ElementExpEnum(Enum):
     """ {0: "XPATH"}，{1: "ID"}，{2: "NAME"}，{3: "TEXT"}，{4: "占位符"}，{5: "CSS"}，{11: "DESCRIPTION"}，{12: "BOUNDS"}，{13: "百分比坐标点击"} """
     XPATH = 0

@@ -40,3 +40,4 @@ class ApiCaseGroupViews(ViewSet):
     @action(methods=['put'], detail=False)
     def put_type(self, request: Request):
         pass
+

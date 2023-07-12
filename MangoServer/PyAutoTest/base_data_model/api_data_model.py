@@ -47,3 +47,18 @@ class PublicModel(BaseModel):
     name: str
     key: str
     value: str
+
+
+class ApiPublicModel(BaseModel):
+    """api公共"""
+    team_id: int
+    end: int
+    public_type: int
+    name: str
+    key: str
+    value: str
+    state: int
+    type: int
+
+    class Config:
+        orm_mode = True

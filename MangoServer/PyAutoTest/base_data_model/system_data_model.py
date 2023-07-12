@@ -6,15 +6,15 @@
 
 from pydantic import BaseModel
 
+from PyAutoTest.base_data_model.api_data_model import RequestModel, ApiCaseGroupModel, PublicModel, ApiPublicModel
 from PyAutoTest.base_data_model.ui_data_model import CaseGroupModel, CaseModel, CaseResult, GroupCaseResult
 from PyAutoTest.enums.system_enum import ClientTypeEnum
-from PyAutoTest.base_data_model.api_data_model import RequestModel, ApiCaseGroupModel, PublicModel
 
 
 class QueueModel(BaseModel):
     func_name: str
     func_args: None | list[
-        CaseGroupModel] | CaseGroupModel | CaseModel | CaseResult | GroupCaseResult | RequestModel | ApiCaseGroupModel | PublicModel
+        CaseGroupModel] | CaseGroupModel | CaseModel | CaseResult | GroupCaseResult | RequestModel | ApiCaseGroupModel | PublicModel | list[ApiPublicModel]
 
 
 class SocketDataModel(BaseModel):
