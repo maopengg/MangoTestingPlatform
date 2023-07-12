@@ -4,11 +4,11 @@
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
 
+from PyAutoTest.utils.other_utils.decorator import convert_args
+
 
 class PerfConsumer:
 
-    def __init__(self):
-        pass
-
+    @convert_args
     def perf_tst(self, team_name, case=1):
         pass

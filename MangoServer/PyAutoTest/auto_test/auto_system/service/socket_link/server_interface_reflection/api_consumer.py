@@ -3,7 +3,10 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-class APIConsumer:
+from PyAutoTest.utils.other_utils.decorator import convert_args
 
+
+class APIConsumer:
+    @convert_args
     def api_test(self):
         pass
