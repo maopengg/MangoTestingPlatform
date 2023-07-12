@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enums.api_enum import PublicTypeEnum, ClientEnum
+from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, ClientEnum
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.utils.view_utils.view_tools import enum_list
@@ -66,7 +66,7 @@ class ApiPublicViews(ViewSet):
         return Response({
             'code': 200,
             'msg': '获取类型成功',
-            'data': enum_list(PublicTypeEnum)
+            'data': enum_list(ApiPublicTypeEnum)
         })
 
     @action(methods=['get'], detail=False)

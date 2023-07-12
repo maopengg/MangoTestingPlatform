@@ -30,7 +30,7 @@ class MethodEnum(Enum):
     PATCH = 6
 
 
-class PublicTypeEnum(Enum):
+class ApiPublicTypeEnum(Enum):
     """ {"0": "CUSTOM"}，{"1": "SQL"}，{"2": "HEAD"} """
     CUSTOM = 0
     SQL = 1

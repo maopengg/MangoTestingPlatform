@@ -52,7 +52,8 @@ import { useDebounceFn, useFullscreen } from '@vueuse/core'
 import useEmit from '@/hooks/useEmit'
 import useAppConfigStore from '@/store/modules/app-config'
 import { useTestObj } from '@/store/modules/get-test-obj'
-
+import { sendCommonParameters } from '@/api/url'
+import { get } from '@/api/http'
 export default defineComponent({
   name: 'ActionItems',
   components: {
@@ -101,8 +102,20 @@ export default defineComponent({
     }
 
     function onSelect(key: number) {
-      te.value = key
-      testObj.te = key
+      get({
+        url: sendCommonParameters,
+        data: () => {
+          return {
+            test_obj_id: key
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          te.value = key
+          testObj.te = key
+        })
+        .catch()
     }
 
     function onShowSetting() {

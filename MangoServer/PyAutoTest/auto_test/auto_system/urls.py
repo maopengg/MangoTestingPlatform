@@ -34,6 +34,7 @@ urlpatterns = [
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("test/func", SystemViews.as_view({'post': 'test_func'})),
+    path("send/common/parameters", SystemViews.as_view({'get': 'send_common_parameters'})),
     # zshop测试接口
     path("shuyun/tag/mark/query", SystemViews.as_view({'get': 'shuyun_tag_mark_query'})),
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),

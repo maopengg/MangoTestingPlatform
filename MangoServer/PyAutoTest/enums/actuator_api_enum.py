@@ -6,6 +6,7 @@ class ApiApiEnum(Enum):
     api_batch_case = 'api_batch_case'
     api_group_case = 'api_group_case'
     refresh_cache = 'refresh_cache'
+    api_common_parameters = 'api_common_parameters'
 
 
 class UiApiEnum(Enum):
