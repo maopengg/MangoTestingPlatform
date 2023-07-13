@@ -237,7 +237,7 @@ const conditionItems: Array<FormItem> = [
 conditionItems[2].optionItems = project.data
 const formItems = [
   {
-    label: '项目组名称',
+    label: '项目名称',
     key: 'project',
     value: ref(''),
     placeholder: '请选择项目名称',

@@ -13,7 +13,7 @@ class RequestModel(BaseModel):
     case_name: str
     url: str
     method: str
-    header: dict | None
+    header: str | None
     body_type: int = None
     body: dict | str = None
 
@@ -52,7 +52,7 @@ class PublicModel(BaseModel):
 class ApiPublicModel(BaseModel):
     """api公共"""
     project_id: int
-    end: int
+    client: int
     public_type: int
     name: str
     key: str

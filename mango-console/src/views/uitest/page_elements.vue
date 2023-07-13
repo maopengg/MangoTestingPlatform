@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目组：' + uiElementData.project_name">
+      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目：' + uiElementData.project_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>

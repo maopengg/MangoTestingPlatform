@@ -11,8 +11,8 @@ from PyAutoTest.auto_test.auto_user.models import User
 
 class TestObject(models.Model):
     """测试对象"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     environment = models.SmallIntegerField(verbose_name="环境备注")
@@ -28,8 +28,8 @@ class TestObject(models.Model):
 
 class NoticeConfig(models.Model):
     """通知配置表"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     config = models.CharField(verbose_name="通知配置", max_length=1028, null=True)
@@ -42,8 +42,8 @@ class NoticeConfig(models.Model):
 
 class Database(models.Model):
     """数据库表"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="数据库名称", max_length=64)
@@ -58,8 +58,8 @@ class Database(models.Model):
 
 
 class TimeTasks(models.Model):
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     name = models.CharField(verbose_name="定时策略名称", max_length=64, null=True, unique=True)
     trigger_type = models.CharField(verbose_name="触发器类型", max_length=64, null=True)
     month = models.CharField(verbose_name="月", max_length=64, null=True)

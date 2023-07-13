@@ -418,7 +418,7 @@ def department():
                 "name": "总裁办",
                 "depCode": "dp_code_manager",
                 "order": 1,
-                "createTime": "2023-02-05 19:54:06",
+                "create_time": "2023-02-05 19:54:06",
                 "status": 0
             },
             {
@@ -426,7 +426,7 @@ def department():
                 "name": "市场部",
                 "depCode": "dp_code_marketing",
                 "order": 1,
-                "createTime": "2023-02-05 19:54:06",
+                "create_time": "2023-02-05 19:54:06",
                 "status": 1,
                 "children": [
                     {
@@ -434,7 +434,7 @@ def department():
                         "name": "市场一部",
                         "depCode": "dp_code_marketing_1",
                         "order": 1,
-                        "createTime": "2023-02-05 19:54:06",
+                        "create_time": "2023-02-05 19:54:06",
                         "status": 1
                     },
                     {
@@ -442,7 +442,7 @@ def department():
                         "name": "市场二部",
                         "depCode": "dp_code_marketing_2",
                         "order": 1,
-                        "createTime": "2023-02-05 19:54:06",
+                        "create_time": "2023-02-05 19:54:06",
                         "status": 1
                     }
                 ]
@@ -452,7 +452,7 @@ def department():
                 "name": "技术部",
                 "depCode": "dp_code_technology",
                 "order": 1,
-                "createTime": "2023-02-05 19:54:06",
+                "create_time": "2023-02-05 19:54:06",
                 "status": 1
             },
             {
@@ -460,7 +460,7 @@ def department():
                 "name": "销售部",
                 "depCode": "dp_code_sale",
                 "order": 1,
-                "createTime": "2023-02-05 19:54:06",
+                "create_time": "2023-02-05 19:54:06",
                 "status": 1
             }
         ]
@@ -639,14 +639,14 @@ def role():
                 "name": "超级管理员",
                 "roleCode": "ROLE_admin",
                 "description": "超级管理员",
-                "createTime": "2023-02-05 19:54:36"
+                "create_time": "2023-02-05 19:54:36"
             },
             {
                 "id": 2,
                 "name": "编辑员",
                 "roleCode": "ROLE_editor",
                 "description": "编辑员",
-                "createTime": "2023-02-05 19:54:36"
+                "create_time": "2023-02-05 19:54:36"
             }
         ]
     }
