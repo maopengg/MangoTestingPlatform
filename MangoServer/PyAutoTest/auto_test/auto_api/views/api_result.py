@@ -23,7 +23,7 @@ class ApiResultSerializers(serializers.ModelSerializer):
 
 
 class ApiResultSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     case = ApiCaseSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
     case_group = ApiCaseGroupSerializers(read_only=True)

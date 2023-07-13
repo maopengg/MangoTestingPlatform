@@ -77,8 +77,8 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'team'" #cell="{ record }">
-                  {{ record.team.name }}
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
                 </template>
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj.name }}
@@ -117,7 +117,7 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'team'">
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
@@ -199,7 +199,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -214,7 +214,7 @@ conditionItems[2].optionItems = project.data
 const formItems = [
   {
     label: '项目名称',
-    key: 'team',
+    key: 'project',
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
@@ -329,8 +329,8 @@ const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目名称',
-    key: 'team',
-    dataIndex: 'team',
+    key: 'project',
+    dataIndex: 'project',
     width: 100
   },
   {
@@ -515,7 +515,7 @@ function onDataForm() {
         url: getDatabase,
         data: () => {
           return {
-            team: value.team,
+            project: value.project,
             name: value.name,
             host: value.host,
             password: value.password,
@@ -531,10 +531,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
-      let teamId = value.team
+      let projectId = value.project
       let testOb = value.test_obj
-      if (typeof value.team === 'string') {
-        teamId = getKeyByTitle(project.data, value.team)
+      if (typeof value.project === 'string') {
+        projectId = getKeyByTitle(project.data, value.project)
         testOb = getKeyByTitle(testObj.data, value.test_obj)
       }
       addUpdate.value = 0
@@ -545,7 +545,7 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            team: teamId,
+            project: projectId,
             name: value.name,
             host: value.host,
             password: value.password,

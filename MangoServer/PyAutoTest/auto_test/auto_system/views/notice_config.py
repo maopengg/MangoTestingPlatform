@@ -23,7 +23,7 @@ class NoticeConfigSerializers(serializers.ModelSerializer):
 
 
 class NoticeConfigSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = NoticeConfig
@@ -47,8 +47,8 @@ class NoticeConfigViews(ViewSet):
     def test(self, request: Request):
         from PyAutoTest.auto_test.auto_system.service.notic_tools import notice_main
         _id = request.query_params.get('id')
-        team_id = request.query_params.get('team_id')
-        notice_main(team_id, _id)
+        project_id = request.query_params.get('project_id')
+        notice_main(project_id, _id)
         return Response({
             'code': 200,
             'msg': '通知发送成功',

@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_api.views.api_ass import ApiAssertionsCRUD, ApiAs
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from PyAutoTest.auto_test.auto_api.views.api_case_group import ApiCaseGroupCRUD, ApiCaseGroupViews
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
-from PyAutoTest.auto_test.auto_api.views.api_relyon import ApiRelyOnCRUD, ApiRelyOnViews
+# from PyAutoTest.auto_test.auto_api.views.api_relyon import ApiRelyOnCRUD, ApiRelyOnViews
 from PyAutoTest.auto_test.auto_api.views.api_result import ApiResultCRUD, ApiResultViews
 from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 
@@ -24,8 +24,8 @@ urlpatterns = [
     path("public/end", ApiPublicViews.as_view({'get': 'get_end_type'})),
     path("public/client/refresh", ApiPublicViews.as_view({'get': 'client_refresh'})),
     #
-    path("relyon", ApiRelyOnCRUD.as_view()),
-    path("relyon/test", ApiRelyOnViews.test),
+    # path("relyon", ApiRelyOnCRUD.as_view()),
+    # path("relyon/test", ApiRelyOnViews.test),
     #
     #
     path("case/group", ApiCaseGroupCRUD.as_view()),

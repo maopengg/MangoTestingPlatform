@@ -20,7 +20,7 @@ class UiPublicSerializers(serializers.ModelSerializer):
 
 
 class UiPublicSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = UiPublic
@@ -29,7 +29,7 @@ class UiPublicSerializersC(serializers.ModelSerializer):
 
 class UiPublicCRUD(ModelCRUD):
     model = UiPublic
-    queryset = UiPublic.objects.select_related('team').all()
+    queryset = UiPublic.objects.select_related('project').all()
     serializer_class = UiPublicSerializersC
     serializer = UiPublicSerializers
 

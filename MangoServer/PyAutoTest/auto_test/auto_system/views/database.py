@@ -21,7 +21,7 @@ class DatabaseSerializers(serializers.ModelSerializer):
 
 
 class DatabaseSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
 
     class Meta:

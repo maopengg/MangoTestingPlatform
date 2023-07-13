@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目组：' + uiElementData.team_name">
+      <a-card :title="'所属页面：' + uiElementData.pageName + ' | ' + '所属项目组：' + uiElementData.project_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
@@ -233,7 +233,7 @@ function onDataForm() {
         url: uiUiElement,
         data: () => {
           return {
-            team: route.query.team_id,
+            project: route.query.project_id,
             page: route.query.id,
             name: value.name,
             exp: value.exp,
@@ -259,7 +259,7 @@ function onDataForm() {
         url: uiUiElement,
         data: () => {
           return {
-            team: route.query.team_id,
+            project: route.query.project_id,
             page: route.query.id,
             name: value.name,
             exp: exp,
@@ -285,7 +285,7 @@ function doResetSearch() {
 
 const uiElementData: any = reactive({
   pageName: route.query.name,
-  team_name: route.query.team_name,
+  project_name: route.query.project_name,
   eleExp: []
 })
 

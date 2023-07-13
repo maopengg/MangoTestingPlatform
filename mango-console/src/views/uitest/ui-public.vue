@@ -110,7 +110,7 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'team'">
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select v-model="item.value.value" :placeholder="item.placeholder">
                   <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.value" :value="optionItem.title">
                     {{ optionItem.title }}
@@ -189,7 +189,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -206,7 +206,7 @@ conditionItems[2].optionItems = project.data
 const formItems = [
   {
     label: '项目名称',
-    key: 'team',
+    key: 'project',
     value: ref(''),
     placeholder: '请选择项目组',
     required: true,
@@ -306,8 +306,8 @@ const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目名称',
-    key: 'team',
-    dataIndex: 'team',
+    key: 'project',
+    dataIndex: 'project',
     width: 100
   },
   {

@@ -233,7 +233,7 @@ function onDataForm() {
         url: getDepartmentList,
         data: () => {
           return {
-            team: value.team,
+            project: value.project,
             name: value.name,
             status: value.status
           }

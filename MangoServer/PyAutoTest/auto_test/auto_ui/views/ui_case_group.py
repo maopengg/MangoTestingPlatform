@@ -23,7 +23,7 @@ class UiCaseGroupSerializers(serializers.ModelSerializer):
 
 
 class UiCaseGroupSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
     time_name = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)

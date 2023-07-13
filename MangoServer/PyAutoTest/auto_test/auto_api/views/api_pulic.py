@@ -25,7 +25,7 @@ class ApiPublicSerializers(serializers.ModelSerializer):
 
 
 class ApiPublicSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = ApiPublic

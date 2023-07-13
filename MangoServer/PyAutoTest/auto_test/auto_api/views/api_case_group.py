@@ -19,7 +19,7 @@ class ApiCaseGroupSerializers(serializers.ModelSerializer):
 
 
 class ApiCaseGroupSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = ApiCaseGroup

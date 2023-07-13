@@ -23,7 +23,7 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 
 class UiPageSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = UiPage

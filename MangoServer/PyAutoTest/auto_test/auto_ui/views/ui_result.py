@@ -23,7 +23,7 @@ class UiResultSerializers(serializers.ModelSerializer):
 
 
 class UiResultSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     case = UiCaseSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
     case_group = UiCaseGroupSerializers(read_only=True)
@@ -35,7 +35,7 @@ class UiResultSerializersC(serializers.ModelSerializer):
 
 class UiResultCRUD(ModelCRUD):
     model = UiResult
-    queryset = UiResult.objects.select_related('team', 'case', 'test_obj', 'case_group').all()
+    queryset = UiResult.objects.select_related('project', 'case', 'test_obj', 'case_group').all()
     serializer_class = UiResultSerializersC
     serializer = UiResultSerializers
 

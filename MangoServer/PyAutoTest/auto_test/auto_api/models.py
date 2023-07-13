@@ -12,7 +12,11 @@ from PyAutoTest.auto_test.auto_user.models import Project
 
 class ApiCase(models.Model):
     """api用例表"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    # 0和空等于调试用例，1等于本期接口，2等于自动化用例，5等于已经被设置为定时执行
+    type = models.SmallIntegerField(verbose_name='接口的类型')
     name = models.CharField(verbose_name="用例名称", max_length=64)
     client = models.SmallIntegerField(verbose_name="什么端")
     method = models.SmallIntegerField(verbose_name="请求方法")
@@ -23,8 +27,6 @@ class ApiCase(models.Model):
     rely = models.CharField(verbose_name="依赖的用例id", max_length=100, null=True)
     ass = models.SmallIntegerField(verbose_name="断言", null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
-    # 0和空等于调试用例，1等于本期接口，2等于自动化用例，5等于已经被设置为定时执行
-    type = models.SmallIntegerField(verbose_name='接口的类型')
 
     class Meta:
         db_table = 'api_case'
@@ -32,46 +34,50 @@ class ApiCase(models.Model):
 
 
 class ApiCaseGroup(models.Model):
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="测试组名称", max_length=64)
     case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
     case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)
     # 0失败，1成功，2警告
     state = models.SmallIntegerField(verbose_name="状态", null=True)
-    time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'api_case_group'
         ordering = ['-id']
 
 
-class ApiRelyOn(models.Model):
-    """api依赖表"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="前置需要处理的名称", max_length=64)
-    rely_type = models.SmallIntegerField(verbose_name="处理的类型", null=True)
-    value = models.CharField(verbose_name="处理的值", max_length=1048, null=True)
-    # 0是前置，1是后置
-    type = models.SmallIntegerField(verbose_name="前置还是后置", null=True)
-
-    class Meta:
-        db_table = 'api_rely_on'
-        ordering = ['-id']
+# class ApiRelyOn(models.Model):
+#     """api依赖表"""
+#     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+#     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+#     name = models.CharField(verbose_name="前置需要处理的名称", max_length=64)
+#     rely_type = models.SmallIntegerField(verbose_name="处理的类型", null=True)
+#     value = models.CharField(verbose_name="处理的值", max_length=1048, null=True)
+#     # 0是前置，1是后置
+#     type = models.SmallIntegerField(verbose_name="前置还是后置", null=True)
+#
+#     class Meta:
+#         db_table = 'api_rely_on'
+#         ordering = ['-id']
 
 
 class ApiPublic(models.Model):
     """api公共"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    end = models.SmallIntegerField(verbose_name="什么端", null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    # 0是公共参数，1是公共断言
+    type = models.SmallIntegerField(verbose_name="公共类型", null=True)
+    client = models.SmallIntegerField(verbose_name="什么端", null=True)
     # 0等于自定义，1等于sql，2等于登录，3等于header
     public_type = models.SmallIntegerField(verbose_name="值的类型", null=True)
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
-    # 0是公共参数，1是公共断言
-    type = models.SmallIntegerField(verbose_name="公共类型", null=True)
 
     class Meta:
         db_table = 'api_public'
@@ -80,7 +86,9 @@ class ApiPublic(models.Model):
 
 class ApiAssertions(models.Model):
     """api断言表"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="依赖名称", max_length=64)
     ass_type = models.SmallIntegerField(verbose_name="依赖类型", null=True)
@@ -92,7 +100,9 @@ class ApiAssertions(models.Model):
 
 
 class ApiResult(models.Model):
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     case_group = models.ForeignKey(to=ApiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
