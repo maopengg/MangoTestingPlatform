@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目组：' + route.query.project_name">
+      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目：' + route.query.project_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>

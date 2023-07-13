@@ -217,7 +217,7 @@ const conditionItems: Array<FormItem> = [
   },
   {
     key: 'project',
-    label: '筛选项目组',
+    label: '筛选项目',
     value: ref(),
     type: 'select',
     placeholder: '请选择项目',
@@ -231,7 +231,7 @@ conditionItems[2].optionItems = project.data
 
 const formItems = [
   {
-    label: '项目组名称',
+    label: '项目名称',
     key: 'project',
     value: ref(''),
     placeholder: '请选择项目名称',
@@ -288,7 +288,7 @@ const testObj = useTestObj()
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目组',
+    title: '项目',
     key: 'project',
     dataIndex: 'project',
     width: 130

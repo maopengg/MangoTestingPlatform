@@ -75,16 +75,19 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
+                </template>
                 <template v-else-if="item.key === 'public_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.public_type === 0">登录</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.public_type === 1">自定义</a-tag>
                   <a-tag color="green" size="small" v-else-if="record.public_type === 2">SQL</a-tag>
                   <a-tag color="green" size="small" v-else-if="record.public_type === 3">请求头</a-tag>
                 </template>
-                <template v-else-if="item.key === 'end'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.end === 0">web端</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.end === 1">小程序</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.end === 2">app</a-tag>
+                <template v-else-if="item.key === 'client'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.client === 0">web端</a-tag>
+                  <a-tag color="orange" size="small" v-else-if="record.client === 1">小程序</a-tag>
+                  <a-tag color="blue" size="small" v-else-if="record.client === 2">app</a-tag>
                 </template>
                 <template v-else-if="item.key === 'state'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.state === 1">启用</a-tag>
@@ -237,13 +240,13 @@ const formItems = [
     label: '项目名称',
     key: 'project',
     value: ref(''),
-    placeholder: '请选择项目组',
+    placeholder: '请选择项目',
     required: true,
     type: 'select'
   },
   {
     label: '客户端',
-    key: 'end',
+    key: 'client',
     value: ref(''),
     type: 'select',
     required: true,
@@ -302,8 +305,8 @@ export default defineComponent({
       },
       {
         title: '客户端',
-        key: 'end',
-        dataIndex: 'end',
+        key: 'client',
+        dataIndex: 'client',
         width: 150
       },
       {

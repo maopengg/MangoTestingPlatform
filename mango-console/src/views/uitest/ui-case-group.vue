@@ -268,10 +268,10 @@ const conditionItems: Array<FormItem> = [
 conditionItems[2].optionItems = project.data
 const formItems = [
   {
-    label: '项目组',
+    label: '项目',
     key: 'project',
     value: ref(''),
-    placeholder: '请选择项目组',
+    placeholder: '请选择项目',
     required: true,
     type: 'select',
     validator: function () {
@@ -383,7 +383,7 @@ const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目组',
+    title: '项目',
     key: 'project',
     dataIndex: 'project',
     width: 100

@@ -84,7 +84,7 @@ import { onMounted, ref, nextTick } from 'vue'
 
 const formItems = [
   {
-    label: '项目组名称',
+    label: '项目名称',
     key: 'name',
     value: ref(''),
     placeholder: '请输入项目名称',
@@ -125,7 +125,7 @@ const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目组名称',
+    title: '项目名称',
     key: 'name',
     dataIndex: 'name'
   },

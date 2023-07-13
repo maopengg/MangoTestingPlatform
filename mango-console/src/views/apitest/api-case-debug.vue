@@ -89,7 +89,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'project'" #cell="{ record }"> 应用组</template>
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
+                </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
                   <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>

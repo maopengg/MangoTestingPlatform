@@ -12,8 +12,8 @@ from PyAutoTest.auto_test.auto_user.models import Project
 
 class ApiCase(models.Model):
     """api用例表"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0和空等于调试用例，1等于本期接口，2等于自动化用例，5等于已经被设置为定时执行
     type = models.SmallIntegerField(verbose_name='接口的类型')
@@ -34,8 +34,8 @@ class ApiCase(models.Model):
 
 
 class ApiCaseGroup(models.Model):
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="测试组名称", max_length=64)
@@ -66,8 +66,8 @@ class ApiCaseGroup(models.Model):
 
 class ApiPublic(models.Model):
     """api公共"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0是公共参数，1是公共断言
     type = models.SmallIntegerField(verbose_name="公共类型", null=True)
@@ -86,8 +86,8 @@ class ApiPublic(models.Model):
 
 class ApiAssertions(models.Model):
     """api断言表"""
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="依赖名称", max_length=64)
@@ -100,8 +100,8 @@ class ApiAssertions(models.Model):
 
 
 class ApiResult(models.Model):
-    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)

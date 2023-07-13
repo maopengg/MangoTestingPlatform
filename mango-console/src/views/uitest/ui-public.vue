@@ -208,7 +208,7 @@ const formItems = [
     label: '项目名称',
     key: 'project',
     value: ref(''),
-    placeholder: '请选择项目组',
+    placeholder: '请选择项目',
     required: true,
     type: 'select',
     validator: function () {

@@ -74,6 +74,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
+                </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
@@ -189,7 +192,7 @@ const conditionItems: Array<FormItem> = [
 conditionItems[2].optionItems = project.data
 const formItems = [
   {
-    label: '项目组',
+    label: '项目',
     key: 'project',
     value: ref(''),
     placeholder: '请输入用户昵称',
@@ -213,12 +216,12 @@ const formItems = [
     placeholder: '请输入用户密码'
   },
   {
-    label: '归属项目组',
+    label: '归属项目',
     key: 'department',
     value: ref(''),
     type: 'select',
     required: true,
-    placeholder: '请选择角色项目组'
+    placeholder: '请选择角色项目'
   },
   {
     label: '绑定角色',
@@ -242,7 +245,7 @@ export default defineComponent({
     const tableColumns = useTableColumn([
       table.indexColumn,
       {
-        title: '项目组',
+        title: '项目',
         key: 'project',
         dataIndex: 'project',
         width: 100

@@ -248,12 +248,12 @@ const formItems = [
     }
   },
   {
-    label: '归属项目组',
+    label: '归属项目',
     key: 'department',
     value: ref(''),
     type: 'select',
     required: false,
-    placeholder: '请选择用户项目组'
+    placeholder: '请选择用户项目'
   },
   {
     label: '绑定角色',
@@ -301,7 +301,7 @@ const tableColumns = useTableColumn([
     align: 'left'
   },
   {
-    title: '归属项目组',
+    title: '归属项目',
     key: 'department',
     dataIndex: 'department',
     width: 150

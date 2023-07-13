@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Project: auto_test
-# @Description: 项目组表
+# @Description: 项目表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
 from rest_framework import serializers
@@ -36,5 +36,5 @@ class ProjectViews(ViewSet):
         return Response({
             'code': 200,
             'data': data,
-            'msg': '获取所有项目组名称成功'
+            'msg': '获取所有项目名称成功'
         })
