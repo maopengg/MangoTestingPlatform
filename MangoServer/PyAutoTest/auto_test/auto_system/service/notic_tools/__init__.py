@@ -13,8 +13,8 @@ TYPE = {
 }
 
 
-def notice_main(team_id, _id, case=1):
-    notify_obj = NoticeConfig.objects.filter(team=team_id, id=_id)
+def notice_main(project_id, _id, case=1):
+    notify_obj = NoticeConfig.objects.filter(project=project_id, id=_id)
     for i in notify_obj:
         # if i.type == TYPE.get(0) and i.state == 1:
         if i.type == 0:

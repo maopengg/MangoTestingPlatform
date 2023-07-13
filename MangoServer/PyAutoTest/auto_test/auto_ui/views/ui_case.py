@@ -22,7 +22,7 @@ class UiCaseSerializers(serializers.ModelSerializer):
 
 
 class UiCaseSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     time_name = TimeTasksSerializers(read_only=True)
 
     class Meta:

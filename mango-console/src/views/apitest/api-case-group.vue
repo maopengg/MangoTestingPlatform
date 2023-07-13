@@ -175,7 +175,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -190,7 +190,7 @@ conditionItems[2].optionItems = project.data
 const formItems = [
   {
     label: '项目组',
-    key: 'team',
+    key: 'project',
     value: ref(''),
     placeholder: '请输入用户昵称',
     required: true,
@@ -243,8 +243,8 @@ export default defineComponent({
       table.indexColumn,
       {
         title: '项目组',
-        key: 'team',
-        dataIndex: 'team',
+        key: 'project',
+        dataIndex: 'project',
         width: 100
       },
       {

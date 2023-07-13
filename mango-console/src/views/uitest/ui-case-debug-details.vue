@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目组：' + route.query.team_name">
+      <a-card :title="'用例：' + uiRunSortData.caseName + ' | ' + '所属项目组：' + route.query.project_name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
@@ -365,7 +365,7 @@ function onDataForm() {
           return {
             case: route.query.id,
             run_sort: uiRunSortData.data.length,
-            team: route.query.team_id,
+            project: route.query.project_id,
             el_name: value.el_name,
             el_name_b: value.el_name_b,
             el_page: value.el_page,

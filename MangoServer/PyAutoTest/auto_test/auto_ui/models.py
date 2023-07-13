@@ -13,7 +13,9 @@ from PyAutoTest.auto_test.auto_user.models import User
 
 class UiPage(models.Model):
     """页面表"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="页面名称", max_length=64)
     url = models.CharField(verbose_name="url", max_length=128)
     # 0是web，1是小程序， 3是app
@@ -26,10 +28,12 @@ class UiPage(models.Model):
 
 class UiElement(models.Model):
     """元素定位表"""
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="元素名称", max_length=64)
     exp = models.SmallIntegerField(verbose_name="元素表达式")
     loc = models.CharField(verbose_name="元素定位", max_length=1048)
-    page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
     sleep = models.IntegerField(verbose_name="等待时间", null=True)
     sub = models.IntegerField(verbose_name="下标", null=True)
 
@@ -40,7 +44,9 @@ class UiElement(models.Model):
 
 class UiCase(models.Model):
     """UI用例表"""
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="用例名称", max_length=64)
     run_flow = models.CharField(verbose_name="执行顺序的展示", max_length=2000, null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
@@ -55,35 +61,41 @@ class UiCase(models.Model):
 
 
 class UiCaseGroup(models.Model):
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="用例组名称", max_length=64)
-    case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
-    case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)
-    # 0失败，1成功，2警告
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
     time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     timing_actuator = models.ForeignKey(to=User, to_field="id", related_name='related_timing_actuator',
                                         verbose_name='定时执行的设备', on_delete=models.SET_NULL, null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', related_name='related_case_people',
                                     on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="用例组名称", max_length=64)
+    case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
+    case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)
+    # 0失败，1成功，2警告
+    state = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'ui_case_group'
         ordering = ['-id']
 
 
-class UiCaseGroupEnvironment(models.Model):
-    team = models.ForeignKey(to=UiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
-    sort = models.IntegerField(verbose_name="执行顺序的展示", null=True)
-
-    class Meta:
-        db_table = 'ui_case_group_environment'
+# class UiCaseGroupEnvironment(models.Model):
+#     createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+#     updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+#     project = models.ForeignKey(to=UiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
+#     case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+#     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+#     sort = models.IntegerField(verbose_name="执行顺序的展示", null=True)
+#
+#     class Meta:
+#         db_table = 'ui_case_group_environment'
 
 
 class RunSort(models.Model):
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     el_page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
     el_name = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_a',
                                 on_delete=models.SET_NULL, null=True)
@@ -103,13 +115,16 @@ class RunSort(models.Model):
 
 
 class UiPublic(models.Model):
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    # 0是公共参数，1是公共断言
+    type = models.SmallIntegerField(verbose_name="公共类型", null=True)
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
-    # 0是公共参数，1是公共断言
-    type = models.SmallIntegerField(verbose_name="公共类型", null=True)
+
 
     class Meta:
         db_table = 'ui_public'
@@ -117,7 +132,9 @@ class UiPublic(models.Model):
 
 
 class UiResult(models.Model):
-    team = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     case_group = models.ForeignKey(to=UiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
@@ -135,6 +152,8 @@ class UiResult(models.Model):
 
 
 class UiConfig(models.Model):
+    createTime = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    updateTime = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     user_id = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     local_port = models.CharField(verbose_name="web端口", max_length=64, null=True)
     browser_path = models.CharField(verbose_name="chrome路径", max_length=1024, null=True)

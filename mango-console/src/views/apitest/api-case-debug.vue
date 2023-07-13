@@ -89,7 +89,7 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'team'" #cell="{ record }"> 应用组</template>
+                <template v-else-if="item.key === 'project'" #cell="{ record }"> 应用组</template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
                   <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>
@@ -229,7 +229,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -243,7 +243,7 @@ const conditionItems: Array<FormItem> = [
 const formItems = [
   {
     label: '项目名称',
-    key: 'team',
+    key: 'project',
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
@@ -270,8 +270,8 @@ const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目名称',
-    key: 'team',
-    dataIndex: 'team',
+    key: 'project',
+    dataIndex: 'project',
     width: 100
   },
   {
@@ -427,7 +427,7 @@ function onBatchUpload() {
     url: ApiCaseSynchronous,
     data: () => {
       return {
-        team_id: '1',
+        project_id: '1',
         host: 'http://172.16.90.93:9999'
       }
     }

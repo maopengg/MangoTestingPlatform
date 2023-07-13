@@ -24,7 +24,7 @@ class TestObjectSerializers(serializers.ModelSerializer):
 
 
 class TestObjectSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     executor_name = UserSerializers(read_only=True)
 
     class Meta:

@@ -81,8 +81,8 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'team'" #cell="{ record }">
-                  {{ record.team.name }}
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
                 </template>
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj.name }}
@@ -131,7 +131,7 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'team'">
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
                   v-model="item.value.value"
                   :placeholder="item.placeholder"
@@ -254,7 +254,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -269,7 +269,7 @@ conditionItems[2].optionItems = project.data
 const formItems = [
   {
     label: '项目组',
-    key: 'team',
+    key: 'project',
     value: ref(''),
     placeholder: '请选择项目组',
     required: true,
@@ -384,8 +384,8 @@ const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目组',
-    key: 'team',
-    dataIndex: 'team',
+    key: 'project',
+    dataIndex: 'project',
     width: 100
   },
   {
@@ -627,7 +627,7 @@ function onDataForm() {
         url: uiCaseGroup,
         data: () => {
           return {
-            team: value.team,
+            project: value.project,
             name: value.name,
             case_id: JSON.stringify(caseId),
             time_name: value.time_name,
@@ -643,13 +643,13 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
-      let teamId = value.team
+      let projectId = value.project
       let timeName = value.time_name
       let testObject = value.test_obj
       let timingActuator = value.timing_actuator
       let casePeople = value.case_people
-      if (typeof value.team === 'string') {
-        teamId = getKeyByTitle(project.data, value.team)
+      if (typeof value.project === 'string') {
+        projectId = getKeyByTitle(project.data, value.project)
       }
       if (typeof value.time_name === 'string') {
         timeName = getKeyByTitle(caseGroup.timingList, value.time_name)
@@ -672,7 +672,7 @@ function onDataForm() {
         data: () => {
           return {
             id: value.id,
-            team: teamId,
+            project: projectId,
             name: value.name,
             case_id: JSON.stringify(caseId),
             time_name: timeName,

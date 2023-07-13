@@ -10,5 +10,5 @@ from PyAutoTest.utils.other_utils.decorator import convert_args
 class PerfConsumer:
 
     @convert_args
-    def perf_tst(self, team_name, case=1):
+    def perf_tst(self, project_name, case=1):
         pass

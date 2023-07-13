@@ -18,7 +18,7 @@ class SendEmail:
     """ 发送邮箱 """
 
     def __init__(self, notice_obj: NoticeConfig):
-        self.team = notice_obj.team.id
+        self.project = notice_obj.project.id
         config = json.loads(notice_obj.config)
         self.send_user = config['send_user']
         self.send_list = config['send_list']
@@ -47,13 +47,13 @@ class SendEmail:
         详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
         """
         try:
-            self.send_mail(send_list, f'{self.team}接口自动化报告', content)
-            logger.info(f"邮件发送成功{self.team},{self.send_user},{self.send_list},{self.stamp_key},"
+            self.send_mail(send_list, f'{self.project}接口自动化报告', content)
+            logger.info(f"邮件发送成功{self.project},{self.send_user},{self.send_list},{self.stamp_key},"
                         f"{self.email_host}")
         except BaseException as e:
             logger.error(f"邮件发送失败，失败原因：{e},发送信息如下："
                          f"用例id：{case_id},"
-                         f"项目名称：{self.team},"
+                         f"项目名称：{self.project},"
                          f"发送用户：{self.send_user},"
                          f"发送列表：{self.send_list},"
                          f"登录key：{self.stamp_key},"
@@ -86,7 +86,7 @@ class SendEmail:
         """
         send_list = self.send_list.split(',')  # 多个邮箱发送，config文件中直接添加  '806029174@qq.com'
         content = f"自动化测试执行完毕，程序中发现异常，请悉知。报错信息如下：\n{error_message}"
-        self.send_mail(send_list, f'{self.team}接口自动化执行异常通知', content)
+        self.send_mail(send_list, f'{self.project}接口自动化执行异常通知', content)
 
 
 if __name__ == '__main__':

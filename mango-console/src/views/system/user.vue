@@ -181,7 +181,7 @@ const conditionItems: Array<FormItem> = [
     }
   },
   {
-    key: 'team',
+    key: 'project',
     label: '筛选项目',
     value: ref(),
     type: 'select',
@@ -503,10 +503,10 @@ function onDataForm() {
         })
         .catch(console.log)
     } else if (addUpdate.value === 0) {
-      let teamId = value.team
+      let projectId = value.project
       let roleId = value.role
-      if (typeof value.team === 'string') {
-        teamId = getKeyByTitle(project.data, value.team)
+      if (typeof value.project === 'string') {
+        projectId = getKeyByTitle(project.data, value.project)
         roleId = getKeyByTitle(allRole.value, value.role)
       }
       addUpdate.value = 0
@@ -521,7 +521,7 @@ function onDataForm() {
             username: value.username,
             password: value.password,
             role: roleId,
-            department: teamId
+            department: projectId
           }
         }
       })

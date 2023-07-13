@@ -10,7 +10,7 @@ from PyAutoTest.utils.other_utils.decorator import convert_args
 class SystemConsumer:
 
     @convert_args
-    def system_notice_main(self, team_name, case=1):
+    def system_notice_main(self, project_name, case=1):
         """ 启动通知消息，自动进行通知 """
-        notice_main(team_name, case)
+        notice_main(project_name, case)
         print('启动通知消息，自动进行通知')

@@ -129,11 +129,11 @@ class ModelR(ViewSet):
     def type_query_by(self, request):
         name = request.query_params.get('name')
         id_ = request.query_params.get('id')
-        team = request.query_params.get('team')
+        project = request.query_params.get('project')
         books = None
-        if team is not None and name is not None:
+        if project is not None and name is not None:
             books = self.model.objects.filter(
-                team=Project.objects.get(id=team).id,
+                project=Project.objects.get(id=project).id,
                 name=name,
                 type=request.query_params.get('type')
             ).order_by('id')
@@ -147,9 +147,9 @@ class ModelR(ViewSet):
         elif name:
             books = self.model.objects.filter(name=name,
                                               type=request.query_params.get('type')).order_by('id')
-        elif team:
+        elif project:
             books = self.model.objects.filter(
-                team=Project.objects.get(id=team).id,
+                project=Project.objects.get(id=project).id,
                 type=request.query_params.get('type')
             ).order_by('id')
         if books is not None:
@@ -174,11 +174,11 @@ class ModelR(ViewSet):
     def not_type_query_by(self, request):
         name = request.query_params.get('name')
         id_ = request.query_params.get('id')
-        team = request.query_params.get('team')
+        project = request.query_params.get('project')
         books = None
-        if team is not None and name is not None:
+        if project is not None and name is not None:
             books = self.model.objects.filter(
-                team=Project.objects.get(id=team).id,
+                project=Project.objects.get(id=project).id,
                 name=name
             ).order_by('id')
         elif name is not None and id_ is not None:
@@ -188,9 +188,9 @@ class ModelR(ViewSet):
             books = self.model.objects.filter(id=id_).order_by('id')
         elif name:
             books = self.model.objects.filter(name=name).order_by('id')
-        elif team:
+        elif project:
             books = self.model.objects.filter(
-                team=Project.objects.get(name=team).id
+                project=Project.objects.get(name=project).id
             ).order_by('id')
         if books is not None:
             return Response({

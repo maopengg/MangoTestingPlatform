@@ -26,7 +26,7 @@ class ApiCaseSerializers(serializers.ModelSerializer):
 
 
 class ApiCaseSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = ApiCase
@@ -52,8 +52,8 @@ class ApiCaseViews(ViewSet):
         @return:
         """
         host = request.GET.get('host')
-        team_id = request.GET.get('team_id')
-        case_list = ApiParameter(host, team_id).get_stage_api()
+        project_id = request.GET.get('project_id')
+        case_list = ApiParameter(host, project_id).get_stage_api()
         res = []
         for i in case_list:
             serializer = self.serializer_class(data=i)

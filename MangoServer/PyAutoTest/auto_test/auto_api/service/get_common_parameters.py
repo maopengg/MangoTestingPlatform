@@ -13,4 +13,4 @@ class GetCommonParameters:
     @classmethod
     def get_args(cls, test_obj_id) -> list[ApiPublicModel]:
         return [ApiPublicModel.from_orm(i) for i in
-                ApiPublic.objects.filter(team_id=TestObject.objects.get(id=test_obj_id).team_id)]
+                ApiPublic.objects.filter(project_id=TestObject.objects.get(id=test_obj_id).project_id)]

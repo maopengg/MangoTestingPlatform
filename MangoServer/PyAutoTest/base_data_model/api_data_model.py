@@ -51,7 +51,7 @@ class PublicModel(BaseModel):
 
 class ApiPublicModel(BaseModel):
     """api公共"""
-    team_id: int
+    project_id: int
     end: int
     public_type: int
     name: str

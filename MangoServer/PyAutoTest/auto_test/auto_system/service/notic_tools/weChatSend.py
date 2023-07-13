@@ -28,8 +28,8 @@ class WeChatSend:
         发送企业微信通知
         :return:
         """
-        t = TestObject.objects.filter(team=self.config.team.id).first()
-        text = f"""【{self.config.team.name}自动化通知】
+        t = TestObject.objects.filter(project=self.config.project.id).first()
+        text = f"""【{self.config.project.name}自动化通知】
                                     >测试环境：<font color=\"info\">{t.name}</font>
                                     >测试负责人：@{t.executor_name.nickname}
                                     >

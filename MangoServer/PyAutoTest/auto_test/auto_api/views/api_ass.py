@@ -20,7 +20,7 @@ class ApiAssertionsSerializers(serializers.ModelSerializer):
 
 
 class ApiAssertionsSerializersC(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
     case = ApiCaseSerializers(read_only=True)
 
     class Meta:
