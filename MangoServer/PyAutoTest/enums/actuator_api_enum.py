@@ -1,16 +1,18 @@
 from enum import Enum
 
 
-class ApiApiEnum(Enum):
-    api_debug_case = 'api_debug_case'
-    api_batch_case = 'api_batch_case'
-    api_group_case = 'api_group_case'
-    refresh_cache = 'refresh_cache'
-    api_common_parameters = 'api_common_parameters'
+class ApiEnum(Enum):
+    A_DEBUG_CASE = 'a_debug_case'
+    A_BATCH_CASE = 'a_batch_case'
+    A_GROUP_CASE = 'a_group_case'
+    REFRESH_CACHE = 'refresh_cache'
+    A_COMMON_PARAMETERS = 'a_common_parameters'
 
 
-class UiApiEnum(Enum):
-    # 执行调试用例对象浏览器对象
-    run_debug_case = 'ui_debug_case'
-    # 执行并发对象浏览器对象
-    run_group_case = 'ui_group_case'
+class UiEnum(Enum):
+    U_DEBUG_CASE = 'u_debug_case'
+    U_GROUP_CASE = 'u_group_case'
+
+
+class ToolsEnum(Enum):
+    T_MYSQL_CONFIG = "t_mysql_config"

@@ -8,7 +8,7 @@ from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.base_data_model.api_data_model import PublicModel, ApiCaseGroupModel, RequestModel
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.enums.actuator_api_enum import ApiApiEnum
+from PyAutoTest.enums.actuator_api_enum import ApiEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.settings import DRIVER
 
@@ -34,7 +34,7 @@ class RunApiSend:
                 value=obj.value
             )
             public_args_list.append(public_args_model)
-        return public_args_list, self.__socket_send(public_args_list, ApiApiEnum.refresh_cache.value)
+        return public_args_list, self.__socket_send(public_args_list, ApiEnum.REFRESH_CACHE.value)
 
     def request_data(self, case_id: int, send: bool = False) -> tuple[RequestModel, bool]:
         """
@@ -49,7 +49,7 @@ class RunApiSend:
                                  body_type=case.body_type,
                                  body=case.body)
         if self.username and send:
-            return case_json, self.__socket_send(case_json, ApiApiEnum.api_debug_case.value)
+            return case_json, self.__socket_send(case_json, ApiEnum.A_DEBUG_CASE.value)
         return case_json, False
 
     def batch_requests_data(self, case_list: list) -> tuple[list[RequestModel], bool]:
@@ -57,7 +57,7 @@ class RunApiSend:
         批量请求
         """
         case_json = [self.request_data(i)[0] for i in case_list]
-        return case_json, self.__socket_send(case_json, ApiApiEnum.api_batch_case.value)
+        return case_json, self.__socket_send(case_json, ApiEnum.A_BATCH_CASE.value)
 
     def group_case_data(self, group_name, case_list: list) -> tuple[ApiCaseGroupModel, bool]:
         """
@@ -66,7 +66,7 @@ class RunApiSend:
         case_json = ApiCaseGroupModel(
             group_name=group_name,
             case_group_list=[self.request_data(i)[0] for i in case_list])
-        return case_json, self.__socket_send(case_json, ApiApiEnum.api_group_case.value)
+        return case_json, self.__socket_send(case_json, ApiEnum.A_GROUP_CASE.value)
 
     def __socket_send(self, case_json, func_name: str) -> bool:
         """

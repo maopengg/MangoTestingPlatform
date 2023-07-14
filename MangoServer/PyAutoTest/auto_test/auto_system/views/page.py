@@ -7,7 +7,7 @@ from PyAutoTest.auto_test.auto_api.service.get_common_parameters import GetCommo
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.base_data_model.api_data_model import ApiPublicModel
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.enums.actuator_api_enum import ApiApiEnum
+from PyAutoTest.enums.actuator_api_enum import ApiEnum, ToolsEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.settings import DRIVER
 from PyAutoTest.utils.cache_utils.redis import Cache
@@ -23,25 +23,47 @@ class SystemViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def send_common_parameters(self, request: Request):
-        data: list[ApiPublicModel] = GetCommonParameters.get_args(request.query_params.get('test_obj_id'))
-
+        mysql = None
+        try:
+            mysql = GetCommonParameters.get_mysql_config(request.query_params.get('test_obj_id'))
+        except Exception as e:
+            print(e)
+            socket_conn.active_send(SocketDataModel(
+                code=300,
+                msg=f"{e}",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.WEB.value))
+            res1 = False
+        else:
+            # 发送mysql配置
+            res1 = socket_conn.active_send(SocketDataModel(
+                code=200,
+                msg="接收公共参数成功，正在写入缓存",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.ACTUATOR.value,
+                data=QueueModel(
+                    func_name=ToolsEnum.T_MYSQL_CONFIG.value,
+                    func_args=mysql
+                )))
+        # 发送公共数据
+        public: list[ApiPublicModel] = GetCommonParameters.get_args(request.query_params.get('test_obj_id'))
         socket_data = SocketDataModel(
             code=200,
             msg="接收公共参数成功，正在写入缓存",
             user=request.user.get('username'),
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=QueueModel(
-                func_name=ApiApiEnum.api_common_parameters.value,
-                func_args=data
+                func_name=ApiEnum.A_COMMON_PARAMETERS.value,
+                func_args=public
             )
         )
-        res = socket_conn.active_send(socket_data)
+        res2 = socket_conn.active_send(socket_data)
         response_data = {
             'code': 200,
             'msg': f'公共参数已同步给{DRIVER}',
-            "data": data
+            "data": [mysql, public]
         }
-        if not res:
+        if not res1 and not res2:
             response_data['code'] = 300
             response_data['msg'] = '发送公共参数失败，请检查执行器是否连接'
         return Response(response_data)

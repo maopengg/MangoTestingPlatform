@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
 from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel
-from PyAutoTest.enums.actuator_api_enum import UiApiEnum
+from PyAutoTest.enums.actuator_api_enum import UiEnum
 from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
 from PyAutoTest.settings import DRIVER
@@ -35,7 +35,7 @@ class RunApi:
             self.user_id = case_group_data.case_people.id
         case_json = self.__group_cases(case_group_data)
         if self.username and send:
-            return case_json, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+            return case_json, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
                                                  case_json=case_json)
         return case_json
 
@@ -52,7 +52,7 @@ class RunApi:
         elif isinstance(group_id_list, list):
             for group_id in group_id_list:
                 case_group_list.append(self.group_one(group_id, time, time))
-        return case_group_list, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+        return case_group_list, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
                                                    case_json=case_group_list)
 
     def case_noe(self, case_id: int, test_obj: int, send: bool = False) -> tuple[CaseModel, bool] or CaseModel:
@@ -61,7 +61,7 @@ class RunApi:
         """
         case_json = self.__data_ui_case(test_obj, case_id)
         if self.username and send:
-            return case_json, self.__socket_send(func_name=UiApiEnum.run_debug_case.value, case_json=case_json)
+            return case_json, self.__socket_send(func_name=UiEnum.U_DEBUG_CASE.value, case_json=case_json)
         return case_json
 
     def case_batch(self, case_list: int or list, test_obj: int) -> tuple[list[CaseModel], bool]:
@@ -77,7 +77,7 @@ class RunApi:
         elif isinstance(case_list, list):
             for case_id in case_list:
                 case_data.append(self.case_noe(test_obj, case_id))
-        return case_data, self.__socket_send(func_name=UiApiEnum.run_group_case.value,
+        return case_data, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
                                              case_json=case_data)
 
     def __socket_send(self, case_json, func_name: str) -> bool:
