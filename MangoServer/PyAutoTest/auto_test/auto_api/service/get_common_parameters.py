@@ -20,13 +20,15 @@ class GetCommonParameters:
         @return:
         """
         data = []
+        test_obj = TestObject.objects.get(id=test_obj_id)
         for i in ApiPublic.objects.filter(
-                project_id=TestObject.objects.get(id=test_obj_id).project_id).order_by('public_type'):
+                project_id=test_obj.project_id).order_by('public_type'):
             if i.public_type == ApiPublicTypeEnum.LOGIN.value:
                 case = ApiCase.objects.get(id=i.value)
+                url = test_obj.value + case.url
                 i.value = RequestModel(case_id=case.id,
                                        case_name=case.name,
-                                       url=case.url,
+                                       url=url,
                                        method=case.method,
                                        header=case.header,
                                        body_type=case.body_type,
@@ -57,5 +59,6 @@ class GetCommonParameters:
                 host=mysql.host,
                 port=mysql.post,
                 user=mysql.user,
-                password=mysql.password)
+                password=mysql.password,
+                db=mysql.name)
         raise "改项目未配置mysql"
