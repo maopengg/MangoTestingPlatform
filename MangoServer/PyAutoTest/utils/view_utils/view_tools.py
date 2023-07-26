@@ -25,8 +25,8 @@ def enum_list(enum) -> list:
 def paging_list(size, current, books, serializer) -> list:
     """
     分页
-    @param size:
-    @param current:
+    @param size:在、
+    @param current:现在页数
     @param books:
     @param serializer:
     @return:

@@ -30,3 +30,4 @@ class MysqlDBModel(BaseModel):
     port: int
     user: str
     password: str
+    db: str
