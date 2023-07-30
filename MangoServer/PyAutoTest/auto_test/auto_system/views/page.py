@@ -60,7 +60,7 @@ class SystemViews(ViewSet):
         res2 = socket_conn.active_send(socket_data)
         response_data = {
             'code': 200,
-            'msg': f'公共参数已同步给{DRIVER}',
+            'msg': f'请等待{DRIVER}处理参数完成',
             "data": [mysql, public]
         }
         if not res1 and not res2:
