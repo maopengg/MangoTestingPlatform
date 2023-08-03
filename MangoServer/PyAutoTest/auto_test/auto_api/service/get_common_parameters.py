@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
 from PyAutoTest.auto_test.auto_system.models import TestObject, Database
-from PyAutoTest.base_data_model.api_data_model import ApiPublicModel, RequestModel
-from PyAutoTest.base_data_model.system_data_model import MysqlDBModel
+from PyAutoTest.models.api_data_model import ApiPublicModel, RequestModel
+from PyAutoTest.models.system_data_model import MysqlDBModel
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
 
 

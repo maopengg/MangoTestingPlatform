@@ -10,7 +10,7 @@ from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.interface_reflection import ServerInterfaceReflection
-from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
 from PyAutoTest.settings import DRIVER, SERVER, WEB
 

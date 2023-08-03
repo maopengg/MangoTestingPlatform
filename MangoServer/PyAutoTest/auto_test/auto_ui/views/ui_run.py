@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.data_producer.run_api import RunApi
-from PyAutoTest.base_data_model.ui_data_model import CaseModel
+from PyAutoTest.models.ui_data_model import CaseModel
 from PyAutoTest.settings import DRIVER, SERVER
 
 

@@ -5,8 +5,8 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
-from PyAutoTest.base_data_model.api_data_model import ApiPublicModel
-from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
+from PyAutoTest.models.api_data_model import ApiPublicModel
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.actuator_api_enum import ApiEnum, ToolsEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.settings import DRIVER

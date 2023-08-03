@@ -7,8 +7,8 @@
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
-from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.base_data_model.ui_data_model import CaseModel, ElementModel, CaseGroupModel
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
+from PyAutoTest.models.ui_data_model import CaseModel, ElementModel, CaseGroupModel
 from PyAutoTest.enums.actuator_api_enum import UiEnum
 from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
@@ -124,7 +124,8 @@ class RunApi:
             case_model.local_port, case_model.browser_path = self.__get_web_config()
             case_model.type = DevicePlatformEnum.WEB.value
             case_model.browser_type = BrowserTypeEnum.CHROMIUM.value
-            case_model.case_url = TestObject.objects.get(id=test_obj).value + run_sort[0].el_page.url
+            case_model.case_host = TestObject.objects.get(id=test_obj).value
+            case_model.case_url = run_sort[0].el_page.url
 
             # if self.group_id == 4 and case_.name == 'shop商城使用管理员登录并切换到妮维雅租户' or case_.name == '获取首页周日数据':
             #     case_model.case_url = 'http://mall-tenant.zalldata.cn' + run_sort[0].el_page.url
