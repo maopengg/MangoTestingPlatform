@@ -14,7 +14,7 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_refle
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.system_consumer import \
     SystemConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.ui_consumer import UIConsumer
-from PyAutoTest.base_data_model.system_data_model import QueueModel
+from PyAutoTest.models.system_data_model import QueueModel
 
 log = logging.getLogger('system')
 

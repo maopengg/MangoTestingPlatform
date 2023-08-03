@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-from PyAutoTest.base_data_model.api_data_model import ResponseModel
+from PyAutoTest.models.api_data_model import ResponseModel
 from PyAutoTest.utils.other_utils.decorator import convert_args
 
 

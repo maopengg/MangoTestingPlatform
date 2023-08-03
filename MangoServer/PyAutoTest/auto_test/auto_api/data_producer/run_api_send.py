@@ -6,8 +6,8 @@
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiCase
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.base_data_model.api_data_model import PublicModel, ApiCaseGroupModel, RequestModel
-from PyAutoTest.base_data_model.system_data_model import SocketDataModel, QueueModel
+from PyAutoTest.models.api_data_model import PublicModel, ApiCaseGroupModel, RequestModel
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.actuator_api_enum import ApiEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.settings import DRIVER
