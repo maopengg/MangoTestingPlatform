@@ -9,7 +9,7 @@ import logging
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
-from PyAutoTest.auto_test.auto_system.service.socket_link.interface_reflection import ServerInterfaceReflection
+from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import queue
 from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
 from PyAutoTest.settings import DRIVER, SERVER, WEB
@@ -24,7 +24,6 @@ class ChatConsumer(WebsocketConsumer):
         from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
         from PyAutoTest.auto_test.auto_user.views.user import UserCRUD
         self.user_crud = UserCRUD()
-        self.s = ServerInterfaceReflection()
         self.user_redis = SocketUserRedis()
         self.user = ''
 
@@ -80,7 +79,7 @@ class ChatConsumer(WebsocketConsumer):
         logger.info(f'接受的消息：{msg}')
         if msg.data:
             if msg.data.func_name:
-                self.s.q.put(msg.data)
+                queue.put(msg.data)
         if msg.is_notice:
             self.active_send(msg)
 
