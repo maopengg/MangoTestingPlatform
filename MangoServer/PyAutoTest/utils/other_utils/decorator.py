@@ -23,7 +23,6 @@ def work():
     for i in range(10000):
         print(i)
 
-
 def convert_args(set_type, set_=None):
     """
     转换类型装饰器
@@ -31,7 +30,6 @@ def convert_args(set_type, set_=None):
     @param set_type:
     @return:
     """
-
     def decorator(func):
         async def wrapper(self, data):
             if set_ == 'list':
@@ -46,6 +44,21 @@ def convert_args(set_type, set_=None):
 
     return decorator
 
+
+def singleton(cls):
+    """
+    单例模式
+    @param cls:类对象
+    @return:
+    """
+    _instance = {}
+
+    def _singleton(*args, **kwargs):
+        if cls not in _instance:
+            _instance[cls] = cls(*args, **kwargs)
+        return _instance[cls]
+
+    return _singleton
 
 if __name__ == '__main__':
     work()
