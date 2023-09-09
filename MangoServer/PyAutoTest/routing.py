@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: websocket路由
 # @Time   : 2023-03-09 8:21
 # @Author : 毛鹏

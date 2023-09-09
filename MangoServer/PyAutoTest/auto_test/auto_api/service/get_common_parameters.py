@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-07-12 17:03
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
 from PyAutoTest.auto_test.auto_system.models import TestObject, Database
+from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
 from PyAutoTest.models.api_data_model import ApiPublicModel, RequestModel
 from PyAutoTest.models.system_data_model import MysqlDBModel
-from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
 
 
 class GetCommonParameters:

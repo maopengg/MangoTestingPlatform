@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
@@ -83,4 +83,3 @@ class TestObjectViews(ViewSet):
             'msg': '获取数据成功',
             'data': data
         })
-

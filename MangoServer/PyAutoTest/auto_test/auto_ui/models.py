@@ -125,7 +125,6 @@ class UiPublic(models.Model):
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
     state = models.SmallIntegerField(verbose_name="状态", null=True)
 
-
     class Meta:
         db_table = 'ui_public'
         ordering = ['-id']

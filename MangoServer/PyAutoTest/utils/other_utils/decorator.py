@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 统计函数运行时间
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
@@ -23,6 +23,7 @@ def work():
     for i in range(10000):
         print(i)
 
+
 def convert_args(set_type, set_=None):
     """
     转换类型装饰器
@@ -30,6 +31,7 @@ def convert_args(set_type, set_=None):
     @param set_type:
     @return:
     """
+
     def decorator(func):
         async def wrapper(self, data):
             if set_ == 'list':
@@ -59,6 +61,7 @@ def singleton(cls):
         return _instance[cls]
 
     return _singleton
+
 
 if __name__ == '__main__':
     work()

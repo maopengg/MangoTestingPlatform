@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 断言类型封装，支持json响应断言、数据库断言
 # @Time   : 2022-12-06 21:05
 # @Author : 毛鹏

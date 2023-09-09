@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: ui自动化子路由
 # @Time   : 2023-01-19 19:21
 # @Author : 毛鹏

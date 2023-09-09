@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
@@ -13,8 +13,8 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 logger = logging.getLogger('api')
 
