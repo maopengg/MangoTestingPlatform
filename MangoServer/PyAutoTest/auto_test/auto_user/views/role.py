@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 角色表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
@@ -29,6 +29,7 @@ class RoleCRUD(ModelCRUD):
 class RoleViews(ViewSet):
     model = Role
     serializer_class = RoleSerializers
+
     @action(methods=['get'], detail=False)
     def get_all_role(self, request: Request):
         items = Role.objects.all()

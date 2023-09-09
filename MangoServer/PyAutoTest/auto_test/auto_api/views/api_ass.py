@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-03-25 18:58
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.viewsets import ViewSet
 from rest_framework.request import Request
+from rest_framework.viewsets import ViewSet
+
 from PyAutoTest.auto_test.auto_api.models import ApiAssertions
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
 
 
 class ApiAssertionsSerializers(serializers.ModelSerializer):

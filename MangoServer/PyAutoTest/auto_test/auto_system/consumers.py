@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: websocket视图函数
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
@@ -10,8 +10,8 @@ from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import queue
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.settings import DRIVER, SERVER, WEB
 
 logger = logging.getLogger('system')
@@ -114,7 +114,8 @@ class ChatConsumer(WebsocketConsumer):
         :param send_data: 发送的数据
         :return:
         """
-        logger.info(f'发送的用户：{send_data.user}，发送的数据：{json.dumps(send_data.data.dict(), ensure_ascii=False) if send_data.data else None}')
+        logger.info(
+            f'发送的用户：{send_data.user}，发送的数据：{json.dumps(send_data.data.dict(), ensure_ascii=False) if send_data.data else None}')
         if send_data.is_notice == ClientTypeEnum.WEB.value:
             obj = self.user_redis.get_user_web_obj(send_data.user)
             if obj and isinstance(obj, type(self)):

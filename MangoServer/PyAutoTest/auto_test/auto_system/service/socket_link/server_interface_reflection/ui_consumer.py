@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
@@ -10,5 +10,3 @@ class UIConsumer:
 
     def ui_debug_case_result(self, data: dict):
         data = CaseResult(**data)
-
-

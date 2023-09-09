@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
@@ -7,11 +7,11 @@
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.models.ui_data_model import CaseModel, ElementModel, CaseGroupModel
 from PyAutoTest.enums.actuator_api_enum import UiEnum
 from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
 from PyAutoTest.enums.ui_enum import BrowserTypeEnum
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
+from PyAutoTest.models.ui_data_model import CaseModel, ElementModel, CaseGroupModel
 from PyAutoTest.settings import DRIVER
 
 
@@ -21,7 +21,7 @@ class RunApi:
         self.username = user.get("username")
         self.user_id = user.get("id")
 
-    def group_one(self, group_id: int, send: bool, time: bool=False) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
+    def group_one(self, group_id: int, send: bool, time: bool = False) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
         """
         执行一个用例组
         @param group_id: 用例组的ID

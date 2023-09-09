@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# @Project: MangoServer
+# @Description:
+# @Time   : 2023-06-04 12:24
+# @Author : 毛鹏
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -5,10 +10,10 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
-from PyAutoTest.models.api_data_model import ApiPublicModel
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.actuator_api_enum import ApiEnum, ToolsEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
+from PyAutoTest.models.api_data_model import ApiPublicModel
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.settings import DRIVER
 from PyAutoTest.utils.cache_utils.redis import Cache
 from PyAutoTest.utils.other_utils.random_data import RandomData

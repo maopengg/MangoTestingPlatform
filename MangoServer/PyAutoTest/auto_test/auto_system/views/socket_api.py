@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-05-13 23:00
 # @Author : 毛鹏
-from rest_framework.request import Request
-
-from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
 from PyAutoTest.auto_test.auto_user.models import User
 
 
