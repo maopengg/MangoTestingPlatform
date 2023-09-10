@@ -41,7 +41,8 @@ class ChatConsumer(WebsocketConsumer):
                                       msg=f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                                       ).json())
         elif self.scope.get('path') == SocketEnum.client_path.value:
-            if not self.user_redis.get_user_web_obj(self.user) and self.user != SocketEnum.common_actuator_name.value:
+            # not
+            if self.user_redis.get_user_web_obj(self.user) and self.user != SocketEnum.common_actuator_name.value:
                 self.send(SocketDataModel(code=300,
                                           msg=f'您在{WEB}未登录，请先登录！').json())
                 self.websocket_disconnect(message)
@@ -75,13 +76,17 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         self.user = self.scope.get('query_string').decode()
-        msg = SocketDataModel(**json.loads(message.get('text')))
-        logger.info(f'接受的消息：{msg}')
-        if msg.data:
-            if msg.data.func_name:
-                queue.put(msg.data)
-        if msg.is_notice:
-            self.active_send(msg)
+        try:
+            msg = SocketDataModel(**json.loads(message.get('text')))
+        except json.decoder.JSONDecodeError as e:
+            logger.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
+        else:
+            logger.info(f'接受的消息：{msg}')
+            if msg.data:
+                if msg.data.func_name:
+                    queue.put(msg.data)
+            if msg.is_notice:
+                self.active_send(msg)
 
     def websocket_disconnect(self, message):
         """
