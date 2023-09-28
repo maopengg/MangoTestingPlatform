@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: websocket视图函数
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
@@ -10,8 +10,8 @@ from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import queue
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
+from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
 from PyAutoTest.settings import DRIVER, SERVER, WEB
 
 logger = logging.getLogger('system')
@@ -41,7 +41,8 @@ class ChatConsumer(WebsocketConsumer):
                                       msg=f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                                       ).json())
         elif self.scope.get('path') == SocketEnum.client_path.value:
-            if not self.user_redis.get_user_web_obj(self.user) and self.user != SocketEnum.common_actuator_name.value:
+            # not
+            if self.user_redis.get_user_web_obj(self.user) and self.user != SocketEnum.common_actuator_name.value:
                 self.send(SocketDataModel(code=300,
                                           msg=f'您在{WEB}未登录，请先登录！').json())
                 self.websocket_disconnect(message)
@@ -75,13 +76,17 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         self.user = self.scope.get('query_string').decode()
-        msg = SocketDataModel(**json.loads(message.get('text')))
-        logger.info(f'接受的消息：{msg}')
-        if msg.data:
-            if msg.data.func_name:
-                queue.put(msg.data)
-        if msg.is_notice:
-            self.active_send(msg)
+        try:
+            msg = SocketDataModel(**json.loads(message.get('text')))
+        except json.decoder.JSONDecodeError as e:
+            logger.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
+        else:
+            logger.info(f'接受的消息：{msg}')
+            if msg.data:
+                if msg.data.func_name:
+                    queue.put(msg.data)
+            if msg.is_notice:
+                self.active_send(msg)
 
     def websocket_disconnect(self, message):
         """
@@ -114,7 +119,8 @@ class ChatConsumer(WebsocketConsumer):
         :param send_data: 发送的数据
         :return:
         """
-        logger.info(f'发送的用户：{send_data.user}，发送的数据：{json.dumps(send_data.data.dict(), ensure_ascii=False) if send_data.data else None}')
+        logger.info(
+            f'发送的用户：{send_data.user}，发送的数据：{json.dumps(send_data.data.dict(), ensure_ascii=False) if send_data.data else None}')
         if send_data.is_notice == ClientTypeEnum.WEB.value:
             obj = self.user_redis.get_user_web_obj(send_data.user)
             if obj and isinstance(obj, type(self)):

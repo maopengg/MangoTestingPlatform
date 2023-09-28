@@ -1,4 +1,8 @@
-# Create your views here.
+# -*- coding: utf-8 -*-
+# @Project: MangoServer
+# @Description:
+# @Time   : 2023-06-04 12:24
+# @Author : 毛鹏
 
 from rest_framework import serializers
 from rest_framework.decorators import action

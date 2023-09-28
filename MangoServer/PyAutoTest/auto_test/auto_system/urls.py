@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 系统设置模块子路由
 # @Time   : 2023-01-19 18:56
 # @Author : 毛鹏

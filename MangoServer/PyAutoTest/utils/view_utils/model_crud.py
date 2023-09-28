@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏

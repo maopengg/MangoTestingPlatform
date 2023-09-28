@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-03-25 18:58
 # @Author : 毛鹏
@@ -11,9 +11,9 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_case_group import ApiCaseGroupSerializers
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 
 
 class ApiResultSerializers(serializers.ModelSerializer):
