@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: redis缓存装饰器
 # @Time   : 2022-11-22 8:34
 # @Author : 毛鹏

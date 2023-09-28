@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
@@ -64,7 +64,7 @@ class CaseModel(BaseModel):
 
     @classmethod
     def create_empty(cls) -> "CaseModel":
-        return cls(case_id=0, case_name="", local_port="", browser_path="", type=0,case_host="", case_url="",
+        return cls(case_id=0, case_name="", local_port="", browser_path="", type=0, case_host="", case_url="",
                    browser_type=0, equipment="", package="", case_data=[])
 
 

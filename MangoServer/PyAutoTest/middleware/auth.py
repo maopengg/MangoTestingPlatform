@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 授权
 # @Time   : 2023-03-01 21:32
 # @Author : 毛鹏

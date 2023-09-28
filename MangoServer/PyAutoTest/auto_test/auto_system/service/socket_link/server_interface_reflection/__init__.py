@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description:
 # @Time   : 2023-04-29 11:19
 # @Author : 毛鹏
@@ -16,8 +16,7 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_refle
     SystemConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.ui_consumer import UIConsumer
 from PyAutoTest.models.system_data_model import QueueModel
-from PyAutoTest.models.ui_data_model import CaseResult
-from PyAutoTest.utils.other_utils.decorator import singleton, convert_args
+from PyAutoTest.utils.other_utils.decorator import singleton
 
 log = logging.getLogger('system')
 
@@ -36,7 +35,6 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
     #     return cls._instance
     def start_up(self, func, data):
         getattr(self, func)(data)
-
 
     def loop_function(self):
         while True:

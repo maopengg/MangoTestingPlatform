@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 项目表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
@@ -29,6 +29,7 @@ class ProjectCRUD(ModelCRUD):
 class ProjectViews(ViewSet):
     model = Project
     serializer_class = ProjectSerializers
+
     @action(methods=['get'], detail=False)
     def get_all_items(self, request: Request):
         items = Project.objects.all()

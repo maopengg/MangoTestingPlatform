@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-01-15 22:10
 # @Author : 毛鹏
-import json
 
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -11,7 +10,6 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.data_producer.run_api import RunApi
-from PyAutoTest.models.ui_data_model import CaseModel
 from PyAutoTest.settings import DRIVER, SERVER
 
 
@@ -96,4 +94,3 @@ class RunUiCase(ViewSet):
             'msg': f'执行失败，请确保{DRIVER}已连接{SERVER}',
             'data': case_json
         })
-
