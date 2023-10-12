@@ -65,9 +65,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'department'" #cell="{ record }">
-                  {{ record.department === null ? '-' : record.department.name }}
-                </template>
+                <!--                <template v-else-if="item.key === 'department'" #cell="{ record }">-->
+                <!--                  {{ record.department === null ? '-' : record.department.name }}-->
+                <!--                </template>-->
                 <template v-else-if="item.key === 'role'" #cell="{ record }">
                   {{ record.role === null ? '-' : record.role.name }}
                 </template>
@@ -300,12 +300,12 @@ const tableColumns = useTableColumn([
     dataIndex: 'username',
     align: 'left'
   },
-  {
-    title: '归属项目',
-    key: 'department',
-    dataIndex: 'department',
-    width: 150
-  },
+  // {
+  //   title: '归属项目',
+  //   key: 'department',
+  //   dataIndex: 'department',
+  //   width: 150
+  // },
   {
     title: '角色',
     key: 'role',

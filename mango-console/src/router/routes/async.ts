@@ -16,16 +16,16 @@ export const asyncRoutes = [
         name: 'Home',
         component: (): any => import('@/views/index/main.vue'),
         meta: {
-          title: '数据看板',
+          title: '项目数据',
           affix: true
         }
       },
       {
-        path: 'work-place',
-        name: 'WorkPlace',
-        component: (): any => import('@/views/index/work-place.vue'),
+        path: 'test_report',
+        name: 'TestReport',
+        component: (): any => import('@/views/index/test_report.vue'),
         meta: {
-          title: '任务进展'
+          title: '测试报告'
         }
       }
     ]
