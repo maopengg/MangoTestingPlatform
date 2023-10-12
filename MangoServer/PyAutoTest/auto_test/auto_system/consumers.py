@@ -41,12 +41,7 @@ class ChatConsumer(WebsocketConsumer):
                                       msg=f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                                       ).json())
         elif self.scope.get('path') == SocketEnum.client_path.value:
-            # not
-            if self.user_redis.get_user_web_obj(self.user) and self.user != SocketEnum.common_actuator_name.value:
-                self.send(SocketDataModel(code=300,
-                                          msg=f'您在{WEB}未登录，请先登录！').json())
-                self.websocket_disconnect(message)
-            elif self.user == SocketEnum.common_actuator_name.value:
+            if self.user == SocketEnum.common_actuator_name.value:
                 self.user_redis.set_user_conn_obj(self.user, SocketEnum.client_conn_obj.value, self)
                 self.send(SocketDataModel(code=200,
                                           msg=f'{DRIVER}已连接上{SERVER}！').json())
@@ -96,16 +91,16 @@ class ChatConsumer(WebsocketConsumer):
         """
         self.user = self.scope.get('query_string').decode()
         if self.scope.get('path') == SocketEnum.web_path.value:
-            self.active_send(SocketDataModel(
-                code=200,
-                msg=f'{WEB}已断开！',
-                user=self.user,
-                is_notice=ClientTypeEnum.ACTUATOR.value,
-                data=QueueModel(func_name='break', func_args=None)))
-            self.user_redis.delete_all(self.user)
+            # self.active_send(SocketDataModel(
+            #     code=200,
+            #     msg=f'{WEB}已断开！',
+            #     user=self.user,
+            #     is_notice=ClientTypeEnum.ACTUATOR.value,
+            #     data=QueueModel(func_name='break', func_args=None)))
+            self.user_redis.delete_key(self.user, SocketEnum.web_conn_obj.value)
             raise StopConsumer()
         elif self.scope.get('path') == SocketEnum.client_path.value:
-            self.user_redis.hdel(self.user, SocketEnum.client_conn_obj.value)
+            self.user_redis.delete_key(self.user, SocketEnum.client_conn_obj.value)
             self.active_send(SocketDataModel(
                 code=200,
                 msg=f'{DRIVER}已断开！',

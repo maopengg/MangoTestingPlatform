@@ -94,15 +94,15 @@ ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'mango-server',
+        'NAME': 'aigc_AutoUITestPlatform',
         'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': 'localhost',
-        'PORT': 3306,
+        'PASSWORD': 'zALL_mysql1',
+        'HOST': '61.183.9.60',
+        'PORT': 23306,
         'TEST': {
             'NAME': 'mango-server',
             'CHARSET': 'utf8mb4',
-            'COLLATION': 'utf8mb4_0900_ai_ci'
+            'COLLATION': 'utf8mb4_general_ci'
         },
         'OPTIONS': {
             "init_command": "SET foreign_key_checks = 0;",

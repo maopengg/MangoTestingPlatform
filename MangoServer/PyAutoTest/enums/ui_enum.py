@@ -19,10 +19,9 @@ class UiPublicTypeEnum(Enum):
 
 
 class ElementExpEnum(Enum):
-    """ {0: "XPATH"}，{1: "ID"}，{2: "NAME"}，{3: "TEXT"}，{4: "占位符"}，{5: "CSS"}，{11: "DESCRIPTION"}，{12: "BOUNDS"}，{13: "百分比坐标点击"} """
+    """ {0: "W_XPATH"}，{1: "W_ID"}，{3: "W_文本"}，{4: "W_占位符"}，{5: "W_CSS"}，{11: "A_DESCRIPTION"}，{12: "A_BOUNDS"}，{13: "A_百分比坐标点击"} """
     XPATH = 0
     ID = 1
-    NAME = 2
     TEXT = 3
     PLACEHOLDER = 4
     CSS = 5
