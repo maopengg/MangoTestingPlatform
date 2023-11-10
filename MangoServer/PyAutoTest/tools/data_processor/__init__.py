@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import re
 
-from exceptions.api_exception import CacheIsNone
+from PyAutoTest.exceptions.api_exception import CacheIsNone
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool
