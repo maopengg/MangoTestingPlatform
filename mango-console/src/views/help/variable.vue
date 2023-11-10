@@ -1,21 +1,18 @@
 <template>
-  <div>
+  <a-card>
     <a-space direction="vertical" class="w-full">
-      <a-card size="small">
-        <div class="text-lg">
-          <span> 公共变量 </span>
-          <a-space>
-            <a-input :style="{ width: '320px' }" placeholder="请输入函数名称" v-model="input" va allow-clear />
-          </a-space>
-          <a-button type="primary" @click="obtain">查看</a-button>
-        </div>
-      </a-card>
-
-      <a-card :body-style="{ padding: '10px' }">
-        <a-descriptions bordered :column="3" title="将函数名称输入到输入框中，点击查看即可获取数据" :data="randomList" />
+      <div class="container">
+        <span>公共变量</span>
+      </div>
+      <a-space>
+        <a-input :style="{ width: '320px' }" placeholder="请直接输入函数试一试" v-model="input" />
+        <a-button type="primary" @click="obtain">测试一下</a-button>
+      </a-space>
+      <a-card :body-style="{ padding: '10px' }" :bordered="false" v-for="item of randomList" :key="item.title">
+        <a-descriptions :column="3" :title="item.title" :data="item.func_list" :bordered="true" />
       </a-card>
     </a-space>
-  </div>
+  </a-card>
 </template>
 
 <script lang="ts" setup>
@@ -42,7 +39,7 @@ function obtain() {
     url: getRandomData,
     data: () => {
       return {
-        name: input.value
+        name: '${' + input.value + '}'
       }
     }
   })
@@ -52,3 +49,8 @@ function obtain() {
     .catch()
 }
 </script>
+<style>
+.container span {
+  font-size: 25px;
+}
+</style>

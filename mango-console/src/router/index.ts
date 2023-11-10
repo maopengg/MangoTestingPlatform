@@ -7,6 +7,26 @@ const Layout = () => import('@/layouts/Layout.vue')
 
 export const extraRoutes = [
   {
+    path: '/index',
+    name: 'home',
+    component: Layout,
+    redirect: { path: 'report-details' },
+    meta: {
+      title: '首页',
+      isSingle: true
+    },
+    children: [
+      {
+        path: 'home',
+        name: 'Details',
+        component: () => import('@/views/index/main.vue'),
+        meta: {
+          title: '首页'
+        }
+      }
+    ]
+  },
+  {
     path: '/uitest',
     name: 'uiTest',
     component: Layout,
@@ -15,17 +35,24 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'details',
-        component: () => import('@/views/uitest/ui-case-debug-details.vue'),
+        path: 'page-steps-details',
+        component: () => import('@/views/uitest/page-steps-details.vue'),
         meta: {
-          title: '用例详情'
+          title: '页面步骤详情'
         }
       },
       {
         path: 'pageel',
-        component: () => import('@/views/uitest/page_elements.vue'),
+        component: () => import('@/views/uitest/page-elements.vue'),
         meta: {
           title: '页面元素详情页'
+        }
+      },
+      {
+        path: 'ui-case-details',
+        component: () => import('@/views/uitest/case-details.vue'),
+        meta: {
+          title: '测试用例详情'
         }
       }
     ]
@@ -50,6 +77,40 @@ export const extraRoutes = [
         component: () => import('@/views/apitest/api-case-debug-details.vue'),
         meta: {
           title: '接口用例详情'
+        }
+      }
+    ]
+  },
+  {
+    path: '/timing',
+    name: 'task',
+    component: Layout,
+    meta: {
+      title: '定时任务'
+    },
+    children: [
+      {
+        path: 'runcase',
+        component: () => import('@/views/timing/runcase.vue'),
+        meta: {
+          title: '添加用例'
+        }
+      }
+    ]
+  },
+  {
+    path: '/index',
+    name: '测试报告',
+    component: Layout,
+    meta: {
+      title: '测试报告'
+    },
+    children: [
+      {
+        path: 'report-details',
+        component: () => import('@/views/index/report-details.vue'),
+        meta: {
+          title: '测试报告'
         }
       }
     ]

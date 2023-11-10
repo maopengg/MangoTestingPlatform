@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
@@ -109,7 +110,6 @@ DATABASES = {
         }
     }
 }
-
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -133,7 +133,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -269,7 +269,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['PyAutoTest.middleware.auth.JwtQueryParamsAuthentication', ],
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
 }
-# 'EXCEPTION_HANDLER': 'PyAutoTest.utils.exceptions.exception.custom_exception_handler',
+# 'EXCEPTION_HANDLER': 'PyAutoTest.tools.exceptions.exception.custom_exception_handler',
 # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 # 'PAGE_SIZE': 10,
 

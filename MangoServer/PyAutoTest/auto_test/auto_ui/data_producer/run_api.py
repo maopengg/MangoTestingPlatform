@@ -5,14 +5,18 @@
 # @Author : 毛鹏
 
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
+from PyAutoTest.auto_test.auto_system.data_consumer.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup, RunSort, UiCase, UiConfig
+from PyAutoTest.auto_test.auto_ui.models import UiPageStepsDetailed, UiCase, UiConfig, UiPageSteps, UiCaseStepsDetailed
 from PyAutoTest.enums.actuator_api_enum import UiEnum
-from PyAutoTest.enums.system_enum import DevicePlatformEnum, ClientTypeEnum
-from PyAutoTest.enums.ui_enum import BrowserTypeEnum
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.models.ui_data_model import CaseModel, ElementModel, CaseGroupModel
+from PyAutoTest.enums.system_enum import ClientTypeEnum, AutoTestTypeEnum
+from PyAutoTest.enums.system_enum import IsItEnabled, DevicePlatformEnum
+from PyAutoTest.enums.ui_enum import DevicePlatform
+from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
+from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
+from PyAutoTest.models.socket_model.ui_model import *
 from PyAutoTest.settings import DRIVER
+from PyAutoTest.tools.snowflake import Snowflake
 
 
 class RunApi:
@@ -21,73 +25,91 @@ class RunApi:
         self.username = user.get("username")
         self.user_id = user.get("id")
 
-    def group_one(self, group_id: int, send: bool, time: bool = False) -> tuple[CaseGroupModel, bool] or CaseGroupModel:
+    def steps(self, steps_id: int, test_obj: int, is_send: bool = True) -> tuple[
+                                                                               PageStepsModel, bool] or PageStepsModel:
+        """
+        收集步骤数据
+        @param steps_id: 步骤id
+        @param test_obj: 测试对象
+        @param is_send: 是否选择发送
+        @return:
+        """
+        case_model = self.__data_ui_case(test_obj, steps_id)
+        if self.username and is_send:
+            return case_model, self.__socket_send(func_name=UiEnum.U_PAGE_STEPS.value, case_model=case_model)
+        return case_model
+
+    def case(self, case_id: int, test_obj: int, is_send: bool = True) -> tuple[CaseModel, bool] or CaseModel:
         """
         执行一个用例组
-        @param group_id: 用例组的ID
-        @param send: 用例组的ID
-        @param time: 用例组的ID
+        @param case_id: 用例ID
+        @param is_send: 是否发送
+        @param test_obj: 测试对象
         @return:
         """
-        case_group_data = UiCaseGroup.objects.get(pk=group_id)
-        if send and time:
-            self.username = case_group_data.timing_actuator.username
-            self.user_id = case_group_data.case_people.id
-        case_json = self.__group_cases(case_group_data)
-        if self.username and send:
-            return case_json, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
-                                                 case_json=case_json)
-        return case_json
+        case = UiCase.objects.get(pk=case_id)
 
-    def group_batch(self, group_id_list: list or int, time: bool = False) -> tuple[list[CaseGroupModel], bool]:
+        objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
+        case_list = []
+        case_cache_data = {}
+        case_cache_ass = {}
+        for i in objects_filter:
+            case_list.append(self.__data_ui_case(test_obj, i.page_step.id))
+            case_cache_data[i.page_step.name] = eval(i.case_cache_data)
+            case_cache_ass[i.page_step.name] = eval(i.case_cache_ass)
+        case_model = CaseModel(case_id=case.id,
+                               case_name=case.name,
+                               project=case.project.id,
+                               module_name=case.module_name.module_name,
+                               case_people=case.case_people.nickname,
+                               case_cache_data=case_cache_data,
+                               case_cache_ass=case_cache_ass,
+                               case_list=case_list)
+        if self.username and is_send:
+            model = TestSuiteModel(id=Snowflake.generate_id(),
+                                   type=AutoTestTypeEnum.UI.value,
+                                   project=case.project.id,
+                                   name=case.name,
+                                   run_state=0,
+                                   case_list=[])
+            model.case_list.append(case_model)
+            send_res = self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
+                                          case_model=model)
+            if send_res:
+                TestSuiteReportUpdate(model).update_test_suite_report()
+            return case_model, send_res
+        return case_model
+
+    def case_batch(self, case_id_list: list, test_obj: int) -> tuple[list[CaseModel], bool]:
         """
         批量执行用例组用例
-        @param group_id_list: 用例组的list或int
-        @param time: 定时
+        @param case_id_list: 用例组的list或int
+        @param test_obj:
         @return:
         """
-        case_group_list = []
-        if isinstance(group_id_list, int):
-            case_group_list.append(self.group_one(group_id_list, time, time))
-        elif isinstance(group_id_list, list):
-            for group_id in group_id_list:
-                case_group_list.append(self.group_one(group_id, time, time))
-        return case_group_list, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
-                                                   case_json=case_group_list)
+        case_group_list: list[CaseModel] = []
+        for case_id in case_id_list:
+            case_group_list.append(self.case(case_id=case_id, test_obj=test_obj, is_send=False))
+        model = TestSuiteModel(id=Snowflake.generate_id(),
+                               type=AutoTestTypeEnum.UI.value,
+                               project=case_group_list[0].project,
+                               name=case_group_list[0].case_name,
+                               run_state=0,
+                               case_list=case_group_list)
+        send_res = self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
+                                      case_model=model)
+        if send_res:
+            TestSuiteReportUpdate(model).update_test_suite_report()
+        return case_group_list, send_res
 
-    def case_noe(self, case_id: int, test_obj: int, send: bool = False) -> tuple[CaseModel, bool] or CaseModel:
-        """
-        调试用例单个执行
-        """
-        case_json = self.__data_ui_case(test_obj, case_id)
-        if self.username and send:
-            return case_json, self.__socket_send(func_name=UiEnum.U_DEBUG_CASE.value, case_json=case_json)
-        return case_json
-
-    def case_batch(self, case_list: int or list, test_obj: int) -> tuple[list[CaseModel], bool]:
-        """
-        调试用例批量执行
-        @param case_list: 用例id列表或者一个
-        @param test_obj: 测试环境
-        @return:
-        """
-        case_data = []
-        if isinstance(case_list, int):
-            case_data.append(self.case_noe(test_obj, case_list))
-        elif isinstance(case_list, list):
-            for case_id in case_list:
-                case_data.append(self.case_noe(test_obj, case_id))
-        return case_data, self.__socket_send(func_name=UiEnum.U_GROUP_CASE.value,
-                                             case_json=case_data)
-
-    def __socket_send(self, case_json, func_name: str) -> bool:
+    def __socket_send(self, case_model, func_name: str) -> bool:
         """
         发送给第三方工具方法
-        @param case_json: 需要发送的json数据
+        @param case_model: 需要发送的json数据
         @param func_name: 需要执行的函数
         @return:
         """
-        data = QueueModel(func_name=func_name, func_args=case_json)
+        data = QueueModel(func_name=func_name, func_args=case_model)
         return socket_conn.active_send(SocketDataModel(
             code=200,
             msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
@@ -96,74 +118,57 @@ class RunApi:
             data=data,
         ))
 
-    def __group_cases(self, group: UiCaseGroup) -> CaseGroupModel:
+    def __data_ui_case(self, test_obj: int, page_steps_id: int) -> PageStepsModel:
         """
-        根据用例组的列表，返回所有的测试对象
-        @param group: UiCaseGroup对象，一条数据
-        @return:
-        """
-        case_single = CaseGroupModel(group_name=group.name, case_group=[])
-        for case_id in eval(group.case_id):
-            case_single.case_group.append(self.__data_ui_case(group.test_obj.id, case_id))
-        return case_single
-
-    def __data_ui_case(self, test_obj: int, case_id: int) -> CaseModel:
-        """
-        根据test对象和用例ID返回一个UI测试对象回去
+        根据test对象和步骤ID返回一个步骤测试对象
         @param test_obj: 测试环境id
-        @param case_id: 用例id
+        @param page_steps_id: 步骤id
         @return: 返回一个数据处理好的测试对象
         """
-        case_ = UiCase.objects.get(id=case_id)
-        case_model = CaseModel.create_empty()
-        case_model.case_id = case_.id
-        case_model.case_name = case_.name
-        run_sort = RunSort.objects.filter(case=case_.id).order_by('run_sort')
-        # 如果是web用例，则写入浏览器的端口，浏览器打开地址，type 执行用例url和浏览器的类型
-        if case_.case_type == DevicePlatformEnum.WEB.value:
-            case_model.local_port, case_model.browser_path = self.__get_web_config()
-            case_model.type = DevicePlatformEnum.WEB.value
-            case_model.browser_type = BrowserTypeEnum.CHROMIUM.value
-            case_model.case_host = TestObject.objects.get(id=test_obj).value
-            case_model.case_url = run_sort[0].el_page.url
+        step = UiPageSteps.objects.get(id=page_steps_id)
+        case_model = PageStepsModel(
+            page_steps_id=step.id,
+            page_step_name=step.name,
+            host=TestObject.objects.get(id=test_obj).value,
+            url=step.page.url,
+            type=step.page.type,
+            config=
+            self.__get_web_config() if step.page.type == DevicePlatform.WEB.value else self.__get_app_config()
+        )
 
-            # if self.group_id == 4 and case_.name == 'shop商城使用管理员登录并切换到妮维雅租户' or case_.name == '获取首页周日数据':
-            #     case_model.case_url = 'http://mall-tenant.zalldata.cn' + run_sort[0].el_page.url
-            # elif self.group_id == 4 and case_.name == '登录GrowKnows租户：妮维雅' or case_.name == '查询昨日支付订单的支付订单金额':
-            #     case_model.case_url = 'https://cdxp.growknows.cn' + run_sort[0].el_page.url
-            # else:
-        # 如果是安卓用例，则写入设备，app和type
-        elif case_.case_type == DevicePlatformEnum.ANDROID.value:
-            case_model.equipment = self.__get_app_config()
-            case_model.package = run_sort[0].el_page.url
-            case_model.type = DevicePlatformEnum.ANDROID.value
-        elif case_.case_type == DevicePlatformEnum.IOS.value:
-            pass
-        elif case_.case_type == DevicePlatformEnum.DESKTOP.value:
-            pass
-        for i in run_sort:
-            if i.el_name is not None:
-                case_model.case_data.append(ElementModel(
-                    ope_type=i.ope_type,
-                    ass_type=i.ass_type,
-                    ope_value=eval(i.ope_value) if i.ope_value else None,
-                    ass_value=eval(i.ass_value) if i.ass_value else None,
-                    ele_name_a=i.el_name.name if i.el_name else None,
-                    ele_name_b=i.el_name_b.name if i.el_name_b else None,
-                    ele_page_name=i.el_page.name,
-                    ele_exp=i.el_name.exp,
-                    ele_loc=i.el_name.loc if i.el_name else None,
-                    ele_loc_b=i.el_name_b.loc if i.el_name_b else None,
-                    ele_sleep=i.el_name.sleep,
-                    ele_sub=i.el_name.sub,
-                    ope_value_key=i.ope_value_key
-                ))
+        step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
+            'step_sort')
+        for i in step_sort_list:
+            case_model.pages_ele.append(ElementModel(
+                type=i.type,
+                ele_name_a=i.ele_name_a.name,
+                ele_name_b=i.ele_name_b.name if i.ele_name_b else None,
+                ele_loc_a=i.ele_name_a.loc,
+                ele_loc_b=i.ele_name_b.loc if i.ele_name_b else None,
+                ele_exp=i.ele_name_a.exp,
+                ele_sleep=i.ele_name_a.sleep,
+                ele_sub=i.ele_name_a.sub,
+                ope_type=i.ope_type,
+                ope_value=eval(i.ope_value) if i.ope_value else None,
+                ass_type=i.ass_type,
+                ass_value=eval(i.ass_value) if i.ass_value else None,
+            ))
         return case_model
 
-    def __get_web_config(self) -> tuple:
-        user_ui_config = UiConfig.objects.get(user_id=self.user_id)
-        return user_ui_config.local_port, user_ui_config.browser_path
+    def __get_web_config(self) -> WEBConfigModel:
+        try:
+            user_ui_config = UiConfig.objects.get(user_id=self.user_id,
+                                                  state=IsItEnabled.right.value,
+                                                  type=DevicePlatformEnum.WEB.value)
+        except UiConfig.DoesNotExist:
+            raise UiConfigQueryIsNoneError('web配置查询结果是空，请先进行配置')
+        return WEBConfigModel(
+            browser_port=user_ui_config.browser_port,
+            browser_path=user_ui_config.browser_path,
+            browser_type=user_ui_config.browser_type)
 
-    def __get_app_config(self) -> tuple:
-        user_ui_config = UiConfig.objects.get(user_id=self.user_id)
-        return user_ui_config.equipment
+    def __get_app_config(self) -> AndroidConfigModel:
+        user_ui_config = UiConfig.objects.get(user_id=self.user_id,
+                                              state=IsItEnabled.right.value,
+                                              type=DevicePlatformEnum.ANDROID.value)
+        return AndroidConfigModel(equipment=user_ui_config.equipment)

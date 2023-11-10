@@ -12,8 +12,8 @@ function usePermissionGuard() {
     const userStore = useUserStore()
     if (userStore.isTokenExpire()) {
       return {
-        path: '/login',
-        query: { redirect: to.fullPath }
+        path: '/login'
+        // query: { redirect: to.fullPath }
       }
     }
     const permissionStore = usePermissionStore()

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-from PyAutoTest.models.api_data_model import ResponseModel
+from PyAutoTest.models.socket_model.api_model import ResponseModel
 
 
 class APIConsumer:

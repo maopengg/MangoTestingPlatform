@@ -8,13 +8,13 @@ import logging
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 logger = logging.getLogger('api')
 
@@ -65,13 +65,5 @@ class ApiCaseViews(ViewSet):
                              f"错误数据：{i}")
                 res.append(False)
         if False in res:
-            return Response({
-                'code': 200,
-                'msg': '接口同步包含部分失败',
-                'data': None
-            })
-        return Response({
-            'code': 200,
-            'msg': '接口同步成功',
-            'data': None
-        })
+            return ResponseData.fail('接口同步包含部分失败')
+        return ResponseData.success('接口同步成功', )

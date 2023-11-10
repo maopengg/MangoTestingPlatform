@@ -15,9 +15,12 @@ class ApiEnum(Enum):
 
 
 class UiEnum(Enum):
-    U_DEBUG_CASE = 'u_debug_case'
-    U_GROUP_CASE = 'u_group_case'
+    U_PAGE_STEPS = 'u_page_step'
+    U_CASE_BATCH = 'u_case_batch'
+    u_page_new_obj = 'u_page_new_obj'
 
 
 class ToolsEnum(Enum):
     T_MYSQL_CONFIG = "t_mysql_config"
+    public_data_write = 'public_data_write'
+    get_cache_key_value = 'get_cache_key_value'

@@ -4,8 +4,8 @@
 # @Time   : 2023-01-19 20:22
 # @Author : 毛鹏
 import logging
-import time
 
+import time
 from django.utils.deprecation import MiddlewareMixin
 
 

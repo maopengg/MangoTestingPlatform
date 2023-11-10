@@ -289,7 +289,6 @@ export default defineComponent({
     }
 
     function doRefresh() {
-      console.log(table.tableLoading)
       post({
         url: getMenuList,
         data: {}

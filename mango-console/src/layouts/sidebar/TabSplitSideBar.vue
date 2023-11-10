@@ -85,7 +85,6 @@ export default defineComponent({
     function findPath(item: SplitTab) {
       if (item.children && item.children.length > 0) {
         const firstItem = item.children[0]
-        console.log(firstItem)
         if (firstItem.children && firstItem.children.length > 0) {
           findPath({
             label: firstItem.meta?.title,

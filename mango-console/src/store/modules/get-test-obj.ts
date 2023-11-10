@@ -20,9 +20,12 @@ export const useTestObj = defineStore('get-test-obj', {
       })
         .then((res) => {
           this.data = res.data
-          console.log(this.data)
         })
         .catch(console.log)
     }
+  },
+  presist: {
+    enable: true,
+    resetToState: true
   }
 })

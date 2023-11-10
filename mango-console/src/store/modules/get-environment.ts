@@ -19,9 +19,12 @@ export const useEnvironment = defineStore('get-environment', {
       })
         .then((res) => {
           this.data = res.data
-          console.log(this.data)
         })
         .catch(console.log)
     }
+  },
+  presist: {
+    enable: true,
+    resetToState: true
   }
 })

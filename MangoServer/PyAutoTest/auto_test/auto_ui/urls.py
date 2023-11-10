@@ -5,51 +5,61 @@
 # @Author : 毛鹏
 from django.urls import path
 
-from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD, UiCaseViews
-from PyAutoTest.auto_test.auto_ui.views.ui_case_group import UiCaseGroupCRUD, UiCaseGroupViews
+from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD, UiCaseViews, UiCaseQuery
+from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultViews, UiCaseResultCRUD
+from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD, UiCaseStepsDetailedViews
 from PyAutoTest.auto_test.auto_ui.views.ui_config import UiConfigCRUD, UiConfigViews
+from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultCRUD, UiEleResultViews
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementCRUD, UiElementViews
-from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageCRUD, UiPageR, UiPageViews
-from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicCRUD, UiPublicViews
-from PyAutoTest.auto_test.auto_ui.views.ui_result import UiResultCRUD, UiResultViews
-from PyAutoTest.auto_test.auto_ui.views.ui_run import RunUiCase
-from PyAutoTest.auto_test.auto_ui.views.ui_runsort import RunSortCRUD, RunSortView
+from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageCRUD, UiPageQuery, UiPageViews
+from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsCRUD, UiPageStepsQuery, UiPageStepsViews
+from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD, UiPageStepsDetailedView
+from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicCRUD, UiPublicViews, UiPublicQuery
 
 urlpatterns = [
     #
     path("page", UiPageCRUD.as_view()),
-    path("page/query", UiPageR.as_view({'get': 'query_by'})),
-    path("page/name1", UiPageViews.as_view({'get': 'get_page_name1'})),
-    path("page/name", UiPageViews.as_view({'get': 'get_page_name'})),
+    path("page/query", UiPageQuery.as_view({'get': 'query_by'})),
+    path("page/name/project", UiPageViews.as_view({'get': 'get_page_name_project'})),
+    path("page/name/all", UiPageViews.as_view({'get': 'get_page_name_all'})),
+    #
+    path("page/steps/detailed", UiPageStepsDetailedCRUD.as_view()),
+    path("page/steps/detailed/ope", UiPageStepsDetailedView.as_view({'get': 'get_ope_type'})),
+    path("page/steps/detailed/ass", UiPageStepsDetailedView.as_view({'get': 'get_ass_type'})),
+    path("page/ass/method", UiPageStepsDetailedView.as_view({'get': 'get_ass_method'})),
     #
     path("element", UiElementCRUD.as_view()),
     path("element/name", UiElementViews.as_view({'get': 'get_ele_name'})),
     path("element/exp", UiElementViews.as_view({'get': 'get_exp_type'})),
     #
-    path("case", UiCaseCRUD.as_view()),
-    path("case/put/type", UiCaseViews.as_view({'put': 'put_type'})),
-    path("get/case/name/list", UiCaseViews.as_view({'get': 'get_case_obj_name'})),
-    #
-    path("runsort", RunSortCRUD.as_view()),
-    # path("runsort/detail", RunSortView.ui_case_detail),
-    path("runsort/ope", RunSortView.as_view({'get': 'get_ope_type'})),
-    path("runsort/ass", RunSortView.as_view({'get': 'get_ass_type'})),
+    path("steps", UiPageStepsCRUD.as_view()),
+    path("steps/query", UiPageStepsQuery.as_view({'get': 'query_by'})),
+    path("steps/put/type", UiPageStepsViews.as_view({'put': 'put_type'})),
+    path("get/case/name/list", UiPageStepsViews.as_view({'get': 'get_case_obj_name'})),
+    path("steps/run", UiPageStepsViews.as_view({'get': 'ui_steps_run'})),
+    path("steps/get/page/steps/name", UiPageStepsViews.as_view({'get': 'get_page_steps_name'})),
     #
     path("public", UiPublicCRUD.as_view()),
-    path("public/test", UiPublicViews.test),
+    path("public/query", UiPublicQuery.as_view({'get': 'query_by'})),
+    path("public/put/state", UiPublicViews.as_view({'put': 'put_state'})),
     #
-    path("result", UiResultCRUD.as_view()),
-    path("result/test", UiResultViews.test),
+    path("case", UiCaseCRUD.as_view()),
+    path("case/query_by", UiCaseQuery.as_view({'get': 'query_by'})),
+    path("case/run", UiCaseViews.as_view({'get': 'ui_case_run'})),
+    path("case/batch/run", UiCaseViews.as_view({'get': 'ui_batch_run'})),
     #
-    path("case/group", UiCaseGroupCRUD.as_view()),
-    path("case/group/test", UiCaseGroupViews.test),
+    path("case/steps/detailed", UiCaseStepsDetailedCRUD.as_view()),
+    path("case/steps/refresh/cache/data", UiCaseStepsDetailedViews.as_view({'get': 'post_case_cache_data'})),
     #
     path("config", UiConfigCRUD.as_view()),
-    path("config/test", UiConfigViews.test),
+    path("config/get/browser/type", UiConfigViews.as_view({'get': 'get_browser_type'})),
+    path("config/get/drive/type", UiConfigViews.as_view({'get': 'get_drive_type'})),
+    path("config/put/state", UiConfigViews.as_view({'put': 'put_state'})),
+    path("config/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
     #
-    path("run", RunUiCase.as_view({'get': 'ui_run'})),
-    path("batch/run", RunUiCase.as_view({'get': 'ui_batch_run'})),
-    path("run/group", RunUiCase.as_view({'get': 'ui_run_group'})),
-    path("run/group/batch", RunUiCase.as_view({'get': 'ui_run_group_batch'})),
-
+    path("case/result", UiCaseResultCRUD.as_view()),
+    path("case/result/suite/get/case", UiCaseResultViews.as_view({'get': 'suite_get_case'})),
+    #
+    path("ele/result", UiEleResultCRUD.as_view()),
+    path("ele/result/ele", UiEleResultViews.as_view({'get': 'get_ele_result'})),
 ]

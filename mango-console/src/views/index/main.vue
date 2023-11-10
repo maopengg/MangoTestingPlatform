@@ -2,133 +2,258 @@
   <div class="main-container">
     <div class="left">
       <div class="item">
-        <Title title="销售渠道" />
-        <EnrollmentChannelsChart ref="enrollmentChannelsChart" />
+        <Title title="测试用例" />
+        <EnrollmentChannelsChart ref="enrollmentChannelsChart" :propData="mainData.reportSum" />
       </div>
       <div class="item">
-        <Title title="周销售额分析图" />
-        <WeekSalesChart ref="weekSalesChart" />
+        <Title title="测试结果" />
+        <EnrollmentChannelsChart ref="enrollmentChannelsChart" :propData="mainData.caseSum" />
       </div>
       <div class="item">
-        <Title title="热卖产品指数" />
+        <Title title="-" />
         <HotProductChart ref="hotProductChart" />
       </div>
     </div>
     <div class="center">
       <div style="display: flex; flex-direction: column; height: 100%">
-        <a-card>
-          <CenterTitle />
-        </a-card>
-        <div class="center-data-item-wrapper">
-          <DataItem class="item" title="周销售金额" :data-model="{ num: 1000, prefix: '￥', suffix: '', bg: Bg1 }" />
-          <DataItem class="item" title="周增长人数" :data-model="{ num: 56100, prefix: '', suffix: '人', bg: Bg2 }" />
-          <DataItem class="item" title="周成交单数" :data-model="{ num: 3216, prefix: '', suffix: '单', bg: Bg3 }" />
-        </div>
-        <a-card style="flex: 1; overflow: hidden">
-          <div style="display: flex; flex-direction: column; height: 100%">
-            <Title title="年销售成交额走势图" />
-            <FullYearSalesChart ref="fullYearSalesChart" />
-            <div style="flex: 1; overflow: auto">
-              <ProjectList />
+        <a-space direction="vertical">
+          <a-card>
+            <CenterTitle />
+          </a-card>
+          <a-card style="flex: 1; overflow: hidden">
+            <div style="display: flex; flex-direction: column; height: 100%">
+              <Title title="近3个月执行用例趋势图" />
+              <FullYearSalesChart ref="fullYearSalesChart" />
             </div>
-          </div>
-        </a-card>
-      </div>
-    </div>
-    <div class="right">
-      <div class="item">
-        <Title title="周订单分析图" />
-        <OrderChart ref="orderChart" />
-      </div>
-      <div class="item">
-        <Title title="销售业绩排行榜" />
-        <SaleOrderList />
+          </a-card>
+          <a-card>
+            <div style="flex: 1; overflow: auto">
+              <a-space direction="vertical" fill>
+                <a-tabs @tab-click="(key) => switchType(key)">
+                  <a-tab-pane key="0" title="界面自动化" />
+                  <a-tab-pane key="1" title="接口自动化" />
+                  <a-tab-pane key="2" title="性能自动化" />
+                </a-tabs>
+                <a-table
+                  :bordered="true"
+                  :loading="table.tableLoading"
+                  :data="table.dataList"
+                  :columns="tableColumns"
+                  :pagination="false"
+                  :rowKey="rowKey"
+                  @selection-change="onSelectionChange"
+                >
+                  <template #columns>
+                    <a-table-column
+                      v-for="item of tableColumns"
+                      :key="item.key"
+                      :align="item.align"
+                      :title="item.title"
+                      :width="item.width"
+                      :data-index="item.key"
+                      :fixed="item.fixed"
+                    >
+                      <template v-if="item.key === 'index'" #cell="{ record }">
+                        <span style="width: 110px; display: inline-block">{{ record.id }}</span>
+                      </template>
+                      <template v-else-if="item.key === 'project'" #cell="{ record }">
+                        {{ record.project.name }}
+                      </template>
+                      <template v-else-if="item.key === 'run_state'" #cell="{ record }">
+                        <a-tag color="red" size="small" v-if="record.run_state === 0">进行中</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.run_state === 1">已完成</a-tag>
+                      </template>
+                      <template v-else-if="item.key === 'state'" #cell="{ record }">
+                        <a-tag color="red" size="small" v-if="record.state === 0">失败</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.state === 1">成功</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.state === null">待测试完成</a-tag>
+                      </template>
+                      <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                        <a-space>
+                          <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
+                        </a-space>
+                      </template>
+                    </a-table-column>
+                  </template>
+                </a-table>
+                <TableFooter :pagination="pagination" />
+              </a-space>
+            </div>
+          </a-card>
+        </a-space>
       </div>
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { computed, defineComponent, ref, unref, watch, onMounted, nextTick } from 'vue'
+<script setup lang="ts">
+import { computed, ref, unref, watch, onMounted, nextTick, reactive } from 'vue'
 import Title from './components/Title'
 import EnrollmentChannelsChart from './components/chart/EnrollmentChannelsChart.vue'
-import SaleOrderList from './components/SaleOrderList.vue'
 import useAppConfigStore from '@/store/modules/app-config'
 import CenterTitle from './components/CenterTitle.vue'
-import DataItem from './components/DataItem.vue'
 import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
-import ProjectList from './components/ProjectList.vue'
-import Bg1 from '@/assets/bg_item_1.png'
-import Bg2 from '@/assets/bg_item_2.png'
-import Bg3 from '@/assets/bg_item_3.png'
-import WeekSalesChart from './components/chart/WeekSalesChart.vue'
 import HotProductChart from './components/chart/HotProductChart.vue'
-import OrderChart from './components/chart/OrderChart.vue'
 import { useProject } from '@/store/modules/get-project'
 import { useTestObj } from '@/store/modules/get-test-obj'
+import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
+import { useRouter } from 'vue-router'
+import { get } from '@/api/http'
+import { testSuiteAllReportSum, testSuiteReport, testSuiteAllCaseSum, SocketAllUserSum } from '@/api/url'
 
-export default defineComponent({
-  name: 'Home',
-  components: {
-    Title,
-    EnrollmentChannelsChart,
-    SaleOrderList,
-    CenterTitle,
-    DataItem,
-    FullYearSalesChart,
-    ProjectList,
-    WeekSalesChart,
-    HotProductChart,
-    OrderChart
+const appStore = useAppConfigStore()
+const mainHeight = computed(() => {
+  return appStore.mainHeight + 'px'
+})
+
+const enrollmentChannelsChart = ref()
+const hotProductChart = ref()
+const fullYearSalesChart = ref()
+const orderChart = ref()
+const onResize = () => {
+  setTimeout(() => {
+    unref(enrollmentChannelsChart).updateChart()
+    // unref(weekSalesChart).updateChart()
+    unref(hotProductChart).updateChart()
+    unref(fullYearSalesChart).updateChart()
+    unref(orderChart).updateChart()
+  }, 500)
+}
+const collapse = computed(() => {
+  return appStore.isCollapse
+})
+watch(collapse, () => {
+  onResize()
+})
+const Project = useProject()
+const testObj = useTestObj()
+
+const pagination = usePagination(doRefresh)
+pagination.pageSize = 9
+
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const tableColumns = useTableColumn([
+  table.indexColumn,
+  {
+    title: '项目名称',
+    key: 'project',
+    dataIndex: 'project',
+    width: 150
   },
-  setup() {
-    const appStore = useAppConfigStore()
-    const mainHeight = computed(() => {
-      return appStore.mainHeight + 'px'
-    })
-
-    const enrollmentChannelsChart = ref()
-    const weekSalesChart = ref()
-    const hotProductChart = ref()
-    const fullYearSalesChart = ref()
-    const orderChart = ref()
-    const onResize = () => {
-      setTimeout(() => {
-        unref(enrollmentChannelsChart).updateChart()
-        unref(weekSalesChart).updateChart()
-        unref(hotProductChart).updateChart()
-        unref(fullYearSalesChart).updateChart()
-        unref(orderChart).updateChart()
-      }, 500)
-    }
-    const collapse = computed(() => {
-      return appStore.isCollapse
-    })
-    watch(collapse, () => {
-      onResize()
-    })
-    const Project = useProject()
-    const testObj = useTestObj()
-    onMounted(() => {
-      nextTick(async () => {
-        Project.getItems()
-        testObj.getEnvironment()
-      })
-    })
-
-    return {
-      enrollmentChannelsChart,
-      weekSalesChart,
-      hotProductChart,
-      fullYearSalesChart,
-      orderChart,
-      Bg1,
-      Bg2,
-      Bg3,
-      mainHeight,
-      collapse
-    }
+  // {
+  // title: '测试套名称',
+  // key: 'name',
+  // dataIndex: 'name'
+  // },
+  {
+    title: '执行时间',
+    key: 'create_time',
+    dataIndex: 'create_time'
+  },
+  {
+    title: '执行状态',
+    key: 'run_state',
+    dataIndex: 'run_state'
+  },
+  {
+    title: '测试结果',
+    key: 'state',
+    dataIndex: 'state'
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    dataIndex: 'actions',
+    fixed: 'right',
+    width: 150
   }
+])
+const router = useRouter()
+
+function onClick(record: any) {
+  router.push({
+    path: '/index/report-details',
+    query: {
+      id: record.id,
+      name: record.name
+    }
+  })
+}
+const pageType: any = ref('0')
+
+function switchType(key: any) {
+  pageType.value = key
+  doRefresh()
+}
+function doRefresh() {
+  get({
+    url: testSuiteReport,
+    data: () => {
+      return {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        type: pageType.value
+      }
+    }
+  })
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize((res as any).totalSize)
+    })
+    .catch(console.log)
+}
+let mainData = reactive({
+  reportSum: [],
+  caseSum: [],
+  userSum: 0
+})
+function getAllReportSum() {
+  get({
+    url: testSuiteAllReportSum,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      mainData.reportSum = res.data
+    })
+    .catch(console.log)
+}
+function getAllCaseSum() {
+  get({
+    url: testSuiteAllCaseSum,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      mainData.caseSum = res.data
+    })
+    .catch(console.log)
+}
+function getAllUserSum() {
+  get({
+    url: SocketAllUserSum,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      mainData.userSum = res.data['sum']
+    })
+    .catch(console.log)
+}
+onMounted(() => {
+  nextTick(async () => {
+    Project.getItems()
+    testObj.getEnvironment()
+    getAllReportSum()
+    getAllCaseSum()
+    doRefresh()
+    getAllUserSum()
+  })
 })
 </script>
 

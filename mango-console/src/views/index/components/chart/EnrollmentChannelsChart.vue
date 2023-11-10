@@ -15,10 +15,9 @@ export default defineComponent({
     const loading = ref(true)
     const channelsChart = ref<HTMLDivElement | null>(null)
     const data = [
-      { value: 1969, name: '线上' },
-      { value: 1594, name: '电话' },
-      { value: 1347, name: '地推' },
-      { value: 635, name: '直播' }
+      { value: 1969, name: '界面' },
+      { value: 1594, name: '接口' },
+      { value: 1347, name: '性能' }
     ]
     const init = () => {
       const option = {

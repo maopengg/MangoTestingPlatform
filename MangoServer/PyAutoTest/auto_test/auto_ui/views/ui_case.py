@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
 # @Project: MangoServer
 # @Description: 
-# @Time   : 2023-01-15 22:06
+# @Time   : 2023-03-25 18:53
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
+from PyAutoTest.auto_test.auto_ui.data_producer.run_api import RunApi
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
+from PyAutoTest.settings import DRIVER, SERVER
+from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
@@ -23,7 +27,8 @@ class UiCaseSerializers(serializers.ModelSerializer):
 
 class UiCaseSerializersC(serializers.ModelSerializer):
     project = ProjectSerializers(read_only=True)
-    time_name = TimeTasksSerializers(read_only=True)
+    module_name = ProjectModuleSerializers(read_only=True)
+    case_people = UserSerializers(read_only=True)
 
     class Meta:
         model = UiCase
@@ -37,46 +42,43 @@ class UiCaseCRUD(ModelCRUD):
     serializer = UiCaseSerializers
 
 
+class UiCaseQuery(ModelQuery):
+    """
+    条件查
+    """
+    model = UiCase
+    serializer_class = UiCaseSerializersC
+
+
 class UiCaseViews(ViewSet):
     model = UiCase
     serializer_class = UiCaseSerializers
 
-    @action(methods=['put'], detail=False)
-    def put_type(self, request: Request):
-        ser = []
-        data = []
-        for i in eval(request.data.get('id')):
-            case = self.model.objects.get(pk=i)
-            serializer = self.serializer_class(instance=case,
-                                               data={'type': request.data.get('type'),
-                                                     'name': case.name})
-            if serializer.is_valid():
-                serializer.save()
-            data.append(serializer.data)
-        for i in ser:
-            if i is True:
-                return Response({
-                    'code': 300,
-                    'msg': '部分数据可能修改失败，请检查设置的用例',
-                    'data': data
-                })
-        return Response({
-            'code': 200,
-            'msg': f'设置为{request.data.get("name")}成功',
-            'data': data
-        })
+    @action(methods=['get'], detail=False)
+    def ui_case_run(self, request: Request):
+        """
+        执行单个用例组
+        @param request:
+        @return:
+        """
+        case_json, res = RunApi(request.user).case(case_id=int(request.GET.get("case_id")),
+                                                   test_obj=request.GET.get("testing_environment"))
+        if res:
+            return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json.dict())
+        return ResponseData.fail(f'执行失败，请确保{DRIVER}已连接{SERVER}', [case_json.dict()])
 
     @action(methods=['get'], detail=False)
-    def get_case_obj_name(self, request: Request):
+    def ui_batch_run(self, request: Request):
         """
-         获取所有用例id和名称
-         :param request:
-         :return:
-         """
-        res = self.model.objects.values_list('id', 'name')
-        data = [{'key': _id, 'title': name} for _id, name in res]
-        return Response({
-            'code': 200,
-            'msg': '获取数据成功',
-            'data': data
-        })
+        批量执行多个用例组
+        @param request:
+        @return:
+        """
+        try:
+            case_json, res = RunApi(request.user).case_batch(case_id_list=eval(request.GET.get("case_id_list")),
+                                                             test_obj=request.GET.get("testing_environment"))
+        except UiConfigQueryIsNoneError as e:
+            return ResponseData.fail(e.msg, code=e.code)
+        if res:
+            return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json)
+        return ResponseData.fail(f'执行失败，请确保{DRIVER}已连接{SERVER}', case_json)

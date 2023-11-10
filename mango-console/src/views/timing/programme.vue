@@ -12,16 +12,16 @@
                   </template>
                   <template v-else>
                     <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value.value" :placeholder="item.placeholder" />
+                      <a-input v-model="item.value" :placeholder="item.placeholder" />
                     </template>
                     <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value.value" />
+                      <a-date-picker v-model="item.value" />
                     </template>
                     <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />
+                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
                     </template>
                     <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value.value">
+                      <a-checkbox-group v-model="item.value">
                         <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
                           {{ item.label }}
                         </a-checkbox>
@@ -39,7 +39,7 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 </div>
               </a-space>
             </template>
@@ -68,7 +68,6 @@
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
-                    <a-button type="text" size="mini" @click="onTrigger(record)">触发</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
@@ -81,7 +80,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="programme.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -91,10 +90,10 @@
               :key="item.key"
             >
               <template v-if="item.type === 'input' && item.key === 'trigger_type'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" disabled />
+                <a-input :placeholder="item.placeholder" v-model="item.value" disabled />
               </template>
               <template v-else-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" />
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
             </a-form-item>
           </a-form>
@@ -106,58 +105,69 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getTimeList, triggerTiming } from '@/api/url'
+import { getTimeList, getTimeQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick } from 'vue'
-import { transformData } from '@/utils/datacleaning'
+import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { getFormItems } from '@/utils/datacleaning'
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const formModel = ref({})
 
-const conditionItems: Array<FormItem> = [
+const programme = reactive({
+  isAdd: false,
+  updateId: 0,
+  actionTitle: '添加定时器'
+})
+const conditionItems: Array<FormItem> = reactive([
   {
-    key: 'name',
-    label: '定时器介绍',
+    key: 'id',
+    label: 'ID',
     type: 'input',
-    placeholder: '请输入页面名称',
-    value: ref(''),
+    placeholder: '请输入定时策略ID',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入页面名称',
-        modelValue: formItem.value.value,
+        placeholder: '请输入定时策略ID',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
   },
   {
-    key: 'id',
-    label: '定时器ID',
+    key: 'name',
+    label: '名称',
     type: 'input',
-    placeholder: '请输入页面ID',
-    value: ref(''),
+    placeholder: '请输入定时策略名称',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入页面ID',
-        modelValue: formItem.value.value,
+        placeholder: '请输入定时策略名称',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
   }
-]
-const formItems = [
+])
+const formItems: FormItem[] = reactive([
   {
     label: '定时器类型',
     key: 'trigger_type',
-    value: ref('cron'),
+    value: 'cron',
     placeholder: 'cron',
     required: true,
     type: 'input'
@@ -165,12 +175,12 @@ const formItems = [
   {
     label: '定时器介绍',
     key: 'name',
-    value: ref(''),
+    value: '',
     placeholder: '请输入定时器的介绍',
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -180,13 +190,13 @@ const formItems = [
   {
     label: '月',
     key: 'month',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: false,
     placeholder: '请输入月份',
     validator: function () {
       // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value.value)
+      const value = parseInt(this.value)
       if (isNaN(value) || value < 1 || value > 12) {
         Message.error('月份请输入1-12之间的数字')
         return false
@@ -197,13 +207,13 @@ const formItems = [
   {
     label: '天',
     key: 'day',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: false,
     placeholder: '请输入天',
     validator: function () {
       // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value.value)
+      const value = parseInt(this.value)
       if (isNaN(value) || value < 1 || value > 31) {
         Message.error('天数请输入1-31之间的数字')
         return false
@@ -214,13 +224,13 @@ const formItems = [
   {
     label: '小时',
     key: 'hour',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: false,
     placeholder: '请输入小时',
     validator: function () {
       // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value.value)
+      const value = parseInt(this.value)
       if (isNaN(value) || value < 1 || value > 24) {
         Message.error('小时请输入1-24之间的数字')
         return false
@@ -231,13 +241,13 @@ const formItems = [
   {
     label: '分钟',
     key: 'minute',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: false,
     placeholder: '请输入分钟',
     validator: function () {
       // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value.value)
+      const value = parseInt(this.value)
       if (isNaN(value) || value < 1 || value > 60) {
         Message.error('分钟请输入1-60之间的数字')
         return false
@@ -245,14 +255,8 @@ const formItems = [
       return true
     }
   }
-] as FormItem[]
+])
 
-const actionTitle = ref('添加定时器')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { onSelectionChange } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -295,8 +299,6 @@ const tableColumns = useTableColumn([
   }
 ])
 
-const formModel = ref({})
-
 function doRefresh() {
   get({
     url: getTimeList,
@@ -313,73 +315,43 @@ function doRefresh() {
     })
     .catch(console.log)
 }
-
 function onSearch() {
-  let data: { [key: string]: string } = {}
-  conditionItems.forEach((it) => {
-    if (it.value.value) {
-      data[it.key] = it.value.value
+  let value = getFormItems(conditionItems)
+  if (JSON.stringify(value) === '{}') {
+    doRefresh()
+    return
+  }
+  get({
+    url: getTimeQuery,
+    data: () => {
+      value['page'] = pagination.page
+      value['pageSize'] = pagination.pageSize
+      return value
     }
   })
-  console.log(data)
-  if (JSON.stringify(data) === '{}') {
-    doRefresh()
-  } else if (data.project) {
-    get({
-      url: getTimeList,
-      data: () => {
-        return {
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize(res.totalSize || 10)
+      Message.success(res.msg)
     })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  } else if (data) {
-    get({
-      url: getTimeList,
-      data: () => {
-        return {
-          id: data.caseid,
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
+    .catch(console.log)
 }
 
 function onResetSearch() {
   conditionItems.forEach((it) => {
-    it.reset ? it.reset() : (it.value.value = '')
+    it.value = ''
   })
 }
 
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
-function onAddPage() {
-  actionTitle.value = '添加定时器'
+function onAdd() {
+  programme.actionTitle = '添加定时器'
   modalDialogRef.value?.toggle()
-  addUpdate.value = 1
+  programme.isAdd = true
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
     } else {
-      it.value.value = ''
+      it.value = ''
     }
   })
 }
@@ -409,18 +381,17 @@ function onDelete(data: any) {
 }
 
 function onUpdate(item: any) {
-  actionTitle.value = '编辑定时器'
+  programme.actionTitle = '编辑定时器'
   modalDialogRef.value?.toggle()
-  addUpdate.value = 0
-  updateId.value = item.id
+  programme.isAdd = false
+  programme.updateId = item.id
   nextTick(() => {
     formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
+      const propName = item[it.key]
       if (typeof propName === 'object' && propName !== null) {
-        it.value.value = propName.name
+        it.value = propName.id
       } else {
-        it.value.value = propName
+        it.value = propName
       }
     })
   })
@@ -429,21 +400,13 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value = transformData(formItems)
-    console.log(value)
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
+    let value = getFormItems(formItems)
+    value['trigger_type'] = 'cron'
+    if (programme.isAdd) {
       post({
         url: getTimeList,
         data: () => {
-          return {
-            name: value.name,
-            trigger_type: 'cron',
-            month: value.month,
-            day: value.day,
-            hour: value.hour,
-            minute: value.minute
-          }
+          return value
         }
       })
         .then((res) => {
@@ -451,22 +414,12 @@ function onDataForm() {
           doRefresh()
         })
         .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
+    } else {
       put({
         url: getTimeList,
         data: () => {
-          return {
-            id: value.id,
-            name: value.name,
-            trigger_type: 'cron',
-            month: value.month,
-            day: value.day,
-            hour: value.hour,
-            minute: value.minute
-          }
+          value['id'] = programme.updateId
+          return value
         }
       })
         .then((res) => {
@@ -476,39 +429,6 @@ function onDataForm() {
         .catch(console.log)
     }
   }
-}
-
-// const timeDataR = reactive({
-//   month: [],
-//   day: [],
-//   hour: [],
-//   minute: []
-// })
-
-// function timeData() {
-//   get({
-//     url: getTimeData
-//   })
-//     .then((res) => {
-//       timeDataR.month = res.data[0].month
-//       console.log(timeDataR.month)
-//       timeDataR.day = res.data[1].day
-//       timeDataR.hour = res.data[2].hour
-//       timeDataR.minute = res.data[3].minute
-//     })
-//     .catch(console.log)
-// }
-function onTrigger(record: any) {
-  get({
-    url: triggerTiming,
-    data: () => {
-      return {
-        id: record.id
-      }
-    }
-  }).then((res) => {
-    Message.success(res.msg)
-  })
 }
 
 onMounted(() => {

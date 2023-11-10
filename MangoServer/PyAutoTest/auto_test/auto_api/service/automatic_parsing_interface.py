@@ -8,7 +8,7 @@ import jsonpath
 import requests
 
 from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum, BodyTypeEnum, StateEnum
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class ApiParameter:

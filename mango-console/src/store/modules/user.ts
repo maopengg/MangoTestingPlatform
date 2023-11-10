@@ -48,7 +48,7 @@ const useUserStore = defineStore('user-info', {
     enable: true,
     resetToState: true,
     option: {
-      exclude: ['userName']
+      exclude: []
     }
   }
 })

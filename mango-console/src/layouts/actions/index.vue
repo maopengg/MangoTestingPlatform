@@ -3,9 +3,9 @@
     <span class="action-item">
       <a-space size="large">
         <a-dropdown trigger="hover">
-          <a-button class="garden">{{ te }}</a-button>
+          <a-button class="garden" type="text" status="normal">{{ te }}</a-button>
           <template #content>
-            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item.key)">{{ item.title }}</a-doption>
+            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item)">{{ item.title }}</a-doption>
           </template>
         </a-dropdown>
       </a-space>
@@ -73,7 +73,7 @@ export default defineComponent({
     const route = useRoute()
     const emitter = useEmit()
     const testObj = useTestObj()
-    const te: any = ref('TE')
+    const te: any = ref('请选择测试环境')
 
     function onShowSearch() {
       emitter?.emit('show-search')
@@ -101,19 +101,19 @@ export default defineComponent({
       debouncedFn()
     }
 
-    function onSelect(key: number) {
+    function onSelect(key: any) {
       get({
         url: sendCommonParameters,
         data: () => {
           return {
-            test_obj_id: key
+            test_obj_id: key.key
           }
         }
       })
         .then((res) => {
           Message.success(res.msg)
-          te.value = key
-          testObj.te = key
+          te.value = key.title
+          testObj.te = key.key
         })
         .catch()
     }
@@ -168,8 +168,7 @@ export default defineComponent({
 }
 
 .garden {
-  border-radius: 50%;
-  width: 30px;
+  width: 200px;
   height: 30px;
 }
 </style>

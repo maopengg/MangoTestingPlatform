@@ -11,8 +11,8 @@ from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import queue
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum
-from PyAutoTest.models.system_data_model import SocketDataModel, QueueModel
-from PyAutoTest.settings import DRIVER, SERVER, WEB
+from PyAutoTest.models.socket_model import SocketDataModel
+from PyAutoTest.settings import DRIVER, SERVER
 
 logger = logging.getLogger('system')
 

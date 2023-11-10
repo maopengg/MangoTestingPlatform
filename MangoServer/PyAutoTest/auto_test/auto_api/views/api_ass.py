@@ -11,7 +11,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiAssertions
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class ApiAssertionsSerializers(serializers.ModelSerializer):

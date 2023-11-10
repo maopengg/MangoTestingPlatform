@@ -24,7 +24,7 @@ export interface SelectOptionItem {
 export interface TableSearchItem {
   key: string | number
   label: string
-  value: Ref<any>
+  value: any
   placeholder?: string
   associatedOption?: string
   onChange?: (value: any, associationItem: string) => void

@@ -12,27 +12,28 @@
                   </template>
                   <template v-else>
                     <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value.value" :placeholder="item.placeholder" />
+                      <a-input v-model="item.value" :placeholder="item.placeholder" />
                     </template>
                     <template v-else-if="item.type === 'select'">
                       <a-select
                         style="width: 150px"
-                        v-model="item.value.value"
+                        v-model="item.value"
                         :placeholder="item.placeholder"
                         :options="project.data"
                         :field-names="fieldNames"
+                        value-key="key"
                         allow-clear
                         allow-search
                       />
                     </template>
                     <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value.value" />
+                      <a-date-picker v-model="item.value" />
                     </template>
                     <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />
+                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
                     </template>
                     <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value.value">
+                      <a-checkbox-group v-model="item.value">
                         <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
                           {{ item.label }}
                         </a-checkbox>
@@ -78,10 +79,10 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project.name }}
+                  {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
-                  {{ record.executor_name.nickname }}
+                  {{ record.executor_name ? record.executor_name.nickname : '-' }}
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
@@ -108,7 +109,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="testObjData.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -118,44 +119,48 @@
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" />
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
-                  v-model="item.value.value"
+                  v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
                   :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'environment'">
                 <a-select
-                  v-model="item.value.value"
+                  v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="uEnvironment.data"
                   :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
                 <a-select
-                  v-model="item.value.value"
+                  v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="testObjData.nickname"
                   :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'test_type'">
                 <a-select
-                  v-model="item.value.value"
+                  v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="testObjData.platformEnum"
                   :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
                 />
@@ -170,54 +175,66 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getProjectConfig, getNickname, getPlatformEnum } from '@/api/url'
+import { getProjectConfig, getNickname, getPlatformEnum, getTestObjQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
 import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useEnvironment } from '@/store/modules/get-environment'
-import { getKeyByTitle, transformData } from '@/utils/datacleaning'
+import { getFormItems } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
 
 const project = useProject()
 const uEnvironment = useEnvironment()
-
-const conditionItems: Array<FormItem> = [
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const formModel = ref({})
+const testObjData = reactive({
+  nickname: [],
+  platformEnum: [],
+  isAdd: false,
+  updateId: 0,
+  actionTitle: '添加测试对象'
+})
+const conditionItems: Array<FormItem> = reactive([
   {
-    key: 'executor_name',
-    label: '负责人名称',
+    key: 'id',
+    label: 'ID',
     type: 'input',
-    placeholder: '请输入页面名称',
-    value: ref(''),
+    placeholder: '请输入测试对象ID',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入页面名称',
-        modelValue: formItem.value.value,
+        placeholder: '请输入测试对象ID',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
   },
   {
-    key: 'id',
-    label: 'ID',
+    key: 'name',
+    label: '名称',
     type: 'input',
-    placeholder: '请输入ID',
-    value: ref(''),
+    placeholder: '请输入环境名称',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入页面ID',
-        modelValue: formItem.value.value,
+        placeholder: '请输入环境名称',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
@@ -225,26 +242,23 @@ const conditionItems: Array<FormItem> = [
   {
     key: 'project',
     label: '筛选项目',
-    value: ref(),
+    value: '',
     type: 'select',
     placeholder: '请选择项目',
-    optionItems: [],
-    reset: function () {
-      this.value.value = undefined
-    }
+    optionItems: project.data,
+    reset: function () {}
   }
-]
-conditionItems[2].optionItems = project.data
-const formItems = [
+])
+const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
     key: 'project',
-    value: ref(''),
+    value: '',
     placeholder: '请选择项目名称',
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -254,12 +268,12 @@ const formItems = [
   {
     label: '环境名称',
     key: 'name',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入环境名称',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -269,12 +283,12 @@ const formItems = [
   {
     label: '测试对象',
     key: 'value',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入域名/名称/对象',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -284,12 +298,12 @@ const formItems = [
   {
     label: '客户端类型',
     key: 'test_type',
-    value: ref(''),
+    value: '',
     type: 'select',
     required: true,
     placeholder: '请选择客户端类型',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -299,12 +313,12 @@ const formItems = [
   {
     label: '绑定环境',
     key: 'environment',
-    value: ref(''),
+    value: '',
     type: 'select',
     required: true,
-    placeholder: '请选择对应环境',
+    placeholder: '请选择绑定环境',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -314,26 +328,20 @@ const formItems = [
   {
     label: '负责人名称',
     key: 'executor_name',
-    value: ref(''),
+    value: '',
     type: 'select',
     required: true,
     placeholder: '请输入负责人名称',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     }
   }
-] as FormItem[]
+])
 
-const actionTitle = ref('添加页面')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { onSelectionChange } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -377,74 +385,43 @@ const tableColumns = useTableColumn([
     width: 150
   }
 ])
-
-const formModel = ref({})
-
 function onSearch() {
-  let data: { [key: string]: string } = {}
-  conditionItems.forEach((it) => {
-    if (it.value.value) {
-      data[it.key] = it.value.value
+  let value = getFormItems(conditionItems)
+  if (JSON.stringify(value) === '{}') {
+    doRefresh()
+    return
+  }
+  get({
+    url: getTestObjQuery,
+    data: () => {
+      value['page'] = pagination.page
+      value['pageSize'] = pagination.pageSize
+      return value
     }
   })
-  if (JSON.stringify(data) === '{}') {
-    doRefresh()
-  } else if (data.project) {
-    get({
-      url: getProjectConfig,
-      data: () => {
-        return {
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize(res.totalSize || 10)
+      Message.success(res.msg)
     })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  } else if (data) {
-    get({
-      url: getProjectConfig,
-      data: () => {
-        return {
-          id: data.caseid,
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
+    .catch(console.log)
 }
 
 function onResetSearch() {
   conditionItems.forEach((it) => {
-    it.reset ? it.reset() : (it.value.value = '')
+    it.value = ''
   })
 }
 
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
 function onAddPage() {
-  actionTitle.value = '添加页面'
+  testObjData.actionTitle = '添加测试对象'
+  testObjData.isAdd = true
   modalDialogRef.value?.toggle()
-  addUpdate.value = 1
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
     } else {
-      it.value.value = ''
+      it.value = ''
     }
   })
 }
@@ -474,22 +451,21 @@ function onDelete(data: any) {
 }
 
 function onUpdate(item: any) {
-  actionTitle.value = '编辑页面'
+  testObjData.actionTitle = '编辑测试对象'
+  testObjData.isAdd = false
+  testObjData.updateId = item.id
   modalDialogRef.value?.toggle()
-  addUpdate.value = 0
-  updateId.value = item.id
   nextTick(() => {
     formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
+      const propName = item[it.key]
       if (typeof propName === 'object' && propName !== null) {
         if (propName.name) {
-          it.value.value = propName.name
+          it.value = propName.id
         } else {
-          it.value.value = propName.nickname
+          it.value = propName.id
         }
       } else {
-        it.value.value = propName
+        it.value = propName
       }
     })
   })
@@ -498,20 +474,12 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value = transformData(formItems)
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
+    let value = getFormItems(formItems)
+    if (testObjData.isAdd) {
       post({
         url: getProjectConfig,
         data: () => {
-          return {
-            project: value.project,
-            name: value.name,
-            value: value.value,
-            environment: value.environment,
-            executor_name: value.executor_name,
-            test_type: value.test_type
-          }
+          return value
         }
       })
         .then((res) => {
@@ -519,28 +487,12 @@ function onDataForm() {
           doRefresh()
         })
         .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      let projectId = value.project
-      let executor_name = value.executor_name
-      if (typeof value.project === 'string') {
-        projectId = getKeyByTitle(project.data, value.project)
-        executor_name = getKeyByTitle(testObjData.nickname, value.executor_name)
-      }
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
+    } else {
       put({
         url: getProjectConfig,
         data: () => {
-          return {
-            id: value.id,
-            project: projectId,
-            value: value.value,
-            name: value.name,
-            environment: value.environment,
-            executor_name: executor_name,
-            test_type: value.test_type
-          }
+          value['id'] = testObjData.updateId
+          return value
         }
       })
         .then((res) => {
@@ -568,11 +520,6 @@ function doRefresh() {
     })
     .catch(console.log)
 }
-
-const testObjData = reactive({
-  nickname: [],
-  platformEnum: []
-})
 
 function getNickName() {
   get({
