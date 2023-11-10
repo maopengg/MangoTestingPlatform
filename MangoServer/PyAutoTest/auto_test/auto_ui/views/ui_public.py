@@ -10,7 +10,8 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
 
 
 class UiPublicSerializers(serializers.ModelSerializer):
@@ -34,10 +35,26 @@ class UiPublicCRUD(ModelCRUD):
     serializer = UiPublicSerializers
 
 
+class UiPublicQuery(ModelQuery):
+    """
+    条件查
+    """
+    model = UiPublic
+    serializer_class = UiPublicSerializersC
+
+
 class UiPublicViews(ViewSet):
     model = UiPublic
     serializer_class = UiPublicSerializers
 
     @action(methods=['put'], detail=False)
-    def test(self, request: Request):
-        pass
+    def put_state(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.state = request.data.get('state')
+        obj.save()
+        return ResponseData.success('修改UI参数状态成功', )

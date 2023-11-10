@@ -22,5 +22,9 @@ export const useProject = defineStore('get-project', {
         })
         .catch(console.log)
     }
+  },
+  presist: {
+    enable: true,
+    resetToState: true
   }
 })

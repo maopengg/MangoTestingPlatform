@@ -7,7 +7,7 @@ from enum import Enum
 
 
 class NoticeEnum(Enum):
-    """ {"0": "邮件"}，{"1": "企微"}，{"2": "钉钉-未测试"} """
+    """ {"0": "邮箱"}，{"1": "企微"}，{"2": "钉钉-未测试"} """
     MAIL = 0
     WECOM = 1
     NAILING = 2
@@ -19,6 +19,20 @@ class EnvironmentEnum(Enum):
     PRE = 1
     PRO = 2
 
+
+class AutoTestTypeEnum(Enum):
+    """ {"0": "界面自动化"}，{"1": "接口自动化"}，{"2": "性能自动化"} """
+    UI = 0
+    API = 1
+    PERF = 2
+
+    @classmethod
+    def get(cls, value):
+        return {
+            0: "界面自动化",
+            1: "接口自动化",
+            2: "性能自动化"
+        }[value]
 
 class DevicePlatformEnum(Enum):
     """ {"0": "web"}，{"1": "安卓"}，{"2": "IOS"}，{"3": "桌面PC"} """
@@ -40,3 +54,8 @@ class ClientTypeEnum(str, Enum):
     ACTUATOR = "actuator"
     WEB = "web"
     SERVER = "server"
+
+
+class IsItEnabled(Enum):
+    right = 1
+    wrong = 0

@@ -1,5 +1,6 @@
 from django.db import models
 
+from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_user.models import Project
 from PyAutoTest.auto_test.auto_user.models import User
 
@@ -51,6 +52,7 @@ class Database(models.Model):
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     host = models.CharField(verbose_name="数据库地址", max_length=64, null=True)
     post = models.IntegerField(verbose_name="端口", null=True)
+    state = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
         db_table = 'data_base'
@@ -69,4 +71,50 @@ class TimeTasks(models.Model):
 
     class Meta:
         db_table = 'time_tasks'
+        ordering = ['-id']
+
+
+class TestSuiteReport(models.Model):
+    id = models.BigIntegerField(primary_key=True, editable=False)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    # type=0是UI,=1是接口,=2是性能
+    type = models.SmallIntegerField(verbose_name="类型", null=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="用例名称", max_length=64)
+    # 0是进行中，1是已完成
+    run_state = models.SmallIntegerField(verbose_name="执行状态", null=True)
+    # null是待测试完成，0是失败，1是成功
+    state = models.SmallIntegerField(verbose_name="测试结果", null=True)
+
+    class Meta:
+        db_table = 'test_suite_report'
+        ordering = ['-create_time']
+
+
+# 定时任务表
+class ScheduledTasks(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="任务名称", max_length=64)
+    executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
+    type = models.SmallIntegerField(verbose_name="任务类型", null=True)
+    status = models.SmallIntegerField(verbose_name="任务状态", null=True)
+    timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        db_table = 'scheduled_tasks'
+        ordering = ['-id']
+
+
+# 定时任务对应的执行用例
+class TasksRunCaseList(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    task = models.ForeignKey(to=ScheduledTasks, to_field="id", on_delete=models.SET_NULL, null=True)
+    ui_case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        db_table = 'tasks_run_case_list'
         ordering = ['-id']

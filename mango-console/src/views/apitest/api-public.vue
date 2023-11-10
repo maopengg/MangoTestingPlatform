@@ -76,7 +76,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project.name }}
+                  {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'public_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.public_type === 0">登录</a-tag>

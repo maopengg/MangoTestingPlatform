@@ -57,8 +57,6 @@ import { UserState } from '@/store/types'
 import setting from '../../setting'
 import useAppInfo from '@/hooks/useAppInfo'
 import useUserStore from '@/store/modules/user'
-import { websocket } from '@/utils/socket'
-
 export default defineComponent({
   name: 'Login',
   setup() {
@@ -84,13 +82,11 @@ export default defineComponent({
           userStore.saveUser(data as UserState).then(() => {
             router
               .replace({
-                path: route.query.redirect ? (route.query.redirect as string) : '/'
+                path: route.query.redirect ? (route.query.redirect as string) : '/index/home'
               })
               .then(() => {
                 Message.success('登录成功，欢迎：' + data.nickName)
                 loading.value = false
-                // await this.$websocket.connect(webSocketURL + data.nickName)
-                websocket(data.userName)
               })
           })
         })

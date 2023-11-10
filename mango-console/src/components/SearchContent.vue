@@ -16,7 +16,7 @@
           />
         </div>
       </a-tab-pane>
-      <a-tab-pane key="2" title="站外">
+      <a-tab-pane key="2" title="执行器缓存">
         <div class="p-4">
           <a-input-search
             v-model="outValue"
@@ -36,6 +36,8 @@
 import usePermissionStore from '@/store/modules/permission'
 import { defineComponent, onMounted, ref } from 'vue'
 import { RouteRecordRaw, useRouter } from 'vue-router'
+import { get } from '@/api/http'
+import { getCacheKeyValue } from '@/api/url'
 interface InnerSearchItem {
   title: string
   key: string
@@ -58,8 +60,19 @@ export default defineComponent({
     }
     function onOutSearch() {
       if (outValue.value) {
-        visible.value = false
-        window.open('https://www.baidu.com/s?wd=' + outValue.value)
+        // visible.value = false
+        get({
+          url: getCacheKeyValue,
+          data: () => {
+            return {
+              key: outValue.value
+            }
+          }
+        })
+          .then((res) => {
+            res.msg
+          })
+          .catch(console.log)
       }
     }
     const permissionStore = usePermissionStore()
@@ -83,7 +96,6 @@ export default defineComponent({
     }
     const router = useRouter()
     function onSelectItem(value: any) {
-      console.log(value)
       const items = value.split(':')
       router.push(items[1]).then(() => {
         visible.value = false

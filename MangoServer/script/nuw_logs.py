@@ -17,3 +17,6 @@ def __nuw_dir():
         subdirectory = os.path.join(logs_dir, i)
         if not os.path.exists(subdirectory):
             os.makedirs(subdirectory)
+
+
+__nuw_dir()

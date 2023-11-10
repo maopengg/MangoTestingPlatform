@@ -12,7 +12,7 @@ function getData() {
   return [99, 90, 80, 70, 60]
 }
 
-const weeks = ['女装', '男装', '童装', '皮鞋', '帽子']
+const weeks = ['1', '2', '3', '4', '5']
 export default defineComponent({
   name: 'HotProdChart',
   setup() {

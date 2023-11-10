@@ -9,7 +9,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
-from PyAutoTest.utils.other_utils.native_ip import get_host_ip
+from PyAutoTest.tools.other_utils.native_ip import get_host_ip
 
 logger = logging.getLogger('system')
 

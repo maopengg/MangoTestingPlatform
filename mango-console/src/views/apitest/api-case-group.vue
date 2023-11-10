@@ -75,7 +75,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project.name }}
+                  {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
@@ -307,7 +307,6 @@ export default defineComponent({
           data[it.key] = it.value.value
         }
       })
-      console.log(data)
       if (JSON.stringify(data) === '{}') {
         doRefresh()
       } else if (data.project) {
@@ -417,7 +416,6 @@ export default defineComponent({
         formItems.forEach((it) => {
           value[it.key] = it.value.value
         })
-        console.log(value)
         if (addUpdate.value === 1) {
           addUpdate.value = 0
           post({

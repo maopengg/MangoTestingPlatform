@@ -17,7 +17,7 @@
     >
       <span class="text-bold">
         <a-statistic
-          :value="num"
+          :value="dataModel.num"
           :value-from="0"
           :start="true"
           animation

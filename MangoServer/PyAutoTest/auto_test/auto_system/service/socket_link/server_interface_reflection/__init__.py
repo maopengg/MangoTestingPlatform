@@ -7,16 +7,17 @@
 import concurrent.futures
 import logging
 import threading
-import time
 from queue import Queue
+
+import time
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.api_consumer import APIConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.perf_consumer import PerfConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.system_consumer import \
     SystemConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.ui_consumer import UIConsumer
-from PyAutoTest.models.system_data_model import QueueModel
-from PyAutoTest.utils.other_utils.decorator import singleton
+from PyAutoTest.models.socket_model import QueueModel
+from PyAutoTest.tools.other_utils.decorator import singleton
 
 log = logging.getLogger('system')
 

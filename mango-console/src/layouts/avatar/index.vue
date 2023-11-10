@@ -25,8 +25,8 @@
 </template>
 
 <script lang="ts">
-import { Modal } from '@arco-design/web-vue'
-import { defineComponent } from 'vue'
+import { Modal, Notification } from '@arco-design/web-vue'
+import { defineComponent, onMounted, onBeforeUnmount, ref } from 'vue'
 import {
   IconUser as UserOutlined,
   IconPoweroff as LogoutOutlined,
@@ -35,6 +35,8 @@ import {
 import useUserStore from '@/store/modules/user'
 import { useRouter } from 'vue-router'
 import { websocket } from '@/utils/socket'
+import { webSocketURL } from '@/api/axios.config'
+import { SERVER } from '@/setting'
 
 export default defineComponent({
   name: 'VAWavatar',
@@ -67,16 +69,19 @@ export default defineComponent({
         cancelText: '再想想',
         onOk: () => {
           userStore.logout().then(() => {
-            websocket(13213, false)
             window.localStorage.removeItem('visited-routes')
             window.location.reload()
+            localStorage.clear()
+            websocket(13213, false)
           })
+          // const params = new URLSearchParams(window.location.search)
+          // params.delete('redirect')
+          // window.history.replaceState(null, null, `/#/login?${params.toString()}`)
         }
       })
     }
 
     function handleSelect(key: string) {
-      console.log(key)
       switch (key) {
         case 'personal-center':
           personalCenter()
@@ -86,6 +91,83 @@ export default defineComponent({
           break
       }
     }
+    const socket = ref<WebSocket | null>(null)
+
+    const connectWebSocket = () => {
+      if (socket.value) {
+        return // 如果正在连接中，则不执行重复连接操作
+      }
+      if (!socket.value) {
+        socket.value = new WebSocket(webSocketURL + userStore.userName)
+      }
+      socket.value.binaryType = 'arraybuffer'
+
+      socket.value.onopen = () => {
+        // 发送消息
+        const message = {
+          code: 200,
+          func: null,
+          user: null,
+          msg: `Hi, ${SERVER}, mango-console Request Connection!`,
+          data: null,
+          end: null
+        }
+        socket.value?.send(JSON.stringify(message))
+      }
+
+      socket.value.onmessage = (event) => {
+        // 在这里处理收到的消息
+        const res = JSON.parse(event.data)
+        if (res.code == 200) {
+          Notification.success('消息：' + res.msg)
+        } else {
+          Notification.error('消息：' + res.msg)
+        }
+      }
+
+      socket.value.onclose = () => {
+        // 在这里执行连接关闭后的操作
+        socket.value = null
+        retryConnection()
+      }
+
+      socket.value.onerror = (error) => {
+        console.error('错误:', error)
+
+        socket.value = null
+        retryConnection()
+        // 在这里处理WebSocket错误
+        // }
+      }
+    }
+
+    const retryConnection = () => {
+      if (!socket.value) {
+        // 永远重试连接
+        setTimeout(() => {
+          Notification.warning('正在尝试重新连接服务器......')
+          connectWebSocket()
+        }, 5000)
+      }
+    }
+
+    onBeforeUnmount(() => {
+      if (socket.value) {
+        socket.value.close()
+      }
+    })
+    // 在页面刷新时执行清理操作
+    window.addEventListener('beforeunload', () => {
+      if (socket.value) {
+        socket.value.close()
+      }
+    })
+
+    onMounted(() => {
+      if (!socket.value) {
+        connectWebSocket()
+      }
+    })
 
     return {
       userStore,

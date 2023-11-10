@@ -13,7 +13,7 @@ from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_case_group import ApiCaseGroupSerializers
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class ApiResultSerializers(serializers.ModelSerializer):

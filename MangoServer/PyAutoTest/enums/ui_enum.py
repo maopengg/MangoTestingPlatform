@@ -6,10 +6,18 @@
 from enum import Enum
 
 
+class DriveTypeEnum(Enum):
+    """ {0: "WEB"}，{1: "安卓"} """
+    WEB = 0
+    ANDROID = 1
+
+
 class BrowserTypeEnum(Enum):
+    """ {0: "谷歌浏览器"}，{1: "EDGE"}，{2: "火狐"}，{3: "WEBKIT"} """
     CHROMIUM = 0
-    FIREFOX = 1
-    WEBKIT = 2
+    EDGE = 1
+    FIREFOX = 2
+    WEBKIT = 3
 
 
 class UiPublicTypeEnum(Enum):
@@ -36,3 +44,11 @@ class StateEnum(Enum):
     NOT = 0
     FAIL = 1
     ADOPT = 2
+
+
+class DevicePlatform(Enum):
+    """ 什么端 """
+    WEB = 0
+    ANDROID = 1
+    IOS = 2
+    DESKTOP = 3

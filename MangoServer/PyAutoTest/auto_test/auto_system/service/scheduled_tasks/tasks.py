@@ -8,39 +8,41 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from PyAutoTest.auto_test.auto_system.models import TimeTasks
+from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList
 from PyAutoTest.auto_test.auto_ui.data_producer.run_api import RunApi
-from PyAutoTest.auto_test.auto_ui.models import UiCaseGroup
 
 logger = logging.getLogger('system')
 
 
 def my_task(task_id):
-    case_group = UiCaseGroup.objects.filter(time_name=task_id)
-    case_list = [i['id'] for i in case_group.values('id')]
-
-    return RunApi().group_batch(case_list, True)
+    scheduled_tasks = ScheduledTasks.objects.get(id=task_id)
+    run_case = TasksRunCaseList.objects.filter(task_id=task_id)
+    case_id_list = [case.ui_case.id for case in run_case]
+    user_dict = {'username': scheduled_tasks.executor_name.username, 'id': scheduled_tasks.executor_name.id}
+    return RunApi(user_dict).case_batch(case_id_list, scheduled_tasks.test_obj.id)
 
 
 # 创建定时任务的函数
 def create_jobs():
     # 创建BlockingScheduler调度器
     scheduler = BackgroundScheduler()
-    # 查询所有的定时器数据
-    queryset = TimeTasks.objects.all()
+    # 查询所有的启用的定时器数据
+    queryset = ScheduledTasks.objects.filter(status=1)
     # 添加定时任务
-    for timer in queryset:
+    for task in queryset:
+        timer_info = task.timing_strategy
         # 判断月、日、时、分字段是否为空，并设置相应的触发器
-        if timer.month:
-            trigger = CronTrigger(month=timer.month, day=timer.day, hour=timer.hour, minute=timer.minute, )
-        elif timer.day:
-            trigger = CronTrigger(day=timer.day, hour=timer.hour, minute=timer.minute)
-        elif timer.hour:
-            trigger = CronTrigger(hour=timer.hour, minute=timer.minute)
-        elif timer.minute:
-            trigger = CronTrigger(minute=timer.minute)
+        if timer_info.month:
+            trigger = CronTrigger(month=timer_info.month, day=timer_info.day, hour=timer_info.hour,
+                                  minute=timer_info.minute, )
+        elif timer_info.day:
+            trigger = CronTrigger(day=timer_info.day, hour=timer_info.hour, minute=timer_info.minute)
+        elif timer_info.hour:
+            trigger = CronTrigger(hour=timer_info.hour, minute=timer_info.minute)
+        elif timer_info.minute:
+            trigger = CronTrigger(minute=timer_info.minute)
         else:
             trigger = None
-            logger.error('定时器数据错误，请检查time_tasks表数据')
+            logger.error('定时器数据错误，请检查scheduled_tasks表数据')
         # 添加定时任务
-        scheduler.add_job(my_task, trigger=trigger, args=[timer.id])
+        scheduler.add_job(my_task, trigger=trigger, args=[task.id])

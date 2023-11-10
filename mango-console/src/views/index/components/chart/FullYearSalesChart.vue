@@ -17,7 +17,7 @@ function getData() {
   return data
 }
 
-const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+const months = ['1周', '2周', '3周', '4周', '5周', '6周', '7周', '8周', '9周', '10周', '11周', '12周']
 export default defineComponent({
   name: 'FullYearSalesChart',
   setup() {

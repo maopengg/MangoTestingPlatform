@@ -243,7 +243,6 @@ function onDataForm() {
     formItems.forEach((it) => {
       value[it.key] = it.value.value
     })
-    console.log(value)
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({

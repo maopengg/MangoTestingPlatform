@@ -6,7 +6,7 @@
 import _ctypes
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.utils.cache_utils.redis_base import RedisBase
+from PyAutoTest.tools.cache_utils.redis_base import RedisBase
 
 
 class SocketUserRedis(RedisBase):

@@ -90,7 +90,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project.name }}
+                  {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
@@ -663,7 +663,6 @@ function setCaseGroup(record: any) {
 }
 
 function onAssertion(record: any) {
-  console.log(record.project)
   router.push({
     path: '/apitest/details',
     query: {

@@ -3,24 +3,38 @@
 # @Description:
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
+import logging
+
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEmail
 from PyAutoTest.auto_test.auto_system.service.notic_tools.weChatSend import WeChatSend
+from PyAutoTest.enums.system_enum import NoticeEnum
 
-TYPE = {
-    0: '邮箱',
-    1: '企微群'
-}
+log = logging.getLogger('system')
 
 
-def notice_main(project_id, _id, case=1):
-    notify_obj = NoticeConfig.objects.filter(project=project_id, id=_id)
-    for i in notify_obj:
-        # if i.type == TYPE.get(0) and i.state == 1:
-        if i.type == 0:
-            email = SendEmail(i)
-            email.send_main(case)
-        elif i.type == 1:
-            # elif i.type == TYPE.get(1) and i.state == 1:
-            wechat = WeChatSend(i)
-            wechat.send_wechat_notification()
+class NoticeMain:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def notice_main(cls):
+        log.error('请勿使用此方法')
+
+    @classmethod
+    def we_chat_send(cls, i):
+        wechat = WeChatSend(i)
+        wechat.send_wechat_notification()
+
+    @classmethod
+    def wend_mail_send(cls, i):
+        email = SendEmail(i)
+        email.send_main('测试个数')
+
+    @classmethod
+    def test_notice_send(cls, _id):
+        notice_obj = NoticeConfig.objects.get(id=_id)
+        if notice_obj.type == NoticeEnum.MAIL.value:
+            cls.wend_mail_send(notice_obj)
+        elif notice_obj.type == NoticeEnum.WECOM.value:
+            cls.we_chat_send(notice_obj)

@@ -18,6 +18,19 @@ class Project(models.Model):
         ordering = ['-id']
 
 
+class ProjectModule(models.Model):
+    """ 项目模块表 """
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    superior_module = models.CharField(verbose_name="上级模块名称", max_length=64)
+    module_name = models.CharField(verbose_name="模块名称", max_length=64)
+
+    class Meta:
+        db_table = 'project_module'
+        ordering = ['-id']
+
+
 class Role(models.Model):
     """角色表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)

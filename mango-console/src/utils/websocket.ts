@@ -9,7 +9,7 @@ interface WebSocketServiceState {
 }
 
 export default class WebSocketService {
-  private state: WebSocketServiceState
+  state: WebSocketServiceState
 
   constructor(url: string) {
     this.state = reactive({
@@ -38,19 +38,22 @@ export default class WebSocketService {
     this.state.socket.onmessage = (event) => {
       const res = JSON.parse(event.data)
       if (res.code == 200) {
-        Notification.success('socket：' + res.msg)
+        Notification.success('消息：' + res.msg)
       } else {
-        Notification.error('socket:' + res.msg)
+        Notification.error('消息:' + res.msg)
       }
     }
 
     this.state.socket.onclose = () => {
-      Notification.error('socket连接关闭，正在尝试重连！')
+      Notification.error('与服务器连接中断，正在尝试重连！')
+      this.state.socket = null
       // 尝试重连
-
-      setTimeout(() => {
-        this.connect()
-      }, 3000)
+      while (this.state.socket !== null) {
+        setTimeout(() => {
+          this.connect()
+          Notification.info('重连中...')
+        }, 5000)
+      }
     }
 
     this.state.socket.onerror = (error) => {

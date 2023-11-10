@@ -9,7 +9,7 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 </div>
               </a-space>
             </template>
@@ -54,7 +54,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="projectData.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -64,7 +64,7 @@
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" />
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
             </a-form-item>
           </a-form>
@@ -80,18 +80,29 @@ import { getDepartmentList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
-import { onMounted, ref, nextTick } from 'vue'
-
-const formItems = [
+import { onMounted, ref, nextTick, reactive } from 'vue'
+import { getFormItems } from '@/utils/datacleaning'
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { onSelectionChange } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const formModel = ref({})
+const projectData = reactive({
+  isAdd: false,
+  updateId: 0,
+  actionTitle: '添加项目'
+})
+const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
     key: 'name',
-    value: ref(''),
+    value: '',
     placeholder: '请输入项目名称',
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -101,27 +112,21 @@ const formItems = [
   {
     label: '状态',
     key: 'status',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: false,
     placeholder: '请输入状态，1是启用，2是停用（暂时无用）',
     validator: function () {
       // 判断value是否为0或1
-      if (this.value.value !== '0' && this.value.value !== '1') {
+      if (this.value !== '0' && this.value !== '1') {
         Message.error('只能输入0或1')
         return false
       }
       return true
     }
   }
-] as FormItem[]
+])
 
-const actionTitle = ref('添加页面')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { onSelectionChange } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -143,8 +148,6 @@ const tableColumns = useTableColumn([
   }
 ])
 
-const formModel = ref({})
-
 function doRefresh() {
   get({
     url: getDepartmentList,
@@ -162,18 +165,15 @@ function doRefresh() {
     .catch(console.log)
 }
 
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
-function onAddPage() {
-  actionTitle.value = '添加页面'
+function onAdd() {
+  projectData.actionTitle = '添加项目'
+  projectData.isAdd = true
   modalDialogRef.value?.toggle()
-  addUpdate.value = 1
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
     } else {
-      it.value.value = ''
+      it.value = ''
     }
   })
 }
@@ -203,18 +203,17 @@ function onDelete(data: any) {
 }
 
 function onUpdate(item: any) {
-  actionTitle.value = '编辑页面'
+  projectData.actionTitle = '编辑项目'
+  projectData.isAdd = false
+  projectData.updateId = item.id
   modalDialogRef.value?.toggle()
-  addUpdate.value = 0
-  updateId.value = item.id
   nextTick(() => {
     formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
+      const propName = item[it.key]
       if (typeof propName === 'object' && propName !== null) {
-        it.value.value = propName.name
+        it.value = propName.id
       } else {
-        it.value.value = propName
+        it.value = propName
       }
     })
   })
@@ -223,20 +222,12 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
+    let value = getFormItems(formItems)
+    if (projectData.isAdd) {
       post({
         url: getDepartmentList,
         data: () => {
-          return {
-            project: value.project,
-            name: value.name,
-            status: value.status
-          }
+          return value
         }
       })
         .then((res) => {
@@ -244,18 +235,12 @@ function onDataForm() {
           doRefresh()
         })
         .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
+    } else {
       put({
         url: getDepartmentList,
         data: () => {
-          return {
-            id: value.id,
-            name: value.name,
-            status: value.status
-          }
+          value['id'] = projectData.updateId
+          return value
         }
       })
         .then((res) => {

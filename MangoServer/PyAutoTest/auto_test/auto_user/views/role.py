@@ -6,10 +6,10 @@
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from ..models import Role
 
 
@@ -37,8 +37,4 @@ class RoleViews(ViewSet):
         for i in items:
             data.append({'title': i.name,
                          'key': i.pk})
-        return Response({
-            'code': 200,
-            'data': data,
-            'msg': '获取所有角色成功'
-        })
+        return ResponseData.success('获取所有角色成功', data)
