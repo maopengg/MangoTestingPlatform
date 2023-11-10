@@ -7,7 +7,7 @@ from typing import Union, Optional, TypeVar
 
 from pydantic import BaseModel
 
-from enums.tools_enum import ClientTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum
 
 T = TypeVar('T')
 
