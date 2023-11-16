@@ -45,24 +45,24 @@
                   :key="item.id"
                   :class="{ 'red-header': item.status !== 1 }"
                 >
-                  <div class="verticallayout">
-                    <div>
-                      <div>测试结果：{{ item.status === 1 ? '成功' : '失败' }}</div>
-                      <div>元素个数：{{ item.ele_quantity }}</div>
-                      <div>元素表达式：{{ item.loc }}</div>
-                      <div>表达式类型：{{ item.exp }}</div>
-                      <div>等待时间：{{ item.sleep ? item.sleep : '-' }}</div>
-                      <div v-if="item.status === 0">错误提示：{{ item.msg }}</div>
-                    </div>
-                    <div>
-                      <div>元素下标：{{ item.sub ? item.sub : '-' }}</div>
-                      <div>输入类型：{{ item.ope_type ? item.ope_type : '-' }}</div>
-                      <div>输入值：{{ item.ope_value ? item.ope_value : '-' }}</div>
-                      <div>断言类型：{{ item.ass_type ? item.ass_type : '-' }}</div>
-                      <div>断言值：{{ item.ass_value ? item.ass_value : '-' }}</div>
-                      <div v-if="item.status === 0">失败截图：{{ item.picture_path }}</div>
-                    </div>
-                  </div>
+                  <a-space>
+                    <a-space direction="vertical">
+                      <span>测试结果：{{ item.status === 1 ? '成功' : '失败' }}</span>
+                      <span>元素个数：{{ item.ele_quantity }}</span>
+                      <span>元素表达式：{{ item.loc }}</span>
+                      <span>表达式类型：{{ item.exp }}</span>
+                      <span>等待时间：{{ item.sleep ? item.sleep : '-' }}</span>
+                      <span v-if="item.status === 0">错误提示：{{ item.msg }}</span>
+                    </a-space>
+                    <a-space direction="vertical">
+                      <span>元素下标：{{ item.sub ? item.sub : '-' }}</span>
+                      <span>输入类型：{{ item.ope_type ? item.ope_type : '-' }}</span>
+                      <span>输入值：{{ item.ope_value ? item.ope_value : '-' }}</span>
+                      <span>断言类型：{{ item.ass_type ? item.ass_type : '-' }}</span>
+                      <span>断言值：{{ item.ass_value ? item.ass_value : '-' }}</span>
+                      <span v-if="item.status === 0">失败截图：{{ item.picture_path }}</span>
+                    </a-space>
+                  </a-space>
                 </a-collapse-item>
               </a-collapse>
             </div>
@@ -74,7 +74,6 @@
 </template>
 <script lang="ts" setup>
 import { reactive, onMounted, nextTick } from 'vue'
-import { Message } from '@arco-design/web-vue'
 import { uiCaseResultSuiteGetCase, uiEleResultEle } from '@/api/url'
 import { get } from '@/api/http'
 import { useRoute } from 'vue-router'
@@ -225,5 +224,8 @@ onMounted(() => {
 }
 .verticallayout > div {
   flex: 1;
+}
+.red-header {
+  color: red;
 }
 </style>

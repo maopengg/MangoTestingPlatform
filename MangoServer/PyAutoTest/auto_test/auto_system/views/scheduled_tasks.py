@@ -55,7 +55,7 @@ class ScheduledTasksViews(ViewSet):
         return ResponseData.success('获取数据成功', )
 
     @action(methods=['put'], detail=False)
-    def put_state(self, request: Request):
+    def put_status(self, request: Request):
         """
         修改启停用
         :param request:

@@ -41,7 +41,7 @@ urlpatterns = [
     #
     path("public", UiPublicCRUD.as_view()),
     path("public/query", UiPublicQuery.as_view({'get': 'query_by'})),
-    path("public/put/state", UiPublicViews.as_view({'put': 'put_state'})),
+    path("public/put/status", UiPublicViews.as_view({'put': 'put_status'})),
     #
     path("case", UiCaseCRUD.as_view()),
     path("case/query_by", UiCaseQuery.as_view({'get': 'query_by'})),
@@ -54,7 +54,7 @@ urlpatterns = [
     path("config", UiConfigCRUD.as_view()),
     path("config/get/browser/type", UiConfigViews.as_view({'get': 'get_browser_type'})),
     path("config/get/drive/type", UiConfigViews.as_view({'get': 'get_drive_type'})),
-    path("config/put/state", UiConfigViews.as_view({'put': 'put_state'})),
+    path("config/put/status", UiConfigViews.as_view({'put': 'put_status'})),
     path("config/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
     #
     path("case/result", UiCaseResultCRUD.as_view()),

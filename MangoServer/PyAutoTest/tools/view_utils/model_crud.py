@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.models import Project
+from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.view_tools import paging_list
 
 logger = logging.getLogger('system')
@@ -23,23 +24,28 @@ class ModelCRUD(GenericAPIView):
     # post专用
     serializer = None
 
-    def get(self, request):
-        data_type = request.query_params.get('type')
-        if data_type:
-            books = self.model.objects.filter(type=int(data_type))
-        else:
-            books = self.get_queryset()
-        return Response({
-            "code": 200,
-            "msg": "获取数据成功",
-            "data": paging_list(
+    def get(self, request: Request):
+        query_dict = dict(request.query_params.lists())
+        page_size = request.query_params.get("pageSize")
+        page = request.query_params.get("page")
+        query_dict = {k: v[0] for k, v in query_dict.items()}
+        project_id = request.headers.get('Project')
+        if project_id and hasattr(self.model, 'project'):
+            query_dict['project'] = project_id
+        if page_size and page:
+            del query_dict['pageSize']
+            del query_dict['page']
+            books = self.model.objects.filter(**query_dict)
+            return ResponseData.success('获取数据成功', paging_list(
                 request.query_params.get("pageSize"),
                 request.query_params.get("page"),
                 books,
                 self.get_serializer_class()
-            ),
-            'totalSize': len(books)
-        })
+            ), len(books))
+        books = self.model.objects.filter(**query_dict)
+        return ResponseData.success('获取数据成功',
+                                    self.get_serializer_class()(instance=books, many=True).data,
+                                    len(books))
 
     def post(self, request):
         serializer = self.serializer(data=request.data)

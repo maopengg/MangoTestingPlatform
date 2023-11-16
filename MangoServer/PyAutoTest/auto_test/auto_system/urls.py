@@ -28,11 +28,11 @@ urlpatterns = [
     path('notice/query', NoticeConfigQuery.as_view({'get': 'query_by'})),
     path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
     path('notice/type', NoticeConfigViews.as_view({'get': 'get_notice_type'})),
-    path('notice/put/state', NoticeConfigViews.as_view({'put': 'put_state'})),
+    path('notice/put/status', NoticeConfigViews.as_view({'put': 'put_status'})),
     #
     path('database', DatabaseCRUD.as_view()),
     path('database/query', DatabaseQuery.as_view({'get': 'query_by'})),
-    path('database/put/state', DatabaseViews.as_view({'put': 'put_state'})),
+    path('database/put/status', DatabaseViews.as_view({'put': 'put_status'})),
     #
     path('time', TimeTasksCRUD.as_view()),
     path('time/query', TimeTasksQuery.as_view({'get': 'query_by'})),
@@ -45,7 +45,7 @@ urlpatterns = [
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
     path('scheduled/tasks/query', ScheduledTasksQuery.as_view({'get': 'query_by'})),
     path('testapi', ScheduledTasksViews.as_view({'get': 'get_test'})),
-    path('scheduled/put/state', ScheduledTasksViews.as_view({'put': 'put_state'})),
+    path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),

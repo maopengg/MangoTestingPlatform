@@ -6,7 +6,7 @@
         <EnrollmentChannelsChart ref="enrollmentChannelsChart" :propData="mainData.reportSum" />
       </div>
       <div class="item">
-        <Title title="测试结果" />
+        <Title title="测试报告" />
         <EnrollmentChannelsChart ref="enrollmentChannelsChart" :propData="mainData.caseSum" />
       </div>
       <div class="item">
@@ -59,14 +59,14 @@
                       <template v-else-if="item.key === 'project'" #cell="{ record }">
                         {{ record.project.name }}
                       </template>
-                      <template v-else-if="item.key === 'run_state'" #cell="{ record }">
-                        <a-tag color="red" size="small" v-if="record.run_state === 0">进行中</a-tag>
-                        <a-tag color="green" size="small" v-else-if="record.run_state === 1">已完成</a-tag>
+                      <template v-else-if="item.key === 'run_status'" #cell="{ record }">
+                        <a-tag color="red" size="small" v-if="record.run_status === 0">进行中</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.run_status === 1">已完成</a-tag>
                       </template>
-                      <template v-else-if="item.key === 'state'" #cell="{ record }">
-                        <a-tag color="red" size="small" v-if="record.state === 0">失败</a-tag>
-                        <a-tag color="green" size="small" v-else-if="record.state === 1">成功</a-tag>
-                        <a-tag color="green" size="small" v-else-if="record.state === null">待测试完成</a-tag>
+                      <template v-else-if="item.key === 'status'" #cell="{ record }">
+                        <a-tag color="red" size="small" v-if="record.status === 0">失败</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.status === 1">成功</a-tag>
+                        <a-tag color="green" size="small" v-else-if="record.status === null">待测试完成</a-tag>
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
@@ -94,8 +94,6 @@ import useAppConfigStore from '@/store/modules/app-config'
 import CenterTitle from './components/CenterTitle.vue'
 import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
 import HotProductChart from './components/chart/HotProductChart.vue'
-import { useProject } from '@/store/modules/get-project'
-import { useTestObj } from '@/store/modules/get-test-obj'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { useRouter } from 'vue-router'
 import { get } from '@/api/http'
@@ -125,8 +123,6 @@ const collapse = computed(() => {
 watch(collapse, () => {
   onResize()
 })
-const Project = useProject()
-const testObj = useTestObj()
 
 const pagination = usePagination(doRefresh)
 pagination.pageSize = 9
@@ -154,13 +150,13 @@ const tableColumns = useTableColumn([
   },
   {
     title: '执行状态',
-    key: 'run_state',
-    dataIndex: 'run_state'
+    key: 'run_status',
+    dataIndex: 'run_status'
   },
   {
-    title: '测试结果',
-    key: 'state',
-    dataIndex: 'state'
+    title: '结果',
+    key: 'status',
+    dataIndex: 'status'
   },
   {
     title: '操作',
@@ -247,8 +243,6 @@ function getAllUserSum() {
 }
 onMounted(() => {
   nextTick(async () => {
-    Project.getItems()
-    testObj.getEnvironment()
     getAllReportSum()
     getAllCaseSum()
     doRefresh()

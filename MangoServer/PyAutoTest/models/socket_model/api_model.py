@@ -57,5 +57,5 @@ class ApiPublicModel(BaseModel):
     name: str
     key: str
     value: str
-    state: int
+    status: int
     type: int

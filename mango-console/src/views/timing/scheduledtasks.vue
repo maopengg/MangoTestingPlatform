@@ -78,7 +78,7 @@
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
                     :default-checked="record.status === 1"
-                    :beforeChange="(newValue) => onModifyState(newValue, record.id)"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                   />
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
@@ -175,7 +175,7 @@ import { get, post, put, deleted } from '@/api/http'
 import {
   getNickname,
   getScheduledTasks,
-  getScheduledTasksPutState,
+  getScheduledTasksPutStatus,
   getScheduledTasksQuery,
   getTimingList,
   triggerTiming
@@ -550,13 +550,13 @@ function getAutoTestName() {
     })
     .catch(console.log)
 }
-const onModifyState = async (newValue: boolean, id: number) => {
+const onModifyStatus = async (newValue: boolean, id: number) => {
   return new Promise<any>((resolve, reject) => {
     setTimeout(async () => {
       try {
         let value: any = false
         await put({
-          url: getScheduledTasksPutState,
+          url: getScheduledTasksPutStatus,
           data: () => {
             return {
               id: id,

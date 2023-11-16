@@ -55,12 +55,12 @@ class RunApi:
         case_cache_ass = {}
         for i in objects_filter:
             case_list.append(self.__data_ui_case(test_obj, i.page_step.id))
-            case_cache_data[i.page_step.name] = eval(i.case_cache_data)
-            case_cache_ass[i.page_step.name] = eval(i.case_cache_ass)
+            case_cache_data[i.page_step.name] = i.case_cache_data
+            case_cache_ass[i.page_step.name] = i.case_cache_ass
         case_model = CaseModel(case_id=case.id,
                                case_name=case.name,
                                project=case.project.id,
-                               module_name=case.module_name.module_name,
+                               module_name=case.module_name.name,
                                case_people=case.case_people.nickname,
                                case_cache_data=case_cache_data,
                                case_cache_ass=case_cache_ass,
@@ -70,7 +70,7 @@ class RunApi:
                                    type=AutoTestTypeEnum.UI.value,
                                    project=case.project.id,
                                    name=case.name,
-                                   run_state=0,
+                                   run_status=0,
                                    case_list=[])
             model.case_list.append(case_model)
             send_res = self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
@@ -94,7 +94,7 @@ class RunApi:
                                type=AutoTestTypeEnum.UI.value,
                                project=case_group_list[0].project,
                                name=case_group_list[0].case_name,
-                               run_state=0,
+                               run_status=0,
                                case_list=case_group_list)
         send_res = self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
                                       case_model=model)
@@ -149,16 +149,16 @@ class RunApi:
                 ele_sleep=i.ele_name_a.sleep,
                 ele_sub=i.ele_name_a.sub,
                 ope_type=i.ope_type,
-                ope_value=eval(i.ope_value) if i.ope_value else None,
+                ope_value=i.ope_value if i.ope_value else None,
                 ass_type=i.ass_type,
-                ass_value=eval(i.ass_value) if i.ass_value else None,
+                ass_value=i.ass_value if i.ass_value else None,
             ))
         return case_model
 
     def __get_web_config(self) -> WEBConfigModel:
         try:
             user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                                  state=IsItEnabled.right.value,
+                                                  status=IsItEnabled.right.value,
                                                   type=DevicePlatformEnum.WEB.value)
         except UiConfig.DoesNotExist:
             raise UiConfigQueryIsNoneError('web配置查询结果是空，请先进行配置')
@@ -169,6 +169,6 @@ class RunApi:
 
     def __get_app_config(self) -> AndroidConfigModel:
         user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                              state=IsItEnabled.right.value,
+                                              status=IsItEnabled.right.value,
                                               type=DevicePlatformEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)

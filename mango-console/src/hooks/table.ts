@@ -122,7 +122,7 @@ export const usePagination = function (callback: () => void) {
     pageSize: 20,
     showSizePicker: true,
     pageCount: 1,
-    pageSizes: ['10', '20', '30', '40'],
+    pageSizes: ['10', '20', '50', '100'],
     onChange,
     setTotalSize(totalSize: number) {
       paginationInfo.pageCount = totalSize

@@ -23,7 +23,7 @@ class RunApiSend:
         """
         处理公共数据
         """
-        objects_filter = ApiPublic.objects.filter(state=1, type=0)
+        objects_filter = ApiPublic.objects.filter(status=1, type=0)
         public_args_list = []
         for obj in objects_filter:
             public_args_model = PublicModel(

@@ -3,7 +3,7 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="Api自动化用例管理" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="接口信息收集" @search="onSearch" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
@@ -44,21 +44,20 @@
         <template #default>
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="1">
             <template #extra>
-              <a-space v-if="caseType === '0'">
+              <a-space v-if="apiInfoData.caseType === '0'">
                 <a-button type="primary" size="small" @click="onBatchUpload">批量上传</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
-                <a-button status="warning" size="small" @click="setCase('测试用例')">设为调试</a-button>
+                <a-button status="warning" size="small" @click="setCase('设为调试')">设为调试</a-button>
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
-              <a-space v-else-if="caseType === '1'">
+              <a-space v-else-if="apiInfoData.caseType === '1'">
                 <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-                <a-button status="warning" size="small" @click="setCase('定时任务')">调试完成</a-button>
+                <a-button status="warning" size="small" @click="setCase('调试完成')">调试完成</a-button>
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
-              <a-space v-else-if="caseType === '2'">
+              <a-space v-else-if="apiInfoData.caseType === '2'">
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
               </a-space>
-              <a-space v-else />
             </template>
             <a-tab-pane key="0" title="本期接口" />
             <a-tab-pane key="1" title="调试接口" />
@@ -92,6 +91,9 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
+                <template v-else-if="item.key === 'module_name'" #cell="{ record }">
+                  {{ record.module_name?.name }}
+                </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
                   <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>
@@ -103,35 +105,18 @@
                   <a-tag color="blue" size="small" v-else-if="record.method === 2">PUT</a-tag>
                   <a-tag color="green" size="small" v-else-if="record.method === 3">DELETE</a-tag>
                 </template>
-                <template v-else-if="item.key === 'rely'" #cell="{ record }">
-                  <a-tag color="blue" size="small" v-if="record.rely != null">已设置</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.rely === null">未设置</a-tag>
-                </template>
-                <template v-else-if="item.key === 'ass'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.ass != null">已设置</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.ass === null">未设置</a-tag>
-                </template>
-                <template v-else-if="item.key === 'state'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.state === 1">通过</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.state === 2">失败</a-tag>
+
+                <template v-else-if="item.key === 'status'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 2">失败</a-tag>
                   <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space v-if="caseType === '0'">
-                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onAssertion(record)">编辑/断言</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-                  </a-space>
-                  <a-space v-else-if="caseType === '1'">
-                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onAssertion(record)">编辑/断言</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-                  </a-space>
-                  <a-space v-else-if="caseType === '2'">
-                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onAssertion(record)">编辑/断言</a-button>
-                    <a-button type="text" size="mini" @click="setCaseGroup(record)">设为用例组</a-button>
-                  </a-space>
+                  <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
+                  <a-button type="text" size="mini" @click="onAssertion(record)">编辑/断言</a-button>
+                  <a-button v-if="apiInfoData.caseType !== '2'" status="danger" type="text" size="mini" @click="onDelete(record)"
+                    >删除</a-button
+                  >
                 </template>
               </a-table-column>
             </template>
@@ -141,7 +126,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="apiInfoData.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -177,14 +162,28 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { ApiCase, getAllItems, ApiCaseSynchronous, ApiRun } from '@/api/url'
+import { ApiInfo, getAllItems, ApiCaseSynchronous, ApiRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
-import { defineComponent, h, onMounted, ref } from 'vue'
+import { h, onMounted, ref, reactive, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTestObj } from '@/store/modules/get-test-obj'
+import { getFormItems } from '@/utils/datacleaning'
+const testObj = useTestObj()
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const formModel = ref({})
 
+const apiInfoData = reactive({
+  actionTitle: '添加接口',
+  isAdd: false,
+  updateId: 0,
+  caseType: '1'
+})
 interface TreeItem {
   title: string
   key: string
@@ -242,11 +241,11 @@ const conditionItems: Array<FormItem> = [
     }
   }
 ]
-const formItems = [
+const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
     key: 'project',
-    value: ref(''),
+    value: '',
     placeholder: '请选择项目名称',
     required: true,
     type: 'tree-select'
@@ -254,20 +253,13 @@ const formItems = [
   {
     label: '用例名称',
     key: 'name',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入页面名称'
   }
-] as FormItem[]
+])
 
-const testObj = useTestObj()
-const actionTitle = ref('添加页面')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -277,16 +269,24 @@ const tableColumns = useTableColumn([
     width: 100
   },
   {
-    title: '用例名称',
-    key: 'name',
-    dataIndex: 'name',
-    width: 150
+    title: '模块名称',
+    key: 'module_name',
+    dataIndex: 'module_name'
   },
   {
-    title: '客户端',
+    title: '接口名称',
+    key: 'name',
+    dataIndex: 'name'
+  },
+  {
+    title: '客户端类型',
     key: 'client',
-    dataIndex: 'client',
-    width: 80
+    dataIndex: 'client'
+  },
+  {
+    title: 'url',
+    key: 'url',
+    dataIndex: 'url'
   },
   {
     title: '方法',
@@ -295,29 +295,42 @@ const tableColumns = useTableColumn([
     width: 80
   },
   {
-    title: '请求体',
-    key: 'body',
-    dataIndex: 'body',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true
+    title: '请求头',
+    key: 'header',
+    dataIndex: 'header'
   },
   {
-    title: '依赖',
-    key: 'rely',
-    dataIndex: 'rely',
-    width: 80
+    title: '参数',
+    key: 'params',
+    dataIndex: 'params'
   },
   {
-    title: '断言',
+    title: 'data',
+    key: 'data',
+    dataIndex: 'data'
+  },
+  {
+    title: 'json',
+    key: 'json',
+    dataIndex: 'json'
+  },
+  {
+    title: '公共断言',
     key: 'ass',
-    dataIndex: 'ass',
-    width: 80
+    dataIndex: 'ass'
   },
+  // {
+  //   title: '请求体',
+  //   key: 'body',
+  //   dataIndex: 'body',
+  //   align: 'left',
+  //   ellipsis: true,
+  //   tooltip: true
+  // },
   {
     title: '状态',
-    key: 'state',
-    dataIndex: 'state',
+    key: 'status',
+    dataIndex: 'status',
     width: 80
   },
   {
@@ -328,23 +341,20 @@ const tableColumns = useTableColumn([
     width: 250
   }
 ])
-const caseType: any = ref('1')
 
 function switchType(key: any) {
-  caseType.value = key
+  apiInfoData.caseType = key
   doRefresh()
 }
 
-const formModel = ref({})
-
 function doRefresh() {
   get({
-    url: ApiCase,
+    url: ApiInfo,
     data: () => {
       return {
         page: pagination.page,
         pageSize: pagination.pageSize,
-        type: caseType.value
+        type: apiInfoData.caseType
       }
     }
   })
@@ -366,13 +376,13 @@ function onSearch() {
     doRefresh()
   } else if (data.project) {
     get({
-      url: ApiCase,
+      url: ApiInfo,
       data: () => {
         return {
           page: pagination.page,
           pageSize: pagination.pageSize,
           project: data.project,
-          type: caseType.value
+          type: apiInfoData.caseType
         }
       }
     })
@@ -384,12 +394,12 @@ function onSearch() {
       .catch(console.log)
   } else if (data) {
     get({
-      url: ApiCase,
+      url: ApiInfo,
       data: () => {
         return {
           id: data.caseid,
           name: data.name,
-          type: caseType.value
+          type: apiInfoData.caseType
         }
       }
     })
@@ -408,13 +418,10 @@ function onResetSearch() {
   })
 }
 
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
 function onAddPage() {
-  actionTitle.value = '新建接口'
+  apiInfoData.actionTitle = '新建接口'
+  apiInfoData.isAdd = true
   modalDialogRef.value?.toggle()
-  addUpdate.value = 1
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
@@ -449,7 +456,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: ApiCase,
+        url: ApiInfo,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -477,7 +484,7 @@ function onDeleteItems() {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: ApiCase,
+        url: ApiInfo,
         data: () => {
           return {
             id: JSON.stringify(selectedRowKeys.value)
@@ -494,21 +501,21 @@ function onDeleteItems() {
   })
 }
 
-// function onUpdate(item: any) {
-//   actionTitle.value = '编辑页面'
-//   modalDialogRef.value?.toggle()
-//   addUpdate.value = 0
-//   updateId.value = item.id
-//   nextTick(() => {
-//     formItems.forEach((it) => {
-//       const key = it.key
-//       const propName = item[key]
-//       if (propName) {
-//         it.value.value = propName
-//       }
-//     })
-//   })
-// }
+function onUpdate(item: any) {
+  apiInfoData.actionTitle = '编辑接口'
+  apiInfoData.isAdd = false
+  apiInfoData.updateId = item.id
+  modalDialogRef.value?.toggle()
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const key = it.key
+      const propName = item[key]
+      if (propName) {
+        it.value = propName
+      }
+    })
+  })
+}
 
 function setCase(name: any) {
   if (selectedRowKeys.value.length === 0) {
@@ -526,7 +533,7 @@ function setCase(name: any) {
     okText: '确定',
     onOk: () => {
       put({
-        url: ApiCase,
+        url: ApiInfo,
         data: () => {
           return {
             id: JSON.stringify(selectedRowKeys.value),
@@ -547,19 +554,13 @@ function setCase(name: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
+    let value = getFormItems(formItems)
+    value['type'] = apiInfoData.caseType
+    if (apiInfoData.isAdd) {
       post({
-        url: ApiCase,
+        url: ApiInfo,
         data: () => {
-          return {
-            project: value.project,
-            name: value.name
-          }
+          return value
         }
       })
         .then((res) => {
@@ -567,18 +568,12 @@ function onDataForm() {
           doRefresh()
         })
         .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
+    } else {
       put({
-        url: ApiCase,
+        url: ApiInfo,
         data: () => {
-          return {
-            id: value.id,
-            project: value.project,
-            name: value.name
-          }
+          value['id'] = apiInfoData.updateId
+          return value
         }
       })
         .then((res) => {
@@ -589,7 +584,6 @@ function onDataForm() {
     }
   }
 }
-
 // 获取所有项目
 const treeData = ref<Array<TreeItem>>([])
 
@@ -628,7 +622,7 @@ function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
 }
 
 function onRunCase(record: any) {
-  if (testObj.te == null) {
+  if (testObj.selectValue == null) {
     Message.error('请先选择用例执行的环境')
     return
   }
@@ -637,7 +631,7 @@ function onRunCase(record: any) {
     data: () => {
       return {
         case_id: record.id,
-        test_obj: testObj.te
+        test_obj: testObj.selectValue
       }
     }
   })
@@ -651,15 +645,6 @@ const router = useRouter()
 
 function onConcurrency() {
   Message.info('调用了并发按钮')
-}
-
-function setCaseGroup(record: any) {
-  router.push({
-    path: '/apitest/group',
-    query: {
-      id: record.id
-    }
-  })
 }
 
 function onAssertion(record: any) {

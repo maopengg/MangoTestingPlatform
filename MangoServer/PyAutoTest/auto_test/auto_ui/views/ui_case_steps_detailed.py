@@ -43,9 +43,6 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
     def get(self, request: Request):
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
         data = [self.serializer_class(i).data for i in books]
-
-        for i in data:
-            i['case_cache_data'] = eval(i.get('case_cache_data'))
         return ResponseData.success('获取数据成功', data)
 
 

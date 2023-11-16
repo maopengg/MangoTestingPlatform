@@ -49,16 +49,16 @@
                   <a-tag color="red" size="small" v-else-if="record.browser_type === 2">火狐</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.browser_type === 3">WEBKIT</a-tag>
                 </template>
-                <template v-else-if="item.key === 'state'" #cell="{ record }">
+                <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
-                    :default-checked="record.state === 1"
-                    :beforeChange="(newValue) => onModifyState(newValue, record.id, item.key)"
+                    :default-checked="record.status === 1"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
                   />
                 </template>
                 <template v-else-if="item.key === 'is_headless'" #cell="{ record }">
                   <a-switch
                     :default-checked="record.is_headless === 1"
-                    :beforeChange="(newValue) => onModifyState(newValue, record.id, item.key)"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
                   />
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -146,7 +146,7 @@ import {
   uiConfigGetBrowserType,
   uiConfigGetDriveType,
   uiConfigNewBrowserObj,
-  uiConfigPutState
+  uiConfigPutStatus
 } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
@@ -288,8 +288,8 @@ const tableColumns = useTableColumn([
   },
   {
     title: '状态',
-    key: 'state',
-    dataIndex: 'state'
+    key: 'status',
+    dataIndex: 'status'
   },
   {
     title: '操作',
@@ -378,7 +378,7 @@ function onDataForm() {
       post({
         url: uiConfig,
         data: () => {
-          value['state'] = 0
+          value['status'] = 0
           value['is_headless'] = 0
           return value
         }
@@ -405,21 +405,21 @@ function onDataForm() {
   }
 }
 
-const onModifyState = async (newValue: number, id: number, key: string) => {
+const onModifyStatus = async (newValue: number, id: number, key: string) => {
   let obj: any = {
     id: id
   }
   if (key === 'is_headless') {
     obj['is_headless'] = newValue ? 1 : 0
   } else {
-    obj['state'] = newValue ? 1 : 0
+    obj['status'] = newValue ? 1 : 0
   }
   return new Promise<any>((resolve, reject) => {
     setTimeout(async () => {
       try {
         let value: any = false
         await put({
-          url: uiConfigPutState,
+          url: uiConfigPutStatus,
           data: () => {
             return obj
           }

@@ -67,7 +67,7 @@ export const extraRoutes = [
     children: [
       {
         path: 'group',
-        component: () => import('@/views/apitest/case.vue'),
+        component: () => import('@/views/apitest/api-case.vue'),
         meta: {
           title: '用例组'
         }
@@ -111,6 +111,23 @@ export const extraRoutes = [
         component: () => import('@/views/index/report-details.vue'),
         meta: {
           title: '测试报告'
+        }
+      }
+    ]
+  },
+  {
+    path: '/system',
+    name: '系统设置',
+    component: Layout,
+    meta: {
+      title: '系统设置'
+    },
+    children: [
+      {
+        path: 'project-module',
+        component: () => import('@/views/system/project-module.vue'),
+        meta: {
+          title: '项目模块'
         }
       }
     ]

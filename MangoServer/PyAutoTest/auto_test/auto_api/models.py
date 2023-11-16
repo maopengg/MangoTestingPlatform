@@ -2,7 +2,7 @@ from django.db import models
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.auto_test.auto_user.models import Project
+from PyAutoTest.auto_test.auto_user.models import Project, User, ProjectModule
 
 """
      1.python manage.py makemigrations
@@ -10,58 +10,60 @@ from PyAutoTest.auto_test.auto_user.models import Project
 """
 
 
-class ApiCase(models.Model):
+class ApiInfo(models.Model):
     """api用例表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    # 0和空等于调试用例，1等于本期接口，2等于自动化用例，5等于已经被设置为定时执行
+    # 0和空等于调试用例，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型')
-    name = models.CharField(verbose_name="用例名称", max_length=64)
+    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="接口名称", max_length=64)
     client = models.SmallIntegerField(verbose_name="什么端")
-    method = models.SmallIntegerField(verbose_name="请求方法")
     url = models.CharField(verbose_name="请求url", max_length=1024)
-    header = models.CharField(verbose_name="请求头", max_length=2048, null=True)
-    body = models.TextField(verbose_name="请求数据", null=True)
-    body_type = models.SmallIntegerField(verbose_name="请求数据类型", null=True)
-    rely = models.CharField(verbose_name="依赖的用例id", max_length=100, null=True)
-    ass = models.SmallIntegerField(verbose_name="断言", null=True)
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    method = models.SmallIntegerField(verbose_name="请求方法")
+    header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
+    params = models.JSONField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.JSONField(verbose_name="json", null=True)
+    ass = models.JSONField(verbose_name="公共断言", null=True)
+    # 0失败， 1是成功
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
+
+    class Meta:
+        db_table = 'api_info'
+        ordering = ['-id']
+
+
+class ApiCase(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="测试用例名称", max_length=64)
+    case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
+    # 0失败，1成功，2警告
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'api_case'
         ordering = ['-id']
 
 
-class ApiCaseGroup(models.Model):
+class ApiCaseDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    time_name = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="测试组名称", max_length=64)
-    case_id = models.CharField(verbose_name="存放组内所有用例ID", max_length=1048, null=True)
-    case_name = models.CharField(verbose_name="存放组内所有用例名称", max_length=1048, null=True)
-    # 0失败，1成功，2警告
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_sort = models.IntegerField(verbose_name="用例排序", null=True)
+    header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
+    params = models.JSONField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.JSONField(verbose_name="json", null=True)
+    ass = models.JSONField(verbose_name="公共断言", null=True)
 
     class Meta:
-        db_table = 'api_case_group'
-        ordering = ['-id']
-
-
-# class ApiRelyOn(models.Model):
-#     """api依赖表"""
-#     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-#     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-#     name = models.CharField(verbose_name="前置需要处理的名称", max_length=64)
-#     rely_type = models.SmallIntegerField(verbose_name="处理的类型", null=True)
-#     value = models.CharField(verbose_name="处理的值", max_length=1048, null=True)
-#     # 0是前置，1是后置
-#     type = models.SmallIntegerField(verbose_name="前置还是后置", null=True)
-#
-#     class Meta:
-#         db_table = 'api_rely_on'
-#         ordering = ['-id']
+        db_table = 'api_case_detailed'
 
 
 class ApiPublic(models.Model):
@@ -77,50 +79,13 @@ class ApiPublic(models.Model):
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'api_public'
         ordering = ['-id']
 
 
-class ApiAssertions(models.Model):
-    """api断言表"""
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="依赖名称", max_length=64)
-    ass_type = models.SmallIntegerField(verbose_name="依赖类型", null=True)
-    value = models.CharField(verbose_name="值", max_length=1048, null=True)
-
-    class Meta:
-        db_table = 'api_ass'
-        ordering = ['-id']
-
-
-class ApiResult(models.Model):
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_group = models.ForeignKey(to=ApiCaseGroup, to_field="id", on_delete=models.SET_NULL, null=True)
-    request_url = models.CharField(verbose_name="请求的url", max_length=1048, null=True)
-    request_header = models.TextField(verbose_name="请求头", null=True)
-    request_body = models.TextField(verbose_name="请求体", null=True)
-    response_header = models.TextField(verbose_name="响应头", null=True)
-    response_body = models.TextField(verbose_name="响应体", null=True)
-    code = models.IntegerField(verbose_name='响应的code码', null=True)
-    response_time = models.TimeField(verbose_name='响应时间', null=True)
-    # 0失败，1成功，2警告
-    ass_res = models.SmallIntegerField(verbose_name="断言结果", null=True)
-
-    class Meta:
-        db_table = 'api_result'
-        ordering = ['-id']
-#
-#
 # class MockModel(models.Model):
 #     """
 #     mock model

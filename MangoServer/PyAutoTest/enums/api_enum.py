@@ -38,7 +38,7 @@ class ApiPublicTypeEnum(Enum):
     HEADER = 3
 
 
-class StateEnum(Enum):
+class StatusEnum(Enum):
     """0是未测试，1是通过，2是失败"""
     UNTESTED = 0
     ADOPT = 1

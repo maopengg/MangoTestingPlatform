@@ -13,7 +13,7 @@ class UiPublicModel(BaseModel):
     name: str
     key: str
     value: str
-    state: int
+    status: int
 
 
 class InputValueModel(BaseModel):
@@ -137,6 +137,6 @@ class TestSuiteModel(BaseModel):
     type: int
     project: int
     name: str
-    run_state: int
-    state: int | None
+    run_status: int
+    status: int | None
     case_list: list[CaseModel] | None

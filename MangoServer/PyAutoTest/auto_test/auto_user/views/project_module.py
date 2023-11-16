@@ -15,6 +15,9 @@ from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
 
 
 class ProjectModuleSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = ProjectModule
         fields = '__all__'
@@ -22,18 +25,12 @@ class ProjectModuleSerializers(serializers.ModelSerializer):
 
 class ProjectModuleSerializersC(serializers.ModelSerializer):
     project = ProjectSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = ProjectModule
         fields = '__all__'
-
-
-class ProjectModuleQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = ProjectModule
-    serializer_class = ProjectModuleSerializersC
 
 
 class ProjectModuleCRUD(ModelCRUD):
@@ -50,6 +47,6 @@ class ProjectModuleViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def get_module_name_all(self, request: Request):
-        res = self.model.objects.values_list('id', 'module_name').filter(project=request.query_params.get('project_id'))
+        res = self.model.objects.values_list('id', 'name').filter(project=request.query_params.get('project_id'))
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)

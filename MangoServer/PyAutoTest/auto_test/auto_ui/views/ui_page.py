@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiPage
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
 
@@ -23,6 +24,8 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 
 class UiPageSerializersC(serializers.ModelSerializer):
+    module_name = ProjectModuleSerializers(read_only=True)
+
     project = ProjectSerializers(read_only=True)
 
     class Meta:

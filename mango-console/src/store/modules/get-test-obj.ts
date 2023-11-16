@@ -7,7 +7,7 @@ export const useTestObj = defineStore('get-test-obj', {
   state: () => {
     return {
       data: [],
-      te: null as number | null
+      selectValue: null as number | null
     }
   },
   // 类似于computed，用来封装计算属性

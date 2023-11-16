@@ -1,9 +1,0 @@
-node_modules
-.DS_Store
-dist-ssr
-*.local
-dist
-dist-staging
-package-lock.json
-yarn.loc
-.idea

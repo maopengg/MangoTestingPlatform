@@ -62,7 +62,7 @@ class GetCommonParameters:
         @return:
         """
         try:
-            mysql = Database.objects.get(test_obj_id=test_obj_id, state=IsItEnabled.right.value)
+            mysql = Database.objects.get(test_obj_id=test_obj_id, status=IsItEnabled.right.value)
         except Database.DoesNotExist:
             data = None
         else:

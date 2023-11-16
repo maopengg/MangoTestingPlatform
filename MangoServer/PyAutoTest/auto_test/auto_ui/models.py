@@ -14,6 +14,7 @@ class UiPage(models.Model):
     create_Time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="页面名称", max_length=64)
     url = models.CharField(verbose_name="url", max_length=128)
     # 0是web，1是小程序， 3是app
@@ -67,11 +68,11 @@ class UiPageStepsDetailed(models.Model):
                                    on_delete=models.SET_NULL, null=True)
     step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
     ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
+    ope_value = models.JSONField(verbose_name="操作内容", null=True)
     # type==0是进行操作，==1是进行断言
     type = models.SmallIntegerField(verbose_name="操作类型", null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
+    ass_value = models.JSONField(verbose_name="操作内容", null=True)
 
     class Meta:
         db_table = 'ui_page_steps_detailed'
@@ -89,7 +90,7 @@ class UiCase(models.Model):
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', related_name='related_case_people',
                                     on_delete=models.SET_NULL, null=True)
     # 0失败，1成功，2警告
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'ui_case'
@@ -103,8 +104,8 @@ class UiCaseStepsDetailed(models.Model):
     case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     page_step = models.ForeignKey(to=UiPageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
-    case_cache_data = models.TextField(verbose_name="用例缓存数据", null=True)
-    case_cache_ass = models.TextField(verbose_name="步骤缓存断言", null=True)
+    case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
+    case_cache_ass = models.JSONField(verbose_name="步骤缓存断言", null=True)
 
     class Meta:
         db_table = 'ui_case_steps_detailed'
@@ -118,7 +119,7 @@ class UiPublic(models.Model):
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'ui_public'
@@ -138,7 +139,7 @@ class UiConfig(models.Model):
     # 0关闭，1开启
     is_headless = models.SmallIntegerField(verbose_name="状态", null=True)
     # 0未选中，1选中
-    state = models.SmallIntegerField(verbose_name="状态", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
         db_table = 'ui_config'
@@ -154,7 +155,7 @@ class UiCaseResult(models.Model):
     module_name = models.CharField(verbose_name="模块名称", max_length=64, null=True)
     case_people = models.CharField(verbose_name="负责人名称", max_length=64, null=True)
     test_obj = models.CharField(verbose_name="测试环境", max_length=1024, null=True)
-    case_cache_data = models.TextField(verbose_name="用例缓存数据", null=True)
+    case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     status = models.SmallIntegerField(verbose_name="用例测试结果", null=True)
 
     class Meta:
@@ -190,9 +191,10 @@ class UiEleResult(models.Model):
     sleep = models.IntegerField(verbose_name="等待时间", null=True)
     sub = models.IntegerField(verbose_name="下标", null=True)
     ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
+    ope_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.CharField(verbose_name="操作内容", max_length=1048, null=True)
+    ass_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
+    msg = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
 
     class Meta:
         db_table = 'ui_ele_result'

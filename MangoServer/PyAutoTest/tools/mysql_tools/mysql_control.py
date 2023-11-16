@@ -52,17 +52,17 @@ class MysqlDB:
         except AttributeError as error:
             logger.error("数据库连接失败，失败原因 %s", error)
 
-    def query(self, sql: Text, state="all"):
+    def query(self, sql: Text, status="all"):
         """
             查询
             :param sql:
-            :param state:  all 是默认查询全部
+            :param status:  all 是默认查询全部
             :return:
             """
         try:
             self.cur.execute(sql)
 
-            if state == "all":
+            if status == "all":
                 # 查询全部
                 data = self.cur.fetchall()
             else:

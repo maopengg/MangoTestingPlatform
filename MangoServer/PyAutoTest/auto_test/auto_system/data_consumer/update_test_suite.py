@@ -32,24 +32,24 @@ class TestSuiteReportUpdate:
     @classmethod
     def update_case_suite(cls, data: CaseResult) -> None:
         pass
-        # cls.update_case_suite_state(data.test_suite_id, data.test_result, self.data.run_state)
+        # cls.update_case_suite_status(data.test_suite_id, data.test_result, self.data.run_status)
         # for i in data.case_res_list:
-        #     ConsumerTestResult.update_case_state(i.case_id, i.test_result)
+        #     ConsumerTestResult.update_case_status(i.case_id, i.test_result)
         #     ConsumerTestResult.update_case_result(i)
 
     @classmethod
-    def update_case_suite_state(cls, _id, status, run_state=1):
+    def update_case_suite_status(cls, _id, status, run_status=1):
         """
 
         @param _id:
         @param status:
-        @param run_state:1是测试完成
+        @param run_status:1是测试完成
         @return:
         """
         try:
             res = TestSuiteReport.objects.get(id=_id)
-            res.state = status
-            res.run_state = run_state
+            res.status = status
+            res.run_status = run_status
             res.save()
         except TestSuiteReport.DoesNotExist as e:
             # 处理找不到对应记录的情况

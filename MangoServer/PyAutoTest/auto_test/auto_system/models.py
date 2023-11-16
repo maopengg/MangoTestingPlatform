@@ -34,7 +34,7 @@ class NoticeConfig(models.Model):
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     config = models.CharField(verbose_name="通知配置", max_length=1028, null=True)
-    state = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
+    status = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
 
     class Meta:
         db_table = 'notice_config'
@@ -52,7 +52,7 @@ class Database(models.Model):
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     host = models.CharField(verbose_name="数据库地址", max_length=64, null=True)
     post = models.IntegerField(verbose_name="端口", null=True)
-    state = models.SmallIntegerField(verbose_name="是否启用", null=True)
+    status = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
         db_table = 'data_base'
@@ -83,9 +83,9 @@ class TestSuiteReport(models.Model):
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="用例名称", max_length=64)
     # 0是进行中，1是已完成
-    run_state = models.SmallIntegerField(verbose_name="执行状态", null=True)
+    run_status = models.SmallIntegerField(verbose_name="执行状态", null=True)
     # null是待测试完成，0是失败，1是成功
-    state = models.SmallIntegerField(verbose_name="测试结果", null=True)
+    status = models.SmallIntegerField(verbose_name="测试结果", null=True)
 
     class Meta:
         db_table = 'test_suite_report'

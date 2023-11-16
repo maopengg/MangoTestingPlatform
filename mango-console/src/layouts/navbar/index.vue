@@ -8,6 +8,12 @@
         <ActionItems />
       </div>
       <div class="avatar-wrapper">
+        <Project />
+      </div>
+      <div class="avatar-wrapper">
+        <TestEnvironment />
+      </div>
+      <div class="avatar-wrapper">
         <VAWavatar />
       </div>
     </div>
@@ -17,8 +23,12 @@
 <script lang="ts">
 import useAppConfigStore from '@/store/modules/app-config'
 import { defineComponent } from 'vue'
+import TestEnvironment from '@/layouts/avatar/testing-environment.vue'
+import Project from '@/layouts/avatar/project.vue'
+import VAWavatar from '@/layouts/avatar/index.vue'
 export default defineComponent({
   name: 'NavBar',
+  components: { VAWavatar, Project, TestEnvironment },
   setup() {
     const appStore = useAppConfigStore()
     return {

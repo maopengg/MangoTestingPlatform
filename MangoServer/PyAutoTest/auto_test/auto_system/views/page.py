@@ -76,7 +76,6 @@ class SystemViews(ViewSet):
         if not name:
             return ResponseData.fail('请输入函数名称')
         match = re.search(r'\((.*?)\)', name)
-        print(match)
         if match:
             return ResponseData.success('获取数据成功', str(ObtainRandomData.regular(name)))
         else:

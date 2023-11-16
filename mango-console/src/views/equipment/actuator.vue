@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="main-container">
-      <TableBody ref="tableBody">
+      <TableBody ref="tableBody" title="执行器列表">
         <template #header></template>
 
         <template #default>
@@ -9,7 +9,7 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                  <!--                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>-->
                 </div>
               </a-space>
             </template>
