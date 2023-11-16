@@ -104,6 +104,7 @@
                   </a-space>
                   <a-space v-else-if="pageStepsData.stepsType === '1'">
                     <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
+                    <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                   </a-space>
                 </template>
@@ -526,7 +527,7 @@ function onDataForm() {
 }
 
 function onRunCase(record: any) {
-  if (testObj.te == null) {
+  if (testObj.selectValue == null) {
     Message.error('请先选择用例执行的环境')
     return
   }
@@ -536,7 +537,7 @@ function onRunCase(record: any) {
     data: () => {
       return {
         page_step_id: record.id,
-        te: testObj.te
+        te: testObj.selectValue
       }
     }
   })

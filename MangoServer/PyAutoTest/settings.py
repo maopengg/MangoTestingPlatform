@@ -22,22 +22,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
 TIME_ZONE = 'Asia/Shanghai'
 
-# ************************ 需要修改的参数↓ ************************ #
-db_user = 'root'
-db_password = '123456'
-db_host = '127.0.0.1'
-db_port = 3306
-db_name = 'mango-server'
-
-redis_ip = '127.0.0.1'
-redis_port = 6379
-
-DRIVER = 'Mango Actuator'
-SERVER = 'Mango Server'
-WEB = 'mango-console'
-# ************************ 需要修改的参数↑ ************************ #
-
-
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
 DEBUG = True
@@ -103,21 +87,23 @@ TEMPLATES = [
 ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 # WSGI_APPLICATION = 'PyAutoTest.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
 
 # ************************ 数据库配置 ************************ #
+
+# Database
+# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'aigc_AutoUITestPlatform',
-        'USER': db_user,
-        'PASSWORD': db_password,
-        'HOST': db_host,
-        'PORT': db_port,
+        'USER': 'root',
+        'PASSWORD': 'zALL_mysql1',
+        'HOST': '61.183.9.60',
+        # 'HOST': '172.30.16.115',
+        # 'PORT': 3306,
+        'PORT': 23306,
         'TEST': {
-            'NAME': db_name,
+            'NAME': 'mango-server',
             'CHARSET': 'utf8mb4',
             'COLLATION': 'utf8mb4_general_ci'
         },
@@ -171,7 +157,8 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{redis_ip}:{redis_port}/0",
+        "LOCATION": "redis://127.0.0.1:6379/0",
+        # "LOCATION": "redis://:123456@172.30.16.114:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -183,7 +170,8 @@ CACHES = {
     },
     "socket": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{redis_ip}:{redis_port}/1",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        # "LOCATION": "redis://:123456@172.30.16.114:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -321,3 +309,7 @@ CORS_ALLOW_METHODS = (
 #     'x-csrftoken',
 #     'x-requested-with'
 # )
+# ************************ 三个端的名称 ************************ #
+DRIVER = 'Mango Actuator'
+SERVER = 'Mango Server'
+WEB = 'mango-console'

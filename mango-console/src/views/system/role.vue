@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="main-container">
-      <TableBody ref="tableBody">
+      <TableBody ref="tableBody" title="角色管理">
         <template #header></template>
 
         <template #default>

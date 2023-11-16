@@ -19,7 +19,7 @@ log = logging.getLogger('ui')
 class ConsumerTestResult:
 
     @classmethod
-    def page_step_state_update(cls, data: PageStepsResultModel) -> None:
+    def page_step_status_update(cls, data: PageStepsResultModel) -> None:
         try:
             res = UiPageSteps.objects.get(id=data.page_step_id)
             res.type = IsItEnabled.right.value if data.status else IsItEnabled.wrong.value
@@ -29,10 +29,10 @@ class ConsumerTestResult:
             log.error(f"当前查询结果是空，请检查id是否在数据库中存在id：{data.page_step_id}报错：{e}")
 
     @classmethod
-    def update_case_state(cls, case_id: int, status: int):
+    def update_case_status(cls, case_id: int, status: int):
         try:
             case = UiCase.objects.get(id=case_id)
-            case.state = status
+            case.status = status
             case.save()
         except UiCase.DoesNotExist as e:
             # 处理找不到对应记录的情况

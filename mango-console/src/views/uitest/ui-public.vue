@@ -12,15 +12,16 @@
                   </template>
                   <template v-else>
                     <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value.value" :placeholder="item.placeholder" />
+                      <a-input v-model="item.value" :placeholder="item.placeholder" />
                     </template>
                     <template v-else-if="item.type === 'select'">
                       <a-select
                         style="width: 150px"
-                        v-model="item.value.value"
+                        v-model="item.value"
                         :placeholder="item.placeholder"
                         :options="project.data"
                         :field-names="fieldNames"
+                        value-key="key"
                         allow-clear
                         allow-search
                       />
@@ -36,12 +37,10 @@
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="0">
             <template #extra>
               <a-space>
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 <!--                <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>-->
               </a-space>
             </template>
-            <a-tab-pane key="0" title="公共请求参数" />
-            <a-tab-pane key="1" title="公共断言类型" />
           </a-tabs>
           <a-table
             :bordered="false"
@@ -66,20 +65,14 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'public_type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.public_type === 0">自定义</a-tag>
-                  <a-tag color="cyan" size="small" v-else-if="record.public_type === 1">SQL</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 2">请求头</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 3">预置数据</a-tag>
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project?.name }}
                 </template>
-                <template v-else-if="item.key === 'end'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.end === 0">web端</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.end === 1">小程序</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.end === 2">app</a-tag>
-                </template>
-                <template v-else-if="item.key === 'state'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.state === 1">启用</a-tag>
-                  <a-tag color="orangered" size="small" v-else-if="record.state === 0">未启用</a-tag>
+                <template v-else-if="item.key === 'status'" #cell="{ record }">
+                  <a-switch
+                    :default-checked="record.status === 1"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                  />
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -95,7 +88,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="uiPublicData.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -105,31 +98,21 @@
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" />
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
               <template v-else-if="item.type === 'textarea'">
-                <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
+                <a-textarea v-model="item.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of conditionItems[2].optionItems" :key="optionItem.value" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'end'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of selectValue.apiPublicEnd" :key="optionItem.value" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'public_type'">
-                <a-select v-model="item.value.value" :placeholder="item.placeholder">
-                  <a-option v-for="optionItem of selectValue.apiPublicPublic" :key="optionItem.value" :value="optionItem.title">
-                    {{ optionItem.title }}
-                  </a-option>
-                </a-select>
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -141,49 +124,62 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { ApiPublic, ApiPublicEnd, ApiPublicPublic } from '@/api/url'
+import { uiPublic, uiPublicPutStatus, uiPublicQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
 import { h, onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
-
-const conditionItems: Array<FormItem> = [
+import { getFormItems } from '@/utils/datacleaning'
+const project = useProject()
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const pagination = usePagination(doRefresh)
+const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+const table = useTable()
+const rowKey = useRowKey('id')
+const formModel = ref({})
+const uiPublicData = reactive({
+  type: 0,
+  actionTitle: '新增参数',
+  updateId: 0,
+  isAdd: true
+})
+const conditionItems: Array<FormItem> = reactive([
   {
-    key: 'executor_name',
-    label: '项目负责人',
+    key: 'id',
+    label: 'ID',
     type: 'input',
-    placeholder: '请输入项目负责人',
-    value: ref(''),
+    placeholder: '请输入参数ID',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入项目负责人',
-        modelValue: formItem.value.value,
+        placeholder: '请输入参数ID',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
   },
   {
-    key: 'caseid',
-    label: '项目ID',
+    key: 'name',
+    label: '名称',
     type: 'input',
-    placeholder: '请输入项目ID',
-    value: ref(''),
+    placeholder: '请输入参数名称',
+    value: '',
     reset: function () {
-      this.value.value = ''
+      this.value = ''
     },
     render: (formItem: FormItem) => {
       return h(Input, {
-        placeholder: '请输入项目ID',
-        modelValue: formItem.value.value,
+        placeholder: '请输入参数名称',
+        modelValue: formItem.value,
         'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
+          formItem.value = value
         }
       })
     }
@@ -191,58 +187,23 @@ const conditionItems: Array<FormItem> = [
   {
     key: 'project',
     label: '筛选项目',
-    value: ref(),
+    value: '',
     type: 'select',
     placeholder: '请选择项目',
-    optionItems: [],
-    reset: function () {
-      this.value.value = undefined
-    }
+    optionItems: project.data,
+    reset: function () {}
   }
-]
-const project = useProject()
-conditionItems[2].optionItems = project.data
-
-const formItems = [
+])
+const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
     key: 'project',
-    value: ref(''),
+    value: '',
     placeholder: '请选择项目',
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '客户端',
-    key: 'end',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择客户端',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '类型',
-    key: 'public_type',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择对应类型，注意不同类型的加载顺序',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -252,12 +213,12 @@ const formItems = [
   {
     label: '名称',
     key: 'name',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入名称',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -267,12 +228,12 @@ const formItems = [
   {
     label: 'key',
     key: 'key',
-    value: ref(''),
+    value: '',
     type: 'input',
     required: true,
     placeholder: '请输入缓存的key',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -282,26 +243,20 @@ const formItems = [
   {
     label: 'value',
     key: 'value',
-    value: ref(''),
+    value: '',
     type: 'textarea',
     required: true,
     placeholder: '请根据规则输入value值',
     validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
+      if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
         return false
       }
       return true
     }
   }
-] as FormItem[]
+])
 
-const actionTitle = ref('新增参数')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -311,27 +266,18 @@ const tableColumns = useTableColumn([
     width: 100
   },
   {
-    title: '客户端',
-    key: 'end',
-    dataIndex: 'end',
-    width: 150
-  },
-  {
-    title: '类型',
-    key: 'public_type',
-    dataIndex: 'public_type'
-  },
-  {
     title: '名称',
     key: 'name',
     dataIndex: 'name',
-    width: 150
+    width: 200,
+    align: 'left'
   },
   {
     title: 'key',
     key: 'key',
     dataIndex: 'key',
-    width: 150
+    width: 150,
+    align: 'left'
   },
   {
     title: 'value',
@@ -341,8 +287,8 @@ const tableColumns = useTableColumn([
   },
   {
     title: '状态',
-    key: 'state',
-    dataIndex: 'state'
+    key: 'status',
+    dataIndex: 'status'
   },
   {
     title: '操作',
@@ -353,22 +299,17 @@ const tableColumns = useTableColumn([
   }
 ])
 
-const formModel = ref({})
-const caseType: any = ref('0')
-
 function switchType(key: any) {
-  caseType.value = key
-  doRefresh()
+  uiPublicData.type = key
 }
 
 function doRefresh() {
   get({
-    url: ApiPublic,
+    url: uiPublic,
     data: () => {
       return {
         page: pagination.page,
-        pageSize: pagination.pageSize,
-        type: caseType.value
+        pageSize: pagination.pageSize
       }
     }
   })
@@ -378,97 +319,69 @@ function doRefresh() {
     })
     .catch(console.log)
 }
-
-const selectValue: any = reactive({
-  apiPublicPublic: [],
-  apiPublicEnd: []
-})
-
-function doPublic() {
-  get({
-    url: ApiPublicPublic
-  })
-    .then((res) => {
-      selectValue.apiPublicPublic = res.data
-    })
-    .catch(console.log)
-}
-
-function doEnd() {
-  get({
-    url: ApiPublicEnd
-  })
-    .then((res) => {
-      selectValue.apiPublicEnd = res.data
-    })
-    .catch(console.log)
-}
-
 function onSearch() {
-  let data: { [key: string]: string } = {}
-  conditionItems.forEach((it) => {
-    if (it.value.value) {
-      data[it.key] = it.value.value
+  let value = getFormItems(conditionItems)
+  if (JSON.stringify(value) === '{}') {
+    doRefresh()
+    return
+  }
+  get({
+    url: uiPublicQuery,
+    data: () => {
+      value['page'] = pagination.page
+      value['pageSize'] = pagination.pageSize
+      return value
     }
   })
-  if (JSON.stringify(data) === '{}') {
-    doRefresh()
-  } else if (data.project) {
-    get({
-      url: ApiPublic,
-      data: () => {
-        return {
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
+    .then((res) => {
+      table.handleSuccess(res)
+      pagination.setTotalSize(res.totalSize || 10)
+      Message.success(res.msg)
     })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  } else if (data) {
-    get({
-      url: ApiPublic,
-      data: () => {
-        return {
-          id: data.caseid,
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          executor_name: data.executor_name
-        }
-      }
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
+    .catch(console.log)
 }
 
 function onResetSearch() {
   conditionItems.forEach((it) => {
-    it.reset ? it.reset() : (it.value.value = '')
+    it.value = ''
+  })
+}
+const onModifyStatus = async (newValue: boolean, id: number) => {
+  return new Promise<any>((resolve, reject) => {
+    setTimeout(async () => {
+      try {
+        let value: any = false
+        await put({
+          url: uiPublicPutStatus,
+          data: () => {
+            return {
+              id: id,
+              status: newValue ? 1 : 0
+            }
+          }
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            value = res.code === 200
+          })
+          .catch(reject)
+        resolve(value)
+      } catch (error) {
+        reject(error)
+      }
+    }, 300)
   })
 }
 
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
-function onAddPage() {
-  actionTitle.value = '新增参数'
+function onAdd() {
+  uiPublicData.actionTitle = '新增参数'
+  uiPublicData.isAdd = true
   modalDialogRef.value?.toggle()
-  addUpdate.value = 1
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
     } else {
-      it.value.value = ''
+      it.value = ''
     }
   })
 }
@@ -481,7 +394,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: ApiPublic,
+        url: uiPublic,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -498,16 +411,17 @@ function onDelete(data: any) {
 }
 
 function onUpdate(item: any) {
-  actionTitle.value = '编辑参数'
+  uiPublicData.actionTitle = '编辑参数'
+  uiPublicData.isAdd = false
+  uiPublicData.updateId = item.id
   modalDialogRef.value?.toggle()
-  addUpdate.value = 0
-  updateId.value = item.id
   nextTick(() => {
     formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
-      if (propName) {
-        it.value.value = propName
+      const propName = item[it.key]
+      if (typeof propName === 'object' && propName !== null) {
+        it.value = propName.id
+      } else {
+        it.value = propName
       }
     })
   })
@@ -516,22 +430,14 @@ function onUpdate(item: any) {
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
-    })
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
+    let value = getFormItems(formItems)
+    if (uiPublicData.isAdd) {
       post({
-        url: ApiPublic,
+        url: uiPublic,
         data: () => {
-          return {
-            project: value.project,
-            name: value.name,
-            url: value.url,
-            environment: value.environment,
-            executor_name: value.executor_name
-          }
+          value['status'] = 1
+
+          return value
         }
       })
         .then((res) => {
@@ -539,21 +445,12 @@ function onDataForm() {
           doRefresh()
         })
         .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
+    } else {
       put({
-        url: ApiPublic,
+        url: uiPublic,
         data: () => {
-          return {
-            id: value.id,
-            project: value.project,
-            name: value.name,
-            url: value.url,
-            environment: value.environment,
-            executor_name: value.executor_name
-          }
+          value['id'] = uiPublicData.updateId
+          return value
         }
       })
         .then((res) => {
@@ -568,8 +465,6 @@ function onDataForm() {
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
-    doPublic()
-    doEnd()
   })
 })
 </script>

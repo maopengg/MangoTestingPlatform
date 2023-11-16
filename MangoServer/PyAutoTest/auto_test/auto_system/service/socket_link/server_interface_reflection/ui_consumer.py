@@ -12,11 +12,12 @@ class UIConsumer:
 
     def u_page_steps(self, data: dict):
         data = PageStepsResultModel(**data)
-        ConsumerTestResult.page_step_state_update(data)
+        ConsumerTestResult.page_step_status_update(data)
 
     def u_case_result(self, data: dict):
         data = CaseResult(**data)
-        TestSuiteReportUpdate.update_case_suite_state(data.test_suite_id, data.status)
-        ConsumerTestResult.update_case_state(data.case_id, data.status)
+        TestSuiteReportUpdate.update_case_suite_status(data.test_suite_id, data.status)
+        ConsumerTestResult.update_case_status(data.case_id, data.status)
         ConsumerTestResult.update_case_result(data)
+
 

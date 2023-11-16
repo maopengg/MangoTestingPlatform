@@ -65,13 +65,13 @@ class NoticeConfigViews(ViewSet):
         return ResponseData.success('获取通知类型成功', enum_list(NoticeEnum))
 
     @action(methods=['put'], detail=False)
-    def put_state(self, request: Request):
+    def put_status(self, request: Request):
         """
         修改启停用
         :param request:
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
-        obj.state = request.data.get('state')
+        obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success('修改通知状态成功', )

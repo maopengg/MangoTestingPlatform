@@ -27,6 +27,12 @@ class RandomNumberData:
         return _data
 
     @staticmethod
+    def random_0_5() -> int:
+        """0-9的随机数"""
+        _data = random.randint(0, 5)
+        return _data
+
+    @staticmethod
     def random_10_99() -> int:
         """10-99的随机数"""
         _data = random.randint(10, 99)

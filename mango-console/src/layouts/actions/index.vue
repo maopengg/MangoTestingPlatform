@@ -1,15 +1,15 @@
 <template>
   <div class="action-items-wrapper">
-    <span class="action-item">
-      <a-space size="large">
-        <a-dropdown trigger="hover">
-          <a-button class="garden" type="text" status="normal">{{ te }}</a-button>
-          <template #content>
-            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item)">{{ item.title }}</a-doption>
-          </template>
-        </a-dropdown>
-      </a-space>
-    </span>
+    <!--    <span class="action-item">-->
+    <!--      <a-space size="large">-->
+    <!--        <a-dropdown trigger="hover">-->
+    <!--          <a-button class="garden" type="text" status="normal">{{ te }}</a-button>-->
+    <!--          <template #content>-->
+    <!--            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item)">{{ item.title }}</a-doption>-->
+    <!--          </template>-->
+    <!--        </a-dropdown>-->
+    <!--      </a-space>-->
+    <!--    </span>-->
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
@@ -101,23 +101,6 @@ export default defineComponent({
       debouncedFn()
     }
 
-    function onSelect(key: any) {
-      get({
-        url: sendCommonParameters,
-        data: () => {
-          return {
-            test_obj_id: key.key
-          }
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          te.value = key.title
-          testObj.te = key.key
-        })
-        .catch()
-    }
-
     function onShowSetting() {
       emitter?.emit('show-setting')
     }
@@ -130,7 +113,6 @@ export default defineComponent({
       appStore,
       testObj,
       te,
-      onSelect,
       onShowSearch,
       onScreenFull,
       onRefrehRoute,

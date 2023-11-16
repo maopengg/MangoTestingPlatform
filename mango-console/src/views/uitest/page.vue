@@ -85,6 +85,9 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
+                <template v-else-if="item.key === 'module_name'" #cell="{ record }">
+                  {{ record.module_name?.name }}
+                </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -115,11 +118,23 @@
               <template v-else-if="item.type === 'textarea'">
                 <a-textarea v-model="item.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="project.data"
+                  :field-names="fieldNames"
+                  @change="getProjectModule(item.value)"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="uiPageData.moduleList"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -136,7 +151,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { uiPage, uiPageQuery } from '@/api/url'
+import { getProjectModuleGetAll, uiPage, uiPageQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -159,7 +174,8 @@ const uiPageData = reactive({
   isAdd: false,
   updateId: 0,
   actionTitle: '添加页面',
-  pageType: 0
+  pageType: 0,
+  moduleList: []
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -227,6 +243,21 @@ const formItems: FormItem[] = reactive([
     }
   },
   {
+    label: '模块',
+    key: 'module_name',
+    value: '',
+    placeholder: '请选择测试模块',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
     label: '页面名称',
     key: 'name',
     value: '',
@@ -264,6 +295,11 @@ const tableColumns = useTableColumn([
     key: 'project',
     dataIndex: 'project',
     width: 150
+  },
+  {
+    title: '模块',
+    key: 'module_name',
+    dataIndex: 'module_name'
   },
   {
     title: '页面名称',
@@ -341,6 +377,7 @@ function onAddPage() {
   uiPageData.actionTitle = '添加页面'
   uiPageData.isAdd = true
   modalDialogRef.value?.toggle()
+  console.log(formItems)
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
@@ -408,6 +445,8 @@ function onUpdate(item: any) {
   uiPageData.isAdd = false
   uiPageData.updateId = item.id
   modalDialogRef.value?.toggle()
+  getProjectModule(item.project.id)
+
   nextTick(() => {
     formItems.forEach((it) => {
       const propName = item[it.key]
@@ -453,7 +492,20 @@ function onDataForm() {
     }
   }
 }
-
+function getProjectModule(projectId: number) {
+  get({
+    url: getProjectModuleGetAll,
+    data: () => {
+      return {
+        project_id: projectId
+      }
+    }
+  })
+    .then((res) => {
+      uiPageData.moduleList = res.data
+    })
+    .catch(console.log)
+}
 function onClick(record: any) {
   router.push({
     path: '/uitest/pageel',

@@ -39,7 +39,7 @@ class ElementExpEnum(Enum):
     PERCENTAGE = 13
 
 
-class StateEnum(Enum):
+class StatusEnum(Enum):
     """ 0 是未测试，1 是失败，2 是通过"""
     NOT = 0
     FAIL = 1

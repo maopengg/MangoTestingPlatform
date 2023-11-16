@@ -65,23 +65,23 @@ class UiConfigViews(ViewSet):
         return ResponseData.success('获取数据成功', enum_list(DriveTypeEnum))
 
     @action(methods=['put'], detail=False)
-    def put_state(self, request: Request):
+    def put_status(self, request: Request):
         """
         获取操作类型
         :param request:
         :return:
         """
-        state = request.data.get('state')
+        status = request.data.get('status')
         is_headless = request.data.get('is_headless')
         obj = self.model.objects.get(id=request.data.get('id'))
 
-        if state:
+        if status:
             obj_list = self.model.objects.filter(user_id=obj.user_id)
             for i in obj_list:
-                if i.state == IsItEnabled.right.value and i.type == obj.type and i.id != obj.id:
+                if i.status == IsItEnabled.right.value and i.type == obj.type and i.id != obj.id:
                     return ResponseData.fail('当前类型已有开启状态')
 
-            obj.state = request.data.get('state')
+            obj.status = request.data.get('status')
             obj.save()
         if is_headless is not None:
             obj.is_headless = request.data.get('is_headless')

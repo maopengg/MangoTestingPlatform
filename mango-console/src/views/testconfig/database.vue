@@ -87,10 +87,10 @@
                 <template v-else-if="item.key === 'password'" #cell="{ record }">
                   {{ record.password }}
                 </template>
-                <template v-else-if="item.key === 'state'" #cell="{ record }">
+                <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
-                    :default-checked="record.state === 1"
-                    :beforeChange="(newValue) => onModifyState(newValue, record.id)"
+                    :default-checked="record.status === 1"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
                   />
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
@@ -156,7 +156,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getDatabase, getDatabasePutState, getDatabaseQuery } from '@/api/url'
+import { getDatabase, getDatabasePutStatus, getDatabaseQuery } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -379,8 +379,8 @@ const tableColumns = useTableColumn([
   },
   {
     title: '状态',
-    key: 'state',
-    dataIndex: 'state'
+    key: 'status',
+    dataIndex: 'status'
   },
   {
     title: '操作',
@@ -498,7 +498,7 @@ function onDataForm() {
       post({
         url: getDatabase,
         data: () => {
-          value['state'] = 0
+          value['status'] = 0
           return value
         }
       })
@@ -524,17 +524,17 @@ function onDataForm() {
   }
 }
 
-const onModifyState = async (newValue: boolean, id: number) => {
+const onModifyStatus = async (newValue: boolean, id: number) => {
   return new Promise<any>((resolve, reject) => {
     setTimeout(async () => {
       try {
         let value: any = false
         await put({
-          url: getDatabasePutState,
+          url: getDatabasePutStatus,
           data: () => {
             return {
               id: id,
-              state: newValue ? 1 : 0
+              status: newValue ? 1 : 0
             }
           }
         })

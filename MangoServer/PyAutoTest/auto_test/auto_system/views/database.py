@@ -47,13 +47,13 @@ class DatabaseViews(ViewSet):
     serializer_class = DatabaseSerializers
 
     @action(methods=['put'], detail=False)
-    def put_state(self, request: Request):
+    def put_status(self, request: Request):
         """
         修改启停用
         :param request:
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
-        obj.state = request.data.get('state')
+        obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success('修改数据库状态成功')

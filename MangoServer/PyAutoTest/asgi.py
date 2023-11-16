@@ -19,7 +19,6 @@ from django.core.asgi import get_asgi_application
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import create_jobs
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
-from script.nuw_logs import __nuw_dir
 from . import routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PyAutoTest.settings')
@@ -28,7 +27,6 @@ application = ProtocolTypeRouter({
     'http': get_asgi_application(),
     'websocket': AuthMiddlewareStack(URLRouter(routing.websocket_urlpatterns))
 })
-__nuw_dir()
 
 # django启动完成后执行
 django.setup()
@@ -37,5 +35,5 @@ django.setup()
 create_jobs()
 #
 
-SocketUserRedis().all_delete()
+# SocketUserRedis().all_delete()
 ServerInterfaceReflection().while_get_data()

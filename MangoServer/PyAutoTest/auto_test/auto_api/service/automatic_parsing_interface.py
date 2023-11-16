@@ -7,7 +7,7 @@
 import jsonpath
 import requests
 
-from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum, BodyTypeEnum, StateEnum
+from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum, BodyTypeEnum, StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
@@ -66,7 +66,7 @@ class ApiParameter:
     def save_api_case(self, project_id: str, name: str, client: int, method: int, url: str,
                       body: dict or None):
         # sql = f"""insert into api_case
-        # (`name`, `client`, `method`, `url`, `header`, `body`, `body_type`, `rely`, `ass`, `state`, `type`, `project_id`)
+        # (`name`, `client`, `method`, `url`, `header`, `body`, `body_type`, `rely`, `ass`, `status`, `type`, `project_id`)
         # values ( '{name}', {client}, {method}, '{url}', NULL, "{body}"
         #        , 0, NULL, NULL, {ApiType.stage.value}, 0, '{project_id}');"""
         # res = self.my.execute(sql)
@@ -80,7 +80,7 @@ class ApiParameter:
             'body_type': BodyTypeEnum.JSON.value,
             'rely': None,
             'ass': None,
-            'state': StateEnum.UNTESTED.value,
+            'status': StatusEnum.UNTESTED.value,
             'type': ApiTypeEnum.stage.value,
             'project': project_id
         })

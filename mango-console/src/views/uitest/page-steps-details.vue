@@ -151,7 +151,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'radio'">
-                <a-radio-group @change="changeState">
+                <a-radio-group @change="changeStatus">
                   <a-radio value="0" default-checked>操作</a-radio>
                   <a-radio value="1">断言</a-radio>
                 </a-radio-group>
@@ -304,7 +304,7 @@ const formItems = reactive([
   }
 ])
 
-function changeState(event: number) {
+function changeStatus(event: number) {
   pageStepsData.isDisabledOpe = event != 0
   pageStepsData.isDisabledAss = event == 0
   formItems.forEach((item) => {

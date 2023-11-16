@@ -38,12 +38,12 @@ def ad_routes():
                     "cacheable": True,
                 }, {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/case",
+                    "menuUrl": "/uitest/ui-case",
                     "menuName": "测试用例",
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/public",
+                    "menuUrl": "/uitest/ui-public",
                     "menuName": "公共参数",
                     "cacheable": True,
                 },
@@ -60,36 +60,36 @@ def ad_routes():
             "icon": "IconSend",
             "parentPath": "",
             "children": [
+                # {
+                #     "parentPath": "/apitest",
+                #     "menuUrl": "/apitest/postman",
+                #     "menuName": "PostMan",
+                # },
+                # {
+                #     "parentPath": "/apitest",
+                #     "menuUrl": "/apitest/mock",
+                #     "menuName": "Mock服务",
+                # },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/postman",
-                    "menuName": "PostMan",
+                    "menuUrl": "/apitest/api-info",
+                    "menuName": "接口信息",
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/mock",
-                    "menuName": "Mock服务",
-                },
-                {
-                    "parentPath": "/apitest",
-                    "menuUrl": "/apitest/api-case-debug",
-                    "menuName": "调试用例",
-                },
-                {
-                    "parentPath": "/apitest",
-                    "menuUrl": "/apitest/api-case-group",
-                    "menuName": "测试用例组",
+                    "menuUrl": "/apitest/api-case",
+                    "menuName": "测试用例",
                 },
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/api-public",
                     "menuName": "公共方法",
                 },
-                {
-                    "parentPath": "/apitest",
-                    "menuUrl": "/apitest/api-test-result",
-                    "menuName": "测试报告",
-                },
+                # {
+                #     "parentPath": "/apitest",
+                #     "menuUrl": "/apitest/api-test-result",
+                #     "menuName": "测试报告",
+                # },
             ],
         },
         # {
@@ -173,11 +173,8 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/system",
-                    "menuUrl": "/system/department",
+                    "menuUrl": "/system/project",
                     "menuName": "项目管理",
-                    "badge": "new",
-                    "routeName": "department",
-                    "localFilePath": "/system/local-path/department",
                 },
                 {
                     "parentPath": "/system",
