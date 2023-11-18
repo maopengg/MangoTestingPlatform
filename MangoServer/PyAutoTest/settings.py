@@ -24,7 +24,7 @@ TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]  # 允许所有ip或域名'*'
 # USE_TZ = False
@@ -98,10 +98,10 @@ DATABASES = {
         'NAME': 'aigc_AutoUITestPlatform',
         'USER': 'root',
         'PASSWORD': 'zALL_mysql1',
-        'HOST': '61.183.9.60',
-        # 'HOST': '172.30.16.115',
-        # 'PORT': 3306,
-        'PORT': 23306,
+        # 'HOST': '61.183.9.60',
+        'HOST': '172.30.16.115',
+        'PORT': 3306,
+        # 'PORT': 23306,
         'TEST': {
             'NAME': 'mango-server',
             'CHARSET': 'utf8mb4',
@@ -157,8 +157,8 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
-        # "LOCATION": "redis://:123456@172.30.16.114:6379/0",
+        # "LOCATION": "redis://127.0.0.1:6379/0",
+        "LOCATION": "redis://:123456@172.30.16.114:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -170,8 +170,8 @@ CACHES = {
     },
     "socket": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        # "LOCATION": "redis://:123456@172.30.16.114:6379/1",
+        # "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": "redis://:123456@172.30.16.114:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {

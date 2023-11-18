@@ -139,6 +139,18 @@ class RunApi:
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
             'step_sort')
         for i in step_sort_list:
+            ope_value = None
+            if i.ope_value is not None:
+                if isinstance(i.ope_value, dict):
+                    ope_value = i.ope_value
+                elif isinstance(i.ope_value, str):
+                    ope_value = eval(i.ope_value)
+            ass_value = None
+            if i.ass_value is not None:
+                if isinstance(i.ass_value, dict):
+                    ass_value = i.ass_value
+                elif isinstance(i.ass_value, str):
+                    ass_value = eval(i.ass_value)
             case_model.pages_ele.append(ElementModel(
                 type=i.type,
                 ele_name_a=i.ele_name_a.name,
@@ -149,9 +161,9 @@ class RunApi:
                 ele_sleep=i.ele_name_a.sleep,
                 ele_sub=i.ele_name_a.sub,
                 ope_type=i.ope_type,
-                ope_value=i.ope_value if i.ope_value else None,
+                ope_value=ope_value,
                 ass_type=i.ass_type,
-                ass_value=i.ass_value if i.ass_value else None,
+                ass_value=ass_value,
             ))
         return case_model
 
