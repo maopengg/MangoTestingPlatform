@@ -47,13 +47,11 @@ class ModelCRUD(GenericAPIView):
                                     self.get_serializer_class()(instance=books, many=True).data,
                                     len(books))
 
-    def post(self, request):
+    def post(self, request: Request):
         serializer = self.serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            if hasattr(self, 'callback'):
-                th = Thread(target=self.callback, args=(serializer.data.get('page_step'),))
-                th.start()
+            self.asynchronous_callback(request)
             return Response({
                 'code': 200,
                 'msg': '新增一条记录成功',
@@ -67,7 +65,7 @@ class ModelCRUD(GenericAPIView):
                 'data': ''
             })
 
-    def put(self, request):
+    def put(self, request: Request):
         if isinstance(request, dict):
             serializer = self.serializer(
                 instance=self.model.objects.get(pk=request.get('id')),
@@ -80,9 +78,8 @@ class ModelCRUD(GenericAPIView):
             )
         if serializer.is_valid():
             serializer.save()
-            if hasattr(self, 'callback'):
-                th = Thread(target=self.callback, args=(request.data.get('page_step'),))
-                th.start()
+            self.asynchronous_callback(request)
+
             return Response({
                 'code': 200,
                 'msg': '修改一条记录成功',
@@ -99,7 +96,7 @@ class ModelCRUD(GenericAPIView):
                 'data': ''
             })
 
-    def delete(self, request):
+    def delete(self, request: Request):
         # 批量删
         if '[' in request.query_params.get('id'):
             for i in eval(request.query_params.get('id')):
@@ -112,28 +109,33 @@ class ModelCRUD(GenericAPIView):
         else:
             # 一条删
             self.model.objects.get(id=request.query_params.get('id')).delete()
-            # if hasattr(self, 'callback'):
-            #     name = self.model.objects.get(id=request.query_params.get('id')).page_step.name
-            #     th = Thread(target=self.callback, args=(name,))
-            #     th.start()
+            self.asynchronous_callback(request)
             return Response({
                 'code': 200,
                 'msg': '删除成功',
                 'data': ''
             })
-        # return Response({
-        #     'code': 300,
-        #     'msg': '删除失败，未查询到id~',
-        #     'data': ''
-        # })
 
-    def asynchronous_callback(self, request):
+    def asynchronous_callback(self, request: Request):
         """
-        完成
+        反射的后置处理
         """
         if hasattr(self, 'callback'):
-            th = Thread(target=self.callback, args=(request.data.get('case'),))
-            th.start()
+            from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
+            from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
+            if isinstance(self, UiPageStepsDetailedCRUD):
+                _id = request.data.get('page_step')
+                if _id is None:
+                    _id = request.query_params.get('page_step')
+            elif isinstance(self, UiCaseStepsDetailedCRUD):
+                _id = request.data.get('case')
+                if _id is None:
+                    _id = request.query_params.get('case')
+            else:
+                return
+            if _id is not None:
+                th = Thread(target=self.callback, args=(_id,))
+                th.start()
 
 
 class ModelQuery(ViewSet):

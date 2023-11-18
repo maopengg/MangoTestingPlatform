@@ -84,16 +84,11 @@ class EleResult(BaseModel):
     test_suite_id: int | None
     case_id: int | None
     page_step_id: int | None
-    # 元素的名称
     ele_name_a: str
     ele_name_b: str | None
-    # 元素个数
     ele_quantity: int
-    # 提示语
     msg: str | None
-    # 错误截图路径
     picture_path: str | None
-    # 测试结果
     status: int
 
     loc: str

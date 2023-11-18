@@ -27,6 +27,7 @@ urlpatterns = [
     path("page/steps/detailed/ope", UiPageStepsDetailedView.as_view({'get': 'get_ope_type'})),
     path("page/steps/detailed/ass", UiPageStepsDetailedView.as_view({'get': 'get_ass_type'})),
     path("page/ass/method", UiPageStepsDetailedView.as_view({'get': 'get_ass_method'})),
+    path("page/put/step/sort", UiPageStepsDetailedView.as_view({'put': 'put_step_sort'})),
     #
     path("element", UiElementCRUD.as_view()),
     path("element/name", UiElementViews.as_view({'get': 'get_ele_name'})),
@@ -50,6 +51,7 @@ urlpatterns = [
     #
     path("case/steps/detailed", UiCaseStepsDetailedCRUD.as_view()),
     path("case/steps/refresh/cache/data", UiCaseStepsDetailedViews.as_view({'get': 'post_case_cache_data'})),
+    path("case/put/case/sort", UiCaseStepsDetailedViews.as_view({'put': 'put_case_sort'})),
     #
     path("config", UiConfigCRUD.as_view()),
     path("config/get/browser/type", UiConfigViews.as_view({'get': 'get_browser_type'})),

@@ -54,7 +54,9 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
 
     def callback(self, _id):
         """
-        步骤id查询后排序
+        排序
+        @param _id: 步骤id
+        @return:
         """
         data = {'id': _id, 'run_flow': '', 'name': ''}
         run = self.model.objects.filter(page_step=_id).order_by('step_sort')
@@ -113,6 +115,28 @@ class UiPageStepsDetailedView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ass_method(self, request: Request):
+        """
+        获取断言类型
+        @param request:
+        @return:
+        """
         redis = RedisBase('default')
         data = redis.get('assertion')
         return ResponseData.success('获取断言类型成功', json.loads(data))
+
+    @action(methods=['put'], detail=False)
+    def put_step_sort(self, request: Request):
+        """
+        修改排序
+        @param request:
+        @return:
+        """
+        page_step_id = None
+
+        for i in request.data.get('step_sort_list'):
+            obj = self.model.objects.get(id=i['id'])
+            obj.step_sort = i['step_sort']
+            page_step_id = obj.page_step.id
+            obj.save()
+        UiPageStepsDetailedCRUD().callback(page_step_id)
+        return ResponseData.success('设置排序成功',)

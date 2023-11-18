@@ -35,6 +35,6 @@ class ProjectViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_all_items(self, request: Request):
-        items = Project.objects.all()
+        items = Project.objects.filter(status=1)
         data = [{'title': i.name, 'key': i.pk} for i in items]
         return ResponseData.success('获取所有项目名称成功', data)
