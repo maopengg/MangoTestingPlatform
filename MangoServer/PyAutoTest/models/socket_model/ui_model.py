@@ -32,6 +32,7 @@ class ElementModel(BaseModel):
     ele_name_a: str | None
     ele_name_b: str | None
     ele_loc_a: str | None
+    locator: str | None
     ele_loc_b: str | None
     ele_exp: int | None
     ele_sleep: int | None
