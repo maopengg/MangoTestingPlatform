@@ -87,6 +87,7 @@ import { Message, Modal } from '@arco-design/web-vue'
 import { onMounted, ref, nextTick, reactive } from 'vue'
 import { getFormItems } from '@/utils/datacleaning'
 import { useRouter } from 'vue-router'
+import { useProject } from '@/store/modules/get-project'
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { onSelectionChange } = useRowSelection()
@@ -94,6 +95,7 @@ const table = useTable()
 const rowKey = useRowKey('id')
 const formModel = ref({})
 const router = useRouter()
+const project = useProject()
 
 const projectData = reactive({
   isAdd: false,
@@ -243,6 +245,7 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
+          project.getItems()
         })
         .catch(console.log)
     } else {
@@ -256,6 +259,7 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
+          project.getItems()
         })
         .catch(console.log)
     }

@@ -23,6 +23,9 @@ logger = logging.getLogger('ui')
 
 
 class UiPageStepsDetailedSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiPageStepsDetailed
         fields = '__all__'
@@ -32,6 +35,8 @@ class UiPageStepsDetailedSerializersC(serializers.ModelSerializer):
     page_step = UiPageStepsSerializers(read_only=True)
     ele_name_a = UiElementSerializers(read_only=True)
     ele_name_b = UiElementSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiPageStepsDetailed
@@ -54,7 +59,9 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
 
     def callback(self, _id):
         """
-        步骤id查询后排序
+        排序
+        @param _id: 步骤id
+        @return:
         """
         data = {'id': _id, 'run_flow': '', 'name': ''}
         run = self.model.objects.filter(page_step=_id).order_by('step_sort')
@@ -63,7 +70,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
             if i.ele_name_a:
                 data['run_flow'] += i.ele_name_a.name
             else:
-                data['run_flow'] += i.ope_type
+                data['run_flow'] += i.ope_type if i.ope_type else '无元素操作'
         data['name'] = run[0].page_step.name
         from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsCRUD
         ui_case = UiPageStepsCRUD()
@@ -108,11 +115,33 @@ class UiPageStepsDetailedView(ViewSet):
         data.append({'value': 'PublicAssertion',
                      'label': '元素文本',
                      'children': json.loads(redis.get('PublicAssertion'))})
-
+        data.append(json.loads(redis.get('SqlAssertion'))[0])
         return ResponseData.success('获取断言类型成功', data)
 
     @action(methods=['get'], detail=False)
     def get_ass_method(self, request: Request):
+        """
+        获取断言类型
+        @param request:
+        @return:
+        """
         redis = RedisBase('default')
         data = redis.get('assertion')
         return ResponseData.success('获取断言类型成功', json.loads(data))
+
+    @action(methods=['put'], detail=False)
+    def put_step_sort(self, request: Request):
+        """
+        修改排序
+        @param request:
+        @return:
+        """
+        page_step_id = None
+
+        for i in request.data.get('step_sort_list'):
+            obj = self.model.objects.get(id=i['id'])
+            obj.step_sort = i['step_sort']
+            page_step_id = obj.page_step.id
+            obj.save()
+        UiPageStepsDetailedCRUD().callback(page_step_id)
+        return ResponseData.success('设置排序成功', )

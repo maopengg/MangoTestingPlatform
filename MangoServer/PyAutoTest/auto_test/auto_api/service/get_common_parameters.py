@@ -68,7 +68,7 @@ class GetCommonParameters:
         else:
             data = MysqlDBModel(
                 host=mysql.host,
-                port=mysql.post,
+                port=mysql.port,
                 user=mysql.user,
                 password=mysql.password,
                 db=mysql.name)

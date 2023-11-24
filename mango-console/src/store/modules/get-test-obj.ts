@@ -7,6 +7,7 @@ export const useTestObj = defineStore('get-test-obj', {
   state: () => {
     return {
       data: [],
+      selectTitle: '选择测试环境',
       selectValue: null as number | null
     }
   },

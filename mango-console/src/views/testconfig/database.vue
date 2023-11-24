@@ -156,7 +156,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getDatabase, getDatabasePutStatus, getDatabaseQuery } from '@/api/url'
+import { getDatabase, getDatabasePutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -276,7 +276,7 @@ const formItems: FormItem[] = reactive([
   },
   {
     label: '端口',
-    key: 'post',
+    key: 'port',
     value: '3306',
     type: 'input',
     required: true,
@@ -341,7 +341,7 @@ const tableColumns = useTableColumn([
     title: '项目名称',
     key: 'project',
     dataIndex: 'project',
-    width: 100
+    width: 110
   },
   {
     title: '对应环境',
@@ -356,15 +356,14 @@ const tableColumns = useTableColumn([
   },
   {
     title: '端口',
-    key: 'post',
-    dataIndex: 'post',
-    width: 70
+    key: 'port',
+    dataIndex: 'port',
+    width: 130
   },
   {
     title: '主库',
     key: 'name',
-    dataIndex: 'name',
-    width: 130
+    dataIndex: 'name'
   },
   {
     title: '用户名',
@@ -415,7 +414,7 @@ function onSearch() {
     return
   }
   get({
-    url: getDatabaseQuery,
+    url: getDatabase,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

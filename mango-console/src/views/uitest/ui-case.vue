@@ -168,7 +168,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNickname, getProjectModuleGetAll, uiCase, uiCaseQuery, uiCaseRun, uiRunCaseBatch } from '@/api/url'
+import { getNickname, getProjectModuleGetAll, uiCase, uiCaseRun, uiRunCaseBatch } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -312,8 +312,7 @@ const tableColumns = useTableColumn([
   {
     title: '项目',
     key: 'project',
-    dataIndex: 'project',
-    width: 100
+    dataIndex: 'project'
   },
   {
     title: '模块',
@@ -328,8 +327,9 @@ const tableColumns = useTableColumn([
   },
   {
     title: '步骤顺序',
-    key: 'run_flow',
-    dataIndex: 'run_flow'
+    key: 'case_flow',
+    dataIndex: 'case_flow',
+    align: 'left'
   },
   {
     title: '用例负责人',
@@ -341,7 +341,6 @@ const tableColumns = useTableColumn([
     key: 'status',
     dataIndex: 'status'
   },
-
   {
     title: '操作',
     key: 'actions',
@@ -375,7 +374,7 @@ function onSearch() {
     return
   }
   get({
-    url: uiCaseQuery,
+    url: uiCase,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

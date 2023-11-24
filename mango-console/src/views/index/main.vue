@@ -97,7 +97,7 @@ import HotProductChart from './components/chart/HotProductChart.vue'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { useRouter } from 'vue-router'
 import { get } from '@/api/http'
-import { testSuiteAllReportSum, testSuiteReport, testSuiteAllCaseSum, SocketAllUserSum } from '@/api/url'
+import { testSuiteAllReportSum, testSuiteReport, testSuiteAllCaseSum } from '@/api/url'
 
 const appStore = useAppConfigStore()
 const mainHeight = computed(() => {
@@ -138,11 +138,7 @@ const tableColumns = useTableColumn([
     dataIndex: 'project',
     width: 150
   },
-  // {
-  // title: '测试套名称',
-  // key: 'name',
-  // dataIndex: 'name'
-  // },
+
   {
     title: '执行时间',
     key: 'create_time',
@@ -157,6 +153,11 @@ const tableColumns = useTableColumn([
     title: '结果',
     key: 'status',
     dataIndex: 'status'
+  },
+  {
+    title: '失败原因',
+    key: 'error_message',
+    dataIndex: 'error_message'
   },
   {
     title: '操作',
@@ -202,8 +203,7 @@ function doRefresh() {
 }
 let mainData = reactive({
   reportSum: [],
-  caseSum: [],
-  userSum: 0
+  caseSum: []
 })
 function getAllReportSum() {
   get({
@@ -229,24 +229,12 @@ function getAllCaseSum() {
     })
     .catch(console.log)
 }
-function getAllUserSum() {
-  get({
-    url: SocketAllUserSum,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      mainData.userSum = res.data['sum']
-    })
-    .catch(console.log)
-}
+
 onMounted(() => {
   nextTick(async () => {
     getAllReportSum()
     getAllCaseSum()
     doRefresh()
-    getAllUserSum()
   })
 })
 </script>

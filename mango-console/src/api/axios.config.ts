@@ -1,10 +1,10 @@
 import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
 
-// export const baseURL = 'http://172.30.16.106:8001'
+// export const baseURL = 'http://61.183.9.60:8001'
 export const baseURL = 'http://localhost:8000'
 export const webSocketURL = 'ws://localhost:8000/web/socket?'
-// export const webSocketURL = 'ws://172.30.16.106:8001/web/socket?'
+// export const webSocketURL = 'ws://61.183.9.60:8001/web/socket?'
 
 export const CONTENT_TYPE = 'Content-Type'
 

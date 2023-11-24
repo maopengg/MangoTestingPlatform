@@ -19,12 +19,17 @@ from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = TasksRunCaseList
         fields = '__all__'
 
 
 class TasksRunCaseListSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     task = ScheduledTasksSerializers(read_only=True)
     ui_case = UiCaseSerializers(read_only=True)
 

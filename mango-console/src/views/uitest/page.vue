@@ -151,7 +151,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getProjectModuleGetAll, uiPage, uiPageQuery } from '@/api/url'
+import { getProjectModuleGetAll, uiPage } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -352,7 +352,7 @@ function onSearch() {
   }
   value['type'] = uiPageData.pageType
   get({
-    url: uiPageQuery,
+    url: uiPage,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

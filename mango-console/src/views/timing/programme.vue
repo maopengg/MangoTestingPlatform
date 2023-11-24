@@ -105,7 +105,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getTimeList, getTimeQuery } from '@/api/url'
+import { getTimeList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -322,7 +322,7 @@ function onSearch() {
     return
   }
   get({
-    url: getTimeQuery,
+    url: getTimeList,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

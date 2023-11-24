@@ -11,21 +11,24 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed
-from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 logger = logging.getLogger('api')
 
 
 class ApiCaseDetailedSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = ApiCaseDetailed
         fields = '__all__'
 
 
 class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
 
     class Meta:

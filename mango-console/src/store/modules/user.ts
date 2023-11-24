@@ -14,7 +14,9 @@ const useUserStore = defineStore('user-info', {
       token: '',
       userName: '',
       nickName: '',
-      avatar: defaultAvatar
+      avatar: defaultAvatar,
+      selected_project: null,
+      selected_environment: null
     }
   },
   actions: {
@@ -26,6 +28,8 @@ const useUserStore = defineStore('user-info', {
         this.userName = userInfo.userName
         this.nickName = userInfo.nickName
         this.avatar = userInfo.avatar || defaultAvatar
+        this.selected_project = userInfo.selected_project
+        this.selected_environment = userInfo.selected_environment
         resolve(userInfo)
       })
     },

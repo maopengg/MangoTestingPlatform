@@ -7,6 +7,7 @@ export const useProject = defineStore('get-project', {
   state: () => {
     return {
       data: [],
+      selectTitle: '选择项目',
       selectValue: null as number | null
     }
   },

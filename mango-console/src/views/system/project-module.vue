@@ -56,7 +56,6 @@ import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
 import { getFormItems } from '@/utils/datacleaning'
-import { fieldNames } from '@/setting'
 
 const route = useRoute()
 const formModel = ref({})

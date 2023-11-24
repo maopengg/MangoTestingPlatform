@@ -9,6 +9,8 @@ export interface UserState {
   userName: string
   nickName: string
   avatar: string
+  selected_environment: number | null
+  selected_project: number | null
 }
 export enum LayoutMode {
   LTR = 'ltr',

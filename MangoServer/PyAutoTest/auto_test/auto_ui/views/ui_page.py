@@ -12,10 +12,13 @@ from PyAutoTest.auto_test.auto_ui.models import UiPage
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class UiPageSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiPage
         fields = '__all__'  # 全部进行序列化
@@ -25,20 +28,13 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 class UiPageSerializersC(serializers.ModelSerializer):
     module_name = ProjectModuleSerializers(read_only=True)
-
     project = ProjectSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiPage
         fields = '__all__'
-
-
-class UiPageQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = UiPage
-    serializer_class = UiPageSerializersC
 
 
 class UiPageCRUD(ModelCRUD):

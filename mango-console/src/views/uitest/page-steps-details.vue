@@ -150,10 +150,10 @@
                   :disabled="pageStepsData.isDisabledAss"
                 />
               </template>
-              <template v-else-if="item.type === 'radio'">
-                <a-radio-group @change="changeStatus">
-                  <a-radio value="0" default-checked>操作</a-radio>
-                  <a-radio value="1">断言</a-radio>
+              <template v-else-if="item.type === 'radio' && item.key === 'type'">
+                <a-radio-group @change="changeStatus" v-model="item.value" :options="pageStepsData.plainOptions">
+                  <!--                  <a-radio value="0" :model-value="item.value">操作</a-radio>-->
+                  <!--                  <a-radio value="1">断言</a-radio>-->
                 </a-radio-group>
               </template>
             </a-form-item>
@@ -167,7 +167,13 @@
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
 
-import { uiPageStepsDetailed, uiPageStepsDetailedAss, uiPageStepsDetailedOpe, uiUiElementName } from '@/api/url'
+import {
+  uiPageStepsDetailed,
+  uiPageStepsDetailedAss,
+  uiPageStepsDetailedOpe,
+  uiPagePutStepSort,
+  uiUiElementName
+} from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
@@ -188,8 +194,12 @@ const pageStepsData = reactive({
   data: [],
   uiPageName: [],
   isDisabledOpe: false,
-  isDisabledAss: false,
-  value: 0
+  isDisabledAss: true,
+  value: 0,
+  plainOptions: [
+    { label: '操作', value: 0 },
+    { label: '断言', value: 1 }
+  ]
 })
 const columns = reactive([
   {
@@ -238,10 +248,6 @@ const formItems = reactive([
     required: true,
     placeholder: '请选择对元素的操作类型',
     validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
       return true
     }
   },
@@ -278,11 +284,20 @@ const formItems = reactive([
   {
     label: '元素操作值',
     key: 'ope_value',
-    value: null,
+    value: '',
     type: 'textarea',
     required: false,
     placeholder: '请输入对元素的操作内容',
     validator: function () {
+      if (this.value !== '') {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          console.log(e)
+          Message.error('元素操作值请输入json数据类型')
+          return false
+        }
+      }
       return true
     }
   },
@@ -297,15 +312,26 @@ const formItems = reactive([
   {
     label: '断言值',
     key: 'ass_value',
-    value: null,
+    value: '',
     type: 'textarea',
     required: false,
-    placeholder: '请输入断言内容'
+    placeholder: '请输入断言内容',
+    validator: function () {
+      if (this.value !== '') {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('断言值请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
   }
 ])
 
 function changeStatus(event: number) {
-  pageStepsData.isDisabledOpe = event != 0
+  pageStepsData.isDisabledOpe = event == 1
   pageStepsData.isDisabledAss = event == 0
   formItems.forEach((item) => {
     item.value = null
@@ -331,7 +357,11 @@ function doAppend() {
     if (it.reset) {
       it.reset()
     } else {
-      it.value = ''
+      if (it.key === 'type') {
+        it.value = 0
+      } else {
+        it.value = ''
+      }
     }
   })
 }
@@ -347,7 +377,8 @@ function onDelete(record: any) {
         url: uiPageStepsDetailed,
         data: () => {
           return {
-            id: record.id
+            id: record.id,
+            page_step: record.page_step.id
           }
         }
       })
@@ -369,7 +400,11 @@ function onUpdate(item: any) {
     formItems.forEach((it: any) => {
       const propName = item[it.key]
       if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id
+        if (it.key === 'ope_value' || it.key === 'ass_value') {
+          it.value = JSON.stringify(propName)
+        } else {
+          it.value = propName.id
+        }
       } else {
         it.value = propName
       }
@@ -379,13 +414,32 @@ function onUpdate(item: any) {
 
 const handleChange = (_data: any) => {
   pageStepsData.data = _data
-  Message.info('测试拖动成功')
+  let data: any = []
+  pageStepsData.data.forEach((item: any, index) => {
+    data.push({
+      id: item.id,
+      step_sort: index
+    })
+  })
+  put({
+    url: uiPagePutStepSort,
+    data: () => {
+      return {
+        step_sort_list: data
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+    })
+    .catch(console.log)
 }
 
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = getFormItems(formItems)
+    console.log(formItems)
     value['page_step'] = route.query.id
     if (pageStepsData.isAdd) {
       post({

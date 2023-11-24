@@ -85,7 +85,6 @@ class ApiPublic(models.Model):
         db_table = 'api_public'
         ordering = ['-id']
 
-
 # class MockModel(models.Model):
 #     """
 #     mock model

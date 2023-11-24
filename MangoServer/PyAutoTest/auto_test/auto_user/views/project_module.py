@@ -11,7 +11,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_user.models import ProjectModule
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class ProjectModuleSerializers(serializers.ModelSerializer):

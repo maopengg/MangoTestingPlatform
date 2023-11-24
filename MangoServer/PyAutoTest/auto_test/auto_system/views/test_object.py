@@ -13,17 +13,22 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.system_enum import EnvironmentEnum, DevicePlatformEnum, AutoTestTypeEnum
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.view_tools import enum_list
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = TestObject
         fields = '__all__'
 
 
 class TestObjectSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
     executor_name = UserSerializers(read_only=True)
 
@@ -37,14 +42,6 @@ class TestObjectCRUD(ModelCRUD):
     queryset = TestObject.objects.all()
     serializer_class = TestObjectSerializersC
     serializer = TestObjectSerializers
-
-
-class TestObjectQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = TestObject
-    serializer_class = TestObjectSerializersC
 
 
 class TestObjectViews(ViewSet):

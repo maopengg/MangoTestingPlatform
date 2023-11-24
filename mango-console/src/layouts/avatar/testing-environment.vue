@@ -2,11 +2,11 @@
   <div class="vaw-avatar-container">
     <a-dropdown trigger="hover" size="large" @select="handleSelect">
       <div class="action-wrapper">
-        <span class="nick-name"> {{ title.title }} </span>
+        <span class="nick-name"> {{ testObj.selectTitle }} </span>
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of testObj.data" :key="item.key" :value="item.key">
+        <a-doption v-for="item of testObjList" :key="item.key" :value="item.key">
           {{ item.title }}
         </a-doption>
       </template>
@@ -16,39 +16,63 @@
 
 <script lang="ts">
 import { Message } from '@arco-design/web-vue'
-import { defineComponent, onMounted, reactive } from 'vue'
+import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
 import useUserStore from '@/store/modules/user'
 import { useTestObj } from '@/store/modules/get-test-obj'
-import { get } from '@/api/http'
-import { sendCommonParameters } from '@/api/url'
+import { get, put } from '@/api/http'
+import { putEnvironment, sendCommonParameters } from '@/api/url'
 
 export default defineComponent({
   name: 'TestEnvironment',
   setup() {
     const userStore = useUserStore()
     const testObj = useTestObj()
-    const title = reactive({
-      title: '选择测试环境'
-    })
-    function handleSelect(key: number) {
-      get({
-        url: sendCommonParameters,
+    let testObjList = reactive([])
+    function handleSelect(key: any) {
+      if (key === '选择测试环境') {
+        key = null
+      }
+      put({
+        url: putEnvironment,
         data: () => {
-          return {
-            test_obj_id: key
-          }
+          return { id: userStore.userId, selected_environment: key }
         }
       })
         .then((res) => {
-          Message.success(res.msg)
-          testObj.selectValue = key
-          testObj.data.forEach((item: any) => {
-            if (item.key === testObj.selectValue) title.title = item.title
-          })
+          userStore.selected_environment = res.data.selected_environment
+          setTitle(key)
         })
-        .catch()
+        .catch(console.log)
+      if (key !== null) {
+        get({
+          url: sendCommonParameters,
+          data: () => {
+            return {
+              test_obj_id: key
+            }
+          }
+        })
+          .then((res) => {
+            if (res.code === 200 && res.msg.includes('处理参数完成')) Message.success(res.msg)
+          })
+          .catch()
+      }
     }
-
+    function setTitle(key: any) {
+      testObjList.push({ key: null, title: '选择测试环境' })
+      testObj.data.forEach((item) => {
+        testObjList.push(item)
+      })
+      testObjList.forEach((item: any) => {
+        testObj.selectValue = key
+        if (item.key === testObj.selectValue) testObj.selectTitle = item.title
+      })
+    }
+    watchEffect(() => {
+      if (testObj.data.length > 0) {
+        setTitle(userStore.selected_environment)
+      }
+    })
     onMounted(() => {
       testObj.getEnvironment()
     })
@@ -56,7 +80,7 @@ export default defineComponent({
     return {
       userStore,
       testObj,
-      title,
+      testObjList,
       handleSelect
     }
   }

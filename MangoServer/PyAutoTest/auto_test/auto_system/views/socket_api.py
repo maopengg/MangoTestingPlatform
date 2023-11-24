@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
+from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.tools.response_data import ResponseData
 
@@ -16,7 +16,7 @@ class SocketApiViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_user_list(self, request: Request):
-        data = SocketUserRedis().get_all_user()
+        data = SocketUser.get_all_user()
         res = User.objects.filter(username__in=data).values_list('id', 'nickname', 'username', 'ip')
         data = [{'id': _id, 'nickname': nickname, 'username': username, 'ip': ip} for _id, nickname, username, ip in
                 res]
@@ -24,5 +24,16 @@ class SocketApiViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_all_user_sum(self, request: Request):
-        data: list = SocketUserRedis().all_keys()
-        return ResponseData.success('获取设备在线列表成功', {'sum': len(data)})
+        data: int = SocketUser.all_keys()
+        return ResponseData.success('获取设备在线列表成功', {'sum': data})
+
+    @action(methods=['get'], detail=False)
+    def get_all_user_list(self, request: Request):
+        data = []
+        for i in SocketUser.get_all_user_list():
+            data.append(
+                {'user_key': i.user_key,
+                 'web_obj': id(i.web_obj) if i.web_obj else None,
+                 'client_obj': id(i.client_obj) if i.client_obj else None}
+            )
+        return ResponseData.success('获取设备在线列表成功', data, )

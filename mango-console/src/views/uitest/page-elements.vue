@@ -43,6 +43,12 @@
                 <a-tag color="arcoblue" size="small" v-else-if="record.exp === 12">A_BOUNDS</a-tag>
                 <a-tag color="purple" size="small" v-else-if="record.exp === 13">A_百分比坐标点击</a-tag>
               </template>
+              <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
+                <a-switch
+                  :default-checked="record.is_iframe === 1"
+                  :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                />
+              </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
@@ -84,7 +90,7 @@
 <script lang="ts" setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { uiUiElement, getUiElementExp } from '@/api/url'
+import { uiUiElement, getUiElementExp, uiUiElementPutIsIframe } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
@@ -119,6 +125,10 @@ const columns = reactive([
     dataIndex: 'loc'
   },
   {
+    title: '是否在iframe中',
+    dataIndex: 'is_iframe'
+  },
+  {
     title: '等待时间',
     dataIndex: 'sleep'
   },
@@ -144,7 +154,7 @@ const formItems: FormItem[] = reactive([
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -154,7 +164,7 @@ const formItems: FormItem[] = reactive([
   {
     label: '表达式类型',
     key: 'exp',
-    value: '',
+    value: null,
     type: 'select',
     required: true,
     placeholder: '请选择元素表达式类型',
@@ -174,7 +184,7 @@ const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入元素表达式',
     validator: function () {
-      if (!this.value && this.value !== 0) {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -263,6 +273,7 @@ function onDataForm() {
       post({
         url: uiUiElement,
         data: () => {
+          value['is_iframe'] = 0
           return value
         }
       })
@@ -303,10 +314,6 @@ function doRefresh() {
     .then((res) => {
       pageEleData.data = res.data
       pageEleData.totalSize = res.totalSize
-      // pageEleData.data.forEach((i: any) => {
-      //   let typeOpe = pageEleData.eleExp.find((obj: any) => obj.key === i.exp)
-      //   i.exp = typeOpe.title
-      // })
     })
     .catch(console.log)
 }
@@ -324,6 +331,32 @@ function getEleExp() {
       pageEleData.eleExp = res.data
     })
     .catch(console.log)
+}
+const onModifyStatus = async (newValue: boolean, id: number) => {
+  return new Promise<any>((resolve, reject) => {
+    setTimeout(async () => {
+      try {
+        let value: any = false
+        await put({
+          url: uiUiElementPutIsIframe,
+          data: () => {
+            return {
+              id: id,
+              is_iframe: newValue ? 1 : 0
+            }
+          }
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            value = res.code === 200
+          })
+          .catch(reject)
+        resolve(value)
+      } catch (error) {
+        reject(error)
+      }
+    }, 300)
+  })
 }
 
 onMounted(() => {

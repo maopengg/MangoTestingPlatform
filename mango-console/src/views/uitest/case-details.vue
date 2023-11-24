@@ -40,7 +40,7 @@
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑变量</a-button>
-                <a-button type="text" size="mini" @click="oeFreshSteps(record)">刷新</a-button>
+                <a-button type="text" size="mini" @click="oeFreshSteps(record)">刷新数据</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
               </template>
             </a-table-column>
@@ -117,7 +117,13 @@
 <script lang="ts" setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { uiCaseStepsDetailed, uiCaseStepsRefreshCacheData, uiPageNameProject, uiStepsPageStepsName } from '@/api/url'
+import {
+  uiCasePutCaseSort,
+  uiCaseStepsDetailed,
+  uiCaseStepsRefreshCacheData,
+  uiPageNameProject,
+  uiStepsPageStepsName
+} from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
@@ -148,11 +154,7 @@ const columns = reactive([
     dataIndex: 'page_step_name',
     width: 140
   },
-  {
-    title: '步骤执行顺序',
-    dataIndex: 'case_sort',
-    width: 80
-  },
+
   {
     title: '用例数据',
     dataIndex: 'case_cache_data'
@@ -182,6 +184,12 @@ let formItems: FormItem[] = reactive([
         Message.error(this.placeholder || '')
         return false
       }
+      try {
+        this.value = JSON.parse(this.value)
+      } catch (e) {
+        Message.error('请输入json数据类型')
+        return false
+      }
       return true
     }
   },
@@ -195,6 +203,12 @@ let formItems: FormItem[] = reactive([
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
+        return false
+      }
+      try {
+        this.value = JSON.parse(this.value)
+      } catch (e) {
+        Message.error('请输入json数据类型')
         return false
       }
       return true
@@ -272,7 +286,8 @@ function onDelete(record: any) {
         url: uiCaseStepsDetailed,
         data: () => {
           return {
-            id: record.id
+            id: record.id,
+            case: record.case.id
           }
         }
       })
@@ -303,9 +318,27 @@ function onUpdate(item: any) {
 }
 
 const handleChange = (_data: any) => {
-  Message.info('测试拖动成功')
+  uiCaseDetailsData.data = _data
+  let data: any = []
+  uiCaseDetailsData.data.forEach((item: any, index) => {
+    data.push({
+      id: item.id,
+      case_sort: index
+    })
+  })
+  put({
+    url: uiCasePutCaseSort,
+    data: () => {
+      return {
+        case_sort_list: data
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+    })
+    .catch(console.log)
 }
-
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
@@ -333,8 +366,8 @@ function onDataForm1() {
       url: uiCaseStepsDetailed,
       data: () => {
         value['case'] = route.query.id
-        value['case_cache_data'] = '[]'
-        value['case_cache_ass'] = '[]'
+        value['case_cache_data'] = []
+        value['case_cache_ass'] = []
         value['case_sort'] = uiCaseDetailsData.data.length
         return value
       }

@@ -18,7 +18,6 @@ from django.core.asgi import get_asgi_application
 #
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import create_jobs
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
-from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user_redis import SocketUserRedis
 from . import routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PyAutoTest.settings')

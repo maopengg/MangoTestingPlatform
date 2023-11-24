@@ -154,7 +154,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNoticeConfig, getNoticeConfigQuery, getNoticeTest, getNoticeType, getNoticePutStatus } from '@/api/url'
+import { getNoticeConfig, getNoticeTest, getNoticeType, getNoticePutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -259,8 +259,7 @@ const tableColumns = useTableColumn([
   {
     title: '项目名称',
     key: 'project',
-    dataIndex: 'project',
-    width: 100
+    dataIndex: 'project'
   },
   {
     title: '通知类型',
@@ -313,7 +312,7 @@ function onSearch() {
     return
   }
   get({
-    url: getNoticeConfigQuery,
+    url: getNoticeConfig,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

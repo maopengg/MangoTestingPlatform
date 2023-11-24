@@ -6,7 +6,7 @@
 
 from PyAutoTest.auto_test.auto_system.consumers import socket_conn
 from PyAutoTest.auto_test.auto_system.data_consumer.update_test_suite import TestSuiteReportUpdate
-from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject, Database
 from PyAutoTest.auto_test.auto_ui.models import UiPageStepsDetailed, UiCase, UiConfig, UiPageSteps, UiCaseStepsDetailed
 from PyAutoTest.enums.actuator_api_enum import UiEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum, AutoTestTypeEnum
@@ -15,6 +15,7 @@ from PyAutoTest.enums.ui_enum import DevicePlatform
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
+from PyAutoTest.models.tools_model import MysqlDBModel
 from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.snowflake import Snowflake
 
@@ -51,12 +52,12 @@ class RunApi:
 
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_list = []
-        case_cache_data = {}
-        case_cache_ass = {}
+        case_cache_data = []
+        case_cache_ass = []
         for i in objects_filter:
             case_list.append(self.__data_ui_case(test_obj, i.page_step.id))
-            case_cache_data[i.page_step.name] = i.case_cache_data
-            case_cache_ass[i.page_step.name] = i.case_cache_ass
+            case_cache_data.append(i.case_cache_data)
+            case_cache_ass.append(i.case_cache_ass)
         case_model = CaseModel(case_id=case.id,
                                case_name=case.name,
                                project=case.project.id,
@@ -69,7 +70,7 @@ class RunApi:
             model = TestSuiteModel(id=Snowflake.generate_id(),
                                    type=AutoTestTypeEnum.UI.value,
                                    project=case.project.id,
-                                   name=case.name,
+                                   error_message=None,
                                    run_status=0,
                                    case_list=[])
             model.case_list.append(case_model)
@@ -93,7 +94,7 @@ class RunApi:
         model = TestSuiteModel(id=Snowflake.generate_id(),
                                type=AutoTestTypeEnum.UI.value,
                                project=case_group_list[0].project,
-                               name=case_group_list[0].case_name,
+                               error_message=None,
                                run_status=0,
                                case_list=case_group_list)
         send_res = self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
@@ -132,26 +133,39 @@ class RunApi:
             host=TestObject.objects.get(id=test_obj).value,
             url=step.page.url,
             type=step.page.type,
-            config=
-            self.__get_web_config() if step.page.type == DevicePlatform.WEB.value else self.__get_app_config()
+            mysql_config=self.__get_mysql_config(test_obj),
+            config=self.__get_web_config() if step.page.type == DevicePlatform.WEB.value else self.__get_app_config()
         )
 
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
             'step_sort')
         for i in step_sort_list:
-            case_model.pages_ele.append(ElementModel(
+            # ope_value = None
+            # if i.ope_value is not None:
+            #     if isinstance(i.ope_value, dict):
+            #         ope_value = i.ope_value
+            #     elif isinstance(i.ope_value, str):
+            #         ope_value = eval(i.ope_value)
+            # ass_value = None
+            # if i.ass_value is not None:
+            #     if isinstance(i.ass_value, dict):
+            #         ass_value = i.ass_value
+            #     elif isinstance(i.ass_value, str):
+            #         ass_value = eval(i.ass_value)
+            case_model.page_ele_list.append(ElementModel(
                 type=i.type,
-                ele_name_a=i.ele_name_a.name,
+                ele_name_a=i.ele_name_a.name if i.ele_name_a else None,
                 ele_name_b=i.ele_name_b.name if i.ele_name_b else None,
-                ele_loc_a=i.ele_name_a.loc,
+                ele_loc_a=i.ele_name_a.loc if i.ele_name_a else None,
                 ele_loc_b=i.ele_name_b.loc if i.ele_name_b else None,
-                ele_exp=i.ele_name_a.exp,
-                ele_sleep=i.ele_name_a.sleep,
-                ele_sub=i.ele_name_a.sub,
+                ele_exp=i.ele_name_a.exp if i.ele_name_a else None,
+                ele_sleep=i.ele_name_a.sleep if i.ele_name_a else None,
+                ele_sub=i.ele_name_a.sub if i.ele_name_a else None,
                 ope_type=i.ope_type,
-                ope_value=i.ope_value if i.ope_value else None,
+                ope_value=i.ope_value,
                 ass_type=i.ass_type,
-                ass_value=i.ass_value if i.ass_value else None,
+                ass_value=i.ass_value,
+                is_iframe=i.ele_name_a.is_iframe if i.ele_name_a else None,
             ))
         return case_model
 
@@ -172,3 +186,13 @@ class RunApi:
                                               status=IsItEnabled.right.value,
                                               type=DevicePlatformEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)
+
+    def __get_mysql_config(self, test_obj: int) -> MysqlDBModel | None:
+        database = Database.objects.filter(test_obj=test_obj, status=IsItEnabled.right.value).first()
+        if database is not None:
+            return MysqlDBModel(host=database.host,
+                                port=database.port,
+                                user=database.user,
+                                password=database.password,
+                                db=database.name)
+        return None

@@ -14,16 +14,21 @@ from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSeriali
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class ScheduledTasksSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = ScheduledTasks
         fields = '__all__'
 
 
 class ScheduledTasksSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     executor_name = UserSerializers(read_only=True)
@@ -38,11 +43,6 @@ class ScheduledTasksCRUD(ModelCRUD):
     queryset = ScheduledTasks.objects.all()
     serializer_class = ScheduledTasksSerializersC
     serializer = ScheduledTasksSerializers
-
-
-class ScheduledTasksQuery(ModelQuery):
-    model = ScheduledTasks
-    serializer_class = ScheduledTasksSerializersC
 
 
 class ScheduledTasksViews(ViewSet):

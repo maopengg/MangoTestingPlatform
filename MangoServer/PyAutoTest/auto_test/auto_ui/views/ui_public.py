@@ -11,16 +11,21 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class UiPublicSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiPublic
         fields = '__all__'
 
 
 class UiPublicSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
 
     class Meta:
@@ -33,14 +38,6 @@ class UiPublicCRUD(ModelCRUD):
     queryset = UiPublic.objects.select_related('project').all()
     serializer_class = UiPublicSerializersC
     serializer = UiPublicSerializers
-
-
-class UiPublicQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = UiPublic
-    serializer_class = UiPublicSerializersC
 
 
 class UiPublicViews(ViewSet):

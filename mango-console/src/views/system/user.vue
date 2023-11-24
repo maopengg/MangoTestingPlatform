@@ -132,7 +132,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getAllRole, getUserList, getUserQuery } from '@/api/url'
+import { getAllRole, getUserList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -292,9 +292,9 @@ const tableColumns = useTableColumn([
     dataIndex: 'role'
   },
   {
-    title: '登录时间',
-    key: 'lastLoginTime',
-    dataIndex: 'lastLoginTime'
+    title: '最近登录时间',
+    key: 'last_login_time',
+    dataIndex: 'last_login_time'
   },
   {
     title: '登录IP',
@@ -347,7 +347,7 @@ function onSearch() {
     return
   }
   get({
-    url: getUserQuery,
+    url: getUserList,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

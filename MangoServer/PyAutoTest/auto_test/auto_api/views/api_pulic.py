@@ -19,12 +19,17 @@ from PyAutoTest.tools.view_utils.view_tools import enum_list
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = ApiPublic
         fields = '__all__'
 
 
 class ApiPublicSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
 
     class Meta:

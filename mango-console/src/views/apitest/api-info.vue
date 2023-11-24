@@ -162,7 +162,7 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { ApiInfo, getAllItems, ApiCaseSynchronous, ApiRun } from '@/api/url'
+import { ApiInfo, getAllItems, ApiCaseSynchronous, ApiRun, ApiCaseInfoRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -265,8 +265,7 @@ const tableColumns = useTableColumn([
   {
     title: '项目名称',
     key: 'project',
-    dataIndex: 'project',
-    width: 100
+    dataIndex: 'project'
   },
   {
     title: '模块名称',
@@ -627,16 +626,25 @@ function onRunCase(record: any) {
     return
   }
   get({
-    url: ApiRun,
+    url: ApiCaseInfoRun,
     data: () => {
       return {
-        case_id: record.id,
-        test_obj: testObj.selectValue
+        id: record.id,
+        test_obj_id: testObj.selectValue
       }
     }
   })
     .then((res) => {
       Message.success(res.msg)
+      Modal.confirm({
+        title: '提示',
+        content: res.data.toString(),
+        cancelText: '取消',
+        okText: '确定',
+        onOk: () => {
+          doRefresh()
+        }
+      })
     })
     .catch(console.log)
 }

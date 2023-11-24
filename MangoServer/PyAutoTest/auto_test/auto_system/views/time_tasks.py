@@ -12,10 +12,13 @@ from PyAutoTest.auto_test.auto_system.models import TimeTasks
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import my_task
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class TimeTasksSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = TimeTasks
         fields = '__all__'
@@ -26,14 +29,6 @@ class TimeTasksCRUD(ModelCRUD):
     queryset = TimeTasks.objects.all()
     serializer_class = TimeTasksSerializers
     serializer = TimeTasksSerializers
-
-
-class TimeTasksQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = TimeTasks
-    serializer_class = TimeTasksSerializers
 
 
 class TimeTasksViews(ViewSet):
