@@ -27,12 +27,16 @@ class UiPublicTypeEnum(Enum):
 
 
 class ElementExpEnum(Enum):
-    """ {0: "W_XPATH"}，{1: "W_ID"}，{3: "W_文本"}，{4: "W_占位符"}，{5: "W_CSS"}，{11: "A_DESCRIPTION"}，{12: "A_BOUNDS"}，{13: "A_百分比坐标点击"} """
+    """ {0: "W_XPATH"}，{1: "W_TestID"}，{3: "W_文本"}，{4: "W_占位符"}，{5: "W_标签"}，{6: "W_标题"}，{7: "W_ROLE"}，{8: "W_AIT_TEXT"}，{11: "W_TITLE"}，{12: "A_BOUNDS"}，{13: "A_百分比坐标点击"} """
     XPATH = 0
-    ID = 1
+    TEST_ID = 1
     TEXT = 3
     PLACEHOLDER = 4
-    CSS = 5
+    LABEL = 5
+    TITLE = 6
+    ROLE = 7
+    AIT_TEXT = 8
+
     # APP专属
     DESCRIPTION = 11
     BOUNDS = 12

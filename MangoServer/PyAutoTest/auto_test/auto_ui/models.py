@@ -33,6 +33,7 @@ class UiElement(models.Model):
     name = models.CharField(verbose_name="元素名称", max_length=64)
     exp = models.SmallIntegerField(verbose_name="元素表达式")
     loc = models.CharField(verbose_name="元素定位", max_length=1048)
+    locator = models.CharField(verbose_name="元素定位", max_length=1048, null=True)
     sleep = models.IntegerField(verbose_name="等待时间", null=True)
     sub = models.IntegerField(verbose_name="下标", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)

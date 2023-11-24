@@ -34,11 +34,14 @@
               :fixed="item.fixed"
             >
               <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
-                <a-tag color="orangered" size="small" v-if="record.exp === 0">W_XPATH</a-tag>
-                <a-tag color="gold" size="small" v-else-if="record.exp === 1">W_ID</a-tag>
-                <a-tag color="lime" size="small" v-else-if="record.exp === 3">W_文本</a-tag>
-                <a-tag color="green" size="small" v-else-if="record.exp === 4">W_占位符</a-tag>
-                <a-tag color="cyan" size="small" v-else-if="record.exp === 5">W_CSS</a-tag>
+                <a-tag color="orangered" size="small" v-if="record.exp === 0">XPATH</a-tag>
+                <a-tag color="gold" size="small" v-else-if="record.exp === 1">TestID</a-tag>
+                <a-tag color="lime" size="small" v-else-if="record.exp === 3">文本</a-tag>
+                <a-tag color="green" size="small" v-else-if="record.exp === 4">占位符</a-tag>
+                <a-tag color="cyan" size="small" v-else-if="record.exp === 5">标签</a-tag>
+                <a-tag color="cyan" size="small" v-else-if="record.exp === 6">标题</a-tag>
+                <a-tag color="cyan" size="small" v-else-if="record.exp === 7">ROLE</a-tag>
+                <a-tag color="cyan" size="small" v-else-if="record.exp === 8">AIT_TEXT</a-tag>
                 <a-tag color="blue" size="small" v-else-if="record.exp === 11">A_DESCRIPTION</a-tag>
                 <a-tag color="arcoblue" size="small" v-else-if="record.exp === 12">A_BOUNDS</a-tag>
                 <a-tag color="purple" size="small" v-else-if="record.exp === 13">A_百分比坐标点击</a-tag>
@@ -125,6 +128,10 @@ const columns = reactive([
     dataIndex: 'loc'
   },
   {
+    title: '定位器',
+    dataIndex: 'locator'
+  },
+  {
     title: '是否在iframe中',
     dataIndex: 'is_iframe'
   },
@@ -190,6 +197,14 @@ const formItems: FormItem[] = reactive([
       }
       return true
     }
+  },
+  {
+    label: '定位器',
+    key: 'locator',
+    value: '',
+    type: 'input',
+    required: false,
+    placeholder: '请输入定位器'
   },
   {
     label: '等待时间',
