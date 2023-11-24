@@ -56,7 +56,7 @@ class SystemViews(ViewSet):
         res2 = socket_conn.active_send(socket_data)
 
         if not res2:
-            return ResponseData.fail('发送公共参数失败，请检查执行器是否连接')
+            return ResponseData.success('执行器未连接，请连接执行器后再次选择环境')
         return ResponseData.success(f'请等待{DRIVER}处理参数完成', public_data.dict())
 
     @action(methods=['get'], detail=False)

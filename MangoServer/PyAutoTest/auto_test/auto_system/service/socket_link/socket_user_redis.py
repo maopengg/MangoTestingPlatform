@@ -9,6 +9,7 @@ import _ctypes
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.tools.cache_utils.redis_base import RedisBase
+
 logger = logging.getLogger('system')
 
 
@@ -20,10 +21,14 @@ class SocketUserRedis(RedisBase):
     def set_user_conn_obj(self, user, key, value):
         self.set_hset(name=user, key=key, value=id(value))
 
-    def get_user_web_obj(self, user) -> ChatConsumer:
+    def get_user_web_obj(self, user) -> ChatConsumer | None:
         """ 获取web端对象"""
         obj_id = self.get_hgetall(name=user).get('web_obj')
-        return _ctypes.PyObj_FromPtr(int(obj_id)) if obj_id else None
+        for obj in globals().values():
+            if isinstance(obj, ChatConsumer) and id(obj) == int(obj_id):
+                return obj
+        return None
+        # return _ctypes.PyObj_FromPtr(int(obj_id)) if obj_id else None
 
     def get_user_client_obj(self, user) -> ChatConsumer:
         """获取执行端对象"""

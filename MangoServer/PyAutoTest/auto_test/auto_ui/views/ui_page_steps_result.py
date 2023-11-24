@@ -12,10 +12,13 @@ from PyAutoTest.auto_test.auto_ui.models import UiPageStepsResult
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class UiPageStepsResultSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiPageStepsResult
         fields = '__all__'
@@ -25,6 +28,8 @@ class UiPageStepsResultSerializersC(serializers.ModelSerializer):
     project = ProjectSerializers(read_only=True)
     module_name = ProjectModuleSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiPageStepsResult
@@ -36,11 +41,6 @@ class UiPageStepsResultCRUD(ModelCRUD):
     queryset = UiPageStepsResult.objects.all()
     serializer_class = UiPageStepsResultSerializersC
     serializer = UiPageStepsResultSerializers
-
-
-class UiPageStepsResultQuery(ModelQuery):
-    model = UiPageStepsResult
-    serializer_class = UiPageStepsResultSerializersC
 
 
 class UiPageStepsResultViews(ViewSet):

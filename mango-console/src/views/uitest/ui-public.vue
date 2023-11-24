@@ -124,7 +124,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { uiPublic, uiPublicPutStatus, uiPublicQuery } from '@/api/url'
+import { uiPublic, uiPublicPutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -262,8 +262,7 @@ const tableColumns = useTableColumn([
   {
     title: '项目名称',
     key: 'project',
-    dataIndex: 'project',
-    width: 100
+    dataIndex: 'project'
   },
   {
     title: '名称',
@@ -326,7 +325,7 @@ function onSearch() {
     return
   }
   get({
-    url: uiPublicQuery,
+    url: uiPublic,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

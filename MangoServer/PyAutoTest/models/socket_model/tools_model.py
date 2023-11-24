@@ -8,14 +8,7 @@ from pydantic import BaseModel
 
 from PyAutoTest.models.socket_model.api_model import ApiPublicModel
 from PyAutoTest.models.socket_model.ui_model import UiPublicModel
-
-
-class MysqlDBModel(BaseModel):
-    host: str
-    port: int
-    user: str
-    password: str
-    db: str
+from PyAutoTest.models.tools_model import MysqlDBModel
 
 
 class PublicDataModel(BaseModel):

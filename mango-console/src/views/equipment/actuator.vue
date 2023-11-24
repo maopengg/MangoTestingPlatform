@@ -181,18 +181,18 @@ function doRefresh() {
 const addUpdate = ref(0)
 const updateId: any = ref('')
 
-function onAddPage() {
-  actionTitle.value = '添加页面'
-  modalDialogRef.value?.toggle()
-  addUpdate.value = 1
-  formItems.forEach((it) => {
-    if (it.reset) {
-      it.reset()
-    } else {
-      it.value.value = ''
-    }
-  })
-}
+// function onAddPage() {
+//   actionTitle.value = '添加页面'
+//   modalDialogRef.value?.toggle()
+//   addUpdate.value = 1
+//   formItems.forEach((it) => {
+//     if (it.reset) {
+//       it.reset()
+//     } else {
+//       it.value.value = ''
+//     }
+//   })
+// }
 
 function onDelete(data: any) {
   Modal.confirm({

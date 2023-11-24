@@ -21,7 +21,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
 TIME_ZONE = 'Asia/Shanghai'
+# ************************ ↓需要修改的内容↓ ************************ #
 
+
+# ************************ ↑需要修改的内容↑ ************************ #
+mysql_ip = '127.0.0.1'
+mysql_port = 3306
+mysql_user = 'root'
+mysql_password = '123456'
+mysql_db_name = 'mango-server'
+redis_ip = '127.0.0.1'
+redis_port = 6379
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
 DEBUG = True
@@ -95,15 +105,13 @@ ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'aigc_AutoUITestPlatform',
-        'USER': 'root',
-        'PASSWORD': 'zALL_mysql1',
-        'HOST': '61.183.9.60',
-        # 'HOST': '172.30.16.115',
-        # 'PORT': 3306,
-        'PORT': 23306,
+        'NAME': mysql_db_name,
+        'USER': mysql_user,
+        'PASSWORD': mysql_password,
+        'HOST': mysql_ip,
+        'PORT': mysql_port,
         'TEST': {
-            'NAME': 'mango-server',
+            'NAME': mysql_db_name,
             'CHARSET': 'utf8mb4',
             'COLLATION': 'utf8mb4_general_ci'
         },
@@ -157,7 +165,7 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
+        "LOCATION": f"redis://{redis_ip}:{redis_port}/0",
         # "LOCATION": "redis://:123456@172.30.16.114:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -170,7 +178,7 @@ CACHES = {
     },
     "socket": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": f"redis://{redis_ip}:{redis_port}/1",
         # "LOCATION": "redis://:123456@172.30.16.114:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",

@@ -12,16 +12,21 @@ from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class DatabaseSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = Database
         fields = '__all__'
 
 
 class DatabaseSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
 
@@ -35,11 +40,6 @@ class DatabaseCRUD(ModelCRUD):
     queryset = Database.objects.all()
     serializer_class = DatabaseSerializersC
     serializer = DatabaseSerializers
-
-
-class DatabaseQuery(ModelQuery):
-    model = Database
-    serializer_class = DatabaseSerializersC
 
 
 class DatabaseViews(ViewSet):

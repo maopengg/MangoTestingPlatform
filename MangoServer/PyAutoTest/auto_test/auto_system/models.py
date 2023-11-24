@@ -51,7 +51,7 @@ class Database(models.Model):
     user = models.CharField(verbose_name="登录用户名", max_length=64, null=True)
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     host = models.CharField(verbose_name="数据库地址", max_length=64, null=True)
-    post = models.IntegerField(verbose_name="端口", null=True)
+    port = models.IntegerField(verbose_name="端口", null=True)
     status = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
@@ -81,7 +81,7 @@ class TestSuiteReport(models.Model):
     # type=0是UI,=1是接口,=2是性能
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="用例名称", max_length=64)
+    error_message = models.CharField(verbose_name="错误提示", max_length=64, null=True)
     # 0是进行中，1是已完成
     run_status = models.SmallIntegerField(verbose_name="执行状态", null=True)
     # null是待测试完成，0是失败，1是成功

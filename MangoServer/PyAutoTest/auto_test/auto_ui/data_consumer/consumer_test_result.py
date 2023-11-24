@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultSerial
 from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultSerializers
 from PyAutoTest.enums.system_enum import IsItEnabled
-from PyAutoTest.models.socket_model.ui_model import CaseResult, PageStepsResultModel, EleResult
+from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel, ElementResultModel
 
 log = logging.getLogger('ui')
 
@@ -39,12 +39,10 @@ class ConsumerTestResult:
             log.error(f"当前查询结果是空，请检查id是否在数据库中存在id：{case_id}报错：{e}")
 
     @classmethod
-    def update_case_result(cls, data: CaseResult):
+    def update_case_result(cls, data: CaseResultModel):
         for i in data.case_res_list:
             cls.update_page_steps(i)
-        data = data.dict()
-        data['case_cache_data'] = str(json.dumps(data['case_cache_data']))
-        serializer = UiCaseResultSerializers(data=data)
+        serializer = UiCaseResultSerializers(data=data.dict())
         if serializer.is_valid():
             serializer.save()
         else:
@@ -61,11 +59,8 @@ class ConsumerTestResult:
             log.error(f'增加用例步骤结果，请联系管理员进行查看，错误信息：{serializer.errors}')
 
     @classmethod
-    def update_ele(cls, data: EleResult):
-        data = data.dict()
-        data['ope_value'] = str(data['ope_value'])
-        data['ass_value'] = str(data['ass_value'])
-        serializer = UiEleResultSerializers(data=data)
+    def update_ele(cls, data: ElementResultModel):
+        serializer = UiEleResultSerializers(data=data.dict())
         if serializer.is_valid():
             serializer.save()
         else:

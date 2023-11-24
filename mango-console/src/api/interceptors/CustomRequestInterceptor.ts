@@ -3,7 +3,7 @@ import { AxiosRequestConfig } from 'axios'
 import { useProject } from '@/store/modules/get-project'
 
 export default function (config: AxiosRequestConfig) {
-  const Project = useProject()
+  const project = useProject()
   const useStore = useUserStoreContext()
   if (config) {
     if (!config.headers) {
@@ -11,8 +11,8 @@ export default function (config: AxiosRequestConfig) {
     }
     if (!config.headers['Auth']) {
       config.headers['Auth'] = useStore.token
-      if (Project.selectValue) {
-        config.headers['project'] = Project.selectValue.toString()
+      if (project.selectValue) {
+        config.headers['project'] = project.selectValue.toString()
       }
     }
   }

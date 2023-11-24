@@ -172,14 +172,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import {
-  getNickname,
-  getScheduledTasks,
-  getScheduledTasksPutStatus,
-  getScheduledTasksQuery,
-  getTimingList,
-  triggerTiming
-} from '@/api/url'
+import { getNickname, getScheduledTasks, getScheduledTasksPutStatus, getTimingList, triggerTiming } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -388,7 +381,7 @@ function onSearch() {
     return
   }
   get({
-    url: getScheduledTasksQuery,
+    url: getScheduledTasks,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

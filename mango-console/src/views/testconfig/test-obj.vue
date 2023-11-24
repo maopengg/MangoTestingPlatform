@@ -175,7 +175,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getProjectConfig, getNickname, getPlatformEnum, getTestObjQuery } from '@/api/url'
+import { getProjectConfig, getNickname, getPlatformEnum } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -184,6 +184,7 @@ import { useProject } from '@/store/modules/get-project'
 import { useEnvironment } from '@/store/modules/get-environment'
 import { getFormItems } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
+import { useTestObj } from '@/store/modules/get-test-obj'
 
 const project = useProject()
 const uEnvironment = useEnvironment()
@@ -193,6 +194,7 @@ const { onSelectionChange } = useRowSelection()
 const table = useTable()
 const rowKey = useRowKey('id')
 const formModel = ref({})
+const testObj = useTestObj()
 const testObjData = reactive({
   nickname: [],
   platformEnum: [],
@@ -392,7 +394,7 @@ function onSearch() {
     return
   }
   get({
-    url: getTestObjQuery,
+    url: getProjectConfig,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
@@ -485,6 +487,7 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
+          testObj.getEnvironment()
         })
         .catch(console.log)
     } else {
@@ -498,6 +501,7 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
+          testObj.getEnvironment()
         })
         .catch(console.log)
     }

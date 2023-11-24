@@ -13,16 +13,21 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class UiCaseResultSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiCaseResult
         fields = '__all__'
 
 
 class UiCaseResultSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
     module_name = ProjectModuleSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
@@ -37,11 +42,6 @@ class UiCaseResultCRUD(ModelCRUD):
     queryset = UiCaseResult.objects.all()
     serializer_class = UiCaseResultSerializersC
     serializer = UiCaseResultSerializers
-
-
-class UiCaseResultQuery(ModelQuery):
-    model = UiCaseResult
-    serializer_class = UiCaseResultSerializersC
 
 
 class UiCaseResultViews(ViewSet):

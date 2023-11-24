@@ -35,6 +35,7 @@ class UiElement(models.Model):
     loc = models.CharField(verbose_name="元素定位", max_length=1048)
     sleep = models.IntegerField(verbose_name="等待时间", null=True)
     sub = models.IntegerField(verbose_name="下标", null=True)
+    is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
 
     class Meta:
         db_table = 'ui_ele'

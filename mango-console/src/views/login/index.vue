@@ -62,13 +62,14 @@ export default defineComponent({
   setup() {
     const projectName = setting.projectName
     const { version } = useAppInfo()
-    const username = ref('18071710220')
-    const password = ref('729164035')
+    const username = ref('')
+    const password = ref('')
     const autoLogin = ref(true)
     const loading = ref(false)
     const router = useRouter()
     const route = useRoute()
     const userStore = useUserStore()
+
     const onLogin = () => {
       loading.value = true
       post({

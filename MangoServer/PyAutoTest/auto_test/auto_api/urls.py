@@ -12,7 +12,7 @@ from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 
 urlpatterns = [
     path("info", ApiInfoCRUD.as_view()),
-    path("case/synchronous", ApiInfoViews.as_view({'get': 'test'})),
+    path("case/api/info/run", ApiInfoViews.as_view({'get': 'get_api_info_run'})),
     #
     path("case", ApiCaseCRUD.as_view()),
     path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),

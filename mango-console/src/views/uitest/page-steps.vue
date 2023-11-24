@@ -162,7 +162,7 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { uiSteps, uiStepsQuery, uiStepsPutType, uiPageNameProject, UiStepsRun } from '@/api/url'
+import { uiSteps, uiStepsPutType, uiPageNameProject, UiStepsRun } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Input, Message, Modal } from '@arco-design/web-vue'
@@ -356,7 +356,7 @@ function onSearch() {
   }
   value['type'] = pageStepsData.stepsType
   get({
-    url: uiStepsQuery,
+    url: uiSteps,
     data: () => {
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize

@@ -17,6 +17,9 @@ from PyAutoTest.tools.view_utils.view_tools import enum_list
 
 
 class UiElementSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiElement
         fields = '__all__'
@@ -24,6 +27,8 @@ class UiElementSerializers(serializers.ModelSerializer):
 
 class UiElementSerializersC(serializers.ModelSerializer):
     page = UiPageSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiElement
@@ -68,3 +73,15 @@ class UiElementViews(ViewSet):
         :return:
         """
         return ResponseData.success('获取数据成功', enum_list(ElementExpEnum))
+
+    @action(methods=['put'], detail=False)
+    def put_is_iframe(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.is_iframe = request.data.get('is_iframe')
+        obj.save()
+        return ResponseData.success('修改状态成功', )

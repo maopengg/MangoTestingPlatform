@@ -29,7 +29,7 @@ export default defineComponent({
         .catch(console.log)
     }
     onMounted(() => {
-      getAllUserSum()
+      setTimeout(getAllUserSum, 500)
     })
     return () => (
       <div class="title-container">

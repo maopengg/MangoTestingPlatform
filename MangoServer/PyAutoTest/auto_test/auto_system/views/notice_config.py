@@ -13,17 +13,22 @@ from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.view_tools import enum_list
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = NoticeConfig
         fields = '__all__'
 
 
 class NoticeConfigSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
 
     class Meta:
@@ -36,11 +41,6 @@ class NoticeConfigCRUD(ModelCRUD):
     queryset = NoticeConfig.objects.all()
     serializer_class = NoticeConfigSerializersC
     serializer = NoticeConfigSerializers
-
-
-class NoticeConfigQuery(ModelQuery):
-    model = NoticeConfig
-    serializer_class = NoticeConfigSerializersC
 
 
 class NoticeConfigViews(ViewSet):

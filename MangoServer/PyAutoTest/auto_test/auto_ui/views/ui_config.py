@@ -22,12 +22,17 @@ from PyAutoTest.tools.view_utils.view_tools import enum_list
 
 
 class UiConfigSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiConfig
         fields = '__all__'
 
 
 class UiConfigSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     user_id = UserSerializers(read_only=True)
 
     class Meta:

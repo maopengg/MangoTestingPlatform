@@ -2,11 +2,11 @@
   <div class="vaw-avatar-container">
     <a-dropdown trigger="hover" size="large" @select="handleSelect">
       <div class="action-wrapper">
-        <span class="nick-name"> {{ title.title }} </span>
+        <span class="nick-name"> {{ project.selectTitle }} </span>
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of Project.data" :key="item.key" :value="item.key">
+        <a-doption v-for="item of projectList" :key="item.key" :value="item.key">
           {{ item.title }}
         </a-doption>
       </template>
@@ -15,34 +15,91 @@
 </template>
 
 <script lang="ts">
-import { Modal } from '@arco-design/web-vue'
-import { defineComponent, onMounted, reactive } from 'vue'
+import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
 import useUserStore from '@/store/modules/user'
 import { useProject } from '@/store/modules/get-project'
+import { useDebounceFn } from '@vueuse/core'
+import { useRoute, useRouter } from 'vue-router'
+import { get, put } from '@/api/http'
+import { getUserProjectEnvironment, putProject, uiPublic } from '@/api/url'
 
 export default defineComponent({
   name: 'Project',
   setup() {
     const userStore = useUserStore()
-    const Project = useProject()
-    const title = reactive({
-      title: '选择项目'
-    })
-    function handleSelect(key: number) {
-      Project.selectValue = key
-      Project.data.forEach((item: any) => {
-        if (item.key === Project.selectValue) title.title = item.title
+    const project = useProject()
+    const router = useRouter()
+    const route = useRoute()
+    let projectList = reactive([])
+    // const projectList = () => {
+    //   let data = [{ key: null, title: '选择项目' }]
+    //   project.data.forEach((item) => {
+    //     data.push(item)
+    //   })
+    //   return data
+    // }
+    function handleSelect(key: any) {
+      console.log(key)
+      if (key === '选择项目') {
+        key = null
+      }
+      put({
+        url: putProject,
+        data: () => {
+          return { id: userStore.userId, selected_project: key }
+        }
+      })
+        .then((res) => {
+          userStore.selected_project = res.data.selected_project
+          setTitle(key)
+        })
+        .catch(console.log)
+      debouncedFn()
+    }
+    const debouncedFn = useDebounceFn(() => {
+      router.replace({ path: '/redirect' + route.path, query: route.query })
+    }, 200)
+
+    function setTitle(key: any) {
+      projectList.push({ key: null, title: '选择项目' })
+      project.data.forEach((item) => {
+        projectList.push(item)
+      })
+      projectList.forEach((item: any) => {
+        project.selectValue = key
+        if (item.key === project.selectValue) project.selectTitle = item.title
       })
     }
+    watchEffect(() => {
+      if (project.data.length > 0) {
+        setTitle(userStore.selected_project)
+      }
+    })
 
-    onMounted(() => {
-      Project.getItems()
+    function doRefresh() {
+      get({
+        url: getUserProjectEnvironment,
+        data: () => {
+          return {
+            id: userStore.userId
+          }
+        }
+      })
+        .then((res) => {
+          userStore.selected_environment = res.data.selected_environment
+          userStore.selected_project = res.data.selected_project
+        })
+        .catch(console.log)
+    }
+    onMounted(async () => {
+      await project.getItems()
+      await doRefresh()
     })
 
     return {
       userStore,
-      Project,
-      title,
+      projectList,
+      project,
       handleSelect
     }
   }

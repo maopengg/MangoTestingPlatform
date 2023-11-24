@@ -7,7 +7,7 @@ import logging
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportSerializers
-from PyAutoTest.models.socket_model.ui_model import TestSuiteModel, CaseResult
+from PyAutoTest.models.socket_model.ui_model import TestSuiteModel, CaseResultModel
 
 log = logging.getLogger('system')
 
@@ -30,7 +30,7 @@ class TestSuiteReportUpdate:
             log.error(f'新增测试套报错，请联系管理员进行查看，错误信息：{serializer.errors}')
 
     @classmethod
-    def update_case_suite(cls, data: CaseResult) -> None:
+    def update_case_suite(cls, data: CaseResultModel) -> None:
         pass
         # cls.update_case_suite_status(data.test_suite_id, data.test_result, self.data.run_status)
         # for i in data.case_res_list:
@@ -38,18 +38,20 @@ class TestSuiteReportUpdate:
         #     ConsumerTestResult.update_case_result(i)
 
     @classmethod
-    def update_case_suite_status(cls, _id, status, run_status=1):
+    def update_case_suite_status(cls, _id, status, run_status=1, error_message=None):
         """
-
         @param _id:
         @param status:
         @param run_status:1是测试完成
+        @param error_message:
         @return:
         """
         try:
             res = TestSuiteReport.objects.get(id=_id)
             res.status = status
             res.run_status = run_status
+            if error_message:
+                res.error_message = run_status
             res.save()
         except TestSuiteReport.DoesNotExist as e:
             # 处理找不到对应记录的情况

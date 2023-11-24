@@ -51,9 +51,6 @@ import {
 import { useDebounceFn, useFullscreen } from '@vueuse/core'
 import useEmit from '@/hooks/useEmit'
 import useAppConfigStore from '@/store/modules/app-config'
-import { useTestObj } from '@/store/modules/get-test-obj'
-import { sendCommonParameters } from '@/api/url'
-import { get } from '@/api/http'
 export default defineComponent({
   name: 'ActionItems',
   components: {
@@ -72,8 +69,6 @@ export default defineComponent({
     const router = useRouter()
     const route = useRoute()
     const emitter = useEmit()
-    const testObj = useTestObj()
-    const te: any = ref('请选择测试环境')
 
     function onShowSearch() {
       emitter?.emit('show-search')
@@ -111,8 +106,6 @@ export default defineComponent({
       searchContent,
       badgeValue,
       appStore,
-      testObj,
-      te,
       onShowSearch,
       onScreenFull,
       onRefrehRoute,

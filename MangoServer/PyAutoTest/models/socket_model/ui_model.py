@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
+from PyAutoTest.models.tools_model import MysqlDBModel
+
 
 class UiPublicModel(BaseModel):
     create_time: str
@@ -27,17 +29,16 @@ class InputValueModel(BaseModel):
 
 class ElementModel(BaseModel):
     type: int
-
-    ele_name_a: str
+    ele_name_a: str | None
     ele_name_b: str | None
-    ele_loc_a: str
+    ele_loc_a: str | None
     ele_loc_b: str | None
     ele_exp: int | None
     ele_sleep: int | None
     ele_sub: int | None
     ope_type: str | None
     ope_value: dict | None
-
+    is_iframe: int | None
     ass_type: str | None
     ass_value: dict | None
 
@@ -61,7 +62,8 @@ class PageStepsModel(BaseModel):
     url: str
     type: int
     config: AndroidConfigModel | WEBConfigModel
-    pages_ele: list[ElementModel] = []
+    mysql_config: MysqlDBModel | None
+    page_ele_list: list[ElementModel] = []
 
     @classmethod
     def create_empty(cls):
@@ -74,18 +76,17 @@ class CaseModel(BaseModel):
     project: int
     module_name: str
     case_people: str
-    case_cache_data: dict[str, list[dict]]
-    case_cache_ass: dict[str, list[dict]]
-
+    case_cache_data: list[list[dict]] | list
+    case_cache_ass: list[list[dict]] | list
     case_list: list[PageStepsModel]
 
 
-class EleResult(BaseModel):
+class ElementResultModel(BaseModel):
     test_suite_id: int | None
     case_id: int | None
     page_step_id: int | None
     # 元素的名称
-    ele_name_a: str
+    ele_name_a: str | None
     ele_name_b: str | None
     # 元素个数
     ele_quantity: int
@@ -96,7 +97,7 @@ class EleResult(BaseModel):
     # 测试结果
     status: int
 
-    loc: str
+    loc: str | None
     exp: int | None
     sleep: int | None
     sub: int | None
@@ -116,10 +117,10 @@ class PageStepsResultModel(BaseModel):
     page_step_name: str
     # 测试结果
     status: int
-    ele_result_list: list[EleResult]
+    ele_result_list: list[ElementResultModel]
 
 
-class CaseResult(BaseModel):
+class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
     case_name: str
@@ -127,7 +128,7 @@ class CaseResult(BaseModel):
     case_people: str
     # 测试对象
     test_obj: str
-    case_cache_data: dict[str, list[dict]]
+    case_cache_ass: list[list[dict]] | list
     status: int
     case_res_list: list[PageStepsResultModel]
 
@@ -136,7 +137,8 @@ class TestSuiteModel(BaseModel):
     id: int
     type: int
     project: int
-    name: str
+    error_message: str | None
     run_status: int
     status: int | None
     case_list: list[CaseModel] | None
+    result_list: list[CaseResultModel] | None

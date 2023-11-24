@@ -16,16 +16,21 @@ from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.settings import DRIVER, SERVER
 from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD, ModelQuery
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiCase
         fields = '__all__'
 
 
 class UiCaseSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
     module_name = ProjectModuleSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
@@ -40,14 +45,6 @@ class UiCaseCRUD(ModelCRUD):
     queryset = UiCase.objects.all()
     serializer_class = UiCaseSerializersC
     serializer = UiCaseSerializers
-
-
-class UiCaseQuery(ModelQuery):
-    """
-    条件查
-    """
-    model = UiCase
-    serializer_class = UiCaseSerializersC
 
 
 class UiCaseViews(ViewSet):

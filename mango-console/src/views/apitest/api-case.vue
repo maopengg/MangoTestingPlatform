@@ -180,7 +180,7 @@ const conditionItems: Array<FormItem> = [
   {
     key: 'project',
     label: '筛选项目',
-    value: ref(),
+    value: project.data,
     type: 'select',
     placeholder: '请选择项目',
     optionItems: [],
@@ -189,7 +189,6 @@ const conditionItems: Array<FormItem> = [
     }
   }
 ]
-conditionItems[2].optionItems = project.data
 const formItems = [
   {
     label: '项目',
@@ -247,8 +246,7 @@ export default defineComponent({
       {
         title: '项目',
         key: 'project',
-        dataIndex: 'project',
-        width: 100
+        dataIndex: 'project'
       },
       {
         title: '用例组名称',
