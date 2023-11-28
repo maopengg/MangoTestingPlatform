@@ -52,6 +52,8 @@
                       :width="item.width"
                       :data-index="item.key"
                       :fixed="item.fixed"
+                      :ellipsis="item.ellipsis"
+                      :tooltip="item.tooltip"
                     >
                       <template v-if="item.key === 'index'" #cell="{ record }">
                         <span style="width: 110px; display: inline-block">{{ record.id }}</span>
@@ -135,8 +137,7 @@ const tableColumns = useTableColumn([
   {
     title: '项目名称',
     key: 'project',
-    dataIndex: 'project',
-    width: 150
+    dataIndex: 'project'
   },
 
   {
@@ -157,7 +158,11 @@ const tableColumns = useTableColumn([
   {
     title: '失败原因',
     key: 'error_message',
-    dataIndex: 'error_message'
+    dataIndex: 'error_message',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
+    width: 300
   },
   {
     title: '操作',
