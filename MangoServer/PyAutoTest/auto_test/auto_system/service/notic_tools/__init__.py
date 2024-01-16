@@ -29,7 +29,7 @@ class NoticeMain:
 
     @classmethod
     def test_notice_send(cls, _id):
-        notice_obj = NoticeConfig.objects.get(id=_id, status=IsItEnabled.right.value)
+        notice_obj = NoticeConfig.objects.get(id=_id, status=StatusEnum.SUCCESS.value)
         if notice_obj.type == NoticeEnum.MAIL.value:
             cls.__wend_mail_send(notice_obj)
         elif notice_obj.type == NoticeEnum.WECOM.value:
