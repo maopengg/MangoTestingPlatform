@@ -5,4 +5,4 @@
 .logs/*
 logs/*
 files/*
-.database_config.json
+database_config.json
