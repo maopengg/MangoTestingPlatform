@@ -26,10 +26,10 @@ class ModelCRUD(GenericAPIView):
         page = request.query_params.get("page")
         query_dict = {k: v[0] for k, v in query_dict.items()}
         project_id = request.headers.get('Project')
-        if project_id and hasattr(self.model, 'project'):
+        if project_id and hasattr(self.model, 'project') and not query_dict.get('project'):
             query_dict['project'] = project_id
-            if query_dict.get('name'):
-                query_dict['name__contains'] = query_dict.pop('name')
+        if query_dict.get('name'):
+            query_dict['name__contains'] = query_dict.pop('name')
         if page_size and page:
             del query_dict['pageSize']
             del query_dict['page']
