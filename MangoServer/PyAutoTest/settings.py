@@ -16,8 +16,19 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def ensure_path_sep(path: str) -> str:
+    """兼容 windows 和 linux 不同环境的操作系统路径 """
+    if "/" in path:
+        path = os.sep.join(path.split("/"))
+
+    if "\\" in path:
+        path = os.sep.join(path.split("\\"))
+    return str(BASE_DIR) + path
+
+
 # ************************ ↓需要修改的内容↓ ************************ #
-with open(rf"{BASE_DIR}\database_config.json", 'r') as f:
+with open(ensure_path_sep(rf"\database_config.json"), 'r') as f:
     data = json.load(f)
     mysql_db_name = data.get('mysql_db_name')
     mysql_user = data.get('mysql_user')
@@ -25,7 +36,6 @@ with open(rf"{BASE_DIR}\database_config.json", 'r') as f:
     mysql_ip = data.get('mysql_ip')
     mysql_port = data.get('mysql_port')
     redis = data.get('redis')
-
 # ************************ ↑需要修改的内容↑ ************************ #
 
 # ************************ 三个端的名称 ************************ #

@@ -70,12 +70,12 @@ class TestResult:
         @return:
         """
         api_case = ApiCase.objects.get(id=case_id)
-        if IsItEnabled.wrong.value in self.assertion_result:
-            self.update_test_suite(IsItEnabled.wrong.value)
-            api_case.status = IsItEnabled.wrong.value
+        if StatusEnum.FAIL.value in self.assertion_result:
+            self.update_test_suite(StatusEnum.FAIL.value)
+            api_case.status = StatusEnum.FAIL.value
         else:
-            self.update_test_suite(IsItEnabled.right.value)
-            api_case.status = IsItEnabled.right.value
+            self.update_test_suite(StatusEnum.FAIL.value)
+            api_case.status = StatusEnum.SUCCESS.value
         api_case.save()
 
     @classmethod
@@ -99,7 +99,7 @@ class TestResult:
         test_suite_data = {
             'id': self.test_suite_data['id'],
             'error_message': json.dumps(self.error_message, ensure_ascii=False),
-            'run_status': IsItEnabled.right.value,
+            'run_status': StatusEnum.SUCCESS.value,
             'status': status
         }
         self.test_suite_report = TestSuiteReportCRUD().inside_put(self.test_suite_data['id'], test_suite_data)
