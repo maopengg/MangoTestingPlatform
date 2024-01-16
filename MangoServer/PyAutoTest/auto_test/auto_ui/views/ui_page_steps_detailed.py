@@ -53,7 +53,12 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
     serializer = UiPageStepsDetailedSerializers
 
     def get(self, request: Request):
-        books = self.model.objects.filter(page_step_id=request.GET.get('page_step_id')).order_by('step_sort')
+        page_step_id = request.GET.get('page_step_id')
+        _id = request.GET.get('id')
+        if page_step_id:
+            books = self.model.objects.filter(page_step_id=page_step_id).order_by('step_sort')
+        else:
+            books = self.model.objects.filter(id=_id).order_by('step_sort')
         data = [self.serializer_class(i).data for i in books]
         return ResponseData.success('获取数据成功', data)
 
