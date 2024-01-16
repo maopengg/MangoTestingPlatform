@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import json
 import logging
 import os
 from pathlib import Path
@@ -16,10 +17,14 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
-mysql_db_name = 'aigc_AutoUITestPlatform'
-mysql_user = 'root'
-mysql_password = 'zALL_mysql1'
-
+with open(rf"{BASE_DIR}\database_config.json", 'r') as f:
+    data = json.load(f)
+    mysql_db_name = data.get('mysql_db_name')
+    mysql_user = data.get('mysql_user')
+    mysql_password = data.get('mysql_password')
+    mysql_ip = data.get('mysql_ip')
+    mysql_port = data.get('mysql_port')
+    redis = data.get('redis')
 
 # ************************ ↑需要修改的内容↑ ************************ #
 
