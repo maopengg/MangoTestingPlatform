@@ -19,8 +19,8 @@ from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicCRUD, UiPublicV
 urlpatterns = [
     #
     path("page", UiPageCRUD.as_view()),
-    path("page/name/project", UiPageViews.as_view({'get': 'get_page_name_project'})),
-    path("page/name/all", UiPageViews.as_view({'get': 'get_page_name_all'})),
+    path("page/name", UiPageViews.as_view({'get': 'page_name'})),
+    path("page/copy", UiPageViews.as_view({'post': 'page_copy'})),
     #
     path("page/steps/detailed", UiPageStepsDetailedCRUD.as_view()),
     path("page/steps/detailed/ope", UiPageStepsDetailedView.as_view({'get': 'get_ope_type'})),
@@ -30,19 +30,23 @@ urlpatterns = [
     #
     path("element", UiElementCRUD.as_view()),
     path("element/name", UiElementViews.as_view({'get': 'get_ele_name'})),
-    path("element/exp", UiElementViews.as_view({'get': 'get_exp_type'})),
     path("element/put/is/iframe", UiElementViews.as_view({'put': 'put_is_iframe'})),
+    path("element/test", UiElementViews.as_view({'post': 'test_element'})),
+    path("element/is/locator", UiElementViews.as_view({'get': 'is_element_locator'})),
     #
     path("steps", UiPageStepsCRUD.as_view()),
     path("steps/put/type", UiPageStepsViews.as_view({'put': 'put_type'})),
-    path("get/case/name/list", UiPageStepsViews.as_view({'get': 'get_case_obj_name'})),
+    path("case/name", UiPageStepsViews.as_view({'get': 'get_case_name'})),
     path("steps/run", UiPageStepsViews.as_view({'get': 'ui_steps_run'})),
-    path("steps/get/page/steps/name", UiPageStepsViews.as_view({'get': 'get_page_steps_name'})),
+    path("steps/page/steps/name", UiPageStepsViews.as_view({'get': 'get_page_steps_name'})),
+    path("copy/page/steps", UiPageStepsViews.as_view({'post': 'copy_page_steps'})),
     #
     path("public", UiPublicCRUD.as_view()),
     path("public/put/status", UiPublicViews.as_view({'put': 'put_status'})),
+
     #
     path("case", UiCaseCRUD.as_view()),
+    path("case/copy/case", UiCaseViews.as_view({'post': 'cody_case'})),
     path("case/run", UiCaseViews.as_view({'get': 'ui_case_run'})),
     path("case/batch/run", UiCaseViews.as_view({'get': 'ui_batch_run'})),
     #
@@ -51,13 +55,12 @@ urlpatterns = [
     path("case/put/case/sort", UiCaseStepsDetailedViews.as_view({'put': 'put_case_sort'})),
     #
     path("config", UiConfigCRUD.as_view()),
-    path("config/get/browser/type", UiConfigViews.as_view({'get': 'get_browser_type'})),
-    path("config/get/drive/type", UiConfigViews.as_view({'get': 'get_drive_type'})),
     path("config/put/status", UiConfigViews.as_view({'put': 'put_status'})),
     path("config/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
     #
     path("case/result", UiCaseResultCRUD.as_view()),
     path("case/result/suite/get/case", UiCaseResultViews.as_view({'get': 'suite_get_case'})),
+    path("result/week", UiCaseResultViews.as_view({'get': 'case_result_week_sum'})),
     #
     path("ele/result", UiEleResultCRUD.as_view()),
     path("ele/result/ele", UiEleResultViews.as_view({'get': 'get_ele_result'})),

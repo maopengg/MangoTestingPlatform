@@ -3,42 +3,77 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="测试用例" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="测试用例" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      @change="getProjectModule(item.value)"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="caseData.moduleList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'case_people'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="caseData.userList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'status'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="caseData.systemStatus"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -62,7 +97,7 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -86,7 +121,8 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                  {{ record.module_name.name }}
+                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
+                  }}{{ record.module_name?.name }}
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ record.case_people.nickname }}
@@ -99,9 +135,24 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onCaseRun(record.id)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-dropdown trigger="hover">
+                      <a-button type="text" size="mini">···</a-button>
+                      <template #content>
+                        <a-doption>
+                          <a-button type="text" size="mini" @click="onClick1(record)">结果</a-button>
+                        </a-doption>
+                        <a-doption>
+                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                        </a-doption>
+                        <a-doption>
+                          <a-button type="text" size="mini" @click="caseCody(record)">复制</a-button>
+                        </a-doption>
+                        <a-doption>
+                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                        </a-doption>
+                      </template>
+                    </a-dropdown>
                   </a-space>
                 </template>
               </a-table-column>
@@ -168,17 +219,20 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNickname, getProjectModuleGetAll, uiCase, uiCaseRun, uiRunCaseBatch } from '@/api/url'
+import { userNickname, userProjectModuleGetAll, uiCase, uiCaseRun, uiRunCaseBatch, uiCaseCopy, systemEnumStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
 import { useRouter } from 'vue-router'
 import { useTestObj } from '@/store/modules/get-test-obj'
+import { useProjectModule } from '@/store/modules/project_module'
+import { usePageData } from '@/store/page-data'
 
+const projectModule = useProjectModule()
 const project = useProject()
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
@@ -193,7 +247,8 @@ const caseData = reactive({
   updateId: 0,
   actionTitle: '添加用例',
   userList: [],
-  moduleList: []
+  moduleList: projectModule.data,
+  systemStatus: []
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -204,43 +259,52 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用例ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'name',
-    label: '名称',
+    label: '用例名称',
     type: 'input',
     placeholder: '请输入用例名称',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用例名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
     optionItems: project.data,
+    reset: function () {}
+  },
+  {
+    key: 'module_name',
+    label: '模块',
+    value: '',
+    type: 'select',
+    placeholder: '请先选择项目',
+    optionItems: caseData.moduleList,
+    reset: function () {}
+  },
+  {
+    key: 'case_people',
+    label: '用例负责人',
+    value: '',
+    type: 'select',
+    placeholder: '请选择用例负责人',
+    optionItems: caseData.userList,
+    reset: function () {}
+  },
+  {
+    key: 'status',
+    label: '测试结果',
+    value: '',
+    type: 'select',
+    placeholder: '请选择测试结果',
+    optionItems: caseData.moduleList,
     reset: function () {}
   }
 ])
@@ -312,18 +376,21 @@ const tableColumns = useTableColumn([
   {
     title: '项目',
     key: 'project',
-    dataIndex: 'project'
+    dataIndex: 'project',
+    width: 130
   },
   {
     title: '模块',
     key: 'module_name',
-    dataIndex: 'module_name'
+    dataIndex: 'module_name',
+    width: 160
   },
   {
     title: '用例名称',
     key: 'name',
     dataIndex: 'name',
-    align: 'left'
+    align: 'left',
+    width: 200
   },
   {
     title: '步骤顺序',
@@ -354,28 +421,7 @@ function doRefresh() {
   get({
     url: uiCase,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: uiCase,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -383,8 +429,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -465,7 +510,7 @@ function onCaseRun(case_id: number) {
     }
   })
     .then((res) => {
-      Message.success(res.msg)
+      Message.loading(res.msg)
     })
     .catch(console.log)
 }
@@ -495,7 +540,7 @@ function onConcurrency(name: string) {
         }
       })
         .then((res) => {
-          Message.success(res.msg)
+          Message.loading(res.msg)
           selectedRowKeys.value = []
           doRefresh()
         })
@@ -539,7 +584,7 @@ function onDataForm() {
 
 function getNickName() {
   get({
-    url: getNickname,
+    url: userNickname,
     data: () => {
       return {}
     }
@@ -549,9 +594,11 @@ function getNickName() {
     })
     .catch(console.log)
 }
+
 function getProjectModule(projectId: number) {
+  doRefresh()
   get({
-    url: getProjectModuleGetAll,
+    url: userProjectModuleGetAll,
     data: () => {
       return {
         project_id: projectId
@@ -563,26 +610,65 @@ function getProjectModule(projectId: number) {
     })
     .catch(console.log)
 }
+
 const router = useRouter()
 
 function onClick(record: any) {
-  let caseId = parseInt(record.id, 10)
+  const pageData = usePageData()
+  pageData.setRecord(record)
   router.push({
     path: '/uitest/ui-case-details',
     query: {
-      id: caseId,
-      name: record.name,
-      project_name: record.project.name,
-      project_id: record.project.id,
-      type: parseInt(record.type)
+      id: parseInt(record.id, 10)
     }
   })
+}
+
+function onClick1(record: any) {
+  const pageData = usePageData()
+  pageData.setRecord(record)
+  router.push({
+    path: '/uitest/report/details',
+    query: {
+      id: 871036342512
+    }
+  })
+}
+
+function caseCody(record: any) {
+  post({
+    url: uiCaseCopy,
+    data: () => {
+      return {
+        case_id: record.id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
+
+function status() {
+  get({
+    url: systemEnumStatus,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      caseData.systemStatus = res.data
+    })
+    .catch(console.log)
 }
 
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
     getNickName()
+    status()
   })
 })
 </script>

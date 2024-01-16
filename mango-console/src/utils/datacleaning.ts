@@ -57,15 +57,33 @@ export function convertEmptyStringToNull(obj: any): any {
   }
   return obj
 }
+
 import { FormItem } from '@/types/components'
+
 type KeyValueObject = {
   [key: string]: any
 }
-export function getFormItems(formItems: FormItem[]): KeyValueObject {
-  return formItems.reduce((obj, item) => {
-    if (item.value !== '' && item.value !== null) {
+
+export function getFormItems1(formItems: FormItem[]): KeyValueObject {
+  return formItems.reduce((obj: any, item) => {
+    if (item.value === '' || item.value === null) {
+      obj[item.key] = null
+    } else {
       obj[item.key] = item.value
+      console.log(obj, item.key, item.value)
     }
     return obj
   }, {})
+}
+
+export function getFormItems(formItems: FormItem[]): KeyValueObject {
+  const obj: any = {}
+  formItems.forEach((item: any) => {
+    if (item.value === '') {
+      obj[item.key] = null
+    } else {
+      obj[item.key] = item.value
+    }
+  })
+  return obj
 }

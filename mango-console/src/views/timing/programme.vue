@@ -3,30 +3,25 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="定时策略" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="定时策略" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -39,6 +34,9 @@
             <template #extra>
               <a-space>
                 <div>
+                  <span>注意：新增的定时策略需要联系管理员重启服务才会生效！</span>
+                </div>
+                <div>
                   <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 </div>
               </a-space>
@@ -46,7 +44,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -105,12 +103,13 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getTimeList } from '@/api/url'
+import { systemTime } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { getFormItems } from '@/utils/datacleaning'
+
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { onSelectionChange } = useRowSelection()
@@ -132,34 +131,16 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入定时策略ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'name',
-    label: '名称',
+    label: '定时器介绍',
     type: 'input',
-    placeholder: '请输入定时策略名称',
+    placeholder: '请输入定时器介绍',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入定时策略名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   }
 ])
@@ -188,69 +169,96 @@ const formItems: FormItem[] = reactive([
     }
   },
   {
-    label: '月',
+    label: '每年某月',
     key: 'month',
     value: '',
     type: 'input',
     required: false,
-    placeholder: '请输入月份',
+    placeholder: '月份请输入1-12之间的数字',
     validator: function () {
-      // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value)
-      if (isNaN(value) || value < 1 || value > 12) {
-        Message.error('月份请输入1-12之间的数字')
-        return false
+      if (this.value) {
+        // 判断value是否为1-12之间的数字
+        const value = parseInt(this.value)
+        if (isNaN(value) || value < 1 || value > 12) {
+          Message.error(this.placeholder || '')
+          return false
+        }
       }
       return true
     }
   },
   {
-    label: '天',
+    label: '每月某天',
     key: 'day',
     value: '',
     type: 'input',
     required: false,
-    placeholder: '请输入天',
+    placeholder: '天数请输入1-31之间的数字',
     validator: function () {
-      // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value)
-      if (isNaN(value) || value < 1 || value > 31) {
-        Message.error('天数请输入1-31之间的数字')
-        return false
+      if (this.value) {
+        // 判断value是否为1-12之间的数字
+        const value = parseInt(this.value)
+        if (isNaN(value) || value < 1 || value > 31) {
+          Message.error(this.placeholder || '')
+          return false
+        }
       }
       return true
     }
   },
   {
-    label: '小时',
+    label: '每周几',
+    key: 'day_of_week',
+    value: '',
+    type: 'input',
+    required: false,
+    placeholder: '请输1-7的数字代表周几',
+    validator: function () {
+      if (this.value) {
+        // 判断value是否为1-12之间的数字
+        const value = parseInt(this.value)
+        if (isNaN(value) || value < 1 || value > 7) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+      }
+      return true
+    }
+  },
+  {
+    label: '每天某小时',
     key: 'hour',
     value: '',
     type: 'input',
     required: false,
-    placeholder: '请输入小时',
+    placeholder: '小时请输入1-24之间的数字',
     validator: function () {
-      // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value)
-      if (isNaN(value) || value < 1 || value > 24) {
-        Message.error('小时请输入1-24之间的数字')
-        return false
+      if (this.value) {
+        // 判断value是否为1-12之间的数字
+        const value = parseInt(this.value)
+        if (isNaN(value) || value < 1 || value > 23) {
+          Message.error(this.placeholder || '')
+          return false
+        }
       }
       return true
     }
   },
   {
-    label: '分钟',
+    label: '某分钟',
     key: 'minute',
     value: '',
     type: 'input',
     required: false,
-    placeholder: '请输入分钟',
+    placeholder: '分钟请输入1-60之间的数字',
     validator: function () {
-      // 判断value是否为1-12之间的数字
-      const value = parseInt(this.value)
-      if (isNaN(value) || value < 1 || value > 60) {
-        Message.error('分钟请输入1-60之间的数字')
-        return false
+      if (this.value) {
+        // 判断value是否为1-12之间的数字
+        const value = parseInt(this.value)
+        if (isNaN(value) || value < 1 || value > 60) {
+          Message.error(this.placeholder || '')
+          return false
+        }
       }
       return true
     }
@@ -271,22 +279,27 @@ const tableColumns = useTableColumn([
     align: 'left'
   },
   {
-    title: '月',
+    title: '每年某月',
     key: 'month',
     dataIndex: 'month'
   },
   {
-    title: '天',
+    title: '每月某天',
     key: 'day',
     dataIndex: 'day'
   },
   {
-    title: '小时',
+    title: '每周几',
+    key: 'day_of_week',
+    dataIndex: 'day_of_week'
+  },
+  {
+    title: '每天某小时',
     key: 'hour',
     dataIndex: 'hour'
   },
   {
-    title: '分钟',
+    title: '每小时的某分钟',
     key: 'minute',
     dataIndex: 'minute'
   },
@@ -301,29 +314,9 @@ const tableColumns = useTableColumn([
 
 function doRefresh() {
   get({
-    url: getTimeList,
+    url: systemTime,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: getTimeList,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -331,8 +324,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -364,7 +356,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getTimeList,
+        url: systemTime,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -404,7 +396,7 @@ function onDataForm() {
     value['trigger_type'] = 'cron'
     if (programme.isAdd) {
       post({
-        url: getTimeList,
+        url: systemTime,
         data: () => {
           return value
         }
@@ -416,7 +408,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getTimeList,
+        url: systemTime,
         data: () => {
           value['id'] = programme.updateId
           return value

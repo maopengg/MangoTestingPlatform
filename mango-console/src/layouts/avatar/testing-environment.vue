@@ -15,12 +15,11 @@
 </template>
 
 <script lang="ts">
-import { Message } from '@arco-design/web-vue'
 import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
 import useUserStore from '@/store/modules/user'
 import { useTestObj } from '@/store/modules/get-test-obj'
-import { get, put } from '@/api/http'
-import { putEnvironment, sendCommonParameters } from '@/api/url'
+import { put } from '@/api/http'
+import { userEnvironment } from '@/api/url'
 
 export default defineComponent({
   name: 'TestEnvironment',
@@ -33,7 +32,7 @@ export default defineComponent({
         key = null
       }
       put({
-        url: putEnvironment,
+        url: userEnvironment,
         data: () => {
           return { id: userStore.userId, selected_environment: key }
         }
@@ -43,20 +42,6 @@ export default defineComponent({
           setTitle(key)
         })
         .catch(console.log)
-      if (key !== null) {
-        get({
-          url: sendCommonParameters,
-          data: () => {
-            return {
-              test_obj_id: key
-            }
-          }
-        })
-          .then((res) => {
-            if (res.code === 200 && res.msg.includes('处理参数完成')) Message.success(res.msg)
-          })
-          .catch()
-      }
     }
     function setTitle(key: any) {
       testObjList.push({ key: null, title: '选择测试环境' })

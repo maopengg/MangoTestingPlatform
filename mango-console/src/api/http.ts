@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 import type { App } from 'vue'
 import request from './axios.config'
 import { Message } from '@arco-design/web-vue'
+import { userFilesDownload } from '@/api/url'
 
 // 定义请求选项
 export interface HttpOption {
@@ -25,6 +26,8 @@ export interface Response<T = any> {
 export function http<T = any>({ url, data, method, headers, beforeRequest, afterRequest }: HttpOption) {
   const successHandler = (res: AxiosResponse<Response<T>>) => {
     if (res.data.code === 200) {
+      return res.data
+    } else if (url === userFilesDownload) {
       return res.data
     }
     Message.error(res.data.msg)

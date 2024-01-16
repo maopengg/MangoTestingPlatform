@@ -6,7 +6,7 @@
 from pydantic import BaseModel
 
 
-class MysqlDBModel(BaseModel):
+class MysqlConingModel(BaseModel):
     host: str
     port: int
     user: str

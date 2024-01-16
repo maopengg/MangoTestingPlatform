@@ -9,7 +9,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class SocketApiViews(ViewSet):

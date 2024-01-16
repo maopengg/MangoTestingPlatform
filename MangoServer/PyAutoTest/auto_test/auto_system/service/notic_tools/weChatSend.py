@@ -8,7 +8,7 @@ import logging
 import requests
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject
-from PyAutoTest.tools.exceptions.exceptions import SendMessageError, ValueTypeError
+from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
 from PyAutoTest.tools.other_utils.native_ip import get_host_ip
 
 logger = logging.getLogger('system')

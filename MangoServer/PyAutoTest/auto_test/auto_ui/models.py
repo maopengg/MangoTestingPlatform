@@ -49,6 +49,7 @@ class UiPageSteps(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
+    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=64)
     run_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
     # 0和空等于调试用例，1等于调试完成
@@ -108,10 +109,13 @@ class UiCaseStepsDetailed(models.Model):
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
     case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     case_cache_ass = models.JSONField(verbose_name="步骤缓存断言", null=True)
+    case_data = models.JSONField(verbose_name="用例步骤数据", null=True)
+    # 0失败，1成功，2警告
+    status = models.SmallIntegerField(verbose_name="状态", null=True)
+    error_message = models.TextField(verbose_name="错误提示", null=True)
 
     class Meta:
         db_table = 'ui_case_steps_detailed'
-        ordering = ['-id']
 
 
 class UiPublic(models.Model):

@@ -6,15 +6,11 @@
 import logging
 from threading import Thread
 
-from rest_framework.decorators import action
+from django.core.paginator import Paginator
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
-from rest_framework.response import Response
-from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import Project
-from PyAutoTest.tools.response_data import ResponseData
-from PyAutoTest.tools.view_utils.view_tools import paging_list
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 logger = logging.getLogger('system')
 
@@ -32,38 +28,33 @@ class ModelCRUD(GenericAPIView):
         project_id = request.headers.get('Project')
         if project_id and hasattr(self.model, 'project'):
             query_dict['project'] = project_id
+            if query_dict.get('name'):
+                query_dict['name__contains'] = query_dict.pop('name')
         if page_size and page:
             del query_dict['pageSize']
             del query_dict['page']
             books = self.model.objects.filter(**query_dict)
-            return ResponseData.success('获取数据成功', paging_list(
+            return ResponseData.success('获取数据成功', self.paging_list(
                 request.query_params.get("pageSize"),
                 request.query_params.get("page"),
                 books,
                 self.get_serializer_class()
             ), len(books))
-        books = self.model.objects.filter(**query_dict)
-        return ResponseData.success('获取数据成功',
-                                    self.get_serializer_class()(instance=books, many=True).data,
-                                    len(books))
+        else:
+            books = self.model.objects.filter(**query_dict)
+            return ResponseData.success('获取数据成功',
+                                        self.get_serializer_class()(instance=books, many=True).data,
+                                        len(books))
 
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
-            return Response({
-                'code': 200,
-                'msg': '新增一条记录成功',
-                'data': serializer.data
-            })
+            return ResponseData.success('新增一条记录成功', serializer.data)
         else:
             logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return Response({
-                'code': 300,
-                'msg': str(serializer.errors),
-                'data': ''
-            })
+            return ResponseData.fail(str(serializer.errors))
 
     def put(self, request: Request):
         if isinstance(request, dict):
@@ -79,50 +70,35 @@ class ModelCRUD(GenericAPIView):
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
-
-            return Response({
-                'code': 200,
-                'msg': '修改一条记录成功',
-                'data': serializer.data
-            })
+            return ResponseData.success('修改一条记录成功', serializer.data)
         else:
             if isinstance(request, dict):
                 logger.error(f'执行修改时报错，请检查！数据：{request}, 报错信息：{str(serializer.errors)}')
             else:
                 logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return Response({
-                'code': 300,
-                'msg': str(serializer.errors),
-                'data': ''
-            })
+            return ResponseData.fail(str(serializer.errors))
 
     def delete(self, request: Request):
         # 批量删
         if '[' in request.query_params.get('id'):
             for i in eval(request.query_params.get('id')):
                 self.model.objects.get(pk=i).delete()
-            return Response({
-                'code': 200,
-                'msg': '删除成功',
-                'data': ''
-            })
         else:
             # 一条删
-            self.model.objects.get(id=request.query_params.get('id')).delete()
-            self.asynchronous_callback(request)
-            return Response({
-                'code': 200,
-                'msg': '删除成功',
-                'data': ''
-            })
+            model = self.model.objects.get(id=request.query_params.get('id'))
+            # case_id = model.case.id
+            model.delete()
+            self.asynchronous_callback(request, model.id)
+        return ResponseData.success('删除成功')
 
-    def asynchronous_callback(self, request: Request):
+    def asynchronous_callback(self, request: Request, case_id: int = None):
         """
         反射的后置处理
         """
         if hasattr(self, 'callback'):
             from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
+            from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
             if isinstance(self, UiPageStepsDetailedCRUD):
                 _id = request.data.get('page_step')
                 if _id is None:
@@ -131,86 +107,57 @@ class ModelCRUD(GenericAPIView):
                 _id = request.data.get('case')
                 if _id is None:
                     _id = request.query_params.get('case')
+            elif isinstance(self, ApiCaseDetailedCRUD):
+                if request.method == "DELETE":
+                    _id = case_id
+                else:
+                    _id = request.data.get('case')
+                    if _id is None:
+                        _id = request.query_params.get('case')
             else:
                 return
             if _id is not None:
                 th = Thread(target=self.callback, args=(_id,))
                 th.start()
 
-#
-# class ModelQuery(ViewSet):
-#     model = None
-#     serializer_class = None
-#
-#     @action(methods=['get'], detail=False)
-#     def query_by(self, request: Request):
-#         query_dict = dict(request.query_params.lists())
-#         del query_dict['pageSize']
-#         del query_dict['page']
-#         query_dict = {k: v[0] for k, v in query_dict.items()}
-#         books = self.model.objects.filter(**query_dict)
-#         return Response({
-#             "code": 200,
-#             "msg": "获取数据成功",
-#             "data": paging_list(
-#                 request.query_params.get("pageSize"),
-#                 request.query_params.get("page"),
-#                 books,
-#                 self.serializer_class
-#             ),
-#             'totalSize': len(books)
-#         })
-#         # if request.query_params.get('type'):
-#         #     # 有type页签的查询
-#         #     return self.type_query_by(request)
-#         # else:
-#         #     # 无type页签的查询
-#         #     return self.not_type_query_by(request)
-#
-#     def type_query_by(self, request: Request):
-#         name = request.query_params.get('name')
-#         id_ = request.query_params.get('id')
-#         project = request.query_params.get('project')
-#         books = None
-#         if project is not None and name is not None:
-#             books = self.model.objects.filter(
-#                 project=Project.objects.get(id=project).id,
-#                 name=name,
-#                 type=request.query_params.get('type')
-#             ).order_by('id')
-#         elif name is not None and id_ is not None:
-#             books = self.model.objects.filter(name=name,
-#                                               id=id_,
-#                                               type=request.query_params.get('type')).order_by('id')
-#         elif id_:
-#             books = self.model.objects.filter(id=id_,
-#                                               type=request.query_params.get('type')).order_by('id')
-#         elif name:
-#             books = self.model.objects.filter(name=name,
-#                                               type=request.query_params.get('type')).order_by('id')
-#         elif project:
-#             books = self.model.objects.filter(
-#                 project=Project.objects.get(id=project).id,
-#                 type=request.query_params.get('type')
-#             ).order_by('id')
-#         if books is not None:
-#             return Response({
-#                 "code": 200,
-#                 "msg": "获取数据成功",
-#                 "data": paging_list(
-#                     request.query_params.get("pageSize"),
-#                     request.query_params.get("page"),
-#                     books,
-#                     self.serializer_class
-#                 ),
-#                 'totalSize': len(books)
-#             })
-#         return Response({
-#             "code": 300,
-#             "msg": "搜索结果为空",
-#             "data": [],
-#             'totalSize': None
-#         })
-#
-#     def not_type_query_by(self, request: Request):
-#         pass
+    def paging_list(self, size, current, books, serializer) -> list:
+        """
+        分页
+        @param size:
+        @param current:现在页数
+        @param books:
+        @param serializer:
+        @return:
+        """
+        if int(books.count()) <= int(size):
+            current = 1
+        pagesize = Paginator(books, size)
+        page = pagesize.page(current)
+        return serializer(instance=page, many=True).data
+
+    def inside_post(self, data: dict):
+        serializer = self.serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return serializer.data
+        else:
+            logger.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+
+    def inside_put(self, _id: int, data: dict):
+        serializer = self.serializer(
+            instance=self.model.objects.get(pk=_id),
+            data=data
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return serializer.data
+        else:
+            logger.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+
+    def inside_delete(self, _id: int):
+        """
+        删除一条记录
+        @param _id:
+        @return:
+        """
+        self.model.objects.get(id=_id).delete()

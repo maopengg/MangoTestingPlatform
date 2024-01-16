@@ -6,183 +6,199 @@
           <div class="info-wrapper">
             <div class="avatar-wrapper">
               <div class="avatar" :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }" @mouseenter="avatarTouchStart">
-                <img :src="avatar" />
+                <img :src="userStore.avatar" />
               </div>
               <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
                 <icon-camera style="color: #fff; font-size: 30px" />
               </div>
             </div>
             <div class="text-xl">
-              {{ nickName }}
-            </div>
-            <div class="des-wrapper">
-              <i class="el-icon-edit"></i>
-              冰冻三尺，非一日之寒，成大事者不拘小节。
+              {{ userStore.nickName }}
             </div>
             <div class="text-wrapper">
               <div class="label">昵称：</div>
-              <div class="value">蝴蝶飞呀飞</div>
+              <div class="value">{{ personalCenterData.data.nickname }}</div>
             </div>
             <div class="text-wrapper">
-              <div class="label">性别：</div>
-              <div class="value">男</div>
+              <div class="label">账号：</div>
+              <div class="value">{{ personalCenterData.data.username }}</div>
             </div>
             <div class="text-wrapper">
-              <div class="label">生日：</div>
-              <div class="value">2021-1-1</div>
+              <div class="label">角色：</div>
+              <div class="value">{{ personalCenterData.data.role?.name }}</div>
             </div>
             <div class="text-wrapper">
-              <div class="label">部门：</div>
-              <div class="value">研发部</div>
+              <div class="label">最近登录时间：</div>
+              <div class="value">{{ personalCenterData.data.last_login_time }}</div>
+            </div>
+            <div class="text-wrapper">
+              <div class="label">socketIP断言：</div>
+              <div class="value">{{ personalCenterData.data.ip }}</div>
+            </div>
+            <div class="text-wrapper">
+              <div class="label">邮箱：</div>
+              <div class="value">{{ personalCenterData.data.mailbox }}</div>
             </div>
             <div class="mt-4">
-              <a-space align="center" :style="{ flexWrap: 'wrap' }">
-                <a-tag color="green" size="small">技术控</a-tag>
-                <a-tag color="green" size="small">爱学习</a-tag>
-                <a-tag color="green" size="small">大嘴巴</a-tag>
-                <a-tag color="green" size="small">宅男</a-tag>
-              </a-space>
-            </div>
-          </div>
-        </a-card>
-        <a-card :bordered="false" title="待办事项" class="flex-1 card-border-radius wating-box" :body-style="{ padding: '10px' }">
-          <div v-for="(item, index) of watingJobs" :key="index" class="flex wating-item">
-            <div class="flex-1">
-              {{ item.title }}
-            </div>
-            <div style="width: 40px">
-              <a-tag :color="item.status === 0 ? 'red' : 'green'" size="small">
-                {{ item.status === 0 ? '未完成' : '已完成' }}
-              </a-tag>
-            </div>
-          </div>
-        </a-card>
-      </div>
-      <div class="mt-2">
-        <a-card :bordered="false" title="消息中心" class="card-border-radius flex-sub" :body-style="{ padding: '10px' }">
-          <template #extra>
-            <a-button type="primary" size="mini"> 查看更多</a-button>
-          </template>
-          <div v-for="(item, index) of messages" :key="index" class="flex items-center message-wrapper">
-            <div class="notify" :class="{ 'bg-red-500': item.status === 0, 'bg-green-500': item.status === 1 }"></div>
-            <div class="flex-1 ml-2">
-              <div class="message-title">
-                {{ item.title }}
-              </div>
-              <div class="content">
-                {{ item.content }}
-              </div>
+              <a-button type="text" size="mini" @click="onUpdate">修改密码</a-button>
             </div>
           </div>
         </a-card>
       </div>
     </div>
   </div>
+  <ModalDialog ref="modalDialogRef" :title="personalCenterData.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import useUserStore from '@/store/modules/user'
-import { defineComponent, ref } from 'vue'
-
-export default defineComponent({
-  name: 'Personal',
-  setup() {
-    const touched = ref(false)
-    const uploaded = ref(false)
-    const avatarTouchStart = () => {
-      touched.value = true
+import { nextTick, onMounted, reactive, ref } from 'vue'
+import { get, put } from '@/api/http'
+import { userPassword, userInfo } from '@/api/url'
+import { FormItem, ModalDialogType } from '@/types/components'
+import { Message } from '@arco-design/web-vue'
+import { getFormItems } from '@/utils/datacleaning'
+import { websocket } from '@/utils/socket'
+const userStore = useUserStore()
+const touched = ref(false)
+const uploaded = ref(false)
+const formModel = ref({})
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const personalCenterData = reactive({
+  actionTitle: '修改密码',
+  data: {}
+})
+const formItems: FormItem[] = reactive([
+  {
+    label: '原始密码',
+    key: 'password',
+    value: '',
+    placeholder: '请输入原始密码',
+    required: true,
+    type: 'input',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
     }
-    const uploadAvatar = () => {
-      uploaded.value = true
-      setTimeout(() => {
-        touched.value = false
-        uploaded.value = false
-      }, 1000)
+  },
+  {
+    label: '新密码',
+    key: 'new_password',
+    value: null,
+    type: 'input',
+    required: true,
+    placeholder: '请输入新密码',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
     }
-    const userStore = useUserStore()
-    return {
-      touched,
-      uploaded,
-      messages: [
-        {
-          title: '重要通知：今天要加班，一堆bug等着修改，请全体家人们注意',
-          content:
-            '为了配合市场家人们努力开单，从今天开始，技术部及教研老师们要努力加班，全力配合市场的家人们多多开单。谢谢大家的支持与配合。',
-          status: 0 // 0未读 1已读
-        },
-        {
-          title: '重要通知：今天要加班，一堆bug等着修改，请全体家人们注意',
-          content:
-            '为了配合市场家人们努力开单，从今天开始，技术部及教研老师们要努力加班，全力配合市场的家人们多多开单。谢谢大家的支持与配合。',
-          status: 1 // 0未读 1已读
-        },
-        {
-          title: '重要通知：今天要加班，一堆bug等着修改，请全体家人们注意',
-          content:
-            '为了配合市场家人们努力开单，从今天开始，技术部及教研老师们要努力加班，全力配合市场的家人们多多开单。谢谢大家的支持与配合。',
-          status: 1 // 0未读 1已读
-        },
-        {
-          title: '重要通知：今天要加班，一堆bug等着修改，请全体家人们注意',
-          content:
-            '为了配合市场家人们努力开单，从今天开始，技术部及教研老师们要努力加班，全力配合市场的家人们多多开单。谢谢大家的支持与配合。',
-          status: 1 // 0未读 1已读
-        }
-      ],
-      watingJobs: [
-        {
-          title: '和朋友同事一起玩王者，吃鸡',
-          status: 0 // 0未完成，1已完成
-        },
-        {
-          title: '下班写今日总结',
-          status: 1 // 0未完成，1已完成
-        },
-        {
-          title: '中午打卡，吃饭，下去买一瓶快乐水',
-          status: 0 // 0未完成，1已完成
-        },
-        {
-          title: '给项目经理演示项目成果，汇报项目进度，查看同事新提交的bug',
-          status: 1 // 0未完成，1已完成
-        },
-        {
-          title: '上班打卡',
-          status: 0 // 0未完成，1已完成
-        },
-        {
-          title: '和朋友同事一起玩王者，吃鸡',
-          status: 0 // 0未完成，1已完成
-        },
-        {
-          title: '下班写今日总结',
-          status: 1 // 0未完成，1已完成
-        },
-        {
-          title: '中午打卡，吃饭，下去买一瓶快乐水',
-          status: 0 // 0未完成，1已完成
-        },
-        {
-          title: '给项目经理演示项目成果，汇报项目进度，查看同事新提交的bug',
-          status: 1 // 0未完成，1已完成
-        },
-        {
-          title: '上班打卡',
-          status: 0 // 0未完成，1已完成
-        }
-      ],
-      avatar: userStore.avatar,
-      nickName: userStore.nickName,
-      avatarTouchStart,
-      uploadAvatar
+  },
+  {
+    label: '确认密码',
+    key: 'confirm_password',
+    value: '',
+    type: 'input',
+    required: true,
+    placeholder: '请输入确认密码',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
     }
   }
+])
+
+const avatarTouchStart = () => {
+  touched.value = true
+}
+const uploadAvatar = () => {
+  uploaded.value = true
+  setTimeout(() => {
+    touched.value = false
+    uploaded.value = false
+  }, 1000)
+}
+function onUpdate() {
+  console.log(formItems)
+  modalDialogRef.value?.toggle()
+  nextTick(() => {
+    formItems.forEach((it) => {
+      it.value = ''
+    })
+  })
+}
+function doRefresh() {
+  get({
+    url: userInfo,
+    data: () => {
+      return {
+        id: userStore.userId
+      }
+    }
+  })
+    .then((res) => {
+      if (res.data) {
+        personalCenterData.data = res.data[0]
+      }
+    })
+    .catch(console.log)
+}
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = getFormItems(formItems)
+    value['id'] = userStore.userId
+    put({
+      url: userPassword,
+      data: () => {
+        return value
+      }
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        userStore.logout().then(() => {
+          window.localStorage.removeItem('visited-routes')
+          window.location.reload()
+          localStorage.clear()
+          websocket(13213, false)
+        })
+      })
+      .catch(console.log)
+  }
+}
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+  })
 })
 </script>
 <style lang="less" scoped>
 .box-wrapper {
   .personal-box {
-    width: 30%;
+    width: 100%;
 
     .info-wrapper {
       text-align: center;

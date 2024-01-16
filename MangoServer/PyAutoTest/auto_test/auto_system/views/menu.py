@@ -51,7 +51,11 @@ def ad_routes():
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/config",
                     "menuName": "配置与调试",
-                }
+                }, {
+                    "parentPath": "/uitest",
+                    "menuUrl": "/uitest/ui-test-report",
+                    "menuName": "测试报告",
+                },
             ],
         },
         {
@@ -60,11 +64,6 @@ def ad_routes():
             "icon": "IconSend",
             "parentPath": "",
             "children": [
-                # {
-                #     "parentPath": "/apitest",
-                #     "menuUrl": "/apitest/postman",
-                #     "menuName": "PostMan",
-                # },
                 # {
                 #     "parentPath": "/apitest",
                 #     "menuUrl": "/apitest/mock",
@@ -85,11 +84,11 @@ def ad_routes():
                     "menuUrl": "/apitest/api-public",
                     "menuName": "公共方法",
                 },
-                # {
-                #     "parentPath": "/apitest",
-                #     "menuUrl": "/apitest/api-test-result",
-                #     "menuName": "测试报告",
-                # },
+                {
+                    "parentPath": "/apitest",
+                    "menuUrl": "/apitest/api-test-report",
+                    "menuName": "测试报告",
+                },
             ],
         },
         # {
@@ -143,6 +142,11 @@ def ad_routes():
                     "parentPath": "/testconfig",
                     "menuUrl": "/testconfig/notice",
                     "menuName": "通知配置",
+                },
+                {
+                    "parentPath": "/testconfig",
+                    "menuUrl": "/testconfig/test-files",
+                    "menuName": "测试文件",
                 }
             ],
         },
@@ -189,6 +193,12 @@ def ad_routes():
                     "menuName": "角色管理",
                     "badge": "12",
                 },
+                {
+                    "parentPath": "/system",
+                    "menuUrl": "/system/user-logs",
+                    "menuName": "登录日志",
+                    "badge": "13",
+                }
                 # {
                 #     "parentPath": "/system",
                 #     "menuUrl": "/system/menu",

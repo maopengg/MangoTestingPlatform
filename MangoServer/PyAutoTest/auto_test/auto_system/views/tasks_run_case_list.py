@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
+from django.forms.models import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -12,10 +13,9 @@ from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
@@ -31,7 +31,6 @@ class TasksRunCaseListSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     task = ScheduledTasksSerializers(read_only=True)
-    ui_case = UiCaseSerializers(read_only=True)
 
     class Meta:
         model = TasksRunCaseList
@@ -45,8 +44,18 @@ class TasksRunCaseListCRUD(ModelCRUD):
     serializer = TasksRunCaseListSerializers
 
     def get(self, request: Request):
+        _type = request.GET.get('type')
         books = self.model.objects.filter(task=request.GET.get('id'))
-        return ResponseData.success('获取数据成功', [self.serializer_class(i).data for i in books])
+        data = []
+        for i in books:
+            _dict = model_to_dict(i)
+            _dict['task'] = model_to_dict(i.task)
+            if int(_type) == AutoTestTypeEnum.UI.value and i.case:
+                _dict['case'] = UiCase.objects.get(id=i.case).name
+            elif int(_type) == AutoTestTypeEnum.API.value and i.case:
+                _dict['case'] = ApiCase.objects.get(id=i.case).name
+            data.append(_dict)
+        return ResponseData.success('获取数据成功', data)
 
 
 class TasksRunCaseListViews(ViewSet):
@@ -56,9 +65,10 @@ class TasksRunCaseListViews(ViewSet):
     @action(methods=['get'], detail=False)
     def get_type_case_name(self, request: Request):
         _type = request.query_params.get('type')
+        module_name = request.query_params.get('module_name')
         if int(_type) == AutoTestTypeEnum.UI.value:
-            res = UiCase.objects.values_list('id', 'name')
+            res = UiCase.objects.filter(module_name=module_name).values_list('id', 'name')
         else:
-            res = ApiCase.objects.values_list('id', 'name')
+            res = ApiCase.objects.filter(module_name=module_name).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)

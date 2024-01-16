@@ -9,32 +9,40 @@ from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEmail
 from PyAutoTest.auto_test.auto_system.service.notic_tools.weChatSend import WeChatSend
 from PyAutoTest.enums.system_enum import NoticeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum
 
 log = logging.getLogger('system')
 
 
 class NoticeMain:
-    def __init__(self):
-        pass
 
     @classmethod
-    def notice_main(cls):
-        log.error('请勿使用此方法')
+    def notice_main(cls, project_id: int):
+        notice_obj = NoticeConfig.objects.filter(project=project_id, status=StatusEnum.SUCCESS.value)
+        for i in notice_obj:
+            if i.type == NoticeEnum.MAIL.value:
+                cls.__wend_mail_send(i)
+            elif i.type == NoticeEnum.WECOM.value:
+                cls.__we_chat_send(i)
+            else:
+                log.error('暂不支持钉钉打卡')
 
     @classmethod
-    def we_chat_send(cls, i):
+    def test_notice_send(cls, _id):
+        notice_obj = NoticeConfig.objects.get(id=_id, status=IsItEnabled.right.value)
+        if notice_obj.type == NoticeEnum.MAIL.value:
+            cls.__wend_mail_send(notice_obj)
+        elif notice_obj.type == NoticeEnum.WECOM.value:
+            cls.__we_chat_send(notice_obj)
+        else:
+            log.error('暂不支持钉钉打卡')
+
+    @classmethod
+    def __we_chat_send(cls, i):
         wechat = WeChatSend(i)
         wechat.send_wechat_notification()
 
     @classmethod
-    def wend_mail_send(cls, i):
+    def __wend_mail_send(cls, i):
         email = SendEmail(i)
         email.send_main('测试个数')
-
-    @classmethod
-    def test_notice_send(cls, _id):
-        notice_obj = NoticeConfig.objects.get(id=_id)
-        if notice_obj.type == NoticeEnum.MAIL.value:
-            cls.wend_mail_send(notice_obj)
-        elif notice_obj.type == NoticeEnum.WECOM.value:
-            cls.we_chat_send(notice_obj)

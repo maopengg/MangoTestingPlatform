@@ -12,6 +12,7 @@ export interface UserState {
   selected_environment: number | null
   selected_project: number | null
 }
+
 export enum LayoutMode {
   LTR = 'ltr',
   LCR = 'lcr',

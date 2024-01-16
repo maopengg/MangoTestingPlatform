@@ -14,29 +14,6 @@ class RandomTimeData:
     """ 随机时间类型测试数据 """
     faker = Faker(locale='zh_CN')
 
-    # @classmethod
-    # def timestamp_conversion(cls, time_str: str) -> int:
-    #     """将年月日时分秒转换成时间戳"""
-    #
-    #     try:
-    #         datetime_format = datetime.strptime(str(time_str), "%Y-%m-%d %H:%M:%S")
-    #         timestamp = int(
-    #             time.mktime(datetime_format.timetuple()) * 1000.0
-    #             + datetime_format.microsecond / 1000.0
-    #         )
-    #         return timestamp
-    #     except ValueError as exc:
-    #         raise ValueError('日期格式错误, 需要传入得格式为 "%Y-%m-%d %H:%M:%S" ') from exc
-    #
-    # @classmethod
-    # def time_conversion(cls, time_num: int) -> str:
-    #     """时间戳转换成年月日时分秒"""
-    #     if isinstance(time_num, int):
-    #         time_stamp = float(time_num / 1000)
-    #         time_array = time.localtime(time_stamp)
-    #         other_style_time = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
-    #         return other_style_time
-
     @classmethod
     def now_time(cls) -> str:
         """获取当前年月日时分秒"""
@@ -50,8 +27,11 @@ class RandomTimeData:
         return localtime
 
     @classmethod
-    def get_time_for_min(cls, minute: int = 1) -> int:
-        """获取几分钟后的时间戳 参数：分钟"""
+    def get_time_for_min(cls, **kwargs) -> int:
+        """获取几分钟后的时间戳 参数：minute"""
+        minute = kwargs.get('data')
+        if minute is None:
+            minute = 1
         return int(time.time() + 60 * int(minute)) * 1000
 
     @classmethod
@@ -85,8 +65,11 @@ class RandomTimeData:
         return cls.faker.date_time()
 
     @classmethod
-    def get_before_time(cls, days: int = 1):
-        """获取当今日之前的日期 参数：前几天"""
+    def get_before_time(cls, **kwargs):
+        """获取当今日之前的日期 参数：days"""
+        days = kwargs.get('data')
+        if days is None:
+            days = 1
         yesterday = datetime.now() - timedelta(days=int(days))
         yesterday_str = yesterday.strftime('%Y-%m-%d')
         return yesterday_str
@@ -114,6 +97,26 @@ class RandomTimeData:
         return now_time
 
     @classmethod
+    def get_time_by_type(cls, **kwargs) -> str:
+        """获取当前年月日时分秒并返回指定格式"""
+        types = str(kwargs.get('data'))
+        data_type = ''
+        if types is None or types == '0':
+            data_type = '%Y-%m-%d %H:%M:%S'
+        elif types == '1':
+            data_type = '%Y-%m-%d %H:%M'
+        elif types == '2':
+            data_type = '%Y-%m-%d %H'
+        elif types == '3':
+            data_type = '%Y-%m-%d'
+        elif types == '4':
+            data_type = '%Y-%m'
+        elif types == '5':
+            data_type = '%Y'
+        now_time = datetime.now().strftime(data_type)
+        return now_time
+
+    @classmethod
     def today_date(cls):
         """获取今日0点整时间"""
         _today = date.today().strftime("%Y-%m-%d") + " 00:00:00"
@@ -122,7 +125,6 @@ class RandomTimeData:
     @classmethod
     def time_after_week(cls):
         """获取一周后12点整的时间"""
-
         _time_after_week = (date.today() + timedelta(days=+6)).strftime("%Y-%m-%d") + " 00:00:00"
         return _time_after_week
 
@@ -134,4 +136,4 @@ class RandomTimeData:
 
 
 if __name__ == '__main__':
-    print(RandomTimeData.get_time())
+    print(RandomTimeData.get_before_time(**{}))

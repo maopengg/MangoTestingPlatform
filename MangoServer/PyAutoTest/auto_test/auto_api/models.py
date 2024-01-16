@@ -15,7 +15,7 @@ class ApiInfo(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    # 0和空等于调试用例，1等于本期接口，2是调试完成
+    # 0和空等于录制，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型')
     module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="接口名称", max_length=64)
@@ -24,9 +24,9 @@ class ApiInfo(models.Model):
     method = models.SmallIntegerField(verbose_name="请求方法")
     header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
     params = models.JSONField(verbose_name="参数", null=True)
-    data = models.TextField(verbose_name="data", null=True)
+    data = models.JSONField(verbose_name="data", null=True)
     json = models.JSONField(verbose_name="json", null=True)
-    ass = models.JSONField(verbose_name="公共断言", null=True)
+    file = models.JSONField(verbose_name="file", null=True)
     # 0失败， 1是成功
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
@@ -39,6 +39,7 @@ class ApiCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="测试用例名称", max_length=64)
     case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
@@ -56,11 +57,25 @@ class ApiCaseDetailed(models.Model):
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.SET_NULL, null=True)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
-    header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
+    # 请求
+    url = models.CharField(verbose_name="请求url", max_length=1024, null=True)
+    header = models.TextField(verbose_name="请求头", max_length=2048, null=True)
     params = models.JSONField(verbose_name="参数", null=True)
-    data = models.TextField(verbose_name="data", null=True)
+    data = models.JSONField(verbose_name="data", null=True)
     json = models.JSONField(verbose_name="json", null=True)
-    ass = models.JSONField(verbose_name="公共断言", null=True)
+    file = models.JSONField(verbose_name="file", null=True)
+    # 前置-目前只支持sql
+    front_sql = models.JSONField(verbose_name="前置sql", null=True)
+    # 断言
+    ass_sql = models.JSONField(verbose_name="sql断言", null=True)
+    ass_response_whole = models.TextField(verbose_name="响应全匹配断言", null=True)
+    ass_response_value = models.JSONField(verbose_name="响应值断言", null=True)
+    # 后置
+    posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
+    posterior_response = models.JSONField(verbose_name="后置响应处理", null=True)
+    posterior_sleep = models.CharField(verbose_name="步骤顺序", max_length=64, null=True)
+    # 后置清除 目前只支持sql
+    dump_data = models.JSONField(verbose_name="数据清除", null=True)
 
     class Meta:
         db_table = 'api_case_detailed'
@@ -85,82 +100,31 @@ class ApiPublic(models.Model):
         db_table = 'api_public'
         ordering = ['-id']
 
-# class MockModel(models.Model):
-#     """
-#     mock model
-#     """
-#     relate_interface = models.CharField(max_length=255, default='', verbose_name='关联接口')
-#     mock_data_id = models.IntegerField(default=-1, verbose_name="对应mock数据id")
-#     service = models.CharField(max_length=255, default="", verbose_name="服务方")
-#     origin_url = models.CharField(max_length=500, default="", verbose_name="正常url地址")
-#     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-#     remark = models.CharField(max_length=500, verbose_name="备注")
-#     status = models.CharField(max_length=10, default='notDefault', verbose_name="是否默认状态")
-#     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-#
-#     class Meta:
-#         db_table = 't_mock'
-#         verbose_name = 'mock数据表'
-#         verbose_name_plural = verbose_name
-#
-#
-# class MockDataModel(models.Model):
-#     """
-#     mock data model
-#     """
-#     # id = models.IntegerField(auto_created=True,unique=True, primary_key=True, verbose_name="id")
-#     mockName = models.CharField(max_length=255, null=False, default='', verbose_name="mock名")
-#     # interface = models.ForeignKey(to=InterfaceModel, to_field='interface', related_name='related_mock', on_delete=models.SET(''), verbose_name='接口名' )
-#     interface_name_id = models.CharField(max_length=255, default='', verbose_name="关联接口")
-#     data = models.TextField(verbose_name="mock数据")
-#     author = models.CharField(max_length=50, null=False, default='', verbose_name='创建者')
-#     thirdpart = models.CharField(max_length=255, default='', verbose_name="三方接口")
-#     status = models.CharField(max_length=255, default='undefault', verbose_name="mock状态")
-#     status_code = models.IntegerField(default=200, verbose_name='状态码')
-#     timeout = models.IntegerField(default=0, verbose_name="超时时长")
-#     remarks = models.CharField(max_length=500, verbose_name="备注")
-#     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-#     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-#
-#     class Meta:
-#         db_table = 't_mock_data'
-#         verbose_name = 'mock表'
-#         verbose_name_plural = verbose_name
-#
-#     def get_object(self):
-#         """
-#         :return:
-#         """
-#         return self.mockName
-#
-#
-# # mock服务表
-# class MockServiceModel(models.Model):
-#     service = models.CharField(max_length=255, null=False, default='', verbose_name="服务名")
-#     status = models.CharField(max_length=255, default='1', verbose_name="状态")
-#     author = models.CharField(max_length=50, null=False, default='', verbose_name='创建者')
-#     remarks = models.CharField(max_length=500, default='', verbose_name="备注")
-#     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-#     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-#
-#     class Meta:
-#         db_table = 't_mock_service'
-#         verbose_name = 'mock服务名表'
-#         verbose_name_plural = verbose_name
-#
-#     def __unicode__(self):
-#         return self.service
-#
-#
-# # interface_mock_map表
-# class MockInterfaceMapModel(models.Model):
-#     interface = models.ForeignKey(to=InterfaceModel, to_field='interface', on_delete=models.SET(""), verbose_name="接口名")
-#     mockIds = models.CharField(max_length=500, default='', verbose_name="关联mockId")
-#     remarks = models.CharField(max_length=500, default='', verbose_name="备注")
-#     create_time = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-#     update_time = models.DateTimeField(auto_now=True, verbose_name="更新时间")
-#
-#     class Meta:
-#         db_table = 't_mock_interface_map'
-#         verbose_name = 'mock与接口对应关系表'
-#         verbose_name_plural = verbose_name
+
+class ApiResult(models.Model):
+    """api测试结果"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
+    # 请求
+    url = models.CharField(verbose_name="请求url", max_length=1024, null=True)
+    headers = models.TextField(verbose_name="请求头", null=True)
+    params = models.TextField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.TextField(verbose_name="json", null=True)
+    file = models.TextField(verbose_name="file", null=True)
+    # 响应
+    response_code = models.CharField(verbose_name="响应code码", max_length=64, null=True)
+    response_time = models.CharField(verbose_name="响应时间", max_length=64, null=True)
+    response_headers = models.TextField(verbose_name="响应headers", null=True)
+    response_text = models.TextField(verbose_name="响应文本", null=True)
+    response_json = models.TextField(verbose_name="响应文本json对象", null=True)
+    status = models.SmallIntegerField(verbose_name="断言结果", null=True)
+    error_message = models.CharField(verbose_name="失败原因", max_length=1024, null=True)
+    all_cache = models.TextField(verbose_name="执行到这个用例时的缓存数据", null=True)
+
+    class Meta:
+        db_table = 'api_result'

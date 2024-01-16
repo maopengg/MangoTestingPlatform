@@ -21,6 +21,7 @@ class TestObject(models.Model):
     test_type = models.SmallIntegerField(verbose_name="对应什么客户端")
     name = models.CharField(verbose_name="被测试的对象", max_length=64)
     value = models.CharField(verbose_name="被测试的对象", max_length=1024)
+    db_status = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
         db_table = 'test_obj'
@@ -52,7 +53,6 @@ class Database(models.Model):
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     host = models.CharField(verbose_name="数据库地址", max_length=64, null=True)
     port = models.IntegerField(verbose_name="端口", null=True)
-    status = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
         db_table = 'data_base'
@@ -66,6 +66,7 @@ class TimeTasks(models.Model):
     trigger_type = models.CharField(verbose_name="触发器类型", max_length=64, null=True)
     month = models.CharField(verbose_name="月", max_length=64, null=True)
     day = models.CharField(verbose_name="天", max_length=64, null=True)
+    day_of_week = models.CharField(verbose_name="周", max_length=64, null=True)
     hour = models.CharField(verbose_name="小时", max_length=64, null=True)
     minute = models.CharField(verbose_name="分钟", max_length=64, null=True)
 
@@ -81,7 +82,9 @@ class TestSuiteReport(models.Model):
     # type=0是UI,=1是接口,=2是性能
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    error_message = models.CharField(verbose_name="错误提示", max_length=64, null=True)
+    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+
+    error_message = models.TextField(verbose_name="错误提示", null=True)
     # 0是进行中，1是已完成
     run_status = models.SmallIntegerField(verbose_name="执行状态", null=True)
     # null是待测试完成，0是失败，1是成功
@@ -102,6 +105,7 @@ class ScheduledTasks(models.Model):
     type = models.SmallIntegerField(verbose_name="任务类型", null=True)
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
+    is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
 
     class Meta:
         db_table = 'scheduled_tasks'
@@ -113,7 +117,7 @@ class TasksRunCaseList(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=ScheduledTasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    ui_case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.SmallIntegerField(verbose_name="api_case_id", null=True)
 
     class Meta:
         db_table = 'tasks_run_case_list'

@@ -17,7 +17,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -80,7 +80,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getDepartmentList } from '@/api/url'
+import { userDepartmentList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -88,6 +88,7 @@ import { onMounted, ref, nextTick, reactive } from 'vue'
 import { getFormItems } from '@/utils/datacleaning'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
+
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { onSelectionChange } = useRowSelection()
@@ -153,7 +154,7 @@ const tableColumns = useTableColumn([
 
 function doRefresh() {
   get({
-    url: getDepartmentList,
+    url: userDepartmentList,
     data: () => {
       return {
         page: pagination.page,
@@ -189,7 +190,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getDepartmentList,
+        url: userDepartmentList,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -221,6 +222,7 @@ function onUpdate(item: any) {
     })
   })
 }
+
 function onClick(record: any) {
   router.push({
     path: '/system/project-module',
@@ -230,13 +232,14 @@ function onClick(record: any) {
     }
   })
 }
+
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = getFormItems(formItems)
     if (projectData.isAdd) {
       post({
-        url: getDepartmentList,
+        url: userDepartmentList,
         data: () => {
           value['status'] = 1
           return value
@@ -245,12 +248,12 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
-          project.getItems()
+          project.getProject()
         })
         .catch(console.log)
     } else {
       put({
-        url: getDepartmentList,
+        url: userDepartmentList,
         data: () => {
           value['id'] = projectData.updateId
           return value
@@ -259,19 +262,20 @@ function onDataForm() {
         .then((res) => {
           Message.success(res.msg)
           doRefresh()
-          project.getItems()
+          project.getProject()
         })
         .catch(console.log)
     }
   }
 }
+
 const onModifyStatus = async (newValue: boolean, id: number, name: string) => {
   return new Promise<any>((resolve, reject) => {
     setTimeout(async () => {
       try {
         let value: any = false
         await put({
-          url: getDepartmentList,
+          url: userDepartmentList,
           data: () => {
             return {
               id: id,

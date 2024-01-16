@@ -17,7 +17,6 @@ class Cache:
         :param key: 唯一标识
         :return: 存在结果
         """
-
         is_exist = False
         if key in cache:
             is_exist = True

@@ -13,50 +13,50 @@ class RandomNumberData:
     """ 随机的数字类型测试数据 """
     faker = Faker(locale='zh_CN')
 
-    @staticmethod
-    def time_random():
+    @classmethod
+    def time_random(cls):
         """获取基于当前时间戳的随机五位数"""
         s = int(time.time())
         s = str(s)
         return s[5:len(s)]
 
-    @staticmethod
-    def random_0_9() -> int:
+    @classmethod
+    def random_0_9(cls) -> int:
         """0-9的随机数"""
         _data = random.randint(0, 9)
         return _data
 
-    @staticmethod
-    def random_0_5() -> int:
+    @classmethod
+    def random_0_5(cls) -> int:
         """0-9的随机数"""
         _data = random.randint(0, 5)
         return _data
 
-    @staticmethod
-    def random_10_99() -> int:
+    @classmethod
+    def random_10_99(cls) -> int:
         """10-99的随机数"""
         _data = random.randint(10, 99)
         return _data
 
-    @staticmethod
-    def random_100_999() -> int:
+    @classmethod
+    def random_100_999(cls) -> int:
         """100-999的随机数"""
         _data = random.randint(100, 999)
         return _data
 
-    @staticmethod
-    def random_0_5000() -> int:
+    @classmethod
+    def random_0_5000(cls) -> int:
         """0-5000的随机数"""
         _data = random.randint(0, 5000)
         return _data
 
-    @staticmethod
-    def random_float():
+    @classmethod
+    def random_float(cls):
         """小数"""
         return random.random()
 
-    @staticmethod
-    def random_two_float():
+    @classmethod
+    def random_two_float(cls):
         """随机两位小数"""
         return round(random.random(), 2)
 

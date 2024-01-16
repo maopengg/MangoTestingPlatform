@@ -14,10 +14,10 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiPageStepsDetailed, UiPageSteps
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
-from PyAutoTest.enums.ui_enum import DevicePlatform
+from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.tools.cache_utils.redis_base import RedisBase
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 logger = logging.getLogger('ui')
 
@@ -87,13 +87,42 @@ class UiPageStepsDetailedView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ope_type(self, request: Request):
-        page_type = int(request.query_params.get('page_type'))
+        page_type = request.query_params.get('page_type')
         redis = RedisBase('default')
-        if page_type == DevicePlatform.WEB.value:
+        data = []
+        if not page_type:
+            data.append({
+                'value': 'all',
+                'label': '请选择操作端',
+                'children': json.loads(redis.get('PlaywrightElementOperation'))
+            })
+            ui_auto = redis.get('UiautomatorApplication')
+            if ui_auto:
+                data.append({
+                    'value': 'all',
+                    'label': '请选择操作端',
+                    'children': json.loads(ui_auto)
+                })
+            desktop = redis.get('DESKTOP_OPE')
+            if desktop:
+                data.append({
+                    'value': 'all',
+                    'label': '请选择操作端',
+                    'children': json.loads(desktop)
+                })
+            ios = redis.get('IOS_OPE')
+            if ios:
+                data.append({
+                    'value': 'all',
+                    'label': '请选择操作端',
+                    'children': json.loads(ios)
+                })
+            return ResponseData.success('获取操作类型成功', data)
+        if int(page_type) == DriveTypeEnum.WEB.value:
             data = json.loads(redis.get('PlaywrightElementOperation'))
-        elif page_type == DevicePlatform.ANDROID.value:
+        elif int(page_type) == DriveTypeEnum.ANDROID.value:
             data = json.loads(redis.get('UiautomatorApplication'))
-        elif page_type == DevicePlatform.DESKTOP.value:
+        elif int(page_type) == DriveTypeEnum.DESKTOP.value:
             data = json.loads(redis.get('DESKTOP_OPE'))
         else:
             data = json.loads(redis.get('IOS_OPE'))
@@ -101,21 +130,23 @@ class UiPageStepsDetailedView(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_ass_type(self, request: Request):
-        page_type = int(request.query_params.get('page_type'))
-
+        page_type = request.query_params.get('page_type')
         redis = RedisBase('default')
-        if page_type == DevicePlatform.WEB.value:
-            data = json.loads(redis.get('PlaywrightAssertion'))
-        elif page_type == DevicePlatform.ANDROID.value:
-            data = json.loads(redis.get('UiautomatorAssertion'))
-        elif page_type == DevicePlatform.DESKTOP.value:
-            data = json.loads(redis.get('DESKTOP_ASS'))
+        if page_type:
+            if int(page_type) == DriveTypeEnum.WEB.value:
+                data = json.loads(redis.get('PlaywrightAssertion'))
+            elif int(page_type) == DriveTypeEnum.ANDROID.value:
+                data = json.loads(redis.get('UiautomatorAssertion'))
+            elif int(page_type) == DriveTypeEnum.DESKTOP.value:
+                data = json.loads(redis.get('DESKTOP_ASS'))
+            else:
+                data = json.loads(redis.get('IOS_ASS'))
+            data.append({'value': 'PublicAssertion',
+                         'label': '元素文本',
+                         'children': json.loads(redis.get('PublicAssertion'))})
+            data.append(json.loads(redis.get('SqlAssertion'))[0])
         else:
-            data = json.loads(redis.get('IOS_ASS'))
-        data.append({'value': 'PublicAssertion',
-                     'label': '元素文本',
-                     'children': json.loads(redis.get('PublicAssertion'))})
-        data.append(json.loads(redis.get('SqlAssertion'))[0])
+            data = json.loads(redis.get('PublicAssertion'))
         return ResponseData.success('获取断言类型成功', data)
 
     @action(methods=['get'], detail=False)

@@ -51,7 +51,7 @@
 <script lang="ts" setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { getProjectModule } from '@/api/url'
+import { userProjectModule } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
@@ -150,7 +150,7 @@ function onDelete(record: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getProjectModule,
+        url: userProjectModule,
         data: () => {
           return {
             id: '[' + record.id + ']'
@@ -190,7 +190,7 @@ function onDataForm() {
     value['project'] = route.query.id
     if (runCaseData.isAdd) {
       post({
-        url: getProjectModule,
+        url: userProjectModule,
         data: () => {
           return value
         }
@@ -202,7 +202,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getProjectModule,
+        url: userProjectModule,
         data: () => {
           value['id'] = runCaseData.updateId
           return value
@@ -220,9 +220,10 @@ function onDataForm() {
 function doResetSearch() {
   window.history.back()
 }
+
 function doRefresh() {
   get({
-    url: getProjectModule,
+    url: userProjectModule,
     data: () => {
       return {
         project: route.query.id

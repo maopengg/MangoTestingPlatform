@@ -9,10 +9,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import my_task
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
 from PyAutoTest.settings import DRIVER, SERVER
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class TimeTasksSerializers(serializers.ModelSerializer):
@@ -35,7 +35,7 @@ class TimeTasksViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def trigger_timing(self, request: Request):
-        case_json, res = my_task(request.query_params.get('id'))
+        case_json, res = Tasks.task(request.query_params.get('id'))
         if res:
             return ResponseData.success('触发定时任务成功', case_json)
 

@@ -1,247 +1,615 @@
 <template>
-  <div class="main-container">
-    <a-card
-      title="接口请求控制台"
-      :bodyStyle="{ padding: '20px' }"
-      :headStyle="{ padding: '0 10px' }"
-      size="small"
-      :bordered="false"
-      class="card-border-radius"
-    >
+  <div>
+    <a-card title="组合用例场景">
       <template #extra>
         <a-space>
-          <a-button type="primary" size="small" @click="caseRun">执行</a-button>
-          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          <a-button type="primary" size="small" @click="addApiInfo">增加接口</a-button>
+          <a-button status="success" size="small" @click="caseRun(null)">全部执行</a-button>
+          <a-button type="primary" status="warning" size="small" @click="doResetSearch">返回</a-button>
         </a-space>
       </template>
-      <div class="flex">
-        <div class="text-lg flex-sub">
-          <span> 查询依赖数据： </span>
-          <a-space>
-            <a-input :style="{ width: '200px' }" placeholder="请输入函数名称" v-model="input" va allow-clear />
-          </a-space>
-          <a-space>
-            <a-button type="primary" status="warning" size="small" @click="obtain">查看</a-button>
-          </a-space>
+      <div class="container">
+        <a-space direction="vertical" style="width: 50%">
+          <span>用例ID：{{ pageData.record.id }}</span>
+          <span>所属项目：{{ pageData.record.project?.name }}</span>
+          <span>顶级模块：{{ pageData.record.module_name?.superior_module }}</span>
+          <span>所属模块：{{ pageData.record.module_name?.name }}</span>
+        </a-space>
+        <a-space direction="vertical" style="width: 50%">
+          <span>用例名称：{{ pageData.record.name }}</span>
+          <span>用例负责人：{{ pageData.record.case_people?.nickname }}</span>
+          <span>执行顺序：{{ pageData.record.case_flow }}</span>
+        </a-space>
+      </div>
+    </a-card>
+    <a-card>
+      <div class="container">
+        <div class="left">
+          <a-table
+            :columns="columns"
+            :data="apiCaseData.data"
+            :draggable="{ type: 'handle', width: 40 }"
+            :pagination="false"
+            :bordered="true"
+            @row-click="select"
+            @change="handleChange"
+          >
+            <template #columns>
+              <a-table-column
+                v-for="item of columns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.dataIndex"
+                :fixed="item.fixed"
+              >
+                <template v-if="item.dataIndex === 'client'" #cell="{ record }">
+                  <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
+                  <a-tag color="magenta" size="small" v-else-if="record.client === 1">APP</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'method'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
+                  <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
+                  <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
+                  <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="caseRun(record.case_sort)">执行到此处</a-button>
+                  <a-button type="text" size="mini" @click="refresh(record.id)">刷新</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
         </div>
-        <div class="flex-sub">
-          <a-descriptions title="响应基础信息" :data="apiData.responseData" size="small" :column="1" />
-        </div>
-        <div class="flex-sub">
-          <a-descriptions title="响应基础信息" :data="apiData.responseData" size="small" :column="1" />
+        <div class="right">
+          <a-space direction="vertical" fill>
+            <a-radio-group v-model="apiCaseData.position" type="button" @change="clickRadioGroup" size="large">
+              <a-radio value="request" :default-checked="true">请求信息</a-radio>
+              <a-radio value="front">前置处理</a-radio>
+              <a-radio value="response">响应结果</a-radio>
+              <a-radio value="assertion">接口断言</a-radio>
+              <a-radio value="posterior">后置处理</a-radio>
+              <a-radio value="dump">数据清除</a-radio>
+              <a-radio value="cache">缓存数据</a-radio>
+              <a-button type="text" :disabled="apiCaseData.disabled" @click="clickAdd">增加一条</a-button>
+            </a-radio-group>
+            <a-tabs position="left" @tab-click="tabsChange" :default-active-key="0">
+              <a-tab-pane v-for="item of apiCaseData.selectData" :key="item.key" :title="item.title">
+                <template v-if="item.type === 'descriptions'">
+                  <a-descriptions style="margin-top: 20px" :data="item.data" :column="1" />
+                </template>
+                <template v-else-if="item.type === 'textarea'">
+                  <a-textarea
+                    placeholder="请输入等待时间单位秒"
+                    v-model="item.data"
+                    @blur="blurSave(item)"
+                    auto-size
+                    allow-clear
+                    show-word-limit
+                  />
+                </template>
+                <template v-else-if="item.type === 'list'">
+                  <a-space direction="vertical" fill>
+                    <a-space v-for="(inputObj, index) of item.data" :key="index">
+                      <a-space>
+                        <a-input placeholder="请输入前置sql" v-model="item.data[index]" @blur="blurSave(item)" />
+                        <a-button type="text" size="small" status="danger" @click="removeFrontSql(item, index)">移除 </a-button>
+                      </a-space>
+                    </a-space>
+                  </a-space>
+                </template>
+                <template v-else-if="item.type === 'assertion'">
+                  <a-space direction="vertical">
+                    <a-space v-for="(value, index) of item.data" :key="index">
+                      <a-input placeholder="请输入sql语句" v-model="item.data[index].value" @blur="blurSave(item)" />
+                      <a-cascader
+                        v-model="item.data[index].method"
+                        :options="apiCaseData.ass"
+                        :default-value="item.data[index].method"
+                        expand-trigger="hover"
+                        placeholder="请选择断言方法"
+                        value-key="key"
+                      />
+                      <a-input placeholder="请输入预期结果" v-model="item.data[index].expect" @blur="blurSave(item)" />
+                      <a-button type="text" status="danger" @click="removeFrontSql(item, index)">移除</a-button>
+                    </a-space>
+                  </a-space>
+                </template>
+                <template v-else-if="item.type === 'posterior'">
+                  <a-space direction="vertical">
+                    <a-space v-for="(value, index) of item.data" :key="index">
+                      <a-input placeholder="请输入前置sql" v-model="item.data[index].key" @blur="blurSave(item)" />
+                      <a-input placeholder="输入提取出的值的key" v-model="item.data[index].value" @blur="blurSave(item)" />
+
+                      <a-button type="text" size="small" status="danger" @click="removeFrontSql(item, index)">移除 </a-button>
+                    </a-space>
+                  </a-space>
+                </template>
+                <template v-else>
+                  <div>
+                    <span>{{ item.data }}</span>
+                  </div>
+                </template>
+              </a-tab-pane>
+            </a-tabs>
+          </a-space>
         </div>
       </div>
     </a-card>
-    <div class="mt-2"></div>
-    <a-collapse :default-active-key="['1', '2']" :bordered="true">
-      <a-collapse-item header="请求信息" key="1">
-        <div>
-          <a-tabs>
-            <a-tab-pane key="0" title="基础信息">
-              <a-descriptions style="margin-top: 20px" :data="apiData.requestData" size="small" :column="1" />
-            </a-tab-pane>
-            <a-tab-pane key="1" title="请求体">{{ apiData.apiRequestBody }}</a-tab-pane>
-            <a-tab-pane key="2" title="请求头">{{ apiData.apiRequestHead }}</a-tab-pane>
-          </a-tabs>
-        </div>
-      </a-collapse-item>
-      <a-collapse-item header="响应信息" key="2">
-        <div>
-          <a-tabs>
-            <a-tab-pane key="0" title="响应体">{{ apiData.apiResponseBody }}</a-tab-pane>
-            <a-tab-pane key="1" title="请求头">{{ apiData.apiResponseHead }}</a-tab-pane>
-          </a-tabs>
-        </div>
-      </a-collapse-item>
-      <a-collapse-item header="前置依赖关系" key="3">
-        <div>Beijing Toutiao Technology Co., Ltd.</div>
-      </a-collapse-item>
-      <a-collapse-item header="后置结果处理" key="4">
-        <div>Beijing Toutiao Technology Co., Ltd.</div>
-      </a-collapse-item>
-      <a-collapse-item header="接口断言验证" key="5">
-        <div>Beijing Toutiao Technology Co., Ltd.</div>
-      </a-collapse-item>
-      <a-collapse-item header="后置数据清除" key="6">
-        <div>Beijing Toutiao Technology Co., Ltd.</div>
-      </a-collapse-item>
-    </a-collapse>
   </div>
+  <ModalDialog ref="modalDialogRef" :title="apiCaseData.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="apiCaseData.moduleList"
+              :field-names="fieldNames"
+              @change="getModuleApi(item.value)"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'api_info'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="apiCaseData.apiList"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref, reactive, nextTick } from 'vue'
-import { Message, Notification } from '@arco-design/web-vue'
-import { get } from '@/api/http'
-import { ApiRun, ApiCase, getRandomData, GetHeader } from '@/api/url'
+import { reactive, nextTick, onMounted, ref } from 'vue'
+import { deleted, get, post, put } from '@/api/http'
+
+import {
+  apiCaseDetailed,
+  systemEnumEnd,
+  systemEnumMethod,
+  apiRun,
+  userProjectModuleGetAll,
+  apiInfoName,
+  apiPutCaseSort,
+  uiPageStepsDetailedAss,
+  apiPutRefreshApiInfo
+} from '@/api/url'
 import { useRoute } from 'vue-router'
+import { useTestObj } from '@/store/modules/get-test-obj'
+import { getFormItems } from '@/utils/datacleaning'
+import { FormItem, ModalDialogType } from '@/types/components'
+import { fieldNames } from '@/setting'
+import { Message, Modal } from '@arco-design/web-vue'
+import { usePageData } from '@/store/page-data'
+
+const testObj = useTestObj()
+const modalDialogRef = ref<ModalDialogType | null>(null)
+const formModel = ref({})
+const pageData = usePageData()
 
 const route = useRoute()
-
-const apiData = reactive({
-  apiRequestType: '0',
-  apiRequestBody: '-',
-  apiRequestHead: '-',
-  apiResponseType: '0',
-  apiResponseBody: '-',
-  apiResponseHead: '-',
-  requestData: [
-    {
-      label: '用例ID',
-      value: '-',
-      key: 'id'
-    },
-    {
-      label: '用例名称',
-      value: '-',
-      key: 'name'
-    },
-    {
-      label: '请求方法',
-      value: '-',
-      key: 'method'
-    },
-    {
-      label: 'body类型',
-      value: '-',
-      key: 'body_type'
-    },
-    {
-      label: '用例URL',
-      value: '-',
-      key: 'url'
-    }
-  ],
-  responseData: [
-    {
-      label: '响应时间',
-      value: '-',
-      key: 'response_time'
-    },
-    {
-      label: '状态码',
-      value: '-',
-      key: 'code'
-    },
-    {
-      label: '测试环境',
-      value: '-',
-      key: 'environment'
-    },
-    {
-      label: '断言结果',
-      value: '-',
-      key: 'assertion'
-    },
-    {
-      label: '测试人',
-      value: '-',
-      key: 'testedBy'
-    }
-  ]
+const apiCaseData: any = reactive({
+  actionTitle: '新增接口',
+  position: 'request',
+  disabled: true,
+  tabsKey: 0,
+  selectDataObj: {},
+  data: [],
+  selectData: [],
+  clientType: [],
+  methodType: [],
+  moduleList: [],
+  apiList: [],
+  ass: []
 })
+const columns = reactive([
+  {
+    title: '接口名称',
+    dataIndex: 'name'
+  },
 
-function doResetSearch() {
-  window.history.back()
-}
+  {
+    title: '请求方法',
+    dataIndex: 'method'
+  },
+  {
+    title: '端类型',
+    dataIndex: 'client'
+  },
+  {
+    title: '测试结果',
+    dataIndex: 'status'
+  },
+  {
+    title: '操作',
+    dataIndex: 'actions',
+    align: 'center',
+    width: 220
+  }
+])
+const formItems: FormItem[] = reactive([
+  {
+    label: '模块',
+    key: 'module_name',
+    value: '',
+    placeholder: '请选择测试模块',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '接口',
+    key: 'api_info',
+    value: '',
+    placeholder: '请选择测试模块',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  }
+])
 
-function caseRun() {
-  Message.info('正在执行用例请稍后~')
-  get({
-    url: ApiRun,
-    data: () => {
-      return {
-        id: route.query.id,
-        project: route.query.project,
-        environment: 1
+function clickRadioGroup() {
+  apiCaseData.data.forEach((item: any) => {
+    for (let key in item) {
+      if (key === apiCaseData.position) {
+        apiCaseData.selectData = item[key]
+        break
       }
     }
   })
+}
+
+function replaceEmptyStringWithNull(obj: any) {
+  for (let key in obj) {
+    if (typeof obj[key] === 'string' && obj[key] === '') {
+      obj[key] = null
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+      replaceEmptyStringWithNull(obj[key])
+    }
+  }
+  return obj
+}
+
+function blurSave(item: any) {
+  let data: any = {
+    id: apiCaseData.selectDataObj.id
+  }
+  if ([2, 3, 4, 5].includes(item.key) && typeof item.data !== 'number' && item.data !== null && item.data !== '') {
+    try {
+      data[item.name] = JSON.parse(item.data)
+      if (data[item.name] && typeof data[item.name] === 'object') {
+      } else {
+        throw new Error('Invalid JSON data')
+      }
+    } catch (e) {
+      Message.error(`字段：${item.title}，转换JSON失败，请检查数据`)
+      return
+    }
+  } else {
+    data[item.name] = item.data
+  }
+  put({
+    url: apiCaseDetailed,
+    data: () => {
+      return replaceEmptyStringWithNull(data)
+    }
+  })
     .then((res) => {
-      apiData.responseData.forEach(function (i) {
-        i.value = res.data[i.key]
-      })
-      apiData.apiResponseBody = res.data.response
-      apiData.apiResponseHead = res.data.header
       Message.success(res.msg)
     })
     .catch(console.log)
 }
 
-const input = ref('')
-
-function obtain() {
-  if (input.value == '') {
-    Message.error('请输入数据后查询~')
-  } else {
-    get({
-      url: getRandomData,
-      data: () => {
-        return {
-          name: input.value
-        }
-      }
-    })
-      .then((res) => {
-        Notification.success(res.data)
-      })
-      .catch()
-  }
+function removeFrontSql(item: any, index: number) {
+  item.data.splice(index, 1)
+  blurSave(item)
 }
 
-function getHead() {
+function getUiRunSortAss() {
   get({
-    url: GetHeader,
+    url: uiPageStepsDetailedAss,
     data: () => {
-      return {
-        end: 0
-      }
+      return {}
     }
   })
     .then((res) => {
-      apiData.apiRequestHead = res.data[0].value
-    })
-    .catch()
-}
-
-function getCaseData() {
-  get({
-    url: ApiCase,
-    data: () => {
-      return {
-        id: route.query.id
-      }
-    }
-  })
-    .then((res) => {
-      apiData.requestData.forEach(function (i) {
-        if (i.key === 'method') {
-          i.value = ['GET', 'POST', 'PUT', 'DELETE'][res.data[0].method]
-        } else if (i.key === 'body_type') {
-          i.value = ['-', 'JSON'][res.data[0].body_type]
-        } else {
-          i.value = res.data[0][i.key]
-        }
-      })
-      apiData.apiRequestBody = res.data[0].body
+      apiCaseData.ass = res.data
     })
     .catch(console.log)
 }
 
+function doMethodType() {
+  get({
+    url: systemEnumMethod
+  })
+    .then((res) => {
+      res.data.forEach((item: any) => {
+        apiCaseData.methodType.push(item.title)
+      })
+    })
+    .catch(console.log)
+}
+
+function doClientType() {
+  get({
+    url: systemEnumEnd
+  })
+    .then((res) => {
+      res.data.forEach((item: any) => {
+        apiCaseData.clientType.push(item.title)
+      })
+    })
+    .catch(console.log)
+}
+
+function doRefresh() {
+  get({
+    url: apiCaseDetailed,
+    data: () => {
+      return {
+        case_id: route.query.case_id
+      }
+    }
+  })
+    .then((res) => {
+      apiCaseData.data = res.data
+      if (res.data.length !== 0) {
+        apiCaseData.selectDataObj = res.data[0]
+        apiCaseData.selectData = res.data[0][apiCaseData.position]
+      }
+    })
+    .catch(console.log)
+}
+
+function caseRun(case_sort: number | null) {
+  Message.loading('用例开始执行中~')
+  get({
+    url: apiRun,
+    data: () => {
+      return {
+        case_id: route.query.case_id,
+        test_obj_id: testObj.selectValue,
+        case_sort: case_sort,
+        project_id: route.query.project
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
+
+function getProjectModule(projectId: any) {
+  get({
+    url: userProjectModuleGetAll,
+    data: () => {
+      return {
+        project_id: projectId
+      }
+    }
+  })
+    .then((res) => {
+      apiCaseData.moduleList = res.data
+    })
+    .catch(console.log)
+}
+
+function getModuleApi(moduleId: number) {
+  get({
+    url: apiInfoName,
+    data: () => {
+      return {
+        module_id: moduleId
+      }
+    }
+  })
+    .then((res) => {
+      apiCaseData.apiList = res.data
+    })
+    .catch(console.log)
+}
+
+const handleChange = (_data: any) => {
+  apiCaseData.data = _data
+  let data: any = []
+  apiCaseData.data.forEach((item: any, index: any) => {
+    data.push({
+      id: item.id,
+      case_sort: index
+    })
+  })
+  put({
+    url: apiPutCaseSort,
+    data: () => {
+      return {
+        case_sort_list: data
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+    })
+    .catch(console.log)
+}
+
+function onDataForm() {
+  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    modalDialogRef.value?.toggle()
+    let value = getFormItems(formItems)
+    post({
+      url: apiCaseDetailed,
+      data: () => {
+        value['case'] = route.query.case_id
+        value['case_sort'] = apiCaseData.data.length
+        value['front_sql'] = []
+        value['ass_sql'] = []
+        value['ass_response_value'] = []
+        value['posterior_sql'] = []
+        value['posterior_response'] = []
+        value['dump_data'] = []
+        return value
+      }
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
+}
+
+function onDelete(data: any) {
+  Modal.confirm({
+    title: '提示',
+    content: '是否要删除此接口？',
+    cancelText: '取消',
+    okText: '删除',
+    onOk: () => {
+      deleted({
+        url: apiCaseDetailed,
+        data: () => {
+          return {
+            id: data.id
+          }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    }
+  })
+}
+
+function addApiInfo() {
+  apiCaseData.actionTitle = '添加接口到用例'
+  modalDialogRef.value?.toggle()
+  formItems.forEach((it) => {
+    if (it.reset) {
+      it.reset()
+    } else {
+      it.value = ''
+    }
+  })
+}
+
+function doResetSearch() {
+  window.history.back()
+}
+
+function refresh(id: number) {
+  put({
+    url: apiPutRefreshApiInfo,
+    data: () => {
+      return {
+        id: id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
+
+function select(record: any) {
+  apiCaseData.selectDataObj = record
+  for (let key in record) {
+    if (key === apiCaseData.position) {
+      apiCaseData.selectData = record[apiCaseData.position]
+    }
+  }
+}
+
+function tabsChange(key: number) {
+  apiCaseData.disabled = false
+  const list = [10, 30, 32, 40, 41, 50]
+  if (!list.includes(key)) {
+    apiCaseData.disabled = true
+  }
+  apiCaseData.tabsKey = key
+}
+
+function clickAdd() {
+  for (let obj of apiCaseData.selectData) {
+    if (obj.key === apiCaseData.tabsKey) {
+      if ([10, 50].includes(apiCaseData.tabsKey)) {
+        obj.data.push('')
+      } else if ([30, 32].includes(apiCaseData.tabsKey)) {
+        obj.data.push({ value: '', method: '', expect: '' })
+      } else if ([40, 41].includes(apiCaseData.tabsKey)) {
+        obj.data.push({ key: '', value: '' })
+      }
+    }
+  }
+}
+
 onMounted(() => {
   nextTick(async () => {
-    getCaseData()
-    getHead()
+    doRefresh()
+    doMethodType()
+    doClientType()
+    getProjectModule(route.query.project)
+    getUiRunSortAss()
   })
 })
 </script>
 
 <style>
-.flex {
-  display: flex;
+.container {
+  display: flex; /* 开启flex布局 */
 }
 
-.flex-sub {
-  flex: 1;
+.left {
+  width: 55%; /* 左边区域占据50%的宽度 */
+  margin-right: 10px; /* 设置左边盒子的右边距 */
+}
+
+.right {
+  width: 45%; /* 右边区域占据50%的宽度 */
+  margin-left: 10px; /* 设置右边盒子的左边距 */
 }
 </style>

@@ -3,18 +3,22 @@
 # @Description: 
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
+from django.forms.models import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.data_producer.run_api import RunApi
-from PyAutoTest.auto_test.auto_ui.models import UiPageSteps
+from PyAutoTest.auto_test.auto_ui.data_producer.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiPageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.settings import DRIVER, SERVER
-from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class UiPageStepsSerializers(serializers.ModelSerializer):
@@ -29,6 +33,7 @@ class UiPageStepsSerializers(serializers.ModelSerializer):
 class UiPageStepsSerializersC(serializers.ModelSerializer):
     project = ProjectSerializers(read_only=True)
     page = UiPageSerializers(read_only=True)
+    module_name = ProjectModuleSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
@@ -55,32 +60,23 @@ class UiPageStepsViews(ViewSet):
         @param request:
         @return:
         """
-
-        case_json, res = RunApi(request.user).steps(steps_id=int(request.GET.get("page_step_id")),
-                                                    test_obj=request.GET.get("te"))
-        if res:
-            return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json.dict())
-        return ResponseData.fail(f'执行失败，请确保{DRIVER}已连接{SERVER}', case_json.dict())
+        try:
+            case_json = UiTestRun(request.user['id'], request.GET.get("te")).steps(
+                steps_id=int(request.GET.get("page_step_id")))
+        except MangoServerError as e:
+            return ResponseData.fail(e.msg)
+        return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json.dict())
 
     @action(methods=['put'], detail=False)
     def put_type(self, request: Request):
-        ser = []
-        data = []
         for i in eval(request.data.get('id')):
-            case = self.model.objects.get(pk=i)
-            serializer = self.serializer_class(instance=case,
-                                               data={'type': request.data.get('type'),
-                                                     'name': case.name})
-            if serializer.is_valid():
-                serializer.save()
-            data.append(serializer.data)
-        for i in ser:
-            if i is True:
-                return ResponseData.fail('部分数据可能修改失败，请检查设置的用例')
-        return ResponseData.success(f'设置为{request.data.get("name")}成功', data)
+            case = self.model.objects.get(id=i)
+            case.type = 0 if case.type == 1 else 1 if not case.type else 1
+            case.save()
+        return ResponseData.success(f'翻转状态成功', )
 
     @action(methods=['get'], detail=False)
-    def get_case_obj_name(self, request: Request):
+    def get_case_name(self, request: Request):
         """
          获取所有用例id和名称
          :param request:
@@ -97,3 +93,30 @@ class UiPageStepsViews(ViewSet):
         """
         res = self.model.objects.filter(page=request.query_params.get('page_id')).values_list('id', 'name')
         return ResponseData.success('获取数据成功', [{'key': _id, 'title': name} for _id, name in res])
+
+    @action(methods=['POST'], detail=False)
+    def copy_page_steps(self, request: Request):
+        from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedSerializers
+        page_id = request.data.get('page_id')
+        page_obj = UiPageSteps.objects.get(id=page_id)
+        page_obj = model_to_dict(page_obj)
+        page_id = page_obj['id']
+        page_obj['name'] = '(副本)' + page_obj['name']
+        page_obj['type'] = StatusEnum.FAIL.value
+        del page_obj['id']
+        serializer = self.serializer_class(data=page_obj)
+        if serializer.is_valid():
+            serializer.save()
+            ui_page_steps_detailed_obj = UiPageStepsDetailed.objects.filter(page_step=page_id)
+            for i in ui_page_steps_detailed_obj:
+                page_steps_detailed = model_to_dict(i)
+                del page_steps_detailed['id']
+                page_steps_detailed['page_step'] = serializer.data['id']
+                ui_page_steps_serializer = UiPageStepsDetailedSerializers(data=page_steps_detailed)
+                if ui_page_steps_serializer.is_valid():
+                    ui_page_steps_serializer.save()
+                else:
+                    return ResponseData.fail(f'{str(ui_page_steps_serializer.errors)}', )
+            return ResponseData.success('复制步骤成功', serializer.data)
+        else:
+            return ResponseData.fail(f'{str(serializer.errors)}', )
