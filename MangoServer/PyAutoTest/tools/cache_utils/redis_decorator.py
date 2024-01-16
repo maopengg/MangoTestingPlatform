@@ -26,21 +26,6 @@ def cache_set(key, value=None):
     return _cache
 
 
-# 装饰器
-# def cache_set(key):
-#     def _cache(func):
-#         @wraps(func)
-#         def wrapper(*args, **kwargs):
-#             # value = cache.get(key)
-#             # if value:  # 如果value存在
-#             #     return json.loads(value)
-#             res = func(*args, **kwargs)
-#             cache.set(key, res)
-#             return res
-#
-#         return wrapper
-#
-#     return _cache
 class Te:
     id_ = ""
 

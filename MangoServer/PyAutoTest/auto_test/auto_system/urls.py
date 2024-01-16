@@ -6,30 +6,28 @@
 from django.urls import path
 
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
+from .views.enum_api import EnumOptionViews
 from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews
 from .views.socket_api import SocketApiViews
 from .views.tasks_run_case_list import TasksRunCaseListCRUD, TasksRunCaseListViews
-from .views.test_suite_report import TestSuiteReportCRUD, TestSuiteReportViews
-from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
+from .views.test_suite_report import TestSuiteReportCRUD
+from ..auto_system.views.database import DatabaseCRUD
+from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
-from ..auto_system.views.page import SystemViews
+from ..auto_system.views.system_api import SystemViews
 from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
     #
     path('test/object', TestObjectCRUD.as_view()),
-    path('get/environment/enum', TestObjectViews.as_view({'get': 'get_environment_enum'})),
-    path('get/platform/enum', TestObjectViews.as_view({'get': 'get_platform_enum'})),
-    path('get/test/obj/name', TestObjectViews.as_view({'get': 'get_test_obj_name'})),
-    path('get/auto/test/name', TestObjectViews.as_view({'get': 'get_auto_test_enum'})),
+    path('test/obj/name', TestObjectViews.as_view({'get': 'get_test_obj_name'})),
+    path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path('notice', NoticeConfigCRUD.as_view()),
     path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
-    path('notice/type', NoticeConfigViews.as_view({'get': 'get_notice_type'})),
     path('notice/put/status', NoticeConfigViews.as_view({'put': 'put_status'})),
     #
     path('database', DatabaseCRUD.as_view()),
-    path('database/put/status', DatabaseViews.as_view({'put': 'put_status'})),
     #
     path('time', TimeTasksCRUD.as_view()),
     path('trigger/timing', TimeTasksViews.as_view({'get': 'trigger_timing'})),
@@ -39,22 +37,36 @@ urlpatterns = [
     path('tasks/type/case/name', TasksRunCaseListViews.as_view({'get': 'get_type_case_name'})),
     #
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
-    path('testapi', ScheduledTasksViews.as_view({'get': 'get_test'})),
     path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
+    path('scheduled/put/notice', ScheduledTasksViews.as_view({'put': 'put_is_notice'})),
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("test/func", SystemViews.as_view({'post': 'test_func'})),
-    path("send/common/parameters", SystemViews.as_view({'get': 'send_common_parameters'})),
-    path("get/cache/key/value", SystemViews.as_view({'get': 'get_cache_key_value'})),
+    path("cache/key/value", SystemViews.as_view({'get': 'get_cache_key_value'})),
     #
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),
     path("socket/all/user/list", SocketApiViews.as_view({'get': 'get_all_user_list'})),
     #
     path('test/suite/report', TestSuiteReportCRUD.as_view()),
-    path('test/suite/all/report/sum', TestSuiteReportViews.as_view({'get': 'get_all_report_sum'})),
-    path('test/suite/all/case/sum', TestSuiteReportViews.as_view({'get': 'get_all_case_sum'})),
-    #
 
+    #
+    path('case/sum', IndexViews.as_view({'get': 'case_sum'})),
+    path('case/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),
+    path('case/run/sum', IndexViews.as_view({'get': 'case_run_sum'})),
+    path('activity/level', IndexViews.as_view({'get': 'activity_level'})),
+    # 枚举接口
+    path('enum/client', EnumOptionViews.as_view({'get': 'enum_client'})),
+    path('enum/method', EnumOptionViews.as_view({'get': 'enum_method'})),
+    path('enum/public', EnumOptionViews.as_view({'get': 'enum_public'})),
+    path('enum/end', EnumOptionViews.as_view({'get': 'enum_end'})),
+    path('enum/notice', EnumOptionViews.as_view({'get': 'enum_notice'})),
+    path('enum/status', EnumOptionViews.as_view({'get': 'enum_status'})),
+    path('enum/environment', EnumOptionViews.as_view({'get': 'enum_environment'})),
+    path('enum/platform', EnumOptionViews.as_view({'get': 'enum_platform'})),
+    path('enum/browser', EnumOptionViews.as_view({'get': 'enum_browser'})),
+    path('enum/drive', EnumOptionViews.as_view({'get': 'enum_drive'})),
+    path('enum/autotest', EnumOptionViews.as_view({'get': 'enum_autotest'})),
+    path('enum/exp', EnumOptionViews.as_view({'get': 'enum_exp'})),
 ]

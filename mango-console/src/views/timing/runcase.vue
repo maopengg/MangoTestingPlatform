@@ -24,8 +24,8 @@
               <template v-if="item.dataIndex === 'task'" #cell="{ record }">
                 {{ record.task.name }}
               </template>
-              <template v-else-if="item.dataIndex === 'ui_case'" #cell="{ record }">
-                {{ record.ui_case.name }}
+              <template v-else-if="item.dataIndex === 'case'" #cell="{ record }">
+                {{ record.case }}
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -47,7 +47,19 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectModule.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="tasksTypeCaseName(item.value)"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'case'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -67,12 +79,15 @@
 <script lang="ts" setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
-import { getTasksRunCase, getTasksTypeCaseName } from '@/api/url'
+import { systemTasksRunCase, systemTasksTypeCaseName } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
 import { getFormItems } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
+import { useProjectModule } from '@/store/modules/project_module'
+
+const projectModule = useProjectModule()
 
 const route = useRoute()
 const formModel = ref({})
@@ -92,7 +107,7 @@ const columns = reactive([
   },
   {
     title: '用例名称',
-    dataIndex: 'ui_case'
+    dataIndex: 'case'
   },
   {
     title: '操作',
@@ -104,8 +119,23 @@ const columns = reactive([
 
 const formItems: FormItem[] = reactive([
   {
+    label: '模块',
+    key: 'module_name',
+    value: '',
+    placeholder: '请选择测试模块',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
     label: '用例名称',
-    key: 'ui_case',
+    key: 'case',
     value: '',
     placeholder: '请选择用例名称',
     required: true,
@@ -141,7 +171,7 @@ function onDelete(record: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getTasksRunCase,
+        url: systemTasksRunCase,
         data: () => {
           return {
             id: '[' + record.id + ']'
@@ -165,10 +195,9 @@ function onUpdate(record: any) {
   nextTick(() => {
     formItems.forEach((it) => {
       const propName = record[it.key]
-      if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id
-      } else {
-        it.value = propName
+      console.log(propName)
+      if (propName) {
+        it.value = record.case
       }
     })
   })
@@ -180,7 +209,7 @@ function onDataForm() {
     let value = getFormItems(formItems)
     if (runCaseData.isAdd) {
       post({
-        url: getTasksRunCase,
+        url: systemTasksRunCase,
         data: () => {
           value['task'] = route.query.id
           return value
@@ -193,7 +222,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getTasksRunCase,
+        url: systemTasksRunCase,
         data: () => {
           value['id'] = runCaseData.updateId
           return value
@@ -211,12 +240,14 @@ function onDataForm() {
 function doResetSearch() {
   window.history.back()
 }
+
 function doRefresh() {
   get({
-    url: getTasksRunCase,
+    url: systemTasksRunCase,
     data: () => {
       return {
-        id: route.query.id
+        id: route.query.id,
+        type: route.query.type
       }
     }
   })
@@ -226,12 +257,13 @@ function doRefresh() {
     .catch(console.log)
 }
 
-function tasksTypeCaseName() {
+function tasksTypeCaseName(value: number) {
   get({
-    url: getTasksTypeCaseName,
+    url: systemTasksTypeCaseName,
     data: () => {
       return {
-        type: route.query.type
+        type: route.query.type,
+        module_name: value
       }
     }
   })
@@ -244,7 +276,6 @@ function tasksTypeCaseName() {
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
-    tasksTypeCaseName()
   })
 })
 </script>

@@ -7,59 +7,46 @@ import json
 
 import jsonpath
 
+from PyAutoTest.exceptions.tools_exception import JsonPathError
+
 
 class JsonTool:
     """ json """
 
     @classmethod
-    def load(cls, json_str):
+    def load(cls, json_str) -> dict | list:
         """
         将json字符串转换成Python对象
         """
         return json.loads(json_str)
 
     @classmethod
-    def dump(cls, obj, indent=None):
+    def dump(cls, obj, indent=None) -> str:
         """
         将Python对象转换成json字符串
         """
         return json.dumps(obj, indent=indent)
 
     @classmethod
-    def loads(cls, json_list_str):
+    def loads(cls, json_list_str: str) -> list | dict:
         """
         将json数组字符串转换成Python列表
         """
-        return json.loads(json_list_str)
+        try:
+            return json.loads(json_list_str)
+        except json.decoder.JSONDecodeError:
+            data_str = str(json_list_str).replace("'", '"')
+            try:
+                return json.loads(data_str)
+            except json.decoder.JSONDecodeError:
+                raise JsonPathError(f'jsonpath表达式错误，请检查表达式！：{json_list_str}')
 
     @classmethod
-    def dumps(cls, obj_list, indent=None):
+    def dumps(cls, obj_list: list | dict, indent=None) -> str:
         """
         将Python列表转换成json数组字符串
         """
         return json.dumps(obj_list, indent=indent)
-
-    @classmethod
-    def get_value(cls, json_obj, key, default=None):
-        """
-        获取json对象的指定key对应的值，如果不存在则返回默认值
-        """
-        return json_obj.get(key, default)
-
-    @classmethod
-    def set_value(cls, json_obj, key, value):
-        """
-        设置json对象的指定key对应的值
-        """
-        json_obj[key] = value
-
-    @classmethod
-    def del_key(cls, json_obj, key):
-        """
-        删除json对象的指定key
-        """
-        if key in json_obj:
-            del json_obj[key]
 
     @classmethod
     def flatten(cls, json_obj, sep='_', prefix=''):
@@ -76,12 +63,15 @@ class JsonTool:
         return result
 
     @classmethod
-    def get_json_path_value(cls, obj, expr, index=0):
+    def get_json_path_value(cls, obj: dict, expr, index=0):
         """
-
+        在dict中根绝jsonpath取出值
         @param obj:
         @param expr:
         @param index:
         @return:
         """
-        return jsonpath.jsonpath(obj, expr)[index]
+        try:
+            return jsonpath.jsonpath(obj, expr)[index]
+        except TypeError:
+            raise JsonPathError(f'jsonpath表达式错误，请检查表达式！：{expr}')

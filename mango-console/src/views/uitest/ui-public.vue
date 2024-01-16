@@ -3,29 +3,25 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="公共方法" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="公共方法" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
+                  <template v-else-if="item.type === 'select'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
                   </template>
                 </a-form-item>
               </a-form>
@@ -45,7 +41,7 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -127,11 +123,12 @@ import { get, post, put, deleted } from '@/api/http'
 import { uiPublic, uiPublicPutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
+
 const project = useProject()
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
@@ -154,39 +151,31 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入参数ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'name',
-    label: '名称',
+    label: '参数名称',
     type: 'input',
     placeholder: '请输入参数名称',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入参数名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
+    }
+  },
+  {
+    key: 'key',
+    label: 'key',
+    type: 'input',
+    placeholder: '请输入key',
+    value: '',
+    reset: function () {
+      this.value = ''
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
@@ -211,7 +200,7 @@ const formItems: FormItem[] = reactive([
     }
   },
   {
-    label: '名称',
+    label: '参数名称',
     key: 'name',
     value: '',
     type: 'input',
@@ -265,7 +254,7 @@ const tableColumns = useTableColumn([
     dataIndex: 'project'
   },
   {
-    title: '名称',
+    title: '参数名称',
     key: 'name',
     dataIndex: 'name',
     width: 200,
@@ -306,27 +295,7 @@ function doRefresh() {
   get({
     url: uiPublic,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: uiPublic,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -334,8 +303,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -345,6 +313,7 @@ function onResetSearch() {
     it.value = ''
   })
 }
+
 const onModifyStatus = async (newValue: boolean, id: number) => {
   return new Promise<any>((resolve, reject) => {
     setTimeout(async () => {

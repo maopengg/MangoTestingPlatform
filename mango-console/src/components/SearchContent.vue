@@ -37,7 +37,7 @@ import usePermissionStore from '@/store/modules/permission'
 import { defineComponent, onMounted, ref } from 'vue'
 import { RouteRecordRaw, useRouter } from 'vue-router'
 import { get } from '@/api/http'
-import { getCacheKeyValue } from '@/api/url'
+import { systemCacheKeyValue } from '@/api/url'
 interface InnerSearchItem {
   title: string
   key: string
@@ -62,7 +62,7 @@ export default defineComponent({
       if (outValue.value) {
         // visible.value = false
         get({
-          url: getCacheKeyValue,
+          url: systemCacheKeyValue,
           data: () => {
             return {
               key: outValue.value

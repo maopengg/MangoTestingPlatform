@@ -12,8 +12,8 @@ from PyAutoTest.auto_test.auto_ui.models import UiEleResult
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class UiEleResultSerializers(serializers.ModelSerializer):

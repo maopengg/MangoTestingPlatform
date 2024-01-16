@@ -13,8 +13,8 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, UiPageStepsDetailed, UiCase
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 logger = logging.getLogger('system')
 
@@ -79,25 +79,29 @@ class UiCaseStepsDetailedViews(ViewSet):
     @action(methods=['get'], detail=False)
     def post_case_cache_data(self, request: Request):
         books = self.model.objects.get(id=request.query_params.get('id'))
-        ui_page_steps_detailed_list = UiPageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
+        ui_page_steps_detailed_obj = UiPageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
             'step_sort')
-        data_list = []
-        for e in ui_page_steps_detailed_list:
-            if e.ope_value:
-                value_dict: dict = e.ope_value
-                value_dict.pop('locating')
-                if value_dict:
-                    data_list.append({e.ele_name_a.name: value_dict})
-        books.case_cache_data = data_list
-        ass_list = []
-        for e in ui_page_steps_detailed_list:
-            if e.ass_value:
-                value_dict: dict = e.ass_value
-                value_dict.pop('value')
-                if value_dict:
-                    ass_list.append({e.ele_name_a.name: value_dict})
-        books.case_cache_ass = ass_list
+        case_data_list = []
+        for steps_detailed in ui_page_steps_detailed_obj:
+            if steps_detailed.ope_type:
+                name = steps_detailed.ele_name_a.name if steps_detailed.ele_name_a else steps_detailed.ope_type
 
+                value_dict: dict = steps_detailed.ope_value
+                if 'locating' in value_dict:
+                    value_dict.pop('locating')
+            elif steps_detailed.ass_type:
+                name = steps_detailed.ele_name_a.name if steps_detailed.ele_name_a else steps_detailed.ass_type
+                value_dict: dict = steps_detailed.ass_value
+                if 'value' in value_dict:
+                    value_dict.pop('value')
+            else:
+                return ResponseData.fail(f'步骤详情ID:{steps_detailed.id}，既不是操作类型也不是断言类型，请检查该元素！')
+            case_data_list.append({
+                'page_step_details_id': steps_detailed.id,
+                'page_step_details_name': name,
+                'page_step_details_data': value_dict
+            })
+        books.case_data = case_data_list
         books.save()
         return ResponseData.success('刷新成功')
 

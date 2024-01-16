@@ -3,42 +3,38 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="自动化通知配置" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="自动化通知配置" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -58,7 +54,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -154,14 +150,15 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getNoticeConfig, getNoticeTest, getNoticeType, getNoticePutStatus } from '@/api/url'
+import { systemNotice, systemNoticeTest, systemEnumNotice, systemNoticePutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
+
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { onSelectionChange } = useRowSelection()
@@ -185,20 +182,11 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入通知ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
@@ -290,30 +278,9 @@ const tableColumns = useTableColumn([
 
 function doRefresh() {
   get({
-    url: getNoticeConfig,
+    url: systemNotice,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: getNoticeConfig,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -321,8 +288,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -354,7 +320,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getNoticeConfig,
+        url: systemNotice,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -394,7 +360,7 @@ function onDataForm() {
 
     if (noticeData.isAdd) {
       post({
-        url: getNoticeConfig,
+        url: systemNotice,
         data: () => {
           value['status'] = 0
           return value
@@ -407,7 +373,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getNoticeConfig,
+        url: systemNotice,
         data: () => {
           value['id'] = noticeData.updateId
           return value
@@ -422,9 +388,9 @@ function onDataForm() {
   }
 }
 
-function getNoticeTpyeF() {
+function enumNotice() {
   get({
-    url: getNoticeType,
+    url: systemEnumNotice,
     data: () => {
       return {
         page: pagination.page,
@@ -444,7 +410,7 @@ const onModifyStatus = async (newValue: boolean, id: number) => {
       try {
         let value: any = false
         await put({
-          url: getNoticePutStatus,
+          url: systemNoticePutStatus,
           data: () => {
             return {
               id: id,
@@ -464,9 +430,10 @@ const onModifyStatus = async (newValue: boolean, id: number) => {
     }, 300)
   })
 }
+
 function onTest(record: any) {
   get({
-    url: getNoticeTest,
+    url: systemNoticeTest,
     data: () => {
       return {
         id: record.id
@@ -482,7 +449,7 @@ function onTest(record: any) {
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
-    getNoticeTpyeF()
+    enumNotice()
   })
 })
 onMounted(doRefresh)

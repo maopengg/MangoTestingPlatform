@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from PyAutoTest.models.tools_model import MysqlDBModel
+from PyAutoTest.models.tools_model import MysqlConingModel
 
 
 class UiPublicModel(BaseModel):
@@ -18,21 +18,14 @@ class UiPublicModel(BaseModel):
     status: int
 
 
-class InputValueModel(BaseModel):
-    locating: str
-    input_value: str | None
-
-    @classmethod
-    def create_empty(cls) -> "InputValueModel":
-        return cls(locating=str, input_value=None)
-
-
 class ElementModel(BaseModel):
+    id: int
     type: int
     ele_name_a: str | None
     ele_name_b: str | None
     ele_loc_a: str | None
     locator: str | None
+
     ele_loc_b: str | None
     ele_exp: int | None
     ele_sleep: int | None
@@ -50,52 +43,52 @@ class WEBConfigModel(BaseModel):
     browser_port: str | None
     browser_path: str | None
     is_headless: int | None
+    is_header_intercept: bool = False
+    host: str | None = None
+    project_id: int | None = None
 
 
 class AndroidConfigModel(BaseModel):
     equipment: str
+    package_name: str
 
 
 class PageStepsModel(BaseModel):
-    page_steps_id: int
-    page_step_name: str
+    id: int
+    name: str
+    case_step_details_id: int | None
+    project_id: int
     host: str
     url: str
     type: int
-    config: AndroidConfigModel | WEBConfigModel
-    mysql_config: MysqlDBModel | None
-    page_ele_list: list[ElementModel] = []
-
-    @classmethod
-    def create_empty(cls):
-        pass
+    element_list: list[ElementModel] = []
+    equipment_config: AndroidConfigModel | WEBConfigModel
+    public_data_list: list[UiPublicModel] | None = None
+    mysql_config: MysqlConingModel | None = None
 
 
 class CaseModel(BaseModel):
-    case_id: int
-    case_name: str
-    project: int
+    id: int
+    name: str
+    project_id: int
     module_name: str
     case_people: str
-    case_cache_data: list[list[dict]] | list
-    case_cache_ass: list[list[dict]] | list
+    case_data: list[list[dict] | list]
     case_list: list[PageStepsModel]
+    public_data_list: list[UiPublicModel] | None
+    mysql_config: MysqlConingModel | None
 
 
 class ElementResultModel(BaseModel):
+    case_step_details_id: int | None
     test_suite_id: int | None
     case_id: int | None
     page_step_id: int | None
-    # 元素的名称
     ele_name_a: str | None
     ele_name_b: str | None
-    # 元素个数
     ele_quantity: int
-    # 提示语
     msg: str | None
-    # 错误截图路径
     picture_path: str | None
-    # 测试结果
     status: int
 
     loc: str | None
@@ -112,11 +105,8 @@ class ElementResultModel(BaseModel):
 class PageStepsResultModel(BaseModel):
     test_suite_id: int | None
     case_id: int | None
-    # 测试步骤ID
     page_step_id: int
-    # 测试步骤名称
     page_step_name: str
-    # 测试结果
     status: int
     ele_result_list: list[ElementResultModel]
 
@@ -127,9 +117,7 @@ class CaseResultModel(BaseModel):
     case_name: str
     module_name: str
     case_people: str
-    # 测试对象
     test_obj: str
-    case_cache_ass: list[list[dict]] | list
     status: int
     case_res_list: list[PageStepsResultModel]
 
@@ -138,8 +126,9 @@ class TestSuiteModel(BaseModel):
     id: int
     type: int
     project: int
+    test_object: int
     error_message: str | None
     run_status: int
     status: int | None
-    case_list: list[CaseModel] | None
-    result_list: list[CaseResultModel] | None
+    case_list: list[CaseModel] | None = None
+    result_list: list[CaseResultModel] | None = None

@@ -3,88 +3,174 @@
 # @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
+import json
 import logging
+from collections import Counter
 
-from PyAutoTest.models.socket_model.api_model import RequestModel
-from PyAutoTest.tools.data_processor import DataProcessor
-from PyAutoTest.tools.mysql_tools.mysql_control import MysqlDB
+import time
+
+from PyAutoTest.auto_test.auto_api.service.driver.common_parameters import CommonParameters
+from PyAutoTest.exceptions.api_exception import *
+from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 
 log = logging.getLogger('api')
 
 
-class Dependence(DataProcessor):
+class ApiDataHandle(CommonParameters, PublicAssertion):
 
-    async def api_ago_dependency(self):
+    def request_data(self, request_data_model: RequestDataModel):
         """
-        前置依赖
+        检查请求信息中是否存在变量进行替换
+        @param request_data_model:
         @return:
         """
+        for key, value in request_data_model:
+            if value is not None and key != 'file':
+                value = self.replace(value)
+                if key == 'headers' and isinstance(value, str):
+                    value = self.loads(value)
+                setattr(request_data_model, key, value)
+            elif key == 'file':
+                file = []
+                if request_data_model.file:
+                    for i in request_data_model.file:
+                        i: list[dict] = i
+                        for k, v in i.items():
+                            file_name = self.identify_parentheses(v)[0].replace('(', '').replace(')', '')
+                            path = self.replace(v)
+                            file.append((k, (file_name, open(f'{str(path)}', 'rb'))))
+                request_data_model.file = file
+        return request_data_model
 
-    async def api_after_dependency(self):
+    def front_sql(self, case_detailed):
+        """
+        前置sql
+        @param case_detailed:
+        @return:
+        """
+        self.__sql_(self.replace(case_detailed.front_sql), '前置')
+
+    def assertion(self, response: ResponseDataModel, case_detailed) -> None:
+        if response.response_json:
+            response_data = response.response_json
+        else:
+            try:
+                response_data = eval(response.response_text)
+            except SyntaxError:
+                raise ResponseSyntaxError('响应数据语法错误，返回的数据非json格式，请检查服务是否正常！')
+        if case_detailed.ass_response_value:
+            self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
+        if case_detailed.ass_sql:
+            self.__assertion_sql(self.replace(case_detailed.ass_sql))
+        if case_detailed.ass_response_whole:
+            self.__assertion_response_whole(response_data, self.replace(case_detailed.ass_response_whole))
+
+    def posterior(self, response: ResponseDataModel, case_detailed):
         """
         后置处理
+        @param response:
+        @param case_detailed:
         @return:
         """
+        if case_detailed.posterior_response:
+            self.__posterior_response(response.response_json, self.replace(case_detailed.posterior_response))
+        if case_detailed.posterior_sql:
+            self.__posterior_sql(self.replace(case_detailed.posterior_sql))
+        if case_detailed.posterior_sleep:
+            self.__posterior_sleep(self.replace(case_detailed.posterior_sleep))
 
-    async def api_result_ass(self):
-        """
-        结果断言
-        @return:
-        """
-
-    async def api_after_empty(self):
+    def dump_data(self, case_detailed):
         """
         后置数据清除
+        @param case_detailed:
         @return:
         """
+        if self.is_db:
+            for sql in case_detailed.dump_data:
+                if sql.strip().lower().startswith('select'):
+                    raise DumpDataError('数据清除不支持查询数据操作')
+                res = self.mysql_obj.execute(self.replace(sql))
+                if isinstance(res, int):
+                    log.info(f'删除成功的条数：{res}')
 
-    async def public_login(self, key, request: RequestModel):
+    def __posterior_sql(self, sql_list: list[dict]):
         """
-        处理登录token
+        后置sql--需要测试
+        @param sql_list:
         @return:
         """
-        pass
-        # session = aiohttp.ClientSession()
-        # response = await HTTPRequest.http_post(session=session,
-        #                                        url=request.url,
-        #                                        headers=request.header,
-        #                                        data=eval(
-        #                                            self.replace_text(request.body)) if request.body else None)
-        # self.set_cache(key, await self.get_json_path_value(await response[0].json(), '$.access_token'))
-        # INFO.logger.info(f'公共参数Token设置成功：{self.get_cache(key)}')
-        # await session.close()
+        for obj in sql_list:
+            for sql, value_key in obj.items():
+                res = self.mysql_obj.execute(sql)
+                if isinstance(res, list):
+                    for res_dict in res:
+                        for key, value in res_dict.items():
+                            self.set_cache(value_key, value)
+                            log.info(f'{value_key}sql写入的数据：{self.get_cache(value_key)}')
 
-    async def public_header(self, key, header):
+    def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         """
-        处理接口请求头
-        @param key: 缓存key
-        @param header: header
+        后置响应
         @return:
         """
-        self.set_cache(key, self.replace_text(header))
-        log.info(f'公共参数请求头设置成功：{self.get_cache(key)}')
+        for i in posterior_response:
+            value = self.get_json_path_value(response_text, i['key'])
+            self.set_cache(i['value'], value)
 
-    async def public_ago_sql(self, key, sql):
-        """
-        处理前置sql
-        @return:
-        """
-        sql = self.replace_text(sql)
-        my: MysqlDB = MysqlDB()
-        await my.connect(self.get_cache('database_tool'))
-        sql_res_list = await my.select(sql)
-        k_list = []
-        for sql_res_dict in sql_res_list:
-            for k, v in sql_res_dict.items():
-                self.set_cache(f'{key}_{k}', v)
-                k_list.append(k)
-        for i in k_list:
-            log.info(f'公共参数sql设置成功：{self.get_cache(f"{key}_{i}")}')
+    def __posterior_sleep(self, sleep: str):
+        time.sleep(int(sleep))
 
-    async def public_customize(self, key, value):
+    def __assertion_response_value(self, response_data, ass_response_value):
         """
-        自定义参数
+        响应jsonpath断言
+        @param response_data:
+        @param ass_response_value:  list[dict]
         @return:
         """
-        self.set_cache(key, value)
-        log.info(f'公共参数自定义设置成功：{self.get_cache(key)}')
+        try:
+            if ass_response_value:
+                for i in ass_response_value:
+                    value = self.get_json_path_value(response_data, i['value'])
+                    _dict = {'value': str(value)}
+                    if i.get('expect'):
+                        _dict['expect'] = i.get('expect')
+                    getattr(self, i['method'])(**_dict)
+        except AssertionError:
+            raise ResponseValueAssError('响应jsonpath断言失败')
+
+    def __assertion_sql(self, sql: list):
+        """
+        sql断言--还需要完善
+        @param sql:
+        @return:
+        """
+        try:
+            if self.is_db:
+                res = self.mysql_obj.execute(sql)
+                log.info(res)
+        except AssertionError:
+            raise SqlAssError('sql断言失败')
+
+    @classmethod
+    def __assertion_response_whole(cls, actual, expect):
+        """
+        响应全匹配断言
+        @param actual:
+        @param expect:
+        @return:
+        """
+        try:
+            assert Counter(actual) == Counter(json.loads(expect))
+        except AssertionError:
+            raise ResponseWholeAssError('全匹配断言失败')
+
+    def __sql_(self, sql_list: list, _str: str):
+        if self.is_db:
+            for sql in sql_list:
+                res = self.mysql_obj.execute(sql)
+                if isinstance(res, list):
+                    for i in res:
+                        for key, value in i.items():
+                            self.set_cache(key, value)
+                            log.info(f'{_str}sql写入的数据：{self.get_cache(key)}')

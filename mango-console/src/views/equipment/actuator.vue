@@ -16,7 +16,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -88,7 +88,7 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { SocketUserList } from '@/api/url'
+import { systemSocketUserList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -163,7 +163,7 @@ const formModel = ref({})
 
 function doRefresh() {
   get({
-    url: SocketUserList,
+    url: systemSocketUserList,
     data: () => {
       return {
         page: pagination.page,
@@ -202,7 +202,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: SocketUserList,
+        url: systemSocketUserList,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -246,7 +246,7 @@ function onDataForm() {
     if (addUpdate.value === 1) {
       addUpdate.value = 0
       post({
-        url: SocketUserList,
+        url: systemSocketUserList,
         data: () => {
           return {
             description: value.description,
@@ -264,7 +264,7 @@ function onDataForm() {
       value['id'] = updateId.value
       updateId.value = 0
       put({
-        url: SocketUserList,
+        url: systemSocketUserList,
         data: () => {
           return {
             id: value.id,

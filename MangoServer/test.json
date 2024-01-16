@@ -1,0 +1,198 @@
+{
+  "request": [
+    {
+      "key": 0,
+      "title": "基础信息",
+      "data": [
+        {
+          "label": "Name",
+          "value": "Socrates"
+        },
+        {
+          "label": "Mobile",
+          "value": "123-1234-1234"
+        },
+        {
+          "label": "Residence",
+          "value": "Beijing"
+        },
+        {
+          "label": "Hometown",
+          "value": "Beijing"
+        },
+        {
+          "label": "Address",
+          "value": "Yingdu Building, Zhichun Road, Beijing"
+        }
+      ],
+      "type": "descriptions"
+    },
+    {
+      "key": 1,
+      "title": "headers",
+      "data": "headers",
+      "type": "textarea"
+    },
+    {
+      "key": 2,
+      "title": "params",
+      "data": "params",
+      "type": "textarea"
+    },
+    {
+      "key": 3,
+      "title": "data",
+      "data": "data",
+      "type": "textarea"
+    },
+    {
+      "key": 4,
+      "title": "json",
+      "data": "json",
+      "type": "textarea"
+    },
+    {
+      "key": 5,
+      "title": "file",
+      "data": "file",
+      "type": "textarea"
+    }
+  ],
+  "front": [
+    {
+      "key": 10,
+      "title": "前置sql",
+      "data": [
+        ",dedaedaed;"
+      ],
+      "type": "list"
+    }
+  ],
+  "response": [
+    {
+      "key": 20,
+      "title": "基础信息",
+      "data": [
+        {
+          "label": "Name",
+          "value": "Socrates"
+        },
+        {
+          "label": "Mobile",
+          "value": "123-1234-1234"
+        }
+      ],
+      "type": "descriptions"
+    },
+    {
+      "key": 21,
+      "title": "响应头",
+      "data": "响应头",
+      "type": "text"
+    },
+    {
+      "key": 22,
+      "title": "响应文本",
+      "data": "响应文本",
+      "type": "text"
+    }
+  ],
+  "assertion": [
+    {
+      "key": 30,
+      "title": "sql断言",
+      "data": [
+        {
+          "value": "1",
+          "method": "2",
+          "expect": "3"
+        },
+        {
+          "value": "4",
+          "method": "5",
+          "expect": "6"
+        }
+      ],
+      "type": "assertion"
+    },
+    {
+      "key": 31,
+      "title": "响应全匹配断言",
+      "data": "响应全匹配断言",
+      "type": "textarea"
+    },
+    {
+      "key": 32,
+      "title": "响应值断言",
+      "data": [
+        {
+          "value": "1",
+          "method": "2",
+          "expect": "3"
+        },
+        {
+          "value": "4",
+          "method": "5",
+          "expect": "6"
+        }
+      ],
+      "type": "assertion"
+    }
+  ],
+  "posterior": [
+    {
+      "key": 40,
+      "title": "后置sql",
+      "data": [
+        {
+          "key": "文档ID",
+          "value": "$.data.records[0].id"
+        },
+        {
+          "key": "文档ID",
+          "value": "$.data.records[0].id"
+        }
+      ],
+      "type": "posterior"
+    },
+    {
+      "key": 41,
+      "title": "后置响应结果提取",
+      "data": [
+        {
+          "key": "文档ID",
+          "value": "$.data.records[0].id"
+        },
+        {
+          "key": "文档ID",
+          "value": "$.data.records[0].id"
+        }
+      ],
+      "type": "posterior"
+    },
+    {
+      "key": 42,
+      "title": "后置等待",
+      "data": "响应值断言",
+      "type": "textarea"
+    }
+  ],
+  "dump": [
+    {
+      "key": 40,
+      "title": "sql清除",
+      "data": [
+        "dedaedaed;"
+      ],
+      "type": "list"
+    }
+  ],
+  "cache": [
+    {
+      "key": 51,
+      "title": "缓存数据",
+      "data": "",
+      "type": "text"
+    }
+  ]
+}

@@ -1,8 +1,26 @@
 <template>
   <div>
     <div class="main-container">
-      <TableBody ref="tableBody">
-        <template #header></template>
+      <TableBody ref="tableBody" title="配置与调试">
+        <template #header>
+          <a-card :bordered="false">
+            <a-space direction="vertical">
+              <a-space>
+                <span> 是否开启无头模式： </span>
+                <a-switch :beforeChange="handleChangeIntercept" />
+              </a-space>
+              <a-space>
+                <span> 是否开启浏览器上下文： </span>
+                <a-switch :beforeChange="handleChangeIntercept" />
+              </a-space>
+
+              <a-space>
+                <span> 选择项目默认登录用例： </span>
+                <a-switch :beforeChange="handleChangeIntercept" />
+              </a-space>
+            </a-space>
+          </a-card>
+        </template>
 
         <template #default>
           <a-tabs>
@@ -16,7 +34,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -69,9 +87,19 @@
                     </template>
                     <template v-if="record.type === 1">
                       <a-button type="text" size="mini" @click="onDebugAndroid(record.id)">调试安卓</a-button>
+                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     </template>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-dropdown trigger="hover">
+                      <a-button type="text" size="mini">···</a-button>
+                      <template #content>
+                        <a-doption v-if="record.type !== 1">
+                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                        </a-doption>
+                        <a-doption>
+                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                        </a-doption>
+                      </template>
+                    </a-dropdown>
                   </a-space>
                 </template>
               </a-table-column>
@@ -140,21 +168,16 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import {
-  getNickname,
-  uiConfig,
-  uiConfigGetBrowserType,
-  uiConfigGetDriveType,
-  uiConfigNewBrowserObj,
-  uiConfigPutStatus
-} from '@/api/url'
+import { userNickname, uiConfig, systemEnumDrive, systemEnumBrowser, uiConfigNewBrowserObj, uiConfigPutStatus } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
 import { onMounted, ref, nextTick, reactive } from 'vue'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
+import useUserStore from '@/store/modules/user'
 
+const userStore = useUserStore()
 const uiConfigData = reactive({
   userList: [],
   browserType: [],
@@ -179,7 +202,7 @@ const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请选择驱动类型',
     validator: function () {
-      if (this.value === null && this.value === '') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -210,7 +233,7 @@ const formItems: FormItem[] = reactive([
   },
   {
     label: '浏览器路径',
-    key: 'browser_type',
+    key: 'browser_path',
     value: '',
     type: 'textarea',
     required: false,
@@ -227,21 +250,6 @@ const formItems: FormItem[] = reactive([
     required: false,
     type: 'input',
     validator: function () {
-      return true
-    }
-  },
-  {
-    label: '所属用户',
-    key: 'user_id',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请选择配置的所属人',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
       return true
     }
   }
@@ -306,7 +314,8 @@ function doRefresh() {
     data: () => {
       return {
         page: pagination.page,
-        pageSize: pagination.pageSize
+        pageSize: pagination.pageSize,
+        user_id: userStore.userId
       }
     }
   })
@@ -380,6 +389,7 @@ function onDataForm() {
         data: () => {
           value['status'] = 0
           value['is_headless'] = 0
+          value['user_id'] = userStore.userId
           return value
         }
       })
@@ -439,7 +449,7 @@ const onModifyStatus = async (newValue: number, id: number, key: string) => {
 
 function getNickName() {
   get({
-    url: getNickname,
+    url: userNickname,
     data: () => {
       return {}
     }
@@ -452,7 +462,7 @@ function getNickName() {
 
 function getUiConfigGetBrowserType() {
   get({
-    url: uiConfigGetBrowserType,
+    url: systemEnumBrowser,
     data: () => {
       return {}
     }
@@ -465,7 +475,7 @@ function getUiConfigGetBrowserType() {
 
 function getUiConfigGetDriveType() {
   get({
-    url: uiConfigGetDriveType,
+    url: systemEnumDrive,
     data: () => {
       return {}
     }
@@ -497,6 +507,10 @@ function onDebugWEB(id: number) {
     .catch(console.log)
 }
 
+const handleChangeIntercept = async (newValue: any) => {
+  await new Promise((resolve) => setTimeout(resolve, 1000))
+  return true
+}
 onMounted(() => {
   nextTick(async () => {
     doRefresh()

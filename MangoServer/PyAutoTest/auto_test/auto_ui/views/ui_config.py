@@ -7,18 +7,19 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-
-from PyAutoTest.auto_test.auto_system.consumers import socket_conn
+from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import UiEnum
 from PyAutoTest.auto_test.auto_ui.models import UiConfig
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.actuator_api_enum import UiEnum
-from PyAutoTest.enums.system_enum import IsItEnabled, ClientTypeEnum
-from PyAutoTest.enums.ui_enum import BrowserTypeEnum, DriveTypeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
+from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import WEBConfigModel
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.view_tools import enum_list
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class UiConfigSerializers(serializers.ModelSerializer):
@@ -51,24 +52,6 @@ class UiConfigViews(ViewSet):
     model = UiConfig
     serializer_class = UiConfigSerializers
 
-    @action(methods=['get'], detail=False)
-    def get_browser_type(self, request: Request):
-        """
-        获取操作类型
-        :param request:
-        :return:
-        """
-        return ResponseData.success('获取数据成功', enum_list(BrowserTypeEnum))
-
-    @action(methods=['get'], detail=False)
-    def get_drive_type(self, request: Request):
-        """
-        获取操作类型
-        :param request:
-        :return:
-        """
-        return ResponseData.success('获取数据成功', enum_list(DriveTypeEnum))
-
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):
         """
@@ -83,7 +66,7 @@ class UiConfigViews(ViewSet):
         if status:
             obj_list = self.model.objects.filter(user_id=obj.user_id)
             for i in obj_list:
-                if i.status == IsItEnabled.right.value and i.type == obj.type and i.id != obj.id:
+                if i.status == StatusEnum.SUCCESS.value and i.type == obj.type and i.id != obj.id:
                     return ResponseData.fail('当前类型已有开启状态')
 
             obj.status = request.data.get('status')
@@ -100,11 +83,30 @@ class UiConfigViews(ViewSet):
         @param request:
         @return:
         """
-        config_obj = self.model.objects.get(id=request.query_params.get('id'))
-        web_config = WEBConfigModel(browser_type=config_obj.browser_type,
-                                    browser_port=config_obj.browser_port,
-                                    browser_path=config_obj.browser_path,
-                                    is_headless=config_obj.is_headless)
+        is_recording = request.query_params.get('is_recording')
+        if is_recording == '1':
+            user_obj = User.objects.get(id=request.user['id'])
+            config_obj = UiConfig.objects.get(user_id=request.user['id'],
+                                              status=StatusEnum.SUCCESS.value,
+                                              type=DriveTypeEnum.WEB.value)
+            if not user_obj.selected_project:
+                return ResponseData.fail('请先选择项目后再尝试', )
+            if not user_obj.selected_environment:
+                return ResponseData.fail('请先选择测试环境后再尝试', )
+            web_config = WEBConfigModel(browser_type=config_obj.browser_type,
+                                        browser_port=config_obj.browser_port,
+                                        browser_path=config_obj.browser_path,
+                                        is_headless=config_obj.is_headless,
+                                        project_id=user_obj.selected_project,
+                                        is_header_intercept=True,
+                                        host=TestObject.objects.get(id=user_obj.selected_environment).value)
+        else:
+            config_obj = self.model.objects.get(id=request.query_params.get('id'))
+            web_config = WEBConfigModel(browser_type=config_obj.browser_type,
+                                        browser_port=config_obj.browser_port,
+                                        browser_path=config_obj.browser_path,
+                                        is_headless=config_obj.is_headless)
+
         send_socket_data = SocketDataModel(
             code=200,
             msg="实例化web对象",
@@ -115,5 +117,8 @@ class UiConfigViews(ViewSet):
                 func_args=web_config
             )
         )
-        socket_conn.active_send(send_socket_data)
-        return ResponseData.success('发送配置成功', )
+        try:
+            ChatConsumer.active_send(send_socket_data)
+        except MangoServerError as e:
+            return ResponseData.fail(e.msg, )
+        return ResponseData.success('浏览器正在启动中...', )

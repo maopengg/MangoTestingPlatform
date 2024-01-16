@@ -3,42 +3,38 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="数据库配置" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="数据库配置" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="project.data"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -58,7 +54,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -87,12 +83,7 @@
                 <template v-else-if="item.key === 'password'" #cell="{ record }">
                   {{ record.password }}
                 </template>
-                <template v-else-if="item.key === 'status'" #cell="{ record }">
-                  <a-switch
-                    :default-checked="record.status === 1"
-                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
-                  />
-                </template>
+
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.environment === 0">测试环境</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.environment === 1">预发环境</a-tag>
@@ -156,11 +147,11 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getDatabase, getDatabasePutStatus } from '@/api/url'
+import { systemDatabase } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { useTestObj } from '@/store/modules/get-test-obj'
 import { fieldNames } from '@/setting'
@@ -188,39 +179,11 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入数据库ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
-    }
-  },
-  {
-    key: 'name',
-    label: '名称',
-    type: 'input',
-    placeholder: '请输入数据库名称',
-    value: '',
-    reset: function () {
-      this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入数据库名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
@@ -377,11 +340,6 @@ const tableColumns = useTableColumn([
     dataIndex: 'password'
   },
   {
-    title: '状态',
-    key: 'status',
-    dataIndex: 'status'
-  },
-  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
@@ -392,30 +350,9 @@ const tableColumns = useTableColumn([
 
 function doRefresh() {
   get({
-    url: getDatabase,
+    url: systemDatabase,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: getDatabase,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -423,8 +360,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -456,7 +392,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getDatabase,
+        url: systemDatabase,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -495,9 +431,8 @@ function onDataForm() {
     const value = getFormItems(formItems)
     if (database.isAdd) {
       post({
-        url: getDatabase,
+        url: systemDatabase,
         data: () => {
-          value['status'] = 0
           return value
         }
       })
@@ -508,7 +443,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getDatabase,
+        url: systemDatabase,
         data: () => {
           value['id'] = database.updateId
           return value
@@ -523,31 +458,5 @@ function onDataForm() {
   }
 }
 
-const onModifyStatus = async (newValue: boolean, id: number) => {
-  return new Promise<any>((resolve, reject) => {
-    setTimeout(async () => {
-      try {
-        let value: any = false
-        await put({
-          url: getDatabasePutStatus,
-          data: () => {
-            return {
-              id: id,
-              status: newValue ? 1 : 0
-            }
-          }
-        })
-          .then((res) => {
-            Message.success(res.msg)
-            value = res.code === 200
-          })
-          .catch(reject)
-        resolve(value)
-      } catch (error) {
-        reject(error)
-      }
-    }, 300)
-  })
-}
 onMounted(doRefresh)
 </script>

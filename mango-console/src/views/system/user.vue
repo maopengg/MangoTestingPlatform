@@ -3,42 +3,38 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="用户管理" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="用户管理" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="project.data"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -59,7 +55,7 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -132,14 +128,15 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getAllRole, getUserList } from '@/api/url'
+import { userAllRole, userInfo } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
+
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -162,34 +159,26 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用户ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'nickname',
-    label: '名称',
+    label: '昵称',
     type: 'input',
-    placeholder: '请输入用户名称',
+    placeholder: '请输入昵称',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用户名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
+    }
+  },
+  {
+    key: 'username',
+    label: '账号',
+    type: 'input',
+    placeholder: '请输入账号',
+    value: '',
+    reset: function () {
+      this.value = ''
     }
   }
 ])
@@ -314,14 +303,15 @@ const tableColumns = useTableColumn([
     width: 150
   }
 ])
+
 function doRefresh() {
   get({
-    url: getUserList,
+    url: userInfo,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
+      let value = getFormItems(conditionItems)
+      value['page'] = pagination.page
+      value['pageSize'] = pagination.pageSize
+      return value
     }
   })
     .then((res) => {
@@ -330,9 +320,10 @@ function doRefresh() {
     })
     .catch(console.log)
 }
+
 function getRole() {
   get({
-    url: getAllRole
+    url: userAllRole
   })
     .then((res) => {
       userData.allRole = res.data
@@ -340,33 +331,34 @@ function getRole() {
     .catch(console.log)
 }
 
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  get({
-    url: getUserList,
-    data: () => {
-      value['page'] = pagination.page
-      value['pageSize'] = pagination.pageSize
-      return value
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
-    })
-    .catch(console.log)
-}
+// function onSearch() {
+//   let value = getFormItems(conditionItems)
+//   if (JSON.stringify(value) === '{}') {
+//     doRefresh()
+//     return
+//   }
+//   get({
+//     url: getUserList,
+//     data: () => {
+//       value['page'] = pagination.page
+//       value['pageSize'] = pagination.pageSize
+//       return value
+//     }
+//   })
+//     .then((res) => {
+//       table.handleSuccess(res)
+//       pagination.setTotalSize(res.totalSize || 10)
+//       Message.success(res.msg)
+//     })
+//     .catch(console.log)
+// }
 
 function onResetSearch() {
   conditionItems.forEach((it) => {
     it.value = ''
   })
 }
+
 function onAddPage() {
   userData.actionTitle = '添加用户'
   userData.isAdd = true
@@ -388,7 +380,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getUserList,
+        url: userInfo,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -427,7 +419,7 @@ function onDataForm() {
     let value = getFormItems(formItems)
     if (userData.isAdd) {
       post({
-        url: getUserList,
+        url: userInfo,
         data: () => {
           return value
         }
@@ -439,7 +431,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getUserList,
+        url: userInfo,
         data: () => {
           value['id'] = userData.updateId
           return value

@@ -3,42 +3,77 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="调试页面步骤" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="调试页面步骤" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      @change="getProjectModule(item.value, true)"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="pageStepsData.moduleList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="onQueryProjectPage(item.value, true)"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'page'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="pageStepsData.pageName"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'type'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="pageStepsData.systemStatus"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -47,24 +82,25 @@
         </template>
 
         <template #default>
-          <a-tabs @tab-click="(key) => switchType(key)">
+          <a-tabs>
             <template #extra>
-              <a-space v-if="pageStepsData.stepsType === '0'">
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-                <a-button status="warning" size="small" @click="setCase('已完成')">设为已完成</a-button>
-                <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
-              </a-space>
-              <a-space v-else-if="pageStepsData.stepsType === '1'">
-                <a-button status="warning" size="small" @click="setCase('调试中')">设为调试中</a-button>
+              <a-space>
+                <div>
+                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                </div>
+                <div>
+                  <a-button status="warning" size="small" @click="setCase">修改状态</a-button>
+                </div>
+                <div>
+                  <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+                </div>
               </a-space>
             </template>
-            <a-tab-pane key="0" title="调试中" />
-            <a-tab-pane key="1" title="已完成" />
           </a-tabs>
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -87,26 +123,35 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
+                <template v-else-if="item.key === 'module_name'" #cell="{ record }">
+                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
+                  }}{{ record.module_name?.name }}
+                </template>
                 <template v-else-if="item.key === 'page'" #cell="{ record }">
                   {{ record.page.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.type === 1">已完成</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.type === 0">调试中</a-tag>
+                  <a-tag color="green" size="small" v-if="record.type === 1">通过</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.type === 0">失败</a-tag>
                   <a-tag color="gray" size="small" v-else>未调试</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space v-if="pageStepsData.stepsType === '0'">
-                    <a-button type="text" size="mini" @click="onRunCase(record)">调试</a-button>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-                  </a-space>
-                  <a-space v-else-if="pageStepsData.stepsType === '1'">
-                    <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                  </a-space>
+                  <a-button type="text" size="mini" @click="onRunCase(record)">调试</a-button>
+                  <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
+                  <a-dropdown trigger="hover">
+                    <a-button type="text" size="mini">···</a-button>
+                    <template #content>
+                      <a-doption>
+                        <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                      </a-doption>
+                      <a-doption>
+                        <a-button type="text" size="mini" @click="pageStepsCopy(record)">复制</a-button>
+                      </a-doption>
+                      <a-doption>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                      </a-doption>
+                    </template>
+                  </a-dropdown>
                 </template>
               </a-table-column>
             </template>
@@ -137,14 +182,26 @@
                   value-key="key"
                   allow-clear
                   allow-search
-                  @change="onQueryProjectPage(item.value)"
+                  @change="getProjectModule(item.value, false)"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="pageStepsData.moduleList"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="onQueryProjectPage(item.value, true)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'page'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="pageStepsData.platformEnum"
+                  :options="pageStepsData.pageName"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -162,16 +219,28 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { uiSteps, uiStepsPutType, uiPageNameProject, UiStepsRun } from '@/api/url'
+import {
+  uiSteps,
+  uiPageName,
+  uiStepsRun,
+  uiPageStepsCopy,
+  userProjectModuleGetAll,
+  uiStepsPutType,
+  systemEnumStatus
+} from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { fieldNames } from '@/setting'
 import { useTestObj } from '@/store/modules/get-test-obj'
 import { getFormItems } from '@/utils/datacleaning'
+import { useProjectModule } from '@/store/modules/project_module'
+import { usePageData } from '@/store/page-data'
+
+const projectModule = useProjectModule()
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -184,8 +253,9 @@ const pageStepsData = reactive({
   isAdd: false,
   updateId: 0,
   actionTitle: '添加测试对象',
-  stepsType: '0',
-  platformEnum: []
+  pageName: [],
+  moduleList: projectModule.data,
+  systemStatus: []
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -196,43 +266,52 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入步骤ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'name',
-    label: '名称',
+    label: '步骤名称',
     type: 'input',
     placeholder: '请输入步骤名称',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入步骤名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
     optionItems: project.data,
+    reset: function () {}
+  },
+  {
+    key: 'module_name',
+    label: '模块',
+    value: '',
+    type: 'select',
+    placeholder: '请先选择项目',
+    optionItems: pageStepsData.moduleList,
+    reset: function () {}
+  },
+  {
+    key: 'page',
+    label: '所属页面',
+    value: '',
+    type: 'select',
+    placeholder: '请选择所属页面',
+    optionItems: pageStepsData.pageName,
+    reset: function () {}
+  },
+  {
+    key: 'type',
+    label: '状态',
+    value: '',
+    type: 'select',
+    placeholder: '请选择步骤状态',
+    optionItems: pageStepsData.systemStatus,
     reset: function () {}
   }
 ])
@@ -242,6 +321,21 @@ const formItems: FormItem[] = reactive([
     key: 'project',
     value: '',
     placeholder: '请选择项目名称',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '模块',
+    key: 'module_name',
+    value: '',
+    placeholder: '请选择测试模块',
     required: true,
     type: 'select',
     validator: function () {
@@ -293,6 +387,12 @@ const tableColumns = useTableColumn([
     width: 130
   },
   {
+    title: '模块',
+    key: 'module_name',
+    dataIndex: 'module_name',
+    width: 160
+  },
+  {
     title: '所属页面',
     key: 'page',
     dataIndex: 'page',
@@ -325,39 +425,11 @@ const tableColumns = useTableColumn([
   }
 ])
 
-function switchType(key: number) {
-  pageStepsData.stepsType = key
-  doRefresh()
-}
-
 function doRefresh() {
   get({
     url: uiSteps,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        type: pageStepsData.stepsType
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  value['type'] = pageStepsData.stepsType
-  get({
-    url: uiSteps,
-    data: () => {
+      let value = getFormItems(conditionItems)
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -365,8 +437,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -448,7 +519,7 @@ function onUpdate(item: any) {
   pageStepsData.isAdd = false
   pageStepsData.updateId = item.id
   modalDialogRef.value?.toggle()
-  onQueryProjectPage(item.project.id)
+  getProjectModule(item.project.id, false)
   nextTick(() => {
     formItems.forEach((it) => {
       const propName = item[it.key]
@@ -461,14 +532,14 @@ function onUpdate(item: any) {
   })
 }
 
-function setCase(name: string) {
+function setCase() {
   if (selectedRowKeys.value.length === 0) {
-    Message.error('请选择要设为' + name + '的数据')
+    Message.error('请选择要修改状态的步骤')
     return
   }
   Modal.confirm({
     title: '提示',
-    content: '确定要把这些设为' + name + '的吗？',
+    content: '确定要翻转这些用例的状态吗？',
     cancelText: '取消',
     okText: '确定',
     onOk: () => {
@@ -476,8 +547,7 @@ function setCase(name: string) {
         url: uiStepsPutType,
         data: () => {
           return {
-            id: JSON.stringify(selectedRowKeys.value),
-            type: name === '已完成' ? 1 : 0
+            id: JSON.stringify(selectedRowKeys.value)
           }
         }
       })
@@ -531,9 +601,8 @@ function onRunCase(record: any) {
     Message.error('请先选择用例执行的环境')
     return
   }
-  // Message.info('测试用例正在执行，请稍后')
   get({
-    url: UiStepsRun,
+    url: uiStepsRun,
     data: () => {
       return {
         page_step_id: record.id,
@@ -542,7 +611,7 @@ function onRunCase(record: any) {
     }
   })
     .then((res) => {
-      Message.success(res.msg)
+      Message.loading(res.msg)
     })
     .catch(console.log)
 }
@@ -550,33 +619,35 @@ function onRunCase(record: any) {
 const router = useRouter()
 
 function onClick(record: any) {
+  const pageData = usePageData()
+  pageData.setRecord(record)
   router.push({
     path: '/uitest/page-steps-details',
     query: {
       id: parseInt(record.id, 10),
-      name: record.name,
       pageId: record.page.id,
-      project_name: record.project.name,
-      type: parseInt(record.type),
       pageType: record.page.type
     }
   })
 }
 
-function onQueryProjectPage(project_id: number) {
+function onQueryProjectPage(moduleId: any, refresh: boolean) {
+  if (refresh) {
+    doRefresh()
+  }
   get({
-    url: uiPageNameProject,
+    url: uiPageName,
     data: () => {
       return {
-        project_id: project_id
+        module_name: moduleId
       }
     }
   })
     .then((res) => {
-      pageStepsData.platformEnum = res.data
+      pageStepsData.pageName = res.data
     })
-    .catch((res) => {
-      pageStepsData.platformEnum = []
+    .catch(() => {
+      pageStepsData.pageName = []
       formItems.forEach((obj: any) => {
         if (obj.key == 'page') {
           obj.value = null
@@ -585,9 +656,58 @@ function onQueryProjectPage(project_id: number) {
     })
 }
 
+function pageStepsCopy(record: any) {
+  post({
+    url: uiPageStepsCopy,
+    data: () => {
+      return {
+        page_id: record.id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
+
+function getProjectModule(projectId: number, isRefresh: boolean | null) {
+  if (isRefresh) {
+    doRefresh()
+  }
+  get({
+    url: userProjectModuleGetAll,
+    data: () => {
+      return {
+        project_id: projectId
+      }
+    }
+  })
+    .then((res) => {
+      pageStepsData.moduleList = res.data
+    })
+    .catch(console.log)
+}
+
+function status() {
+  get({
+    url: systemEnumStatus,
+    data: () => {
+      return {}
+    }
+  })
+    .then((res) => {
+      pageStepsData.systemStatus = res.data
+    })
+    .catch(console.log)
+}
+
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    onQueryProjectPage(null, false)
+    status()
   })
 })
 </script>

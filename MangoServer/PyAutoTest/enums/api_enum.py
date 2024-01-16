@@ -3,24 +3,22 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-from enum import Enum
+from PyAutoTest.enums import BaseEnum
 
 
-class ClientEnum(Enum):
-    """ {"0": "WEB"}，{"1": "APP"}，{"2": "MINI"} """
+class ClientEnum(BaseEnum):
+    """设备类型"""
     WEB = 0
     APP = 1
     MINI = 2
 
-
-class BodyTypeEnum(Enum):
-    """ [NULL, JSON] """
-    NULL = 0
-    JSON = 1
+    @classmethod
+    def obj(cls):
+        return {0: "WEB", 1: "APP", 2: "MINI"}
 
 
-class MethodEnum(Enum):
-    """ [NULL, JSON] """
+class MethodEnum(BaseEnum):
+    """方法枚举"""
     GET = 0
     POST = 1
     PUT = 2
@@ -29,37 +27,29 @@ class MethodEnum(Enum):
     DEAD = 5
     PATCH = 6
 
-
-class ApiPublicTypeEnum(Enum):
-    """ {"0": "登录"}，{"1": "自定义"}，{"2": "SQL"}，{"2": "请求头"} """
-    LOGIN = 0
-    CUSTOM = 1
-    SQL = 2
-    HEADER = 3
+    @classmethod
+    def obj(cls):
+        return {0: "GET", 1: "POST", 2: "PUT", 3: "DELETE", 4: "OPTIONS", 5: "DEAD", 6: "PATCH"}
 
 
-class StatusEnum(Enum):
-    """0是未测试，1是通过，2是失败"""
-    UNTESTED = 0
-    ADOPT = 1
-    FAIL = 2
+class ApiPublicTypeEnum(BaseEnum):
+    """公共参数类型"""
+    CUSTOM = 0
+    SQL = 1
+    LOGIN = 2
+    HEADERS = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "自定义-第一加载", 1: "SQL-第二加载", 2: "登录-第三加载", 3: "请求头-第四加载"}
 
 
-class ApiTypeEnum(Enum):
-    """0是本期接口，1是用例调试，2是测试用例"""
-    stage = 0
+class ApiTypeEnum(BaseEnum):
+    """接口类型"""
+    batch = 0
     debug = 1
-    test = 2
+    success = 2
 
-
-if __name__ == '__main__':
-    # case = 0
-    # lis = [x.name for x in Method if x.value == case][0]
-    # print(type(lis), lis)
-    # for i in Method:
-    #     if i.value == 1:
-    #         print(i.name)
-    # print(Method.name)
-    for name, obj in MethodEnum.__members__.items():
-        print(name + ':', obj)
-        print(obj.name, obj.value)
+    @classmethod
+    def obj(cls):
+        return {0: "批量生成", 1: "调试接口", 2: "调试完成"}

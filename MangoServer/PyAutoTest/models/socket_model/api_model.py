@@ -43,11 +43,6 @@ class ResponseModel(BaseModel):
     response: dict
     assertion_res: bool = None
 
-    @classmethod
-    def create_empty(cls):
-        return cls(case_id=0, case_name="", url="", method="", header={}, response_time=0.0,
-                   res_code=100, body_type=0, body={}, assertion_res=False)
-
 
 class ApiPublicModel(BaseModel):
     """api公共"""
@@ -59,3 +54,20 @@ class ApiPublicModel(BaseModel):
     value: str
     status: int
     type: int
+
+
+class ApiInfoModel(BaseModel):
+    """ApiInfo模型"""
+    project: int
+    type: int = 0
+    module_name: int | None
+    name: str
+    client: int = 0
+    url: str
+    method: int
+    header: dict | None = None
+    params: list | dict | None = None
+    data: list | dict | None = None
+    json_data: list | dict | None = None
+    file: str | None = None
+    status: int | None = None

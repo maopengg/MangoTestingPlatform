@@ -9,12 +9,11 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import my_task
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class ScheduledTasksSerializers(serializers.ModelSerializer):
@@ -49,11 +48,6 @@ class ScheduledTasksViews(ViewSet):
     model = ScheduledTasks
     serializer_class = ScheduledTasksSerializers
 
-    @action(methods=['get'], detail=False)
-    def get_test(self, request: Request):
-        my_task(1)
-        return ResponseData.success('获取数据成功', )
-
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):
         """
@@ -65,3 +59,16 @@ class ScheduledTasksViews(ViewSet):
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success('修改定时任务状态成功', )
+
+    @action(methods=['put'], detail=False)
+    def put_is_notice(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        print(request.data)
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.is_notice = request.data.get('is_notice')
+        obj.save()
+        return ResponseData.success('修改通知状态成功', )

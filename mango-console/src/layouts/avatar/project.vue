@@ -21,30 +21,25 @@ import { useProject } from '@/store/modules/get-project'
 import { useDebounceFn } from '@vueuse/core'
 import { useRoute, useRouter } from 'vue-router'
 import { get, put } from '@/api/http'
-import { getUserProjectEnvironment, putProject, uiPublic } from '@/api/url'
+import { userProjectEnvironment, userPutProject } from '@/api/url'
+import { useProjectModule } from '@/store/modules/project_module'
 
 export default defineComponent({
   name: 'Project',
   setup() {
     const userStore = useUserStore()
     const project = useProject()
+    const projectModule = useProjectModule()
+
     const router = useRouter()
     const route = useRoute()
     let projectList = reactive([])
-    // const projectList = () => {
-    //   let data = [{ key: null, title: '选择项目' }]
-    //   project.data.forEach((item) => {
-    //     data.push(item)
-    //   })
-    //   return data
-    // }
     function handleSelect(key: any) {
-      console.log(key)
       if (key === '选择项目') {
         key = null
       }
       put({
-        url: putProject,
+        url: userPutProject,
         data: () => {
           return { id: userStore.userId, selected_project: key }
         }
@@ -52,6 +47,7 @@ export default defineComponent({
         .then((res) => {
           userStore.selected_project = res.data.selected_project
           setTitle(key)
+          projectModule.getProjectModule()
         })
         .catch(console.log)
       debouncedFn()
@@ -78,7 +74,7 @@ export default defineComponent({
 
     function doRefresh() {
       get({
-        url: getUserProjectEnvironment,
+        url: userProjectEnvironment,
         data: () => {
           return {
             id: userStore.userId
@@ -92,7 +88,7 @@ export default defineComponent({
         .catch(console.log)
     }
     onMounted(async () => {
-      await project.getItems()
+      await project.getProject()
       await doRefresh()
     })
 

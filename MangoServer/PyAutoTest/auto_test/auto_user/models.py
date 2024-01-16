@@ -11,6 +11,8 @@ class Project(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     name = models.CharField(verbose_name="项目名称", max_length=64)
+    upload_folder = models.CharField(verbose_name="上传文件存放的文件夹", max_length=64, null=True)
+    screenshot_folder = models.CharField(verbose_name="执行失败的截图文件夹", max_length=64, null=True)
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
@@ -61,3 +63,17 @@ class User(models.Model):
     class Meta:
         db_table = 'user'
         ordering = ['id']
+
+
+class UserLogs(models.Model):
+    """用户登录日志表"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    nickname = models.CharField(verbose_name="昵称", max_length=64, null=True)
+    username = models.CharField(verbose_name="登录账号", max_length=64, null=True)
+    source_type = models.CharField(verbose_name="来源类型", max_length=64, null=True)
+    ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)
+    user_id = models.SmallIntegerField(verbose_name="选中的项目ID", null=True)
+
+    class Meta:
+        db_table = 'user_logs'
+        ordering = ['-create_time']

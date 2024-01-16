@@ -2,7 +2,7 @@
 import { getNowDate } from '@/utils'
 import { defineComponent, onUnmounted, ref, onMounted } from 'vue'
 import { get } from '@/api/http'
-import { SocketAllUserSum } from '@/api/url'
+import { systemSocketAllUserSum } from '@/api/url'
 
 export default defineComponent({
   setup() {
@@ -16,9 +16,10 @@ export default defineComponent({
       clearInterval(interval)
     })
     let userSum = ref(0)
+
     function getAllUserSum() {
       get({
-        url: SocketAllUserSum,
+        url: systemSocketAllUserSum,
         data: () => {
           return {}
         }
@@ -28,6 +29,7 @@ export default defineComponent({
         })
         .catch(console.log)
     }
+
     onMounted(() => {
       setTimeout(getAllUserSum, 500)
     })
@@ -37,7 +39,7 @@ export default defineComponent({
           <div class="date">{dateStr}</div>
           <div class="time">{timeStr.value}</div>
         </div>
-        <div class="center">MangoAutoTest 平台管理</div>
+        <div class="center">MangoAutoTest 自动化测试平台</div>
         <div class="right">
           <div>{userSum.value}</div>
           <div style={{ color: '#333', fontSize: '12px' }}>当前在线人数</div>

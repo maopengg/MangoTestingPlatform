@@ -3,37 +3,64 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="接口信息收集" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="接口信息收集" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-if="item.type === 'select'">
-                      <a-select v-model="item.value.value" style="width: 150px" :placeholder="item.placeholder">
-                        <a-option v-for="optionItem of item.optionItems" :key="optionItem.value" :value="optionItem.title">
-                          {{ optionItem.title }}
-                        </a-option>
-                      </a-select>
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      @change="getProjectModule(item.value)"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="apiInfoData.moduleList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'client'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="apiInfoData.apiPublicEnd"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -44,29 +71,26 @@
         <template #default>
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="1">
             <template #extra>
-              <a-space v-if="apiInfoData.caseType === '0'">
-                <a-button type="primary" size="small" @click="onBatchUpload">批量上传</a-button>
+              <a-space v-if="apiInfoData.apiType === '0'">
+                <a-button type="primary" size="small" @click="onBatchUpload">录制请求</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('设为调试')">设为调试</a-button>
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
-              <a-space v-else-if="apiInfoData.caseType === '1'">
+              <a-space v-else-if="apiInfoData.apiType === '1'">
                 <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('调试完成')">调试完成</a-button>
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
-              <a-space v-else-if="apiInfoData.caseType === '2'">
-                <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
-              </a-space>
             </template>
-            <a-tab-pane key="0" title="本期接口" />
+            <a-tab-pane key="0" title="批量生成" />
             <a-tab-pane key="1" title="调试接口" />
-            <a-tab-pane key="2" title="调试完成" />
           </a-tabs>
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -92,31 +116,67 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                  {{ record.module_name?.name }}
+                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
+                  }}{{ record.module_name?.name }}
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.client === 0">WEB</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.client === 1">APP</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.client === 2">MINI</a-tag>
+                  <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
+                  <a-tag color="magenta" size="small" v-else-if="record.client === 1">APP</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
                 </template>
                 <template v-else-if="item.key === 'method'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.method === 0">GET</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.method === 1">POST</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.method === 2">PUT</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.method === 3">DELETE</a-tag>
+                  <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
+                  <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
+                  <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
+                  <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
                 </template>
-
+                <template v-else-if="item.key === 'header'" #cell="{ record }">
+                  {{ record.header }}
+                </template>
+                <template v-else-if="item.key === 'params'" #cell="{ record }">
+                  {{ record.params }}
+                </template>
+                <template v-else-if="item.key === 'data'" #cell="{ record }">
+                  {{ record.data }}
+                </template>
+                <template v-else-if="item.key === 'json'" #cell="{ record }">
+                  {{ record.json }}
+                </template>
+                <template v-else-if="item.key === 'file'" #cell="{ record }">
+                  {{ record.file }}
+                </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.status === 2">失败</a-tag>
                   <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                  <template>
+                    <a-button @click="onRunCase">Open Modal</a-button>
+                    <a-modal width="50%" v-model:visible="visible" @ok="handleOk" @cancel="handleCancel">
+                      <template #title> {{ record.name }}接口-测试结果</template>
+                      <a-space direction="vertical">
+                        <!-- eslint-disable-next-line vue/valid-v-for -->
+                        <a-space v-for="(value, key) in apiInfoData.caseResult">
+                          <a-tag class="header-tag" color="#0fc6c2">{{ key }}</a-tag>
+                          <span>{{ value }}</span>
+                        </a-space>
+                      </a-space>
+                    </a-modal>
+                  </template>
                   <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                  <a-button type="text" size="mini" @click="onAssertion(record)">编辑/断言</a-button>
-                  <a-button v-if="apiInfoData.caseType !== '2'" status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除</a-button
-                  >
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-dropdown trigger="hover">
+                    <a-button type="text" size="mini">···</a-button>
+                    <template #content>
+                      <!--                      <a-doption>-->
+                      <!--                        <a-button type="text" size="mini" @click="pageStepsCody(record)">复制</a-button>-->
+                      <!--                      </a-doption>-->
+                      <a-doption>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                      </a-doption>
+                    </template>
+                  </a-dropdown>
                 </template>
               </a-table-column>
             </template>
@@ -136,19 +196,54 @@
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value.value" />
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
               <template v-else-if="item.type === 'textarea'">
-                <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
+                <a-textarea v-model="item.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
               </template>
-              <template v-else-if="item.type === 'tree-select'">
-                <a-tree-select
-                  v-model="item.value.value"
-                  style="width: 100%"
-                  :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
+              <template v-else-if="item.type === 'select' && item.key === 'project'">
+                <a-select
+                  v-model="item.value"
                   :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
+                  @change="getProjectModule(item.value)"
+                  value-key="key"
                   allow-clear
-                  :data="treeData"
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="apiInfoData.moduleList"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'client'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="apiInfoData.apiPublicEnd"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'method'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="apiInfoData.apiMethodType"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
                 />
               </template>
             </a-form-item>
@@ -162,14 +257,28 @@
 <script lang="ts" setup>
 // import {Search} from '@/components/ListSearch.vue'
 import { get, post, put, deleted } from '@/api/http'
-import { ApiInfo, getAllItems, ApiCaseSynchronous, ApiRun, ApiCaseInfoRun } from '@/api/url'
+import {
+  apiInfo,
+  apiCaseInfoRun,
+  systemEnumEnd,
+  systemEnumMethod,
+  userProjectModuleGetAll,
+  uiConfigNewBrowserObj,
+  apiPutApiInfoType
+} from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, reactive, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, reactive, nextTick } from 'vue'
 import { useTestObj } from '@/store/modules/get-test-obj'
 import { getFormItems } from '@/utils/datacleaning'
+import { fieldNames } from '@/setting'
+import { useProject } from '@/store/modules/get-project'
+import { useProjectModule } from '@/store/modules/project_module'
+
+const projectModule = useProjectModule()
+
+const project = useProject()
 const testObj = useTestObj()
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
@@ -182,65 +291,78 @@ const apiInfoData = reactive({
   actionTitle: '添加接口',
   isAdd: false,
   updateId: 0,
-  caseType: '1'
+  apiType: '1',
+  caseResult: {},
+  apiPublicEnd: [],
+  apiMethodType: [],
+  moduleList: projectModule.data
 })
-interface TreeItem {
-  title: string
-  key: string
-  children?: TreeItem[]
+const visible = ref(false)
+
+const handleOk = () => {
+  visible.value = false
+}
+const handleCancel = () => {
+  visible.value = false
 }
 
-const conditionItems: Array<FormItem> = [
+const conditionItems: Array<FormItem> = reactive([
   {
-    key: 'name',
-    label: '用例名称',
+    key: 'id',
+    label: 'ID',
     type: 'input',
-    placeholder: '请输入用例名称',
-    value: ref(''),
+    placeholder: '请输入接口ID',
+    value: '',
     reset: function () {
-      this.value.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用例名称',
-        modelValue: formItem.value.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
-        }
-      })
+      this.value = ''
     }
   },
   {
-    key: 'caseid',
-    label: '用例ID',
+    key: 'name',
+    label: '接口名称',
     type: 'input',
-    placeholder: '请输入用例ID',
-    value: ref(''),
+    placeholder: '请输入用例名称',
+    value: '',
     reset: function () {
-      this.value.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入用例ID',
-        modelValue: formItem.value.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value.value = value
-        }
-      })
+      this.value = ''
     }
+  },
+  {
+    key: 'url',
+    label: 'url',
+    value: '',
+    type: 'input',
+    placeholder: '请先选择项目',
+    reset: function () {}
   },
   {
     key: 'project',
-    label: '筛选项目',
-    value: ref(),
+    label: '项目',
+    value: '',
     type: 'select',
     placeholder: '请选择项目',
-    optionItems: [],
-    reset: function () {
-      this.value.value = undefined
-    }
+    optionItems: project.data,
+    reset: function () {}
+  },
+  {
+    key: 'module_name',
+    label: '模块',
+    value: '',
+    type: 'select',
+    placeholder: '请先选择项目',
+    optionItems: apiInfoData.moduleList,
+    reset: function () {}
+  },
+  {
+    key: 'client',
+    label: '客户端类型',
+    value: '',
+    type: 'select',
+    placeholder: '请选择客户端类型',
+    optionItems: apiInfoData.moduleList,
+    reset: function () {}
   }
-]
+])
 const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
@@ -248,15 +370,177 @@ const formItems: FormItem[] = reactive([
     value: '',
     placeholder: '请选择项目名称',
     required: true,
-    type: 'tree-select'
+    type: 'select',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
   },
   {
-    label: '用例名称',
+    label: '模块名称',
+    key: 'module_name',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请用例归属模块',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '接口名称',
     key: 'name',
     value: '',
     type: 'input',
     required: true,
-    placeholder: '请输入页面名称'
+    placeholder: '请输入用例名称',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: '客户端类型',
+    key: 'client',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请设置客户端类型',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: 'url',
+    key: 'url',
+    value: '',
+    type: 'input',
+    required: true,
+    placeholder: '请输入url'
+  },
+  {
+    label: 'method',
+    key: 'method',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请选择接口方法',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
+    label: 'header',
+    key: 'header',
+    value: '',
+    type: 'textarea',
+    required: false,
+    placeholder: '请输入header',
+    validator: function () {
+      if (this.value) {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
+  },
+  {
+    label: 'params',
+    key: 'params',
+    value: '',
+    type: 'textarea',
+    required: false,
+    placeholder: '请输入params',
+    validator: function () {
+      if (this.value) {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
+  },
+  {
+    label: 'data',
+    key: 'data',
+    value: '',
+    type: 'textarea',
+    required: false,
+    placeholder: '请输入data',
+    validator: function () {
+      if (this.value) {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
+  },
+  {
+    label: 'json',
+    key: 'json',
+    value: '',
+    type: 'textarea',
+    required: false,
+    placeholder: '请输入json',
+    validator: function () {
+      if (this.value) {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
+  },
+  {
+    label: 'file',
+    key: 'file',
+    value: '',
+    type: 'textarea',
+    required: false,
+    placeholder: '请输入文件地址',
+    validator: function () {
+      if (this.value) {
+        try {
+          this.value = JSON.parse(this.value)
+        } catch (e) {
+          Message.error('请输入json数据类型')
+          return false
+        }
+      }
+      return true
+    }
   }
 ])
 
@@ -270,12 +554,16 @@ const tableColumns = useTableColumn([
   {
     title: '模块名称',
     key: 'module_name',
-    dataIndex: 'module_name'
+    dataIndex: 'module_name',
+    width: 150
   },
   {
     title: '接口名称',
     key: 'name',
-    dataIndex: 'name'
+    dataIndex: 'name',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: '客户端类型',
@@ -285,7 +573,10 @@ const tableColumns = useTableColumn([
   {
     title: 'url',
     key: 'url',
-    dataIndex: 'url'
+    dataIndex: 'url',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: '方法',
@@ -296,36 +587,43 @@ const tableColumns = useTableColumn([
   {
     title: '请求头',
     key: 'header',
-    dataIndex: 'header'
+    dataIndex: 'header',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
-    title: '参数',
+    title: 'params',
     key: 'params',
-    dataIndex: 'params'
+    dataIndex: 'params',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: 'data',
     key: 'data',
-    dataIndex: 'data'
+    dataIndex: 'data',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: 'json',
     key: 'json',
-    dataIndex: 'json'
+    dataIndex: 'json',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
   {
-    title: '公共断言',
-    key: 'ass',
-    dataIndex: 'ass'
+    title: '文件',
+    key: 'file',
+    dataIndex: 'file',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
-  // {
-  //   title: '请求体',
-  //   key: 'body',
-  //   dataIndex: 'body',
-  //   align: 'left',
-  //   ellipsis: true,
-  //   tooltip: true
-  // },
   {
     title: '状态',
     key: 'status',
@@ -337,24 +635,24 @@ const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 250
+    width: 200
   }
 ])
 
 function switchType(key: any) {
-  apiInfoData.caseType = key
+  apiInfoData.apiType = key
   doRefresh()
 }
 
 function doRefresh() {
   get({
-    url: ApiInfo,
+    url: apiInfo,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        type: apiInfoData.caseType
-      }
+      let value = getFormItems(conditionItems)
+      value['page'] = pagination.page
+      value['type'] = apiInfoData.apiType
+      value['pageSize'] = pagination.pageSize
+      return value
     }
   })
     .then((res) => {
@@ -364,56 +662,9 @@ function doRefresh() {
     .catch(console.log)
 }
 
-function onSearch() {
-  let data: { [key: string]: string } = {}
-  conditionItems.forEach((it) => {
-    if (it.value.value) {
-      data[it.key] = it.value.value
-    }
-  })
-  if (JSON.stringify(data) === '{}') {
-    doRefresh()
-  } else if (data.project) {
-    get({
-      url: ApiInfo,
-      data: () => {
-        return {
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-          project: data.project,
-          type: apiInfoData.caseType
-        }
-      }
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  } else if (data) {
-    get({
-      url: ApiInfo,
-      data: () => {
-        return {
-          id: data.caseid,
-          name: data.name,
-          type: apiInfoData.caseType
-        }
-      }
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize(res.totalSize || 10)
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
-}
-
 function onResetSearch() {
   conditionItems.forEach((it) => {
-    it.reset ? it.reset() : (it.value.value = '')
+    it.value = ''
   })
 }
 
@@ -425,37 +676,64 @@ function onAddPage() {
     if (it.reset) {
       it.reset()
     } else {
-      it.value.value = ''
+      it.value = ''
     }
   })
 }
 
-function onBatchUpload() {
-  get({
-    url: ApiCaseSynchronous,
-    data: () => {
-      return {
-        project_id: '1',
-        host: 'http://172.16.90.93:9999'
+function onUpdate(item: any) {
+  apiInfoData.actionTitle = '编辑公共参数'
+  apiInfoData.isAdd = false
+  apiInfoData.updateId = item.id
+  modalDialogRef.value?.toggle()
+  getProjectModule(item.project.id)
+  nextTick(() => {
+    formItems.forEach((it) => {
+      const propName = item[it.key]
+      if (typeof propName === 'object' && propName !== null) {
+        if (it.type === 'select') {
+          it.value = propName.id
+        } else {
+          it.value = JSON.stringify(propName, null, '\t')
+        }
+      } else {
+        it.value = propName
       }
+    })
+  })
+}
+
+function onBatchUpload() {
+  Modal.confirm({
+    title: '注意事项',
+    content:
+      '录制接口只支持web端，开始时会结合执行器启动一个浏览器，用例会自动绑定给所选择的项目，请确认是否已选择项目；使用所选择测试环境的域名进行进行过滤请求，请确认是否准备完成！',
+    cancelText: '取消',
+    okText: '确定',
+    onOk: () => {
+      get({
+        url: uiConfigNewBrowserObj,
+        data: () => {
+          return { is_recording: 1 }
+        }
+      })
+        .then((res) => {
+          Message.success(res.msg)
+        })
+        .catch(console.log)
     }
   })
-    .then((res) => {
-      doRefresh()
-      Message.success(res.msg)
-    })
-    .catch(console.log)
 }
 
 function onDelete(data: any) {
   Modal.confirm({
     title: '提示',
-    content: '是否要删除此页面？',
+    content: '是否要删除此接口？',
     cancelText: '取消',
     okText: '删除',
     onOk: () => {
       deleted({
-        url: ApiInfo,
+        url: apiInfo,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -483,7 +761,7 @@ function onDeleteItems() {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: ApiInfo,
+        url: apiInfo,
         data: () => {
           return {
             id: JSON.stringify(selectedRowKeys.value)
@@ -500,30 +778,14 @@ function onDeleteItems() {
   })
 }
 
-function onUpdate(item: any) {
-  apiInfoData.actionTitle = '编辑接口'
-  apiInfoData.isAdd = false
-  apiInfoData.updateId = item.id
-  modalDialogRef.value?.toggle()
-  nextTick(() => {
-    formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
-      if (propName) {
-        it.value = propName
-      }
-    })
-  })
-}
-
 function setCase(name: any) {
   if (selectedRowKeys.value.length === 0) {
     Message.error('请选择要设为' + name + '的数据')
     return
   }
   let type: any = 1
-  if (name) {
-    type = 5
+  if (name === '调试完成') {
+    type = 2
   }
   Modal.confirm({
     title: '提示',
@@ -532,10 +794,10 @@ function setCase(name: any) {
     okText: '确定',
     onOk: () => {
       put({
-        url: ApiInfo,
+        url: apiPutApiInfoType,
         data: () => {
           return {
-            id: JSON.stringify(selectedRowKeys.value),
+            id_list: selectedRowKeys.value,
             type: type
           }
         }
@@ -554,10 +816,10 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = getFormItems(formItems)
-    value['type'] = apiInfoData.caseType
+    value['type'] = apiInfoData.apiType
     if (apiInfoData.isAdd) {
       post({
-        url: ApiInfo,
+        url: apiInfo,
         data: () => {
           return value
         }
@@ -569,7 +831,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: ApiInfo,
+        url: apiInfo,
         data: () => {
           value['id'] = apiInfoData.updateId
           return value
@@ -583,90 +845,78 @@ function onDataForm() {
     }
   }
 }
+
 // 获取所有项目
-const treeData = ref<Array<TreeItem>>([])
-
-function getItems() {
-  get({
-    url: getAllItems,
-    data: {}
-  })
-    .then((res) => {
-      for (let value of conditionItems) {
-        if (value.key === 'project') {
-          value.optionItems = res.data
-        }
-      }
-      treeData.value = transformRoutes(res.data)
-    })
-    .catch(console.log)
-}
-
-function transformRoutes(routes: any[], parentPath = '/'): TreeItem[] {
-  const list: TreeItem[] = []
-  routes
-    .filter((it) => it.hidden !== true && it.fullPath !== parentPath)
-    .forEach((it) => {
-      const searchItem: TreeItem = {
-        // 可以控制是取id还是取名称
-        key: it.title,
-        title: it.title
-      }
-      if (it.children && it.children.length > 0) {
-        searchItem.children = transformRoutes(it.children, it.fullPath)
-      }
-      list.push(searchItem)
-    })
-  return list
-}
-
 function onRunCase(record: any) {
   if (testObj.selectValue == null) {
     Message.error('请先选择用例执行的环境')
     return
   }
+  Message.loading('接口开始执行中~')
   get({
-    url: ApiCaseInfoRun,
+    url: apiCaseInfoRun,
     data: () => {
       return {
         id: record.id,
-        test_obj_id: testObj.selectValue
+        test_obj_id: testObj.selectValue,
+        project_id: record.project.id
       }
     }
   })
     .then((res) => {
-      Message.success(res.msg)
-      Modal.confirm({
-        title: '提示',
-        content: res.data.toString(),
-        cancelText: '取消',
-        okText: '确定',
-        onOk: () => {
-          doRefresh()
-        }
-      })
+      apiInfoData.caseResult = res.data
+      visible.value = true
     })
     .catch(console.log)
 }
 
-const router = useRouter()
-
 function onConcurrency() {
-  Message.info('调用了并发按钮')
+  Message.loading('调用了并发按钮')
 }
 
-function onAssertion(record: any) {
-  router.push({
-    path: '/apitest/details',
-    query: {
-      id: record.id,
-      project: record.project
+function doEnd() {
+  get({
+    url: systemEnumEnd
+  })
+    .then((res) => {
+      apiInfoData.apiPublicEnd = res.data
+    })
+    .catch(console.log)
+}
+
+function doMethod() {
+  get({
+    url: systemEnumMethod
+  })
+    .then((res) => {
+      apiInfoData.apiMethodType = res.data
+    })
+    .catch(console.log)
+}
+
+function getProjectModule(projectId: number) {
+  doRefresh()
+  get({
+    url: userProjectModuleGetAll,
+    data: () => {
+      return {
+        project_id: projectId
+      }
     }
   })
+    .then((res) => {
+      apiInfoData.moduleList = res.data
+    })
+    .catch(console.log)
 }
 
-onMounted(doRefresh)
-onMounted(getItems)
+onMounted(() => {
+  nextTick(async () => {
+    doRefresh()
+    doEnd()
+    doMethod()
+  })
+})
 </script>
 
 <style lang="less" scoped>
@@ -700,5 +950,9 @@ onMounted(getItems)
   .gender-icon {
     width: 20px;
   }
+}
+
+.header-tag {
+  width: 100px; /* 设置标签的宽度 */
 }
 </style>

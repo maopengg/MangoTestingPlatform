@@ -7,6 +7,9 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
+from PyAutoTest.settings import DRIVER, SERVER, WEB
+
 
 class SocketUserModel(BaseModel):
     user_key: str
@@ -53,13 +56,21 @@ class SocketUser:
     def get_user_web_obj(cls, user_key):
         for i in cls.user:
             if i.user_key == user_key:
-                return i.web_obj
+                if i.web_obj:
+                    return i.web_obj
+                else:
+                    raise SocketClientNotPresentError(f'发送任务失败，请确保{WEB}已连接{SERVER}')
+        raise SocketClientNotPresentError(f'发送任务失败，请确保{WEB}已连接{SERVER}')
 
     @classmethod
     def get_user_client_obj(cls, user_key):
         for i in cls.user:
             if i.user_key == user_key:
-                return i.client_obj
+                if i.client_obj:
+                    return i.client_obj
+                else:
+                    raise SocketClientNotPresentError(f'发送任务失败，请确保{DRIVER}已连接{SERVER}')
+        raise SocketClientNotPresentError(f'发送任务失败，请确保{DRIVER}已连接{SERVER}')
 
     @classmethod
     def get_all_user(cls):

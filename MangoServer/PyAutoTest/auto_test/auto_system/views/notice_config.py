@@ -11,10 +11,8 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enums.system_enum import NoticeEnum
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.view_tools import enum_list
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
@@ -59,10 +57,6 @@ class NoticeConfigViews(ViewSet):
             return ResponseData.fail('请检查系统代理，并设置为关闭在进行测试')
         else:
             return ResponseData.success('通知发送成功')
-
-    @action(methods=['get'], detail=False)
-    def get_notice_type(self, request: Request):
-        return ResponseData.success('获取通知类型成功', enum_list(NoticeEnum))
 
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):

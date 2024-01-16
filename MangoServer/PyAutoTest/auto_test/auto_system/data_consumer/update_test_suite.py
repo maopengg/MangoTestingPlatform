@@ -17,7 +17,7 @@ class TestSuiteReportUpdate:
     def __init__(self, data: TestSuiteModel = None):
         self.data = data
 
-    def update_test_suite_report(self):
+    def add_test_suite_report(self):
         """
         新增一条测试套
         @return:
@@ -51,7 +51,7 @@ class TestSuiteReportUpdate:
             res.status = status
             res.run_status = run_status
             if error_message:
-                res.error_message = run_status
+                res.error_message = error_message
             res.save()
         except TestSuiteReport.DoesNotExist as e:
             # 处理找不到对应记录的情况

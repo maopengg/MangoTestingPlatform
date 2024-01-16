@@ -9,12 +9,12 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.system_enum import EnvironmentEnum, DevicePlatformEnum, AutoTestTypeEnum
-from PyAutoTest.tools.response_data import ResponseData
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.view_tools import enum_list
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
@@ -49,33 +49,6 @@ class TestObjectViews(ViewSet):
     serializer_class = TestObjectSerializers
 
     @action(methods=['get'], detail=False)
-    def get_environment_enum(self, request: Request):
-        """
-         获取环境信息
-         :param request:
-         :return:
-         """
-        return ResponseData.success('获取数据成功', enum_list(EnvironmentEnum))
-
-    @action(methods=['get'], detail=False)
-    def get_platform_enum(self, request: Request):
-        """
-         获取平台枚举
-         :param request:
-         :return:
-         """
-        return ResponseData.success('获取数据成功', enum_list(DevicePlatformEnum))
-
-    @action(methods=['get'], detail=False)
-    def get_auto_test_enum(self, request: Request):
-        """
-         获取环境信息
-         :param request:
-         :return:
-         """
-        return ResponseData.success('获取数据成功', enum_list(AutoTestTypeEnum))
-
-    @action(methods=['get'], detail=False)
     def get_test_obj_name(self, request: Request):
         """
          获取平台枚举
@@ -85,3 +58,21 @@ class TestObjectViews(ViewSet):
         res = TestObject.objects.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)
+
+    @action(methods=['put'], detail=False)
+    def put_status(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        db_status = request.data.get('db_status')
+        try:
+            obj = self.model.objects.get(id=request.data.get('id'))
+            if db_status:
+                GetDataBase.get_mysql_config(obj.id)
+            obj.db_status = db_status
+            obj.save()
+            return ResponseData.success('修改sql断言状态成功')
+        except MangoServerError as e:
+            return ResponseData.fail(e.msg)

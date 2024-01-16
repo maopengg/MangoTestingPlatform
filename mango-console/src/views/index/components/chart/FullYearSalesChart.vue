@@ -5,9 +5,11 @@
 </template>
 <script lang="ts">
 import useEcharts from '@/hooks/useEcharts'
-import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { dispose, graphic } from 'echarts/core'
 import { random } from 'lodash-es'
+import { get } from '@/api/http'
+import { systemCaseResultWeekSum } from '@/api/url'
 
 function getData() {
   const data: number[] = []
@@ -24,6 +26,20 @@ export default defineComponent({
     const loading = ref(true)
     const fullYearSalesChart = ref<HTMLDivElement | null>(null)
     let interval: any = null
+    let data: any = reactive([])
+    function caseResultWeekSum() {
+      get({
+        url: systemCaseResultWeekSum,
+        data: () => {
+          return {}
+        }
+      })
+        .then((res) => {
+          data = res.data
+          init()
+        })
+        .catch(console.log)
+    }
     const init = () => {
       const option = {
         color: ['rgba(64, 58, 255)'],
@@ -54,7 +70,7 @@ export default defineComponent({
         },
         yAxis: {
           type: 'value',
-          max: 300,
+          max: 800,
           splitLine: { show: false },
           axisLine: {
             show: true,
@@ -68,9 +84,9 @@ export default defineComponent({
         series: [
           {
             type: 'line',
-            name: '全年销售额',
+            name: '接口用例执行数',
             stack: '总量',
-            data: getData(),
+            data: data.api_count,
             symbolSize: 0,
             smooth: true,
             lineStyle: {
@@ -80,11 +96,24 @@ export default defineComponent({
               shadowOffsetY: 5
             },
             itemStyle: {
-              color: new graphic.LinearGradient(1, 0, 0, 0, [
-                { offset: 0, color: '#D860FF' },
-                { offset: 0.5, color: '#3CA6FF' },
-                { offset: 1, color: '#00FDAD' }
-              ])
+              color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#91cc75' }])
+            }
+          },
+          {
+            type: 'line',
+            name: '界面用例执行数',
+            stack: '总量2',
+            data: data.ui_count,
+            symbolSize: 0,
+            smooth: true,
+            lineStyle: {
+              width: 5,
+              shadowColor: '#999', //设置折线阴影
+              shadowBlur: 10,
+              shadowOffsetY: 5
+            },
+            itemStyle: {
+              color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#5470c6' }])
             }
           }
         ]
@@ -99,7 +128,11 @@ export default defineComponent({
     const updateChart = () => {
       useEcharts(fullYearSalesChart.value as HTMLDivElement).resize()
     }
-    onMounted(init)
+    onMounted(() => {
+      nextTick(async () => {
+        await caseResultWeekSum()
+      })
+    })
     onBeforeUnmount(() => {
       dispose(fullYearSalesChart.value as HTMLDivElement)
       clearInterval(interval)
@@ -118,7 +151,7 @@ export default defineComponent({
   width: 100%;
 
   .chart-item {
-    height: 20vh;
+    height: 31vh;
   }
 }
 </style>

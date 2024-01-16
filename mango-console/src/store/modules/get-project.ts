@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { get } from '@/api/http'
-import { getAllItems } from '@/api/url'
+import { userProjectAll } from '@/api/url'
 // 1.定义容器
 export const useProject = defineStore('get-project', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -15,9 +15,9 @@ export const useProject = defineStore('get-project', {
   getters: {},
   // 封装业务逻辑，修改state
   actions: {
-    getItems() {
+    getProject() {
       get({
-        url: getAllItems
+        url: userProjectAll
       })
         .then((res) => {
           this.data = res.data

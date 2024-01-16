@@ -1,166 +1,181 @@
 <template>
   <div>
-    <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'步骤名称：' + pageStepsData.caseName + ' | ' + '所属项目：' + route.query.project_name">
-        <template #extra>
-          <a-affix :offsetTop="80">
-            <a-space>
-              <a-button type="primary" status="warning" size="small" @click="doSave">保存</a-button>
-              <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-              <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-            </a-space>
-          </a-affix>
+    <a-card title="页面步骤详情">
+      <template #extra>
+        <a-affix :offsetTop="80">
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+            <a-button status="success" size="small" @click="onRunCase">调试</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
+        </a-affix>
+      </template>
+      <div class="container">
+        <a-space direction="vertical" style="width: 25%">
+          <span>所属项目：{{ pageData.record.project?.name }}</span>
+          <span>顶级模块：{{ pageData.record.module_name?.superior_module }}</span>
+          <span>所属模块：{{ pageData.record.module_name?.name }}</span>
+          <span>所属页面：{{ pageData.record.page?.name }}</span>
+        </a-space>
+        <a-space direction="vertical" style="width: 25%">
+          <span>步骤ID：{{ pageData.record.id }}</span>
+          <span>步骤名称：{{ pageData.record.name }}</span>
+          <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
+        </a-space>
+        <a-space direction="vertical" style="width: 50%">
+          <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
+        </a-space>
+      </div>
+    </a-card>
+
+    <a-card>
+      <a-table
+        :columns="columns"
+        :data="pageStepsData.data"
+        @change="handleChange"
+        :draggable="{ type: 'handle', width: 40 }"
+        :pagination="false"
+        :bordered="false"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of columns"
+            :key="item.key"
+            :align="item.align"
+            :title="item.title"
+            :width="item.width"
+            :data-index="item.dataIndex"
+            :fixed="item.fixed"
+          >
+            <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
+              {{ record.page_step.name }}
+            </template>
+            <template v-else-if="item.dataIndex === 'ele_name_a'" #cell="{ record }">
+              {{ record.ele_name_a == null ? '-' : record.ele_name_a.name }}
+            </template>
+            <!--              <template v-else-if="item.dataIndex === 'ele_name_b'" #cell="{ record }">-->
+            <!--                {{ record.ele_name_b == null ? '-' : record.ele_name_b.name }}-->
+            <!--              </template>-->
+            <template v-else-if="item.dataIndex === 'ope_type'" #cell="{ record }">
+              {{ record.ope_type == null ? '-' : getLabelByValue(pageStepsData.ope, record.ope_type) }}
+            </template>
+            <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
+              {{ record.ope_value == null ? '-' : record.ope_value }}
+            </template>
+            <template v-else-if="item.dataIndex === 'ass_type'" #cell="{ record }">
+              {{ record.ass_type == null ? '-' : getLabelByValue(pageStepsData.ass, record.ass_type) }}
+            </template>
+            <template v-else-if="item.dataIndex === 'ass_value'" #cell="{ record }">
+              {{ record.ass_value == null ? '-' : record.ass_value }}
+            </template>
+            <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
+              <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
+              <a-tag color="purple" size="small" v-else-if="record.type === 0">操作</a-tag>
+            </template>
+            <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+            </template>
+          </a-table-column>
         </template>
-        <a-table
-          :columns="columns"
-          :data="pageStepsData.data"
-          @change="handleChange"
-          :draggable="{ type: 'handle', width: 40 }"
-          :pagination="false"
-          :bordered="false"
-        >
-          <template #columns>
-            <a-table-column
-              v-for="item of columns"
-              :key="item.key"
-              :align="item.align"
-              :title="item.title"
-              :width="item.width"
-              :data-index="item.dataIndex"
-              :fixed="item.fixed"
-            >
-              <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-                {{ record.page_step.name }}
-              </template>
-              <template v-else-if="item.dataIndex === 'ele_name_a'" #cell="{ record }">
-                {{ record.ele_name_a == null ? '-' : record.ele_name_a.name }}
-              </template>
-              <!--              <template v-else-if="item.dataIndex === 'ele_name_b'" #cell="{ record }">-->
-              <!--                {{ record.ele_name_b == null ? '-' : record.ele_name_b.name }}-->
-              <!--              </template>-->
-              <template v-else-if="item.dataIndex === 'ope_type'" #cell="{ record }">
-                {{ record.ope_type == null ? '-' : getLabelByValue(pageStepsData.ope, record.ope_type) }}
-              </template>
-              <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-                {{ record.ope_value == null ? '-' : record.ope_value }}
-              </template>
-              <template v-else-if="item.dataIndex === 'ass_type'" #cell="{ record }">
-                {{ record.ass_type == null ? '-' : getLabelByValue(pageStepsData.ass, record.ass_type) }}
-              </template>
-              <template v-else-if="item.dataIndex === 'ass_value'" #cell="{ record }">
-                {{ record.ass_value == null ? '-' : record.ass_value }}
-              </template>
-              <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-                <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
-                <a-tag color="purple" size="small" v-else-if="record.type === 0">操作</a-tag>
-              </template>
-              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-card>
-      <ModalDialog ref="modalDialogRef" :title="pageStepsData.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems"
-              :key="item.key"
-            >
-              <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'ele_name_a'">
-                <a-select
+      </a-table>
+    </a-card>
+    <ModalDialog ref="modalDialogRef" :title="pageStepsData.actionTitle" @confirm="onDataForm">
+      <template #content>
+        <a-form :model="formModel">
+          <a-form-item
+            :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+            :label="item.label"
+            v-for="item of formItems"
+            :key="item.key"
+          >
+            <template v-if="item.type === 'input'">
+              <a-input :placeholder="item.placeholder" v-model="item.value" />
+            </template>
+            <template v-else-if="item.type === 'select' && item.key === 'ele_name_a'">
+              <a-select
+                v-model="item.value"
+                :placeholder="item.placeholder"
+                :options="pageStepsData.uiPageName"
+                :field-names="fieldNames"
+                @change="elementIsLocator"
+                value-key="key"
+                allow-clear
+                allow-search
+              />
+            </template>
+            <!--              <template v-else-if="item.type === 'select' && item.key === 'ele_name_b'">-->
+            <!--                <a-select-->
+            <!--                  v-model="item.value"-->
+            <!--                  :placeholder="item.placeholder"-->
+            <!--                  :options="pageStepsData.uiPageName"-->
+            <!--                  :field-names="fieldNames"-->
+            <!--                  value-key="key"-->
+            <!--                  allow-clear-->
+            <!--                  allow-search-->
+            <!--                />-->
+            <!--              </template>-->
+            <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
+              <a-space direction="vertical">
+                <a-cascader
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="pageStepsData.uiPageName"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-              <!--              <template v-else-if="item.type === 'select' && item.key === 'ele_name_b'">-->
-              <!--                <a-select-->
-              <!--                  v-model="item.value"-->
-              <!--                  :placeholder="item.placeholder"-->
-              <!--                  :options="pageStepsData.uiPageName"-->
-              <!--                  :field-names="fieldNames"-->
-              <!--                  value-key="key"-->
-              <!--                  allow-clear-->
-              <!--                  allow-search-->
-              <!--                />-->
-              <!--              </template>-->
-              <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
-                <a-space direction="vertical">
-                  <a-cascader
-                    v-model="item.value"
-                    :options="pageStepsData.ope"
-                    :default-value="item.value"
-                    expand-trigger="hover"
-                    :placeholder="item.placeholder"
-                    @change="upDataOpeValue(item.value)"
-                    value-key="key"
-                    style="width: 380px"
-                    allow-search
-                    allow-clear
-                    :disabled="pageStepsData.isDisabledOpe"
-                  />
-                </a-space>
-              </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
-                <a-space direction="vertical">
-                  <a-cascader
-                    v-model="item.value"
-                    :options="pageStepsData.ass"
-                    :default-value="item.value"
-                    expand-trigger="hover"
-                    :placeholder="item.placeholder"
-                    @change="upDataAssValue(item.value)"
-                    value-key="key"
-                    style="width: 380px"
-                    allow-search
-                    allow-clear
-                    :disabled="pageStepsData.isDisabledAss"
-                  />
-                </a-space>
-              </template>
-              <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
-                <a-textarea
-                  :auto-size="{ minRows: 4, maxRows: 7 }"
-                  :placeholder="item.placeholder"
+                  :options="pageStepsData.ope"
                   :default-value="item.value"
-                  v-model="item.value"
+                  expand-trigger="hover"
+                  :placeholder="item.placeholder"
+                  @change="upDataOpeValue(item.value)"
+                  value-key="key"
+                  style="width: 380px"
+                  allow-search
                   allow-clear
                   :disabled="pageStepsData.isDisabledOpe"
                 />
-              </template>
-              <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
-                <a-textarea
-                  :auto-size="{ minRows: 4, maxRows: 7 }"
-                  :placeholder="item.placeholder"
-                  :default-value="item.value"
+              </a-space>
+            </template>
+            <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
+              <a-space direction="vertical">
+                <a-cascader
                   v-model="item.value"
+                  :options="pageStepsData.ass"
+                  :default-value="item.value"
+                  expand-trigger="hover"
+                  :placeholder="item.placeholder"
+                  @change="upDataAssValue(item.value)"
+                  value-key="key"
+                  style="width: 380px"
+                  allow-search
                   allow-clear
                   :disabled="pageStepsData.isDisabledAss"
                 />
-              </template>
-              <template v-else-if="item.type === 'radio' && item.key === 'type'">
-                <a-radio-group @change="changeStatus" v-model="item.value" :options="pageStepsData.plainOptions">
-                  <!--                  <a-radio value="0" :model-value="item.value">操作</a-radio>-->
-                  <!--                  <a-radio value="1">断言</a-radio>-->
-                </a-radio-group>
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </ModalDialog>
-    </div>
+              </a-space>
+            </template>
+            <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+              <a-textarea
+                :auto-size="{ minRows: 4, maxRows: 7 }"
+                :placeholder="item.placeholder"
+                :default-value="item.value"
+                v-model="item.value"
+                allow-clear
+                :disabled="pageStepsData.isDisabledOpe"
+              />
+            </template>
+            <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
+              <a-textarea
+                :auto-size="{ minRows: 4, maxRows: 7 }"
+                :placeholder="item.placeholder"
+                :default-value="item.value"
+                v-model="item.value"
+                allow-clear
+                :disabled="pageStepsData.isDisabledAss"
+              />
+            </template>
+            <template v-else-if="item.type === 'radio' && item.key === 'type'">
+              <a-radio-group @change="changeStatus" v-model="item.value" :options="pageStepsData.plainOptions" />
+            </template>
+          </a-form-item>
+        </a-form>
+      </template>
+    </ModalDialog>
   </div>
 </template>
 <script lang="ts" setup>
@@ -172,13 +187,19 @@ import {
   uiPageStepsDetailedAss,
   uiPageStepsDetailedOpe,
   uiPagePutStepSort,
-  uiUiElementName
+  uiUiElementName,
+  uiStepsRun,
+  uiElementIsLocator
 } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { ModalDialogType } from '@/types/components'
 import { useRoute } from 'vue-router'
 import { fieldNames } from '@/setting'
 import { getFormItems } from '@/utils/datacleaning'
+import { usePageData } from '@/store/page-data'
+import { useTestObj } from '@/store/modules/get-test-obj'
+const pageData = usePageData()
+const testObj = useTestObj()
 
 const route = useRoute()
 const formModel = ref({})
@@ -187,7 +208,6 @@ const pageStepsData = reactive({
   isAdd: false,
   updateId: 0,
   actionTitle: '添加测试对象',
-  caseName: route.query.name,
   eleName: [],
   ass: [],
   ope: [],
@@ -293,7 +313,6 @@ const formItems = reactive([
         try {
           this.value = JSON.parse(this.value)
         } catch (e) {
-          console.log(e)
           Message.error('元素操作值请输入json数据类型')
           return false
         }
@@ -439,7 +458,6 @@ function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = getFormItems(formItems)
-    console.log(formItems)
     value['page_step'] = route.query.id
     if (pageStepsData.isAdd) {
       post({
@@ -470,10 +488,10 @@ function onDataForm() {
     }
   }
   pageStepsData.eleName = []
-}
-
-function doSave() {
-  Message.success('调用了保存')
+  pageStepsData.plainOptions = [
+    { label: '操作', value: 0 },
+    { label: '断言', value: 1 }
+  ]
 }
 
 function doResetSearch() {
@@ -540,7 +558,7 @@ function getEleName() {
     .catch(console.log)
 }
 
-function upDataAssValue(value: string) {
+function upDataAssValue(value: any) {
   const inputItem = findItemByValue(pageStepsData.ass, value)
   if (inputItem) {
     const parameter: any = inputItem.parameter
@@ -555,7 +573,7 @@ function upDataAssValue(value: string) {
   }
 }
 
-function upDataOpeValue(value: string) {
+function upDataOpeValue(value: any) {
   const inputItem = findItemByValue(pageStepsData.ope, value)
   if (inputItem) {
     const parameter: any = inputItem.parameter
@@ -594,7 +612,48 @@ function findItemByValue(data: Item[], value: string): Item | undefined {
   }
   return undefined
 }
-
+function onRunCase(record: any) {
+  if (testObj.selectValue == null) {
+    Message.error('请先选择用例执行的环境')
+    return
+  }
+  get({
+    url: uiStepsRun,
+    data: () => {
+      return {
+        page_step_id: route.query.id,
+        te: testObj.selectValue
+      }
+    }
+  })
+    .then((res) => {
+      Message.loading(res.msg)
+    })
+    .catch(console.log)
+}
+function elementIsLocator(key: number) {
+  console.log(key)
+  get({
+    url: uiElementIsLocator,
+    data: () => {
+      return {
+        element_id: key
+      }
+    }
+  })
+    .then((res) => {
+      if (res.data === '1') {
+        formItems.forEach((item: any) => {
+          if (item.key === 'ope_value') {
+            let data = JSON.parse(item.value)
+            data['element_locator'] = ''
+            item.value = JSON.stringify(data)
+          }
+        })
+      }
+    })
+    .catch(console.log)
+}
 onMounted(() => {
   nextTick(async () => {
     await getUiRunSortAss()

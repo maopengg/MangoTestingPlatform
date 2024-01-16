@@ -3,16 +3,17 @@
 # @Description:
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
+from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiPage
+from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class UiPageSerializers(serializers.ModelSerializer):
@@ -50,23 +51,44 @@ class UiPageViews(ViewSet):
     serializer_class = UiPageSerializers
 
     @action(methods=['GET'], detail=False)
-    def get_page_name_all(self, request: Request):
-        """
-        获取所有的页面名称
-        """
-        res = UiPage.objects.values_list('id', 'name')
-        data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
-
-    @action(methods=['GET'], detail=False)
-    def get_page_name_project(self, request: Request):
+    def page_name(self, request: Request):
         """
         根据项目获取页面id和名称
         """
-        res = UiPage.objects.filter(project=request.query_params.get('project_id')).values_list('id', 'name')
+        module_name = request.query_params.get('module_name')
+        if module_name:
+            res = UiPage.objects.filter(module_name=module_name).values_list('id', 'name')
+        else:
+            res = UiPage.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         if data:
             return ResponseData.success('获取数据成功', data)
 
         else:
-            return ResponseData.fail('该选择的项目暂无页面，清先建立页面并收集页面元素')
+            return ResponseData.fail('该模块暂无页面，请先添加页面并收集元素')
+
+    @action(methods=['post'], detail=False)
+    def page_copy(self, request: Request):
+        from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
+        page_id = request.data.get('page_id')
+        page_obj = UiPage.objects.get(id=page_id)
+        page_obj = model_to_dict(page_obj)
+        page_id = page_obj['id']
+        page_obj['name'] = '(副本)' + page_obj['name']
+        del page_obj['id']
+        serializer = self.serializer_class(data=page_obj)
+        if serializer.is_valid():
+            serializer.save()
+            page_elements = UiElement.objects.filter(page=page_id)
+            for i in page_elements:
+                page_element = model_to_dict(i)
+                del page_element['id']
+                page_element['page'] = serializer.data['id']
+                page_element_serializer = UiElementSerializers(data=page_element)
+                if page_element_serializer.is_valid():
+                    page_element_serializer.save()
+                else:
+                    return ResponseData.fail(f'{str(page_element_serializer.errors)}', )
+            return ResponseData.success('复制用例成功', serializer.data)
+        else:
+            return ResponseData.fail(f'{str(serializer.errors)}', )

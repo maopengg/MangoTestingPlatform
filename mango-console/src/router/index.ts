@@ -54,6 +54,13 @@ export const extraRoutes = [
         meta: {
           title: '测试用例详情'
         }
+      },
+      {
+        path: 'report/details',
+        component: () => import('@/views/uitest/report-details.vue'),
+        meta: {
+          title: '界面测试报告详情'
+        }
       }
     ]
   },
@@ -78,6 +85,13 @@ export const extraRoutes = [
         meta: {
           title: '接口用例详情'
         }
+      },
+      {
+        path: 'report/details',
+        component: () => import('@/views/apitest/report-details.vue'),
+        meta: {
+          title: '接口测试报告详情'
+        }
       }
     ]
   },
@@ -94,23 +108,6 @@ export const extraRoutes = [
         component: () => import('@/views/timing/runcase.vue'),
         meta: {
           title: '添加用例'
-        }
-      }
-    ]
-  },
-  {
-    path: '/index',
-    name: '测试报告',
-    component: Layout,
-    meta: {
-      title: '测试报告'
-    },
-    children: [
-      {
-        path: 'report-details',
-        component: () => import('@/views/index/report-details.vue'),
-        meta: {
-          title: '测试报告'
         }
       }
     ]

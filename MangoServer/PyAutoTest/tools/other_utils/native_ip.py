@@ -20,15 +20,3 @@ def get_host_ip():
         _s.close()
 
     return l_host
-
-
-def get_pid():
-    pass
-
-
-def get_port():
-    """
-    查询谷歌浏览器的端口号
-    :return:
-    """
-    pass

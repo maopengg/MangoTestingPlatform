@@ -3,42 +3,51 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="Ui元素页面对象" @search="onSearch" @reset-search="onResetSearch">
+          <TableHeader :show-filter="true" title="Ui元素页面对象" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
-              <a-form layout="inline" :model="{}">
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.render">
-                    <FormRender :render="item.render" :formItem="item" />
+                  <template v-if="item.type === 'input'">
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
                   </template>
-                  <template v-else>
-                    <template v-if="item.type === 'input'">
-                      <a-input v-model="item.value" :placeholder="item.placeholder" />
-                    </template>
-                    <template v-else-if="item.type === 'select'">
-                      <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="project.data"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </template>
-                    <template v-if="item.type === 'date'">
-                      <a-date-picker v-model="item.value" />
-                    </template>
-                    <template v-if="item.type === 'time'">
-                      <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                    </template>
-                    <template v-if="item.type === 'check-group'">
-                      <a-checkbox-group v-model="item.value">
-                        <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                          {{ item.label }}
-                        </a-checkbox>
-                      </a-checkbox-group>
-                    </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="item.optionItems"
+                      @change="getProjectModule(item.value)"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="uiPageData.moduleList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -62,7 +71,7 @@
           <a-table
             :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -86,14 +95,23 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                  {{ record.module_name?.name }}
+                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
+                  }}{{ record.module_name?.name }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-                  </a-space>
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
+                  <a-dropdown trigger="hover">
+                    <a-button type="text" size="mini">···</a-button>
+                    <template #content>
+                      <a-doption>
+                        <a-button type="text" size="mini" @click="PageCopy(record)">复制</a-button>
+                      </a-doption>
+                      <a-doption>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                      </a-doption>
+                    </template>
+                  </a-dropdown>
                 </template>
               </a-table-column>
             </template>
@@ -151,15 +169,18 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getProjectModuleGetAll, uiPage } from '@/api/url'
+import { userProjectModuleGetAll, uiPage, uiPageCopy } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
-import { Input, Message, Modal } from '@arco-design/web-vue'
-import { h, onMounted, ref, nextTick, reactive } from 'vue'
+import { Message, Modal } from '@arco-design/web-vue'
+import { onMounted, ref, nextTick, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProject } from '@/store/modules/get-project'
 import { getFormItems } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
+import { useProjectModule } from '@/store/modules/project_module'
+import { usePageData } from '@/store/page-data'
+const projectModule = useProjectModule()
 
 const project = useProject()
 const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -175,7 +196,7 @@ const uiPageData = reactive({
   updateId: 0,
   actionTitle: '添加页面',
   pageType: 0,
-  moduleList: []
+  moduleList: projectModule.data
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -186,43 +207,44 @@ const conditionItems: Array<FormItem> = reactive([
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入页面ID',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
     }
   },
   {
     key: 'name',
-    label: '名称',
+    label: '页面名称',
     type: 'input',
     placeholder: '请输入页面名称',
     value: '',
     reset: function () {
       this.value = ''
-    },
-    render: (formItem: FormItem) => {
-      return h(Input, {
-        placeholder: '请输入页面名称',
-        modelValue: formItem.value,
-        'onUpdate:modelValue': (value) => {
-          formItem.value = value
-        }
-      })
+    }
+  },
+  {
+    key: 'url',
+    label: '页面地址',
+    type: 'input',
+    placeholder: '请输入页面地址',
+    value: '',
+    reset: function () {
+      this.value = ''
     }
   },
   {
     key: 'project',
-    label: '筛选项目',
+    label: '项目',
     value: '',
     type: 'select',
     placeholder: '请选择项目',
     optionItems: project.data,
+    reset: function () {}
+  },
+  {
+    key: 'module_name',
+    label: '模块',
+    value: '',
+    type: 'select',
+    placeholder: '请先选择模块',
+    optionItems: uiPageData.moduleList,
     reset: function () {}
   }
 ])
@@ -299,13 +321,14 @@ const tableColumns = useTableColumn([
   {
     title: '模块',
     key: 'module_name',
-    dataIndex: 'module_name'
+    dataIndex: 'module_name',
+    width: 160
   },
   {
     title: '页面名称',
     key: 'name',
     dataIndex: 'name',
-    width: 150
+    width: 250
   },
   {
     title: '页面地址',
@@ -318,7 +341,7 @@ const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 150
+    width: 250
   }
 ])
 
@@ -331,29 +354,8 @@ function doRefresh() {
   get({
     url: uiPage,
     data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize,
-        type: uiPageData.pageType
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-function onSearch() {
-  let value = getFormItems(conditionItems)
-  if (JSON.stringify(value) === '{}') {
-    doRefresh()
-    return
-  }
-  value['type'] = uiPageData.pageType
-  get({
-    url: uiPage,
-    data: () => {
+      let value = getFormItems(conditionItems)
+      value['type'] = uiPageData.pageType
       value['page'] = pagination.page
       value['pageSize'] = pagination.pageSize
       return value
@@ -361,8 +363,7 @@ function onSearch() {
   })
     .then((res) => {
       table.handleSuccess(res)
-      pagination.setTotalSize(res.totalSize || 10)
-      Message.success(res.msg)
+      pagination.setTotalSize((res as any).totalSize)
     })
     .catch(console.log)
 }
@@ -377,7 +378,6 @@ function onAddPage() {
   uiPageData.actionTitle = '添加页面'
   uiPageData.isAdd = true
   modalDialogRef.value?.toggle()
-  console.log(formItems)
   formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
@@ -492,9 +492,27 @@ function onDataForm() {
     }
   }
 }
+
+function PageCopy(record: any) {
+  post({
+    url: uiPageCopy,
+    data: () => {
+      return {
+        page_id: record.id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
+
 function getProjectModule(projectId: number) {
+  doRefresh()
   get({
-    url: getProjectModuleGetAll,
+    url: userProjectModuleGetAll,
     data: () => {
       return {
         project_id: projectId
@@ -506,14 +524,15 @@ function getProjectModule(projectId: number) {
     })
     .catch(console.log)
 }
+
 function onClick(record: any) {
+  const pageData = usePageData()
+  pageData.setRecord(record)
   router.push({
     path: '/uitest/pageel',
     query: {
       id: record.id,
-      name: record.name,
-      project_id: record.project.id,
-      project_name: record.project.name
+      pageType: uiPageData.pageType
     }
   })
 }

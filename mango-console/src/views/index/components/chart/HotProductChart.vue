@@ -5,20 +5,37 @@
 </template>
 <script lang="ts">
 import useEcharts from '@/hooks/useEcharts'
-import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
 import { dispose } from 'echarts/core'
+import { get } from '@/api/http'
+import { systemActivityLevel } from '@/api/url'
 
 function getData() {
-  return [99, 90, 80, 70, 60]
+  return [19, 90, 80, 70, 60]
 }
-
-const weeks = ['1', '2', '3', '4', '5']
+function getData1() {
+  return ['毛鹏', '吴强', '丁锦城', '李元', '陶丹']
+}
 export default defineComponent({
   name: 'HotProdChart',
   setup() {
     const loading = ref(true)
     const hotProdChart = ref<HTMLDivElement | null>(null)
     let interval: any = null
+    let data: any = reactive([])
+    function activityLevel() {
+      get({
+        url: systemActivityLevel,
+        data: () => {
+          return {}
+        }
+      })
+        .then((res) => {
+          data = res.data
+          init()
+        })
+        .catch(console.log)
+    }
     const init = () => {
       const option = {
         grid: {
@@ -33,7 +50,7 @@ export default defineComponent({
         },
         yAxis: {
           type: 'category',
-          data: weeks.reverse(),
+          data: data.nickname,
           axisLine: {
             show: false
           },
@@ -55,7 +72,7 @@ export default defineComponent({
             type: 'pictorialBar',
             name: '热卖指数',
             stack: '指数',
-            data: getData().reverse(),
+            data: data.total_logins,
             smooth: true,
             symbol: 'rect',
             symbolRepeat: true,
@@ -86,7 +103,11 @@ export default defineComponent({
     const updateChart = () => {
       useEcharts(hotProdChart.value as HTMLDivElement).resize()
     }
-    onMounted(init)
+    onMounted(() => {
+      nextTick(async () => {
+        await activityLevel()
+      })
+    })
     onBeforeUnmount(() => {
       dispose(hotProdChart.value as HTMLDivElement)
       clearInterval(interval)

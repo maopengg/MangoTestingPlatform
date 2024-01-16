@@ -3,14 +3,16 @@
 # @Description: 
 # @Time   : 2023-03-07 8:24
 # @Author : 毛鹏
+import json
 import re
 
-from PyAutoTest.exceptions.api_exception import CacheIsNone
+from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool
 from ..data_processor.json_tool import JsonTool
 from ..data_processor.random_character_info_data import RandomCharacterInfoData
+from ..data_processor.random_file import RandomFileData
 from ..data_processor.random_number_data import RandomNumberData
 from ..data_processor.random_string_data import RandomStringData
 from ..data_processor.random_time_data import RandomTimeData
@@ -20,8 +22,11 @@ ObtainRandomData类的函数注释必须是： “”“中间写值”“”
 """
 
 
-class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData, RandomStringData):
+class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData, RandomStringData, RandomFileData):
     """ 获取随机数据 """
+
+    def __init__(self, project_id: int = None):
+        self.project_id = project_id
 
     @classmethod
     def get_methods(cls):
@@ -46,8 +51,7 @@ class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData
                 func_list = []
         return class_lict
 
-    @classmethod
-    def regular(cls, func: str):
+    def regular(self, func: str):
         """
         反射并执行函数
         :param func: 函数
@@ -55,78 +59,98 @@ class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData
         """
         match = re.search(r'\((.*?)\)', func)
         if match:
-            content = match.group(1)
-            func = re.sub(r'\(' + content + r'\)', '', func)
-            if content != '':
-                return getattr(cls, func)(content)
-            return getattr(cls, func)()
+            try:
+                content = json.loads(match.group(1))
+                if not isinstance(content, dict):
+                    content = {'data': match.group(1)}
+            except json.decoder.JSONDecodeError:
+                content = {'data': match.group(1)}
+            content['project_id'] = self.project_id
+            func = re.sub(r'\(' + match.group(1) + r'\)', '', func)
+            if content['data'] != '':
+                return getattr(self, func)(**content)
+            return getattr(self, func)()
 
 
 class DataClean(JsonTool, CacheTool, EncryptionTool, CodingTool):
-    """ 存储或处理随机数据 """
-    pass
+    """存储或处理随机数据"""
+
+    def __init__(self):
+        super().__init__()
 
 
-class DataProcessor(DataClean, ObtainRandomData):
+class DataProcessor(ObtainRandomData, DataClean):
 
-    @classmethod
-    def case_input_data(cls, obj, key: str):
-        """
-        取出缓存的数据
-        :param obj: 类对象
-        :param key: 缓存的key
-        :return:
-        """
-        key = cls.remove_parentheses(key)
-        key_value = cls.get_cache(key)
-        if key_value:
-            # 如果缓存中存在这个key，则直接返回
-            return key_value
-        ope_value = cls.remove_parentheses(key)
-        key = str(id(obj)) + str(ope_value)
-        key_value = cls.get_cache(key)
-        if key_value:
-            return key_value
-        if re.search(r'\(.*\)', ope_value):
-            value = cls.regular(ope_value)
+    def __init__(self, project_id: int = None):
+        ObtainRandomData.__init__(self, project_id)
+        DataClean.__init__(self)
+
+    def replace(self, data: list | dict | str) -> list | dict | str:
+        if isinstance(data, list):
+            return [self.replace(item) for item in data]
+        elif isinstance(data, dict):
+            return {key: self.replace(value) for key, value in data.items()}
         else:
-            value = ope_value
-        cls.set_cache(key_value, value)
-        return value
+            return self.replace_str(data)
 
     @classmethod
-    def replace_text(cls, data: str) -> str:
+    def specify_replace(cls, data: str, replace: str):
+        replace_list = re.findall(r"\${.*?}", str(data))
+        if len(replace_list) > 1:
+            raise ReplaceElementLocatorError('一个元素内只能包含一个需要被替换的内容')
+        return data.replace(replace_list[0], replace)
+
+    def replace_str(self, data: str) -> str:
         """
         用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
         @param data: 需要替换的文本
         @return: 返回替换完成的文本
         """
-        data1 = data
-        while True:
-            rrr = re.findall(r"\${.*?}", data1)
-            if not rrr:
-                return data1
-            res1 = rrr[0].replace("${", "")
-            res2 = res1.replace("}", "")
-            # 获取随机数据，完成替换
-            if "()" in res2:
-                value = cls.regular(res2)
-                res3 = res2.replace("()", "")
-                data1 = re.sub(pattern=r"\${}".format("{" + res3 + r"\(\)" + "}"), repl=value, string=data1)
-            # 获取缓存数据，完成替换
+        replace_list = re.findall(r"\${.*?}", str(data))
+        for replace_value in replace_list:
+            key_text = self.remove_parentheses(replace_value)
+            args = key_text.split(",")
+            if len(args) == 2:
+                key_text = args[0].strip()
+                key = args[1].strip()
             else:
-                value = cls.get_cache(res2)
-                if value:
-                    data1 = re.sub(pattern=r"\${}".format("{" + res2 + "}"), repl=value, string=data1)
-                else:
-                    raise CacheIsNone("缓存中的值是null，请检查依赖")
+                key_text = args[0].strip()
+                key = None
+            # 检查key是否有值，有值则直接返回
+            if key:
+                key_value = self.get_cache(key)
+                if key_value:
+                    return key_value
+            match = self.identify_parentheses(key_text)
+            if match:
+                value = self.regular(key_text)
+            else:
+                value = self.get_cache(key_text)
+            if value is None:
+                raise CacheIsEmptyError(f'缓存中无法获取到：{key_text}的值')
+            if key:
+                self.set_cache(key, value)
+            data = data.replace(replace_value, value)
+        return data
 
     @classmethod
     def remove_parentheses(cls, data: str) -> str:
-        res1 = data.replace("${", "")
-        res2 = res1.replace("}", "")
-        return res2
+        return data.replace("${", "").replace("}", "").strip()
+
+    @classmethod
+    def identify_parentheses(cls, value: str):
+        return re.search(r'\((.*?)\)', str(value))
+
+    @classmethod
+    def is_extract(cls, string: str) -> bool:
+        return True if re.search(r'\$\{.*\}', string) else False
 
 
 if __name__ == '__main__':
-    print(ObtainRandomData.get_methods())
+    r = DataProcessor()
+    r.set_cache('文档ID', 'maopeng')
+    r.set_cache('新建知识库ID', 'maopeng2')
+    data1 = {'code': '${文档ID}', 'mode': 'none', 'uuid': '21cfcf8feaf84ed4a831c80662227d8c', 'scope': 'server',
+             'password': '${文档ID}', 'userName': '${文档ID}', 'grant_type': 'password', 'account_type': 'admin',
+             'enterpriseName': '${文档ID}'}
+    print(r.replace(data1))

@@ -8,10 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProjectModule
+from PyAutoTest.auto_test.auto_user.models import ProjectModule, User
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class ProjectModuleSerializers(serializers.ModelSerializer):
@@ -47,6 +47,12 @@ class ProjectModuleViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def get_module_name_all(self, request: Request):
-        res = self.model.objects.values_list('id', 'name').filter(project=request.query_params.get('project_id'))
+        project_id = request.query_params.get('project_id')
+        if project_id is None:
+            project_id = User.objects.get(id=request.user['id']).selected_project
+        if project_id:
+            res = self.model.objects.values_list('id', 'name').filter(project=project_id)
+        else:
+            res = self.model.objects.values_list('id', 'name').all()
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)

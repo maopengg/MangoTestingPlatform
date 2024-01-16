@@ -21,9 +21,13 @@ from PyAutoTest.auto_test.auto_user.views.user import LoginViews
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('docs/', include_docs_urls(title='PyAutoTest')),
+    path('docs/', include_docs_urls(title='PyAutoTest', authentication_classes=[])),
     #
     path("login", LoginViews.as_view({'post': 'login'})),  # 登录
+    # path("test1", LoginViews.as_view({'post': 'test1'})),  # 登录
+    # path("test2", LoginViews.as_view({'post': 'test2'})),  # 登录
+    # path("test3", LoginViews.as_view({'post': 'test3'})),  # 登录
+    # path("login1", LoginViews.as_view({'get': 'login1'})),  # 登录
     path("menu/", LoginViews.as_view({'get': 'menu'})),
     #
     path('system/', include("PyAutoTest.auto_test.auto_system.urls")),

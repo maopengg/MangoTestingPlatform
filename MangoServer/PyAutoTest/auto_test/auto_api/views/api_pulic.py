@@ -8,14 +8,12 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
+from PyAutoTest.auto_test.auto_api.service.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, ClientEnum
 from PyAutoTest.settings import DRIVER, SERVER
-from PyAutoTest.tools.response_data import ResponseData
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.view_tools import enum_list
+from PyAutoTest.tools.view_utils.response_data import ResponseData
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
@@ -55,20 +53,20 @@ class ApiPublicViews(ViewSet):
             return ResponseData.success(f'刷新{DRIVER}api自动化数据成功', data)
         return ResponseData.fail(f'刷新失败，请确保{DRIVER}已连接{SERVER}', data)
 
-    @action(methods=['get'], detail=False)
-    def get_public_type(self, request: Request):
+    @action(methods=['put'], detail=False)
+    def put_status(self, request: Request):
         """
-        获取公共类型
+        修改启停用
         :param request:
         :return:
         """
-        return ResponseData.success('获取数据成功', enum_list(ApiPublicTypeEnum))
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.status = request.data.get('status')
+        obj.save()
+        return ResponseData.success('修改API参数状态成功', )
 
     @action(methods=['get'], detail=False)
-    def get_end_type(self, request: Request):
-        """
-        获取客户端类型
-        :param request:
-        :return:
-        """
-        return ResponseData.success('获取数据成功', enum_list(ClientEnum))
+    def get_set_cache(self, request: Request):
+        from PyAutoTest.auto_test.auto_api.service.driver.common_parameters import CommonParameters
+        CommonParameters(request.query_params.get('id'))
+        return ResponseData.success('设置API公共参数成功', )

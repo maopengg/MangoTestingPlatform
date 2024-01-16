@@ -1,13 +1,14 @@
 # Create your tests here.
+
 from django.test import TestCase
 
-from PyAutoTest.auto_test.auto_api.data_producer.run_api_send import RunApiSend
+
+# from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoViews
 
 
-def add(a, b):
-    return a + b
+class MyTestCase(TestCase):
 
-
-class AddTestCase(TestCase):
-    def test_add(self):
-        RunApiSend.get_api_case_data(1)
+    def test_user_info(self):
+        url = "/api/case/api/info/run"
+        response = self.client.get(url)
+        print(response.json())

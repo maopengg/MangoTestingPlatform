@@ -7,7 +7,7 @@ from typing import Union, Optional, TypeVar
 
 from pydantic import BaseModel
 
-from PyAutoTest.enums.system_enum import ClientTypeEnum
+from PyAutoTest.enums.tools_enum import ClientTypeEnum
 
 T = TypeVar('T')
 
@@ -21,5 +21,5 @@ class SocketDataModel(BaseModel):
     code: int
     msg: str
     user: str = None
-    is_notice: ClientTypeEnum | None = None
+    is_notice: ClientTypeEnum | None | int = None
     data: QueueModel | None = None

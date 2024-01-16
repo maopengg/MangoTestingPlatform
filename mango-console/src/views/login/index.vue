@@ -15,7 +15,7 @@
           </a-input>
         </div>
         <div class="item-wrapper mt-4">
-          <a-input-password v-model="password" placeholder="请输入密码" allow-clear size="large">
+          <a-input-password v-model="password" placeholder="请输入密码" allow-clear size="large" @keyup.enter="onLogin">
             <template #prefix>
               <icon-lock />
             </template>
@@ -57,6 +57,7 @@ import { UserState } from '@/store/types'
 import setting from '../../setting'
 import useAppInfo from '@/hooks/useAppInfo'
 import useUserStore from '@/store/modules/user'
+
 export default defineComponent({
   name: 'Login',
   setup() {
@@ -76,7 +77,8 @@ export default defineComponent({
         url: login,
         data: {
           username: username.value,
-          password: password.value
+          password: password.value,
+          type: 1
         }
       })
         .then(({ data }: Response) => {

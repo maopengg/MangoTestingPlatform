@@ -13,35 +13,37 @@ import logging
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
-TIME_ZONE = 'Asia/Shanghai'
 # ************************ ↓需要修改的内容↓ ************************ #
-mysql_ip = '127.0.0.1'
-mysql_port = 3306
+mysql_db_name = 'aigc_AutoUITestPlatform'
 mysql_user = 'root'
-mysql_password = 'root'
-mysql_db_name = 'mango-server'
-redis_ip = '127.0.0.1'
-redis_port = 6379
+mysql_password = 'zALL_mysql1'
+
 
 # ************************ ↑需要修改的内容↑ ************************ #
+
+# ************************ 三个端的名称 ************************ #
+DRIVER = 'Mango Actuator'
+SERVER = 'Mango Server'
+WEB = 'mango-console'
+
+# ************************ 时区 ************************ #
+
+USE_TZ = False
+TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
 DEBUG = True
-
-ALLOWED_HOSTS = ["*"]  # 允许所有ip或域名'*'
+# 允许所有ip或域名'*'
+ALLOWED_HOSTS = ["*"]
 # USE_TZ = False
-# TIME_ZONE = 'Asia/Shanghai'
 # ************************ app注册 ************************ #
-# Application definition
-# 使用前后端分离时需要解开'rest_framework'的注释
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -57,7 +59,6 @@ INSTALLED_APPS = [
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
-
 ]
 
 # ************************ 中间件 ************************ #
@@ -100,8 +101,6 @@ ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 
 # ************************ 数据库配置 ************************ #
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -143,8 +142,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-# TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
@@ -165,8 +162,7 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{redis_ip}:{redis_port}/0",
-        # "LOCATION": "redis://:123456@172.0.0.1:6379/0",
+        "LOCATION": f"{redis}0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -178,8 +174,7 @@ CACHES = {
     },
     "socket": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://{redis_ip}:{redis_port}/1",
-        # "LOCATION": "redis://:123456@172.0.0.1:6379/1",
+        "LOCATION": f"{redis}1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
@@ -281,10 +276,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['PyAutoTest.middleware.auth.JwtQueryParamsAuthentication', ],
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
 }
-# 'EXCEPTION_HANDLER': 'PyAutoTest.tools.exceptions.exception.custom_exception_handler',
-# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-# 'PAGE_SIZE': 10,
-
 
 # ************************ 接口文档 ************************ #
 APPEND_SLASH = False

@@ -16,7 +16,7 @@
           </a-tabs>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading"
+            :loading="table.tableLoading.value"
             :data="table.dataList"
             :columns="tableColumns"
             :pagination="false"
@@ -75,12 +75,13 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { getRoleList } from '@/api/url'
+import { userRoleList } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
 import { onMounted, ref, nextTick, reactive } from 'vue'
 import { getFormItems } from '@/utils/datacleaning'
+
 const modalDialogRef = ref<ModalDialogType | null>(null)
 const pagination = usePagination(doRefresh)
 const { onSelectionChange } = useRowSelection()
@@ -148,7 +149,7 @@ const tableColumns = useTableColumn([
 
 function doRefresh() {
   get({
-    url: getRoleList,
+    url: userRoleList,
     data: () => {
       return {
         page: pagination.page,
@@ -184,7 +185,7 @@ function onDelete(data: any) {
     okText: '删除',
     onOk: () => {
       deleted({
-        url: getRoleList,
+        url: userRoleList,
         data: () => {
           return {
             id: '[' + data.id + ']'
@@ -223,7 +224,7 @@ function onDataForm() {
     let value = getFormItems(formItems)
     if (roleData.isAdd) {
       post({
-        url: getRoleList,
+        url: userRoleList,
         data: () => {
           return value
         }
@@ -235,7 +236,7 @@ function onDataForm() {
         .catch(console.log)
     } else {
       put({
-        url: getRoleList,
+        url: userRoleList,
         data: () => {
           value['id'] = roleData.updateId
           return value

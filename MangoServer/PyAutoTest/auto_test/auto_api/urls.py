@@ -6,26 +6,39 @@
 from django.urls import path
 
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
+from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
+from PyAutoTest.auto_test.auto_api.views.api_result import ApiResultCRUD, ApiResultViews
 from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 
 urlpatterns = [
     path("info", ApiInfoCRUD.as_view()),
     path("case/api/info/run", ApiInfoViews.as_view({'get': 'get_api_info_run'})),
+    path("info/name", ApiInfoViews.as_view({'get': 'get_api_name'})),
+    path("put/api/info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     #
     path("case", ApiCaseCRUD.as_view()),
     path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),
+    path("case/copy", ApiCaseViews.as_view({'post': 'copy_case'})),
+    #
+    path("case/detailed", ApiCaseDetailedCRUD.as_view()),
+    path("put/case/sort", ApiCaseDetailedViews.as_view({'put': 'put_case_sort'})),
+    path("put/refresh/api/info", ApiCaseDetailedViews.as_view({'put': 'put_refresh_api_info'})),
     #
     path("public", ApiPublicCRUD.as_view()),
-    # path("public/header", ApiPublicViews.get_header),
-    path("public/public", ApiPublicViews.as_view({'get': 'get_public_type'})),
-    path("public/end", ApiPublicViews.as_view({'get': 'get_end_type'})),
     path("public/client/refresh", ApiPublicViews.as_view({'get': 'client_refresh'})),
+    path("public/put/status", ApiPublicViews.as_view({'put': 'put_status'})),
+    path("public/set/cache", ApiPublicViews.as_view({'get': 'get_set_cache'})),
+    #
+    path("result", ApiResultCRUD.as_view()),
+    path("result/week", ApiResultViews.as_view({'get': 'case_result_week_sum'})),
+    path("result/suite/case", ApiResultViews.as_view({'get': 'suite_case_result'})),
     #
     path("run", RunApiCase.as_view({'get': 'api_run'})),
     path("run/batch", RunApiCase.as_view({'get': 'api_batch_run'})),
     path("run/group", RunApiCase.as_view({'get': 'api_group_run'})),
+    path("test", RunApiCase.as_view({'get': 'test'})),
 
     # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
 

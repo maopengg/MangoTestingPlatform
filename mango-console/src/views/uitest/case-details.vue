@@ -1,128 +1,184 @@
 <template>
   <div>
-    <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'用例步骤 用例：' + uiCaseDetailsData.caseName + ' | ' + '所属项目：' + route.query.project_name">
-        <template #extra>
-          <a-affix :offsetTop="80">
-            <a-space>
-              <a-button type="primary" status="warning" size="small" @click="doSave">保存</a-button>
-              <a-button type="primary" size="small" @click="doAppend">增加步骤</a-button>
-              <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-            </a-space>
-          </a-affix>
-        </template>
-        <a-table
-          :columns="columns"
-          :data="uiCaseDetailsData.data"
-          @change="handleChange"
-          :draggable="{ type: 'handle', width: 40 }"
-          :pagination="false"
-          :bordered="false"
-        >
-          <template #columns>
-            <a-table-column
-              v-for="item of columns"
-              :key="item.key"
-              :align="item.align"
-              :title="item.title"
-              :width="item.width"
-              :data-index="item.dataIndex"
-              :fixed="item.fixed"
+    <a-card title="用例详情">
+      <template #extra>
+        <a-affix :offsetTop="80">
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+            <a-button type="primary" size="small" @click="doRefresh">刷新页面</a-button>
+            <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
+        </a-affix>
+      </template>
+      <div class="container">
+        <a-space direction="vertical" style="width: 25%">
+          <span>所属项目：{{ pageData.record.project?.name }}</span>
+          <span>顶级模块：{{ pageData.record.module_name?.superior_module }}</span>
+          <span>所属模块：{{ pageData.record.module_name?.name }}</span>
+          <span>用例负责人：{{ pageData.record.case_people?.nickname }}</span>
+        </a-space>
+        <a-space direction="vertical" style="width: 25%">
+          <span>用例ID：{{ pageData.record.id }}</span>
+          <span>用例名称：{{ pageData.record.name }}</span>
+          <span>测试结果：{{ pageData.record.status === 1 ? '通过' : '失败' }}</span>
+        </a-space>
+        <a-space direction="vertical" style="width: 50%">
+          <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
+        </a-space>
+      </div>
+    </a-card>
+    <a-card>
+      <div style="display: flex">
+        <div style="width: 40%; margin-right: 10px">
+          <a-table
+            :columns="columns"
+            :data="uiCaseDetailsData.data"
+            @change="handleChange"
+            :draggable="{ type: 'handle', width: 40 }"
+            :pagination="false"
+            @row-click="select"
+          >
+            <template #columns>
+              <a-table-column
+                v-for="item of columns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.dataIndex"
+                :fixed="item.fixed"
+                :ellipsis="item.ellipsis"
+                :tooltip="item.tooltip"
+              >
+                <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
+                  {{ record.page_step?.name }}
+                </template>
+                <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
+                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="oeFreshSteps(record)">更新数据</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </div>
+        <div style="width: 60%; margin-left: 10px">
+          <a-list :bordered="false">
+            <template #header> {{ uiCaseDetailsData.selectData?.page_step?.name }} </template>
+            <a-list-item
+              v-for="item of uiCaseDetailsData.selectData?.case_data"
+              :key="item.page_step_details_id"
+              style="padding: 4px 20px"
             >
-              <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
-                {{ record.page_step.name }}
-              </template>
-              <template v-else-if="item.dataIndex === 'case_cache_data'" #cell="{ record }">
-                {{ record.case_cache_data }}
-              </template>
-              <template v-else-if="item.dataIndex === 'case_cache_ass'" #cell="{ record }">
-                {{ record.case_cache_ass }}
-              </template>
-              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑变量</a-button>
-                <a-button type="text" size="mini" @click="oeFreshSteps(record)">刷新数据</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-card>
-      <ModalDialog ref="modalDialogRef" :title="uiCaseDetailsData.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems"
-              :key="item.key"
-            >
-              <template v-if="item.type === 'textarea'">
-                <a-textarea :placeholder="item.placeholder" :auto-size="true" v-model="item.value" />
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </ModalDialog>
-      <ModalDialog ref="modalDialogRef1" :title="uiCaseDetailsData.actionTitle1" @confirm="onDataForm1">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems1"
-              :key="item.key"
-            >
-              <template v-if="item.type === 'select' && item.key === 'project'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  @change="doUiPageNameAll(item.value)"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'page'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="uiCaseDetailsData.pageName"
-                  :field-names="fieldNames"
-                  @change="doUiStepsPageStepsName(item.value)"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'page_step'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="uiCaseDetailsData.pageStepsName"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </ModalDialog>
-    </div>
+              <div style="display: flex; flex-direction: column">
+                <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
+                  <a-space style="width: 50%">
+                    <span>元素名称：</span>
+                    <span>{{ item.page_step_details_name }}</span>
+                  </a-space>
+                  <a-space style="width: 50%">
+                    <span>操作类型：</span>
+                    <span>{{ item.type === 0 ? '操作' : '断言' }}</span>
+                  </a-space>
+                </div>
+                <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
+                  <template v-for="key in Object.keys(item.page_step_details_data)" :key="key">
+                    <div style="display: flex">
+                      <span style="width: 10%">{{ key + '：' }}</span>
+                      <a-textarea
+                        v-model="item.page_step_details_data[key]"
+                        @blur="onUpdate"
+                        :auto-size="{ minRows: 1, maxRows: 5 }"
+                        style="width: 90%"
+                      />
+                    </div>
+                  </template>
+                </a-space>
+              </div>
+            </a-list-item>
+          </a-list>
+        </div>
+      </div>
+    </a-card>
   </div>
+
+  <ModalDialog ref="modalDialogRef" :title="uiCaseDetailsData.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'select' && item.key === 'project'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="project.data"
+              :field-names="fieldNames"
+              @change="doUiModuleNameAll(item.value)"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="uiCaseDetailsData.moduleName"
+              :field-names="fieldNames"
+              @change="doUiPageNameAll(item.value)"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'page'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="uiCaseDetailsData.pageName"
+              :field-names="fieldNames"
+              @change="doUiStepsPageStepsName(item.value)"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'page_step'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="uiCaseDetailsData.pageStepsName"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 <script lang="ts" setup>
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { Message, Modal } from '@arco-design/web-vue'
 import {
+  userProjectModuleGetAll,
+  uiPageName,
   uiCasePutCaseSort,
   uiCaseStepsDetailed,
   uiCaseStepsRefreshCacheData,
-  uiPageNameProject,
-  uiStepsPageStepsName
+  uiStepsPageStepsName,
+  uiCaseRun
 } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
@@ -131,91 +187,51 @@ import { getFormItems } from '@/utils/datacleaning'
 import { fieldNames } from '@/setting'
 import { useProject } from '@/store/modules/get-project'
 import ModalDialog from '@/components/ModalDialog.vue'
-
+import { usePageData } from '@/store/page-data'
+import { useTestObj } from '@/store/modules/get-test-obj'
+const pageData = usePageData()
+const testObj = useTestObj()
 const project = useProject()
 const route = useRoute()
 const formModel = ref({})
 const modalDialogRef = ref<ModalDialogType | null>(null)
-const modalDialogRef1 = ref<ModalDialogType | null>(null)
-const uiCaseDetailsData = reactive({
-  caseName: route.query.name,
+const uiCaseDetailsData: any = reactive({
+  moduleName: [],
   pageName: [],
   pageStepsName: [],
   data: [],
   isAdd: false,
   updateId: 0,
-  actionTitle: '添加元素',
-  actionTitle1: '添加用例步骤'
+  selectData: {},
+  actionTitle: '添加用例步骤'
 })
 
 const columns = reactive([
   {
     title: '步骤名称',
-    dataIndex: 'page_step_name',
-    width: 140
+    dataIndex: 'page_step_name'
+  },
+  {
+    title: '测试结果',
+    dataIndex: 'status'
+  },
+  {
+    title: '错误提示',
+    dataIndex: 'error_message',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true
   },
 
-  {
-    title: '用例数据',
-    dataIndex: 'case_cache_data'
-  },
-  {
-    title: '用例断言',
-    dataIndex: 'case_cache_ass'
-  },
   {
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 200
+    width: 160
   }
 ])
 
-let formItems: FormItem[] = reactive([
-  {
-    label: '用例数据',
-    key: 'case_cache_data',
-    value: '',
-    placeholder: '请输入字段需要的value值',
-    required: true,
-    type: 'textarea',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      try {
-        this.value = JSON.parse(this.value)
-      } catch (e) {
-        Message.error('请输入json数据类型')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '用例断言',
-    key: 'case_cache_ass',
-    value: '',
-    placeholder: '请输入字段需要的value值',
-    required: true,
-    type: 'textarea',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      try {
-        this.value = JSON.parse(this.value)
-      } catch (e) {
-        Message.error('请输入json数据类型')
-        return false
-      }
-      return true
-    }
-  }
-])
-const formItems1: FormItem[] = reactive([
+const formItems: FormItem[] = reactive([
   {
     label: '选择项目',
     key: 'project',
@@ -232,10 +248,25 @@ const formItems1: FormItem[] = reactive([
     }
   },
   {
+    label: '选择模块',
+    key: 'module',
+    value: '',
+    placeholder: '请选择模块',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    }
+  },
+  {
     label: '选择页面',
     key: 'page',
     value: '',
-    placeholder: '请选择测试模块',
+    placeholder: '请选择测试页面',
     required: true,
     type: 'select',
     validator: function () {
@@ -264,9 +295,8 @@ const formItems1: FormItem[] = reactive([
 ])
 
 function doAppend() {
-  uiCaseDetailsData.actionTitle1 = '添加用例步骤'
-  modalDialogRef1.value?.toggle()
-  formItems1.forEach((it) => {
+  modalDialogRef.value?.toggle()
+  formItems.forEach((it) => {
     if (it.reset) {
       it.reset()
     } else {
@@ -300,27 +330,10 @@ function onDelete(record: any) {
   })
 }
 
-function onUpdate(item: any) {
-  uiCaseDetailsData.actionTitle = '编辑步骤数据'
-  modalDialogRef.value?.toggle()
-  uiCaseDetailsData.isAdd = false
-  uiCaseDetailsData.updateId = item.id
-  nextTick(() => {
-    formItems.forEach((it: any) => {
-      const propName = item[it.key]
-      if (typeof propName === 'object' && propName !== null) {
-        it.value = JSON.stringify(propName, null, '\t')
-      } else {
-        it.value = propName
-      }
-    })
-  })
-}
-
 const handleChange = (_data: any) => {
   uiCaseDetailsData.data = _data
   let data: any = []
-  uiCaseDetailsData.data.forEach((item: any, index) => {
+  uiCaseDetailsData.data.forEach((item: any, index: number) => {
     data.push({
       id: item.id,
       case_sort: index
@@ -339,35 +352,16 @@ const handleChange = (_data: any) => {
     })
     .catch(console.log)
 }
+
 function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+  if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()
     let value = getFormItems(formItems)
-
-    put({
-      url: uiCaseStepsDetailed,
-      data: () => {
-        value['id'] = uiCaseDetailsData.updateId
-        return value
-      }
-    })
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-  }
-}
-function onDataForm1() {
-  if (formItems1.every((it: any) => (it.validator ? it.validator() : true))) {
-    modalDialogRef1.value?.toggle()
-    let value = getFormItems(formItems1)
     post({
       url: uiCaseStepsDetailed,
       data: () => {
         value['case'] = route.query.id
-        value['case_cache_data'] = []
-        value['case_cache_ass'] = []
+        value['case_data'] = []
         value['case_sort'] = uiCaseDetailsData.data.length
         return value
       }
@@ -392,9 +386,6 @@ function onDataForm1() {
       .catch(console.log)
   }
 }
-function doSave() {
-  Message.success('调用了保存')
-}
 
 function doResetSearch() {
   window.history.back()
@@ -411,6 +402,9 @@ function doRefresh() {
   })
     .then((res) => {
       uiCaseDetailsData.data = res.data
+      if (res.data) {
+        uiCaseDetailsData.selectData = res.data[0]
+      }
     })
     .catch(console.log)
 }
@@ -439,12 +433,27 @@ function oeFreshSteps(record: any) {
   })
 }
 
-function doUiPageNameAll(project_id: number) {
+function doUiModuleNameAll(project_id: number) {
   get({
-    url: uiPageNameProject,
+    url: userProjectModuleGetAll,
     data: () => {
       return {
         project_id: project_id
+      }
+    }
+  })
+    .then((res) => {
+      uiCaseDetailsData.moduleName = res.data
+    })
+    .catch(console.log)
+}
+
+function doUiPageNameAll(project_id: number) {
+  get({
+    url: uiPageName,
+    data: () => {
+      return {
+        module_name: project_id
       }
     }
   })
@@ -468,10 +477,63 @@ function doUiStepsPageStepsName(page_id: number) {
     })
     .catch(console.log)
 }
-
+function onCaseRun() {
+  if (testObj.selectValue == null) {
+    Message.error('请先选择用例执行的环境')
+    return
+  }
+  get({
+    url: uiCaseRun,
+    data: () => {
+      return {
+        case_id: route.query.id,
+        testing_environment: testObj.selectValue
+      }
+    }
+  })
+    .then((res) => {
+      Message.loading(res.msg)
+    })
+    .catch(console.log)
+}
+function select(record: any) {
+  uiCaseDetailsData.selectData = record
+}
+function onUpdate() {
+  put({
+    url: uiCaseStepsDetailed,
+    data: () => {
+      return {
+        id: uiCaseDetailsData.selectData.id,
+        case_data: uiCaseDetailsData.selectData.case_data
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      console.log(res.data)
+    })
+    .catch(console.log)
+}
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
   })
 })
 </script>
+
+<style>
+.container {
+  display: flex; /* 开启flex布局 */
+}
+
+.left {
+  width: 30%; /* 左边区域占据50%的宽度 */
+  margin-right: 10px; /* 设置左边盒子的右边距 */
+}
+
+.right {
+  width: 70%; /* 右边区域占据50%的宽度 */
+  margin-left: 10px; /* 设置右边盒子的左边距 */
+}
+</style>
