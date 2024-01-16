@@ -25,12 +25,13 @@
         </a-space>
         <a-space direction="vertical" style="width: 50%">
           <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
+          <span v-if="uiCaseDetailsData.elementLocator">元素表达式：{{ uiCaseDetailsData.elementLocator }}</span>
         </a-space>
       </div>
     </a-card>
     <a-card>
       <div style="display: flex">
-        <div style="width: 40%; margin-right: 10px">
+        <div style="width: 50%; margin-right: 10px">
           <a-table
             :columns="columns"
             :data="uiCaseDetailsData.data"
@@ -60,6 +61,7 @@
                   <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
                 <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="onPageStep(record)">调试</a-button>
                   <a-button type="text" size="mini" @click="oeFreshSteps(record)">更新数据</a-button>
                   <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                 </template>
@@ -67,7 +69,7 @@
             </template>
           </a-table>
         </div>
-        <div style="width: 60%; margin-left: 10px">
+        <div style="width: 50%; margin-left: 10px">
           <a-list :bordered="false">
             <template #header> {{ uiCaseDetailsData.selectData?.page_step?.name }} </template>
             <a-list-item
@@ -77,19 +79,24 @@
             >
               <div style="display: flex; flex-direction: column">
                 <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
-                  <a-space style="width: 50%">
+                  <a-space style="width: 40%">
                     <span>元素名称：</span>
                     <span>{{ item.page_step_details_name }}</span>
                   </a-space>
-                  <a-space style="width: 50%">
-                    <span>操作类型：</span>
-                    <span>{{ item.type === 0 ? '操作' : '断言' }}</span>
+                  <a-space style="width: 30%">
+                    <span v-if="item.type === 0">操作：{{ getLabelByValue(uiCaseDetailsData.ope, item.ope_type) }}</span>
+                    <span v-if="item.type === 1">断言：{{ getLabelByValue(uiCaseDetailsData.ass, item.ass_type) }}</span>
+                  </a-space>
+                  <a-space style="width: 30%">
+                    <a-button type="text" size="mini" @click="viewElementExpressions(item.page_step_details_id)"
+                      >查看元素表达式</a-button
+                    >
                   </a-space>
                 </div>
                 <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
                   <template v-for="key in Object.keys(item.page_step_details_data)" :key="key">
                     <div style="display: flex">
-                      <span style="width: 10%">{{ key + '：' }}</span>
+                      <span style="width: 13%">{{ key + '：' }}</span>
                       <a-textarea
                         v-model="item.page_step_details_data[key]"
                         @blur="onUpdate"
@@ -178,7 +185,11 @@ import {
   uiCaseStepsDetailed,
   uiCaseStepsRefreshCacheData,
   uiStepsPageStepsName,
-  uiCaseRun
+  uiCaseRun,
+  uiStepsRun,
+  uiPageStepsDetailed,
+  uiPageStepsDetailedOpe,
+  uiPageStepsDetailedAss
 } from '@/api/url'
 import { deleted, get, post, put } from '@/api/http'
 import { FormItem, ModalDialogType } from '@/types/components'
@@ -203,7 +214,10 @@ const uiCaseDetailsData: any = reactive({
   isAdd: false,
   updateId: 0,
   selectData: {},
-  actionTitle: '添加用例步骤'
+  actionTitle: '添加用例步骤',
+  elementLocator: null,
+  ope: [],
+  ass: []
 })
 
 const columns = reactive([
@@ -227,7 +241,7 @@ const columns = reactive([
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 160
+    width: 200
   }
 ])
 
@@ -515,9 +529,84 @@ function onUpdate() {
     })
     .catch(console.log)
 }
+function onPageStep(record: any) {
+  if (testObj.selectValue == null) {
+    Message.error('请先选择用例执行的环境')
+    return
+  }
+  get({
+    url: uiStepsRun,
+    data: () => {
+      return {
+        page_step_id: record.page_step.id,
+        case_id: record.id,
+        te: testObj.selectValue
+      }
+    }
+  })
+    .then((res) => {
+      Message.loading(res.msg)
+    })
+    .catch(console.log)
+}
+function getLabelByValue(data: any, value: string): string {
+  const list = [...data]
+  for (const item of list) {
+    if (item.children) {
+      list.push(...item.children)
+    }
+  }
+  return list.find((item: any) => item.value === value)?.label
+}
+
+function viewElementExpressions(id: number) {
+  get({
+    url: uiPageStepsDetailed,
+    data: () => {
+      return {
+        id: id
+      }
+    }
+  })
+    .then((res) => {
+      uiCaseDetailsData.elementLocator = res.data[0].ele_name_a.loc
+    })
+    .catch(console.log)
+}
+function getUiRunSortOpe() {
+  get({
+    url: uiPageStepsDetailedOpe,
+    data: () => {
+      return {
+        page_type: route.query.pageType
+      }
+    }
+  })
+    .then((res) => {
+      uiCaseDetailsData.ope = res.data
+    })
+    .catch(console.log)
+}
+function getUiRunSortAss() {
+  get({
+    url: uiPageStepsDetailedAss,
+    data: () => {
+      return {
+        page_type: route.query.pageType
+      }
+    }
+  })
+    .then((res) => {
+      uiCaseDetailsData.ass = res.data
+    })
+    .catch(console.log)
+}
+
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    getUiRunSortOpe()
+    getUiRunSortAss()
   })
 })
 </script>

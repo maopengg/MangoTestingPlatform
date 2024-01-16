@@ -99,7 +99,10 @@ class UiCaseStepsDetailedViews(ViewSet):
             case_data_list.append({
                 'page_step_details_id': steps_detailed.id,
                 'page_step_details_name': name,
-                'page_step_details_data': value_dict
+                'page_step_details_data': value_dict,
+                'type': steps_detailed.type,
+                'ope_type': steps_detailed.ope_type,
+                'ass_type': steps_detailed.ass_type,
             })
         books.case_data = case_data_list
         books.save()
