@@ -116,8 +116,7 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
-                  }}{{ record.module_name?.name }}
+                  {{ record.module_name?.name }}
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
@@ -125,7 +124,7 @@
                   <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
                 </template>
                 <template v-else-if="item.key === 'method'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
+                  <a-tag color="orangered" size="small" v-if="record.method === 0">GET</a-tag>
                   <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
                   <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
                   <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
@@ -547,36 +546,34 @@ const formItems: FormItem[] = reactive([
 const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '项目名称',
-    key: 'project',
-    dataIndex: 'project'
-  },
-  {
     title: '模块名称',
     key: 'module_name',
     dataIndex: 'module_name',
-    width: 150
+    align: 'left',
+    width: 100
   },
   {
     title: '接口名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    ellipsis: true,
-    tooltip: true
+    width: 270
   },
-  {
-    title: '客户端类型',
-    key: 'client',
-    dataIndex: 'client'
-  },
+
   {
     title: 'url',
     key: 'url',
     dataIndex: 'url',
+    width: 400,
     align: 'left',
     ellipsis: true,
     tooltip: true
+  },
+  {
+    title: '端类型',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80
   },
   {
     title: '方法',
@@ -593,7 +590,7 @@ const tableColumns = useTableColumn([
     tooltip: true
   },
   {
-    title: 'params',
+    title: '参数',
     key: 'params',
     dataIndex: 'params',
     align: 'left',
@@ -601,7 +598,7 @@ const tableColumns = useTableColumn([
     tooltip: true
   },
   {
-    title: 'data',
+    title: '表单',
     key: 'data',
     dataIndex: 'data',
     align: 'left',
@@ -635,7 +632,7 @@ const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 200
+    width: 170
   }
 ])
 

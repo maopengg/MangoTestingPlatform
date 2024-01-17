@@ -46,6 +46,8 @@
             :width="item.width"
             :data-index="item.dataIndex"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
               {{ record.page_step.name }}
@@ -224,7 +226,8 @@ const pageStepsData = reactive({
 const columns = reactive([
   {
     title: '元素名称',
-    dataIndex: 'ele_name_a'
+    dataIndex: 'ele_name_a',
+    width: 150
   },
   // {
   //   title: '页面元素B',
@@ -232,24 +235,31 @@ const columns = reactive([
   // },
   {
     title: '步骤类型',
-    dataIndex: 'type'
+    dataIndex: 'type',
+    width: 90
   },
   {
     title: '元素操作类型',
-    dataIndex: 'ope_type'
+    dataIndex: 'ope_type',
+    width: 150
   },
   {
     title: '元素操作值',
-    dataIndex: 'ope_value'
+    dataIndex: 'ope_value',
+    ellipsis: true,
+    tooltip: true
   },
 
   {
     title: '断言类型',
-    dataIndex: 'ass_type'
+    dataIndex: 'ass_type',
+    width: 150
   },
   {
     title: '断言操作值',
-    dataIndex: 'ass_value'
+    dataIndex: 'ass_value',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: '操作',
