@@ -36,4 +36,4 @@ class AutoTestTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "界面自动化", 1: "接口自动化", 2: "性能自动化"}
+        return {0: "界面", 1: "接口", 2: "性能"}

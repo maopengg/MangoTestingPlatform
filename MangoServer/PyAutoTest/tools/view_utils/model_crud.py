@@ -21,25 +21,28 @@ class ModelCRUD(GenericAPIView):
     serializer = None
 
     def get(self, request: Request):
-        query_dict = dict(request.query_params.lists())
-        page_size = request.query_params.get("pageSize")
-        page = request.query_params.get("page")
-        query_dict = {k: v[0] for k, v in query_dict.items()}
+        not_matching_str = ['pageSize', 'page', 'type', 'project', 'id']
+        query_dict = {}
+        for k, v in dict(request.query_params.lists()).items():
+            if k and isinstance(v[0], str) and k not in not_matching_str:
+                query_dict[f'{k}__contains'] = v[0]
+            else:
+                query_dict[k] = v[0]
+        #
         project_id = request.headers.get('Project')
         if project_id and hasattr(self.model, 'project') and not query_dict.get('project'):
             query_dict['project'] = project_id
-        if query_dict.get('name'):
-            query_dict['name__contains'] = query_dict.pop('name')
-        if page_size and page:
+
+        if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']
             books = self.model.objects.filter(**query_dict)
-            return ResponseData.success('获取数据成功', self.paging_list(
-                request.query_params.get("pageSize"),
-                request.query_params.get("page"),
-                books,
-                self.get_serializer_class()
-            ), len(books))
+            return ResponseData.success('获取数据成功',
+                                        self.paging_list(request.query_params.get("pageSize"),
+                                                         request.query_params.get("page"),
+                                                         books,
+                                                         self.get_serializer_class()),
+                                        len(books))
         else:
             books = self.model.objects.filter(**query_dict)
             return ResponseData.success('获取数据成功',
@@ -120,7 +123,8 @@ class ModelCRUD(GenericAPIView):
                 th = Thread(target=self.callback, args=(_id,))
                 th.start()
 
-    def paging_list(self, size, current, books, serializer) -> list:
+    @classmethod
+    def paging_list(cls, size: int, current: int, books, serializer) -> list:
         """
         分页
         @param size:
@@ -131,11 +135,9 @@ class ModelCRUD(GenericAPIView):
         """
         if int(books.count()) <= int(size):
             current = 1
-        pagesize = Paginator(books, size)
-        page = pagesize.page(current)
-        return serializer(instance=page, many=True).data
+        return serializer(instance=Paginator(books, size).page(current), many=True).data
 
-    def inside_post(self, data: dict):
+    def inside_post(self, data: dict) -> dict:
         serializer = self.serializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -143,18 +145,15 @@ class ModelCRUD(GenericAPIView):
         else:
             logger.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
 
-    def inside_put(self, _id: int, data: dict):
-        serializer = self.serializer(
-            instance=self.model.objects.get(pk=_id),
-            data=data
-        )
+    def inside_put(self, _id: int, data: dict) -> dict:
+        serializer = self.serializer(instance=self.model.objects.get(pk=_id), data=data)
         if serializer.is_valid():
             serializer.save()
             return serializer.data
         else:
-            logger.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            logger.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
 
-    def inside_delete(self, _id: int):
+    def inside_delete(self, _id: int) -> None:
         """
         删除一条记录
         @param _id:
