@@ -35,6 +35,8 @@
             :width="item.width"
             :data-index="item.dataIndex"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
               <a-tag color="orangered" size="small" v-if="record.exp === 0">XPATH</a-tag>
@@ -214,31 +216,40 @@ const columns = reactive([
   {
     title: '元素名称',
     dataIndex: 'name',
-    width: 200
+    width: 250
   },
   {
     title: '表达式类型',
-    dataIndex: 'exp'
+    dataIndex: 'exp',
+    width: 110
   },
   {
     title: '定位表达式',
-    dataIndex: 'loc'
+    dataIndex: 'loc',
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: '定位器',
-    dataIndex: 'locator'
+    dataIndex: 'locator',
+    width: 200,
+    ellipsis: true,
+    tooltip: true
   },
   {
     title: '是否在iframe中',
-    dataIndex: 'is_iframe'
+    dataIndex: 'is_iframe',
+    width: 200
   },
   {
     title: '等待时间',
-    dataIndex: 'sleep'
+    dataIndex: 'sleep',
+    width: 100
   },
   {
     title: '元素下标',
-    dataIndex: 'sub'
+    dataIndex: 'sub',
+    width: 100
   },
 
   {
