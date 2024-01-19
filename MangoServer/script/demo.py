@@ -1,25 +1,14 @@
 import json
-from urllib.parse import parse_qs
 
 import requests
 
-url = "https://app-test.growknows.cn/dev-api/auth/oauth2/token"
+url = "https://app-test.growknows.cn/dev-api/business/workFlowInfo/getTemplateList?page=1&pageSize=10"
 
-payload = 'enterpriseName=yali008&userName=test005%40yali006.com&password=123456&code=4&uuid=2abe6ff5e94249f58605a76b57c1adb9&mode=none&grant_type=password&account_type=admin&scope=server'
+
 headers = {
-    'Authorization': 'Basic eHVleWk6eHVleWk=',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-    'Sec-Fetch-Dest': 'empty',
-    'Sec-Ch-Ua-Platform': '"Windows"',
-    'Sec-Ch-Ua-Mobile': '?0',
-    'Cookie': 'SERVERCORSID=5f2c27a2826e61a65f5771b981490dee|1704191335|1704191335; SERVERID=5f2c27a2826e61a65f5771b981490dee|1704191335|1704191335'
+  'Accept': 'application/json, text/plain, */*',
+  'Authorization': 'eyJhbGciOiJIUzUxMiJ9.eyJhY2Nlc3NfdG9rZW4iOiJCZWFyZXIgdG9rZW46bG9naW5fdG9rZW5zOjE6MTphY2Nlc3NfdG9rZW46NTE0MjU1ZTUtNDMwZi00YTAyLWI5ZDYtZmRjNTVlMWYxOTQ0IiwicmVmcmVzaF90b2tlbiI6IkJlYXJlciB0b2tlbjpsb2dpbl90b2tlbnM6MToxOnJlZnJlc2hfdG9rZW46RGtWNHo2U0ZOSFdMcURqZ3ZnSl94cm5WZi1nam5DN0xOQ3BxQ2xHSGVCT3BGNjVUYUo0OXdyakpkZVFwd2ZkZFFQUXlQTkZiMW1od05HbWdIR19qNnNyeFVjamNkUjY1Tl9CbGQ2aXc4QzB2dV9jdW1HMnRJX1QzbVRiQnlvT1IiLCJhY2NvdW50X3R5cGUiOiJhZG1pbiIsInVzZXJfdHlwZSI6IjAwIiwidXNlcl9pZCI6MSwidXNlcl9uYW1lIjoiYWRtaW5AYWlnYy5jb20iLCJpc19sZXNzb3IiOiJZIiwiZW50ZXJwcmlzZV9pZCI6MSwiZW50ZXJwcmlzZV9uYW1lIjoiYWRtaW5pc3RyYXRvciIsInNvdXJjZV9uYW1lIjoic2xhdmUifQ.mRnEfjE3tXG5ZDFlf_Xk0_NWCZI0SNQUE4USBASo064OszYIZDH4KnqerdkWuoBgs4x17OYqwHcZV-E6tpfY7g',
 }
-r = requests.get(url="https://app-test.growknows.cn/dev-api/code")
-_dict = {k: v[0] for k, v in parse_qs(payload).items()}
-_dict['code'] = 'AIgc2023aiGC'
-_dict['userName'] = 'test005@yali006.com'
-_dict['password'] = '123456'
-_dict['uuid'] = r.json()['data']['uuid']
-response = requests.request("POST", url, headers=headers, data=_dict)
-print(json.dumps(_dict))
+response = requests.request("GET", url, headers=headers)
+
 print(response.text)

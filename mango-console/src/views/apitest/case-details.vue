@@ -81,7 +81,7 @@
               <a-radio value="cache">缓存数据</a-radio>
               <a-button type="text" :disabled="apiCaseData.disabled" @click="clickAdd">增加一条</a-button>
             </a-radio-group>
-            <a-tabs position="left" @tab-click="tabsChange" :default-active-key="0">
+            <a-tabs position="left" @tab-click="tabsChange">
               <a-tab-pane v-for="item of apiCaseData.selectData" :key="item.key" :title="item.title">
                 <template v-if="item.type === 'descriptions'">
                   <a-descriptions style="margin-top: 20px" :data="item.data" :column="1" />
@@ -117,6 +117,7 @@
                         expand-trigger="hover"
                         placeholder="请选择断言方法"
                         value-key="key"
+                        @blur="blurSave(item)"
                       />
                       <a-input placeholder="请输入预期结果" v-model="item.data[index].expect" @blur="blurSave(item)" />
                       <a-button type="text" status="danger" @click="removeFrontSql(item, index)">移除</a-button>
@@ -288,14 +289,12 @@ const formItems: FormItem[] = reactive([
 ])
 
 function clickRadioGroup() {
-  apiCaseData.data.forEach((item: any) => {
-    for (let key in item) {
-      if (key === apiCaseData.position) {
-        apiCaseData.selectData = item[key]
-        break
-      }
+  for (let key in apiCaseData.selectDataObj) {
+    if (key === apiCaseData.position) {
+      apiCaseData.selectData = apiCaseData.selectDataObj[key]
+      break
     }
-  })
+  }
 }
 
 function replaceEmptyStringWithNull(obj: any) {
