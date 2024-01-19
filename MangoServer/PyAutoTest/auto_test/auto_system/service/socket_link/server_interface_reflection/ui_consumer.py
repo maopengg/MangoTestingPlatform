@@ -24,6 +24,7 @@ class UIConsumer:
     @convert_args(TestSuiteModel)
     def u_case_batch_result(self, data: TestSuiteModel):
         TestSuiteReportUpdate.update_case_suite_status(data.id, data.status, data.run_status, data.error_message)
-        for i in data.result_list:
-            ConsumerTestResult.update_case_status(i.case_id, data.result_list[0].status)
-            ConsumerTestResult.update_case_result(i, data.error_message)
+        if data.result_list:
+            for i in data.result_list:
+                ConsumerTestResult.update_case_status(i.case_id, data.result_list[0].status)
+                ConsumerTestResult.update_case_result(i, data.error_message)
