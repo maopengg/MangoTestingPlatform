@@ -7,7 +7,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiCase
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import ApiEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum
+from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.api_model import PublicModel, ApiCaseGroupModel, RequestModel
 from PyAutoTest.settings import DRIVER
@@ -23,7 +23,7 @@ class RunApiSend:
         """
         处理公共数据
         """
-        objects_filter = ApiPublic.objects.filter(status=1, type=0)
+        objects_filter = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value, type=0)
         public_args_list = []
         for obj in objects_filter:
             public_args_model = PublicModel(

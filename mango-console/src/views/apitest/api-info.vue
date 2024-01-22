@@ -88,7 +88,6 @@
             <a-tab-pane key="1" title="调试接口" />
           </a-tabs>
           <a-table
-            :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
             :loading="table.tableLoading.value"
             :data="table.dataList"
@@ -96,6 +95,7 @@
             :pagination="false"
             :rowKey="rowKey"
             @selection-change="onSelectionChange"
+            :scroll="scrollPercent"
           >
             <template #columns>
               <a-table-column
@@ -285,7 +285,10 @@ const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
 const table = useTable()
 const rowKey = useRowKey('id')
 const formModel = ref({})
-
+const scrollPercent = {
+  x: 2000,
+  y: 540
+}
 const apiInfoData = reactive({
   actionTitle: '添加接口',
   isAdd: false,
@@ -564,7 +567,7 @@ const tableColumns = useTableColumn([
     title: 'url',
     key: 'url',
     dataIndex: 'url',
-    width: 400,
+    width: 500,
     align: 'left',
     ellipsis: true,
     tooltip: true
@@ -579,6 +582,12 @@ const tableColumns = useTableColumn([
     title: '方法',
     key: 'method',
     dataIndex: 'method',
+    width: 80
+  },
+  {
+    title: '状态',
+    key: 'status',
+    dataIndex: 'status',
     width: 80
   },
   {
@@ -621,12 +630,7 @@ const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true
   },
-  {
-    title: '状态',
-    key: 'status',
-    dataIndex: 'status',
-    width: 80
-  },
+
   {
     title: '操作',
     key: 'actions',

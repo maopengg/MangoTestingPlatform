@@ -13,6 +13,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -75,9 +76,9 @@ class ApiResultViews(ViewSet):
                 data.append(case_result_obj)
         summary = [
             {'name': '用例总数', 'value': result.count()},
-            {'name': '成功', 'value': result.filter(status=1).count()},
+            {'name': '成功', 'value': result.filter(status=StatusEnum.SUCCESS.value).count()},
             {'name': '警告', 'value': result.filter(status=2).count()},
-            {'name': '失败', 'value': result.filter(status=0).count()}
+            {'name': '失败', 'value': result.filter(status=StatusEnum.FAIL.value).count()}
         ]
         return ResponseData.success('查询不同类型结果成功', {'data': data, 'summary': summary})
 

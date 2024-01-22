@@ -94,6 +94,7 @@ class UiCase(models.Model):
                                     on_delete=models.SET_NULL, null=True)
     # 0失败，1成功，2警告
     status = models.SmallIntegerField(verbose_name="状态", null=True)
+    test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
 
     class Meta:
         db_table = 'ui_case'
@@ -156,6 +157,7 @@ class UiCaseResult(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
+    is_batch = models.SmallIntegerField(verbose_name="是否是批量", null=True)
     case_id = models.IntegerField(verbose_name="用例ID", null=True)
     case_name = models.CharField(verbose_name="用例名称", max_length=64, null=True)
     module_name = models.CharField(verbose_name="模块名称", max_length=64, null=True)
@@ -163,6 +165,7 @@ class UiCaseResult(models.Model):
     test_obj = models.CharField(verbose_name="测试环境", max_length=1024, null=True)
     case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     status = models.SmallIntegerField(verbose_name="用例测试结果", null=True)
+    error_message = models.TextField(verbose_name="错误提示", null=True)
 
     class Meta:
         db_table = 'ui_case_result'
@@ -176,6 +179,7 @@ class UiPageStepsResult(models.Model):
     page_step_id = models.IntegerField(verbose_name="步骤id", null=True)
     page_step_name = models.CharField(verbose_name="步骤名称", max_length=64, null=True)
     status = models.SmallIntegerField(verbose_name="步骤测试结果", null=True)
+    error_message = models.TextField(verbose_name="错误提示", null=True)
 
     class Meta:
         db_table = 'ui_page_steps_result'
@@ -200,7 +204,7 @@ class UiEleResult(models.Model):
     ope_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
     ass_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
-    msg = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
+    error_message = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
 
     class Meta:
         db_table = 'ui_ele_result'

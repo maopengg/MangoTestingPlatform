@@ -9,7 +9,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
-from PyAutoTest.tools.other_utils.native_ip import get_host_ip
+from PyAutoTest.models.tools_model import TestReportModel
 
 logger = logging.getLogger('system')
 
@@ -17,13 +17,14 @@ logger = logging.getLogger('system')
 class SendEmail:
     """ 发送邮箱 """
 
-    def __init__(self, notice_obj: NoticeConfig):
+    def __init__(self, notice_obj: NoticeConfig, test_report: TestReportModel):
         self.project = notice_obj.project.id
         config = json.loads(notice_obj.config)
         self.send_user = config['send_user']
         self.send_list = config['send_list']
         self.email_host = config['email_host']
         self.stamp_key = config['stamp_key']
+        self.test_report = test_report
 
     def send_main(self, case_id) -> None:
         """
@@ -33,17 +34,17 @@ class SendEmail:
         send_list = self.send_list.split(',')  # 发送多个人，用,隔开就可以
         content = f"""
         各位同事, 大家好:
-            自动化用例执行完成，执行结果如下:
-            用例运行总数: {case_id} 个
-            通过用例个数: {99} 个
-            失败用例个数: {0} 个
-            异常用例个数: {0} 个
-            跳过用例个数: {0} 个
-            成  功   率: {99} %
+            测试套ID：{self.test_report.test_suite_id}任务执行完成，执行结果如下:
+            用例运行总数: {self.test_report.case_sum} 个
+            通过用例个数: {self.test_report.success} 个
+            失败用例个数: {self.test_report.fail} 个
+            异常用例个数: {self.test_report.warning} 个
+            跳过用例个数: 暂不统计 个
+            成  功   率: {self.test_report.success_rate} %
 
 
         **********************************
-        芒果自动化平台地址：https://{get_host_ip()}:5173/index
+        芒果自动化平台地址：https://{self.test_report.ip}:5173/index
         详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
         """
         try:
@@ -87,15 +88,3 @@ class SendEmail:
         send_list = self.send_list.split(',')  # 多个邮箱发送，config文件中直接添加  '806029174@qq.com'
         content = f"自动化测试执行完毕，程序中发现异常，请悉知。报错信息如下：\n{error_message}"
         self.send_mail(send_list, f'{self.project}接口自动化执行异常通知', content)
-
-
-if __name__ == '__main__':
-    # project = "Zshop"
-    # send_user = '729164035@qq.com'
-    # send_list = "maopeng@zalldigital.com,729164035@qq.com"
-    # email_host = 'smtp.qq.com'
-    # stamp_key = 'lqfzvjbpfcwtbecg'
-    # case_id = [0, 1, 2]
-    # SendEmail().send_main(case_id=case_id)
-    # SendEmail.notice_data()
-    pass

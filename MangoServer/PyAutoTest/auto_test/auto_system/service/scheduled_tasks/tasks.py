@@ -12,7 +12,7 @@ from apscheduler.triggers.cron import CronTrigger
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.test_runner.api_test_run import ApiTestRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
-from PyAutoTest.auto_test.auto_ui.data_producer.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -24,7 +24,62 @@ class Tasks:
     scheduler = BackgroundScheduler()
 
     @classmethod
-    def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: bool):
+    def create_jobs(cls):
+        queryset = TimeTasks.objects.all()
+        for timer in queryset:
+            cls.scheduler.add_job(cls.timing,
+                                  trigger=CronTrigger(month=timer.month,
+                                                      day=timer.day,
+                                                      day_of_week=timer.day_of_week,
+                                                      hour=timer.hour,
+                                                      minute=timer.minute),
+                                  args=[timer.id])
+        cls.scheduler.start()
+
+    @classmethod
+    def timing(cls, timing_strategy_id):
+        log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
+        scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
+                                                            status=StatusEnum.SUCCESS.value)
+        for scheduled_tasks in scheduled_tasks_obj:
+            cls.distribute(scheduled_tasks)
+
+    @classmethod
+    def trigger(cls, scheduled_tasks_id):
+        scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
+        is_notice = True if scheduled_tasks.is_notice == StatusEnum.SUCCESS.value else False
+        if scheduled_tasks.type == AutoTestTypeEnum.API.value:
+            cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, is_notice, True)
+        elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
+            cls.ui_task(scheduled_tasks.id,
+                        scheduled_tasks.executor_name.id,
+                        scheduled_tasks.test_obj.id,
+                        is_notice,
+                        True)
+        else:
+            log.error('开始执行性能自动化任务')
+
+    @classmethod
+    def distribute(cls, scheduled_tasks):
+        # scheduled_tasks: ScheduledTasks = scheduled_tasks
+        is_notice = True if scheduled_tasks.is_notice == StatusEnum.SUCCESS.value else False
+        if scheduled_tasks.type == AutoTestTypeEnum.API.value:
+            task = Thread(target=cls.api_task, args=(scheduled_tasks.id,
+                                                     scheduled_tasks.test_obj.id,
+                                                     is_notice))
+            task.start()
+
+        elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
+            task = Thread(target=cls.ui_task, args=(scheduled_tasks.id,
+                                                    scheduled_tasks.executor_name.id,
+                                                    scheduled_tasks.test_obj.id,
+                                                    is_notice))
+            task.start()
+        else:
+            log.error('开始执行性能自动化任务')
+
+    @classmethod
+    def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: bool, is_trigger: bool = False):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id)
             case_id_list = [case.case for case in run_case]
@@ -34,9 +89,12 @@ class Tasks:
                 ApiTestRun(project_id=project_id, test_obj_id=test_obj_id, is_notice=is_notice).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行API定时任务失败，错误消息：{error.msg}')
+            if is_trigger:
+                raise error
 
     @classmethod
-    def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool):
+    def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool,
+                is_trigger: bool = False):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id)
             case_id_list = [case.case for case in run_case]
@@ -46,36 +104,8 @@ class Tasks:
                     case_id_list)
         except MangoServerError as error:
             log.error(f'执行UI定时任务失败，错误消息：{error.msg}')
-
-    @classmethod
-    def distribute(cls, task_id):
-        log.info(f'开始执行任务ID为：{task_id}的用例')
-        scheduled_tasks = ScheduledTasks.objects.filter(timing_strategy=task_id, status=StatusEnum.SUCCESS.value)
-        for i in scheduled_tasks:
-            # scheduled_tasks: ScheduledTasks = scheduled_tasks
-            is_notice = True if i.is_notice == StatusEnum.SUCCESS.value else False
-            if i.type == AutoTestTypeEnum.API.value:
-                task = Thread(target=cls.api_task, args=(i.id, i.test_obj.id, is_notice))
-                task.start()
-
-            elif i.type == AutoTestTypeEnum.UI.value:
-                task = Thread(target=cls.ui_task, args=(i.id, i.executor_name.id, i.test_obj.id, is_notice))
-                task.start()
-            else:
-                log.error('开始执行性能自动化任务')
-
-    @classmethod
-    def create_jobs(cls):
-        queryset = TimeTasks.objects.all()
-        for timer in queryset:
-            cls.scheduler.add_job(cls.distribute,
-                                  trigger=CronTrigger(month=timer.month,
-                                                      day=timer.day,
-                                                      day_of_week=timer.day_of_week,
-                                                      hour=timer.hour,
-                                                      minute=timer.minute),
-                                  args=[timer.id])
-        cls.scheduler.start()
+            if is_trigger:
+                raise error
 
 
 Tasks.create_jobs()

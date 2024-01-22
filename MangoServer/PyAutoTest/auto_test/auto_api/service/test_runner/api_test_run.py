@@ -47,7 +47,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
         for case_id in case_list:
             self.run_one_case(case_id)
         if self.is_notice:
-            NoticeMain.notice_main(self.project_id)
+            NoticeMain.notice_main(self.project_id, self.test_suite_data['id'])
 
     def run_api(self, case_detailed: ApiCaseDetailed) -> bool:
         try:

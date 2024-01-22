@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiCaseResult, UiPageStepsResult
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -68,9 +69,9 @@ class UiCaseResultViews(ViewSet):
             data.append(case_result_obj)
         summary = [
             {'name': '用例总数', 'value': case_result.count()},
-            {'name': '成功', 'value': case_result.filter(status=1).count()},
+            {'name': '成功', 'value': case_result.filter(status=StatusEnum.SUCCESS.value).count()},
             {'name': '警告', 'value': case_result.filter(status=2).count()},
-            {'name': '失败', 'value': case_result.filter(status=0).count()}
+            {'name': '失败', 'value': case_result.filter(status=StatusEnum.FAIL.value).count()}
         ]
         return ResponseData.success('查询不同类型结果成功', {'data': data, 'summary': summary})
 

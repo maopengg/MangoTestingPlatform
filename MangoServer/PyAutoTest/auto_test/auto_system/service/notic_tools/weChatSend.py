@@ -9,7 +9,7 @@ import requests
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
-from PyAutoTest.tools.other_utils.native_ip import get_host_ip
+from PyAutoTest.models.tools_model import TestReportModel
 
 logger = logging.getLogger('system')
 
@@ -19,9 +19,10 @@ class WeChatSend:
     企业微信消息通知
     """
 
-    def __init__(self, notice_obj: NoticeConfig):
+    def __init__(self, notice_obj: NoticeConfig, test_report: TestReportModel):
         self.config = notice_obj
         self.headers = {"Content-Type": "application/json"}
+        self.test_report = test_report
 
     def send_wechat_notification(self):
         """
@@ -29,23 +30,25 @@ class WeChatSend:
         :return:
         """
         t = TestObject.objects.filter(project=self.config.project.id).first()
-        text = f"""【{self.config.project.name}自动化通知】
-                                    >测试环境：<font color=\"info\">{t.name}</font>
-                                    >测试负责人：@{t.executor_name.nickname}
-                                    >
-                                    > **执行结果**
-                                    ><font color=\"info\">成  功  率  : {1}%</font>
-                                    >执行用例数：<font color=\"info\">{1}</font>                                    
-                                    >成功用例数：<font color=\"info\">{1}</font>
-                                    >失败用例数：`{1}个`
-                                    >异常用例数：`{1}个`
-                                    >跳过用例数：<font color=\"warning\">{1}个</font>
-                                    >用例执行时长：<font color=\"warning\">{1} s</font>
-                                    >测试时间：<font color=\"comment\">{1}</font>
-                                    >
-                                    >非相关负责人员可忽略此消息。
-                                    >测试报告，点击查看>>[测试报告入口](https://{get_host_ip()}:5173)"""
 
+        text = f"""【{self.config.project.name}自动化通知】
+                    >测试项目：<font color=\"info\">{self.test_report.project}</font>
+                    >测试环境：{self.test_report.test_environment}
+                    >测试套ID：{self.test_report.test_suite_id}
+                    >
+                    > **执行结果**
+                    ><font color=\"info\">成  功  率  : {self.test_report.success_rate}%</font>
+                    >执行用例数：<font color=\"info\">{self.test_report.case_sum}</font>                                    
+                    >成功用例数：<font color=\"info\">{self.test_report.success}</font>
+                    >失败用例数：`{self.test_report.fail}个`
+                    >异常用例数：`0 个`
+                    >跳过用例数：<font color=\"warning\">0</font>
+                    >用例执行时长：<font color=\"warning\">{self.test_report.execution_duration} s</font>
+                    >测试时间：<font color=\"comment\">{self.test_report.test_time}</font>
+                    >
+                    >非相关负责人员可忽略此消息。
+                    >测试报告，点击查看>>[测试报告入口](https://{self.test_report.ip}:5173)
+               """
         self.send_markdown(text)
 
     def send_markdown(self, content):

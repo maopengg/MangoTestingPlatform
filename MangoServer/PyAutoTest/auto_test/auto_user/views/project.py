@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 from ..models import Project
@@ -62,6 +63,6 @@ class ProjectViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_all_items(self, request: Request):
-        items = Project.objects.filter(status=1)
+        items = Project.objects.filter(status=StatusEnum.SUCCESS.value)
         data = [{'title': i.name, 'key': i.pk} for i in items]
         return ResponseData.success('获取所有项目名称成功', data)

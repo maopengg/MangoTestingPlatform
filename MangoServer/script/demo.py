@@ -1,14 +1,3 @@
-import json
-
-import requests
-
-url = "https://app-test.growknows.cn/dev-api/business/workFlowInfo/getTemplateList?page=1&pageSize=10"
-
-
-headers = {
-  'Accept': 'application/json, text/plain, */*',
-  'Authorization': 'eyJhbGciOiJIUzUxMiJ9.eyJhY2Nlc3NfdG9rZW4iOiJCZWFyZXIgdG9rZW46bG9naW5fdG9rZW5zOjE6MTphY2Nlc3NfdG9rZW46NTE0MjU1ZTUtNDMwZi00YTAyLWI5ZDYtZmRjNTVlMWYxOTQ0IiwicmVmcmVzaF90b2tlbiI6IkJlYXJlciB0b2tlbjpsb2dpbl90b2tlbnM6MToxOnJlZnJlc2hfdG9rZW46RGtWNHo2U0ZOSFdMcURqZ3ZnSl94cm5WZi1nam5DN0xOQ3BxQ2xHSGVCT3BGNjVUYUo0OXdyakpkZVFwd2ZkZFFQUXlQTkZiMW1od05HbWdIR19qNnNyeFVjamNkUjY1Tl9CbGQ2aXc4QzB2dV9jdW1HMnRJX1QzbVRiQnlvT1IiLCJhY2NvdW50X3R5cGUiOiJhZG1pbiIsInVzZXJfdHlwZSI6IjAwIiwidXNlcl9pZCI6MSwidXNlcl9uYW1lIjoiYWRtaW5AYWlnYy5jb20iLCJpc19sZXNzb3IiOiJZIiwiZW50ZXJwcmlzZV9pZCI6MSwiZW50ZXJwcmlzZV9uYW1lIjoiYWRtaW5pc3RyYXRvciIsInNvdXJjZV9uYW1lIjoic2xhdmUifQ.mRnEfjE3tXG5ZDFlf_Xk0_NWCZI0SNQUE4USBASo064OszYIZDH4KnqerdkWuoBgs4x17OYqwHcZV-E6tpfY7g',
-}
-response = requests.request("GET", url, headers=headers)
-
-print(response.text)
+number = 69.87951807228916
+rounded_number = round(number, 2)
+print(rounded_number)  # 输出：69.87
