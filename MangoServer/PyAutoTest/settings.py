@@ -323,7 +323,3 @@ CORS_ALLOW_METHODS = (
 #     'x-csrftoken',
 #     'x-requested-with'
 # )
-# ************************ 三个端的名称 ************************ #
-DRIVER = 'Mango Actuator'
-SERVER = 'Mango Server'
-WEB = 'mango-console'

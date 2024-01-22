@@ -21,10 +21,10 @@ class ModelCRUD(GenericAPIView):
     serializer = None
 
     def get(self, request: Request):
-        not_matching_str = ['pageSize', 'page', 'type', 'project', 'id']
+        not_matching_str = ['pageSize', 'page', 'type', 'project', 'module_name']
         query_dict = {}
         for k, v in dict(request.query_params.lists()).items():
-            if k and isinstance(v[0], str) and k not in not_matching_str:
+            if k and isinstance(v[0], str) and k not in not_matching_str and 'id' not in k:
                 query_dict[f'{k}__contains'] = v[0]
             else:
                 query_dict[k] = v[0]

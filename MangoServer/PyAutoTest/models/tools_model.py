@@ -12,3 +12,17 @@ class MysqlConingModel(BaseModel):
     user: str
     password: str
     db: str | None
+
+
+class TestReportModel(BaseModel):
+    test_suite_id: int
+    case_sum: int
+    success: int
+    success_rate: float
+    warning: int
+    fail: int
+    execution_duration: int
+    test_time: str
+    ip: str
+    test_environment: str
+    project: str

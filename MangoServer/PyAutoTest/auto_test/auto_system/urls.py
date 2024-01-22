@@ -7,7 +7,7 @@ from django.urls import path
 
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
 from .views.enum_api import EnumOptionViews
-from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews
+from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews, ScheduledTasksNoPermissionViews
 from .views.socket_api import SocketApiViews
 from .views.tasks_run_case_list import TasksRunCaseListCRUD, TasksRunCaseListViews
 from .views.test_suite_report import TestSuiteReportCRUD
@@ -30,7 +30,6 @@ urlpatterns = [
     path('database', DatabaseCRUD.as_view()),
     #
     path('time', TimeTasksCRUD.as_view()),
-    path('trigger/timing', TimeTasksViews.as_view({'get': 'trigger_timing'})),
     path('get/timing/list', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),
     #
     path('tasks/run/case', TasksRunCaseListCRUD.as_view()),
@@ -39,6 +38,8 @@ urlpatterns = [
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
     path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
     path('scheduled/put/notice', ScheduledTasksViews.as_view({'put': 'put_is_notice'})),
+    path('trigger/timing', ScheduledTasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
+
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),

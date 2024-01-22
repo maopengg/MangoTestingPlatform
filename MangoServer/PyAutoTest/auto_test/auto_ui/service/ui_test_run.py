@@ -5,11 +5,11 @@
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.auto_test.auto_system.data_consumer.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import UiEnum
+from PyAutoTest.auto_test.auto_system.service.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
     UiElement, UiConfig, UiPage
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
@@ -44,19 +44,21 @@ class UiTestRun:
             self.__socket_send(func_name=UiEnum.U_PAGE_STEPS.value, case_model=case_model)
         return case_model
 
-    def case(self, case_id: int, is_send: bool = True) -> CaseModel:
+    def case(self, case_id: int, is_send: bool = True, is_batch: bool = False) -> CaseModel:
         """
         执行一个用例组
         @param case_id: 用例ID
         @param is_send: 是否发送
+        @param is_batch: 是否是批量发送
         @return:
         """
-        case = UiCase.objects.get(pk=case_id)
+        case = UiCase.objects.get(id=case_id)
 
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
 
         case_model = CaseModel(id=case.id,
                                name=case.name,
+                               is_batch=StatusEnum.SUCCESS.value if is_batch else StatusEnum.FAIL.value,
                                project_id=case.project.id,
                                module_name=case.module_name.name,
                                case_people=case.case_people.nickname,
@@ -85,10 +87,15 @@ class UiTestRun:
         @param case_id_list: 用例组的list或int
         @return:
         """
+        test_suite_id = Snowflake.generate_id()
         case_group_list: list[CaseModel] = []
-        for case_id in case_id_list:
-            case_group_list.append(self.case(case_id=case_id, is_send=False))
-        model = TestSuiteModel(id=Snowflake.generate_id(),
+        for index, case_id in enumerate(case_id_list):
+            is_last = (index == len(case_id_list) - 1)
+            if is_last:
+                case_group_list.append(self.case(case_id=case_id, is_send=False, is_batch=True))
+            else:
+                case_group_list.append(self.case(case_id=case_id, is_send=False))
+        model = TestSuiteModel(id=test_suite_id,
                                type=AutoTestTypeEnum.UI.value,
                                project=case_group_list[0].project_id,
                                test_object=self.test_obj_id,
@@ -99,7 +106,7 @@ class UiTestRun:
                            case_model=model)
         TestSuiteReportUpdate(model).add_test_suite_report()
         if self.is_notice:
-            NoticeMain.notice_main(case_group_list[0].project_id)
+            NoticeMain.notice_main(case_group_list[0].project_id, test_suite_id)
         return case_group_list
 
     def __socket_send(self, case_model, func_name: str) -> None:

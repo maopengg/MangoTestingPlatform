@@ -70,6 +70,7 @@ class PageStepsModel(BaseModel):
 class CaseModel(BaseModel):
     id: int
     name: str
+    is_batch: int
     project_id: int
     module_name: str
     case_people: str
@@ -80,14 +81,14 @@ class CaseModel(BaseModel):
 
 
 class ElementResultModel(BaseModel):
-    case_step_details_id: int | None
     test_suite_id: int | None
     case_id: int | None
     page_step_id: int | None
+
     ele_name_a: str | None
     ele_name_b: str | None
     ele_quantity: int
-    msg: str | None
+    error_message: str | None
     picture_path: str | None
     status: int
 
@@ -105,21 +106,26 @@ class ElementResultModel(BaseModel):
 class PageStepsResultModel(BaseModel):
     test_suite_id: int | None
     case_id: int | None
+    case_step_details_id: int | None
     page_step_id: int
     page_step_name: str
+
     status: int
-    ele_result_list: list[ElementResultModel]
+    error_message: str | None
+    element_result_list: list[ElementResultModel]
 
 
 class CaseResultModel(BaseModel):
     test_suite_id: int
+    is_batch: int
     case_id: int
     case_name: str
     module_name: str
     case_people: str
     test_obj: str
     status: int
-    case_res_list: list[PageStepsResultModel]
+    error_message: str | None
+    page_steps_result_list: list[PageStepsResultModel]
 
 
 class TestSuiteModel(BaseModel):
@@ -127,8 +133,7 @@ class TestSuiteModel(BaseModel):
     type: int
     project: int
     test_object: int
-    error_message: str | None
     run_status: int
     status: int | None
+    error_message: str | None
     case_list: list[CaseModel] | None = None
-    result_list: list[CaseResultModel] | None = None

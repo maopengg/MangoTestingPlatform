@@ -70,7 +70,7 @@ export default defineComponent({
         series: [
           {
             type: 'pictorialBar',
-            name: '热卖指数',
+            name: '访问次数',
             stack: '指数',
             data: data.total_logins,
             smooth: true,
