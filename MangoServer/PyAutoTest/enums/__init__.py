@@ -7,7 +7,7 @@ from enum import Enum
 
 
 class BaseEnum(Enum):
-    """基础枚举类，提供通用的getitem方法"""
+    """基础枚举类，提供通用的三个方法"""
 
     @classmethod
     def get_option(cls):

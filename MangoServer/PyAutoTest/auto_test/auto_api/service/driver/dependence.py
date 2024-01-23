@@ -32,15 +32,15 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     value = self.loads(value)
                 setattr(request_data_model, key, value)
             elif key == 'file':
-                file = []
                 if request_data_model.file:
+                    file = []
                     for i in request_data_model.file:
-                        i: list[dict] = i
+                        i: dict = i
                         for k, v in i.items():
                             file_name = self.identify_parentheses(v)[0].replace('(', '').replace(')', '')
                             path = self.replace(v)
-                            file.append((k, (file_name, open(f'{str(path)}', 'rb'))))
-                request_data_model.file = file
+                            file.append((k, (file_name, open(path, 'rb'))))
+                    request_data_model.file = file
         return request_data_model
 
     def front_sql(self, case_detailed):
@@ -96,18 +96,17 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
 
     def __posterior_sql(self, sql_list: list[dict]):
         """
-        后置sql--需要测试
+        后置sql
         @param sql_list:
         @return:
         """
-        for obj in sql_list:
-            for sql, value_key in obj.items():
-                res = self.mysql_obj.execute(sql)
-                if isinstance(res, list):
-                    for res_dict in res:
-                        for key, value in res_dict.items():
-                            self.set_cache(value_key, value)
-                            log.info(f'{value_key}sql写入的数据：{self.get_cache(value_key)}')
+        for sql_obj in sql_list:
+            res = self.mysql_obj.execute(sql_obj.get('key'))
+            if isinstance(res, list):
+                for res_dict in res:
+                    for key, value in res_dict.items():
+                        self.set_cache(sql_obj.get('value'), value)
+                        log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         """

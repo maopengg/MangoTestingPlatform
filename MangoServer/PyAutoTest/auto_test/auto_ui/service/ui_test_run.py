@@ -99,14 +99,14 @@ class UiTestRun:
                                type=AutoTestTypeEnum.UI.value,
                                project=case_group_list[0].project_id,
                                test_object=self.test_obj_id,
+                               is_notice=self.is_notice,
                                error_message=None,
                                run_status=0,
                                case_list=case_group_list)
         self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
                            case_model=model)
         TestSuiteReportUpdate(model).add_test_suite_report()
-        if self.is_notice:
-            NoticeMain.notice_main(case_group_list[0].project_id, test_suite_id)
+
         return case_group_list
 
     def __socket_send(self, case_model, func_name: str) -> None:

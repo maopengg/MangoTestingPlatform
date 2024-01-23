@@ -7,7 +7,7 @@ import os
 import shutil
 
 from PyAutoTest.auto_test.auto_ui.models import Project
-from PyAutoTest.tools.other_utils.path import Path
+from PyAutoTest.tools.other_utils.path import FilePath
 
 
 class FilesCRUD:
@@ -15,7 +15,7 @@ class FilesCRUD:
     def __init__(self, project_id=None):
         self.project_id = project_id
         #
-        self.path = Path.ensure_path_sep(fr'/files')
+        self.path = FilePath.auto_ensure_path_sep(fr'/files')
         if not os.path.isdir(self.path):
             os.makedirs(self.path)
         self.upload_folder = rf'/{project_id}/upload_folder'

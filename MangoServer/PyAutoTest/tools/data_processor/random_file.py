@@ -15,7 +15,7 @@ class RandomFileData:
 
     @classmethod
     def get_file_obj(cls, **kwargs) -> BinaryIO:
-        """传入文件名称，返回文件对象,参数：file_name"""
+        """传入文件名称，返回文件对象"""
         project_id = kwargs.get('project_id')
         file_name = kwargs.get('data')
         file_obj = FilesCRUD(project_id)

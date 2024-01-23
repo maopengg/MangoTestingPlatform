@@ -8,7 +8,7 @@ import os
 from PyAutoTest import settings
 
 
-class Path:
+class FilePath:
 
     @classmethod
     def root_path(cls):
@@ -17,7 +17,7 @@ class Path:
         return path
 
     @classmethod
-    def ensure_path_sep(cls, path: str) -> str:
+    def auto_ensure_path_sep(cls, path: str) -> str:
         """兼容 windows 和 linux 不同环境的操作系统路径 """
         if "/" in path:
             path = os.sep.join(path.split("/"))
@@ -26,6 +26,11 @@ class Path:
             path = os.sep.join(path.split("\\"))
         return str(settings.BASE_DIR) + path
 
+    @classmethod
+    def ensure_path_sep(cls, path: str) -> str:
+        file_path = path.replace('/', os.sep)
+        return file_path.replace('\\', '/')
+
 
 if __name__ == '__main__':
-    print(Path.ensure_path_sep('/files'))
+    print(FilePath.ensure_path_sep('/files'))
