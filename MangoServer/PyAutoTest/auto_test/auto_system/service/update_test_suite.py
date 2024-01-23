@@ -7,6 +7,7 @@ import json
 import logging
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
+from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportSerializers
 from PyAutoTest.models.socket_model.ui_model import TestSuiteModel
 
@@ -31,21 +32,17 @@ class TestSuiteReportUpdate:
             log.error(f'新增测试套报错，请联系管理员进行查看，错误信息：{serializer.errors}')
 
     @classmethod
-    def update_case_suite_status(cls, _id, status, run_status, error_message: list | None = None):
+    def update_case_suite_status(cls, data: TestSuiteModel):
         """
-        @param _id:
-        @param status:
-        @param run_status:1是测试完成
-        @param error_message:
+        更新测试套
+        @param data:
         @return:
         """
-        try:
-            res = TestSuiteReport.objects.get(id=_id)
-            res.status = status
-            res.run_status = run_status
-            if error_message:
-                res.error_message = json.dumps(error_message)
-            res.save()
-        except TestSuiteReport.DoesNotExist as e:
-            # 处理找不到对应记录的情况
-            log.error(f"当前查询结果是空，请检查id是否在数据库中存在id：{_id}报错：{e}")
+        res = TestSuiteReport.objects.get(id=data.id)
+        res.status = data.status
+        res.run_status = data.run_status
+        if data.error_message:
+            res.error_message = json.dumps(data.error_message)
+        res.save()
+        if data.is_notice:
+            NoticeMain.notice_main(data.project, data.id)

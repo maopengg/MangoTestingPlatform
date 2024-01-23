@@ -4,6 +4,7 @@ import os
 
 import sys
 
+from PyAutoTest.tools import nuw_dir
 
 
 def main():
@@ -21,4 +22,5 @@ def main():
 
 
 if __name__ == '__main__':
+    nuw_dir()
     main()

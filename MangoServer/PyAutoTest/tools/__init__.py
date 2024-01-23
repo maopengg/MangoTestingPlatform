@@ -5,12 +5,22 @@
 # @Author : 毛鹏
 import os
 
+from PyAutoTest.settings import BASE_DIR
 
-def __nuw_dir():
+
+def ensure_path_sep(path: str) -> str:
+    """兼容 windows 和 linux 不同环境的操作系统路径 """
+    if "/" in path:
+        path = os.sep.join(path.split("/"))
+
+    if "\\" in path:
+        path = os.sep.join(path.split("\\"))
+    return str(BASE_DIR) + path
+
+
+def nuw_dir():
     file = ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user', 'failure_screenshot']
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    current_dir = os.path.dirname(current_dir)
-    logs_dir = os.path.join(current_dir, "../../logs")
+    logs_dir = ensure_path_sep('/logs')
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
     for i in file:
@@ -18,4 +28,6 @@ def __nuw_dir():
         if not os.path.exists(subdirectory):
             os.makedirs(subdirectory)
 
-__nuw_dir()
+
+if __name__ == '__main__':
+    nuw_dir()

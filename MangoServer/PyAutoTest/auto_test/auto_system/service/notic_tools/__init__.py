@@ -75,11 +75,12 @@ class NoticeMain:
         success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
         create_time = test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S")
         execution_duration = test_suite.update_time - test_suite.create_time
+        success_rate = 100 if success == case_sum else round(success / case_sum * 100, 2)
         return TestReportModel(
             test_suite_id=test_suite_id,
             case_sum=case_sum,
             success=success,
-            success_rate=round(success / case_sum * 100, 2),
+            success_rate=success_rate,
             warning=case_result.filter(status=2).count(),
             fail=case_result.filter(status=StatusEnum.FAIL.value).count(),
             execution_duration=int(execution_duration.total_seconds()),

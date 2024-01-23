@@ -21,5 +21,5 @@ class UIConsumer:
 
     @convert_args(TestSuiteModel)
     def u_case_batch_result(self, data: TestSuiteModel):
-        TestSuiteReportUpdate.update_case_suite_status(data.id, data.status, data.run_status, data.error_message)
+        TestSuiteReportUpdate.update_case_suite_status(data)
 

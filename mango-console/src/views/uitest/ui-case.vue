@@ -625,12 +625,16 @@ function onClick(record: any) {
 }
 
 function onClick1(record: any) {
+  if (!record.test_suite_id) {
+    Message.error(`用例：${record.name}最近无执行记录`)
+    return
+  }
   const pageData = usePageData()
   pageData.setRecord(record)
   router.push({
     path: '/uitest/report/details',
     query: {
-      id: 871036342512
+      id: record.test_suite_id
     }
   })
 }

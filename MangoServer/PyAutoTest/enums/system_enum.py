@@ -37,3 +37,15 @@ class AutoTestTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "界面", 1: "接口", 2: "性能"}
+
+
+class CaseLevelEnum(BaseEnum):
+    """测试用例级别"""
+    P0 = 0
+    P1 = 1
+    P2 = 2
+    P3 = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "高", 1: "中", 2: "低", 3: "极低"}

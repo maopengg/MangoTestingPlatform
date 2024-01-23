@@ -53,8 +53,11 @@ class MysqlClient:
                 return result
             else:
                 # 更新、删除、新增操作
-                rows_affected = self.cur.execute(sql)
-                self.conn.commit()
-                return rows_affected
+                try:
+                    rows_affected = self.cur.execute(sql)
+                    self.conn.commit()
+                    return rows_affected
+                except OperationalError:
+                    raise SQLGrammarError('sql语句为空')
         except ProgrammingError:
             raise SQLGrammarError('sql语法错误，请检查sql')

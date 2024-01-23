@@ -329,7 +329,7 @@ function blurSave(item: any) {
   put({
     url: apiCaseDetailed,
     data: () => {
-      return replaceEmptyStringWithNull(data)
+      return data
     }
   })
     .then((res) => {
@@ -576,7 +576,7 @@ function clickAdd() {
   for (let obj of apiCaseData.selectData) {
     if (obj.key === apiCaseData.tabsKey) {
       if ([10, 50].includes(apiCaseData.tabsKey)) {
-        obj.data.push('')
+        obj.data.push('请添加sql语句')
       } else if ([30, 32].includes(apiCaseData.tabsKey)) {
         obj.data.push({ value: '', method: '', expect: '' })
       } else if ([40, 41].includes(apiCaseData.tabsKey)) {

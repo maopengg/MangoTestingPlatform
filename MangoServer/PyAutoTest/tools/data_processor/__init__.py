@@ -93,13 +93,6 @@ class DataProcessor(ObtainRandomData, DataClean):
         else:
             return self.replace_str(data)
 
-    @classmethod
-    def specify_replace(cls, data: str, replace: str):
-        replace_list = re.findall(r"\${.*?}", str(data))
-        if len(replace_list) > 1:
-            raise ReplaceElementLocatorError('一个元素内只能包含一个需要被替换的内容')
-        return data.replace(replace_list[0], replace)
-
     def replace_str(self, data: str) -> str:
         """
         用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
@@ -130,7 +123,7 @@ class DataProcessor(ObtainRandomData, DataClean):
                 raise CacheIsEmptyError(f'缓存中无法获取到：{key_text}的值')
             if key:
                 self.set_cache(key, value)
-            data = data.replace(replace_value, value)
+            data = data.replace(replace_value, str(value))
         return data
 
     @classmethod

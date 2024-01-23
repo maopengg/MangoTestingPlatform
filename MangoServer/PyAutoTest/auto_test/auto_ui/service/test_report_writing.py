@@ -41,10 +41,10 @@ class TestReportWriting:
         case.test_suite_id = data.test_suite_id
         case.save()
         # 保存用例结果
-        error_message = []
+        # error_message = []
         for page_steps_result in data.page_steps_result_list:
             # 保存测试步骤结果
-            serializer = UiPageStepsResultSerializers(data=data.dict())
+            serializer = UiPageStepsResultSerializers(data=page_steps_result.dict())
             if serializer.is_valid():
                 serializer.save()
             else:
@@ -52,9 +52,10 @@ class TestReportWriting:
             # 更新测试报告页面的状态和错误提示语
             case_step_detailed_dict = UiCaseStepsDetailed.objects.get(id=page_steps_result.case_step_details_id)
             case_step_detailed_dict.status = page_steps_result.status
-            case_step_detailed_dict.error_message = page_steps_result.error_message
+            if page_steps_result.status == StatusEnum.FAIL.value:
+                case_step_detailed_dict.error_message = page_steps_result.error_message
+                # error_message.append(page_steps_result.error_message)
             case_step_detailed_dict.save()
-            error_message.append(page_steps_result.error_message)
             for element_result in page_steps_result.element_result_list:
                 # 保存元素测试结果
                 serializer = UiEleResultSerializers(data=element_result.dict())
@@ -68,10 +69,9 @@ class TestReportWriting:
             case_result_serializer.save()
         else:
             log.error(f'增加用例结果，请联系管理员进行查看，错误信息：{case_result_serializer.errors}')
-
-        if data.is_batch == StatusEnum.SUCCESS.value:
-            TestSuiteReportUpdate.update_case_suite_status(data.test_suite_id,
-                                                           data.status,
-                                                           StatusEnum.SUCCESS.value,
-                                                           error_message
-                                                           )
+        # if data.is_batch == StatusEnum.SUCCESS.value:
+        #     TestSuiteReportUpdate.update_case_suite_status(data.test_suite_id,
+        #                                                    data.status,
+        #                                                    StatusEnum.SUCCESS.value,
+        #                                                    error_message
+        #                                                    )

@@ -134,6 +134,7 @@ class TestSuiteModel(BaseModel):
     project: int
     test_object: int
     run_status: int
+    is_notice: int | None
     status: int | None
     error_message: str | None
     case_list: list[CaseModel] | None = None

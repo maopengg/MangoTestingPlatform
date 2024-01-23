@@ -258,12 +258,18 @@ function initBarEcharts() {
           {
             name: '成功',
             data: res.data.success,
-            type: 'line'
+            type: 'line',
+            itemStyle: {
+                color: 'green', // Set the line color to green
+                }
           },
           {
             name: '失败',
             data: res.data.fail,
-            type: 'line'
+            type: 'line',
+            itemStyle: {
+                color: 'red', // Set the line color to red
+                }
           }
         ]
       })
@@ -317,8 +323,20 @@ function initPieEcharts() {
               show: false
             },
             data: [
-              { value: res.data.successSun, name: '用例通过数' },
-              { value: res.data.failSun, name: '用例失败数' }
+            {
+              value: res.data.successSun,
+              name: '用例通过数',
+              itemStyle: {
+                color: '#11a834' // Set the color to green for case pass count
+              }
+            },
+            {
+              value: res.data.failSun,
+              name: '用例失败数',
+              itemStyle: {
+                color: '#d34141' // Set the color to red for case fail count
+              }
+            }
             ]
           }
         ]

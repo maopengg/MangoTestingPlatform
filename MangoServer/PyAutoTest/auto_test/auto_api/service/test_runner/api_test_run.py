@@ -63,7 +63,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             response: ResponseDataModel = HTTPRequest.http(request_data_model)
         except MangoServerError as error:
             self.assertion_result.append(StatusEnum.FAIL.value)
-            self.error_message.append(error.msg)
+            self.error_message.append(f'接口：{case_detailed.api_info.name}{error.msg}')
             self.save_test_result(case_detailed)
             return False
         try:
@@ -74,7 +74,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             # 数据清除
             self.dump_data(case_detailed)
         except MangoServerError as error:
-            self.error_message.append(error.msg)
+            self.error_message.append(f'接口：{case_detailed.api_info.name}{error.msg}')
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.save_test_result(case_detailed, request_data_model, response)
             return False
