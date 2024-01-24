@@ -95,7 +95,6 @@ class TestSuiteReport(models.Model):
         ordering = ['-create_time']
 
 
-# 定时任务表
 class ScheduledTasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
@@ -112,7 +111,6 @@ class ScheduledTasks(models.Model):
         ordering = ['-id']
 
 
-# 定时任务对应的执行用例
 class TasksRunCaseList(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
@@ -122,3 +120,18 @@ class TasksRunCaseList(models.Model):
     class Meta:
         db_table = 'tasks_run_case_list'
         ordering = ['-id']
+
+
+class CacheData(models.Model):
+    """ 缓存表 """
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    describe = models.CharField(verbose_name="描述", max_length=1024, null=True)
+    key = models.CharField(verbose_name="key", max_length=128)
+    value = models.TextField(verbose_name="value", null=True)
+    value_type = models.SmallIntegerField(verbose_name="value的类型枚举", null=True)
+    case_type = models.SmallIntegerField(verbose_name="用例类型", null=True)
+    case_id = models.SmallIntegerField(verbose_name="绑定的用例ID", null=True)
+
+    class Meta:
+        db_table = 'cache_data'

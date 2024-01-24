@@ -7,7 +7,7 @@ import json
 
 from pydantic import BaseModel
 
-from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiResult
+from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCaseResult
 
 
 class RequestDataModel(BaseModel):
@@ -50,7 +50,7 @@ class CaseApiInfo:
             api_case_detailed = ApiCaseDetailed.objects.filter(case=self.case_id).order_by('case_sort')
         data = []
         for i in api_case_detailed:
-            api_result = ApiResult.objects.raw(
+            api_result = ApiCaseResult.objects.raw(
                 f'SELECT MAX(create_time) AS create_time,id, api_info_id,response_code,response_time,response_headers,response_text,response_json,`status` FROM `api_result` WHERE case_id = {self.case_id} AND api_info_id = {i.api_info.id} GROUP BY api_info_id;')
             data.append(RequestDataModel(
                 api_info_id=i.api_info.id,

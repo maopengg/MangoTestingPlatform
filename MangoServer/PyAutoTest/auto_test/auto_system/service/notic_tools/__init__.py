@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import logging
 
-from PyAutoTest.auto_test.auto_api.models import ApiResult
+from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEmail
@@ -70,7 +70,7 @@ class NoticeMain:
         if test_suite.type == AutoTestTypeEnum.UI.value:
             case_result = UiCaseResult.objects.filter(test_suite_id=test_suite_id)
         else:
-            case_result = ApiResult.objects.filter(test_suite_id=test_suite_id).order_by('create_time')
+            case_result = ApiCaseResult.objects.filter(test_suite_id=test_suite_id).order_by('create_time')
         case_sum = case_result.count()
         success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
         create_time = test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S")

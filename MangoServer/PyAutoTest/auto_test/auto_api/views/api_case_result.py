@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiResult
+from PyAutoTest.auto_test.auto_api.models import ApiCaseResult, ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -20,65 +20,63 @@ from PyAutoTest.tools.view_utils.response_data import ResponseData
 logger = logging.getLogger('api')
 
 
-class ApiResultSerializers(serializers.ModelSerializer):
+class ApiCaseResultSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = ApiResult
+        model = ApiCaseResult
         fields = '__all__'
 
 
-class ApiResultSerializersC(serializers.ModelSerializer):
+class ApiCaseResultSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     case = ApiCaseSerializers(read_only=True)
     api_info = ApiInfoSerializers(read_only=True)
 
     class Meta:
-        model = ApiResult
+        model = ApiCaseResult
         fields = '__all__'
 
 
-class ApiResultCRUD(ModelCRUD):
-    model = ApiResult
-    queryset = ApiResult.objects.all()
-    serializer_class = ApiResultSerializersC
-    serializer = ApiResultSerializers
+class ApiCaseResultCRUD(ModelCRUD):
+    model = ApiCaseResult
+    queryset = ApiCaseResult.objects.all()
+    serializer_class = ApiCaseResultSerializersC
+    serializer = ApiCaseResultSerializers
 
 
-class ApiResultViews(ViewSet):
-    model = ApiResult
-    serializer_class = ApiResultSerializers
+class ApiCaseResultViews(ViewSet):
+    model = ApiCaseResult
+    serializer_class = ApiCaseResultSerializers
 
     @action(methods=['get'], detail=False)
     def suite_case_result(self, request: Request):
-        result = self.model.objects.filter(test_suite_id=request.query_params.get('test_suite_id')).order_by(
-            'create_time')
+        test_suite_id = request.query_params.get('test_suite_id')
+        api_case_result_list = self.model.objects.filter(test_suite_id=test_suite_id).order_by('create_time')
         data = []
-        for i in result:
-            case_result_list = self.model.objects.filter(test_suite_id=request.query_params.get('test_suite_id'),
-                                                         case=i.case.id)
-            for case_result in case_result_list:
-                case_result_obj = {
-                    'title': case_result.case.name,
-                    'key': f'1-{case_result.id}',
+        for api_case_result in api_case_result_list:
+            case_result_obj = {
+                'title': api_case_result.case.name,
+                'key': f'1-{api_case_result.id}',
+                'children': []
+            }
+            api_info_result_list = ApiInfoResult.objects.filter(test_suite_id=test_suite_id,
+                                                                case=api_case_result.case.id).order_by('case_sort')
+            for api_info_result in api_info_result_list:
+                case_result_obj['children'].append({
+                    'title': api_info_result.api_info.name,
+                    'key': f'2-{api_info_result.id}',
                     'children': []
-                }
-                api_info_list = self.model.objects.filter(test_suite_id=request.query_params.get('test_suite_id'),
-                                                          case_id=i.case.id, api_info=case_result.api_info.id)
-                for api_info in api_info_list:
-                    case_result_obj['children'].append({
-                        'title': api_info.api_info.name,
-                        'key': f'2-{case_result.id}',
-                        'children': []
-                    })
-                data.append(case_result_obj)
+                })
+            data.append(case_result_obj)
+
         summary = [
-            {'name': '用例总数', 'value': result.count()},
-            {'name': '成功', 'value': result.filter(status=StatusEnum.SUCCESS.value).count()},
-            {'name': '警告', 'value': result.filter(status=2).count()},
-            {'name': '失败', 'value': result.filter(status=StatusEnum.FAIL.value).count()}
+            {'name': '用例总数', 'value': api_case_result_list.count()},
+            {'name': '成功', 'value': api_case_result_list.filter(status=StatusEnum.SUCCESS.value).count()},
+            {'name': '警告', 'value': api_case_result_list.filter(status=2).count()},
+            {'name': '失败', 'value': api_case_result_list.filter(status=StatusEnum.FAIL.value).count()}
         ]
         return ResponseData.success('查询不同类型结果成功', {'data': data, 'summary': summary})
 
@@ -89,7 +87,7 @@ class ApiResultViews(ViewSet):
         @param request:
         @return:
         """
-        ui_result = ApiResult.objects.raw(
+        ui_result = self.model.objects.raw(
             """
             SELECT
                 weeks.id,
@@ -121,7 +119,7 @@ class ApiResultViews(ViewSet):
                     COUNT(YEARWEEK(create_time)) AS total_count,
                     SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS status_0_total,
                     SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS status_1_total
-                FROM api_result
+                FROM api_case_result
                 WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
                 GROUP BY YEARWEEK(create_time)
             ) api_counts ON weeks.yearweek = api_counts.yearweek

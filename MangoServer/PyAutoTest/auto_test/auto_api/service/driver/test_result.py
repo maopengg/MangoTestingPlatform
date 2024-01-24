@@ -6,7 +6,8 @@
 import json
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiInfo
-from PyAutoTest.auto_test.auto_api.views.api_result import ApiResultCRUD
+from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD
+from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -41,28 +42,41 @@ class TestResult:
         """
         if request_data_model and response:
             data = {
-                'case_detailed': case_detailed.id,
+                'test_suite_id': self.test_suite_data['id'],
+                'case_sort': case_detailed.case_sort,
                 'case': case_detailed.case.id,
                 'api_info': case_detailed.api_info.id,
-                'test_suite_id': self.test_suite_data['id'],
+                'case_detailed': case_detailed.id,
+
                 'url': request_data_model.url,
-                'method': request_data_model.method,
-                'headers': json.dumps(response.headers, ensure_ascii=False),
-                'params': json.dumps(request_data_model.params, ensure_ascii=False),
-                'data': json.dumps(request_data_model.data, ensure_ascii=False),
-                'json': json.dumps(request_data_model.json_data, ensure_ascii=False),
-                'file': str(request_data_model.file),
+                'headers': json.dumps(response.headers, ensure_ascii=False) if response.headers else None,
+                'params': json.dumps(request_data_model.params, ensure_ascii=False) if request_data_model.params else None,
+                'data': json.dumps(request_data_model.data, ensure_ascii=False) if request_data_model.data else None,
+                'json': json.dumps(request_data_model.json_data, ensure_ascii=False) if request_data_model.json_data else None,
+                'file': str(request_data_model.file) if request_data_model.file else None,
+
                 'response_code': response.status_code,
                 'response_time': str(response.response_time),
                 'response_headers': json.dumps(response.response_headers, ensure_ascii=False),
-                'response_text': response.response_text,
-                'response_json': json.dumps(response.response_json, ensure_ascii=False),
-                'error_message': self.error_message[-1] if self.error_message else None,
+                'response_text': response.response_text if response.response_text else None,
+                'response_json': json.dumps(response.response_json,
+                                            ensure_ascii=False) if response.response_json else None,
+
                 'status': self.assertion_result[-1],
-                'all_cache': json.dumps(self.get_all(), ensure_ascii=False),
+                'error_message': self.error_message[-1] if self.error_message else None,
+                'all_cache': json.dumps(self.get_all(), ensure_ascii=False) if self.get_all() else None,
             }
-            ApiResultCRUD().inside_post(data)
+            ApiInfoResultCRUD().inside_post(data)
         self.update_api_info(case_detailed.api_info.id, self.assertion_result[-1])
+
+    def api_case_result_sava(self, case_id: int) -> None:
+        data = {
+            'case': case_id,
+            'test_suite_id': self.test_suite_data['id'],
+            'error_message': self.error_message[-1] if self.error_message else None,
+            'status': self.assertion_result[-1],
+        }
+        ApiCaseResultCRUD().inside_post(data)
 
     def update_case_or_suite(self, case_id: int):
         """
@@ -70,11 +84,12 @@ class TestResult:
         @return:
         """
         api_case = ApiCase.objects.get(id=case_id)
+        api_case.test_suite_id = self.test_suite_report.get('id')
         if StatusEnum.FAIL.value in self.assertion_result:
             self.update_test_suite(StatusEnum.FAIL.value)
             api_case.status = StatusEnum.FAIL.value
         else:
-            self.update_test_suite(StatusEnum.FAIL.value)
+            self.update_test_suite(StatusEnum.SUCCESS.value)
             api_case.status = StatusEnum.SUCCESS.value
         api_case.save()
 
@@ -98,7 +113,7 @@ class TestResult:
         """
         test_suite_data = {
             'id': self.test_suite_data['id'],
-            'error_message': json.dumps(self.error_message, ensure_ascii=False),
+            'error_message': json.dumps(self.error_message, ensure_ascii=False) if self.error_message else None,
             'run_status': StatusEnum.SUCCESS.value,
             'status': status
         }
