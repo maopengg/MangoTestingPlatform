@@ -100,7 +100,7 @@
                   <a-space direction="vertical" fill>
                     <a-space v-for="(inputObj, index) of item.data" :key="index">
                       <a-space>
-                        <a-input placeholder="请输入前置sql" v-model="item.data[index]" @blur="blurSave(item)" />
+                        <a-input placeholder="请输入" v-model="item.data[index]" @blur="blurSave(item)" />
                         <a-button type="text" size="small" status="danger" @click="removeFrontSql(item, index)">移除 </a-button>
                       </a-space>
                     </a-space>
@@ -109,7 +109,7 @@
                 <template v-else-if="item.type === 'assertion'">
                   <a-space direction="vertical">
                     <a-space v-for="(value, index) of item.data" :key="index">
-                      <a-input placeholder="请输入sql语句" v-model="item.data[index].value" @blur="blurSave(item)" />
+                      <a-input placeholder="请输入" v-model="item.data[index].value" @blur="blurSave(item)" />
                       <a-cascader
                         v-model="item.data[index].method"
                         :options="apiCaseData.ass"
@@ -119,7 +119,7 @@
                         value-key="key"
                         @blur="blurSave(item)"
                       />
-                      <a-input placeholder="请输入预期结果" v-model="item.data[index].expect" @blur="blurSave(item)" />
+                      <a-input placeholder="请输入" v-model="item.data[index].expect" @blur="blurSave(item)" />
                       <a-button type="text" status="danger" @click="removeFrontSql(item, index)">移除</a-button>
                     </a-space>
                   </a-space>
@@ -127,8 +127,8 @@
                 <template v-else-if="item.type === 'posterior'">
                   <a-space direction="vertical">
                     <a-space v-for="(value, index) of item.data" :key="index">
-                      <a-input placeholder="请输入前置sql" v-model="item.data[index].key" @blur="blurSave(item)" />
-                      <a-input placeholder="输入提取出的值的key" v-model="item.data[index].value" @blur="blurSave(item)" />
+                      <a-input placeholder="请输入" v-model="item.data[index].key" @blur="blurSave(item)" />
+                      <a-input placeholder="请输入" v-model="item.data[index].value" @blur="blurSave(item)" />
 
                       <a-button type="text" size="small" status="danger" @click="removeFrontSql(item, index)">移除 </a-button>
                     </a-space>
@@ -374,7 +374,6 @@ function doRefresh(test_suite: any = null) {
   if (test_suite) {
     test_suite_id = test_suite
   }
-  console.log(test_suite_id)
   get({
     url: apiCaseDetailed,
     data: () => {

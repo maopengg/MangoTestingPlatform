@@ -29,7 +29,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             if value is not None and key != 'file':
                 value = self.replace(value)
                 if key == 'headers' and isinstance(value, str):
-                    value = self.loads(value)
+                    value = self.replace(self.loads(value))
                 setattr(request_data_model, key, value)
             elif key == 'file':
                 if request_data_model.file:
@@ -138,18 +138,25 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         except AssertionError:
             raise ResponseValueAssError('响应jsonpath断言失败')
 
-    def __assertion_sql(self, sql: list):
+    def __assertion_sql(self, sql_list: list[dict]):
         """
-        sql断言--还需要完善
+        sql断言
         @param sql:
         @return:
         """
         try:
             if self.is_db:
-                res = self.mysql_obj.execute(sql)
-                log.info(res)
+                for sql in sql_list:
+                    value = self.mysql_obj.execute(self.replace(sql.get('value')))
+                    if value:
+                        _dict = {'value': str(list(value[0].values())[0])}
+                    else:
+                        _dict = {'value': None}
+                    if sql.get('expect'):
+                        _dict['expect'] = sql.get('expect')
+                    getattr(self, sql['method'])(**_dict)
         except AssertionError:
-            raise SqlAssError('sql断言失败')
+            raise ResponseValueAssError('响应jsonpath断言失败')
 
     @classmethod
     def __assertion_response_whole(cls, actual, expect):

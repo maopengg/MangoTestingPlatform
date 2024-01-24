@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import logging
 
+from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -14,6 +15,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.test_runner.api_info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.apimodel import ResponseDataModel
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
@@ -84,3 +86,17 @@ class ApiInfoViews(ViewSet):
             api_info_obj.type = _type
             api_info_obj.save()
         return ResponseData.success('修改状态成功', )
+
+    @action(methods=['POST'], detail=False)
+    def copy_api_info(self, request: Request):
+        api_info = self.model.objects.get(id=request.data.get('id'))
+        api_info = model_to_dict(api_info)
+        api_info['status'] = StatusEnum.FAIL.value
+        api_info['name'] = '(副本)' + api_info.get('name')
+        del api_info['id']
+        serializer = self.serializer_class(data=api_info)
+        if serializer.is_valid():
+            serializer.save()
+            return ResponseData.success('复制用例成功', serializer.data)
+        else:
+            return ResponseData.fail(f'{str(serializer.errors)}', )
