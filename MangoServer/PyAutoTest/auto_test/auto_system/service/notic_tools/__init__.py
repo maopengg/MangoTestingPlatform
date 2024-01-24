@@ -62,7 +62,7 @@ class NoticeMain:
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         email = SendEmail(i, test_report)
-        email.send_main('测试个数')
+        email.send_main()
 
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:

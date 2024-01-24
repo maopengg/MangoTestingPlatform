@@ -26,7 +26,7 @@ class SendEmail:
         self.stamp_key = config['stamp_key']
         self.test_report = test_report
 
-    def send_main(self, case_id) -> None:
+    def send_main(self) -> None:
         """
         发送邮件
         :return:
@@ -44,7 +44,7 @@ class SendEmail:
 
 
         **********************************
-        芒果自动化平台地址：https://{self.test_report.ip}:5173/index
+        芒果自动化平台地址：https://{self.test_report.ip}:5173
         详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
         """
         try:
@@ -53,7 +53,6 @@ class SendEmail:
                         f"{self.email_host}")
         except BaseException as e:
             logger.error(f"邮件发送失败，失败原因：{e},发送信息如下："
-                         f"用例id：{case_id},"
                          f"项目名称：{self.project},"
                          f"发送用户：{self.send_user},"
                          f"发送列表：{self.send_list},"
