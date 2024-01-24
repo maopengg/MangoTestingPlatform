@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiCaseResult, ApiInfoResult
+from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
@@ -60,6 +60,10 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         data = []
         for i in api_case_detailed:
             api_info_result = ApiInfoResult.objects.filter(case_detailed=i.id, test_suite_id=test_suite_id).first()
+            if api_info_result:
+                status = '通过' if api_info_result.status else '失败'
+            else:
+                status = None
             data.append({
                 'id': i.id,
                 'api_info_id': i.api_info.id,
@@ -82,21 +86,27 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 'front': [{'key': 10, 'title': '前置sql', 'name': 'front_sql', 'data': i.front_sql, 'type': 'list'}],
                 'response': [{'key': 20, 'title': '基础信息',
                               'data': [{'label': 'url', 'value': api_info_result.url if api_info_result else None},
-                                       {'label': 'code', 'value': api_info_result.response_code if api_info_result else None},
-                                       {'label': '响应时间', 'value': api_info_result.response_time if api_info_result else None},
-                                       {'label': '错误提示', 'value': api_info_result.error_message if api_info_result else None},
-                                       {'label': '测试结果', 'value': api_info_result.status if api_info_result else None},
+                                       {'label': 'code',
+                                        'value': api_info_result.response_code if api_info_result else None},
+                                       {'label': '响应时间',
+                                        'value': api_info_result.response_time if api_info_result else None},
+                                       {'label': '测试结果', 'value': status},
+                                       {'label': '错误提示',
+                                        'value': api_info_result.error_message if api_info_result else None},
                                        ],
                               'type': 'descriptions'},
-                             {'key': 21, 'title': '响应头', 'data': api_info_result.response_headers if api_info_result else None,
+                             {'key': 21, 'title': '响应头',
+                              'data': api_info_result.response_headers if api_info_result else None,
                               'type': 'text'},
-                             {'key': 22, 'title': '响应文本', 'data': api_info_result.response_text if api_info_result else None,
+                             {'key': 22, 'title': '响应文本',
+                              'data': api_info_result.response_text if api_info_result else None,
                               'type': 'text'}
                              ],
                 'assertion': [
                     {
                         'key': 30,
                         'title': 'sql断言',
+                        'name': 'ass_sql',
                         'data': i.ass_sql,
                         'type': 'assertion'
                     },
@@ -104,7 +114,8 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                      'type': 'textarea'},
                     {
                         'key': 32,
-                        'title': '响应值断言', 'name': 'ass_response_value',
+                        'title': '响应值断言',
+                        'name': 'ass_response_value',
                         'data': i.ass_response_value,
                         'type': 'assertion'
                     }

@@ -168,9 +168,9 @@
                   <a-dropdown trigger="hover">
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
-                      <!--                      <a-doption>-->
-                      <!--                        <a-button type="text" size="mini" @click="pageStepsCody(record)">复制</a-button>-->
-                      <!--                      </a-doption>-->
+                      <a-doption>
+                        <a-button type="text" size="mini" @click="apiInfoCopy(record)">复制</a-button>
+                      </a-doption>
                       <a-doption>
                         <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                       </a-doption>
@@ -263,7 +263,9 @@ import {
   systemEnumMethod,
   userProjectModuleGetAll,
   uiConfigNewBrowserObj,
-  apiPutApiInfoType
+  apiPutApiInfoType,
+  uiPageCopy,
+  apiCopyInfo
 } from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
@@ -910,7 +912,21 @@ function getProjectModule(projectId: number) {
     })
     .catch(console.log)
 }
-
+function apiInfoCopy(record: any) {
+  post({
+    url: apiCopyInfo,
+    data: () => {
+      return {
+        id: record.id
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      doRefresh()
+    })
+    .catch(console.log)
+}
 onMounted(() => {
   nextTick(async () => {
     doRefresh()

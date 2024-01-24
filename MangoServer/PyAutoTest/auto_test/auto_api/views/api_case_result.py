@@ -131,9 +131,9 @@ class ApiCaseResultViews(ViewSet):
             'fail': []
         }
         for row in ui_result:
-            result_dict['success'].append(row.status_0_total)
+            result_dict['success'].append(row.status_1_total)
         for row in ui_result:
-            result_dict['fail'].append(row.status_1_total)
+            result_dict['fail'].append(row.status_0_total)
         result_dict['successSun'] = sum(result_dict['success'])
         result_dict['failSun'] = sum(result_dict['fail'])
         return ResponseData.success(f'获取图表数据成功', result_dict)

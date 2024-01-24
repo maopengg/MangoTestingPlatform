@@ -11,17 +11,22 @@ class WhatIsItAssertion:
 
     @staticmethod
     def p_is_not_none(value):
-        """是null"""
+        """不是null"""
         assert_that(value).is_not_none()
 
     @staticmethod
+    def p_is_none(value):
+        """是null"""
+        assert_that(value).is_none()
+
+    @staticmethod
     def p_is_empty(value):
-        """是空"""
+        """是空字符串"""
         assert_that(value).is_empty()
 
     @staticmethod
     def p_is_not_empty(value):
-        """不是空"""
+        """不是空符串"""
         assert_that(value).is_not_empty()
 
     @staticmethod
