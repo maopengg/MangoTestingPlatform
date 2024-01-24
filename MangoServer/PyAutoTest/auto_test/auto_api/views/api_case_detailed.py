@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiResult
+from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiCaseResult, ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
@@ -51,6 +51,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
     def get(self, request: Request):
         case_id = request.query_params.get('case_id')
         api_info_id = request.query_params.get('api_info_id')
+        test_suite_id = request.query_params.get('test_suite_id')
         if api_info_id:
             api_case_detailed = ApiCaseDetailed.objects.filter(case=case_id, api_info=api_info_id).order_by(
                 'case_sort')
@@ -58,15 +59,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
             api_case_detailed = ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
         data = []
         for i in api_case_detailed:
-            sql = f"""
-            SELECT id, api_info_id,response_code,response_time,response_headers,response_text,response_json,`status`
-            FROM `api_result`  
-            WHERE `case_id` = {case_id} AND `case_detailed_id` = {i.id} 
-            ORDER BY `create_time` DESC
-            LIMIT 1;
-            """
-            api_result = ApiResult.objects.raw(sql)
-
+            api_info_result = ApiInfoResult.objects.filter(case_detailed=i.id, test_suite_id=test_suite_id).first()
             data.append({
                 'id': i.id,
                 'api_info_id': i.api_info.id,
@@ -74,7 +67,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 'name': i.api_info.name,
                 'method': i.api_info.method,
                 'client': i.api_info.client,
-                'status': api_result[0].status if api_result else None,
+                'status': api_info_result.status if api_info_result else None,
                 'request': [{'key': 6, 'title': 'url', 'name': 'url', 'data': i.url, 'type': 'textarea'},
                             {'key': 1, 'title': '请求头', 'name': 'header', 'data': i.header, 'type': 'textarea'},
                             {'key': 2, 'title': '参数', 'name': 'params',
@@ -88,16 +81,16 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                              'data': json.dumps(i.file, ensure_ascii=False) if i.file else None, 'type': 'textarea'}],
                 'front': [{'key': 10, 'title': '前置sql', 'name': 'front_sql', 'data': i.front_sql, 'type': 'list'}],
                 'response': [{'key': 20, 'title': '基础信息',
-                              'data': [{'label': 'url', 'value': api_result[0].url if api_result else None},
-                                       {'label': 'code', 'value': api_result[0].response_code if api_result else None},
-                                       {'label': '响应时间', 'value': api_result[0].response_time if api_result else None},
-                                       {'label': '错误提示', 'value': api_result[0].error_message if api_result else None},
-                                       {'label': '测试结果', 'value': api_result[0].status if api_result else None},
+                              'data': [{'label': 'url', 'value': api_info_result.url if api_info_result else None},
+                                       {'label': 'code', 'value': api_info_result.response_code if api_info_result else None},
+                                       {'label': '响应时间', 'value': api_info_result.response_time if api_info_result else None},
+                                       {'label': '错误提示', 'value': api_info_result.error_message if api_info_result else None},
+                                       {'label': '测试结果', 'value': api_info_result.status if api_info_result else None},
                                        ],
                               'type': 'descriptions'},
-                             {'key': 21, 'title': '响应头', 'data': api_result[0].response_headers if api_result else None,
+                             {'key': 21, 'title': '响应头', 'data': api_info_result.response_headers if api_info_result else None,
                               'type': 'text'},
-                             {'key': 22, 'title': '响应文本', 'data': api_result[0].response_text if api_result else None,
+                             {'key': 22, 'title': '响应文本', 'data': api_info_result.response_text if api_info_result else None,
                               'type': 'text'}
                              ],
                 'assertion': [
@@ -144,7 +137,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                     {
                         'key': 60,
                         'title': '缓存数据',
-                        'data': api_result[0].all_cache if api_result else None,
+                        'data': api_info_result.all_cache if api_info_result else None,
                         'type': 'text'
                     }
                 ]

@@ -48,6 +48,7 @@ export const apiInfoName = '/api/info/name'
 export const apiCaseSynchronous = '/api/case/synchronous'
 export const apiRun = '/api/run'
 export const apiResult = '/api/result'
+export const apiInfoResult = '/api/info/result'
 export const apiResultWeek = '/api/result/week'
 export const apiResultSuiteCase = '/api/result/suite/case'
 

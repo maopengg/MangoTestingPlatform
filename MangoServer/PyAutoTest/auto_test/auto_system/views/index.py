@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiResult
+from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiCaseResult
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import UserLogs
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
@@ -25,7 +25,7 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        api_result = ApiResult.objects.raw(
+        api_result = ApiCaseResult.objects.raw(
             """
                 SELECT
                     weeks.id,
@@ -53,7 +53,7 @@ class IndexViews(ViewSet):
                     id,
                         YEARWEEK(create_time) AS yearweek, 
                         COUNT(YEARWEEK(create_time)) AS total_count
-                    FROM api_result
+                    FROM api_case_result
                     WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
                     GROUP BY YEARWEEK(create_time)
                 ) api_counts ON weeks.yearweek = api_counts.yearweek
@@ -135,7 +135,7 @@ class IndexViews(ViewSet):
                                     [
                                         {'value': UiCaseResult.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
-                                        {'value': ApiResult.objects.count(),
+                                        {'value': ApiCaseResult.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)}
                                     ])
 

@@ -39,12 +39,13 @@
         </a-space>
         <a-space direction="vertical" style="width: 60%">
           <a-tabs default-active-key="1">
-            <a-tab-pane key="1" title="基础信息">
+            <a-tab-pane key="1" title="接口信息">
               <a-space direction="vertical">
                 <p>接口ID：{{ reportDetailsData.apiResult.api_info?.id }}</p>
                 <p>接口名称：{{ reportDetailsData.apiResult.api_info?.name }}</p>
-                <p>请求方法：{{ reportDetailsData.apiResult.api_info?.method }}</p>
-                <p>请求端：{{ reportDetailsData.apiResult.api_info?.client }}</p>
+                <p>请求方法：{{ reportDetailsData.methodType[reportDetailsData.apiResult.api_info?.method] }}</p>
+                <p>请求端：{{ reportDetailsData.clientType[reportDetailsData.apiResult.api_info?.client] }}</p>
+                <p>请求url：{{ reportDetailsData.apiResult.url }}</p>
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="2" title="请求头"> {{ reportDetailsData.apiResult.headers }}</a-tab-pane>
@@ -65,6 +66,7 @@
             <a-tab-pane key="8" title="响应头"> {{ reportDetailsData.apiResult.response_headers }}</a-tab-pane>
             <a-tab-pane key="9" title="响应体"> {{ reportDetailsData.apiResult.response_text }}</a-tab-pane>
             <a-tab-pane key="10" title="缓存数据"> {{ reportDetailsData.apiResult.all_cache }}</a-tab-pane>
+            <a-tab-pane key="11" title="断言数据"> {{ reportDetailsData.apiResult.all_cache }}</a-tab-pane>
           </a-tabs>
         </a-space>
       </div>
@@ -73,7 +75,7 @@
 </template>
 <script lang="ts" setup>
 import { reactive, onMounted, nextTick } from 'vue'
-import { apiResultSuiteCase, apiResult } from '@/api/url'
+import { apiResultSuiteCase, apiInfoResult, systemEnumMethod, systemEnumEnd } from '@/api/url'
 import { get } from '@/api/http'
 import { usePageData } from '@/store/page-data'
 
@@ -82,7 +84,9 @@ const pageData: any = usePageData()
 const reportDetailsData: any = reactive({
   treeData: [],
   summary: [],
-  apiResult: {}
+  apiResult: {},
+  clientType: [],
+  methodType: []
 })
 
 function click(key: string) {
@@ -90,7 +94,7 @@ function click(key: string) {
     return
   }
   get({
-    url: apiResult,
+    url: apiInfoResult,
     data: () => {
       return {
         id: key.substring(2)
@@ -124,10 +128,34 @@ function doRefresh() {
     })
     .catch(console.log)
 }
+function doMethodType() {
+  get({
+    url: systemEnumMethod
+  })
+    .then((res) => {
+      res.data.forEach((item: any) => {
+        reportDetailsData.methodType.push(item.title)
+      })
+    })
+    .catch(console.log)
+}
 
+function doClientType() {
+  get({
+    url: systemEnumEnd
+  })
+    .then((res) => {
+      res.data.forEach((item: any) => {
+        reportDetailsData.clientType.push(item.title)
+      })
+    })
+    .catch(console.log)
+}
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
+    doMethodType()
+    doClientType()
   })
 })
 </script>

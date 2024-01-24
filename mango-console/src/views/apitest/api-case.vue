@@ -581,7 +581,8 @@ function onStep(record: any) {
     path: '/apitest/details',
     query: {
       case_id: record.id,
-      project: record.project.id
+      project: record.project.id,
+      test_suite_id: record.test_suite_id
     }
   })
 }

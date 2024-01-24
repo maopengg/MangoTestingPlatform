@@ -297,17 +297,6 @@ function clickRadioGroup() {
   }
 }
 
-function replaceEmptyStringWithNull(obj: any) {
-  for (let key in obj) {
-    if (typeof obj[key] === 'string' && obj[key] === '') {
-      obj[key] = null
-    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-      replaceEmptyStringWithNull(obj[key])
-    }
-  }
-  return obj
-}
-
 function blurSave(item: any) {
   let data: any = {
     id: apiCaseData.selectDataObj.id
@@ -380,12 +369,18 @@ function doClientType() {
     .catch(console.log)
 }
 
-function doRefresh() {
+function doRefresh(test_suite: any = null) {
+  let test_suite_id = route.query.test_suite_id
+  if (test_suite) {
+    test_suite_id = test_suite
+  }
+  console.log(test_suite_id)
   get({
     url: apiCaseDetailed,
     data: () => {
       return {
-        case_id: route.query.case_id
+        case_id: route.query.case_id,
+        test_suite_id: test_suite_id
       }
     }
   })
@@ -414,7 +409,7 @@ function caseRun(case_sort: number | null) {
   })
     .then((res) => {
       Message.success(res.msg)
-      doRefresh()
+      doRefresh(res.data.test_suite)
     })
     .catch(console.log)
 }

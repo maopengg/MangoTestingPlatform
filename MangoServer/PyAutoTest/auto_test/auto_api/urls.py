@@ -8,8 +8,9 @@ from django.urls import path
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
+from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
-from PyAutoTest.auto_test.auto_api.views.api_result import ApiResultCRUD, ApiResultViews
+from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD, ApiCaseResultViews
 from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 
 urlpatterns = [
@@ -31,9 +32,11 @@ urlpatterns = [
     path("public/put/status", ApiPublicViews.as_view({'put': 'put_status'})),
     path("public/set/cache", ApiPublicViews.as_view({'get': 'get_set_cache'})),
     #
-    path("result", ApiResultCRUD.as_view()),
-    path("result/week", ApiResultViews.as_view({'get': 'case_result_week_sum'})),
-    path("result/suite/case", ApiResultViews.as_view({'get': 'suite_case_result'})),
+    path("result", ApiCaseResultCRUD.as_view()),
+    path("result/week", ApiCaseResultViews.as_view({'get': 'case_result_week_sum'})),
+    path("result/suite/case", ApiCaseResultViews.as_view({'get': 'suite_case_result'})),
+    #
+    path("info/result", ApiInfoResultCRUD.as_view()),
     #
     path("run", RunApiCase.as_view({'get': 'api_run'})),
     path("run/batch", RunApiCase.as_view({'get': 'api_batch_run'})),

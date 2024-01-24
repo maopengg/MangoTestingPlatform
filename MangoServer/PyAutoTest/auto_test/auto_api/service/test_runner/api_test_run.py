@@ -36,6 +36,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
         for api_info in case_list:
             if not self.run_api(api_info):
                 break
+        self.api_case_result_sava(case_id)
         self.update_case_or_suite(case_id)
         return {
             'test_suite': self.test_suite_data['id'],
@@ -84,7 +85,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
 
     def get_case(self, case_id: int):
         if self.case_sort:
-            return ApiCaseDetailed.objects.filter(case=case_id, case_sort__lte=self.case_sort).order_by(
-                'case_sort')
+            return ApiCaseDetailed.objects.filter(case=case_id, case_sort__lte=self.case_sort).order_by('case_sort')
         else:
             return ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
