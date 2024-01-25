@@ -16,6 +16,9 @@ class MysqlConingModel(BaseModel):
 
 class TestReportModel(BaseModel):
     test_suite_id: int
+    project_id: str
+    project_name: str
+    test_environment: str
     case_sum: int
     success: int
     success_rate: float
@@ -24,5 +27,14 @@ class TestReportModel(BaseModel):
     execution_duration: int
     test_time: str
     ip: str
-    test_environment: str
-    project: str
+
+
+class WeChatNoticeModel(BaseModel):
+    webhook: str
+
+
+class EmailNoticeModel(BaseModel):
+    send_user: str
+    email_host: str
+    stamp_key: str
+    send_list: list

@@ -18,6 +18,12 @@ class JsonPathError(MangoServerError):
         self.msg = msg
 
 
+class JsonSerializeError(MangoServerError):
+    def __init__(self, msg):
+        self.code = 300
+        self.msg = msg
+
+
 class ValueTypeError(MangoServerError):
     def __init__(self, msg):
         self.code = 300

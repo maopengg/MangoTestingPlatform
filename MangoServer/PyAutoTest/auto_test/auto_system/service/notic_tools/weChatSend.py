@@ -7,9 +7,10 @@ import logging
 
 import requests
 
-from PyAutoTest.auto_test.auto_system.models import NoticeConfig, TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
-from PyAutoTest.models.tools_model import TestReportModel
+from PyAutoTest.models.tools_model import TestReportModel, WeChatNoticeModel
 
 logger = logging.getLogger('system')
 
@@ -19,20 +20,21 @@ class WeChatSend:
     企业微信消息通知
     """
 
-    def __init__(self, notice_obj: NoticeConfig, test_report: TestReportModel):
-        self.config = notice_obj
-        self.headers = {"Content-Type": "application/json"}
+    def __init__(self, notice_config: WeChatNoticeModel, test_report: TestReportModel):
+        self.notice_config = notice_config
         self.test_report = test_report
+
+        self.headers = {"Content-Type": "application/json"}
 
     def send_wechat_notification(self):
         """
         发送企业微信通知
         :return:
         """
-        t = TestObject.objects.filter(project=self.config.project.id).first()
+        t = TestObject.objects.filter(project=self.test_report.project_id).first()
 
-        text = f"""【{self.config.project.name}自动化通知】
-                    >测试项目：<font color=\"info\">{self.test_report.project}</font>
+        text = f"""【{ClientNameEnum.PLATFORM_CHINESE.value}通知】
+                    >测试项目：<font color=\"info\">{self.test_report.project_name}</font>
                     >测试环境：{self.test_report.test_environment}
                     >测试套ID：{self.test_report.test_suite_id}
                     >
@@ -47,7 +49,7 @@ class WeChatSend:
                     >测试时间：<font color=\"comment\">{self.test_report.test_time}</font>
                     >
                     >非相关负责人员可忽略此消息。
-                    >测试报告，点击查看>>[测试报告入口](https://{self.test_report.ip}:5173)
+                    >测试报告，点击查看>>[测试报告入口](http://{self.test_report.ip}:8002/#/login)
                """
         self.send_markdown(text)
 
@@ -58,10 +60,10 @@ class WeChatSend:
         :return:
         """
         _data = {"msgtype": "markdown", "markdown": {"content": content}}
-        res = requests.post(url=self.config.config, json=_data, headers=self.headers)
+        res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
-            logger.error(res.json())
-            raise SendMessageError("企业微信「MarkDown类型」消息发送失败")
+            logger.error(res.text)
+            raise SendMessageError("企业微信消息发送失败，请检查webhook地址是否正确可调用")
 
     def send_file_msg(self, file):
         """
@@ -70,7 +72,7 @@ class WeChatSend:
         """
 
         _data = {"msgtype": "file", "file": {"media_id": self.__upload_file(file)}}
-        res = requests.post(url=self.config.config, json=_data, headers=self.headers)
+        res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
             logger.error(res.json())
             raise SendMessageError("企业微信「file类型」消息发送失败")
@@ -82,7 +84,7 @@ class WeChatSend:
         :return:
         """
         data = {"file": open(file, "rb")}
-        res = requests.post(url=self.config.config, files=data).json()
+        res = requests.post(url=self.notice_config.webhook, files=data).json()
         return res['media_id']
 
     def send_text(self, content, mentioned_mobile_list=None):
@@ -100,7 +102,7 @@ class WeChatSend:
             if len(mentioned_mobile_list) >= 1:
                 for i in mentioned_mobile_list:
                     if isinstance(i, str):
-                        res = requests.post(url=self.config.config, json=_data, headers=self.headers)
+                        res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
                         if res.json()['errcode'] != 0:
                             logger.error(res.json())
                             raise SendMessageError("企业微信「文本类型」消息发送失败")

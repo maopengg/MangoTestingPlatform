@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
+import json
 import logging
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
@@ -14,7 +15,8 @@ from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.models.tools_model import TestReportModel
+from PyAutoTest.exceptions.tools_exception import JsonSerializeError
+from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
 
 log = logging.getLogger('system')
 
@@ -46,7 +48,8 @@ class NoticeMain:
             test_time='2024-01-22 06:35:58',
             ip='61.183.9.60',
             test_environment='手动测试环境',
-            project='手动触发项目')
+            project_name='手动触发项目',
+            project_id=0)
         if notice_obj.type == NoticeEnum.MAIL.value:
             cls.__wend_mail_send(notice_obj, test_report)
         elif notice_obj.type == NoticeEnum.WECOM.value:
@@ -56,12 +59,22 @@ class NoticeMain:
 
     @classmethod
     def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
-        wechat = WeChatSend(i, test_report)
+
+        wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report)
         wechat.send_wechat_notification()
 
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
-        email = SendEmail(i, test_report)
+        try:
+            config = json.loads(i.config)
+        except json.decoder.JSONDecodeError:
+            raise JsonSerializeError('邮件的配置详情不是json格式')
+        email = SendEmail(EmailNoticeModel(
+            send_user=config.get('send_user'),
+            email_host=config.get('email_host'),
+            stamp_key=config.get('stamp_key'),
+            send_list=config.get('send_list'),
+        ), test_report)
         email.send_main()
 
     @classmethod
@@ -87,4 +100,5 @@ class NoticeMain:
             test_time=create_time,
             ip='61.183.9.60',
             test_environment=test_suite.test_object.name,
-            project=test_suite.project.name)
+            project_name=test_suite.project.name,
+            project_id=test_suite.project.id)
