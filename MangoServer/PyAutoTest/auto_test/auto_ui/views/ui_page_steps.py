@@ -14,9 +14,8 @@ from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiPageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -65,7 +64,7 @@ class UiPageStepsViews(ViewSet):
                 steps_id=int(request.GET.get("page_step_id")))
         except MangoServerError as e:
             return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json.dict())
+        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json.dict())
 
     @action(methods=['put'], detail=False)
     def put_type(self, request: Request):

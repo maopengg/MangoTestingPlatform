@@ -11,8 +11,8 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.models import UiElement
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
+from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
@@ -62,7 +62,7 @@ class UiElementViews(ViewSet):
             UiTestRun(request.user.get('id'), request.data.get("testing_environment")).element(request.data)
         except MangoServerError as e:
             return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{DRIVER}已收到元素，正在定位中...', )
+        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到元素，正在定位中...', )
 
     @action(methods=['get'], detail=False)
     def get_ele_name(self, request: Request):

@@ -7,8 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
-from PyAutoTest.settings import DRIVER, SERVER, WEB
 
 
 class SocketUserModel(BaseModel):
@@ -59,8 +59,9 @@ class SocketUser:
                 if i.web_obj:
                     return i.web_obj
                 else:
-                    raise SocketClientNotPresentError(f'发送任务失败，请确保{WEB}已连接{SERVER}')
-        raise SocketClientNotPresentError(f'发送任务失败，请确保{WEB}已连接{SERVER}')
+                    raise SocketClientNotPresentError(
+                        f'发送任务失败，请确保{ClientNameEnum.WEB.value}已连接{ClientNameEnum.SERVER.value}')
+        raise SocketClientNotPresentError(f'发送任务失败，请确保{ClientNameEnum.WEB.value}已连接{ClientNameEnum.SERVER.value}')
 
     @classmethod
     def get_user_client_obj(cls, user_key):
@@ -69,8 +70,9 @@ class SocketUser:
                 if i.client_obj:
                     return i.client_obj
                 else:
-                    raise SocketClientNotPresentError(f'发送任务失败，请确保{DRIVER}已连接{SERVER}')
-        raise SocketClientNotPresentError(f'发送任务失败，请确保{DRIVER}已连接{SERVER}')
+                    raise SocketClientNotPresentError(
+                        f'发送任务失败，请确保{ClientNameEnum.DRIVER.value}已连接{ClientNameEnum.SERVER.value}')
+        raise SocketClientNotPresentError(f'发送任务失败，请确保{ClientNameEnum.DRIVER.value}已连接{ClientNameEnum.SERVER.value}')
 
     @classmethod
     def get_all_user(cls):

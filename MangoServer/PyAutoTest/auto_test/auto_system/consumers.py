@@ -10,14 +10,13 @@ import logging
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
-from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import SocketEnum
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.enums.tools_enum import ClientTypeEnum
+from PyAutoTest.enums.system_enum import SocketEnum
+from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.settings import DRIVER, SERVER, WEB
 
 logger = logging.getLogger('system')
 
@@ -37,25 +36,28 @@ class ChatConsumer(WebsocketConsumer):
         """
         self.user = self.scope.get('query_string').decode()
         self.accept()
-        if self.scope.get('path') == SocketEnum.web_path.value:
+        if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.set_user_web_obj(self.user, self)
             self.send(SocketDataModel(code=200,
                                       msg=f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
                                       ).json())
-        elif self.scope.get('path') == SocketEnum.client_path.value:
-            if self.user == SocketEnum.common_actuator_name.value:
-                self.send(SocketDataModel(code=200, msg=f'{DRIVER}已连接上{SERVER}！').json())
+        elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
+            if self.user == SocketEnum.ADMIN.value:
+                self.send(SocketDataModel(code=200,
+                                          msg=f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！').json())
             else:
 
-                self.send(SocketDataModel(code=200, msg=f'{DRIVER}已连接上{SERVER}！').json())
+                self.send(SocketDataModel(code=200,
+                                          msg=f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！').json())
                 try:
                     self.active_send(SocketDataModel(code=200,
-                                                     msg=f'您的{DRIVER}已连接上{SERVER}！',
+                                                     msg=f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
                                                      user=self.user,
                                                      is_notice=ClientTypeEnum.WEB.value
                                                      ))
                 except SocketClientNotPresentError:
-                    self.send(SocketDataModel(code=200, msg=f'{WEB}未登录，如有需要可以先选择登录{WEB}端以便查看执行日志').json())
+                    self.send(SocketDataModel(code=200,
+                                              msg=f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志').json())
             SocketUser.set_user_client_obj(self.user, self)
             user = User.objects.get(username=self.user)
             user.ip = f'{self.scope.get("client")[0]}:{self.scope.get("client")[1]}'
@@ -88,15 +90,15 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         self.user = self.scope.get('query_string').decode()
-        if self.scope.get('path') == SocketEnum.web_path.value:
+        if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.delete_user_web_obj(self.user)
             raise StopConsumer()
-        elif self.scope.get('path') == SocketEnum.client_path.value:
+        elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.user)
             try:
                 self.active_send(SocketDataModel(
                     code=200,
-                    msg=f'{DRIVER}已断开！',
+                    msg=f'{ClientNameEnum.DRIVER.value}已断开！',
                     user=self.user,
                     is_notice=ClientTypeEnum.WEB.value))
             except SocketClientNotPresentError:

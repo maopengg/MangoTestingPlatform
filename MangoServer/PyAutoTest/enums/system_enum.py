@@ -67,3 +67,11 @@ class CacheValueTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "字符串", 1: "整数", 2: "小数", 3: "布尔", 4: "null", 5: "列表", 6: "字典", 7: "元组", 8: "JSON"}
+
+
+class SocketEnum(BaseEnum):
+    WEB_PATH = '/web/socket'
+    CLIENT_PATH = '/client/socket'
+    ADMIN = 'admin'
+    CLIENT_CONN_OBJ = 'client_obj'
+    WEB_CONN_OBJ = 'web_obj'

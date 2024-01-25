@@ -11,15 +11,17 @@ from PyAutoTest.tools.decorator.convert_args import convert_args
 
 class UIConsumer:
 
+    @classmethod
     @convert_args(PageStepsResultModel)
-    def u_page_steps(self, data: PageStepsResultModel):
+    def u_page_steps(cls, data: PageStepsResultModel):
         TestReportWriting.update_page_step_status(data)
 
+    @classmethod
     @convert_args(CaseResultModel)
-    def u_case_result(self, data: CaseResultModel):
+    def u_case_result(cls, data: CaseResultModel):
         TestReportWriting.update_case(data)
 
+    @classmethod
     @convert_args(TestSuiteModel)
-    def u_case_batch_result(self, data: TestSuiteModel):
+    def u_case_batch_result(cls, data: TestSuiteModel):
         TestSuiteReportUpdate.update_case_suite_status(data)
-

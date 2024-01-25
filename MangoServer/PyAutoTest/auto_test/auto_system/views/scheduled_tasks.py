@@ -74,6 +74,18 @@ class ScheduledTasksViews(ViewSet):
         obj.save()
         return ResponseData.success('修改通知状态成功', )
 
+    @action(methods=['put'], detail=False)
+    def get_id_name(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        case_type = request.query_params.get('case_type')
+        scheduled_tasks_list = self.model.objects.filter(type=case_type).values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in scheduled_tasks_list]
+        return ResponseData.success('获取数据成功', data)
+
 
 class ScheduledTasksNoPermissionViews(ViewSet):
     model = ScheduledTasks

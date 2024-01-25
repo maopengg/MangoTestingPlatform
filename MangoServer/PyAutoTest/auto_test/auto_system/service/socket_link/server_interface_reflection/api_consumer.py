@@ -10,11 +10,8 @@ from PyAutoTest.tools.decorator.convert_args import convert_args
 
 
 class APIConsumer:
-    list_ = []
 
-    def api_test(self, data: ResponseModel):
-        print(data)
-
+    @classmethod
     @convert_args(ApiInfoModel)
-    def a_recording_api(self, data: ApiInfoModel):
+    def a_recording_api(cls, data: ApiInfoModel):
         WriteAPI.write(data)
