@@ -11,6 +11,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -55,6 +56,8 @@ class NoticeConfigViews(ViewSet):
             NoticeMain.test_notice_send(_id)
         except requests.exceptions.SSLError:
             return ResponseData.fail('请检查系统代理，并设置为关闭在进行测试')
+        except MangoServerError as error:
+            return ResponseData.fail(error.msg)
         else:
             return ResponseData.success('通知发送成功')
 

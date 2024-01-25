@@ -20,6 +20,21 @@ class ClientTypeEnum(BaseEnum):
         return {0: "服务端", 1: "执行端", 2: "控制端"}
 
 
+class ClientNameEnum(BaseEnum):
+    """
+    端名称
+    """
+    DRIVER = 'Mango Actuator'
+    SERVER = 'Mango Server'
+    WEB = 'mango-console'
+    PLATFORM_CHINESE = '芒果自动化测试平台'
+    PLATFORM_ENGLISH = 'MangoTestPlatform'
+
+    @classmethod
+    def obj(cls):
+        return {'DRIVER': "Mango Actuator", 'SERVER': "Mango Server", 'WEB': "mango-console"}
+
+
 class StatusEnum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
