@@ -72,3 +72,16 @@ class TasksRunCaseListViews(ViewSet):
             res = ApiCase.objects.filter(module_name=module_name).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)
+
+    @action(methods=['get'], detail=False)
+    def batch_set_use_cases(self, request: Request):
+        case_id_list = eval(request.query_params.get('case_id_list'))
+        case_type = request.query_params.get('case_type')
+
+        if case_type == AutoTestTypeEnum.UI.value:
+            for case_id in case_id_list:
+                case = UiCase.objects.get(id=case_id)
+
+        else:
+            for case_id in case_id_list:
+                case = ApiCase.objects.get(id=case_id)

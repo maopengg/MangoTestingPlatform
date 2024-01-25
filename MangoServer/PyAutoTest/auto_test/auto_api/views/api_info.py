@@ -12,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
-from PyAutoTest.auto_test.auto_api.service.test_runner.api_info_run import ApiInfoRun
+from PyAutoTest.auto_test.auto_api.service.test_execution.api_info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum

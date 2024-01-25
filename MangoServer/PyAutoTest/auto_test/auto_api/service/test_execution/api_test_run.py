@@ -6,9 +6,9 @@
 from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed
-from PyAutoTest.auto_test.auto_api.service.driver.dependence import ApiDataHandle
-from PyAutoTest.auto_test.auto_api.service.driver.http_request import HTTPRequest
-from PyAutoTest.auto_test.auto_api.service.driver.test_result import TestResult
+from PyAutoTest.auto_test.auto_api.service.base.dependence import ApiDataHandle
+from PyAutoTest.auto_test.auto_api.service.base.http_request import HTTPRequest
+from PyAutoTest.auto_test.auto_api.service.base.test_result import TestResult
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum

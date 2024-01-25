@@ -14,9 +14,8 @@ from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -65,7 +64,7 @@ class UiCaseViews(ViewSet):
                 case_id=int(request.GET.get("case_id")))
         except MangoServerError as e:
             return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json.dict())
+        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json.dict())
 
     @action(methods=['get'], detail=False)
     def ui_batch_run(self, request: Request):
@@ -79,7 +78,7 @@ class UiCaseViews(ViewSet):
                 case_id_list=eval(request.GET.get("case_id_list")))
         except MangoServerError as e:
             return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{DRIVER}已收到全部用例，正在执行中...', case_json)
+        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json)
 
     @action(methods=['POST'], detail=False)
     def cody_case(self, request: Request):

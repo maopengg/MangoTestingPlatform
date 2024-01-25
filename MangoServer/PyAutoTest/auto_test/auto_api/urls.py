@@ -11,7 +11,6 @@ from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoVie
 from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD, ApiCaseResultViews
-from PyAutoTest.auto_test.auto_api.views.api_run import RunApiCase
 
 urlpatterns = [
     path("info", ApiInfoCRUD.as_view()),
@@ -29,7 +28,6 @@ urlpatterns = [
     path("put/refresh/api/info", ApiCaseDetailedViews.as_view({'put': 'put_refresh_api_info'})),
     #
     path("public", ApiPublicCRUD.as_view()),
-    path("public/client/refresh", ApiPublicViews.as_view({'get': 'client_refresh'})),
     path("public/put/status", ApiPublicViews.as_view({'put': 'put_status'})),
     path("public/set/cache", ApiPublicViews.as_view({'get': 'get_set_cache'})),
     #
@@ -39,11 +37,6 @@ urlpatterns = [
     #
     path("info/result", ApiInfoResultCRUD.as_view()),
     #
-    path("run", RunApiCase.as_view({'get': 'api_run'})),
-    path("run/batch", RunApiCase.as_view({'get': 'api_batch_run'})),
-    path("run/group", RunApiCase.as_view({'get': 'api_group_run'})),
-    path("test", RunApiCase.as_view({'get': 'test'})),
-
     # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
 
 ]

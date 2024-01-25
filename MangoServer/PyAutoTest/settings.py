@@ -27,11 +27,6 @@ with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
     redis = data.get('redis')
 # ************************ ↑需要修改的内容↑ ************************ #
 
-# ************************ 三个端的名称 ************************ #
-DRIVER = 'Mango Actuator'
-SERVER = 'Mango Server'
-WEB = 'mango-console'
-
 # ************************ 时区 ************************ #
 
 USE_TZ = False

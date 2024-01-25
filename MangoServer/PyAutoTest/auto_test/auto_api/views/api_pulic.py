@@ -9,9 +9,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
-from PyAutoTest.auto_test.auto_api.service.run_api_send import RunApiSend
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.settings import DRIVER, SERVER
+from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 
@@ -46,13 +45,6 @@ class ApiPublicViews(ViewSet):
     model = ApiPublic
     serializer_class = ApiPublicSerializers
 
-    @action(methods=['get'], detail=False)
-    def client_refresh(self, request: Request):
-        data, res = RunApiSend(request.query_params.get("username")).public_args_data()
-        if res:
-            return ResponseData.success(f'刷新{DRIVER}api自动化数据成功', data)
-        return ResponseData.fail(f'刷新失败，请确保{DRIVER}已连接{SERVER}', data)
-
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):
         """
@@ -67,6 +59,6 @@ class ApiPublicViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_set_cache(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.driver.common_parameters import CommonParameters
+        from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
         CommonParameters(request.query_params.get('id'))
         return ResponseData.success('设置API公共参数成功', )

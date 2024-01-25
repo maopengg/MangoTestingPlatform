@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import UiEnum
+from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.auto_test.auto_ui.models import UiConfig
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
@@ -113,7 +113,7 @@ class UiConfigViews(ViewSet):
             user=request.user.get('username'),
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=QueueModel(
-                func_name=UiEnum.u_page_new_obj.value,
+                func_name=UiSocketEnum.NEW_PAGE_OBJ.value,
                 func_args=web_config
             )
         )

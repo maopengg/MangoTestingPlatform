@@ -9,7 +9,7 @@ from collections import Counter
 
 import time
 
-from PyAutoTest.auto_test.auto_api.service.driver.common_parameters import CommonParameters
+from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion

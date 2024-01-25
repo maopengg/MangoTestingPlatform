@@ -3,22 +3,20 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
-from PyAutoTest.auto_test.auto_api.service.get_common_parameters import GetCommonParameters
+from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
-from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
-from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import UiEnum
+from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.auto_test.auto_system.service.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
     UiElement, UiConfig, UiPage
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum
+from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.settings import DRIVER
 from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 
@@ -41,7 +39,7 @@ class UiTestRun:
         """
         case_model = self.__data_ui_case(steps_id, None)
         if is_send:
-            self.__socket_send(func_name=UiEnum.U_PAGE_STEPS.value, case_model=case_model)
+            self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=case_model)
         return case_model
 
     def case(self, case_id: int, is_send: bool = True, is_batch: bool = False) -> CaseModel:
@@ -76,7 +74,7 @@ class UiTestRun:
                                    run_status=0,
                                    case_list=[])
             model.case_list.append(case_model)
-            self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
+            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                case_model=model)
             TestSuiteReportUpdate(model).add_test_suite_report()
         return case_model
@@ -103,7 +101,7 @@ class UiTestRun:
                                error_message=None,
                                run_status=0,
                                case_list=case_group_list)
-        self.__socket_send(func_name=UiEnum.U_CASE_BATCH.value,
+        self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                            case_model=model)
         TestSuiteReportUpdate(model).add_test_suite_report()
 
@@ -119,7 +117,7 @@ class UiTestRun:
         data = QueueModel(func_name=func_name, func_args=case_model)
         ChatConsumer.active_send(SocketDataModel(
             code=200,
-            msg=f'{DRIVER}：收到用例数据，准备开始执行自动化任务！',
+            msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
             user=self.user_obj.username,
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=data,
@@ -201,7 +199,7 @@ class UiTestRun:
             ass_value=data['ass_value'] if data.get('ass_value') else None,
             is_iframe=element_obj.is_iframe,
         ))
-        self.__socket_send(func_name=UiEnum.U_PAGE_STEPS.value, case_model=page_steps_model)
+        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=page_steps_model)
 
     def __get_web_config(self, host: str) -> WEBConfigModel:
         try:

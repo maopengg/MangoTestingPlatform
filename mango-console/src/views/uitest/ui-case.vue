@@ -89,6 +89,16 @@
                   <a-button status="success" size="small" @click="onConcurrency('批量执行')">批量执行</a-button>
                 </div>
                 <div>
+                  <a-button @click="handleClick">Open Modal</a-button>
+                  <a-modal v-model:visible="visible" @cancel="handleCancel" :on-before-ok="handleBeforeOk" unmountOnClose>
+                    <template #title> Title </template>
+                    <div>
+                      You can customize modal body text by the current situation. This modal will be closed immediately once you
+                      press the OK button.
+                    </div>
+                  </a-modal>
+                </div>
+                <div>
                   <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 </div>
               </a-space>
@@ -548,7 +558,53 @@ function onConcurrency(name: string) {
     }
   })
 }
+const visible = ref(false)
 
+const handleClick = () => {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要添加定时任务的用例')
+    return
+  }
+  visible.value = true
+}
+const handleBeforeOk = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 3000))
+  return true
+  // prevent close
+  // return false;
+}
+const handleCancel = () => {
+  visible.value = false
+}
+function addScheduledTasks() {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要添加定时任务的用例')
+    return
+  }
+  Modal.confirm({
+    title: '提示',
+    content: '确定要把选择的用例添加为任务吗',
+    cancelText: '取消',
+    okText: '执行',
+    onOk: () => {
+      get({
+        url: uiRunCaseBatch,
+        data: () => {
+          return {
+            case_id_list: JSON.stringify(selectedRowKeys.value),
+            testing_environment: testObj.selectValue
+          }
+        }
+      })
+        .then((res) => {
+          Message.loading(res.msg)
+          selectedRowKeys.value = []
+          doRefresh()
+        })
+        .catch(console.log)
+    }
+  })
+}
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
     modalDialogRef.value?.toggle()

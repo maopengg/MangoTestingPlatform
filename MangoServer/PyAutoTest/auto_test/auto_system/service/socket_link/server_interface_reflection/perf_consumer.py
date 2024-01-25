@@ -6,6 +6,4 @@
 
 
 class PerfConsumer:
-
-    def perf_tst(self, project_name, case=1):
-        pass
+    pass

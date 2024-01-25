@@ -11,7 +11,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.auto_test.auto_system.service.socket_link.actuator_api_enum import ToolsEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
