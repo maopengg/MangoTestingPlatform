@@ -77,7 +77,7 @@ class ScheduledTasksViews(ViewSet):
     @action(methods=['put'], detail=False)
     def get_id_name(self, request: Request):
         """
-        修改启停用
+        获取定时任务列表
         :param request:
         :return:
         """

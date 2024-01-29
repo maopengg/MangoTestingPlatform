@@ -89,12 +89,19 @@
                   <a-button status="success" size="small" @click="onConcurrency('批量执行')">批量执行</a-button>
                 </div>
                 <div>
-                  <a-button @click="handleClick">Open Modal</a-button>
-                  <a-modal v-model:visible="visible" @cancel="handleCancel" :on-before-ok="handleBeforeOk" unmountOnClose>
-                    <template #title> Title </template>
+                  <a-button status="warning" @click="handleClick">设为定时任务</a-button>
+                  <a-modal v-model:visible="caseData.visible" @ok="handleOk" @cancel="handleCancel">
+                    <template #title> 设为定时任务 </template>
                     <div>
-                      You can customize modal body text by the current situation. This modal will be closed immediately once you
-                      press the OK button.
+                      <a-select
+                        v-model="caseData.value"
+                        placeholder="请选择定时任务进行绑定"
+                        :options="caseData.scheduledName"
+                        :field-names="fieldNames"
+                        value-key="key"
+                        allow-clear
+                        allow-search
+                      />
                     </div>
                   </a-modal>
                 </div>
@@ -229,7 +236,17 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { userNickname, userProjectModuleGetAll, uiCase, uiCaseRun, uiRunCaseBatch, uiCaseCopy, systemEnumStatus } from '@/api/url'
+import {
+  userNickname,
+  userProjectModuleGetAll,
+  uiCase,
+  uiCaseRun,
+  uiRunCaseBatch,
+  uiCaseCopy,
+  systemEnumStatus,
+  systemTasksBatchSetCases,
+  systemScheduledName
+} from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -258,7 +275,10 @@ const caseData = reactive({
   actionTitle: '添加用例',
   userList: [],
   moduleList: projectModule.data,
-  systemStatus: []
+  systemStatus: [],
+  scheduledName: [],
+  value: null,
+  visible: false
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -558,52 +578,32 @@ function onConcurrency(name: string) {
     }
   })
 }
-const visible = ref(false)
 
 const handleClick = () => {
   if (selectedRowKeys.value.length === 0) {
     Message.error('请选择要添加定时任务的用例')
     return
   }
-  visible.value = true
+  caseData.visible = true
 }
-const handleBeforeOk = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 3000))
-  return true
-  // prevent close
-  // return false;
-}
-const handleCancel = () => {
-  visible.value = false
-}
-function addScheduledTasks() {
-  if (selectedRowKeys.value.length === 0) {
-    Message.error('请选择要添加定时任务的用例')
-    return
-  }
-  Modal.confirm({
-    title: '提示',
-    content: '确定要把选择的用例添加为任务吗',
-    cancelText: '取消',
-    okText: '执行',
-    onOk: () => {
-      get({
-        url: uiRunCaseBatch,
-        data: () => {
-          return {
-            case_id_list: JSON.stringify(selectedRowKeys.value),
-            testing_environment: testObj.selectValue
-          }
-        }
-      })
-        .then((res) => {
-          Message.loading(res.msg)
-          selectedRowKeys.value = []
-          doRefresh()
-        })
-        .catch(console.log)
+const handleOk = () => {
+  post({
+    url: systemTasksBatchSetCases,
+    data: () => {
+      return {
+        case_id_list: JSON.stringify(selectedRowKeys.value),
+        scheduled_tasks_id: caseData.value
+      }
     }
   })
+    .then((res) => {
+      Message.success(res.msg)
+      caseData.visible = false
+    })
+    .catch(console.log)
+}
+const handleCancel = () => {
+  caseData.visible = false
 }
 function onDataForm() {
   if (formItems.every((it) => (it.validator ? it.validator() : true))) {
@@ -723,12 +723,27 @@ function status() {
     })
     .catch(console.log)
 }
+function scheduledName() {
+  get({
+    url: systemScheduledName,
+    data: () => {
+      return {
+        case_type: 0
+      }
+    }
+  })
+    .then((res) => {
+      caseData.scheduledName = res.data
+    })
+    .catch(console.log)
+}
 
 onMounted(() => {
   nextTick(async () => {
     doRefresh()
     getNickName()
     status()
+    scheduledName()
   })
 })
 </script>

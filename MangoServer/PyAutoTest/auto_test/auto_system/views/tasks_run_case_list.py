@@ -73,15 +73,17 @@ class TasksRunCaseListViews(ViewSet):
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success('获取数据成功', data)
 
-    @action(methods=['get'], detail=False)
-    def batch_set_use_cases(self, request: Request):
-        case_id_list = eval(request.query_params.get('case_id_list'))
-        case_type = request.query_params.get('case_type')
-
-        if case_type == AutoTestTypeEnum.UI.value:
-            for case_id in case_id_list:
-                case = UiCase.objects.get(id=case_id)
-
-        else:
-            for case_id in case_id_list:
-                case = ApiCase.objects.get(id=case_id)
+    @action(methods=['post'], detail=False)
+    def batch_set_cases(self, request: Request):
+        case_id_list = eval(request.data.get('case_id_list'))
+        scheduled_tasks_id = request.data.get('scheduled_tasks_id')
+        tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list('case')
+        tasks_run_case_list = [i[0] for i in list(tasks_run_case_list)]
+        for case_id in case_id_list:
+            if case_id not in tasks_run_case_list:
+                serializer = self.serializer_class(data={'task': scheduled_tasks_id, 'case': case_id})
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    return ResponseData.fail('批量设置到定时任务失败')
+        return ResponseData.success('批量设置到定时任务成功')

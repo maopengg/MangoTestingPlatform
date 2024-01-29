@@ -126,8 +126,16 @@ class LoginViews(ViewSet):
     @action(methods=['post'], detail=False)
     def login(self, request: Request):
         username = request.data.get('username')
-        password = EncryptionTool.md5_encrypt(request.data.get('password'))
+        password = request.data.get('password')
         source_type = request.data.get('type')
+        # if isinstance(username, list):
+        #     username = username[0]
+        # if isinstance(password, list):
+        #     password = password[0]
+        # if isinstance(source_type, list):
+        #     source_type = source_type[0]
+        # print(username, password)
+        password = EncryptionTool.md5_encrypt(password)
         user_info = User.objects.filter(username=username, password=password).first()
         if not user_info:
             return ResponseData.fail('用户名或密码错误')
