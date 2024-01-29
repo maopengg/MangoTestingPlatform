@@ -34,10 +34,12 @@ urlpatterns = [
     #
     path('tasks/run/case', TasksRunCaseListCRUD.as_view()),
     path('tasks/type/case/name', TasksRunCaseListViews.as_view({'get': 'get_type_case_name'})),
+    path('tasks/batch/set/cases', TasksRunCaseListViews.as_view({'post': 'batch_set_cases'})),
     #
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
     path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
     path('scheduled/put/notice', ScheduledTasksViews.as_view({'put': 'put_is_notice'})),
+    path('scheduled/name', ScheduledTasksViews.as_view({'get': 'get_id_name'})),
     path('trigger/timing', ScheduledTasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
 
     #

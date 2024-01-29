@@ -86,6 +86,23 @@
             <template #extra>
               <a-space>
                 <div>
+                  <a-button status="warning" @click="handleClick">设为定时任务</a-button>
+                  <a-modal v-model:visible="apiCaseData.visible" @ok="handleOk" @cancel="handleCancel">
+                    <template #title> 设为定时任务 </template>
+                    <div>
+                      <a-select
+                        v-model="apiCaseData.value"
+                        placeholder="请选择定时任务进行绑定"
+                        :options="apiCaseData.scheduledName"
+                        :field-names="fieldNames"
+                        value-key="key"
+                        allow-clear
+                        allow-search
+                      />
+                    </div>
+                  </a-modal>
+                </div>
+                <div>
                   <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
                 </div>
               </a-space>
@@ -213,7 +230,16 @@
 
 <script lang="ts" setup>
 import { get, post, put, deleted } from '@/api/http'
-import { apiCase, apiCaseCody, apiRun, userNickname, userProjectModuleGetAll, systemEnumStatus } from '@/api/url'
+import {
+  apiCase,
+  apiCaseCody,
+  apiRun,
+  userNickname,
+  userProjectModuleGetAll,
+  systemEnumStatus,
+  systemTasksBatchSetCases,
+  systemScheduledName
+} from '@/api/url'
 import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
 import { FormItem, ModalDialogType } from '@/types/components'
 import { Message, Modal } from '@arco-design/web-vue'
@@ -244,7 +270,10 @@ const apiCaseData = reactive({
   updateId: 0,
   userList: [],
   systemStatus: [],
-  moduleList: projectModule.data
+  moduleList: projectModule.data,
+  scheduledName: [],
+  value: null,
+  visible: false
 })
 const conditionItems: Array<FormItem> = reactive([
   {
@@ -602,7 +631,46 @@ function pageStepsCody(record: any) {
     })
     .catch(console.log)
 }
-
+const handleClick = () => {
+  if (selectedRowKeys.value.length === 0) {
+    Message.error('请选择要添加定时任务的用例')
+    return
+  }
+  apiCaseData.visible = true
+}
+const handleOk = () => {
+  post({
+    url: systemTasksBatchSetCases,
+    data: () => {
+      return {
+        case_id_list: JSON.stringify(selectedRowKeys.value),
+        scheduled_tasks_id: apiCaseData.value
+      }
+    }
+  })
+    .then((res) => {
+      Message.success(res.msg)
+      apiCaseData.visible = false
+    })
+    .catch(console.log)
+}
+const handleCancel = () => {
+  apiCaseData.visible = false
+}
+function scheduledName() {
+  get({
+    url: systemScheduledName,
+    data: () => {
+      return {
+        case_type: 1
+      }
+    }
+  })
+    .then((res) => {
+      apiCaseData.scheduledName = res.data
+    })
+    .catch(console.log)
+}
 function status() {
   get({
     url: systemEnumStatus,
@@ -621,6 +689,7 @@ onMounted(() => {
     doRefresh()
     getNickName()
     status()
+    scheduledName()
   })
 })
 </script>
