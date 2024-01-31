@@ -6,6 +6,7 @@
 import datetime
 import json
 import logging
+from typing import Union, Optional, TypeVar
 
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
@@ -16,8 +17,9 @@ from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import SocketEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
-from PyAutoTest.models.socket_model import SocketDataModel
+from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 
+T = TypeVar('T')
 logger = logging.getLogger('system')
 
 
@@ -38,26 +40,18 @@ class ChatConsumer(WebsocketConsumer):
         self.accept()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.set_user_web_obj(self.user, self)
-            self.send(SocketDataModel(code=200,
-                                      msg=f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}"
-                                      ).json())
+            self.inside_send(f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             if self.user == SocketEnum.ADMIN.value:
-                self.send(SocketDataModel(code=200,
-                                          msg=f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！').json())
+                self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
             else:
-
-                self.send(SocketDataModel(code=200,
-                                          msg=f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！').json())
+                self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
                 try:
-                    self.active_send(SocketDataModel(code=200,
-                                                     msg=f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
-                                                     user=self.user,
-                                                     is_notice=ClientTypeEnum.WEB.value
-                                                     ))
+                    self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
+                                     is_notice=ClientTypeEnum.WEB.value)
+
                 except SocketClientNotPresentError:
-                    self.send(SocketDataModel(code=200,
-                                              msg=f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志').json())
+                    self.inside_send(f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
             SocketUser.set_user_client_obj(self.user, self)
             user = User.objects.get(username=self.user)
             user.ip = f'{self.scope.get("client")[0]}:{self.scope.get("client")[1]}'
@@ -96,11 +90,8 @@ class ChatConsumer(WebsocketConsumer):
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.user)
             try:
-                self.active_send(SocketDataModel(
-                    code=200,
-                    msg=f'{ClientNameEnum.DRIVER.value}已断开！',
-                    user=self.user,
-                    is_notice=ClientTypeEnum.WEB.value))
+                self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！',
+                                 is_notice=ClientTypeEnum.WEB.value)
             except SocketClientNotPresentError:
                 pass
             raise StopConsumer()
@@ -122,3 +113,39 @@ class ChatConsumer(WebsocketConsumer):
             logger.info(
                 f'发送的用户：{send_data.user}，发送的数据：'
                 f'{send_data.json(ensure_ascii=False) if send_data.data else None}')
+
+    def inside_send(self,
+                    msg: str,
+                    code: int = 200,
+                    func_name: None = None,
+                    func_args: Optional[Union[list[T], T]] | None = None,
+                    is_notice: ClientTypeEnum | None = None,
+                    ):
+        send_data = SocketDataModel(
+            code=code,
+            msg=msg,
+            user=self.user,
+            is_notice=is_notice,
+            data=None
+        )
+        if func_name:
+            send_data.data = QueueModel(func_name=func_name, func_args=func_args)
+        if send_data.is_notice:
+            self.active_send(send_data)
+        else:
+            self.send(self.__serialize(send_data))
+
+    @classmethod
+    def __serialize(cls, data: SocketDataModel):
+        """
+        主动发送消息
+        :param data: 发送的数据
+        :return:
+        """
+        try:
+            data_json = data.json()
+        except TypeError:
+            logger.error(f'序列化数据错误，请检查发送数据！')
+        else:
+            logger.debug(f"发送的数据：{data_json}")
+            return data_json
