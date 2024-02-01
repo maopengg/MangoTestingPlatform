@@ -1,7 +1,11 @@
-import json
-from urllib import parse
+error_template = 'jsonpath表达式错误，请{}检查表达式！：{}'
 
-data = parse.parse_qs(
-    "id=1749732204080648194&sort=-1&name=&status=1&remark=&createBy=1&createTime=2024-01-23+17:54:00&updateBy=1&updateTime=&createName=admin%40aigc.com&updateName=&workFlowName=api%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95-%E6%96%B0%E5%BB%BAFlow-%E5%89%AF%E6%9C%AC39&version=&workFlowStatus=2&workFlowType=1&tenantId=1&applicationTemplate=0")
+# 定义变量
+error_action = "修复"
+json_list_str = "your_json_path_expression"
 
-print(json.dumps({key:value[0] for key, value in data.items()}, ensure_ascii=False))
+# 使用 format 方法替换占位符
+error_message = error_template.format(error_action, json_list_str)
+
+# 输出结果
+print(error_message)

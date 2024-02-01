@@ -7,6 +7,7 @@ import json
 import re
 
 from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0027
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool
@@ -120,7 +121,7 @@ class DataProcessor(ObtainRandomData, DataClean):
             else:
                 value = self.get_cache(key_text)
             if value is None:
-                raise CacheIsEmptyError(f'缓存中无法获取到：{key_text}的值')
+                raise CacheIsEmptyError(*ERROR_MSG_0027, value=(key_text,))
             if key:
                 self.set_cache(key, value)
             data = data.replace(replace_value, str(value))

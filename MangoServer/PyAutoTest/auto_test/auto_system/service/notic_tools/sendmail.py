@@ -12,6 +12,7 @@ from socket import gaierror
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
 
 logger = logging.getLogger('system')
 
@@ -48,7 +49,7 @@ class SendEmail:
             logger.info(f"邮件发送成功:{self.notice_config.json()}")
         except SMTPException as error:
             logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.json()}")
-            raise SendMessageError("邮件发送失败，请检查邮件配置是否正确")
+            raise SendMessageError(*ERROR_MSG_0016)
 
     def send_mail(self, user_list: list, sub: str, content: str, ) -> None:
         """
@@ -71,7 +72,7 @@ class SendEmail:
             server.close()
         except gaierror as error:
             logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.json()}")
-            raise SendMessageError("请检查email_host是否正确，导致无法连接发送错误")
+            raise SendMessageError(*ERROR_MSG_0017)
 
     def error_mail(self, error_message: str) -> None:
         """

@@ -16,6 +16,7 @@ from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfig
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.mysql_tools.mysql_control import MysqlClient
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0003, ERROR_MSG_0009
 from .http_request import HTTPRequest
 
 log = logging.getLogger('api')
@@ -56,7 +57,7 @@ class CommonParameters(DataProcessor):
                                                                 file=api_info.file))
         response: ResponseDataModel = HTTPRequest.http(request_data_model)
         if response.response_json is None:
-            raise LoginError('登录失败，请检查登录用例或代理')
+            raise LoginError(*ERROR_MSG_0003)
         value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))
         self.set_cache(key, value)
 
@@ -72,4 +73,4 @@ class CommonParameters(DataProcessor):
             mysql_obj = MysqlClient(GetDataBase.get_mysql_config(self.test_obj_id))
             res = mysql_obj.execute(api_public_obj.value)
         except (DoesNotExistError, MysqlConfigError):
-            raise PublicMysqlError('项目配置了公共的sql变量，但是未配置mysql配置')
+            raise PublicMysqlError(*ERROR_MSG_0009)

@@ -15,6 +15,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.api_exception import CaseIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0008
 
 
 class ApiTestRun(ApiDataHandle, TestResult):
@@ -32,7 +33,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
         """
         case_list = self.get_case(case_id)
         if not case_list:
-            raise CaseIsEmptyError('用例是空，请先配置用例')
+            raise CaseIsEmptyError(*ERROR_MSG_0008)
         for api_info in case_list:
             if not self.run_api(api_info):
                 break
