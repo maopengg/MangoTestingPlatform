@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonP
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010
 
 log = logging.getLogger('api')
 
@@ -58,7 +59,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             try:
                 response_data = eval(response.response_text)
             except SyntaxError:
-                raise ResponseSyntaxError('响应数据语法错误，返回的数据非json格式，请检查服务是否正常！')
+                raise ResponseSyntaxError(*ERROR_MSG_0007)
         if case_detailed.ass_response_value:
             self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
         if case_detailed.ass_sql:
@@ -89,7 +90,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         if self.is_db:
             for sql in case_detailed.dump_data:
                 if sql.strip().lower().startswith('select'):
-                    raise DumpDataError('数据清除不支持查询数据操作')
+                    raise DumpDataError(*ERROR_MSG_0010)
                 res = self.mysql_obj.execute(self.replace(sql))
                 if isinstance(res, int):
                     log.info(f'删除成功的条数：{res}')
@@ -136,7 +137,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                         _dict['expect'] = i.get('expect')
                     getattr(self, i['method'])(**_dict)
         except AssertionError:
-            raise ResponseValueAssError('响应jsonpath断言失败')
+            raise ResponseValueAssError(*ERROR_MSG_0005)
 
     def __assertion_sql(self, sql_list: list[dict]):
         """
@@ -156,7 +157,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                         _dict['expect'] = sql.get('expect')
                     getattr(self, sql['method'])(**_dict)
         except AssertionError:
-            raise ResponseValueAssError('响应jsonpath断言失败')
+            raise SqlAssError(*ERROR_MSG_0006)
 
     @classmethod
     def __assertion_response_whole(cls, actual, expect):
@@ -169,7 +170,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         try:
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError:
-            raise ResponseWholeAssError('全匹配断言失败')
+            raise ResponseWholeAssError(*ERROR_MSG_0004)
 
     def __sql_(self, sql_list: list, _str: str):
         if self.is_db:

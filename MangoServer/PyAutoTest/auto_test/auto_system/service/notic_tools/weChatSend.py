@@ -11,6 +11,8 @@ from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
 from PyAutoTest.models.tools_model import TestReportModel, WeChatNoticeModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0013, ERROR_MSG_0014, ERROR_MSG_0018, ERROR_MSG_0019, \
+    ERROR_MSG_0020
 
 logger = logging.getLogger('system')
 
@@ -63,7 +65,7 @@ class WeChatSend:
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
             logger.error(res.text)
-            raise SendMessageError("企业微信消息发送失败，请检查webhook地址是否正确可调用")
+            raise SendMessageError(*ERROR_MSG_0018)
 
     def send_file_msg(self, file):
         """
@@ -75,7 +77,7 @@ class WeChatSend:
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
             logger.error(res.json())
-            raise SendMessageError("企业微信「file类型」消息发送失败")
+            raise SendMessageError(*ERROR_MSG_0020)
 
     def __upload_file(self, file):
         """
@@ -105,12 +107,12 @@ class WeChatSend:
                         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
                         if res.json()['errcode'] != 0:
                             logger.error(res.json())
-                            raise SendMessageError("企业微信「文本类型」消息发送失败")
+                            raise SendMessageError(*ERROR_MSG_0019)
 
                     else:
-                        raise ValueTypeError("手机号码必须是字符串类型.")
+                        raise ValueTypeError(*ERROR_MSG_0013)
         else:
-            raise ValueTypeError("手机号码列表必须是list类型.")
+            raise ValueTypeError(*ERROR_MSG_0014)
 
 
 if __name__ == '__main__':

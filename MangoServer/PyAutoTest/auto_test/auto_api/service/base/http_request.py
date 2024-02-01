@@ -11,6 +11,7 @@ from requests import RequestException
 
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0001, ERROR_MSG_0002
 
 log = logging.getLogger('api')
 
@@ -34,10 +35,10 @@ class HTTPRequest:
             )
             end = time.time() - s
         except requests.exceptions.ProxyError:
-            raise AgentError('系统代理出错，请检查系统代理')
+            raise AgentError(*ERROR_MSG_0001)
         except RequestException as e:
             log.error(f'请求发生未知错误，请联系管理员检查！错误数据：{request_data.dict()}，报错内容：{e}')
-            raise UnknownError('请求发生未知错误，请联系管理员检查！')
+            raise UnknownError(*ERROR_MSG_0002)
         try:
             response_json = response.json()
         except Exception:

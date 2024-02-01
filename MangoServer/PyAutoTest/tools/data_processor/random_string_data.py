@@ -10,6 +10,7 @@ import uuid
 from faker import Faker
 
 from PyAutoTest.exceptions.tools_exception import ValueTypeError
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0015
 
 
 class RandomStringData:
@@ -76,7 +77,7 @@ class RandomStringData:
         try:
             length = int(kwargs.get('data'))
         except ValueError:
-            raise ValueTypeError('随机字符串函数只支持传入int类型数字')
+            raise ValueTypeError(*ERROR_MSG_0015)
         if length is None:
             length = 10
         # 定义字符集合，包含大小写字母和数字

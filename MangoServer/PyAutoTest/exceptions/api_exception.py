@@ -7,72 +7,48 @@ from PyAutoTest.exceptions import MangoServerError
 
 
 class CacheIsNone(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class AgentError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class LoginError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class UnknownError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class AssError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class SqlAssError(AssError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class ResponseWholeAssError(AssError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class ResponseValueAssError(AssError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class ResponseSyntaxError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class CaseIsEmptyError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class PublicMysqlError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class DumpDataError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass

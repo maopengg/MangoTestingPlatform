@@ -8,6 +8,7 @@ import json
 import jsonpath
 
 from PyAutoTest.exceptions.tools_exception import JsonPathError
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0011
 
 
 class JsonTool:
@@ -39,7 +40,7 @@ class JsonTool:
             try:
                 return json.loads(data_str)
             except json.decoder.JSONDecodeError:
-                raise JsonPathError(f'jsonpath表达式错误，请检查表达式！：{json_list_str}')
+                raise JsonPathError(*ERROR_MSG_0011, value=(json_list_str,))
 
     @classmethod
     def dumps(cls, obj_list: list | dict, indent=None) -> str:
@@ -74,4 +75,4 @@ class JsonTool:
         try:
             return jsonpath.jsonpath(obj, expr)[index]
         except TypeError:
-            raise JsonPathError(f'jsonpath表达式错误，请检查表达式！：{expr}')
+            raise JsonPathError(*ERROR_MSG_0011, value=(expr,))

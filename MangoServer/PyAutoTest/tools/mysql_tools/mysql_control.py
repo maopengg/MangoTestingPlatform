@@ -9,6 +9,7 @@ from pymysql.err import ProgrammingError, OperationalError
 
 from PyAutoTest.exceptions.tools_exception import MySQLConnectionFailureError, SQLGrammarError
 from PyAutoTest.models.tools_model import MysqlConingModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0023, ERROR_MSG_0024, ERROR_MSG_0025
 
 logger = logging.getLogger('system')
 
@@ -31,7 +32,7 @@ class MysqlClient:
         # 使用 cursor 方法获取操作游标，得到一个可以执行sql语句，并且操作结果为字典返回的游标
             self.cur = self.conn.cursor(cursor=pymysql.cursors.DictCursor)
         except OperationalError:
-            raise MySQLConnectionFailureError('请检查mysql配置或确保该地址在服务器中可以被连接')
+            raise MySQLConnectionFailureError(*ERROR_MSG_0023)
 
     def __del__(self):
         if self.cur:
@@ -58,6 +59,6 @@ class MysqlClient:
                     self.conn.commit()
                     return rows_affected
                 except OperationalError:
-                    raise SQLGrammarError('sql语句为空')
+                    raise SQLGrammarError(*ERROR_MSG_0024)
         except ProgrammingError:
-            raise SQLGrammarError('sql语法错误，请检查sql')
+            raise SQLGrammarError(*ERROR_MSG_0025)

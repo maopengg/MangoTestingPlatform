@@ -11,3 +11,4 @@ class MyTestCase(TestCase):
     def test_user_info(self):
         url = "/api/case/api/info/run"
         response = self.client.get(url)
+        print(response.json())

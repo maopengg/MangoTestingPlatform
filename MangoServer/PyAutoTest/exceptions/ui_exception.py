@@ -7,7 +7,4 @@ from PyAutoTest.exceptions import MangoServerError
 
 
 class UiConfigQueryIsNoneError(MangoServerError):
-
-    def __init__(self, path):
-        self.code = 301
-        self.msg = path
+    pass

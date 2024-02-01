@@ -17,6 +17,7 @@ from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012
 
 log = logging.getLogger('system')
 
@@ -68,7 +69,7 @@ class NoticeMain:
         try:
             config = json.loads(i.config)
         except json.decoder.JSONDecodeError:
-            raise JsonSerializeError('邮件的配置详情不是json格式')
+            raise JsonSerializeError(*ERROR_MSG_0012)
         email = SendEmail(EmailNoticeModel(
             send_user=config.get('send_user'),
             email_host=config.get('email_host'),

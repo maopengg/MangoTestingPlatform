@@ -17,6 +17,7 @@ from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0029
 from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 
@@ -207,7 +208,7 @@ class UiTestRun:
                                                   status=StatusEnum.SUCCESS.value,
                                                   type=DriveTypeEnum.WEB.value)
         except UiConfig.DoesNotExist:
-            raise UiConfigQueryIsNoneError('web配置查询结果是空，请先进行配置')
+            raise UiConfigQueryIsNoneError(*ERROR_MSG_0029)
         return WEBConfigModel(
             browser_port=user_ui_config.browser_port,
             browser_path=user_ui_config.browser_path,

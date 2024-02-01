@@ -7,80 +7,48 @@ from PyAutoTest.exceptions import MangoServerError
 
 
 class MysqlAbnormalConnection(MangoServerError):
-    def __init__(self, msg):
-        self.code = 301
-        self.msg = msg
+    pass
 
 
 class JsonPathError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class JsonSerializeError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class ValueTypeError(MangoServerError):
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class SendMessageError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class DoesNotExistError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class MysqlConfigError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class MySQLConnectionFailureError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class SQLGrammarError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class FileDoesNotEexistError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class CacheIsEmptyError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass
 
 
 class SocketClientNotPresentError(MangoServerError):
-
-    def __init__(self, msg):
-        self.code = 300
-        self.msg = msg
+    pass

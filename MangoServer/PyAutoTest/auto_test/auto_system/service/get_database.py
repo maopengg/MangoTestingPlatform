@@ -8,6 +8,7 @@ from pydantic.error_wrappers import ValidationError
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError
 from PyAutoTest.models.tools_model import MysqlConingModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0021, ERROR_MSG_0022
 
 
 class GetDataBase:
@@ -22,7 +23,7 @@ class GetDataBase:
         try:
             mysql = Database.objects.get(test_obj_id=test_obj_id)
         except Database.DoesNotExist:
-            raise DoesNotExistError('该项目未配置mysql，但是开启了数据库断言')
+            raise DoesNotExistError(*ERROR_MSG_0021)
         try:
             return MysqlConingModel(
                 host=mysql.host,
@@ -31,4 +32,4 @@ class GetDataBase:
                 password=mysql.password,
                 db=mysql.name)
         except ValidationError:
-            raise MysqlConfigError('Mysql配置错误，请先在数据库中检查mysql配置是否正确')
+            raise MysqlConfigError(*ERROR_MSG_0022)
