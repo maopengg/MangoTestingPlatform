@@ -42,7 +42,7 @@ class TestSuiteReportUpdate:
         res.status = data.status
         res.run_status = data.run_status
         if data.error_message:
-            res.error_message = json.dumps(data.error_message)
+            res.error_message = data.error_message
         res.save()
         if data.is_notice:
             NoticeMain.notice_main(data.project, data.id)
