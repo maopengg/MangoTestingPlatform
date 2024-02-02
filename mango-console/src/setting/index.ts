@@ -1,6 +1,6 @@
 import { DeviceType } from '@/store/types'
 
-export const projectName = 'MangoAutoTest'
+export const projectName = '芒果自动化测试平台'
 
 export default {
   theme: 'light',
@@ -19,8 +19,8 @@ export default {
     isShowSearch: true,
     isShowMessage: true,
     isShowRefresh: true,
-    isShowFullScreen: true
-  }
+    isShowFullScreen: true,
+  },
 }
 
 export const DRIVER = 'Mango Actuator'

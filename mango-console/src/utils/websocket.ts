@@ -14,7 +14,7 @@ export default class WebSocketService {
   constructor(url: string) {
     this.state = reactive({
       url,
-      socket: null
+      socket: null,
     })
   }
 
@@ -30,7 +30,7 @@ export default class WebSocketService {
         user: null,
         msg: `Hi, ${SERVER}, mango-console Request Connection!`,
         data: null,
-        end: null
+        end: null,
       }
       this.state.socket?.send(JSON.stringify(message))
     }
@@ -77,7 +77,7 @@ export default class WebSocketService {
       user: user,
       msg: msg,
       data: data,
-      end: end
+      end: end,
     }
 
     if (this.state.socket) {

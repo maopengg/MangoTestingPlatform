@@ -10,13 +10,13 @@ const useVisitedRouteStore = defineStore('visited-routes', {
   state: () => {
     return {
       visitedRoutes: visitedRoutes as RouteLocationNormalized[],
-      isLoadAffix: false
+      isLoadAffix: false,
     }
   },
   getters: {
     getVisitedRoutes(state) {
       return state.visitedRoutes
-    }
+    },
   },
   actions: {
     initAffixRoutes(affixRoutes: RouteLocationNormalized[]) {
@@ -49,7 +49,10 @@ const useVisitedRouteStore = defineStore('visited-routes', {
         if (route.name) {
           const cachedRoutesStore = useCachedRouteStore()
           if (cachedRoutesStore.cachedRoutes.includes(route.name as string)) {
-            cachedRoutesStore.cachedRoutes.splice(cachedRoutesStore.cachedRoutes.indexOf(route.name as string), 1)
+            cachedRoutesStore.cachedRoutes.splice(
+              cachedRoutesStore.cachedRoutes.indexOf(route.name as string),
+              1
+            )
           }
         }
         this.persistentVisitedView()
@@ -106,15 +109,15 @@ const useVisitedRouteStore = defineStore('visited-routes', {
           fullPath: it.fullPath,
           meta: it.meta,
           name: it.name,
-          path: it.path
+          path: it.path,
         }
       })
       localStorage.setItem(this.$id, JSON.stringify(tempPersistendRoutes))
     },
     restoreVisitedView() {
       this.$reset()
-    }
-  }
+    },
+  },
   // 由于需要自定义持久化过程，所以这里就不能用插件来实现
   // presist: {
   //   enable: true,

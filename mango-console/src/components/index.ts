@@ -8,5 +8,5 @@ export default {
       const component = components[it]
       app.component(component.default.name || toHump(getComponentName(it)), component.default)
     })
-  }
+  },
 }

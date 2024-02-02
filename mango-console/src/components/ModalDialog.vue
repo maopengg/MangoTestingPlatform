@@ -13,55 +13,55 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
+  import { defineComponent, ref } from 'vue'
 
-export default defineComponent({
-  name: 'ModalDialog',
-  props: {
-    title: {
-      type: String,
-      default: '操作'
+  export default defineComponent({
+    name: 'ModalDialog',
+    props: {
+      title: {
+        type: String,
+        default: '操作',
+      },
+      contentHeight: {
+        type: String,
+        default: '30vh',
+      },
     },
-    contentHeight: {
-      type: String,
-      default: '30vh'
-    }
-  },
-  emits: ['confirm', 'cancel'],
-  setup(props, { emit }) {
-    const showModal = ref(false)
-    function toggle() {
-      showModal.value = !showModal.value
-      return Promise.resolve(showModal.value)
-    }
-    function show() {
-      showModal.value = true
-      return Promise.resolve(true)
-    }
-    function close() {
-      showModal.value = false
-      return Promise.resolve(false)
-    }
-    function onConfirm() {
-      emit('confirm')
-    }
-    function onCancel() {
-      showModal.value = false
-      emit('cancel')
-    }
-    return {
-      showModal,
-      toggle,
-      show,
-      close,
-      onConfirm,
-      onCancel
-    }
-  }
-})
+    emits: ['confirm', 'cancel'],
+    setup(props, { emit }) {
+      const showModal = ref(false)
+      function toggle() {
+        showModal.value = !showModal.value
+        return Promise.resolve(showModal.value)
+      }
+      function show() {
+        showModal.value = true
+        return Promise.resolve(true)
+      }
+      function close() {
+        showModal.value = false
+        return Promise.resolve(false)
+      }
+      function onConfirm() {
+        emit('confirm')
+      }
+      function onCancel() {
+        showModal.value = false
+        emit('cancel')
+      }
+      return {
+        showModal,
+        toggle,
+        show,
+        close,
+        onConfirm,
+        onCancel,
+      }
+    },
+  })
 </script>
 <style>
-.modal-dialog__wrap {
-  max-height: 80vh;
-}
+  .modal-dialog__wrap {
+    max-height: 80vh;
+  }
 </style>

@@ -1,6 +1,13 @@
 import Mock, { Random } from 'mockjs'
 import { baseData } from '../base.ts'
-import { getDepartmentList, getUserList, getCardList, getCommentList, addDepartment, getRoleList } from '@/api/url'
+import {
+  getDepartmentList,
+  getUserList,
+  getCardList,
+  getCommentList,
+  addDepartment,
+  getRoleList,
+} from '@/api/url'
 
 const totalSize = 30
 
@@ -19,7 +26,7 @@ Mock.mock(RegExp(getDepartmentList), 'post', function () {
         depCode: 'dp_code_manager', // 0男 1女
         'order|+1': 1, // 0不是 1是
         createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
-        status: 0 // 0 禁用 1正常
+        status: 0, // 0 禁用 1正常
       },
       {
         id: 2,
@@ -35,7 +42,7 @@ Mock.mock(RegExp(getDepartmentList), 'post', function () {
             depCode: 'dp_code_marketing_1', // 0男 1女
             'order|+1': 1, // 0不是 1是
             createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
-            status: 1 // 0 禁用 1正常
+            status: 1, // 0 禁用 1正常
           },
           {
             id: 4,
@@ -43,9 +50,9 @@ Mock.mock(RegExp(getDepartmentList), 'post', function () {
             depCode: 'dp_code_marketing_2', // 0男 1女
             'order|+1': 1, // 0不是 1是
             createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
-            status: 1 // 0 禁用 1正常
-          }
-        ]
+            status: 1, // 0 禁用 1正常
+          },
+        ],
       },
       {
         id: 5,
@@ -53,7 +60,7 @@ Mock.mock(RegExp(getDepartmentList), 'post', function () {
         depCode: 'dp_code_technology', // 0男 1女
         'order|+1': 1, // 0不是 1是
         createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
-        status: 1 // 0 禁用 1正常
+        status: 1, // 0 禁用 1正常
       },
       {
         id: 6,
@@ -61,9 +68,9 @@ Mock.mock(RegExp(getDepartmentList), 'post', function () {
         depCode: 'dp_code_sale', // 0男 1女
         'order|+1': 1, // 0不是 1是
         createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
-        status: 1 // 0 禁用 1正常
-      }
-    ]
+        status: 1, // 0 禁用 1正常
+      },
+    ],
   })
 })
 
@@ -76,16 +83,16 @@ Mock.mock(RegExp(getRoleList), 'post', function () {
         name: '超级管理员',
         roleCode: 'ROLE_admin',
         description: '超级管理员',
-        createTime: Random.now('yyyy-MM-dd HH:mm:ss')
+        createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
       },
       {
         id: 2,
         name: '编辑员',
         roleCode: 'ROLE_editor',
         description: '编辑员',
-        createTime: Random.now('yyyy-MM-dd HH:mm:ss')
-      }
-    ]
+        createTime: Random.now('yyyy-MM-dd HH:mm:ss'),
+      },
+    ],
   })
 })
 
@@ -105,7 +112,9 @@ Mock.mock(RegExp(getUserList), 'post', function ({ body }) {
         nickName: function () {
           return Random.name()
         },
-        avatar: (import.meta.env.MODE === 'development' ? '' : '/vue-admin-work-p') + '/static/images/img_avatar_01.jpeg',
+        avatar:
+          (import.meta.env.MODE === 'development' ? '' : '/vue-admin-work-p') +
+          '/static/images/img_avatar_01.jpeg',
         'gender|0-1': 0, // 0男 1女
         'vip|0-1': 0, // 0不是 1是
         address: function () {
@@ -115,9 +124,9 @@ Mock.mock(RegExp(getUserList), 'post', function ({ body }) {
         lastLoginIp: function () {
           return Random.ip()
         },
-        'status|0-1': 1 // 0 禁用 1正常
-      }
-    ]
+        'status|0-1': 1, // 0 禁用 1正常
+      },
+    ],
   })
 })
 
@@ -141,9 +150,9 @@ Mock.mock(RegExp(getCardList), 'post', function ({ body }) {
         },
         time: function () {
           return Random.date()
-        }
-      }
-    ]
+        },
+      },
+    ],
   })
 })
 
@@ -170,8 +179,8 @@ Mock.mock(RegExp(getCommentList), 'post', function ({ body }) {
         },
         'rate|1-5': 5,
         'progress|20-100': 50,
-        'status|0-1': 1 // 对外展示状态 0 不展示，1 展示
-      }
-    ]
+        'status|0-1': 1, // 对外展示状态 0 不展示，1 展示
+      },
+    ],
   })
 })

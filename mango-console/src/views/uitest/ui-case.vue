@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="测试用例" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="测试用例"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @change="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project'">
                     <a-select
@@ -86,7 +95,9 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button status="success" size="small" @click="onConcurrency('批量执行')">批量执行</a-button>
+                  <a-button status="success" size="small" @click="onConcurrency('批量执行')"
+                    >批量执行</a-button
+                  >
                 </div>
                 <div>
                   <a-button status="warning" @click="handleClick">设为定时任务</a-button>
@@ -138,7 +149,10 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
-                  {{ record.module_name?.superior_module ? record.module_name?.superior_module + '/' : ''
+                  {{
+                    record.module_name?.superior_module
+                      ? record.module_name?.superior_module + '/'
+                      : ''
                   }}{{ record.module_name?.name }}
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
@@ -157,16 +171,28 @@
                       <a-button type="text" size="mini">···</a-button>
                       <template #content>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onClick1(record)">结果</a-button>
+                          <a-button type="text" size="mini" @click="onClick1(record)"
+                            >结果</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                          <a-button type="text" size="mini" @click="onUpdate(record)"
+                            >编辑</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="caseCody(record)">复制</a-button>
+                          <a-button type="text" size="mini" @click="caseCody(record)"
+                            >复制</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                          <a-button
+                            status="danger"
+                            type="text"
+                            size="mini"
+                            @click="onDelete(record)"
+                            >删除</a-button
+                          >
                         </a-doption>
                       </template>
                     </a-dropdown>
@@ -235,515 +261,521 @@
 </template>
 
 <script lang="ts" setup>
-import { get, post, put, deleted } from '@/api/http'
-import {
-  userNickname,
-  userProjectModuleGetAll,
-  uiCase,
-  uiCaseRun,
-  uiRunCaseBatch,
-  uiCaseCopy,
-  systemEnumStatus,
-  systemTasksBatchSetCases,
-  systemScheduledName
-} from '@/api/url'
-import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
-import { FormItem, ModalDialogType } from '@/types/components'
-import { Message, Modal } from '@arco-design/web-vue'
-import { onMounted, ref, nextTick, reactive } from 'vue'
-import { useProject } from '@/store/modules/get-project'
-import { fieldNames } from '@/setting'
-import { getFormItems } from '@/utils/datacleaning'
-import { useRouter } from 'vue-router'
-import { useTestObj } from '@/store/modules/get-test-obj'
-import { useProjectModule } from '@/store/modules/project_module'
-import { usePageData } from '@/store/page-data'
+  import { get, post, put, deleted } from '@/api/http'
+  import {
+    userNickname,
+    userProjectModuleGetAll,
+    uiCase,
+    uiCaseRun,
+    uiRunCaseBatch,
+    uiCaseCopy,
+    systemEnumStatus,
+    systemTasksBatchSetCases,
+    systemScheduledName,
+  } from '@/api/url'
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
+  import { FormItem, ModalDialogType } from '@/types/components'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { useProject } from '@/store/modules/get-project'
+  import { fieldNames } from '@/setting'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { useRouter } from 'vue-router'
+  import { useTestObj } from '@/store/modules/get-test-obj'
+  import { useProjectModule } from '@/store/modules/project_module'
+  import { usePageData } from '@/store/page-data'
 
-const projectModule = useProjectModule()
-const project = useProject()
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
-const formModel = ref({})
-const testObj = useTestObj()
+  const projectModule = useProjectModule()
+  const project = useProject()
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const pagination = usePagination(doRefresh)
+  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const formModel = ref({})
+  const testObj = useTestObj()
 
-const caseData = reactive({
-  isAdd: false,
-  updateId: 0,
-  actionTitle: '添加用例',
-  userList: [],
-  moduleList: projectModule.data,
-  systemStatus: [],
-  scheduledName: [],
-  value: null,
-  visible: false
-})
-const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入用例ID',
-    value: '',
-    reset: function () {
-      this.value = ''
-    }
-  },
-  {
-    key: 'name',
-    label: '用例名称',
-    type: 'input',
-    placeholder: '请输入用例名称',
-    value: '',
-    reset: function () {
-      this.value = ''
-    }
-  },
-  {
-    key: 'project',
-    label: '项目',
-    value: '',
-    type: 'select',
-    placeholder: '请选择项目',
-    optionItems: project.data,
-    reset: function () {}
-  },
-  {
-    key: 'module_name',
-    label: '模块',
-    value: '',
-    type: 'select',
-    placeholder: '请先选择项目',
-    optionItems: caseData.moduleList,
-    reset: function () {}
-  },
-  {
-    key: 'case_people',
-    label: '用例负责人',
-    value: '',
-    type: 'select',
-    placeholder: '请选择用例负责人',
-    optionItems: caseData.userList,
-    reset: function () {}
-  },
-  {
-    key: 'status',
-    label: '测试结果',
-    value: '',
-    type: 'select',
-    placeholder: '请选择测试结果',
-    optionItems: caseData.moduleList,
-    reset: function () {}
-  }
-])
-const formItems = reactive([
-  {
-    label: '项目',
-    key: 'project',
-    value: '',
-    placeholder: '请选择项目',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '模块',
-    key: 'module_name',
-    value: '',
-    placeholder: '请选择测试模块',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '用例名称',
-    key: 'name',
-    value: '',
-    type: 'input',
-    required: true,
-    placeholder: '请输入用例名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '用例负责人',
-    key: 'case_people',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请设置用例负责人',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  }
-])
-
-const tableColumns = useTableColumn([
-  table.indexColumn,
-  {
-    title: '项目',
-    key: 'project',
-    dataIndex: 'project',
-    width: 130
-  },
-  {
-    title: '模块',
-    key: 'module_name',
-    dataIndex: 'module_name',
-    width: 160
-  },
-  {
-    title: '用例名称',
-    key: 'name',
-    dataIndex: 'name',
-    align: 'left',
-    width: 200
-  },
-  {
-    title: '步骤顺序',
-    key: 'case_flow',
-    dataIndex: 'case_flow',
-    align: 'left'
-  },
-  {
-    title: '用例负责人',
-    key: 'case_people',
-    dataIndex: 'case_people'
-  },
-  {
-    title: '结果',
-    key: 'status',
-    dataIndex: 'status'
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    dataIndex: 'actions',
-    fixed: 'right',
-    width: 150
-  }
-])
-
-function doRefresh() {
-  get({
-    url: uiCase,
-    data: () => {
-      let value = getFormItems(conditionItems)
-      value['page'] = pagination.page
-      value['pageSize'] = pagination.pageSize
-      return value
-    }
+  const caseData = reactive({
+    isAdd: false,
+    updateId: 0,
+    actionTitle: '添加用例',
+    userList: [],
+    moduleList: projectModule.data,
+    systemStatus: [],
+    scheduledName: [],
+    value: null,
+    visible: false,
   })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
+  const conditionItems: Array<FormItem> = reactive([
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入用例ID',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'name',
+      label: '用例名称',
+      type: 'input',
+      placeholder: '请输入用例名称',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'project',
+      label: '项目',
+      value: '',
+      type: 'select',
+      placeholder: '请选择项目',
+      optionItems: project.data,
+      reset: function () {},
+    },
+    {
+      key: 'module_name',
+      label: '模块',
+      value: '',
+      type: 'select',
+      placeholder: '请先选择项目',
+      optionItems: caseData.moduleList,
+      reset: function () {},
+    },
+    {
+      key: 'case_people',
+      label: '用例负责人',
+      value: '',
+      type: 'select',
+      placeholder: '请选择用例负责人',
+      optionItems: caseData.userList,
+      reset: function () {},
+    },
+    {
+      key: 'status',
+      label: '测试结果',
+      value: '',
+      type: 'select',
+      placeholder: '请选择测试结果',
+      optionItems: caseData.moduleList,
+      reset: function () {},
+    },
+  ])
+  const formItems = reactive([
+    {
+      label: '项目',
+      key: 'project',
+      value: '',
+      placeholder: '请选择项目',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '模块',
+      key: 'module_name',
+      value: '',
+      placeholder: '请选择测试模块',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '用例名称',
+      key: 'name',
+      value: '',
+      type: 'input',
+      required: true,
+      placeholder: '请输入用例名称',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '用例负责人',
+      key: 'case_people',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请设置用例负责人',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ])
+
+  const tableColumns = useTableColumn([
+    table.indexColumn,
+    {
+      title: '项目',
+      key: 'project',
+      dataIndex: 'project',
+      width: 130,
+    },
+    {
+      title: '模块',
+      key: 'module_name',
+      dataIndex: 'module_name',
+      width: 160,
+    },
+    {
+      title: '用例名称',
+      key: 'name',
+      dataIndex: 'name',
+      align: 'left',
+      width: 200,
+    },
+    {
+      title: '步骤顺序',
+      key: 'case_flow',
+      dataIndex: 'case_flow',
+      align: 'left',
+    },
+    {
+      title: '用例负责人',
+      key: 'case_people',
+      dataIndex: 'case_people',
+    },
+    {
+      title: '结果',
+      key: 'status',
+      dataIndex: 'status',
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      dataIndex: 'actions',
+      fixed: 'right',
+      width: 150,
+    },
+  ])
+
+  function doRefresh() {
+    get({
+      url: uiCase,
+      data: () => {
+        let value = getFormItems(conditionItems)
+        value['page'] = pagination.page
+        value['pageSize'] = pagination.pageSize
+        return value
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
 
-function onResetSearch() {
-  conditionItems.forEach((it) => {
-    it.value = ''
-  })
-}
-
-function onAdd() {
-  caseData.actionTitle = '添加用例'
-  caseData.isAdd = true
-  modalDialogRef.value?.toggle()
-  formItems.forEach((it: any) => {
-    if (it.reset) {
-      it.reset()
-    } else {
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
       it.value = ''
-    }
-  })
-}
-
-function onDelete(data: any) {
-  Modal.confirm({
-    title: '提示',
-    content: '是否要删除此页面？',
-    cancelText: '取消',
-    okText: '删除',
-    onOk: () => {
-      deleted({
-        url: uiCase,
-        data: () => {
-          return {
-            id: '[' + data.id + ']'
-          }
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    }
-  })
-}
-
-function onUpdate(item: any) {
-  caseData.actionTitle = '编辑用例'
-  caseData.isAdd = false
-  caseData.updateId = item.id
-  getProjectModule(item.project.id)
-  modalDialogRef.value?.toggle()
-  nextTick(() => {
-    formItems.forEach((it) => {
-      const propName = item[it.key]
-      if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id
-      } else {
-        it.value = propName
-      }
     })
-  })
-}
+  }
 
-function onCaseRun(case_id: number) {
-  if (testObj.selectValue == null) {
-    Message.error('请先选择用例执行的环境')
-    return
-  }
-  get({
-    url: uiCaseRun,
-    data: () => {
-      return {
-        case_id: case_id,
-        testing_environment: testObj.selectValue
-      }
-    }
-  })
-    .then((res) => {
-      Message.loading(res.msg)
-    })
-    .catch(console.log)
-}
-
-function onConcurrency(name: string) {
-  if (testObj.selectValue == null) {
-    Message.error('请先选择用例执行的环境')
-    return
-  }
-  if (selectedRowKeys.value.length === 0) {
-    Message.error('请选择要' + name + '的用例数据')
-    return
-  }
-  Modal.confirm({
-    title: '提示',
-    content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
-    cancelText: '取消',
-    okText: '执行',
-    onOk: () => {
-      get({
-        url: uiRunCaseBatch,
-        data: () => {
-          return {
-            case_id_list: JSON.stringify(selectedRowKeys.value),
-            testing_environment: testObj.selectValue
-          }
-        }
-      })
-        .then((res) => {
-          Message.loading(res.msg)
-          selectedRowKeys.value = []
-          doRefresh()
-        })
-        .catch(console.log)
-    }
-  })
-}
-
-const handleClick = () => {
-  if (selectedRowKeys.value.length === 0) {
-    Message.error('请选择要添加定时任务的用例')
-    return
-  }
-  caseData.visible = true
-}
-const handleOk = () => {
-  post({
-    url: systemTasksBatchSetCases,
-    data: () => {
-      return {
-        case_id_list: JSON.stringify(selectedRowKeys.value),
-        scheduled_tasks_id: caseData.value
-      }
-    }
-  })
-    .then((res) => {
-      Message.success(res.msg)
-      caseData.visible = false
-    })
-    .catch(console.log)
-}
-const handleCancel = () => {
-  caseData.visible = false
-}
-function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+  function onAdd() {
+    caseData.actionTitle = '添加用例'
+    caseData.isAdd = true
     modalDialogRef.value?.toggle()
-    let value = getFormItems(formItems)
-    if (caseData.isAdd) {
-      post({
-        url: uiCase,
-        data: () => {
-          return value
+    formItems.forEach((it: any) => {
+      if (it.reset) {
+        it.reset()
+      } else {
+        it.value = ''
+      }
+    })
+  }
+
+  function onDelete(data: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此页面？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleted({
+          url: uiCase,
+          data: () => {
+            return {
+              id: '[' + data.id + ']',
+            }
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
+  function onUpdate(item: any) {
+    caseData.actionTitle = '编辑用例'
+    caseData.isAdd = false
+    caseData.updateId = item.id
+    getProjectModule(item.project.id)
+    modalDialogRef.value?.toggle()
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = item[it.key]
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName
         }
       })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    } else {
-      put({
-        url: uiCase,
-        data: () => {
-          value['id'] = caseData.updateId
-          return value
+    })
+  }
+
+  function onCaseRun(case_id: number) {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    get({
+      url: uiCaseRun,
+      data: () => {
+        return {
+          case_id: case_id,
+          testing_environment: testObj.selectValue,
         }
+      },
+    })
+      .then((res) => {
+        Message.loading(res.msg)
       })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
+      .catch(console.log)
+  }
+
+  function onConcurrency(name: string) {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要' + name + '的用例数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '确定要' + name + '这些用例吗？批量执行会生成多个浏览器来执行用例',
+      cancelText: '取消',
+      okText: '执行',
+      onOk: () => {
+        get({
+          url: uiRunCaseBatch,
+          data: () => {
+            return {
+              case_id_list: JSON.stringify(selectedRowKeys.value),
+              testing_environment: testObj.selectValue,
+            }
+          },
         })
-        .catch(console.log)
+          .then((res) => {
+            Message.loading(res.msg)
+            selectedRowKeys.value = []
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
+  const handleClick = () => {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要添加定时任务的用例')
+      return
+    }
+    caseData.visible = true
+  }
+  const handleOk = () => {
+    post({
+      url: systemTasksBatchSetCases,
+      data: () => {
+        return {
+          case_id_list: JSON.stringify(selectedRowKeys.value),
+          scheduled_tasks_id: caseData.value,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        caseData.visible = false
+      })
+      .catch(console.log)
+  }
+  const handleCancel = () => {
+    caseData.visible = false
+  }
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      if (caseData.isAdd) {
+        post({
+          url: uiCase,
+          data: () => {
+            return value
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        put({
+          url: uiCase,
+          data: () => {
+            value['id'] = caseData.updateId
+            return value
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      }
     }
   }
-}
 
-function getNickName() {
-  get({
-    url: userNickname,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      caseData.userList = res.data
+  function getNickName() {
+    get({
+      url: userNickname,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
-
-function getProjectModule(projectId: number) {
-  doRefresh()
-  get({
-    url: userProjectModuleGetAll,
-    data: () => {
-      return {
-        project_id: projectId
-      }
-    }
-  })
-    .then((res) => {
-      caseData.moduleList = res.data
-    })
-    .catch(console.log)
-}
-
-const router = useRouter()
-
-function onClick(record: any) {
-  const pageData = usePageData()
-  pageData.setRecord(record)
-  router.push({
-    path: '/uitest/ui-case-details',
-    query: {
-      id: parseInt(record.id, 10)
-    }
-  })
-}
-
-function onClick1(record: any) {
-  if (!record.test_suite_id) {
-    Message.error(`用例：${record.name}最近无执行记录`)
-    return
+      .then((res) => {
+        caseData.userList = res.data
+      })
+      .catch(console.log)
   }
-  const pageData = usePageData()
-  pageData.setRecord(record)
-  router.push({
-    path: '/uitest/report/details',
-    query: {
-      id: record.test_suite_id
-    }
-  })
-}
 
-function caseCody(record: any) {
-  post({
-    url: uiCaseCopy,
-    data: () => {
-      return {
-        case_id: record.id
-      }
-    }
-  })
-    .then((res) => {
-      Message.success(res.msg)
-      doRefresh()
-    })
-    .catch(console.log)
-}
-
-function status() {
-  get({
-    url: systemEnumStatus,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      caseData.systemStatus = res.data
-    })
-    .catch(console.log)
-}
-function scheduledName() {
-  get({
-    url: systemScheduledName,
-    data: () => {
-      return {
-        case_type: 0
-      }
-    }
-  })
-    .then((res) => {
-      caseData.scheduledName = res.data
-    })
-    .catch(console.log)
-}
-
-onMounted(() => {
-  nextTick(async () => {
+  function getProjectModule(projectId: number) {
     doRefresh()
-    getNickName()
-    status()
-    scheduledName()
+    get({
+      url: userProjectModuleGetAll,
+      data: () => {
+        return {
+          project_id: projectId,
+        }
+      },
+    })
+      .then((res) => {
+        caseData.moduleList = res.data
+      })
+      .catch(console.log)
+  }
+
+  const router = useRouter()
+
+  function onClick(record: any) {
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/uitest/ui-case-details',
+      query: {
+        id: parseInt(record.id, 10),
+      },
+    })
+  }
+
+  function onClick1(record: any) {
+    if (!record.test_suite_id) {
+      Message.error(`用例：${record.name}最近无执行记录`)
+      return
+    }
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/uitest/report/details',
+      query: {
+        id: record.test_suite_id,
+      },
+    })
+  }
+
+  function caseCody(record: any) {
+    post({
+      url: uiCaseCopy,
+      data: () => {
+        return {
+          case_id: record.id,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
+
+  function status() {
+    get({
+      url: systemEnumStatus,
+      data: () => {
+        return {}
+      },
+    })
+      .then((res) => {
+        caseData.systemStatus = res.data
+      })
+      .catch(console.log)
+  }
+  function scheduledName() {
+    get({
+      url: systemScheduledName,
+      data: () => {
+        return {
+          case_type: 0,
+        }
+      },
+    })
+      .then((res) => {
+        caseData.scheduledName = res.data
+      })
+      .catch(console.log)
+  }
+
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+      getNickName()
+      status()
+      scheduledName()
+    })
   })
-})
 </script>

@@ -13,7 +13,7 @@ export const login = '/login'
 export const getMenuListByRoleId = '/menu/'
 export const getAllMenuByRoleId = '/role'
 export const getMenuList = '/menu_1'
-export const test = '/testconfig/test'
+export const test = '/config/test'
 // -
 export const userDepartmentList = '/user/project'
 export const userUserLogs = '/user/user/logs'

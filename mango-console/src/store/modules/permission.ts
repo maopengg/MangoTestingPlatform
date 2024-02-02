@@ -11,7 +11,7 @@ import { constantRoutes } from '@/router/routes/constants'
 const usePermissionStore = defineStore('permission-route', {
   state: () => {
     return {
-      permissionRoutes: [] as RouteRecordRaw[]
+      permissionRoutes: [] as RouteRecordRaw[],
     }
   },
   getters: {
@@ -35,14 +35,14 @@ const usePermissionStore = defineStore('permission-route', {
           delete obj.children
           return obj
         })
-    }
+    },
   },
   actions: {
     async getRoutes(data: { userId: number; roleId: number }) {
       try {
         if (getMenuListByRoleId) {
           const res = await get({
-            url: baseAddress + getMenuListByRoleId
+            url: baseAddress + getMenuListByRoleId,
             // 在实际的开发中，这个地方可以换成 token，让后端解析用户信息获取 userId 和 roleId，前端可以不用传 userId 和 roleId。
             // 这样可以增加安全性
             // 用户数据
@@ -64,7 +64,7 @@ const usePermissionStore = defineStore('permission-route', {
       // 加载路由
       const accessRoutes = await this.getRoutes({
         roleId: userStore.roleId,
-        userId: userStore.userId
+        userId: userStore.userId,
       })
       const mapRoutes = mapTwoLevelRouter(accessRoutes)
       mapRoutes.forEach((it: any) => {
@@ -75,16 +75,16 @@ const usePermissionStore = defineStore('permission-route', {
         path: '/',
         redirect: findRootPathRoute(accessRoutes),
         meta: {
-          hidden: true
-        }
+          hidden: true,
+        },
       })
       // 这个路由一定要放在最后
       router.addRoute({
         path: '/:pathMatch(.*)*',
         redirect: '/404',
         meta: {
-          hidden: true
-        }
+          hidden: true,
+        },
       })
       this.permissionRoutes = [...constantRoutes, ...accessRoutes]
     },
@@ -93,8 +93,8 @@ const usePermissionStore = defineStore('permission-route', {
     },
     reset() {
       this.$reset()
-    }
-  }
+    },
+  },
 })
 
 export default usePermissionStore

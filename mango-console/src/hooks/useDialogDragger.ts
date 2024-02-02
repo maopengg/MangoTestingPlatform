@@ -2,7 +2,7 @@ const range = {
   left: 0,
   right: 0,
   top: 0,
-  bottom: 0
+  bottom: 0,
 }
 
 const listeners: { name: string; listener: (e: MouseEvent) => void }[] = []
@@ -54,11 +54,11 @@ export function drag(wrap: HTMLElement) {
     listeners.push(
       {
         name: 'mousemove',
-        listener: handleMove
+        listener: handleMove,
       },
       {
         name: 'mouseup',
-        listener: handleUp
+        listener: handleUp,
       }
     )
     document.addEventListener('mousemove', handleMove)

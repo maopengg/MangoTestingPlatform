@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="登录日志" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="登录日志"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @change="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'user_id'">
                     <a-select
@@ -79,7 +88,9 @@
                 </template>
                 <template v-else-if="item.key === 'source_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.source_type === '1'">控制端</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.source_type === '2'">执行端</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.source_type === '2'"
+                    >执行端</a-tag
+                  >
                 </template>
               </a-table-column>
             </template>
@@ -94,134 +105,134 @@
 </template>
 
 <script lang="ts" setup>
-import { get } from '@/api/http'
-import { userNickname, userUserLogs, systemEnumClient } from '@/api/url'
-import { usePagination, useRowKey, useTable, useTableColumn } from '@/hooks/table'
-import { FormItem } from '@/types/components'
-import { onMounted, nextTick, reactive } from 'vue'
-import { getFormItems } from '@/utils/datacleaning'
-import { fieldNames } from '@/setting'
+  import { get } from '@/api/http'
+  import { userNickname, userUserLogs, systemEnumClient } from '@/api/url'
+  import { usePagination, useRowKey, useTable, useTableColumn } from '@/hooks/table'
+  import { FormItem } from '@/types/components'
+  import { onMounted, nextTick, reactive } from 'vue'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { fieldNames } from '@/setting'
 
-const pagination = usePagination(doRefresh)
-const table = useTable()
-const rowKey = useRowKey('id')
-const userLogsData = reactive({
-  userList: [],
-  enumClientTypeList: []
-})
-const tableColumns = useTableColumn([
-  table.indexColumn,
-  {
-    title: '昵称',
-    key: 'nickname',
-    dataIndex: 'nickname'
-  },
-  {
-    title: '账号',
-    key: 'username',
-    dataIndex: 'username'
-  },
-  {
-    title: '来源',
-    key: 'source_type',
-    dataIndex: 'source_type'
-  },
-  {
-    title: 'IP',
-    key: 'ip',
-    dataIndex: 'ip'
-  },
-  {
-    title: '登录时间',
-    key: 'create_time',
-    dataIndex: 'create_time'
+  const pagination = usePagination(doRefresh)
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const userLogsData = reactive({
+    userList: [],
+    enumClientTypeList: [],
+  })
+  const tableColumns = useTableColumn([
+    table.indexColumn,
+    {
+      title: '昵称',
+      key: 'nickname',
+      dataIndex: 'nickname',
+    },
+    {
+      title: '账号',
+      key: 'username',
+      dataIndex: 'username',
+    },
+    {
+      title: '来源',
+      key: 'source_type',
+      dataIndex: 'source_type',
+    },
+    {
+      title: 'IP',
+      key: 'ip',
+      dataIndex: 'ip',
+    },
+    {
+      title: '登录时间',
+      key: 'create_time',
+      dataIndex: 'create_time',
+    },
+  ])
+
+  const conditionItems: Array<FormItem> = reactive([
+    {
+      key: 'user_id',
+      label: '筛选用户',
+      value: '',
+      type: 'select',
+      placeholder: '请选择用户',
+      optionItems: userLogsData.userList,
+      reset: function () {},
+    },
+    {
+      key: 'source_type',
+      label: '筛选来源',
+      type: 'select',
+      placeholder: '请选择来源',
+      value: '',
+      optionItems: userLogsData.enumClientTypeList,
+      reset: function () {},
+    },
+  ])
+
+  function doRefresh() {
+    get({
+      url: userUserLogs,
+      data: () => {
+        let value = getFormItems(conditionItems)
+        value['page'] = pagination.page
+        value['pageSize'] = pagination.pageSize
+        return value
+      },
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
   }
-])
 
-const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'user_id',
-    label: '筛选用户',
-    value: '',
-    type: 'select',
-    placeholder: '请选择用户',
-    optionItems: userLogsData.userList,
-    reset: function () {}
-  },
-  {
-    key: 'source_type',
-    label: '筛选来源',
-    type: 'select',
-    placeholder: '请选择来源',
-    value: '',
-    optionItems: userLogsData.enumClientTypeList,
-    reset: function () {}
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
   }
-])
 
-function doRefresh() {
-  get({
-    url: userUserLogs,
-    data: () => {
-      let value = getFormItems(conditionItems)
-      value['page'] = pagination.page
-      value['pageSize'] = pagination.pageSize
-      return value
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
+  function getNickName() {
+    get({
+      url: userNickname,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        userLogsData.userList = res.data
+      })
+      .catch(console.log)
+  }
 
-function onResetSearch() {
-  conditionItems.forEach((it) => {
-    it.value = ''
-  })
-}
-
-function getNickName() {
-  get({
-    url: userNickname,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      userLogsData.userList = res.data
+  function enumClientType() {
+    get({
+      url: systemEnumClient,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        userLogsData.enumClientTypeList = res.data
+        console.log(userLogsData.enumClientTypeList)
+      })
+      .catch(console.log)
+  }
 
-function enumClientType() {
-  get({
-    url: systemEnumClient,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      userLogsData.enumClientTypeList = res.data
-      console.log(userLogsData.enumClientTypeList)
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+      getNickName()
+      enumClientType()
     })
-    .catch(console.log)
-}
-
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
-    getNickName()
-    enumClientType()
   })
-})
 </script>
 
 <style>
-.title-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 </style>

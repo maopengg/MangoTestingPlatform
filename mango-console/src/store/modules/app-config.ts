@@ -14,7 +14,7 @@ const useAppConfigStore = defineStore('app-config', {
   getters: {
     getLayoutMode(state) {
       return state.layoutMode
-    }
+    },
   },
   actions: {
     changeTheme(theme: ThemeMode) {
@@ -49,15 +49,15 @@ const useAppConfigStore = defineStore('app-config', {
     },
     setFlexMainHeight(isFlex: boolean) {
       this.flexMainHeight = isFlex
-    }
+    },
   },
   presist: {
     enable: true,
     resetToState: true,
     option: {
-      exclude: ['flexMainHeight']
-    }
-  }
+      exclude: ['flexMainHeight'],
+    },
+  },
 })
 
 export default useAppConfigStore

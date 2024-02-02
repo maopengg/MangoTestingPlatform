@@ -45,7 +45,11 @@ export function findRootPathRoute(routes: RouteRecordRaw[]) {
     : '/login'
 }
 
-export function filterRoutesFromLocalRoutes(route: OriginRoute, localRoutes: Array<RouteRecordRaw>, path = '/') {
+export function filterRoutesFromLocalRoutes(
+  route: OriginRoute,
+  localRoutes: Array<RouteRecordRaw>,
+  path = '/'
+) {
   const filterRoute = localRoutes.find((it) => {
     return resolve(path, it.path) === route.menuUrl
   })
@@ -59,7 +63,7 @@ export function filterRoutesFromLocalRoutes(route: OriginRoute, localRoutes: Arr
       hidden: !!route.hidden,
       isRootPath: !!route.isRootPath,
       isSingle: !!route.isSingle,
-      ...filterRoute.meta
+      ...filterRoute.meta,
     }
     const parentPath = resolve(path, filterRoute.path)
     if (
@@ -108,8 +112,8 @@ export function generatorRoutes(res: Array<OriginRoute>) {
           icon: it.icon || 'icon-menu',
           badge: it.badge,
           isRootPath: !!it.isRootPath,
-          isSingle: !!it.isSingle
-        }
+          isSingle: !!it.isSingle,
+        },
       }
       if (it.children) {
         route.children = generatorRoutes(it.children) as any
@@ -184,14 +188,18 @@ export function transfromMenu(originRoutes: Array<RouteRecordRaw>): Array<MenuOp
         key: it.path,
         label: it.meta?.title as string,
         icon: it.meta?.icon as string,
-        children: null
+        children: null,
       }
       if (it.children) {
         if (it.meta && it.meta.isSingle && it.children.length === 1) {
           const lastItem = it.children[0] as RouteRecordRaw
           tempMenu.key = lastItem.path || tempMenu.key
-          tempMenu.label = (lastItem.meta && lastItem.meta.title ? lastItem.meta?.title : tempMenu.label) as string
-          tempMenu.icon = (lastItem.meta && lastItem.meta.icon ? lastItem.meta?.icon : tempMenu.icon) as string
+          tempMenu.label = (
+            lastItem.meta && lastItem.meta.title ? lastItem.meta?.title : tempMenu.label
+          ) as string
+          tempMenu.icon = (
+            lastItem.meta && lastItem.meta.icon ? lastItem.meta?.icon : tempMenu.icon
+          ) as string
           tempMenu.children = null
         } else {
           tempMenu.children = transfromMenu(it.children)
@@ -211,7 +219,7 @@ export function transformSplitTabMenu(routes: Array<RouteRecordRaw>): Array<Spli
       iconPrefix: it.meta?.iconPrefix || 'icon',
       icon: it.meta ? (it.meta?.icon as any) : undefined,
       children: it.children as RouteRecordRaw[],
-      checked: ref(false)
+      checked: ref(false),
     }
     tempTabs.push(splitTab)
   })

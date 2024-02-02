@@ -2,10 +2,18 @@
   <div class="main-container">
     <div class="box-wrapper">
       <div class="flex">
-        <a-card :bordered="false" class="card-border-radius personal-box" :body-style="{ padding: '10px' }">
+        <a-card
+          :bordered="false"
+          class="card-border-radius personal-box"
+          :body-style="{ padding: '10px' }"
+        >
           <div class="info-wrapper">
             <div class="avatar-wrapper">
-              <div class="avatar" :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }" @mouseenter="avatarTouchStart">
+              <div
+                class="avatar"
+                :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }"
+                @mouseenter="avatarTouchStart"
+              >
                 <img :src="userStore.avatar" />
               </div>
               <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
@@ -66,253 +74,253 @@
 </template>
 
 <script lang="ts" setup>
-import useUserStore from '@/store/modules/user'
-import { nextTick, onMounted, reactive, ref } from 'vue'
-import { get, put } from '@/api/http'
-import { userPassword, userInfo } from '@/api/url'
-import { FormItem, ModalDialogType } from '@/types/components'
-import { Message } from '@arco-design/web-vue'
-import { getFormItems } from '@/utils/datacleaning'
-import { websocket } from '@/utils/socket'
-const userStore = useUserStore()
-const touched = ref(false)
-const uploaded = ref(false)
-const formModel = ref({})
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const personalCenterData = reactive({
-  actionTitle: '修改密码',
-  data: {}
-})
-const formItems: FormItem[] = reactive([
-  {
-    label: '原始密码',
-    key: 'password',
-    value: '',
-    placeholder: '请输入原始密码',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '新密码',
-    key: 'new_password',
-    value: null,
-    type: 'input',
-    required: true,
-    placeholder: '请输入新密码',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '确认密码',
-    key: 'confirm_password',
-    value: '',
-    type: 'input',
-    required: true,
-    placeholder: '请输入确认密码',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  }
-])
+  import useUserStore from '@/store/modules/user'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { get, put } from '@/api/http'
+  import { userPassword, userInfo } from '@/api/url'
+  import { FormItem, ModalDialogType } from '@/types/components'
+  import { Message } from '@arco-design/web-vue'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { websocket } from '@/utils/socket'
+  const userStore = useUserStore()
+  const touched = ref(false)
+  const uploaded = ref(false)
+  const formModel = ref({})
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const personalCenterData = reactive({
+    actionTitle: '修改密码',
+    data: {},
+  })
+  const formItems: FormItem[] = reactive([
+    {
+      label: '原始密码',
+      key: 'password',
+      value: '',
+      placeholder: '请输入原始密码',
+      required: true,
+      type: 'input',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '新密码',
+      key: 'new_password',
+      value: null,
+      type: 'input',
+      required: true,
+      placeholder: '请输入新密码',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '确认密码',
+      key: 'confirm_password',
+      value: '',
+      type: 'input',
+      required: true,
+      placeholder: '请输入确认密码',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ])
 
-const avatarTouchStart = () => {
-  touched.value = true
-}
-const uploadAvatar = () => {
-  uploaded.value = true
-  setTimeout(() => {
-    touched.value = false
-    uploaded.value = false
-  }, 1000)
-}
-function onUpdate() {
-  console.log(formItems)
-  modalDialogRef.value?.toggle()
-  nextTick(() => {
-    formItems.forEach((it) => {
-      it.value = ''
-    })
-  })
-}
-function doRefresh() {
-  get({
-    url: userInfo,
-    data: () => {
-      return {
-        id: userStore.userId
-      }
-    }
-  })
-    .then((res) => {
-      if (res.data) {
-        personalCenterData.data = res.data[0]
-      }
-    })
-    .catch(console.log)
-}
-function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+  const avatarTouchStart = () => {
+    touched.value = true
+  }
+  const uploadAvatar = () => {
+    uploaded.value = true
+    setTimeout(() => {
+      touched.value = false
+      uploaded.value = false
+    }, 1000)
+  }
+  function onUpdate() {
+    console.log(formItems)
     modalDialogRef.value?.toggle()
-    let value = getFormItems(formItems)
-    value['id'] = userStore.userId
-    put({
-      url: userPassword,
+    nextTick(() => {
+      formItems.forEach((it) => {
+        it.value = ''
+      })
+    })
+  }
+  function doRefresh() {
+    get({
+      url: userInfo,
       data: () => {
-        return value
-      }
+        return {
+          id: userStore.userId,
+        }
+      },
     })
       .then((res) => {
-        Message.success(res.msg)
-        userStore.logout().then(() => {
-          window.localStorage.removeItem('visited-routes')
-          window.location.reload()
-          localStorage.clear()
-          websocket(13213, false)
-        })
+        if (res.data) {
+          personalCenterData.data = res.data[0]
+        }
       })
       .catch(console.log)
   }
-}
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      value['id'] = userStore.userId
+      put({
+        url: userPassword,
+        data: () => {
+          return value
+        },
+      })
+        .then((res) => {
+          Message.success(res.msg)
+          userStore.logout().then(() => {
+            window.localStorage.removeItem('visited-routes')
+            window.location.reload()
+            localStorage.clear()
+            websocket(13213, false)
+          })
+        })
+        .catch(console.log)
+    }
+  }
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+    })
   })
-})
 </script>
 <style lang="less" scoped>
-.box-wrapper {
-  .personal-box {
-    width: 100%;
+  .box-wrapper {
+    .personal-box {
+      width: 100%;
 
-    .info-wrapper {
-      text-align: center;
+      .info-wrapper {
+        text-align: center;
 
-      .avatar-wrapper {
-        display: inline-block;
-        width: 6rem;
-        height: 6rem;
-        margin-top: 20px;
-        position: relative;
+        .avatar-wrapper {
+          display: inline-block;
+          width: 6rem;
+          height: 6rem;
+          margin-top: 20px;
+          position: relative;
 
-        .avatar {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          transform-origin: bottom;
-          transform: rotate(0deg);
-          z-index: 1;
-          transition: all 0.5s ease-in-out;
+          .avatar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            transform-origin: bottom;
+            transform: rotate(0deg);
+            z-index: 1;
+            transition: all 0.5s ease-in-out;
 
-          & > img {
-            width: 100%;
-            height: 100%;
+            & > img {
+              width: 100%;
+              height: 100%;
+              border-radius: 50%;
+              border: 2px solid rgb(245, 241, 7);
+            }
+          }
+
+          .avatar-touch {
+            transform: rotate(180deg);
+          }
+
+          .avatar-end {
+            transform: rotate(0deg);
+          }
+
+          .camera-layer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 50%;
-            border: 2px solid rgb(245, 241, 7);
           }
         }
 
-        .avatar-touch {
-          transform: rotate(180deg);
+        .des-wrapper {
+          width: 70%;
+          margin: 0 auto;
+          font-size: 14px;
+          padding: 15px;
         }
 
-        .avatar-end {
-          transform: rotate(0deg);
+        .text-wrapper {
+          font-size: 0.8rem;
+          margin-top: 20px;
+          width: 50%;
+          margin: 0 auto;
+
+          .label {
+            display: inline-block;
+            width: 40%;
+            text-align: right;
+          }
+
+          .value {
+            display: inline-block;
+            width: 60%;
+            text-align: left;
+          }
         }
 
-        .camera-layer {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: rgba(0, 0, 0, 0.6);
-          border-radius: 50%;
-        }
-      }
-
-      .des-wrapper {
-        width: 70%;
-        margin: 0 auto;
-        font-size: 14px;
-        padding: 15px;
-      }
-
-      .text-wrapper {
-        font-size: 0.8rem;
-        margin-top: 20px;
-        width: 50%;
-        margin: 0 auto;
-
-        .label {
-          display: inline-block;
-          width: 40%;
-          text-align: right;
-        }
-
-        .value {
-          display: inline-block;
-          width: 60%;
-          text-align: left;
+        .text-wrapper + .text-wrapper {
+          margin-top: 15px;
         }
       }
-
-      .text-wrapper + .text-wrapper {
-        margin-top: 15px;
-      }
-    }
-  }
-
-  .message-wrapper {
-    border-bottom: 1px solid #f5f5f5;
-    padding-bottom: 10px;
-
-    .notify {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
     }
 
-    .message-title {
-      font-size: 14px;
-    }
-
-    .content {
-      font-size: 12px;
-      margin-top: 10px;
-      line-height: 1rem;
-    }
-  }
-
-  .message-wrapper + .message-wrapper {
-    margin-top: 10px;
-  }
-
-  .wating-box {
-    width: 30%;
-    margin-left: 10px;
-
-    .wating-item {
-      padding: 10px;
+    .message-wrapper {
       border-bottom: 1px solid #f5f5f5;
+      padding-bottom: 10px;
+
+      .notify {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .message-title {
+        font-size: 14px;
+      }
+
+      .content {
+        font-size: 12px;
+        margin-top: 10px;
+        line-height: 1rem;
+      }
+    }
+
+    .message-wrapper + .message-wrapper {
+      margin-top: 10px;
+    }
+
+    .wating-box {
+      width: 30%;
+      margin-left: 10px;
+
+      .wating-item {
+        padding: 10px;
+        border-bottom: 1px solid #f5f5f5;
+      }
     }
   }
-}
 </style>

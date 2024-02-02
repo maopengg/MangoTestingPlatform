@@ -46,32 +46,32 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+  import { defineComponent } from 'vue'
 
-export default defineComponent({
-  setup() {
-    const data = [
-      {
-        title: '下午三点大会议室开会'
-      },
-      {
-        title: '下午三点大会议室开会'
-      },
-      {
-        title: '下午三点大会议室开会'
-      },
-      {
-        title: '下午三点大会议室开会'
+  export default defineComponent({
+    setup() {
+      const data = [
+        {
+          title: '下午三点大会议室开会',
+        },
+        {
+          title: '下午三点大会议室开会',
+        },
+        {
+          title: '下午三点大会议室开会',
+        },
+        {
+          title: '下午三点大会议室开会',
+        },
+      ]
+      return {
+        data,
       }
-    ]
-    return {
-      data
-    }
-  }
-})
+    },
+  })
 </script>
 <style lang="less" scoped>
-:deep(.arco-list-medium > .arco-list-content > .arco-list-item) {
-  padding: 0 !important;
-}
+  :deep(.arco-list-medium > .arco-list-content > .arco-list-item) {
+    padding: 0 !important;
+  }
 </style>

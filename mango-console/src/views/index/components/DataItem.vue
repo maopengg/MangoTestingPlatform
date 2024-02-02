@@ -36,62 +36,62 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+  import { defineComponent } from 'vue'
 
-export default defineComponent({
-  name: 'DataItem',
-  props: {
-    dataModel: {
-      type: Object,
-      default: () => {
-        return {}
+  export default defineComponent({
+    name: 'DataItem',
+    props: {
+      dataModel: {
+        type: Object,
+        default: () => {
+          return {}
+        },
+      },
+      title: {
+        type: String,
+        default: '',
+      },
+    },
+    setup(props) {
+      return {
+        ...props.dataModel,
       }
     },
-    title: {
-      type: String,
-      default: ''
-    }
-  },
-  setup(props) {
-    return {
-      ...props.dataModel
-    }
-  }
-})
+  })
 </script>
 
 <style lang="less" scoped>
-:deep(.arco-card-body) {
-  position: relative;
-  overflow: hidden;
-  border-radius: 5px;
-}
+  :deep(.arco-card-body) {
+    position: relative;
+    overflow: hidden;
+    border-radius: 5px;
+  }
 
-:deep(.arco-statistic-content .arco-statistic-value-integer) {
-  font-size: 36px;
-}
+  :deep(.arco-statistic-content .arco-statistic-value-integer) {
+    font-size: 36px;
+  }
 
-.title-wrapper {
-  position: relative;
-  z-index: 9;
-  padding: 6px 10px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #fff;
-  border-bottom: #fff dashed 1px;
-}
+  .title-wrapper {
+    position: relative;
+    z-index: 9;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    border-bottom: #fff dashed 1px;
+  }
 
-.item-img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
+  .item-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
 
-.item-value {
-  font-size: 46px;
-  font-weight: bold;
-}
+  .item-value {
+    font-size: 46px;
+    font-weight: bold;
+  }
 </style>

@@ -33,88 +33,88 @@
 </template>
 
 <script lang="ts">
-import usePermissionStore from '@/store/modules/permission'
-import { defineComponent, onMounted, ref } from 'vue'
-import { RouteRecordRaw, useRouter } from 'vue-router'
-import { get } from '@/api/http'
-import { systemCacheKeyValue } from '@/api/url'
-interface InnerSearchItem {
-  title: string
-  key: string
-  disabled: boolean
-  children?: InnerSearchItem[]
-}
-
-export default defineComponent({
-  setup() {
-    const visible = ref(false)
-    const activeKey = ref('1')
-    const outValue = ref('')
-    const innerValue = ref(undefined)
-    const searchList = ref<Array<InnerSearchItem>>([])
-    function show() {
-      visible.value = true
-    }
-    function close() {
-      visible.value = false
-    }
-    function onOutSearch() {
-      if (outValue.value) {
-        // visible.value = false
-        get({
-          url: systemCacheKeyValue,
-          data: () => {
-            return {
-              key: outValue.value
-            }
-          }
-        })
-          .then((res) => {
-            res.msg
-          })
-          .catch(console.log)
-      }
-    }
-    const permissionStore = usePermissionStore()
-    function transformRoutes(routes: RouteRecordRaw[], parentPath = '/'): InnerSearchItem[] {
-      const list: InnerSearchItem[] = []
-      routes
-        .filter((it) => it.meta && it.meta.hidden !== true && it.path !== parentPath)
-        .forEach((it) => {
-          const searchItem: InnerSearchItem = {
-            key: ((it.meta?.title as string) || '') + ':' + it.path,
-            title: it.meta ? (it.meta.title as string) : '',
-            disabled: false
-          }
-          if (it.children && it.children.length > 0) {
-            searchItem.children = transformRoutes(it.children, it.path)
-            searchItem.disabled = true
-          }
-          list.push(searchItem)
-        })
-      return list
-    }
-    const router = useRouter()
-    function onSelectItem(value: any) {
-      const items = value.split(':')
-      router.push(items[1]).then(() => {
-        visible.value = false
-      })
-    }
-    onMounted(() => {
-      searchList.value = transformRoutes(permissionStore.getPermissionSideBar)
-    })
-    return {
-      visible,
-      activeKey,
-      searchList,
-      outValue,
-      innerValue,
-      show,
-      close,
-      onOutSearch,
-      onSelectItem
-    }
+  import usePermissionStore from '@/store/modules/permission'
+  import { defineComponent, onMounted, ref } from 'vue'
+  import { RouteRecordRaw, useRouter } from 'vue-router'
+  import { get } from '@/api/http'
+  import { systemCacheKeyValue } from '@/api/url'
+  interface InnerSearchItem {
+    title: string
+    key: string
+    disabled: boolean
+    children?: InnerSearchItem[]
   }
-})
+
+  export default defineComponent({
+    setup() {
+      const visible = ref(false)
+      const activeKey = ref('1')
+      const outValue = ref('')
+      const innerValue = ref(undefined)
+      const searchList = ref<Array<InnerSearchItem>>([])
+      function show() {
+        visible.value = true
+      }
+      function close() {
+        visible.value = false
+      }
+      function onOutSearch() {
+        if (outValue.value) {
+          // visible.value = false
+          get({
+            url: systemCacheKeyValue,
+            data: () => {
+              return {
+                key: outValue.value,
+              }
+            },
+          })
+            .then((res) => {
+              res.msg
+            })
+            .catch(console.log)
+        }
+      }
+      const permissionStore = usePermissionStore()
+      function transformRoutes(routes: RouteRecordRaw[], parentPath = '/'): InnerSearchItem[] {
+        const list: InnerSearchItem[] = []
+        routes
+          .filter((it) => it.meta && it.meta.hidden !== true && it.path !== parentPath)
+          .forEach((it) => {
+            const searchItem: InnerSearchItem = {
+              key: ((it.meta?.title as string) || '') + ':' + it.path,
+              title: it.meta ? (it.meta.title as string) : '',
+              disabled: false,
+            }
+            if (it.children && it.children.length > 0) {
+              searchItem.children = transformRoutes(it.children, it.path)
+              searchItem.disabled = true
+            }
+            list.push(searchItem)
+          })
+        return list
+      }
+      const router = useRouter()
+      function onSelectItem(value: any) {
+        const items = value.split(':')
+        router.push(items[1]).then(() => {
+          visible.value = false
+        })
+      }
+      onMounted(() => {
+        searchList.value = transformRoutes(permissionStore.getPermissionSideBar)
+      })
+      return {
+        visible,
+        activeKey,
+        searchList,
+        outValue,
+        innerValue,
+        show,
+        close,
+        onOutSearch,
+        onSelectItem,
+      }
+    },
+  })
 </script>

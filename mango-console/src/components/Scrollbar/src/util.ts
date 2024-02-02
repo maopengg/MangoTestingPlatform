@@ -8,7 +8,7 @@ export const BAR_MAP: BarMap = {
     key: 'vertical',
     axis: 'Y',
     client: 'clientY',
-    direction: 'top'
+    direction: 'top',
   },
   horizontal: {
     offset: 'offsetWidth',
@@ -18,8 +18,8 @@ export const BAR_MAP: BarMap = {
     key: 'horizontal',
     axis: 'X',
     client: 'clientX',
-    direction: 'left'
-  }
+    direction: 'left',
+  },
 }
 
 // @ts-ignore
