@@ -17,13 +17,22 @@
         </a-space>
         <a-space direction="vertical" style="width: 42%">
           <p>测试对象：{{ pageData.record.test_object?.name }}</p>
-          <p>是否开启数据库断言：{{ pageData.record.test_object?.db_status === 1 ? '开启' : '关闭' }}</p>
+          <p
+            >是否开启数据库断言：{{
+              pageData.record.test_object?.db_status === 1 ? '开启' : '关闭'
+            }}</p
+          >
           <p :style="{ color: pageData.record.status === 0 ? 'red' : 'inherit' }">
             测试套结果：{{ pageData.record.status === 1 ? '通过' : '失败' }}
           </p>
           <p>失败消息：{{ pageData.record.error_message }}</p>
         </a-space>
-        <a-space size="large" v-for="item of reportDetailsData.summary" :key="item.name" style="width: 7%">
+        <a-space
+          size="large"
+          v-for="item of reportDetailsData.summary"
+          :key="item.name"
+          style="width: 7%"
+        >
           <a-statistic :title="item.name" :value="item.value" show-group-separator />
         </a-space>
       </div>
@@ -58,8 +67,16 @@
               <a-collapse-item :header="item.ele_name_a" :style="customStyle" :key="item.id">
                 <div>
                   <a-space direction="vertical" style="width: 50%">
-                    <p>输入类型：{{ item.ope_type ? getLabelByValue(reportDetailsData.ope, item.ope_type) : '-' }}</p>
-                    <p>断言类型：{{ item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-' }}</p>
+                    <p
+                      >输入类型：{{
+                        item.ope_type ? getLabelByValue(reportDetailsData.ope, item.ope_type) : '-'
+                      }}</p
+                    >
+                    <p
+                      >断言类型：{{
+                        item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-'
+                      }}</p
+                    >
                     <p>表达式类型：{{ reportDetailsData.eleExp[item.exp].title }}</p>
                     <p>测试结果：{{ item.status === 1 ? '成功' : '失败' }}</p>
                     <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
@@ -83,205 +100,205 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { reactive, onMounted, nextTick } from 'vue'
-import {
-  systemEnumExp,
-  uiCaseResultSuiteGetCase,
-  uiEleResultEle,
-  uiPageStepsDetailedAss,
-  uiPageStepsDetailedOpe
-} from '@/api/url'
-import { get } from '@/api/http'
-import { usePageData } from '@/store/page-data'
-import { useRoute } from 'vue-router'
+  import { reactive, onMounted, nextTick } from 'vue'
+  import {
+    systemEnumExp,
+    uiCaseResultSuiteGetCase,
+    uiEleResultEle,
+    uiPageStepsDetailedAss,
+    uiPageStepsDetailedOpe,
+  } from '@/api/url'
+  import { get } from '@/api/http'
+  import { usePageData } from '@/store/page-data'
+  import { useRoute } from 'vue-router'
 
-const pageData: any = usePageData()
-const route = useRoute()
+  const pageData: any = usePageData()
+  const route = useRoute()
 
-const reportDetailsData: any = reactive({
-  stepName: '',
-  treeData: [],
-  summary: [],
-  eleResult: [],
-  eleResultKey: [],
-  eleExp: [],
-  ass: [],
-  ope: []
-})
-const customStyle = reactive({
-  borderRadius: '6px',
-  marginBottom: '2px',
-  border: 'none',
-  overflow: 'hidden'
-})
-
-function click(key: string) {
-  let obj = JSON.parse(key)
-  reportDetailsData.treeData.forEach((item: any) => {
-    if (item.children.length !== 0) {
-      item.children.forEach((i: any) => {
-        if (i.key == key) {
-          reportDetailsData.stepName = i.title
-          return
-        }
-      })
-    }
-    if (item.key == key) {
-      reportDetailsData.stepName = item.title
-      return
-    }
+  const reportDetailsData: any = reactive({
+    stepName: '',
+    treeData: [],
+    summary: [],
+    eleResult: [],
+    eleResultKey: [],
+    eleExp: [],
+    ass: [],
+    ope: [],
   })
-  if (obj.page_steps_result) {
-    get({
-      url: uiEleResultEle,
-      data: () => {
-        return {
-          test_suite_id: obj.test_suite_id,
-          page_step_id: obj.page_step_id,
-          case_id: obj.case_id
-        }
-      }
-    })
-      .then((res) => {
-        reportDetailsData.eleResult = res.data
-        res.data.forEach((item: any) => {
-          if (item.status === 0) {
-            reportDetailsData.eleResultKey.push(item.id)
+  const customStyle = reactive({
+    borderRadius: '6px',
+    marginBottom: '2px',
+    border: 'none',
+    overflow: 'hidden',
+  })
+
+  function click(key: string) {
+    let obj = JSON.parse(key)
+    reportDetailsData.treeData.forEach((item: any) => {
+      if (item.children.length !== 0) {
+        item.children.forEach((i: any) => {
+          if (i.key == key) {
+            reportDetailsData.stepName = i.title
+            return
           }
         })
-        console.log(reportDetailsData.eleResultKey)
+      }
+      if (item.key == key) {
+        reportDetailsData.stepName = item.title
+        return
+      }
+    })
+    if (obj.page_steps_result) {
+      get({
+        url: uiEleResultEle,
+        data: () => {
+          return {
+            test_suite_id: obj.test_suite_id,
+            page_step_id: obj.page_step_id,
+            case_id: obj.case_id,
+          }
+        },
+      })
+        .then((res) => {
+          reportDetailsData.eleResult = res.data
+          res.data.forEach((item: any) => {
+            if (item.status === 0) {
+              reportDetailsData.eleResultKey.push(item.id)
+            }
+          })
+          console.log(reportDetailsData.eleResultKey)
+        })
+        .catch(console.log)
+    } else {
+      reportDetailsData.eleResult = []
+    }
+  }
+
+  function doResetSearch() {
+    window.history.back()
+  }
+
+  function doRefresh() {
+    get({
+      url: uiCaseResultSuiteGetCase,
+      data: () => {
+        return {
+          test_suite_id: route.query.id,
+        }
+      },
+    })
+      .then((res) => {
+        reportDetailsData.treeData = res.data.data
+        reportDetailsData.summary = res.data.summary
       })
       .catch(console.log)
-  } else {
-    reportDetailsData.eleResult = []
   }
-}
 
-function doResetSearch() {
-  window.history.back()
-}
-
-function doRefresh() {
-  get({
-    url: uiCaseResultSuiteGetCase,
-    data: () => {
-      return {
-        test_suite_id: route.query.id
+  function getLabelByValue(data: any, value: string): string {
+    const list = [...data]
+    for (const item of list) {
+      if (item.children) {
+        list.push(...item.children)
       }
     }
-  })
-    .then((res) => {
-      reportDetailsData.treeData = res.data.data
-      reportDetailsData.summary = res.data.summary
-    })
-    .catch(console.log)
-}
-
-function getLabelByValue(data: any, value: string): string {
-  const list = [...data]
-  for (const item of list) {
-    if (item.children) {
-      list.push(...item.children)
-    }
+    return list.find((item: any) => item.value === value)?.label
   }
-  return list.find((item: any) => item.value === value)?.label
-}
 
-function getEleExp() {
-  get({
-    url: systemEnumExp,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      reportDetailsData.eleExp = res.data
+  function getEleExp() {
+    get({
+      url: systemEnumExp,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        reportDetailsData.eleExp = res.data
+      })
+      .catch(console.log)
+  }
 
-function getUiRunSortAss() {
-  get({
-    url: uiPageStepsDetailedAss,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      reportDetailsData.ass = res.data
+  function getUiRunSortAss() {
+    get({
+      url: uiPageStepsDetailedAss,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        reportDetailsData.ass = res.data
+      })
+      .catch(console.log)
+  }
 
-function getUiRunSortOpe() {
-  get({
-    url: uiPageStepsDetailedOpe,
-    data: () => {
-      return {}
-    }
-  })
-    .then((res) => {
-      reportDetailsData.ope = res.data
+  function getUiRunSortOpe() {
+    get({
+      url: uiPageStepsDetailedOpe,
+      data: () => {
+        return {}
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        reportDetailsData.ope = res.data
+      })
+      .catch(console.log)
+  }
 
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
-    getEleExp()
-    getUiRunSortOpe()
-    getUiRunSortAss()
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+      getEleExp()
+      getUiRunSortOpe()
+      getUiRunSortAss()
+    })
   })
-})
 </script>
 <style>
-.content-container {
-  display: flex;
-}
+  .content-container {
+    display: flex;
+  }
 
-.left-content {
-  flex: 1;
-  padding-right: 10px;
-}
+  .left-content {
+    flex: 1;
+    padding-right: 10px;
+  }
 
-.right-content {
-  flex: 1;
-  padding-left: 10px;
-}
+  .right-content {
+    flex: 1;
+    padding-left: 10px;
+  }
 
-.divider {
-  width: 1px;
-  background-color: #ccc;
-  margin: 0 10px;
-  position: relative;
-}
+  .divider {
+    width: 1px;
+    background-color: #ccc;
+    margin: 0 10px;
+    position: relative;
+  }
 
-.divider:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -3px;
-  border-left: 1px dashed #ccc;
-}
+  .divider:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -3px;
+    border-left: 1px dashed #ccc;
+  }
 
-.span {
-  display: block;
-  font-size: 16px;
-  font-weight: bold;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
+  .span {
+    display: block;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
 
-.verticallayout > div {
-  flex: 1;
-}
+  .verticallayout > div {
+    flex: 1;
+  }
 
-.pppp {
-  display: -webkit-box;
-  -webkit-line-clamp: 5; /* 设置为盒子高度的百分之80 */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+  .pppp {
+    display: -webkit-box;
+    -webkit-line-clamp: 5; /* 设置为盒子高度的百分之80 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 </style>

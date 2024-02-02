@@ -19,8 +19,8 @@ Mock.mock(RegExp(login), 'post', function (options) {
       {
         roleCode: 'ROLE_admin',
         roleId: 1,
-        roleName: '超级管理员'
-      }
+        roleName: '超级管理员',
+      },
     ]
     baseData.data = data
   } else if (username === 'editor') {
@@ -35,8 +35,8 @@ Mock.mock(RegExp(login), 'post', function (options) {
       {
         roleCode: 'ROLE_editor',
         roleId: 2,
-        roleName: '网站编辑人员'
-      }
+        roleName: '网站编辑人员',
+      },
     ]
     baseData.data = data
   } else {
@@ -75,13 +75,13 @@ Mock.mock(RegExp(getMenuListByRoleId), 'post', function (options) {
     return Mock.mock({
       code: 200,
       data: editorRoutes,
-      msg: '获取菜单列表成功'
+      msg: '获取菜单列表成功',
     })
   } else {
     return Mock.mock({
       code: 500,
       data: '',
-      msg: '目前仅支持超级管理员和编辑人员菜单'
+      msg: '目前仅支持超级管理员和编辑人员菜单',
     })
   }
 })

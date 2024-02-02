@@ -29,7 +29,9 @@
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                  >删除</a-button
+                >
               </template>
             </a-table-column>
           </template>
@@ -77,205 +79,205 @@
   </div>
 </template>
 <script lang="ts" setup>
-import { nextTick, onMounted, reactive, ref } from 'vue'
-import { Message, Modal } from '@arco-design/web-vue'
-import { systemTasksRunCase, systemTasksTypeCaseName } from '@/api/url'
-import { deleted, get, post, put } from '@/api/http'
-import { FormItem, ModalDialogType } from '@/types/components'
-import { useRoute } from 'vue-router'
-import { getFormItems } from '@/utils/datacleaning'
-import { fieldNames } from '@/setting'
-import { useProjectModule } from '@/store/modules/project_module'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { systemTasksRunCase, systemTasksTypeCaseName } from '@/api/url'
+  import { deleted, get, post, put } from '@/api/http'
+  import { FormItem, ModalDialogType } from '@/types/components'
+  import { useRoute } from 'vue-router'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { fieldNames } from '@/setting'
+  import { useProjectModule } from '@/store/modules/project_module'
 
-const projectModule = useProjectModule()
+  const projectModule = useProjectModule()
 
-const route = useRoute()
-const formModel = ref({})
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const runCaseData = reactive({
-  isAdd: false,
-  updateId: 0,
-  actionTitle: '添加定时任务',
-  data: [],
-  caseList: []
-})
-const columns = reactive([
-  {
-    title: '任务名称',
-    dataIndex: 'task',
-    width: 200
-  },
-  {
-    title: '用例名称',
-    dataIndex: 'case'
-  },
-  {
-    title: '操作',
-    dataIndex: 'actions',
-    align: 'center',
-    width: 130
-  }
-])
-
-const formItems: FormItem[] = reactive([
-  {
-    label: '模块',
-    key: 'module_name',
-    value: '',
-    placeholder: '请选择测试模块',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '用例名称',
-    key: 'case',
-    value: '',
-    placeholder: '请选择用例名称',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  }
-])
-
-function doAppend() {
-  runCaseData.actionTitle = '添加用例'
-  runCaseData.isAdd = true
-  modalDialogRef.value?.toggle()
-  formItems.forEach((it) => {
-    if (it.reset) {
-      it.reset()
-    } else {
-      it.value = ''
-    }
+  const route = useRoute()
+  const formModel = ref({})
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const runCaseData = reactive({
+    isAdd: false,
+    updateId: 0,
+    actionTitle: '添加定时任务',
+    data: [],
+    caseList: [],
   })
-}
+  const columns = reactive([
+    {
+      title: '任务名称',
+      dataIndex: 'task',
+      width: 200,
+    },
+    {
+      title: '用例名称',
+      dataIndex: 'case',
+    },
+    {
+      title: '操作',
+      dataIndex: 'actions',
+      align: 'center',
+      width: 130,
+    },
+  ])
 
-function onDelete(record: any) {
-  Modal.confirm({
-    title: '提示',
-    content: '是否要删除此页面？',
-    cancelText: '取消',
-    okText: '删除',
-    onOk: () => {
-      deleted({
-        url: systemTasksRunCase,
-        data: () => {
-          return {
-            id: '[' + record.id + ']'
-          }
+  const formItems: FormItem[] = reactive([
+    {
+      label: '模块',
+      key: 'module_name',
+      value: '',
+      placeholder: '请选择测试模块',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
         }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    }
-  })
-}
+        return true
+      },
+    },
+    {
+      label: '用例名称',
+      key: 'case',
+      value: '',
+      placeholder: '请选择用例名称',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ])
 
-function onUpdate(record: any) {
-  runCaseData.actionTitle = '编辑用例'
-  runCaseData.isAdd = false
-  runCaseData.updateId = record.id
-  modalDialogRef.value?.toggle()
-  nextTick(() => {
-    formItems.forEach((it) => {
-      const propName = record[it.key]
-      console.log(propName)
-      if (propName) {
-        it.value = record.case
-      }
-    })
-  })
-}
-
-function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+  function doAppend() {
+    runCaseData.actionTitle = '添加用例'
+    runCaseData.isAdd = true
     modalDialogRef.value?.toggle()
-    let value = getFormItems(formItems)
-    if (runCaseData.isAdd) {
-      post({
-        url: systemTasksRunCase,
-        data: () => {
-          value['task'] = route.query.id
-          return value
+    formItems.forEach((it) => {
+      if (it.reset) {
+        it.reset()
+      } else {
+        it.value = ''
+      }
+    })
+  }
+
+  function onDelete(record: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此页面？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleted({
+          url: systemTasksRunCase,
+          data: () => {
+            return {
+              id: '[' + record.id + ']',
+            }
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
+  function onUpdate(record: any) {
+    runCaseData.actionTitle = '编辑用例'
+    runCaseData.isAdd = false
+    runCaseData.updateId = record.id
+    modalDialogRef.value?.toggle()
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = record[it.key]
+        console.log(propName)
+        if (propName) {
+          it.value = record.case
         }
       })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
+    })
+  }
+
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      if (runCaseData.isAdd) {
+        post({
+          url: systemTasksRunCase,
+          data: () => {
+            value['task'] = route.query.id
+            return value
+          },
         })
-        .catch(console.log)
-    } else {
-      put({
-        url: systemTasksRunCase,
-        data: () => {
-          value['id'] = runCaseData.updateId
-          return value
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        put({
+          url: systemTasksRunCase,
+          data: () => {
+            value['id'] = runCaseData.updateId
+            return value
+          },
         })
-        .catch(console.log)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      }
     }
   }
-}
 
-function doResetSearch() {
-  window.history.back()
-}
+  function doResetSearch() {
+    window.history.back()
+  }
 
-function doRefresh() {
-  get({
-    url: systemTasksRunCase,
-    data: () => {
-      return {
-        id: route.query.id,
-        type: route.query.type
-      }
-    }
-  })
-    .then((res) => {
-      runCaseData.data = res.data
+  function doRefresh() {
+    get({
+      url: systemTasksRunCase,
+      data: () => {
+        return {
+          id: route.query.id,
+          type: route.query.type,
+        }
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        runCaseData.data = res.data
+      })
+      .catch(console.log)
+  }
 
-function tasksTypeCaseName(value: number) {
-  get({
-    url: systemTasksTypeCaseName,
-    data: () => {
-      return {
-        type: route.query.type,
-        module_name: value
-      }
-    }
-  })
-    .then((res) => {
-      runCaseData.caseList = res.data
+  function tasksTypeCaseName(value: number) {
+    get({
+      url: systemTasksTypeCaseName,
+      data: () => {
+        return {
+          type: route.query.type,
+          module_name: value,
+        }
+      },
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        runCaseData.caseList = res.data
+      })
+      .catch(console.log)
+  }
 
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+    })
   })
-})
 </script>

@@ -40,13 +40,27 @@
                   <template v-if="record.username === 'admin'">
                     <a-space>
                       <a-button type="text" size="mini" @click="onUpdate(record)">领取</a-button>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled>下线 </a-button>
+                      <a-button
+                        status="danger"
+                        type="text"
+                        size="mini"
+                        @click="onDelete(record)"
+                        disabled
+                        >下线
+                      </a-button>
                     </a-space>
                   </template>
                   <template v-if="record.username !== 'admin'">
                     <a-space>
                       <!--                      <a-button type="text" size="mini" @click="onUpdate(record)">领取</a-button>-->
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled>下线 </a-button>
+                      <a-button
+                        status="danger"
+                        type="text"
+                        size="mini"
+                        @click="onDelete(record)"
+                        disabled
+                        >下线
+                      </a-button>
                     </a-space>
                   </template>
                 </template>
@@ -76,7 +90,11 @@
                 <a-input :placeholder="item.placeholder" v-model="item.value.value" />
               </template>
               <template v-else-if="item.type === 'textarea'">
-                <a-textarea v-model="item.value.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
+                <a-textarea
+                  v-model="item.value.value"
+                  :placeholder="item.placeholder"
+                  :auto-size="{ minRows: 3, maxRows: 5 }"
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -87,204 +105,210 @@
 </template>
 
 <script lang="ts" setup>
-import { get, post, put, deleted } from '@/api/http'
-import { systemSocketUserList } from '@/api/url'
-import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
-import { FormItem, ModalDialogType } from '@/types/components'
-import { Message, Modal } from '@arco-design/web-vue'
-import { onMounted, ref, nextTick } from 'vue'
+  import { get, post, put, deleted } from '@/api/http'
+  import { systemSocketUserList } from '@/api/url'
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
+  import { FormItem, ModalDialogType } from '@/types/components'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { onMounted, ref, nextTick } from 'vue'
 
-const formItems = [
-  {
-    label: '角色名称',
-    key: 'name',
-    value: ref(''),
-    placeholder: '请输入角色名称',
-    required: true,
-    type: 'input',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '角色描述',
-    key: 'description',
-    value: ref(''),
-    type: 'textarea',
-    required: true,
-    placeholder: '请输入橘色描述',
-    validator: function () {
-      if (!this.value.value && this.value.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  }
-] as FormItem[]
-
-const actionTitle = ref('添加页面')
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { onSelectionChange } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
-const tableColumns = useTableColumn([
-  table.indexColumn,
-  {
-    title: '所有者',
-    key: 'nickname',
-    dataIndex: 'nickname'
-  },
-  {
-    title: '账号',
-    key: 'username',
-    dataIndex: 'username'
-  },
-  {
-    title: 'IP端口',
-    key: 'ip',
-    dataIndex: 'ip'
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    dataIndex: 'actions',
-    fixed: 'right',
-    width: 150
-  }
-])
-
-const formModel = ref({})
-
-function doRefresh() {
-  get({
-    url: systemSocketUserList,
-    data: () => {
-      return {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      }
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
-}
-
-const addUpdate = ref(0)
-const updateId: any = ref('')
-
-// function onAddPage() {
-//   actionTitle.value = '添加页面'
-//   modalDialogRef.value?.toggle()
-//   addUpdate.value = 1
-//   formItems.forEach((it) => {
-//     if (it.reset) {
-//       it.reset()
-//     } else {
-//       it.value.value = ''
-//     }
-//   })
-// }
-
-function onDelete(data: any) {
-  Modal.confirm({
-    title: '提示',
-    content: '是否要删除此页面？',
-    cancelText: '取消',
-    okText: '删除',
-    onOk: () => {
-      deleted({
-        url: systemSocketUserList,
-        data: () => {
-          return {
-            id: '[' + data.id + ']'
-          }
+  const formItems = [
+    {
+      label: '角色名称',
+      key: 'name',
+      value: ref(''),
+      placeholder: '请输入角色名称',
+      required: true,
+      type: 'input',
+      validator: function () {
+        if (!this.value.value && this.value.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
         }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    }
-  })
-}
+        return true
+      },
+    },
+    {
+      label: '角色描述',
+      key: 'description',
+      value: ref(''),
+      type: 'textarea',
+      required: true,
+      placeholder: '请输入橘色描述',
+      validator: function () {
+        if (!this.value.value && this.value.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ] as FormItem[]
 
-function onUpdate(item: any) {
-  actionTitle.value = '编辑页面'
-  modalDialogRef.value?.toggle()
-  addUpdate.value = 0
-  updateId.value = item.id
-  nextTick(() => {
-    formItems.forEach((it) => {
-      const key = it.key
-      const propName = item[key]
-      if (typeof propName === 'object' && propName !== null) {
-        it.value.value = propName.name
-      } else {
-        it.value.value = propName
-      }
+  const actionTitle = ref('添加页面')
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const pagination = usePagination(doRefresh)
+  const { onSelectionChange } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const tableColumns = useTableColumn([
+    table.indexColumn,
+    {
+      title: '所有者',
+      key: 'nickname',
+      dataIndex: 'nickname',
+    },
+    {
+      title: '账号',
+      key: 'username',
+      dataIndex: 'username',
+    },
+    {
+      title: 'IP端口',
+      key: 'ip',
+      dataIndex: 'ip',
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      dataIndex: 'actions',
+      fixed: 'right',
+      width: 150,
+    },
+  ])
+
+  const formModel = ref({})
+
+  function doRefresh() {
+    get({
+      url: systemSocketUserList,
+      data: () => {
+        return {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+        }
+      },
     })
-  })
-}
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
 
-function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+  const addUpdate = ref(0)
+  const updateId: any = ref('')
+
+  // function onAddPage() {
+  //   actionTitle.value = '添加页面'
+  //   modalDialogRef.value?.toggle()
+  //   addUpdate.value = 1
+  //   formItems.forEach((it) => {
+  //     if (it.reset) {
+  //       it.reset()
+  //     } else {
+  //       it.value.value = ''
+  //     }
+  //   })
+  // }
+
+  function onDelete(data: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此页面？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleted({
+          url: systemSocketUserList,
+          data: () => {
+            return {
+              id: '[' + data.id + ']',
+            }
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
+  function onUpdate(item: any) {
+    actionTitle.value = '编辑页面'
     modalDialogRef.value?.toggle()
-    let value: { [key: string]: string } = {}
-    formItems.forEach((it) => {
-      value[it.key] = it.value.value
+    addUpdate.value = 0
+    updateId.value = item.id
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const key = it.key
+        const propName = item[key]
+        if (typeof propName === 'object' && propName !== null) {
+          it.value.value = propName.name
+        } else {
+          it.value.value = propName
+        }
+      })
     })
-    if (addUpdate.value === 1) {
-      addUpdate.value = 0
-      post({
-        url: systemSocketUserList,
-        data: () => {
-          return {
-            description: value.description,
-            name: value.name
-          }
-        }
+  }
+
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value: { [key: string]: string } = {}
+      formItems.forEach((it) => {
+        value[it.key] = it.value.value
       })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
+      if (addUpdate.value === 1) {
+        addUpdate.value = 0
+        post({
+          url: systemSocketUserList,
+          data: () => {
+            return {
+              description: value.description,
+              name: value.name,
+            }
+          },
         })
-        .catch(console.log)
-    } else if (addUpdate.value === 0) {
-      addUpdate.value = 0
-      value['id'] = updateId.value
-      updateId.value = 0
-      put({
-        url: systemSocketUserList,
-        data: () => {
-          return {
-            id: value.id,
-            description: value.description,
-            name: value.name
-          }
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else if (addUpdate.value === 0) {
+        addUpdate.value = 0
+        value['id'] = updateId.value
+        updateId.value = 0
+        put({
+          url: systemSocketUserList,
+          data: () => {
+            return {
+              id: value.id,
+              description: value.description,
+              name: value.name,
+            }
+          },
         })
-        .catch(console.log)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      }
     }
   }
-}
 
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+    })
   })
-})
 </script>

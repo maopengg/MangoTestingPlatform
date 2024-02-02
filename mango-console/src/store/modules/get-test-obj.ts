@@ -8,7 +8,7 @@ export const useTestObj = defineStore('get-test-obj', {
     return {
       data: [],
       selectTitle: '选择测试环境',
-      selectValue: null as number | null
+      selectValue: null as number | null,
     }
   },
   // 类似于computed，用来封装计算属性
@@ -17,16 +17,16 @@ export const useTestObj = defineStore('get-test-obj', {
   actions: {
     getEnvironment() {
       get({
-        url: systemTestObjName
+        url: systemTestObjName,
       })
         .then((res) => {
           this.data = res.data
         })
         .catch(console.log)
-    }
+    },
   },
   presist: {
     enable: true,
-    resetToState: true
-  }
+    resetToState: true,
+  },
 })

@@ -16,7 +16,8 @@
 
         <a-space>
           <span
-            >加载授权页面错误，原因： redirect_uri 的主域名必须与创建应用时登记的回调域名一致加载授权页面错误，原因： redirect_uri
+            >加载授权页面错误，原因： redirect_uri
+            的主域名必须与创建应用时登记的回调域名一致加载授权页面错误，原因： redirect_uri
             的主域名必须与创建应用时登记的回调域名一致加载授权页面错误，原因： redirect_uri
             的主域名必须与创建应用时登记的回调域名一致加载授权页面错误，原因： redirect_uri
             的主域名必须与创建应用时登记的回调域名一致加载授权页面错误，原因： redirect_uri
@@ -34,10 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+  import { ref } from 'vue'
 </script>
 <style>
-.container span {
-  font-size: 25px;
-}
+  .container span {
+    font-size: 25px;
+  }
 </style>

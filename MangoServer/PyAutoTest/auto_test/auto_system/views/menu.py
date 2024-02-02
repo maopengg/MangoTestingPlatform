@@ -49,8 +49,8 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/config",
-                    "menuName": "配置与调试",
+                    "menuUrl": "/uitest/equipment-config",
+                    "menuName": "设备配置",
                 }, {
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/ui-test-report",
@@ -109,43 +109,48 @@ def ad_routes():
         #         },
         #     ],
         # },
+        # {
+        #     "menuUrl": "/equipment",
+        #     "menuName": "设备中心",
+        #     "icon": "IconMobile",
+        #     "parentPath": "",
+        #     "children": [
+        #         {
+        #             "parentPath": "/equipment",
+        #             "menuUrl": "/equipment/actuator",
+        #             "menuName": "执行器",
+        #         }
+        #     ],
+        # },
         {
-            "menuUrl": "/equipment",
-            "menuName": "设备中心",
-            "icon": "IconMobile",
-            "parentPath": "",
-            "children": [
-                {
-                    "parentPath": "/equipment",
-                    "menuUrl": "/equipment/actuator",
-                    "menuName": "执行器",
-                }
-            ],
-        },
-        {
-            "menuUrl": "/testconfig",
+            "menuUrl": "/config",
             "menuName": "测试配置",
             "icon": "IconCommand",
             "parentPath": "",
             "children": [
                 {
-                    "parentPath": "/testconfig",
-                    "menuUrl": "/testconfig/test-obj",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/project",
+                    "menuName": "测试项目",
+                },
+                {
+                    "parentPath": "/config",
+                    "menuUrl": "/config/test-obj",
                     "menuName": "测试环境",
                 },
                 {
-                    "parentPath": "/testconfig",
-                    "menuUrl": "/testconfig/database",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/database",
                     "menuName": "数据库配置",
                 },
                 {
-                    "parentPath": "/testconfig",
-                    "menuUrl": "/testconfig/notice",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/notice",
                     "menuName": "通知配置",
                 },
                 {
-                    "parentPath": "/testconfig",
-                    "menuUrl": "/testconfig/test-files",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/test-files",
                     "menuName": "测试文件",
                 }
             ],
@@ -158,7 +163,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/timing",
-                    "menuUrl": "/timing/scheduledtasks",
+                    "menuUrl": "/timing/scheduled-tasks",
                     "menuName": "定时任务",
                 },
                 {
@@ -177,8 +182,8 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/system",
-                    "menuUrl": "/system/project",
-                    "menuName": "项目管理",
+                    "menuUrl": "/system/settings",
+                    "menuName": "系统设置",
                 },
                 {
                     "parentPath": "/system",

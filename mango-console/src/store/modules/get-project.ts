@@ -8,7 +8,7 @@ export const useProject = defineStore('get-project', {
     return {
       data: [],
       selectTitle: '选择项目',
-      selectValue: null as number | null
+      selectValue: null as number | null,
     }
   },
   // 类似于computed，用来封装计算属性
@@ -17,16 +17,16 @@ export const useProject = defineStore('get-project', {
   actions: {
     getProject() {
       get({
-        url: userProjectAll
+        url: userProjectAll,
       })
         .then((res) => {
           this.data = res.data
         })
         .catch(console.log)
-    }
+    },
   },
   presist: {
     enable: true,
-    resetToState: true
-  }
+    resetToState: true,
+  },
 })

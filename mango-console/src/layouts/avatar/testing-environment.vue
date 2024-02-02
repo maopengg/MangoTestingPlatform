@@ -15,101 +15,101 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
-import useUserStore from '@/store/modules/user'
-import { useTestObj } from '@/store/modules/get-test-obj'
-import { put } from '@/api/http'
-import { userEnvironment } from '@/api/url'
+  import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
+  import useUserStore from '@/store/modules/user'
+  import { useTestObj } from '@/store/modules/get-test-obj'
+  import { put } from '@/api/http'
+  import { userEnvironment } from '@/api/url'
 
-export default defineComponent({
-  name: 'TestEnvironment',
-  setup() {
-    const userStore = useUserStore()
-    const testObj = useTestObj()
-    let testObjList = reactive([])
-    function handleSelect(key: any) {
-      if (key === '选择测试环境') {
-        key = null
+  export default defineComponent({
+    name: 'TestEnvironment',
+    setup() {
+      const userStore = useUserStore()
+      const testObj = useTestObj()
+      let testObjList = reactive([])
+      function handleSelect(key: any) {
+        if (key === '选择测试环境') {
+          key = null
+        }
+        put({
+          url: userEnvironment,
+          data: () => {
+            return { id: userStore.userId, selected_environment: key }
+          },
+        })
+          .then((res) => {
+            userStore.selected_environment = res.data.selected_environment
+            setTitle(key)
+          })
+          .catch(console.log)
       }
-      put({
-        url: userEnvironment,
-        data: () => {
-          return { id: userStore.userId, selected_environment: key }
+      function setTitle(key: any) {
+        testObjList.push({ key: null, title: '选择测试环境' })
+        testObj.data.forEach((item) => {
+          testObjList.push(item)
+        })
+        testObjList.forEach((item: any) => {
+          testObj.selectValue = key
+          if (item.key === testObj.selectValue) testObj.selectTitle = item.title
+        })
+      }
+      watchEffect(() => {
+        if (testObj.data.length > 0) {
+          setTitle(userStore.selected_environment)
         }
       })
-        .then((res) => {
-          userStore.selected_environment = res.data.selected_environment
-          setTitle(key)
-        })
-        .catch(console.log)
-    }
-    function setTitle(key: any) {
-      testObjList.push({ key: null, title: '选择测试环境' })
-      testObj.data.forEach((item) => {
-        testObjList.push(item)
+      onMounted(() => {
+        testObj.getEnvironment()
       })
-      testObjList.forEach((item: any) => {
-        testObj.selectValue = key
-        if (item.key === testObj.selectValue) testObj.selectTitle = item.title
-      })
-    }
-    watchEffect(() => {
-      if (testObj.data.length > 0) {
-        setTitle(userStore.selected_environment)
-      }
-    })
-    onMounted(() => {
-      testObj.getEnvironment()
-    })
 
-    return {
-      userStore,
-      testObj,
-      testObjList,
-      handleSelect
-    }
-  }
-})
+      return {
+        userStore,
+        testObj,
+        testObjList,
+        handleSelect,
+      }
+    },
+  })
 </script>
 
 <style lang="less" scoped>
-.vaw-avatar-container {
-  .action-wrapper {
-    display: flex;
-    align-items: center;
-
-    .avatar {
+  .vaw-avatar-container {
+    .action-wrapper {
       display: flex;
       align-items: center;
 
-      & > img {
-        border: 1px solid #f6f6f6;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
+      .avatar {
+        display: flex;
+        align-items: center;
+
+        & > img {
+          border: 1px solid #f6f6f6;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+        }
       }
-    }
 
-    .nick-name {
-      margin: 0 5px;
+      .nick-name {
+        margin: 0 5px;
 
-      .tip {
-        transform: rotate(0);
-        transition: transform @transitionTime;
-        margin-left: 2px;
+        .tip {
+          transform: rotate(0);
+          transition: transform @transitionTime;
+          margin-left: 2px;
+        }
       }
     }
   }
-}
 
-.vaw-avatar-container:hover {
-  cursor: pointer;
-  color: var(--primary-color);
+  .vaw-avatar-container:hover {
+    cursor: pointer;
+    color: var(--primary-color);
 
-  .tip {
-    transform: rotate(180deg);
-    transition: transform @transitionTime;
+    .tip {
+      transform: rotate(180deg);
+      transition: transform @transitionTime;
+    }
   }
-}
 </style>

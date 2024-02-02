@@ -9,7 +9,7 @@ export const asyncRoutes = [
       title: '首页',
       iconPrefix: 'iconfont',
       icon: 'icon-dashboard',
-      isSingle: true
+      isSingle: true,
     },
     children: [
       {
@@ -18,9 +18,9 @@ export const asyncRoutes = [
         component: (): any => import('@/views/index/main.vue'),
         meta: {
           title: '首页',
-          affix: true
-        }
-      }
-    ]
-  }
+          affix: true,
+        },
+      },
+    ],
+  },
 ]

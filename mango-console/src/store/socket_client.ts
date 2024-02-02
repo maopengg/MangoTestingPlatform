@@ -9,7 +9,7 @@ export const useSocketClient = defineStore('socket-client', {
   state: (): { socket_obj: WebSocketService | null; username: number } => {
     return {
       socket_obj: null,
-      username: 0
+      username: 0,
     }
   },
   getters: {},
@@ -27,10 +27,10 @@ export const useSocketClient = defineStore('socket-client', {
           this.socket_obj.disconnect()
         }
       }
-    }
+    },
   },
   presist: {
     enable: true,
-    resetToState: true
-  }
+    resetToState: true,
+  },
 })

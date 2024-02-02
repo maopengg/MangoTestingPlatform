@@ -16,7 +16,7 @@ const useUserStore = defineStore('user-info', {
       nickName: '',
       avatar: defaultAvatar,
       selected_project: null,
-      selected_environment: null
+      selected_environment: null,
     }
   },
   actions: {
@@ -46,15 +46,15 @@ const useUserStore = defineStore('user-info', {
         sessionStorage.clear()
         resolve()
       })
-    }
+    },
   },
   presist: {
     enable: true,
     resetToState: true,
     option: {
-      exclude: []
-    }
-  }
+      exclude: [],
+    },
+  },
 })
 
 export default useUserStore

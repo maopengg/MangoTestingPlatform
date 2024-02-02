@@ -6,7 +6,7 @@ export const useEnvironment = defineStore('get-environment', {
   // 类似于data，用来存储全局状态，必须是箭头函数
   state: () => {
     return {
-      data: []
+      data: [],
     }
   },
   // 类似于computed，用来封装计算属性
@@ -15,16 +15,16 @@ export const useEnvironment = defineStore('get-environment', {
   actions: {
     getEnvironment() {
       get({
-        url: systemEnumEnvironment
+        url: systemEnumEnvironment,
       })
         .then((res) => {
           this.data = res.data
         })
         .catch(console.log)
-    }
+    },
   },
   presist: {
     enable: true,
-    resetToState: true
-  }
+    resetToState: true,
+  },
 })

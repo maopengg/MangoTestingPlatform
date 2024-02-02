@@ -5,8 +5,8 @@ export default defineComponent({
   props: {
     title: {
       type: String,
-      default: ''
-    }
+      default: '',
+    },
   },
   setup(props) {
     const { title } = toRefs(props)
@@ -16,5 +16,5 @@ export default defineComponent({
         <span class={TitleStyle['title']}>{title.value}</span>
       </div>
     )
-  }
+  },
 })

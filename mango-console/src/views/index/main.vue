@@ -62,13 +62,21 @@
                         {{ record.test_obj?.name }}
                       </template>
                       <template v-else-if="item.key === 'type'" #cell="{ record }">
-                        <a-tag color="orangered" size="small" v-if="record.type === 0">界面自动化</a-tag>
-                        <a-tag color="cyan" size="small" v-else-if="record.type === 1">接口自动化</a-tag>
-                        <a-tag color="green" size="small" v-else-if="record.type === 2">性能自动化</a-tag>
+                        <a-tag color="orangered" size="small" v-if="record.type === 0"
+                          >界面自动化</a-tag
+                        >
+                        <a-tag color="cyan" size="small" v-else-if="record.type === 1"
+                          >接口自动化</a-tag
+                        >
+                        <a-tag color="green" size="small" v-else-if="record.type === 2"
+                          >性能自动化</a-tag
+                        >
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
-                          <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
+                          <a-button type="text" size="mini" @click="onClick(record)"
+                            >查看结果</a-button
+                          >
                         </a-space>
                       </template>
                     </a-table-column>
@@ -85,214 +93,220 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, unref, watch, onMounted, nextTick } from 'vue'
-import Title from './components/Title'
-import useAppConfigStore from '@/store/modules/app-config'
-import CenterTitle from './components/CenterTitle.vue'
-import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
-import ReportSum from './components/chart/RreportSum.vue'
-import CaseSum from './components/chart/CaseSum.vue'
-import HotProductChart from './components/chart/HotProductChart.vue'
-import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
-import { useRouter } from 'vue-router'
-import { get } from '@/api/http'
-import { systemScheduledTasks } from '@/api/url'
-import { useProjectModule } from '@/store/modules/project_module'
+  import { computed, ref, unref, watch, onMounted, nextTick } from 'vue'
+  import Title from './components/Title'
+  import useAppConfigStore from '@/store/modules/app-config'
+  import CenterTitle from './components/CenterTitle.vue'
+  import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
+  import ReportSum from './components/chart/RreportSum.vue'
+  import CaseSum from './components/chart/CaseSum.vue'
+  import HotProductChart from './components/chart/HotProductChart.vue'
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
+  import { useRouter } from 'vue-router'
+  import { get } from '@/api/http'
+  import { systemScheduledTasks } from '@/api/url'
+  import { useProjectModule } from '@/store/modules/project_module'
 
-const appStore = useAppConfigStore()
-const mainHeight = computed(() => {
-  return appStore.mainHeight + 'px'
-})
-const projectModule = useProjectModule()
-const reportSum = ref()
-const caseSum = ref()
-const hotProductChart = ref()
-const fullYearSalesChart = ref()
-const orderChart = ref()
-const onResize = () => {
-  setTimeout(() => {
-    unref(caseSum).updateChart()
-    unref(reportSum).updateChart()
-    // unref(weekSalesChart).updateChart()
-    unref(hotProductChart).updateChart()
-    unref(fullYearSalesChart).updateChart()
-    unref(orderChart).updateChart()
-  }, 500)
-}
-const collapse = computed(() => {
-  return appStore.isCollapse
-})
-watch(collapse, () => {
-  onResize()
-})
-
-const pagination = usePagination(doRefresh)
-pagination.pageSize = 7
-
-const { onSelectionChange } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
-const tableColumns = useTableColumn([
-  table.indexColumn,
-
-  {
-    title: '任务名称',
-    key: 'name',
-    dataIndex: 'name',
-    align: 'left'
-  },
-  {
-    title: '任务类型',
-    key: 'type',
-    dataIndex: 'type'
-  },
-  {
-    title: '执行对象',
-    key: 'test_obj',
-    dataIndex: 'test_obj',
-    align: 'left'
-  },
-  {
-    title: '定时策略',
-    key: 'timing_strategy',
-    dataIndex: 'timing_strategy',
-    align: 'left'
+  const appStore = useAppConfigStore()
+  const mainHeight = computed(() => {
+    return appStore.mainHeight + 'px'
+  })
+  const projectModule = useProjectModule()
+  const reportSum = ref()
+  const caseSum = ref()
+  const hotProductChart = ref()
+  const fullYearSalesChart = ref()
+  const orderChart = ref()
+  const onResize = () => {
+    setTimeout(() => {
+      unref(caseSum).updateChart()
+      unref(reportSum).updateChart()
+      // unref(weekSalesChart).updateChart()
+      unref(hotProductChart).updateChart()
+      unref(fullYearSalesChart).updateChart()
+      unref(orderChart).updateChart()
+    }, 500)
   }
-])
-const router = useRouter()
-
-function onClick(record: any) {
-  router.push({
-    path: '/index/report-details',
-    query: {
-      id: record.id,
-      name: record.name,
-      type: record.type
-    }
+  const collapse = computed(() => {
+    return appStore.isCollapse
   })
-}
-
-function doRefresh() {
-  get({
-    url: systemScheduledTasks,
-    data: () => {
-      return {
-        pageSize: pagination.pageSize,
-        page: pagination.page
-      }
-    }
+  watch(collapse, () => {
+    onResize()
   })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
+
+  const pagination = usePagination(doRefresh)
+  pagination.pageSize = 7
+
+  const { onSelectionChange } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const tableColumns = useTableColumn([
+    table.indexColumn,
+
+    {
+      title: '任务名称',
+      key: 'name',
+      dataIndex: 'name',
+      align: 'left',
+    },
+    {
+      title: '任务类型',
+      key: 'type',
+      dataIndex: 'type',
+    },
+    {
+      title: '执行对象',
+      key: 'test_obj',
+      dataIndex: 'test_obj',
+      align: 'left',
+    },
+    {
+      title: '定时策略',
+      key: 'timing_strategy',
+      dataIndex: 'timing_strategy',
+      align: 'left',
+    },
+  ])
+  const router = useRouter()
+
+  function onClick(record: any) {
+    router.push({
+      path: '/index/report-details',
+      query: {
+        id: record.id,
+        name: record.name,
+        type: record.type,
+      },
     })
-    .catch(console.log)
-}
+  }
 
-onMounted(() => {
-  nextTick(async () => {
-    doRefresh()
-    projectModule.getProjectModule()
+  function doRefresh() {
+    get({
+      url: systemScheduledTasks,
+      data: () => {
+        return {
+          pageSize: pagination.pageSize,
+          page: pagination.page,
+        }
+      },
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
+
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+      projectModule.getProjectModule()
+    })
   })
-})
 </script>
 
 <style lang="less" scoped>
-:deep(.arco-card) {
-  border-radius: 5px;
-  border: none;
-  box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
-}
-
-:deep(.arco-card-body) {
-  padding: 0;
-  height: 100%;
-}
-
-.main-container {
-  display: flex;
-  height: v-bind(mainHeight);
-  overflow: hidden;
-
-  .left {
-    width: 25%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-
-    .item {
-      border-radius: 5px;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      position: relative;
-      background: var(--color-bg-2);
-      transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
-      box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
-
-      div:nth-last-child(1) {
-        flex: 1;
-      }
-    }
-
-    .item + .item {
-      margin-top: 10px;
-    }
+  :deep(.arco-card) {
+    border-radius: 5px;
+    border: none;
+    box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
   }
 
-  .center {
-    margin: 0 10px;
-    flex: 1;
+  :deep(.arco-card-body) {
+    padding: 0;
+    height: 100%;
+  }
+
+  .main-container {
+    display: flex;
+    height: v-bind(mainHeight);
     overflow: hidden;
 
-    .center-data-item-wrapper {
+    .left {
+      width: 25%;
       display: flex;
-      margin: 10px 0;
+      flex-direction: column;
+      justify-content: space-evenly;
 
       .item {
-        flex: 1;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        background: var(--color-bg-2);
+        transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
+        box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+
+        div:nth-last-child(1) {
+          flex: 1;
+        }
       }
 
       .item + .item {
-        margin-left: 10px;
+        margin-top: 10px;
       }
     }
-  }
 
-  .right {
-    width: 25%;
-    display: flex;
-    height: 100%;
-    overflow: hidden;
-    flex-direction: column;
-
-    & > div:nth-child(1) {
+    .center {
+      margin: 0 10px;
       flex: 1;
-    }
-
-    & > div:nth-child(2) {
-      flex: 2;
       overflow: hidden;
+
+      .center-data-item-wrapper {
+        display: flex;
+        margin: 10px 0;
+
+        .item {
+          flex: 1;
+        }
+
+        .item + .item {
+          margin-left: 10px;
+        }
+      }
     }
 
-    .item {
+    .right {
+      width: 25%;
       display: flex;
-      flex-direction: column;
       height: 100%;
-      position: relative;
-      background: var(--color-bg-2);
-      border-radius: 5px;
-      transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
-      box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+      overflow: hidden;
+      flex-direction: column;
 
-      & > div:nth-child(2) {
+      & > div:nth-child(1) {
         flex: 1;
       }
-    }
 
-    .item + .item {
-      margin-top: 10px;
+      & > div:nth-child(2) {
+        flex: 2;
+        overflow: hidden;
+      }
+
+      .item {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        background: var(--color-bg-2);
+        border-radius: 5px;
+        transition: box-shadow 0.2s cubic-bezier(0, 0, 1, 1);
+        box-shadow: 0px 8px 8px 0px rgba(162, 173, 200, 0.15);
+
+        & > div:nth-child(2) {
+          flex: 1;
+        }
+      }
+
+      .item + .item {
+        margin-top: 10px;
+      }
     }
   }
-}
 </style>

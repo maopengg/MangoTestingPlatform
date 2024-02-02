@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="公共方法" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="公共方法"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @change="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @change="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project'">
                     <a-select
@@ -105,10 +114,16 @@
                   {{ record.project?.name }}
                 </template>
                 <template v-else-if="item.key === 'public_type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.public_type === 0">自定义</a-tag>
+                  <a-tag color="orangered" size="small" v-if="record.public_type === 0"
+                    >自定义</a-tag
+                  >
                   <a-tag color="cyan" size="small" v-else-if="record.public_type === 1">SQL</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 2">登录</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 3">请求头</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.public_type === 2"
+                    >登录</a-tag
+                  >
+                  <a-tag color="green" size="small" v-else-if="record.public_type === 3"
+                    >请求头</a-tag
+                  >
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">web端</a-tag>
@@ -124,7 +139,9 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除</a-button
+                    >
                   </a-space>
                 </template>
               </a-table-column>
@@ -148,7 +165,11 @@
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
               <template v-else-if="item.type === 'textarea'">
-                <a-textarea v-model="item.value" :placeholder="item.placeholder" :auto-size="{ minRows: 3, maxRows: 5 }" />
+                <a-textarea
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :auto-size="{ minRows: 3, maxRows: 5 }"
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project'">
                 <a-select
@@ -192,399 +213,411 @@
 </template>
 
 <script lang="ts" setup>
-import { get, post, put, deleted } from '@/api/http'
-import { apiPublic, systemEnumEnd, systemEnumPublic, apiPublicPutStatus, userProjectModuleGetAll } from '@/api/url'
-import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
-import { FormItem, ModalDialogType } from '@/types/components'
-import { Message, Modal } from '@arco-design/web-vue'
-import { onMounted, ref, nextTick, reactive } from 'vue'
-import { useProject } from '@/store/modules/get-project'
-import { getFormItems } from '@/utils/datacleaning'
-import { fieldNames } from '@/setting'
+  import { get, post, put, deleted } from '@/api/http'
+  import {
+    apiPublic,
+    systemEnumEnd,
+    systemEnumPublic,
+    apiPublicPutStatus,
+    userProjectModuleGetAll,
+  } from '@/api/url'
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
+  import { FormItem, ModalDialogType } from '@/types/components'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { useProject } from '@/store/modules/get-project'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { fieldNames } from '@/setting'
 
-const project = useProject()
-const modalDialogRef = ref<ModalDialogType | null>(null)
-const pagination = usePagination(doRefresh)
-const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-const table = useTable()
-const rowKey = useRowKey('id')
-const formModel = ref({})
-const apiPublicData = reactive({
-  actionTitle: '添加接口',
-  isAdd: false,
-  updateId: 0,
-  publicType: '0',
-  apiPublicPublic: [],
-  apiPublicEnd: [],
-  moduleList: []
-})
-const conditionItems: Array<FormItem> = reactive([
-  {
-    key: 'id',
-    label: 'ID',
-    type: 'input',
-    placeholder: '请输入ID',
-    value: '',
-    reset: function () {
-      this.value = ''
-    }
-  },
-  {
-    key: 'name',
-    label: '参数名称',
-    type: 'input',
-    placeholder: '请输入参数名称',
-    value: '',
-    reset: function () {
-      this.value = ''
-    }
-  },
-  {
-    key: 'project',
-    label: '项目',
-    value: '',
-    type: 'select',
-    placeholder: '请选择项目',
-    optionItems: project.data,
-    reset: function () {}
-  },
-  {
-    key: 'client',
-    label: '客户端',
-    value: '',
-    type: 'select',
-    placeholder: '选择客户端类型',
-    optionItems: apiPublicData.apiPublicEnd,
-    reset: function () {}
+  const project = useProject()
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const pagination = usePagination(doRefresh)
+  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const formModel = ref({})
+  const apiPublicData = reactive({
+    actionTitle: '添加接口',
+    isAdd: false,
+    updateId: 0,
+    publicType: '0',
+    apiPublicPublic: [],
+    apiPublicEnd: [],
+    moduleList: [],
+  })
+  const conditionItems: Array<FormItem> = reactive([
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入ID',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'name',
+      label: '参数名称',
+      type: 'input',
+      placeholder: '请输入参数名称',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'project',
+      label: '项目',
+      value: '',
+      type: 'select',
+      placeholder: '请选择项目',
+      optionItems: project.data,
+      reset: function () {},
+    },
+    {
+      key: 'client',
+      label: '客户端',
+      value: '',
+      type: 'select',
+      placeholder: '选择客户端类型',
+      optionItems: apiPublicData.apiPublicEnd,
+      reset: function () {},
+    },
+  ])
+
+  const formItems: FormItem[] = reactive([
+    {
+      label: '项目名称',
+      key: 'project',
+      value: '',
+      placeholder: '请选择项目',
+      required: true,
+      type: 'select',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '客户端',
+      key: 'client',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请选择客户端',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '类型',
+      key: 'public_type',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请选择对应类型，注意不同类型的加载顺序',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '参数名称',
+      key: 'name',
+      value: '',
+      type: 'input',
+      required: true,
+      placeholder: '请输入名称',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: 'key',
+      key: 'key',
+      value: '',
+      type: 'input',
+      required: true,
+      placeholder: '请输入缓存的key',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: 'value',
+      key: 'value',
+      value: '',
+      type: 'textarea',
+      required: true,
+      placeholder: '请根据规则输入value值',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+  ])
+
+  const tableColumns = useTableColumn([
+    table.indexColumn,
+    {
+      title: '项目名称',
+      key: 'project',
+      dataIndex: 'project',
+    },
+    {
+      title: '客户端',
+      key: 'client',
+      dataIndex: 'client',
+    },
+    {
+      title: '类型',
+      key: 'public_type',
+      dataIndex: 'public_type',
+    },
+    {
+      title: '参数名称',
+      key: 'name',
+      dataIndex: 'name',
+    },
+    {
+      title: 'key',
+      key: 'key',
+      dataIndex: 'key',
+    },
+    {
+      title: 'value',
+      key: 'value',
+      dataIndex: 'value',
+      align: 'left',
+    },
+    {
+      title: '状态',
+      key: 'status',
+      dataIndex: 'status',
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      dataIndex: 'actions',
+      fixed: 'right',
+      width: 150,
+    },
+  ])
+
+  function switchType(key: any) {
+    apiPublicData.publicType = key
+    doRefresh()
   }
-])
 
-const formItems: FormItem[] = reactive([
-  {
-    label: '项目名称',
-    key: 'project',
-    value: '',
-    placeholder: '请选择项目',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '客户端',
-    key: 'client',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请选择客户端',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '类型',
-    key: 'public_type',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请选择对应类型，注意不同类型的加载顺序',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: '参数名称',
-    key: 'name',
-    value: '',
-    type: 'input',
-    required: true,
-    placeholder: '请输入名称',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: 'key',
-    key: 'key',
-    value: '',
-    type: 'input',
-    required: true,
-    placeholder: '请输入缓存的key',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
-  },
-  {
-    label: 'value',
-    key: 'value',
-    value: '',
-    type: 'textarea',
-    required: true,
-    placeholder: '请根据规则输入value值',
-    validator: function () {
-      if (!this.value) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    }
+  function doRefresh() {
+    get({
+      url: apiPublic,
+      data: () => {
+        let value = getFormItems(conditionItems)
+        value['page'] = pagination.page
+        value['type'] = apiPublicData.publicType
+        value['pageSize'] = pagination.pageSize
+        return value
+      },
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
   }
-])
 
-const tableColumns = useTableColumn([
-  table.indexColumn,
-  {
-    title: '项目名称',
-    key: 'project',
-    dataIndex: 'project'
-  },
-  {
-    title: '客户端',
-    key: 'client',
-    dataIndex: 'client'
-  },
-  {
-    title: '类型',
-    key: 'public_type',
-    dataIndex: 'public_type'
-  },
-  {
-    title: '参数名称',
-    key: 'name',
-    dataIndex: 'name'
-  },
-  {
-    title: 'key',
-    key: 'key',
-    dataIndex: 'key'
-  },
-  {
-    title: 'value',
-    key: 'value',
-    dataIndex: 'value',
-    align: 'left'
-  },
-  {
-    title: '状态',
-    key: 'status',
-    dataIndex: 'status'
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    dataIndex: 'actions',
-    fixed: 'right',
-    width: 150
+  function doPublic() {
+    get({
+      url: systemEnumPublic,
+    })
+      .then((res) => {
+        apiPublicData.apiPublicPublic = res.data
+      })
+      .catch(console.log)
   }
-])
 
-function switchType(key: any) {
-  apiPublicData.publicType = key
-  doRefresh()
-}
-
-function doRefresh() {
-  get({
-    url: apiPublic,
-    data: () => {
-      let value = getFormItems(conditionItems)
-      value['page'] = pagination.page
-      value['type'] = apiPublicData.publicType
-      value['pageSize'] = pagination.pageSize
-      return value
-    }
-  })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
+  function doEnd() {
+    get({
+      url: systemEnumEnd,
     })
-    .catch(console.log)
-}
+      .then((res) => {
+        apiPublicData.apiPublicEnd = res.data
+      })
+      .catch(console.log)
+  }
 
-function doPublic() {
-  get({
-    url: systemEnumPublic
-  })
-    .then((res) => {
-      apiPublicData.apiPublicPublic = res.data
-    })
-    .catch(console.log)
-}
-
-function doEnd() {
-  get({
-    url: systemEnumEnd
-  })
-    .then((res) => {
-      apiPublicData.apiPublicEnd = res.data
-    })
-    .catch(console.log)
-}
-
-function onResetSearch() {
-  conditionItems.forEach((it) => {
-    it.value = ''
-  })
-}
-
-function onAddPage() {
-  apiPublicData.actionTitle = '添加公共参数'
-  apiPublicData.isAdd = true
-  modalDialogRef.value?.toggle()
-  formItems.forEach((it) => {
-    if (it.reset) {
-      it.reset()
-    } else {
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
       it.value = ''
-    }
-  })
-}
+    })
+  }
 
-function onDelete(data: any) {
-  Modal.confirm({
-    title: '提示',
-    content: '是否要删除此页面？',
-    cancelText: '取消',
-    okText: '删除',
-    onOk: () => {
-      deleted({
-        url: apiPublic,
-        data: () => {
-          return {
-            id: data.id
-          }
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    }
-  })
-}
-
-function onUpdate(item: any) {
-  apiPublicData.actionTitle = '编辑公共参数'
-  apiPublicData.isAdd = false
-  apiPublicData.updateId = item.id
-  modalDialogRef.value?.toggle()
-  nextTick(() => {
+  function onAddPage() {
+    apiPublicData.actionTitle = '添加公共参数'
+    apiPublicData.isAdd = true
+    modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
-      const propName = item[it.key]
-      if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id
+      if (it.reset) {
+        it.reset()
       } else {
-        it.value = propName
+        it.value = ''
       }
     })
-  })
-}
-
-function onDataForm() {
-  if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-    modalDialogRef.value?.toggle()
-    let value = getFormItems(formItems)
-    value['type'] = apiPublicData.publicType
-    if (apiPublicData.isAdd) {
-      post({
-        url: apiPublic,
-        data: () => {
-          value['status'] = 1
-          return value
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    } else {
-      put({
-        url: apiPublic,
-        data: () => {
-          value['id'] = apiPublicData.updateId
-          return value
-        }
-      })
-        .then((res) => {
-          Message.success(res.msg)
-          doRefresh()
-        })
-        .catch(console.log)
-    }
   }
-}
 
-const onModifyStatus = async (newValue: boolean, id: number) => {
-  return new Promise<any>((resolve, reject) => {
-    setTimeout(async () => {
-      try {
-        let value: any = false
-        await put({
-          url: apiPublicPutStatus,
+  function onDelete(data: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此页面？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleted({
+          url: apiPublic,
           data: () => {
             return {
-              id: id,
-              status: newValue ? 1 : 0
+              id: data.id,
             }
-          }
+          },
         })
           .then((res) => {
             Message.success(res.msg)
-            value = res.code === 200
+            doRefresh()
           })
-          .catch(reject)
-        resolve(value)
-      } catch (error) {
-        reject(error)
-      }
-    }, 300)
-  })
-}
+          .catch(console.log)
+      },
+    })
+  }
 
-function getProjectModule(projectId: number) {
-  doRefresh()
-  get({
-    url: userProjectModuleGetAll,
-    data: () => {
-      return {
-        project_id: projectId
+  function onUpdate(item: any) {
+    apiPublicData.actionTitle = '编辑公共参数'
+    apiPublicData.isAdd = false
+    apiPublicData.updateId = item.id
+    modalDialogRef.value?.toggle()
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = item[it.key]
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName
+        }
+      })
+    })
+  }
+
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      value['type'] = apiPublicData.publicType
+      if (apiPublicData.isAdd) {
+        post({
+          url: apiPublic,
+          data: () => {
+            value['status'] = 1
+            return value
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        put({
+          url: apiPublic,
+          data: () => {
+            value['id'] = apiPublicData.updateId
+            return value
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
       }
     }
-  })
-    .then((res) => {
-      apiPublicData.moduleList = res.data
-    })
-    .catch(console.log)
-}
+  }
 
-onMounted(() => {
-  nextTick(async () => {
+  const onModifyStatus = async (newValue: boolean, id: number) => {
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await put({
+            url: apiPublicPutStatus,
+            data: () => {
+              return {
+                id: id,
+                status: newValue ? 1 : 0,
+              }
+            },
+          })
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
+  }
+
+  function getProjectModule(projectId: number) {
     doRefresh()
-    doPublic()
-    doEnd()
+    get({
+      url: userProjectModuleGetAll,
+      data: () => {
+        return {
+          project_id: projectId,
+        }
+      },
+    })
+      .then((res) => {
+        apiPublicData.moduleList = res.data
+      })
+      .catch(console.log)
+  }
+
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+      doPublic()
+      doEnd()
+    })
   })
-})
 </script>

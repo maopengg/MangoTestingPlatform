@@ -14,7 +14,7 @@ export const TEXT_PLAIN = 'text/plain; charset=UTF-8'
 
 const service = Axios.create({
   baseURL,
-  timeout: 10 * 60 * 1000
+  timeout: 10 * 60 * 1000,
 })
 
 // 在正式发送请求之前进行拦截配置

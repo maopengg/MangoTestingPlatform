@@ -21,17 +21,17 @@ export default defineConfig(({ mode }) => {
             if (id.includes('node_modules')) {
               return id.toString().split('node_modules/')[1].split('/')[0].toString()
             }
-          }
-        }
-      }
+          },
+        },
+      },
     },
     plugins: [
       vue(),
       viteSvgIcons({
         iconDirs: [path.resolve(process.cwd(), 'src/icons')],
-        symbolId: 'icon-[dir]-[name]'
+        symbolId: 'icon-[dir]-[name]',
       }),
-      vueJsx()
+      vueJsx(),
       // 在正式打包的时候，可以把这三行代码放开
       // Components({
       //   resolvers: [ArcoResolver()],
@@ -42,20 +42,20 @@ export default defineConfig(({ mode }) => {
         less: {
           additionalData: `@import "src/styles/variables.less";`,
           modifyVars: {},
-          javascriptEnabled: true
-        }
-      }
+          javascriptEnabled: true,
+        },
+      },
     },
     resolve: {
       alias: [
         {
           find: '@/',
-          replacement: path.resolve(process.cwd(), 'src') + '/'
-        }
-      ]
+          replacement: path.resolve(process.cwd(), 'src') + '/',
+        },
+      ],
     },
     server: {
-      open: true
+      open: true,
       // proxy:{
       //   '/api':{//表示拦截以/api开头的请求路径
       //     target:'http://localhost:8000/',
@@ -64,7 +64,7 @@ export default defineConfig(({ mode }) => {
       //       '^/api':'' //重写api，把api变成空字符，因为我们真正请求的路径是没有api的
       //     }
       //   }
-    }
+    },
     // optimizeDeps: {
     //   include: [
     //     'vue',

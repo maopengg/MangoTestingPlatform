@@ -17,7 +17,14 @@ function getComponentName(key: string) {
   const name = paths
     .filter((it) => !!it && it !== '.')
     .reverse()
-    .find((it) => it !== 'index.vue' && it !== 'index.ts' && it !== 'index.js' && it !== 'index.jsx' && it !== 'index.tsx')
+    .find(
+      (it) =>
+        it !== 'index.vue' &&
+        it !== 'index.ts' &&
+        it !== 'index.js' &&
+        it !== 'index.jsx' &&
+        it !== 'index.tsx'
+    )
     ?.replace('.vue', '')
     ?.replace('.tsx', '')
   return name || ''
