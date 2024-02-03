@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class SocketApiViews(ViewSet):
@@ -20,12 +21,12 @@ class SocketApiViews(ViewSet):
         res = User.objects.filter(username__in=data).values_list('id', 'nickname', 'username', 'ip')
         data = [{'id': _id, 'nickname': nickname, 'username': username, 'ip': ip} for _id, nickname, username, ip in
                 res]
-        return ResponseData.success('获取设备在线列表成功', data, len(data))
+        return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)
     def get_all_user_sum(self, request: Request):
         data: int = SocketUser.all_keys()
-        return ResponseData.success('获取设备在线列表成功', {'sum': data})
+        return ResponseData.success(RESPONSE_MSG_0102, {'sum': data})
 
     @action(methods=['get'], detail=False)
     def get_all_user_list(self, request: Request):
@@ -36,4 +37,4 @@ class SocketApiViews(ViewSet):
                  'web_obj': id(i.web_obj) if i.web_obj else None,
                  'client_obj': id(i.client_obj) if i.client_obj else None}
             )
-        return ResponseData.success('获取设备在线列表成功', data, )
+        return ResponseData.success(RESPONSE_MSG_0102, data, )

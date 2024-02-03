@@ -17,6 +17,7 @@ from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.tools.cache_utils.redis import Cache
 from PyAutoTest.tools.data_processor import ObtainRandomData
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 log = logging.getLogger('system')
 
@@ -34,7 +35,7 @@ class SystemViews(ViewSet):
         @param request:
         @return:
         """
-        return ResponseData.success('获取数据成功', ObtainRandomData.get_methods())
+        return ResponseData.success(RESPONSE_MSG_0061, ObtainRandomData.get_methods())
 
     @action(methods=['get'], detail=False)
     def random_data(self, request: Request):
@@ -42,19 +43,19 @@ class SystemViews(ViewSet):
         res1 = name.replace("${", "")
         name: str = res1.replace("}", "").strip()
         if not name:
-            return ResponseData.fail('请输入函数名称')
+            return ResponseData.fail(RESPONSE_MSG_0063)
         match = re.search(r'\((.*?)\)', name)
         if match:
             try:
                 obj = ObtainRandomData(request.headers.get('Project'))
-                return ResponseData.success('获取数据成功', str(obj.regular(name)))
-            except MangoServerError as e:
-                return ResponseData.fail(e.msg, )
+                return ResponseData.success(RESPONSE_MSG_0062, str(obj.regular(name)))
+            except MangoServerError as error:
+                return ResponseData.fail((error.code, error.msg), )
         else:
             if Cache().read_data_from_cache(name):
-                return ResponseData.success('获取数据成功', Cache().read_data_from_cache(name))
+                return ResponseData.success(RESPONSE_MSG_0062, Cache().read_data_from_cache(name))
             else:
-                return ResponseData.fail('Redis缓存中不存在')
+                return ResponseData.fail(RESPONSE_MSG_0060)
 
     @action(methods=['get'], detail=False)
     def get_cache_key_value(self, request: Request):
@@ -69,4 +70,4 @@ class SystemViews(ViewSet):
             )
         )
         ChatConsumer.active_send(socket_data)
-        return ResponseData.success('获取数据成功')
+        return ResponseData.success(RESPONSE_MSG_0062)

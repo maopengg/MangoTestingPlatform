@@ -10,20 +10,21 @@ class ResponseData:
 
     @classmethod
     def success(cls,
-                msg: str,
+                msg: tuple,
                 data: None | str | list | dict = None,
                 total_size=None,
-                code=200,
                 status=None,
                 template_name=None,
                 headers=None,
                 exception=False,
-                content_type=None) -> Response:
+                content_type=None,
+                value: tuple | None = None) -> Response:
         data = {
-            'code': code,
-            'msg': msg,
+            'code': msg[0],
+            'msg': msg[1].format(*value) if value else msg[1],
             'data': data
         }
+
         if total_size:
             data['totalSize'] = total_size
         return Response(
@@ -37,18 +38,18 @@ class ResponseData:
 
     @classmethod
     def fail(cls,
-             msg: str,
+             msg: tuple,
              data: None | str | list | dict = None,
              total_size=None,
-             code=300,
              status=None,
              template_name=None,
              headers=None,
              exception=False,
-             content_type=None) -> Response:
+             content_type=None,
+             value: tuple | None = None) -> Response:
         data = {
-            'code': code,
-            'msg': msg,
+            'code': msg[0],
+            'msg': msg[1].format(*value) if value else msg[1],
             'data': data
         }
         if total_size:

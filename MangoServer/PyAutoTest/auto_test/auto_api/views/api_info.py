@@ -20,6 +20,7 @@ from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.apimodel import ResponseDataModel
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('api')
 
@@ -62,9 +63,9 @@ class ApiInfoViews(ViewSet):
         test_obj_id = request.query_params.get('test_obj_id')
         try:
             api_info_res: ResponseDataModel = ApiInfoRun(project_id, test_obj_id).api_info_run(api_info_id)
-            return ResponseData.success('测试接口完成', api_info_res.dict())
+            return ResponseData.success(RESPONSE_MSG_0072, api_info_res.dict())
         except MangoServerError as error:
-            return ResponseData.fail(error.msg, )
+            return ResponseData.fail((error.code,error.msg), )
 
     @action(methods=['get'], detail=False)
     def get_api_name(self, request: Request):
@@ -75,7 +76,7 @@ class ApiInfoViews(ViewSet):
         """
         res = self.model.objects.filter(module_name=request.query_params.get('module_id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0071, data)
 
     @action(methods=['put'], detail=False)
     def put_api_info_type(self, request: Request):
@@ -85,7 +86,7 @@ class ApiInfoViews(ViewSet):
             api_info_obj = self.model.objects.get(id=i)
             api_info_obj.type = _type
             api_info_obj.save()
-        return ResponseData.success('修改状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0070, )
 
     @action(methods=['POST'], detail=False)
     def copy_api_info(self, request: Request):
@@ -97,6 +98,6 @@ class ApiInfoViews(ViewSet):
         serializer = self.serializer_class(data=api_info)
         if serializer.is_valid():
             serializer.save()
-            return ResponseData.success('复制用例成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0069, serializer.data)
         else:
-            return ResponseData.fail(f'{str(serializer.errors)}', )
+            return ResponseData.fail(RESPONSE_MSG_0068, serializer.errors)

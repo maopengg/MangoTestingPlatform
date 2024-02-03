@@ -14,6 +14,7 @@ from PyAutoTest.enums.system_enum import *
 from PyAutoTest.enums.tools_enum import *
 from PyAutoTest.enums.ui_enum import *
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 log = logging.getLogger('system')
 
@@ -28,7 +29,7 @@ class EnumOptionViews(ViewSet):
         @param request: 
         @return: 
         """
-        return ResponseData.success('获取枚举类型成功', ClientTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, ClientTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_method(self, request: Request):
@@ -37,7 +38,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', MethodEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, MethodEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_public(self, request: Request):
@@ -46,7 +47,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', ApiPublicTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, ApiPublicTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_end(self, request: Request):
@@ -55,15 +56,15 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', ClientEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, ClientEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_notice(self, request: Request):
-        return ResponseData.success('获取枚举类型成功', NoticeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, NoticeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_status(self, request: Request):
-        return ResponseData.success('获取枚举类型成功', StatusEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, StatusEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_environment(self, request: Request):
@@ -72,7 +73,7 @@ class EnumOptionViews(ViewSet):
          :param request:
          :return:
          """
-        return ResponseData.success('获取枚举类型成功', EnvironmentEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, EnvironmentEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_platform(self, request: Request):
@@ -81,7 +82,7 @@ class EnumOptionViews(ViewSet):
          :param request:
          :return:
          """
-        return ResponseData.success('获取枚举类型成功', DriveTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_browser(self, request: Request):
@@ -90,7 +91,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', BrowserTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, BrowserTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_drive(self, request: Request):
@@ -99,7 +100,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', DriveTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_exp(self, request):
@@ -108,7 +109,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', ElementExpEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, ElementExpEnum.get_option())
 
     @action(methods=['get'], detail=False)
     def enum_autotest(self, request):
@@ -117,4 +118,4 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success('获取枚举类型成功', AutoTestTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, AutoTestTypeEnum.get_option())

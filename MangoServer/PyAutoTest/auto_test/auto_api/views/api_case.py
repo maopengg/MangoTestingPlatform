@@ -19,6 +19,8 @@ from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import RESPONSE_MSG_0007, RESPONSE_MSG_0006, RESPONSE_MSG_0008, \
+    RESPONSE_MSG_0009
 
 logger = logging.getLogger('api')
 
@@ -76,8 +78,8 @@ class ApiCaseViews(ViewSet):
                              f"错误数据：{i}")
                 res.append(False)
         if False in res:
-            return ResponseData.fail('接口同步包含部分失败')
-        return ResponseData.success('接口同步成功', )
+            return ResponseData.fail(RESPONSE_MSG_0006)
+        return ResponseData.success(RESPONSE_MSG_0007, )
 
     @action(methods=['POST'], detail=False)
     def copy_case(self, request: Request):
@@ -102,7 +104,7 @@ class ApiCaseViews(ViewSet):
                 if ui_case_steps_serializer.is_valid():
                     ui_case_steps_serializer.save()
                 else:
-                    return ResponseData.fail(f'{str(ui_case_steps_serializer.errors)}', )
-            return ResponseData.success('复制用例成功', serializer.data)
+                    return ResponseData.fail(RESPONSE_MSG_0008)
+            return ResponseData.success(RESPONSE_MSG_0009, serializer.data)
         else:
-            return ResponseData.fail(f'{str(serializer.errors)}', )
+            return ResponseData.fail(RESPONSE_MSG_0008, serializer.errors)

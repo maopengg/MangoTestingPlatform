@@ -18,6 +18,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiPageStepsSerializers(serializers.ModelSerializer):
@@ -62,9 +63,9 @@ class UiPageStepsViews(ViewSet):
         try:
             case_json = UiTestRun(request.user['id'], request.GET.get("te")).steps(
                 steps_id=int(request.GET.get("page_step_id")))
-        except MangoServerError as e:
-            return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json.dict())
+        except MangoServerError as error:
+            return ResponseData.fail((error.code,error.msg))
+        return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['put'], detail=False)
     def put_type(self, request: Request):
@@ -72,7 +73,7 @@ class UiPageStepsViews(ViewSet):
             case = self.model.objects.get(id=i)
             case.type = 0 if case.type == 1 else 1 if not case.type else 1
             case.save()
-        return ResponseData.success(f'翻转状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0085, )
 
     @action(methods=['get'], detail=False)
     def get_case_name(self, request: Request):
@@ -83,7 +84,7 @@ class UiPageStepsViews(ViewSet):
          """
         res = self.model.objects.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0086, data)
 
     @action(methods=['GET'], detail=False)
     def get_page_steps_name(self, request: Request):
@@ -91,7 +92,7 @@ class UiPageStepsViews(ViewSet):
         根据项目获取页面id和名称
         """
         res = self.model.objects.filter(page=request.query_params.get('page_id')).values_list('id', 'name')
-        return ResponseData.success('获取数据成功', [{'key': _id, 'title': name} for _id, name in res])
+        return ResponseData.success(RESPONSE_MSG_0087, [{'key': _id, 'title': name} for _id, name in res])
 
     @action(methods=['POST'], detail=False)
     def copy_page_steps(self, request: Request):
@@ -115,7 +116,7 @@ class UiPageStepsViews(ViewSet):
                 if ui_page_steps_serializer.is_valid():
                     ui_page_steps_serializer.save()
                 else:
-                    return ResponseData.fail(f'{str(ui_page_steps_serializer.errors)}', )
-            return ResponseData.success('复制步骤成功', serializer.data)
+                    return ResponseData.fail(RESPONSE_MSG_0089,ui_page_steps_serializer.errors)
+            return ResponseData.success(RESPONSE_MSG_0088, serializer.data)
         else:
-            return ResponseData.fail(f'{str(serializer.errors)}', )
+            return ResponseData.fail(RESPONSE_MSG_0089, serializer.errors)

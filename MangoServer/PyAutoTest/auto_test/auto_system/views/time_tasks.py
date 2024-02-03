@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import RESPONSE_MSG_0103
 
 
 class TimeTasksSerializers(serializers.ModelSerializer):
@@ -39,4 +40,4 @@ class TimeTasksViews(ViewSet):
          """
         res = TimeTasks.objects.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0103, data)

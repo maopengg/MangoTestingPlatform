@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import UserLogs
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class IndexViews(ViewSet):
@@ -105,7 +106,7 @@ class IndexViews(ViewSet):
         for row in ui_result:
             result_dict['ui_count'].append(row.total_count)
 
-        return ResponseData.success(f'获取图表数据成功', result_dict)
+        return ResponseData.success(RESPONSE_MSG_0092, result_dict)
 
     @action(methods=['get'], detail=False)
     def case_sum(self, request: Request):
@@ -115,7 +116,7 @@ class IndexViews(ViewSet):
         @return:
         """
 
-        return ResponseData.success('获取数据成功',
+        return ResponseData.success(RESPONSE_MSG_0093,
                                     [
                                         {'value': UiCase.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
@@ -131,7 +132,7 @@ class IndexViews(ViewSet):
         @return:
         """
 
-        return ResponseData.success('获取数据成功',
+        return ResponseData.success(RESPONSE_MSG_0094,
                                     [
                                         {'value': UiCaseResult.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
@@ -155,4 +156,4 @@ class IndexViews(ViewSet):
         for user_count in active_user_counts:
             active_user_counts_['nickname'].append(user_count['nickname'])
             active_user_counts_['total_logins'].append(user_count['total_logins'])
-        return ResponseData.success('获取数据成功', active_user_counts_)
+        return ResponseData.success(RESPONSE_MSG_0092, active_user_counts_)

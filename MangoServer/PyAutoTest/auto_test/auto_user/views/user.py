@@ -24,6 +24,7 @@ from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UserSerializers(serializers.ModelSerializer):
@@ -70,7 +71,7 @@ class UserViews(ViewSet):
         """
         res = User.objects.values_list('id', 'nickname')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0033, data)
 
     @action(methods=['put'], detail=False)
     def put_project(self, request: Request):
@@ -79,10 +80,10 @@ class UserViews(ViewSet):
             data={'selected_project': request.data.get('selected_project')})
         if serializer.is_valid():
             serializer.save()
-            return ResponseData.success(f'修改测试环境成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0034, serializer.data)
 
         else:
-            return ResponseData.fail(f'修改测试环境失败{serializer.errors}')
+            return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
 
     @action(methods=['put'], detail=False)
     def put_environment(self, request: Request):
@@ -91,17 +92,17 @@ class UserViews(ViewSet):
             data={'selected_environment': request.data.get('selected_environment')})
         if serializer.is_valid():
             serializer.save()
-            return ResponseData.success(f'修改测试环境成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0036, serializer.data)
 
         else:
-            return ResponseData.fail(f'修改测试环境失败{serializer.errors}')
+            return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
 
     @action(methods=['get'], detail=False)
     def get_user_project_environment(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
         data = {'id': obj.id, 'selected_environment': obj.selected_environment,
                 'selected_project': obj.selected_project}
-        return ResponseData.success(f'修改测试环境成功', data)
+        return ResponseData.success(RESPONSE_MSG_0041, data)
 
     @action(methods=['put'], detail=False)
     def put_password(self, request: Request):
@@ -111,12 +112,12 @@ class UserViews(ViewSet):
 
         obj = self.model.objects.get(id=request.data.get('id'))
         if password != obj.password:
-            return ResponseData.fail('原始密码不正确')
+            return ResponseData.fail(RESPONSE_MSG_0038)
         if new_password != confirm_password:
-            return ResponseData.fail('两次密码输入不一致')
+            return ResponseData.fail(RESPONSE_MSG_0039)
         obj.password = new_password
         obj.save()
-        return ResponseData.success(f'修改密码成功')
+        return ResponseData.success(RESPONSE_MSG_0040)
 
 
 class LoginViews(ViewSet):
@@ -128,17 +129,10 @@ class LoginViews(ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         source_type = request.data.get('type')
-        # if isinstance(username, list):
-        #     username = username[0]
-        # if isinstance(password, list):
-        #     password = password[0]
-        # if isinstance(source_type, list):
-        #     source_type = source_type[0]
-        # print(username, password)
         password = EncryptionTool.md5_encrypt(password)
         user_info = User.objects.filter(username=username, password=password).first()
         if not user_info:
-            return ResponseData.fail('用户名或密码错误')
+            return ResponseData.fail(RESPONSE_MSG_0042)
         token = create_token({'id': user_info.id, 'username': user_info.username})
         data = {
             "nickName": user_info.nickname,
@@ -167,11 +161,11 @@ class LoginViews(ViewSet):
                      "source_type": source_type,
                      "user_id": user_info.id}
         UserLogsCRUD().inside_post(data_logs)
-        return ResponseData.success('登录成功', data)
+        return ResponseData.success(RESPONSE_MSG_0043, data)
 
     @action(methods=['get'], detail=False)
     def menu(self, request: Request):
-        return ResponseData.success('获取菜单列表成功', ad_routes())
+        return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
 
     @action(methods=['post'], detail=False)
     def test1(self, request: Request):
@@ -181,7 +175,7 @@ class LoginViews(ViewSet):
         secret_key = b"daewdaedawe"
         sign = request.headers.get('Sign')
         if not sign:
-            return ResponseData.success('缺少签名', )
+            return ResponseData.success((200, '缺少签名'), )
         # 计算哈希值
         digest = hmac.new(secret_key, json.dumps(request.data).encode(), hashlib.sha1).digest()
         # 将哈希值转换为16进制字符串
@@ -190,9 +184,9 @@ class LoginViews(ViewSet):
         print(f'自己计算的key:{sign}')
         # 比较签名和哈希值是否相同
         if not hmac.compare_digest(signature, sign):
-            return ResponseData.success('签名不正确', )
+            return ResponseData.success((300, '签名不正确'), )
 
-        return ResponseData.success('验证消息的内容完整成功', )
+        return ResponseData.success((200, '验证消息的内容完整成功'), )
 
     @action(methods=['post'], detail=False)
     def test2(self, request: Request):
@@ -206,7 +200,7 @@ class LoginViews(ViewSet):
         if username == webhook_username and webhook_password == password:
             pass
         print(f'webhook_username：{webhook_username}', f'webhook_password：{webhook_password}')
-        return ResponseData.success('Basic Authentication', )
+        return ResponseData.success((200, 'Basic Authentication'), )
 
     @action(methods=['post'], detail=False)
     def test3(self, request: Request):
@@ -216,7 +210,7 @@ class LoginViews(ViewSet):
         authorization = request.headers.get('Authorization')
         print(f'headers中的authorization值：{authorization}'
               f'没有过期的值：{self.access_token}')
-        return ResponseData.success('Oauth2', )
+        return ResponseData.success((200, 'Oauth2'), )
 
     @action(methods=['get'], detail=False)
     def login1(self, request: Request):
@@ -226,4 +220,4 @@ class LoginViews(ViewSet):
             "access_token": self.access_token,
             "token_type": "bde34423earer"
         }
-        return Response(data)
+        return ResponseData.success((200, '成功'), data)

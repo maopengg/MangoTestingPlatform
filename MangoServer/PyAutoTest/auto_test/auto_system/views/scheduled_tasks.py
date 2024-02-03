@@ -16,6 +16,7 @@ from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class ScheduledTasksSerializers(serializers.ModelSerializer):
@@ -60,7 +61,7 @@ class ScheduledTasksViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.save()
-        return ResponseData.success('修改定时任务状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0097, )
 
     @action(methods=['put'], detail=False)
     def put_is_notice(self, request: Request):
@@ -72,7 +73,7 @@ class ScheduledTasksViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.is_notice = request.data.get('is_notice')
         obj.save()
-        return ResponseData.success('修改通知状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0098, )
 
     @action(methods=['put'], detail=False)
     def get_id_name(self, request: Request):
@@ -84,7 +85,7 @@ class ScheduledTasksViews(ViewSet):
         case_type = request.query_params.get('case_type')
         scheduled_tasks_list = self.model.objects.filter(type=case_type).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in scheduled_tasks_list]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0099, data)
 
 
 class ScheduledTasksNoPermissionViews(ViewSet):
@@ -96,6 +97,6 @@ class ScheduledTasksNoPermissionViews(ViewSet):
     def trigger_timing(self, request: Request):
         try:
             data = Tasks.trigger(request.query_params.get('id'))
-            return ResponseData.success('触发定时任务成功，任务正在进行中...', data)
+            return ResponseData.success(RESPONSE_MSG_0100)
         except MangoServerError as error:
-            return ResponseData.fail(error.msg, )
+            return ResponseData.fail((error.code, error.msg), )

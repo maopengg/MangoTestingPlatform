@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSer
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiEleResultSerializers(serializers.ModelSerializer):
@@ -53,4 +54,4 @@ class UiEleResultViews(ViewSet):
         ele_result = UiEleResult.objects.filter(test_suite_id=request.query_params.get('test_suite_id'),
                                                 page_step_id=request.query_params.get('page_step_id'),
                                                 case_id=request.query_params.get('case_id'))
-        return ResponseData.success('获取元素结果成功', self.serializer_class(instance=ele_result, many=True).data)
+        return ResponseData.success(RESPONSE_MSG_0090, self.serializer_class(instance=ele_result, many=True).data)

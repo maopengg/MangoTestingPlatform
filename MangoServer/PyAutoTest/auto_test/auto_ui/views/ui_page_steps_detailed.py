@@ -18,6 +18,7 @@ from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.tools.cache_utils.redis_base import RedisBase
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('ui')
 
@@ -60,7 +61,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
         else:
             books = self.model.objects.filter(id=_id).order_by('step_sort')
         data = [self.serializer_class(i).data for i in books]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0016, data)
 
     def callback(self, _id):
         """
@@ -122,7 +123,7 @@ class UiPageStepsDetailedView(ViewSet):
                     'label': '请选择操作端',
                     'children': json.loads(ios)
                 })
-            return ResponseData.success('获取操作类型成功', data)
+            return ResponseData.success(RESPONSE_MSG_0017, data)
         if int(page_type) == DriveTypeEnum.WEB.value:
             data = json.loads(redis.get('PlaywrightElementOperation'))
         elif int(page_type) == DriveTypeEnum.ANDROID.value:
@@ -131,7 +132,7 @@ class UiPageStepsDetailedView(ViewSet):
             data = json.loads(redis.get('DESKTOP_OPE'))
         else:
             data = json.loads(redis.get('IOS_OPE'))
-        return ResponseData.success('获取操作类型成功', data)
+        return ResponseData.success(RESPONSE_MSG_0017, data)
 
     @action(methods=['get'], detail=False)
     def get_ass_type(self, request: Request):
@@ -152,7 +153,7 @@ class UiPageStepsDetailedView(ViewSet):
             data.append(json.loads(redis.get('SqlAssertion'))[0])
         else:
             data = json.loads(redis.get('PublicAssertion'))
-        return ResponseData.success('获取断言类型成功', data)
+        return ResponseData.success(RESPONSE_MSG_0018, data)
 
     @action(methods=['get'], detail=False)
     def get_ass_method(self, request: Request):
@@ -163,7 +164,7 @@ class UiPageStepsDetailedView(ViewSet):
         """
         redis = RedisBase('default')
         data = redis.get('assertion')
-        return ResponseData.success('获取断言类型成功', json.loads(data))
+        return ResponseData.success(RESPONSE_MSG_0019, json.loads(data))
 
     @action(methods=['put'], detail=False)
     def put_step_sort(self, request: Request):
@@ -180,4 +181,4 @@ class UiPageStepsDetailedView(ViewSet):
             page_step_id = obj.page_step.id
             obj.save()
         UiPageStepsDetailedCRUD().callback(page_step_id)
-        return ResponseData.success('设置排序成功', )
+        return ResponseData.success(RESPONSE_MSG_0020, )

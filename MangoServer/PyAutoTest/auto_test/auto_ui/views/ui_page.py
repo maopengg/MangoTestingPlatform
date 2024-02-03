@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiPageSerializers(serializers.ModelSerializer):
@@ -62,10 +63,10 @@ class UiPageViews(ViewSet):
             res = UiPage.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         if data:
-            return ResponseData.success('获取数据成功', data)
+            return ResponseData.success(RESPONSE_MSG_0052, data)
 
         else:
-            return ResponseData.fail('该模块暂无页面，请先添加页面并收集元素')
+            return ResponseData.fail(RESPONSE_MSG_0053)
 
     @action(methods=['post'], detail=False)
     def page_copy(self, request: Request):
@@ -88,7 +89,7 @@ class UiPageViews(ViewSet):
                 if page_element_serializer.is_valid():
                     page_element_serializer.save()
                 else:
-                    return ResponseData.fail(f'{str(page_element_serializer.errors)}', )
-            return ResponseData.success('复制用例成功', serializer.data)
+                    return ResponseData.fail(RESPONSE_MSG_0054, serializer.errors)
+            return ResponseData.success(RESPONSE_MSG_0055, serializer.data)
         else:
-            return ResponseData.fail(f'{str(serializer.errors)}', )
+            return ResponseData.fail(RESPONSE_MSG_0054, serializer.errors)
