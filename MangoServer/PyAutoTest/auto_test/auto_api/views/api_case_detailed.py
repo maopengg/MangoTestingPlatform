@@ -17,6 +17,7 @@ from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('api')
 
@@ -153,7 +154,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                     }
                 ]
             })
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0010, data)
 
     def post(self, request: Request):
         data = request.data
@@ -171,10 +172,10 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
-            return ResponseData.success('新增一条记录成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
         else:
             logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(str(serializer.errors))
+            return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
 
     def callback(self, _id):
         """
@@ -216,7 +217,7 @@ class ApiCaseDetailedViews(ViewSet):
             case_id = obj.case.id
             obj.save()
         ApiCaseDetailedCRUD().callback(case_id)
-        return ResponseData.success('设置排序成功', )
+        return ResponseData.success(RESPONSE_MSG_0013, )
 
     @action(methods=['put'], detail=False)
     def put_refresh_api_info(self, request: Request):
@@ -236,7 +237,7 @@ class ApiCaseDetailedViews(ViewSet):
         )
         if serializer.is_valid():
             serializer.save()
-            return ResponseData.success('刷新接口成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0014, serializer.data)
         else:
             logger.error(f'执行刷新时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(str(serializer.errors))
+            return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)

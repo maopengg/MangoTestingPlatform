@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
@@ -55,10 +56,10 @@ class ApiPublicViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.save()
-        return ResponseData.success('修改API参数状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0104, )
 
     @action(methods=['get'], detail=False)
     def get_set_cache(self, request: Request):
         from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
         CommonParameters(request.query_params.get('id'))
-        return ResponseData.success('设置API公共参数成功', )
+        return ResponseData.success(RESPONSE_MSG_0105, )

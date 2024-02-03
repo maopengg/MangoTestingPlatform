@@ -15,6 +15,7 @@ from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class TestObjectSerializers(serializers.ModelSerializer):
@@ -57,7 +58,7 @@ class TestObjectViews(ViewSet):
          """
         res = TestObject.objects.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0095, data)
 
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):
@@ -73,6 +74,6 @@ class TestObjectViews(ViewSet):
                 GetDataBase.get_mysql_config(obj.id)
             obj.db_status = db_status
             obj.save()
-            return ResponseData.success('修改sql断言状态成功')
-        except MangoServerError as e:
-            return ResponseData.fail(e.msg)
+            return ResponseData.success(RESPONSE_MSG_0096)
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))

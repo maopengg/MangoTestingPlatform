@@ -16,6 +16,7 @@ from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('api')
 
@@ -78,7 +79,7 @@ class ApiCaseResultViews(ViewSet):
             {'name': '警告', 'value': api_case_result_list.filter(status=2).count()},
             {'name': '失败', 'value': api_case_result_list.filter(status=StatusEnum.FAIL.value).count()}
         ]
-        return ResponseData.success('查询不同类型结果成功', {'data': data, 'summary': summary})
+        return ResponseData.success(RESPONSE_MSG_0083, {'data': data, 'summary': summary})
 
     @action(methods=['get'], detail=False)
     def case_result_week_sum(self, request: Request):
@@ -136,4 +137,4 @@ class ApiCaseResultViews(ViewSet):
             result_dict['fail'].append(row.status_0_total)
         result_dict['successSun'] = sum(result_dict['success'])
         result_dict['failSun'] = sum(result_dict['fail'])
-        return ResponseData.success(f'获取图表数据成功', result_dict)
+        return ResponseData.success(RESPONSE_MSG_0084, result_dict)

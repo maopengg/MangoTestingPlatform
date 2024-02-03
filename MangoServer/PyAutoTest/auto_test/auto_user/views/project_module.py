@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_user.models import ProjectModule, User
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class ProjectModuleSerializers(serializers.ModelSerializer):
@@ -55,4 +56,4 @@ class ProjectModuleViews(ViewSet):
         else:
             res = self.model.objects.values_list('id', 'name').all()
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0031, data)

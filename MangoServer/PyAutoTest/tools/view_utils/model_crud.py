@@ -11,6 +11,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('system')
 
@@ -37,7 +38,7 @@ class ModelCRUD(GenericAPIView):
             del query_dict['pageSize']
             del query_dict['page']
             books = self.model.objects.filter(**query_dict)
-            return ResponseData.success('获取数据成功',
+            return ResponseData.success(RESPONSE_MSG_0001,
                                         self.paging_list(request.query_params.get("pageSize"),
                                                          request.query_params.get("page"),
                                                          books,
@@ -45,7 +46,7 @@ class ModelCRUD(GenericAPIView):
                                         len(books))
         else:
             books = self.model.objects.filter(**query_dict)
-            return ResponseData.success('获取数据成功',
+            return ResponseData.success(RESPONSE_MSG_0001,
                                         self.get_serializer_class()(instance=books, many=True).data,
                                         len(books))
 
@@ -54,10 +55,10 @@ class ModelCRUD(GenericAPIView):
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
-            return ResponseData.success('新增一条记录成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
             logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(str(serializer.errors))
+            return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
     def put(self, request: Request):
         if isinstance(request, dict):
@@ -73,13 +74,13 @@ class ModelCRUD(GenericAPIView):
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
-            return ResponseData.success('修改一条记录成功', serializer.data)
+            return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
             if isinstance(request, dict):
                 logger.error(f'执行修改时报错，请检查！数据：{request}, 报错信息：{str(serializer.errors)}')
             else:
                 logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(str(serializer.errors))
+            return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
     def delete(self, request: Request):
         # 批量删
@@ -92,7 +93,7 @@ class ModelCRUD(GenericAPIView):
             # case_id = model.case.id
             model.delete()
             self.asynchronous_callback(request, model.id)
-        return ResponseData.success('删除成功')
+        return ResponseData.success(RESPONSE_MSG_0005)
 
     def asynchronous_callback(self, request: Request, case_id: int = None):
         """

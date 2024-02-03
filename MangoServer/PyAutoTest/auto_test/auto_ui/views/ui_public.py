@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiPublicSerializers(serializers.ModelSerializer):
@@ -55,4 +56,4 @@ class UiPublicViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.save()
-        return ResponseData.success('修改UI参数状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0021, )

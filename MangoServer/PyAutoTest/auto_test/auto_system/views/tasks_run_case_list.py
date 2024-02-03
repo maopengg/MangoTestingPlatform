@@ -16,6 +16,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
@@ -55,7 +56,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
             elif int(_type) == AutoTestTypeEnum.API.value and i.case:
                 _dict['case'] = ApiCase.objects.get(id=i.case).name
             data.append(_dict)
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0064, data)
 
 
 class TasksRunCaseListViews(ViewSet):
@@ -71,7 +72,7 @@ class TasksRunCaseListViews(ViewSet):
         else:
             res = ApiCase.objects.filter(module_name=module_name).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0065, data)
 
     @action(methods=['post'], detail=False)
     def batch_set_cases(self, request: Request):
@@ -85,5 +86,5 @@ class TasksRunCaseListViews(ViewSet):
                 if serializer.is_valid():
                     serializer.save()
                 else:
-                    return ResponseData.fail('批量设置到定时任务失败')
-        return ResponseData.success('批量设置到定时任务成功')
+                    return ResponseData.fail(RESPONSE_MSG_0066)
+        return ResponseData.success(RESPONSE_MSG_0067)

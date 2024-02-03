@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
@@ -55,11 +56,11 @@ class NoticeConfigViews(ViewSet):
         try:
             NoticeMain.test_notice_send(_id)
         except requests.exceptions.SSLError:
-            return ResponseData.fail('请检查系统代理，并设置为关闭在进行测试')
+            return ResponseData.fail(RESPONSE_MSG_0045)
         except MangoServerError as error:
-            return ResponseData.fail(error.msg)
+            return ResponseData.fail((error.code, error.msg))
         else:
-            return ResponseData.success('通知发送成功')
+            return ResponseData.success(RESPONSE_MSG_0046)
 
     @action(methods=['put'], detail=False)
     def put_status(self, request: Request):
@@ -71,4 +72,4 @@ class NoticeConfigViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.status = request.data.get('status')
         obj.save()
-        return ResponseData.success('修改通知状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0047, )

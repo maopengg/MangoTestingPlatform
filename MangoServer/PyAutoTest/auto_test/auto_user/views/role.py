@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import RESPONSE_MSG_0032
 from ..models import Role
 
 
@@ -37,4 +38,4 @@ class RoleViews(ViewSet):
         for i in items:
             data.append({'title': i.name,
                          'key': i.pk})
-        return ResponseData.success('获取所有角色成功', data)
+        return ResponseData.success(RESPONSE_MSG_0032, data)

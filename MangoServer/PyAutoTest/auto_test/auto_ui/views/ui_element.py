@@ -16,6 +16,7 @@ from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiElementSerializers(serializers.ModelSerializer):
@@ -45,7 +46,7 @@ class UiElementCRUD(ModelCRUD):
 
     def get(self, request):
         books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
-        return ResponseData.success('获取数据成功', self.get_serializer_class()(instance=books, many=True).data,
+        return ResponseData.success(RESPONSE_MSG_0077, self.get_serializer_class()(instance=books, many=True).data,
                                     len(books))
 
 
@@ -60,9 +61,9 @@ class UiElementViews(ViewSet):
         """
         try:
             UiTestRun(request.user.get('id'), request.data.get("testing_environment")).element(request.data)
-        except MangoServerError as e:
-            return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到元素，正在定位中...', )
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))
+        return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
     def get_ele_name(self, request: Request):
@@ -73,7 +74,7 @@ class UiElementViews(ViewSet):
         """
         res = UiElement.objects.filter(page=request.query_params.get('id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0080, data)
 
     @action(methods=['put'], detail=False)
     def put_is_iframe(self, request: Request):
@@ -85,13 +86,13 @@ class UiElementViews(ViewSet):
         obj = self.model.objects.get(id=request.data.get('id'))
         obj.is_iframe = request.data.get('is_iframe')
         obj.save()
-        return ResponseData.success('修改状态成功', )
+        return ResponseData.success(RESPONSE_MSG_0079, )
 
     @action(methods=['get'], detail=False)
     def is_element_locator(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('element_id'))
         res_bool = DataProcessor.is_extract(obj.loc)
         if res_bool:
-            return ResponseData.success('判断元素中是否包含${}完成', '1')
+            return ResponseData.success(RESPONSE_MSG_0078, '1')
         else:
-            return ResponseData.success('判断元素中是否包含${}完成', '0')
+            return ResponseData.success(RESPONSE_MSG_0078, '0')

@@ -9,8 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
@@ -18,6 +18,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
@@ -62,9 +63,9 @@ class UiCaseViews(ViewSet):
         try:
             case_json = UiTestRun(request.user['id'], request.GET.get("testing_environment")).case(
                 case_id=int(request.GET.get("case_id")))
-        except MangoServerError as e:
-            return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json.dict())
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))
+        return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
     def ui_batch_run(self, request: Request):
@@ -76,9 +77,9 @@ class UiCaseViews(ViewSet):
         try:
             case_json = UiTestRun(request.user['id'], request.GET.get("testing_environment")).case_batch(
                 case_id_list=eval(request.GET.get("case_id_list")))
-        except MangoServerError as e:
-            return ResponseData.fail(e.msg)
-        return ResponseData.success(f'{ClientNameEnum.DRIVER.value}已收到全部用例，正在执行中...', case_json)
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))
+        return ResponseData.success(RESPONSE_MSG_0074, case_json, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)
     def cody_case(self, request: Request):
@@ -103,7 +104,7 @@ class UiCaseViews(ViewSet):
                 if ui_case_steps_serializer.is_valid():
                     ui_case_steps_serializer.save()
                 else:
-                    return ResponseData.fail(f'{str(ui_case_steps_serializer.errors)}', )
-            return ResponseData.success('复制用例成功', serializer.data)
+                    return ResponseData.fail(RESPONSE_MSG_0075, ui_case_steps_serializer.errors)
+            return ResponseData.success(RESPONSE_MSG_0073, serializer.data)
         else:
-            return ResponseData.fail(f'{str(serializer.errors)}', )
+            return ResponseData.fail(RESPONSE_MSG_0075, serializer.errors)

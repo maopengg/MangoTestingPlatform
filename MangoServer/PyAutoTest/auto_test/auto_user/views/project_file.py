@@ -13,6 +13,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('user')
 
@@ -22,11 +23,11 @@ class ProjectFileViews(ViewSet):
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
         FilesCRUD().initialization()
-        return ResponseData.success('获取所有项目测试文件成功', FilesCRUD().get_project_all_list())
+        return ResponseData.success(RESPONSE_MSG_0026, FilesCRUD().get_project_all_list())
 
     @action(methods=['get'], detail=False)
     def get_project_all_list(self, request: Request):
-        return ResponseData.success('获取所有项目测试文件成功', FilesCRUD().get_project_all_list())
+        return ResponseData.success(RESPONSE_MSG_0026, FilesCRUD().get_project_all_list())
 
     @action(methods=['post'], detail=False)
     def upload_files(self, request: Request):
@@ -34,8 +35,8 @@ class ProjectFileViews(ViewSet):
         project_id = request.headers.get('Project')
         if project_id:
             FilesCRUD(project_id).upload_files(file_obj)
-            return ResponseData.success('上传文件成功', )
-        return ResponseData.fail('请先选择所属项目再上传', )
+            return ResponseData.success(RESPONSE_MSG_0027, )
+        return ResponseData.fail(RESPONSE_MSG_0028, )
 
     @action(methods=['get'], detail=False)
     def download_file(self, request: Request):
@@ -48,11 +49,11 @@ class ProjectFileViews(ViewSet):
             response['Content-Disposition'] = f'attachment; filename="{file_name}"'
             return response
         else:
-            return ResponseData.fail('文件不存在')
+            return ResponseData.fail(RESPONSE_MSG_0029)
 
     @action(methods=['get'], detail=False)
     def delete_file(self, request: Request):
         project_id = request.query_params.get('project_id')
         file_name = request.query_params.get('file_name')
         FilesCRUD(project_id).delete_file(file_name)
-        return ResponseData.success('文件删除成功')
+        return ResponseData.success(RESPONSE_MSG_0030)

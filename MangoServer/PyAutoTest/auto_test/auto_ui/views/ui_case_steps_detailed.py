@@ -15,6 +15,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('system')
 
@@ -48,7 +49,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
     def get(self, request: Request):
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
         data = [self.serializer_class(i).data for i in books]
-        return ResponseData.success('获取数据成功', data)
+        return ResponseData.success(RESPONSE_MSG_0049, data)
 
     def callback(self, _id):
         """
@@ -95,7 +96,7 @@ class UiCaseStepsDetailedViews(ViewSet):
                 if 'value' in value_dict:
                     value_dict.pop('value')
             else:
-                return ResponseData.fail(f'步骤详情ID:{steps_detailed.id}，既不是操作类型也不是断言类型，请检查该元素！')
+                return ResponseData.fail(RESPONSE_MSG_0048)
             case_data_list.append({
                 'page_step_details_id': steps_detailed.id,
                 'page_step_details_name': name,
@@ -106,7 +107,7 @@ class UiCaseStepsDetailedViews(ViewSet):
             })
         books.case_data = case_data_list
         books.save()
-        return ResponseData.success('刷新成功')
+        return ResponseData.success(RESPONSE_MSG_0050)
 
     @action(methods=['put'], detail=False)
     def put_case_sort(self, request: Request):
@@ -122,4 +123,4 @@ class UiCaseStepsDetailedViews(ViewSet):
             case_id = obj.case.id
             obj.save()
         UiCaseStepsDetailedCRUD().callback(case_id)
-        return ResponseData.success('设置排序成功', )
+        return ResponseData.success(RESPONSE_MSG_0051, )
