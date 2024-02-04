@@ -95,6 +95,7 @@ class UiCase(models.Model):
     # 0失败，1成功，2警告
     status = models.SmallIntegerField(verbose_name="状态", null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
+    level = models.SmallIntegerField(verbose_name="用例级别", null=True)
 
     class Meta:
         db_table = 'ui_case'
@@ -205,6 +206,8 @@ class UiEleResult(models.Model):
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
     ass_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
     error_message = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
+    expect = models.TextField(verbose_name="预期", null=True)
+    actual = models.TextField(verbose_name="实际", null=True)
 
     class Meta:
         db_table = 'ui_ele_result'

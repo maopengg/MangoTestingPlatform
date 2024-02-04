@@ -158,6 +158,9 @@
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ record.case_people.nickname }}
                 </template>
+                <template v-else-if="item.key === 'level'" #cell="{ record }">
+                  {{ caseData.enumCaseLevel[record.level] }}
+                </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
@@ -272,6 +275,7 @@
     systemEnumStatus,
     systemTasksBatchSetCases,
     systemScheduledName,
+    systemEnumCaseLevel,
   } from '@/api/url'
   import {
     usePagination,
@@ -309,6 +313,7 @@
     moduleList: projectModule.data,
     systemStatus: [],
     scheduledName: [],
+    enumCaseLevel: [],
     value: null,
     visible: false,
   })
@@ -464,6 +469,11 @@
       title: '用例负责人',
       key: 'case_people',
       dataIndex: 'case_people',
+    },
+    {
+      title: '级别',
+      key: 'level',
+      dataIndex: 'level',
     },
     {
       title: '结果',
@@ -769,6 +779,18 @@
       })
       .catch(console.log)
   }
+  function enumCaseLevel() {
+    get({
+      url: systemEnumCaseLevel,
+      data: () => {
+        return {}
+      },
+    })
+      .then((res) => {
+        caseData.enumCaseLevel = res.data
+      })
+      .catch(console.log)
+  }
 
   onMounted(() => {
     nextTick(async () => {
@@ -776,6 +798,7 @@
       getNickName()
       status()
       scheduledName()
+      enumCaseLevel()
     })
   })
 </script>

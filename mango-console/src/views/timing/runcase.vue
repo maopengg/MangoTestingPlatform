@@ -5,33 +5,50 @@
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
-              <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+              <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
+              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
             </a-space>
           </a-affix>
         </template>
-        <a-table :columns="columns" :data="runCaseData.data" :pagination="false" :bordered="false">
+        <a-table
+          :draggable="{ type: 'handle', width: 40 }"
+          :bordered="false"
+          :row-selection="{ selectedRowKeys, showCheckedAll }"
+          :loading="table.tableLoading.value"
+          :data="table.dataList"
+          :columns="tableColumns"
+          :pagination="false"
+          :rowKey="rowKey"
+          @selection-change="onSelectionChange"
+        >
           <template #columns>
             <a-table-column
+              v-for="item of tableColumns"
               :key="item.key"
-              v-for="item of columns"
               :align="item.align"
               :title="item.title"
               :width="item.width"
-              :data-index="item.dataIndex"
+              :data-index="item.key"
               :fixed="item.fixed"
             >
-              <template v-if="item.dataIndex === 'task'" #cell="{ record }">
+              <template v-if="item.key === 'index'" #cell="{ record }">
+                {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'task'" #cell="{ record }">
                 {{ record.task.name }}
               </template>
-              <template v-else-if="item.dataIndex === 'case'" #cell="{ record }">
+              <template v-else-if="item.key === 'case'" #cell="{ record }">
                 {{ record.case }}
               </template>
-              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+              <template v-else-if="item.key === 'test_object'" #cell="{ record }">
+                {{ record.test_object == null ? '跟随定时任务' : record.test_object?.name }}
+              </template>
+              <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                  >删除
+                </a-button>
               </template>
             </a-table-column>
           </template>
@@ -88,33 +105,56 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProjectModule } from '@/store/modules/project_module'
-
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
   const projectModule = useProjectModule()
-
+  const pagination = usePagination(doRefresh)
+  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
   const route = useRoute()
+  pagination.pageSize = 1000
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const runCaseData = reactive({
     isAdd: false,
     updateId: 0,
     actionTitle: '添加定时任务',
-    data: [],
     caseList: [],
   })
-  const columns = reactive([
+  const tableColumns = useTableColumn([
+    table.indexColumn,
     {
       title: '任务名称',
+      key: 'task',
       dataIndex: 'task',
       width: 200,
     },
     {
       title: '用例名称',
+      key: 'case',
       dataIndex: 'case',
     },
     {
+      title: '执行排序',
+      key: 'sort',
+      dataIndex: 'sort',
+    },
+    {
+      title: '用例绑定环境',
+      key: 'test_object',
+      dataIndex: 'test_object',
+    },
+    {
       title: '操作',
+      key: 'actions',
       dataIndex: 'actions',
-      align: 'center',
+      fixed: 'right',
       width: 130,
     },
   ])
@@ -151,6 +191,36 @@
       },
     },
   ])
+
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    console.log(selectedRowKeys.value)
+    Modal.confirm({
+      title: '提示',
+      content: '确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleted({
+          url: systemTasksRunCase,
+          data: () => {
+            return {
+              id: JSON.stringify(selectedRowKeys.value),
+            }
+          },
+        })
+          .then((res) => {
+            Message.success(res.msg)
+            selectedRowKeys.value = []
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
 
   function doAppend() {
     runCaseData.actionTitle = '添加用例'
@@ -250,11 +320,14 @@
         return {
           id: route.query.id,
           type: route.query.type,
+          page: pagination.page,
+          pageSize: pagination.pageSize,
         }
       },
     })
       .then((res) => {
-        runCaseData.data = res.data
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
   }
