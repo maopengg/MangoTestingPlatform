@@ -46,6 +46,7 @@ class ApiCase(models.Model):
     # 0失败，1成功，2警告
     status = models.SmallIntegerField(verbose_name="状态", null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
+    level = models.SmallIntegerField(verbose_name="用例级别", null=True)
 
     class Meta:
         db_table = 'api_case'

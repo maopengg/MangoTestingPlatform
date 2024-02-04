@@ -105,6 +105,7 @@ class ScheduledTasks(models.Model):
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
+    parallel_number = models.SmallIntegerField(verbose_name="用例执行并行数", null=True)
 
     class Meta:
         db_table = 'scheduled_tasks'
@@ -116,6 +117,8 @@ class TasksRunCaseList(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=ScheduledTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     case = models.SmallIntegerField(verbose_name="api_case_id", null=True)
+    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    sort = models.SmallIntegerField(verbose_name="api_case_id", null=True)
 
     class Meta:
         db_table = 'tasks_run_case_list'

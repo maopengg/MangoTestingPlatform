@@ -72,4 +72,5 @@ urlpatterns = [
     path('enum/drive', EnumOptionViews.as_view({'get': 'enum_drive'})),
     path('enum/autotest', EnumOptionViews.as_view({'get': 'enum_autotest'})),
     path('enum/exp', EnumOptionViews.as_view({'get': 'enum_exp'})),
+    path('enum/case/level', EnumOptionViews.as_view({'get': 'enum_case_level'})),
 ]

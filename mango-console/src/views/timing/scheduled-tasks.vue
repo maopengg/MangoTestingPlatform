@@ -390,6 +390,11 @@
       align: 'left',
     },
     {
+      title: '用例并行数',
+      key: 'parallel_number',
+      dataIndex: 'parallel_number',
+    },
+    {
       title: '任务状态',
       key: 'status',
       dataIndex: 'status',

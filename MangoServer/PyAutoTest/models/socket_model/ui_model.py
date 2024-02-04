@@ -101,6 +101,8 @@ class ElementResultModel(BaseModel):
     ope_value: dict | str | None
     ass_type: str | None
     ass_value: dict | None
+    expect: str | None
+    actual: str | None
 
 
 class PageStepsResultModel(BaseModel):

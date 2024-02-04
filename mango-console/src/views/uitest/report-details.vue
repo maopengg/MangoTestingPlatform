@@ -81,6 +81,7 @@
                     <p>测试结果：{{ item.status === 1 ? '成功' : '失败' }}</p>
                     <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
                     <p v-if="item.status === 0">错误提示：{{ item.msg }}</p>
+                    <p v-if="item.expect">预期：{{ item.expect }}</p>
                   </a-space>
                   <a-space direction="vertical" style="width: 50%">
                     <p>输入值：{{ item.ope_value ? item.ope_value : '-' }}</p>
@@ -89,6 +90,7 @@
                     <p>元素个数：{{ item.ele_quantity }}</p>
                     <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
                     <p v-if="item.status === 0">失败截图：{{ item.picture_path }}</p>
+                    <p v-if="item.expect">实际：{{ item.actual }}</p>
                   </a-space>
                 </div>
               </a-collapse-item>

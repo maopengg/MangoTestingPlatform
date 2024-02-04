@@ -129,6 +129,7 @@ export const systemEnumBrowser = 'system/enum/browser'
 export const systemEnumDrive = 'system/enum/drive'
 export const systemEnumExp = 'system/enum/exp'
 export const systemEnumAutotest = 'system/enum/autotest'
+export const systemEnumCaseLevel = 'system/enum/case/level'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {

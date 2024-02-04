@@ -119,3 +119,12 @@ class EnumOptionViews(ViewSet):
         :return:
         """
         return ResponseData.success(RESPONSE_MSG_0076, AutoTestTypeEnum.get_option())
+
+    @action(methods=['get'], detail=False)
+    def enum_case_level(self, request):
+        """
+        获取用例级别
+        :param request:
+        :return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0106, CaseLevelEnum.get_value_list())
