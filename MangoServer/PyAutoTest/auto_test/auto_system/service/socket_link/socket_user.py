@@ -60,10 +60,11 @@ class SocketUser:
                 if i.web_obj:
                     return i.web_obj
                 else:
-                    raise SocketClientNotPresentError(*ERROR_MSG_0028,
-                                                      value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
-        raise SocketClientNotPresentError(*ERROR_MSG_0028,
-                                          value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
+                    return False
+        #             raise SocketClientNotPresentError(*ERROR_MSG_0028,
+        #                                               value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
+        # raise SocketClientNotPresentError(*ERROR_MSG_0028,
+        #                                   value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
 
     @classmethod
     def get_user_client_obj(cls, user_key):

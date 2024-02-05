@@ -18,7 +18,7 @@ from PyAutoTest.enums.system_enum import SocketEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
-
+from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
 T = TypeVar('T')
 logger = logging.getLogger('system')
 
@@ -106,7 +106,10 @@ class ChatConsumer(WebsocketConsumer):
         if send_data.is_notice:
             if send_data.is_notice.value == ClientTypeEnum.WEB.value:
                 obj = SocketUser.get_user_web_obj(send_data.user)
-                obj.send(send_data.json())
+                if not obj:
+                    pass
+                else:
+                    obj.send(send_data.json())
             elif send_data.is_notice.value == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.json())
