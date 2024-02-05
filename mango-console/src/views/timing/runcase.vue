@@ -6,6 +6,21 @@
           <a-affix :offsetTop="80">
             <a-space>
               <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
+              <a-button status="warning" size="small" @click="handleClick">批量设置环境</a-button>
+              <a-modal v-model:visible="runCaseData.visible" @ok="handleOk" @cancel="handleCancel">
+                <template #title> 设为定时任务 </template>
+                <div>
+                  <a-select
+                    v-model="runCaseData.value"
+                    placeholder="请选择定时任务进行绑定"
+                    :options="testObj.data"
+                    :field-names="fieldNames"
+                    value-key="key"
+                    allow-clear
+                    allow-search
+                  />
+                </div>
+              </a-modal>
               <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
             </a-space>
@@ -21,6 +36,7 @@
           :pagination="false"
           :rowKey="rowKey"
           @selection-change="onSelectionChange"
+          @change="handleChange"
         >
           <template #columns>
             <a-table-column
@@ -98,7 +114,13 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { systemTasksRunCase, systemTasksTypeCaseName } from '@/api/url'
+  import {
+    systemTasksBatchSetCases,
+    systemTasksCaseSort,
+    systemTasksCaseTestObject,
+    systemTasksRunCase,
+    systemTasksTypeCaseName,
+  } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -112,6 +134,8 @@
     useTable,
     useTableColumn,
   } from '@/hooks/table'
+  import { useTestObj } from '@/store/modules/get-test-obj'
+  const testObj = useTestObj()
   const projectModule = useProjectModule()
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -123,9 +147,12 @@
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const runCaseData = reactive({
     isAdd: false,
+    visible: false,
+    value: null,
     updateId: 0,
     actionTitle: '添加定时任务',
     caseList: [],
+    data: [],
   })
   const tableColumns = useTableColumn([
     table.indexColumn,
@@ -284,6 +311,8 @@
           url: systemTasksRunCase,
           data: () => {
             value['task'] = route.query.id
+            value['sort'] = runCaseData.data.length
+
             return value
           },
         })
@@ -308,7 +337,27 @@
       }
     }
   }
-
+  const handleChange = (_data: any) => {
+    let data: any = []
+    _data.forEach((item: any, index: number) => {
+      data.push({
+        id: item.id,
+        sort: index,
+      })
+    })
+    put({
+      url: systemTasksCaseSort,
+      data: () => {
+        return {
+          sort_list: data,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
   function doResetSearch() {
     window.history.back()
   }
@@ -326,6 +375,7 @@
       },
     })
       .then((res) => {
+        runCaseData.data = res.data
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
@@ -347,7 +397,33 @@
       })
       .catch(console.log)
   }
-
+  const handleCancel = () => {
+    runCaseData.visible = false
+  }
+  const handleClick = () => {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要绑定测试的用例环境')
+      return
+    }
+    runCaseData.visible = true
+  }
+  const handleOk = () => {
+    put({
+      url: systemTasksCaseTestObject,
+      data: () => {
+        return {
+          case_list: selectedRowKeys.value,
+          test_obj_id: runCaseData.value,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        runCaseData.visible = false
+        doRefresh()
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

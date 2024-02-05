@@ -127,4 +127,4 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success(RESPONSE_MSG_0106, CaseLevelEnum.get_value_list())
+        return ResponseData.success(RESPONSE_MSG_0106, CaseLevelEnum.get_option())

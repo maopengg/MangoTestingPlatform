@@ -77,10 +77,14 @@
                         item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-'
                       }}</p
                     >
-                    <p>表达式类型：{{ reportDetailsData.eleExp[item.exp].title }}</p>
+                    <p
+                      >表达式类型：{{
+                        item.exp ? reportDetailsData.eleExp[item.exp].title : item.exp
+                      }}</p
+                    >
                     <p>测试结果：{{ item.status === 1 ? '成功' : '失败' }}</p>
                     <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                    <p v-if="item.status === 0">错误提示：{{ item.msg }}</p>
+                    <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
                     <p v-if="item.expect">预期：{{ item.expect }}</p>
                   </a-space>
                   <a-space direction="vertical" style="width: 50%">

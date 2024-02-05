@@ -155,11 +155,15 @@
                       : ''
                   }}{{ record.module_name?.name }}
                 </template>
+                <template v-else-if="item.key === 'level'" #cell="{ record }">
+                  <a-tag color="orange" size="small">
+                    {{
+                      record.level !== null ? caseData.enumCaseLevel[record.level].title : '-'
+                    }}</a-tag
+                  >
+                </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ record.case_people.nickname }}
-                </template>
-                <template v-else-if="item.key === 'level'" #cell="{ record }">
-                  {{ caseData.enumCaseLevel[record.level] }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -249,6 +253,17 @@
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="caseData.userList"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'level'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="caseData.enumCaseLevel"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -422,6 +437,21 @@
       },
     },
     {
+      label: '用例级别',
+      key: 'level',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请设置用例级别',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
       label: '用例负责人',
       key: 'case_people',
       value: '',
@@ -466,15 +496,17 @@
       align: 'left',
     },
     {
-      title: '用例负责人',
-      key: 'case_people',
-      dataIndex: 'case_people',
-    },
-    {
       title: '级别',
       key: 'level',
       dataIndex: 'level',
     },
+    {
+      title: '负责人',
+      key: 'case_people',
+      dataIndex: 'case_people',
+      width: 80,
+    },
+
     {
       title: '结果',
       key: 'status',
