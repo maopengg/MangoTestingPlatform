@@ -81,7 +81,7 @@ class Tasks:
     @classmethod
     def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: bool, is_trigger: bool = False):
         try:
-            run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id)
+            run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
@@ -96,7 +96,7 @@ class Tasks:
     def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool,
                 is_trigger: bool = False):
         try:
-            run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id)
+            run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')

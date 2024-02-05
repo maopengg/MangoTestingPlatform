@@ -161,6 +161,9 @@
               <template v-else-if="item.type === 'input' && item.key === 'name'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
+              <template v-else-if="item.type === 'input' && item.key === 'parallel_number'">
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
+              </template>
 
               <template v-else-if="item.type === 'select' && item.key === 'timing_strategy'">
                 <a-select
@@ -295,6 +298,13 @@
       placeholder: '请输入任务名称',
       required: true,
       type: 'input',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
     },
     {
       label: '定时策略',
@@ -342,10 +352,10 @@
       },
     },
     {
-      label: '负责人',
+      label: '定时器',
       key: 'executor_name',
       value: '',
-      placeholder: '请选择负责人',
+      placeholder: '请选择绑定执行的定时器',
       required: true,
       type: 'select',
       validator: function () {
@@ -354,6 +364,26 @@
           return false
         }
         return true
+      },
+    },
+    {
+      label: '用例并行数',
+      key: 'parallel_number',
+      value: '',
+      placeholder: '请输入用例并行数，建议不超过10',
+      required: true,
+      type: 'input',
+      validator: function () {
+        if (!this.value) {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        if (/^\d+$/.test(this.value) && parseInt(this.value) > 0) {
+          return true // 返回true表示该字符串是正整数类型且大于0
+        } else {
+          Message.error('用例并行数请输入大于0的正整数')
+          return false // 返回false表示该字符串不是正整数类型或者小于等于0
+        }
       },
     },
   ])

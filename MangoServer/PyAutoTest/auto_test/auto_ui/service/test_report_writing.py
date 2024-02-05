@@ -11,7 +11,9 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultSerial
 from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0030
 
 log = logging.getLogger('ui')
 
@@ -25,7 +27,10 @@ class TestReportWriting:
         @param data:
         @return:
         """
-        res = UiPageSteps.objects.get(id=data.page_step_id)
+        try:
+            res = UiPageSteps.objects.get(id=data.page_step_id)
+        except UiPageSteps.DoesNotExist as error:
+            raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         res.type = data.status
         res.save()
 
@@ -49,13 +54,7 @@ class TestReportWriting:
                 serializer.save()
             else:
                 log.error(f'增加用例步骤结果，请联系管理员进行查看，错误信息：{serializer.errors}')
-            # 更新测试报告页面的状态和错误提示语
-            case_step_detailed_dict = UiCaseStepsDetailed.objects.get(id=page_steps_result.case_step_details_id)
-            case_step_detailed_dict.status = page_steps_result.status
-            if page_steps_result.status == StatusEnum.FAIL.value:
-                case_step_detailed_dict.error_message = page_steps_result.error_message
-                # error_message.append(page_steps_result.error_message)
-            case_step_detailed_dict.save()
+            cls.update_step(page_steps_result)
             for element_result in page_steps_result.element_result_list:
                 # 保存元素测试结果
                 serializer = UiEleResultSerializers(data=element_result.dict())
@@ -69,9 +68,14 @@ class TestReportWriting:
             case_result_serializer.save()
         else:
             log.error(f'增加用例结果，请联系管理员进行查看，错误信息：{case_result_serializer.errors}')
-        # if data.is_batch == StatusEnum.SUCCESS.value:
-        #     TestSuiteReportUpdate.update_case_suite_status(data.test_suite_id,
-        #                                                    data.status,
-        #                                                    StatusEnum.SUCCESS.value,
-        #                                                    error_message
-        #                                                    )
+
+    @classmethod
+    def update_step(cls, step_data: PageStepsResultModel):
+        case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
+        case_step_detailed.status = step_data.status
+        case_step_detailed.error_message = step_data.error_message
+        case_step_detailed.save()
+        #
+        page_step = UiPageSteps.objects.get(id=step_data.page_step_id)
+        page_step.type = step_data.status
+        page_step.save()

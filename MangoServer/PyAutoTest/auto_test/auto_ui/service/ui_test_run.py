@@ -14,10 +14,11 @@ from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageSteps
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
+from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0029
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0029, ERROR_MSG_0030
 from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 
@@ -133,7 +134,7 @@ class UiTestRun:
         """
         step = UiPageSteps.objects.get(id=page_steps_id)
         page_steps_model = PageStepsModel(
-            id=step.id,
+            id=page_steps_id,
             name=step.name,
             case_step_details_id=case_step_details_id,
             project_id=step.project.id,
@@ -170,7 +171,10 @@ class UiTestRun:
         return page_steps_model
 
     def element(self, data: dict) -> None:
-        page_obj = UiPage.objects.get(id=data['page_id'])
+        try:
+            page_obj = UiPage.objects.get(id=data['page_id'])
+        except UiPage.DoesNotExist as error:
+            raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         element_obj = UiElement.objects.get(id=data['id'])
         page_steps_model = PageStepsModel(
             id=0,

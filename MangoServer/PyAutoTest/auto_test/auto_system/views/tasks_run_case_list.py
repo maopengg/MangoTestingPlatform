@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTasksSerializers
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
@@ -32,6 +33,7 @@ class TasksRunCaseListSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     task = ScheduledTasksSerializers(read_only=True)
+    test_object = TestObjectSerializers(read_only=True)
 
     class Meta:
         model = TasksRunCaseList
@@ -46,11 +48,13 @@ class TasksRunCaseListCRUD(ModelCRUD):
 
     def get(self, request: Request):
         _type = request.GET.get('type')
-        books = self.model.objects.filter(task=request.GET.get('id'))
+        books = self.model.objects.filter(task=request.GET.get('id')).order_by('sort')
         data = []
         for i in books:
             _dict = model_to_dict(i)
             _dict['task'] = model_to_dict(i.task)
+            if i.test_object:
+                _dict['test_object'] = model_to_dict(i.test_object)
             if int(_type) == AutoTestTypeEnum.UI.value and i.case:
                 _dict['case'] = UiCase.objects.get(id=i.case).name
             elif int(_type) == AutoTestTypeEnum.API.value and i.case:
@@ -88,3 +92,34 @@ class TasksRunCaseListViews(ViewSet):
                 else:
                     return ResponseData.fail(RESPONSE_MSG_0066)
         return ResponseData.success(RESPONSE_MSG_0067)
+
+    @action(methods=['put'], detail=False)
+    def put_tasks_case_sort(self, request: Request):
+        """
+        修改排序
+        @param request:
+        @return:
+        """
+        for i in request.data.get('sort_list'):
+            obj = self.model.objects.get(id=i['id'])
+            obj.sort = i['sort']
+            obj.save()
+        return ResponseData.success(RESPONSE_MSG_0107, )
+
+    @action(methods=['put'], detail=False)
+    def put_tasks_case_test_object(self, request: Request):
+        """
+        修改排序
+        @param request:
+        @return:
+        """
+        for i in request.data.get('case_list'):
+            serializer = self.serializer_class(
+                instance=self.model.objects.get(id=i),
+                data={'id': i, 'test_object': request.data.get('test_obj_id')})
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                return ResponseData.fail(RESPONSE_MSG_0109, serializer.errors)
+
+        return ResponseData.success(RESPONSE_MSG_0108, )

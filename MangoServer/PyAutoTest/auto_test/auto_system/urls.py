@@ -35,6 +35,8 @@ urlpatterns = [
     path('tasks/run/case', TasksRunCaseListCRUD.as_view()),
     path('tasks/type/case/name', TasksRunCaseListViews.as_view({'get': 'get_type_case_name'})),
     path('tasks/batch/set/cases', TasksRunCaseListViews.as_view({'post': 'batch_set_cases'})),
+    path('tasks/case/sort', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_sort'})),
+    path('tasks/case/test/object', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_test_object'})),
     #
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
     path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
