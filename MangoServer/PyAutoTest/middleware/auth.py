@@ -13,7 +13,7 @@ from rest_framework.exceptions import AuthenticationFailed
 class JwtQueryParamsAuthentication(BaseAuthentication):
 
     def authenticate(self, request):
-        token = request.META.get('HTTP_AUTH')
+        token = request.META.get('HTTP_AUTHORIZATION')
         salt = settings.SECRET_KEY
         # 1.切割
         # 2.解密第二段，判断过期
