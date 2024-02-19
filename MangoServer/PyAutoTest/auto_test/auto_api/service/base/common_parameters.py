@@ -31,17 +31,17 @@ class CommonParameters(DataProcessor):
         self.test_object = TestObject.objects.get(id=self.test_obj_id)
         self.is_db = True if self.test_object.db_status else False
         self.public_obj = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
-                                                   project=project_id).order_by('public_type')
+                                                   project=project_id).order_by('type')
         if self.is_db:
             self.mysql_obj = MysqlClient(GetDataBase.get_mysql_config(self.test_obj_id))
         for i in self.public_obj:
-            if i.public_type == ApiPublicTypeEnum.SQL.value:
+            if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
-            elif i.public_type == ApiPublicTypeEnum.LOGIN.value:
+            elif i.type == ApiPublicTypeEnum.LOGIN.value:
                 self.__login(i)
-            elif i.public_type == ApiPublicTypeEnum.CUSTOM.value:
+            elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
-            elif i.public_type == ApiPublicTypeEnum.HEADERS.value:
+            elif i.type == ApiPublicTypeEnum.HEADERS.value:
                 self.__headers(i)
 
     def __login(self, api_public_obj: ApiPublic):

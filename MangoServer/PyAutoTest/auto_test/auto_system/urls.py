@@ -64,7 +64,7 @@ urlpatterns = [
     # 枚举接口
     path('enum/client', EnumOptionViews.as_view({'get': 'enum_client'})),
     path('enum/method', EnumOptionViews.as_view({'get': 'enum_method'})),
-    path('enum/public', EnumOptionViews.as_view({'get': 'enum_public'})),
+    path('enum/api/public', EnumOptionViews.as_view({'get': 'enum_api_public'})),
     path('enum/end', EnumOptionViews.as_view({'get': 'enum_end'})),
     path('enum/notice', EnumOptionViews.as_view({'get': 'enum_notice'})),
     path('enum/status', EnumOptionViews.as_view({'get': 'enum_status'})),
@@ -75,4 +75,5 @@ urlpatterns = [
     path('enum/autotest', EnumOptionViews.as_view({'get': 'enum_autotest'})),
     path('enum/exp', EnumOptionViews.as_view({'get': 'enum_exp'})),
     path('enum/case/level', EnumOptionViews.as_view({'get': 'enum_case_level'})),
+    path('enum/ui/public', EnumOptionViews.as_view({'get': 'enum_ui_public'})),
 ]

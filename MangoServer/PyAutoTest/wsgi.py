@@ -1,5 +1,5 @@
 """
-WSGI config for PyAutoTest project.
+WSGI settings for PyAutoTest project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

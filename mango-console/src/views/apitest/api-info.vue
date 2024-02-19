@@ -19,19 +19,6 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'project'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="item.optionItems"
-                      @change="getProjectModule(item.value)"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                    />
-                  </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module_name'">
                     <a-select
                       style="width: 150px"

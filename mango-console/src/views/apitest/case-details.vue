@@ -560,6 +560,7 @@
           data: () => {
             return {
               id: data.id,
+              parent_id: route.query.case_id,
             }
           },
         })

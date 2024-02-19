@@ -417,7 +417,7 @@
           data: () => {
             return {
               id: record.id,
-              page_step: record.page_step.id,
+              parent_id: record.page_step.id,
             }
           },
         })

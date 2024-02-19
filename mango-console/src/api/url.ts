@@ -122,7 +122,7 @@ export const systemActivityLevel = 'system/activity/level'
 export const systemCacheKeyValue = 'system/cache/key/value'
 export const systemEnumClient = 'system/enum/client'
 export const systemEnumMethod = 'system/enum/method'
-export const systemEnumPublic = 'system/enum/public'
+export const systemEnumApiPublic = 'system/enum/api/public'
 export const systemEnumEnd = 'system/enum/end'
 export const systemEnumNotice = 'system/enum/notice'
 export const systemEnumStatus = 'system/enum/status'
@@ -133,6 +133,7 @@ export const systemEnumDrive = 'system/enum/drive'
 export const systemEnumExp = 'system/enum/exp'
 export const systemEnumAutotest = 'system/enum/autotest'
 export const systemEnumCaseLevel = 'system/enum/case/level'
+export const systemEnumUiPublic = 'system/enum/ui/public'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {

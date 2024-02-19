@@ -9,8 +9,9 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
+from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enums.tools_enum import ClientNameEnum
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 from PyAutoTest.tools.view_utils.response_msg import *
@@ -53,7 +54,13 @@ class ApiPublicViews(ViewSet):
         :param request:
         :return:
         """
+
         obj = self.model.objects.get(id=request.data.get('id'))
+        if request.data.get('status') == StatusEnum.SUCCESS.value:
+            try:
+                Database.objects.get(project_id=obj.project.id)
+            except Database.DoesNotExist:
+                return ResponseData.fail(RESPONSE_MSG_0110, )
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0104, )

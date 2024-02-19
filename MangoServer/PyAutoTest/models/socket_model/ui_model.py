@@ -12,6 +12,7 @@ class UiPublicModel(BaseModel):
     create_time: str
     update_time: str
     project: int
+    type: int
     name: str
     key: str
     value: str

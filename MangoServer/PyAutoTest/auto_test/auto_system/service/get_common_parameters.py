@@ -47,6 +47,6 @@ class GetCommonParameters:
         """
         data = []
         test_obj = TestObject.objects.get(id=test_obj_id)
-        for i in UiPublic.objects.filter(project_id=test_obj.project_id):
+        for i in UiPublic.objects.filter(project_id=test_obj.project_id).order_by('type'):
             data.append(UiPublicSerializers(instance=i).data)
         return data

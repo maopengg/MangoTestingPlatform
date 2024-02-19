@@ -73,6 +73,12 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
+                <template v-else-if="item.key === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
+                  <a-tag color="cyan" size="small" v-else-if="record.type === 1">SQL</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 2">登录</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 3">请求头</a-tag>
+                </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
                     :default-checked="record.status === 1"
@@ -125,6 +131,17 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="uiPublicData.publicEnum"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -135,7 +152,7 @@
 
 <script lang="ts" setup>
   import { get, post, put, deleted } from '@/api/http'
-  import { uiPublic, uiPublicPutStatus } from '@/api/url'
+  import { systemEnumUiPublic, uiPublic, uiPublicPutStatus } from '@/api/url'
   import {
     usePagination,
     useRowKey,
@@ -162,6 +179,7 @@
     actionTitle: '新增参数',
     updateId: 0,
     isAdd: true,
+    publicEnum: [],
   })
   const conditionItems: Array<FormItem> = reactive([
     {
@@ -194,15 +212,6 @@
         this.value = ''
       },
     },
-    {
-      key: 'project',
-      label: '项目',
-      value: '',
-      type: 'select',
-      placeholder: '请选择项目',
-      optionItems: project.data,
-      reset: function () {},
-    },
   ])
   const formItems: FormItem[] = reactive([
     {
@@ -214,6 +223,21 @@
       type: 'select',
       validator: function () {
         if (!this.value && this.value !== '0') {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '类型',
+      key: 'type',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请选择对应类型，注意不同类型的加载顺序',
+      validator: function () {
+        if (!this.value && this.value !== 0) {
           Message.error(this.placeholder || '')
           return false
         }
@@ -273,6 +297,11 @@
       title: '项目名称',
       key: 'project',
       dataIndex: 'project',
+    },
+    {
+      title: '类型',
+      key: 'type',
+      dataIndex: 'type',
     },
     {
       title: '参数名称',
@@ -450,10 +479,20 @@
       }
     }
   }
+  function doPublic() {
+    get({
+      url: systemEnumUiPublic,
+    })
+      .then((res) => {
+        uiPublicData.publicEnum = res.data
+      })
+      .catch(console.log)
+  }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      doPublic()
     })
   })
 </script>

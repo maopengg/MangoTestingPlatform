@@ -62,27 +62,27 @@ class ModelCRUD(GenericAPIView):
 
     def put(self, request: Request):
         if isinstance(request, dict):
+            data = request
             serializer = self.serializer(
                 instance=self.model.objects.get(pk=request.get('id')),
-                data=request
+                data=data
             )
         else:
+            data = request.data
             serializer = self.serializer(
                 instance=self.model.objects.get(pk=request.data.get('id')),
-                data=request.data
+                data=data
             )
         if serializer.is_valid():
             serializer.save()
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
-            if isinstance(request, dict):
-                logger.error(f'执行修改时报错，请检查！数据：{request}, 报错信息：{str(serializer.errors)}')
-            else:
-                logger.error(f'执行修改时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            logger.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
     def delete(self, request: Request):
+
         # 批量删
         if '[' in request.query_params.get('id'):
             for i in eval(request.query_params.get('id')):
@@ -90,39 +90,28 @@ class ModelCRUD(GenericAPIView):
         else:
             # 一条删
             model = self.model.objects.get(id=request.query_params.get('id'))
-            # case_id = model.case.id
             model.delete()
-            self.asynchronous_callback(request, model.id)
+            self.asynchronous_callback(request, request.query_params.get('parent_id'))
         return ResponseData.success(RESPONSE_MSG_0005)
 
-    def asynchronous_callback(self, request: Request, case_id: int = None):
+    def asynchronous_callback(self, request: Request, _id: int = None):
         """
         反射的后置处理
         """
         if hasattr(self, 'callback'):
-            from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
-            from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
+            from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
+            # from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
             if isinstance(self, UiPageStepsDetailedCRUD):
-                _id = request.data.get('page_step')
-                if _id is None:
-                    _id = request.query_params.get('page_step')
+                parent_id = request.data.get('page_step')
             elif isinstance(self, UiCaseStepsDetailedCRUD):
-                _id = request.data.get('case')
-                if _id is None:
-                    _id = request.query_params.get('case')
-            elif isinstance(self, ApiCaseDetailedCRUD):
-                if request.method == "DELETE":
-                    _id = case_id
-                else:
-                    _id = request.data.get('case')
-                    if _id is None:
-                        _id = request.query_params.get('case')
+                parent_id = request.data.get('case')
             else:
-                return
-            if _id is not None:
-                th = Thread(target=self.callback, args=(_id,))
-                th.start()
+                parent_id = request.data.get('case')
+            if parent_id is None:
+                parent_id = _id
+            th = Thread(target=self.callback, args=(parent_id,))
+            th.start()
 
     @classmethod
     def paging_list(cls, size: int, current: int, books, serializer) -> list:

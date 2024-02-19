@@ -344,7 +344,7 @@
           data: () => {
             return {
               id: record.id,
-              case: record.case.id,
+              parent_id: record.case.id,
             }
           },
         })

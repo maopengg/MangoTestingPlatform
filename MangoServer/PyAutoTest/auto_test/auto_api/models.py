@@ -88,11 +88,9 @@ class ApiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    # 0是公共参数，1是公共断言
-    type = models.SmallIntegerField(verbose_name="公共类型", null=True)
-    client = models.SmallIntegerField(verbose_name="什么端", null=True)
     # 0等于自定义，1等于sql，2等于登录，3等于header
-    public_type = models.SmallIntegerField(verbose_name="值的类型", null=True)
+    type = models.SmallIntegerField(verbose_name="自定义变量类型", null=True)
+    client = models.SmallIntegerField(verbose_name="什么端", null=True)
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
     value = models.CharField(verbose_name="值", max_length=2048, null=True)
