@@ -255,15 +255,6 @@
         this.value = ''
       },
     },
-    {
-      key: 'project',
-      label: '项目',
-      value: '',
-      type: 'select',
-      placeholder: '请选择项目',
-      optionItems: project.data,
-      reset: function () {},
-    },
   ])
   const formItems: FormItem[] = reactive([
     {

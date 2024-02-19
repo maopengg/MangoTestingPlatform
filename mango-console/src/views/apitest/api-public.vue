@@ -19,19 +19,6 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'project'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="item.optionItems"
-                      @change="getProjectModule(item.value)"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                    />
-                  </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module_name'">
                     <a-select
                       style="width: 150px"
@@ -78,14 +65,12 @@
         </template>
 
         <template #default>
-          <a-tabs @tab-click="(key) => switchType(key)" default-active-key="0">
+          <a-tabs>
             <template #extra>
-              <a-space>
+              <div>
                 <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-              </a-space>
+              </div>
             </template>
-            <a-tab-pane key="0" title="公共请求参数" />
-            <a-tab-pane key="1" title="公共断言类型" />
           </a-tabs>
           <a-table
             :bordered="false"
@@ -113,17 +98,11 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
-                <template v-else-if="item.key === 'public_type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.public_type === 0"
-                    >自定义</a-tag
-                  >
-                  <a-tag color="cyan" size="small" v-else-if="record.public_type === 1">SQL</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 2"
-                    >登录</a-tag
-                  >
-                  <a-tag color="green" size="small" v-else-if="record.public_type === 3"
-                    >请求头</a-tag
-                  >
+                <template v-else-if="item.key === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
+                  <a-tag color="cyan" size="small" v-else-if="record.type === 1">SQL</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 2">登录</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 3">请求头</a-tag>
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.client === 0">web端</a-tag>
@@ -193,11 +172,11 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'public_type'">
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="apiPublicData.apiPublicPublic"
+                  :options="apiPublicData.publicEnum"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -214,13 +193,7 @@
 
 <script lang="ts" setup>
   import { get, post, put, deleted } from '@/api/http'
-  import {
-    apiPublic,
-    systemEnumEnd,
-    systemEnumPublic,
-    apiPublicPutStatus,
-    userProjectModuleGetAll,
-  } from '@/api/url'
+  import { apiPublic, systemEnumEnd, systemEnumApiPublic, apiPublicPutStatus } from '@/api/url'
   import {
     usePagination,
     useRowKey,
@@ -246,8 +219,7 @@
     actionTitle: '添加接口',
     isAdd: false,
     updateId: 0,
-    publicType: '0',
-    apiPublicPublic: [],
+    publicEnum: [],
     apiPublicEnd: [],
     moduleList: [],
   })
@@ -271,15 +243,6 @@
       reset: function () {
         this.value = ''
       },
-    },
-    {
-      key: 'project',
-      label: '项目',
-      value: '',
-      type: 'select',
-      placeholder: '请选择项目',
-      optionItems: project.data,
-      reset: function () {},
     },
     {
       key: 'client',
@@ -325,7 +288,7 @@
     },
     {
       label: '类型',
-      key: 'public_type',
+      key: 'type',
       value: '',
       type: 'select',
       required: true,
@@ -399,8 +362,8 @@
     },
     {
       title: '类型',
-      key: 'public_type',
-      dataIndex: 'public_type',
+      key: 'type',
+      dataIndex: 'type',
     },
     {
       title: '参数名称',
@@ -432,18 +395,12 @@
     },
   ])
 
-  function switchType(key: any) {
-    apiPublicData.publicType = key
-    doRefresh()
-  }
-
   function doRefresh() {
     get({
       url: apiPublic,
       data: () => {
         let value = getFormItems(conditionItems)
         value['page'] = pagination.page
-        value['type'] = apiPublicData.publicType
         value['pageSize'] = pagination.pageSize
         return value
       },
@@ -457,10 +414,10 @@
 
   function doPublic() {
     get({
-      url: systemEnumPublic,
+      url: systemEnumApiPublic,
     })
       .then((res) => {
-        apiPublicData.apiPublicPublic = res.data
+        apiPublicData.publicEnum = res.data
       })
       .catch(console.log)
   }
@@ -539,7 +496,6 @@
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['type'] = apiPublicData.publicType
       if (apiPublicData.isAdd) {
         post({
           url: apiPublic,
@@ -595,22 +551,6 @@
         }
       }, 300)
     })
-  }
-
-  function getProjectModule(projectId: number) {
-    doRefresh()
-    get({
-      url: userProjectModuleGetAll,
-      data: () => {
-        return {
-          project_id: projectId,
-        }
-      },
-    })
-      .then((res) => {
-        apiPublicData.moduleList = res.data
-      })
-      .catch(console.log)
   }
 
   onMounted(() => {

@@ -18,16 +18,6 @@ class BrowserTypeEnum(BaseEnum):
         return {0: "谷歌浏览器", 1: "EDGE", 2: "火狐", 3: "WEBKIT"}
 
 
-class UiPublicTypeEnum(BaseEnum):
-    """UI公共参数枚举"""
-    CUSTOM = 0
-    SQL = 1
-
-    @classmethod
-    def obj(cls):
-        return {0: "CUSTOM", 1: "SQL"}
-
-
 class ElementExpEnum(BaseEnum):
     """元素定位方式枚举"""
     XPATH = 0
@@ -74,3 +64,15 @@ class ElementAssEnum(BaseEnum):
     """元素断言"""
     OPE = 0
     ASS = 1
+
+
+class UiPublicTypeEnum(BaseEnum):
+    """公共参数类型"""
+    CUSTOM = 0
+    SQL = 1
+    LOGIN = 2
+    HEADERS = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "自定义-第一加载", 1: "SQL-第二加载"}

@@ -41,7 +41,7 @@ class EnumOptionViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0076, MethodEnum.get_option())
 
     @action(methods=['get'], detail=False)
-    def enum_public(self, request: Request):
+    def enum_api_public(self, request: Request):
         """
         获取公共类型
         :param request:
@@ -128,3 +128,12 @@ class EnumOptionViews(ViewSet):
         :return:
         """
         return ResponseData.success(RESPONSE_MSG_0106, CaseLevelEnum.get_option())
+
+    @action(methods=['get'], detail=False)
+    def enum_ui_public(self, request):
+        """
+        获取用例级别
+        :param request:
+        :return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0106, UiPublicTypeEnum.get_option())

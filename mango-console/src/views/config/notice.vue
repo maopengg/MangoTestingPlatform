@@ -19,19 +19,6 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="item.optionItems"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
                   <template v-if="item.type === 'date'">
                     <a-date-picker v-model="item.value" />
                   </template>
@@ -209,15 +196,6 @@
       reset: function () {
         this.value = ''
       },
-    },
-    {
-      key: 'project',
-      label: '项目',
-      value: '',
-      type: 'select',
-      placeholder: '请选择项目',
-      optionItems: project.data,
-      reset: function () {},
     },
   ])
   const formItems: FormItem[] = reactive([
