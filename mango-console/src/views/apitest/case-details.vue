@@ -246,7 +246,7 @@
     apiCaseDetailed,
     systemEnumEnd,
     systemEnumMethod,
-    apiRun,
+    apiCaseRun,
     userProjectModuleGetAll,
     apiInfoName,
     apiPutCaseSort,
@@ -452,7 +452,7 @@
   function caseRun(case_sort: number | null) {
     Message.loading('用例开始执行中~')
     get({
-      url: apiRun,
+      url: apiCaseRun,
       data: () => {
         return {
           case_id: route.query.case_id,

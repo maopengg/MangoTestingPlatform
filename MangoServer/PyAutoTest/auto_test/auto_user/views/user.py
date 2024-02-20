@@ -106,9 +106,9 @@ class UserViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     def put_password(self, request: Request):
-        password = EncryptionTool.md5_encrypt(request.data['password'])
-        new_password = EncryptionTool.md5_encrypt(request.data['new_password'])
-        confirm_password = EncryptionTool.md5_encrypt(request.data['confirm_password'])
+        password = EncryptionTool.md5_32_small(**{'data': request.data['password']})
+        new_password = EncryptionTool.md5_32_small(**{'data': request.data['new_password']})
+        confirm_password = EncryptionTool.md5_32_small(**{'data': request.data['confirm_password']})
 
         obj = self.model.objects.get(id=request.data.get('id'))
         if password != obj.password:
@@ -129,7 +129,7 @@ class LoginViews(ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         source_type = request.data.get('type')
-        password = EncryptionTool.md5_encrypt(password)
+        password = EncryptionTool.md5_32_small(**{'data': password})
         user_info = User.objects.filter(username=username, password=password).first()
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
