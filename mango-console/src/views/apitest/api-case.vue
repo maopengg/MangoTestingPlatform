@@ -264,7 +264,7 @@
   import {
     apiCase,
     apiCaseCody,
-    apiRun,
+    apiCaseRun,
     userNickname,
     userProjectModuleGetAll,
     systemEnumStatus,
@@ -635,7 +635,7 @@
   function caseRun(record: any) {
     Message.loading('正在执行用例请稍后~')
     get({
-      url: apiRun,
+      url: apiCaseRun,
       data: () => {
         return {
           case_id: record.id,

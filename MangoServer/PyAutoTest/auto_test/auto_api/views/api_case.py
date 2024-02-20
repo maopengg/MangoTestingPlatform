@@ -17,10 +17,10 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import RESPONSE_MSG_0007, RESPONSE_MSG_0006, RESPONSE_MSG_0008, \
-    RESPONSE_MSG_0009
+from PyAutoTest.tools.view_utils.response_msg import *
 
 logger = logging.getLogger('api')
 
@@ -56,6 +56,23 @@ class ApiCaseCRUD(ModelCRUD):
 class ApiCaseViews(ViewSet):
     model = ApiCase
     serializer_class = ApiCaseSerializers
+
+    @action(methods=['get'], detail=False)
+    def api_case_run(self, request: Request):
+        from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
+        case_id = request.query_params.get('case_id')
+        test_obj_id = request.query_params.get('test_obj_id')
+        case_sort = request.query_params.get('case_sort')
+        project_id = request.query_params.get('project_id')
+        try:
+            api_case_run = ApiTestRun(project_id, test_obj_id, case_sort)
+        except MangoServerError as error:
+            print(error.msg, error.code)
+            return ResponseData.fail((error.code, error.msg), )
+        test_result: dict = api_case_run.run_one_case(case_id)
+        if StatusEnum.FAIL.value in test_result['ass_result']:
+            return ResponseData.success((200, test_result['error_message'][-1]))
+        return ResponseData.success(RESPONSE_MSG_0111, test_result)
 
     @action(methods=['get'], detail=False)
     def api_synchronous_interface(self, request: Request):
