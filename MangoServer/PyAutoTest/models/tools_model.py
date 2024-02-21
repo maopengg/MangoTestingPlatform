@@ -26,7 +26,6 @@ class TestReportModel(BaseModel):
     fail: int
     execution_duration: int
     test_time: str
-    ip: str
 
 
 class WeChatNoticeModel(BaseModel):

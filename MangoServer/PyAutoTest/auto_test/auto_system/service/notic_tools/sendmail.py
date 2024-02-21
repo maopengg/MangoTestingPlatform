@@ -9,11 +9,12 @@ from email.mime.text import MIMEText
 from smtplib import SMTPException
 from socket import gaierror
 
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel
 from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
-
+from PyAutoTest.auto_test.auto_system.models import CacheData
 logger = logging.getLogger('system')
 
 
@@ -29,6 +30,14 @@ class SendEmail:
         发送邮件
         :return:
         """
+        domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
+        try:
+            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
+        except CacheData.DoesNotExist:
+            pass
+        else:
+            if cache_data_obj.value:
+                domain_name = cache_data_obj.value
         content = f"""
         各位同事, 大家好:
             测试套ID：{self.test_report.test_suite_id}任务执行完成，执行结果如下:
@@ -41,7 +50,7 @@ class SendEmail:
 
 
         **********************************
-        芒果自动化平台地址：https://{self.test_report.ip}:8002/#/login
+        芒果自动化平台地址：{domain_name}
         详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
         """
         try:

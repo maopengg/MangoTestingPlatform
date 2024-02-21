@@ -75,3 +75,15 @@ class SocketEnum(BaseEnum):
     ADMIN = 'admin'
     CLIENT_CONN_OBJ = 'client_obj'
     WEB_CONN_OBJ = 'web_obj'
+
+
+class CacheDataKeyEnum(BaseEnum):
+    """缓存KEY的名称"""
+    DOMAIN_NAME = '本系统的URL地址'
+    SEND_USER = '邮箱发送人'
+    EMAIL_HOST = '邮箱域名'
+    STAMP_KET = '邮箱的stamp_key'
+
+    @classmethod
+    def obj(cls):
+        return {'DOMAIN_NAME': "本系统的URL地址"}

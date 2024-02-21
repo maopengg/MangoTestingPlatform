@@ -49,7 +49,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/equipment-settings",
+                    "menuUrl": "/uitest/equipment-config",
                     "menuName": "设备配置",
                 }, {
                     "parentPath": "/uitest",
@@ -123,34 +123,34 @@ def ad_routes():
         #     ],
         # },
         {
-            "menuUrl": "/settings",
+            "menuUrl": "/config",
             "menuName": "测试配置",
             "icon": "IconCommand",
             "parentPath": "",
             "children": [
                 {
-                    "parentPath": "/settings",
-                    "menuUrl": "/settings/project",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/project",
                     "menuName": "测试项目",
                 },
                 {
-                    "parentPath": "/settings",
-                    "menuUrl": "/settings/test-obj",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/test-obj",
                     "menuName": "测试环境",
                 },
                 {
-                    "parentPath": "/settings",
-                    "menuUrl": "/settings/database",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/database",
                     "menuName": "数据库配置",
                 },
                 {
-                    "parentPath": "/settings",
-                    "menuUrl": "/settings/notice",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/notice",
                     "menuName": "通知配置",
                 },
                 {
-                    "parentPath": "/settings",
-                    "menuUrl": "/settings/test-files",
+                    "parentPath": "/config",
+                    "menuUrl": "/config/test-files",
                     "menuName": "测试文件",
                 }
             ],
