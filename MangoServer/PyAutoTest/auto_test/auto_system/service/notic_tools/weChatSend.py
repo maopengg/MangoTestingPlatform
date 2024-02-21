@@ -7,7 +7,8 @@ import logging
 
 import requests
 
-from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject, CacheData
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
 from PyAutoTest.models.tools_model import TestReportModel, WeChatNoticeModel
@@ -33,8 +34,14 @@ class WeChatSend:
         发送企业微信通知
         :return:
         """
-        t = TestObject.objects.filter(project=self.test_report.project_id).first()
-
+        domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
+        try:
+            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
+        except CacheData.DoesNotExist:
+            pass
+        else:
+            if cache_data_obj.value:
+                domain_name = cache_data_obj.value
         text = f"""【{ClientNameEnum.PLATFORM_CHINESE.value}通知】
                     >测试项目：<font color=\"info\">{self.test_report.project_name}</font>
                     >测试环境：{self.test_report.test_environment}
@@ -51,7 +58,7 @@ class WeChatSend:
                     >测试时间：<font color=\"comment\">{self.test_report.test_time}</font>
                     >
                     >非相关负责人员可忽略此消息。
-                    >测试报告，点击查看>>[测试报告入口](http://{self.test_report.ip}:8002/#/login)
+                    >测试报告，点击查看>>[测试报告入口]({domain_name})
                """
         self.send_markdown(text)
 

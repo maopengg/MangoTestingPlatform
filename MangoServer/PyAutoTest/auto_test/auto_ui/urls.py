@@ -54,9 +54,9 @@ urlpatterns = [
     path("case/steps/refresh/cache/data", UiCaseStepsDetailedViews.as_view({'get': 'post_case_cache_data'})),
     path("case/put/case/sort", UiCaseStepsDetailedViews.as_view({'put': 'put_case_sort'})),
     #
-    path("settings", UiConfigCRUD.as_view()),
-    path("settings/put/status", UiConfigViews.as_view({'put': 'put_status'})),
-    path("settings/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
+    path("config", UiConfigCRUD.as_view()),
+    path("config/put/status", UiConfigViews.as_view({'put': 'put_status'})),
+    path("config/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
     #
     path("case/result", UiCaseResultCRUD.as_view()),
     path("case/result/suite/get/case", UiCaseResultViews.as_view({'get': 'suite_get_case'})),

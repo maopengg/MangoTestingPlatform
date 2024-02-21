@@ -47,7 +47,6 @@ class NoticeMain:
             fail=0,
             execution_duration=395,
             test_time='2024-01-22 06:35:58',
-            ip='61.183.9.60',
             test_environment='手动测试环境',
             project_name='手动触发项目',
             project_id=0)
@@ -99,7 +98,6 @@ class NoticeMain:
             fail=case_result.filter(status=StatusEnum.FAIL.value).count(),
             execution_duration=int(execution_duration.total_seconds()),
             test_time=create_time,
-            ip='61.183.9.60',
             test_environment=test_suite.test_object.name,
             project_name=test_suite.project.name,
             project_id=test_suite.project.id)

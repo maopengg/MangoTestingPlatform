@@ -6,6 +6,7 @@
 from django.urls import path
 
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
+from .views.cache_data import CacheDataCRUD
 from .views.enum_api import EnumOptionViews
 from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews, ScheduledTasksNoPermissionViews
 from .views.socket_api import SocketApiViews
@@ -61,6 +62,8 @@ urlpatterns = [
     path('case/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),
     path('case/run/sum', IndexViews.as_view({'get': 'case_run_sum'})),
     path('activity/level', IndexViews.as_view({'get': 'activity_level'})),
+    #
+    path('cache/data', CacheDataCRUD.as_view()),
     # 枚举接口
     path('enum/client', EnumOptionViews.as_view({'get': 'enum_client'})),
     path('enum/method', EnumOptionViews.as_view({'get': 'enum_method'})),

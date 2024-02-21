@@ -368,6 +368,12 @@
         Message.error(`字段：${item.title}，转换JSON失败，请检查数据`)
         return
       }
+    } else if ([31].includes(item.key)) {
+      if (item.data === '') {
+        data[item.name] = null
+      } else {
+        data[item.name] = item.data
+      }
     } else {
       data[item.name] = item.data
     }

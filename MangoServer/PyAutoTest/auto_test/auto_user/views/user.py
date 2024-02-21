@@ -31,8 +31,6 @@ class UserSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     last_login_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    department = ProjectSerializers(read_only=True)
-    role = RoleSerializers(read_only=True)
 
     class Meta:
         model = User
@@ -56,6 +54,16 @@ class UserCRUD(ModelCRUD):
     queryset = User.objects.all()
     serializer_class = UserSerializersC
     serializer = UserSerializers
+
+    def post(self, request: Request):
+        data = request.data
+        serializer = self.serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            user = self.model.objects.get(id=serializer.data.get('id'))
+            user.password = EncryptionTool.md5_32_small(**{'data': data['password']})
+            user.save()
+            return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
 
 
 class UserViews(ViewSet):
@@ -144,9 +152,9 @@ class LoginViews(ViewSet):
             "selected_environment": user_info.selected_environment,
             "roles": [
                 {
-                    "description": user_info.role.description,
-                    "roleId": user_info.role.id,
-                    "roleName": user_info.role.name
+                    "description": user_info.role.description if user_info.role else None,
+                    "roleId": user_info.role.id if user_info.role else None,
+                    "roleName": user_info.role.name if user_info.role else None
                 }
             ]
         }
