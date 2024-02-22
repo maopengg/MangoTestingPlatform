@@ -7,7 +7,7 @@ import json
 import logging
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
-from PyAutoTest.auto_test.auto_system.models import NoticeConfig
+from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEmail
 from PyAutoTest.auto_test.auto_system.service.notic_tools.weChatSend import WeChatSend
@@ -15,9 +15,10 @@ from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.exceptions.tools_exception import JsonSerializeError
+from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012,ERROR_MSG_0031
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 
 log = logging.getLogger('system')
 
@@ -66,14 +67,24 @@ class NoticeMain:
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         try:
-            config = json.loads(i.config)
+            send_list = json.loads(i.config)
         except json.decoder.JSONDecodeError:
             raise JsonSerializeError(*ERROR_MSG_0012)
+        try:
+            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name)
+            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name)
+            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name)
+        except CacheData.DoesNotExist:
+            raise CacheKetNullError(*ERROR_MSG_0031)
+        else:
+            if send_user.value is None or email_host.value is None or stamp_key.value is None:
+                raise CacheKetNullError(*ERROR_MSG_0031)
+
         email = SendEmail(EmailNoticeModel(
-            send_user=config.get('send_user'),
-            email_host=config.get('email_host'),
-            stamp_key=config.get('stamp_key'),
-            send_list=config.get('send_list'),
+            send_user=send_user.value,
+            email_host=email_host.value,
+            stamp_key=stamp_key.value,
+            send_list=send_list,
         ), test_report)
         email.send_main()
 

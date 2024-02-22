@@ -41,6 +41,11 @@
       // Call your API to submit data here
       // For demonstration purposes, we'll just log the submitted value
       console.log('Submitted value:', settingsData.data)
+      settingsData.data.forEach((item: any) => {
+        if (item.value === '') {
+          item.value = null
+        }
+      })
       put({
         url: systemCacheData,
         data: () => {

@@ -3,7 +3,7 @@
     <a-card title="组合用例场景">
       <template #extra>
         <a-space>
-          <a-button type="primary" size="small" @click="addApiInfo">增加接口</a-button>
+          <!--          <a-button type="primary" size="small" @click="addApiInfo">增加接口</a-button>-->
           <a-button status="success" size="small" @click="caseRun(null)">全部执行</a-button>
           <a-button type="primary" status="warning" size="small" @click="doResetSearch"
             >返回</a-button
@@ -27,53 +27,146 @@
     <a-card>
       <div class="container">
         <div class="left">
-          <a-table
-            :columns="columns"
-            :data="apiCaseData.data"
-            :draggable="{ type: 'handle', width: 40 }"
-            :pagination="false"
-            :bordered="true"
-            @row-click="select"
-            @change="handleChange"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of columns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.dataIndex"
-                :fixed="item.fixed"
-              >
-                <template v-if="item.dataIndex === 'client'" #cell="{ record }">
-                  <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
-                  <a-tag color="magenta" size="small" v-else-if="record.client === 1">APP</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
-                </template>
-                <template v-else-if="item.dataIndex === 'method'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
-                  <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
-                  <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
-                  <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
-                </template>
-                <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
-                </template>
-                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                  <a-button type="text" size="mini" @click="caseRun(record.case_sort)"
-                    >执行到此处</a-button
-                  >
-                  <a-button type="text" size="mini" @click="refresh(record.id)">刷新</a-button>
-                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除</a-button
-                  >
-                </template>
-              </a-table-column>
+          <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
+            <template #extra>
+              <a-space>
+                <a-button type="primary" size="small" @click="addData">增加</a-button>
+              </a-space>
             </template>
-          </a-table>
+            <a-tab-pane key="1" title="前置数据">
+              <a-tabs
+                :default-active-key="apiCaseData.apiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
+                <a-tab-pane key="11" title="自定义变量">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.front_custom" :key="item.key">
+                      <span>key</span>
+                      <a-input
+                        v-model="item.key"
+                        placeholder="请输入key的名称"
+                        @blur="upDataCase"
+                      />
+                      <span>value</span>
+                      <a-input
+                        v-model="item.value"
+                        placeholder="请输入value的名称"
+                        @blur="upDataCase"
+                      />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql1(pageData.record.front_custom, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+                <a-tab-pane key="12" title="sql变量">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.front_sql" :key="item.sql">
+                      <span>sql语句</span>
+                      <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
+                      <span>key列表</span>
+                      <a-input
+                        v-model="item.key_list"
+                        placeholder="请输入查询结果缓存key"
+                        @blur="upDataCase"
+                      />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql1(pageData.record.front_sql, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+
+            <a-tab-pane key="2" title="用例步骤">
+              <a-table
+                :columns="columns"
+                :data="apiCaseData.data"
+                :draggable="{ type: 'handle', width: 40 }"
+                :pagination="false"
+                :bordered="true"
+                @row-click="select"
+                @change="handleChange"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="item of columns"
+                    :key="item.key"
+                    :align="item.align"
+                    :title="item.title"
+                    :width="item.width"
+                    :data-index="item.dataIndex"
+                    :fixed="item.fixed"
+                  >
+                    <template v-if="item.dataIndex === 'client'" #cell="{ record }">
+                      <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
+                      <a-tag color="magenta" size="small" v-else-if="record.client === 1"
+                        >APP</a-tag
+                      >
+                      <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
+                    </template>
+                    <template v-else-if="item.dataIndex === 'method'" #cell="{ record }">
+                      <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
+                      <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
+                      <a-tag color="arcoblue" size="small" v-else-if="record.method === 2"
+                        >PUT</a-tag
+                      >
+                      <a-tag color="magenta" size="small" v-else-if="record.method === 3"
+                        >DELETE</a-tag
+                      >
+                    </template>
+                    <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
+                      <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                      <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                    </template>
+                    <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                      <a-button type="text" size="mini" @click="caseRun(record.case_sort)"
+                        >执行到此处</a-button
+                      >
+                      <a-button type="text" size="mini" @click="refresh(record.id)">刷新</a-button>
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        >删除</a-button
+                      >
+                    </template>
+                  </a-table-column>
+                </template>
+              </a-table>
+            </a-tab-pane>
+            <a-tab-pane key="3" title="后置清除">
+              <a-tabs
+                :default-active-key="apiCaseData.apiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
+                <a-tab-pane key="31" title="sql清除">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.posterior_sql" :key="item.sql">
+                      <span>sql语句</span>
+                      <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql1(pageData.record.posterior_sql, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+          </a-tabs>
         </div>
         <div class="right">
           <a-space direction="vertical" fill>
@@ -252,6 +345,7 @@
     apiPutCaseSort,
     uiPageStepsDetailedAss,
     apiPutRefreshApiInfo,
+    apiCase,
   } from '@/api/url'
   import { useRoute } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
@@ -280,6 +374,8 @@
     moduleList: [],
     apiList: [],
     ass: [],
+    apiType: '2',
+    apiSonType: '11',
   })
   const columns = reactive([
     {
@@ -338,7 +434,52 @@
       },
     },
   ])
-
+  function switchType(key: any) {
+    if (key === '1') {
+      apiCaseData.apiSonType = '11'
+    } else if (key === '3') {
+      apiCaseData.apiSonType = '31'
+    }
+    apiCaseData.apiType = key
+    console.log(apiCaseData.apiSonType)
+  }
+  function switchSonType(key: any) {
+    apiCaseData.apiSonType = key
+  }
+  function addData() {
+    if (apiCaseData.apiSonType === '11') {
+      pageData.record.front_custom.push({ key: '', value: '' })
+    } else if (apiCaseData.apiSonType === '12') {
+      pageData.record.front_sql.push({ sql: '', key_list: '' })
+    } else if (apiCaseData.apiSonType === '31') {
+      pageData.record.posterior_sql.push({ sql: '' })
+    } else {
+      addApiInfo()
+    }
+  }
+  function removeFrontSql1(item: any, index: number) {
+    item.splice(index, 1)
+    upDataCase()
+  }
+  function upDataCase() {
+    put({
+      url: apiCase,
+      data: () => {
+        return {
+          id: pageData.record.id,
+          name: pageData.record.name,
+          posterior_sql: pageData.record.posterior_sql,
+          front_sql: pageData.record.front_sql,
+          front_custom: pageData.record.front_custom,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
   function clickRadioGroup() {
     for (let key in apiCaseData.selectDataObj) {
       if (key === apiCaseData.position) {
