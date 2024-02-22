@@ -18,6 +18,10 @@ class JsonSerializeError(MangoServerError):
     pass
 
 
+class CacheKetNullError(MangoServerError):
+    pass
+
+
 class ValueTypeError(MangoServerError):
     pass
 

@@ -4,7 +4,6 @@
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button type="primary" size="small" @click="doRefresh">刷新页面</a-button>
             <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
@@ -34,46 +33,92 @@
     <a-card>
       <div style="display: flex">
         <div style="width: 50%; margin-right: 10px">
-          <a-table
-            :columns="columns"
-            :data="uiCaseDetailsData.data"
-            @change="handleChange"
-            :draggable="{ type: 'handle', width: 40 }"
-            :pagination="false"
-            @row-click="select"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of columns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.dataIndex"
-                :fixed="item.fixed"
-                :ellipsis="item.ellipsis"
-                :tooltip="item.tooltip"
-              >
-                <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
-                  {{ record.page_step?.name }}
-                </template>
-                <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
-                </template>
-                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                  <a-button type="text" size="mini" @click="onPageStep(record)">调试</a-button>
-                  <a-button type="text" size="mini" @click="oeFreshSteps(record)"
-                    >更新数据</a-button
-                  >
-                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除</a-button
-                  >
-                </template>
-              </a-table-column>
+          <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
+            <template #extra>
+              <a-space>
+                <a-button type="primary" size="small" @click="addData">增加</a-button>
+              </a-space>
             </template>
-          </a-table>
+            <a-tab-pane key="1" title="前置数据">
+              <a-tabs
+                :default-active-key="uiCaseDetailsData.uiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
+                <a-tab-pane key="11" title="自定义变量">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.front_custom" :key="item.key">
+                      <span>key</span>
+                      <a-input
+                        v-model="item.key"
+                        placeholder="请输入key的名称"
+                        @blur="upDataCase"
+                      />
+                      <span>value</span>
+                      <a-input
+                        v-model="item.value"
+                        placeholder="请输入value的名称"
+                        @blur="upDataCase"
+                      />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql(pageData.record.front_custom, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+                <a-tab-pane key="12" title="sql变量">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.front_sql" :key="item.sql">
+                      <span>sql语句</span>
+                      <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
+                      <span>key列表</span>
+                      <a-input
+                        v-model="item.key_list"
+                        placeholder="请输入查询结果缓存key"
+                        @blur="upDataCase"
+                      />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql(pageData.record.front_sql, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+
+            <a-tab-pane key="2" title="用例步骤" />
+            <a-tab-pane key="3" title="后置清除">
+              <a-tabs
+                :default-active-key="uiCaseDetailsData.uiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
+                <a-tab-pane key="31" title="sql清除">
+                  <a-space direction="vertical">
+                    <a-space v-for="(item, index) of pageData.record.posterior_sql" :key="item.sql">
+                      <span>sql语句</span>
+                      <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
+                      <a-button
+                        type="text"
+                        size="small"
+                        status="danger"
+                        @click="removeFrontSql(pageData.record.posterior_sql, index)"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+          </a-tabs>
         </div>
         <div style="width: 50%; margin-left: 10px">
           <a-list :bordered="false">
@@ -203,6 +248,7 @@
     uiPageStepsDetailed,
     uiPageStepsDetailedOpe,
     uiPageStepsDetailedAss,
+    uiCase,
   } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
@@ -231,6 +277,8 @@
     elementLocator: null,
     ope: [],
     ass: [],
+    uiType: '2',
+    uiSonType: '11',
   })
 
   const columns = reactive([
@@ -320,7 +368,53 @@
       },
     },
   ])
-
+  function switchType(key: any) {
+    if (key === '1') {
+      uiCaseDetailsData.uiSonType = '11'
+    } else if (key === '3') {
+      uiCaseDetailsData.uiSonType = '31'
+    }
+    uiCaseDetailsData.uiType = key
+    console.log(uiCaseDetailsData.uiSonType)
+  }
+  function switchSonType(key: any) {
+    uiCaseDetailsData.uiSonType = key
+  }
+  function addData() {
+    if (uiCaseDetailsData.uiSonType === '11') {
+      pageData.record.front_custom.push({ key: '', value: '' })
+    } else if (uiCaseDetailsData.uiSonType === '12') {
+      pageData.record.front_sql.push({ sql: '', key_list: '' })
+    } else if (uiCaseDetailsData.uiSonType === '31') {
+      pageData.record.posterior_sql.push({ sql: '' })
+    } else {
+      doAppend()
+    }
+  }
+  function removeFrontSql(item: any, index: number) {
+    console.log(item, index)
+    item.splice(index, 1)
+    upDataCase()
+  }
+  function upDataCase() {
+    put({
+      url: uiCase,
+      data: () => {
+        return {
+          id: pageData.record.id,
+          name: pageData.record.name,
+          posterior_sql: pageData.record.posterior_sql,
+          front_sql: pageData.record.front_sql,
+          front_custom: pageData.record.front_custom,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
   function doAppend() {
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {

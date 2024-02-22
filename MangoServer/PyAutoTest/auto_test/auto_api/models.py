@@ -47,6 +47,9 @@ class ApiCase(models.Model):
     status = models.SmallIntegerField(verbose_name="状态", null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
     level = models.SmallIntegerField(verbose_name="用例级别", null=True)
+    front_custom = models.JSONField(verbose_name="前置自定义", null=True)
+    front_sql = models.JSONField(verbose_name="前置sql", null=True)
+    posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
 
     class Meta:
         db_table = 'api_case'

@@ -591,6 +591,9 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (apiCaseData.isAdd) {
+        value['front_custom'] = []
+        value['front_sql'] = []
+        value['posterior_sql'] = []
         post({
           url: apiCase,
           data: () => {
