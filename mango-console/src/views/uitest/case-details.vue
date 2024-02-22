@@ -94,7 +94,47 @@
               </a-tabs>
             </a-tab-pane>
 
-            <a-tab-pane key="2" title="用例步骤" />
+            <a-tab-pane key="2" title="用例步骤">
+              <a-table
+                :columns="columns"
+                :data="uiCaseDetailsData.data"
+                @change="handleChange"
+                :draggable="{ type: 'handle', width: 40 }"
+                :pagination="false"
+                @row-click="select"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="item of columns"
+                    :key="item.key"
+                    :align="item.align"
+                    :title="item.title"
+                    :width="item.width"
+                    :data-index="item.dataIndex"
+                    :fixed="item.fixed"
+                    :ellipsis="item.ellipsis"
+                    :tooltip="item.tooltip"
+                  >
+                    <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
+                      {{ record.page_step?.name }}
+                    </template>
+                    <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
+                      <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                      <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                    </template>
+                    <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                      <a-button type="text" size="mini" @click="oeFreshSteps(record)"
+                        >更新数据</a-button
+                      >
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        >删除</a-button
+                      >
+                    </template>
+                  </a-table-column>
+                </template>
+              </a-table>
+            </a-tab-pane>
             <a-tab-pane key="3" title="后置清除">
               <a-tabs
                 :default-active-key="uiCaseDetailsData.uiSonType"
