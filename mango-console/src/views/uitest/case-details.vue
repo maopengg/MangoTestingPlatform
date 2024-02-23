@@ -415,20 +415,21 @@
       uiCaseDetailsData.uiSonType = '31'
     }
     uiCaseDetailsData.uiType = key
-    console.log(uiCaseDetailsData.uiSonType)
   }
   function switchSonType(key: any) {
     uiCaseDetailsData.uiSonType = key
   }
   function addData() {
+    if (uiCaseDetailsData.uiType == '2') {
+      doAppend()
+      return
+    }
     if (uiCaseDetailsData.uiSonType === '11') {
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (uiCaseDetailsData.uiSonType === '12') {
       pageData.record.front_sql.push({ sql: '', key_list: '' })
     } else if (uiCaseDetailsData.uiSonType === '31') {
       pageData.record.posterior_sql.push({ sql: '' })
-    } else {
-      doAppend()
     }
   }
   function removeFrontSql(item: any, index: number) {
