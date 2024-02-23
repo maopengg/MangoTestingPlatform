@@ -70,8 +70,6 @@ class UiPublicTypeEnum(BaseEnum):
     """公共参数类型"""
     CUSTOM = 0
     SQL = 1
-    LOGIN = 2
-    HEADERS = 3
 
     @classmethod
     def obj(cls):

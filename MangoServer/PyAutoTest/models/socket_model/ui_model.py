@@ -70,15 +70,18 @@ class PageStepsModel(BaseModel):
 
 class CaseModel(BaseModel):
     id: int
-    name: str
-    is_batch: int
     project_id: int
     module_name: str
+    name: str
+    is_batch: int
     case_people: str
     case_data: list[list[dict] | list]
     case_list: list[PageStepsModel]
     public_data_list: list[UiPublicModel] | None
     mysql_config: MysqlConingModel | None
+    front_custom: list
+    front_sql: list
+    posterior_sql: list
 
 
 class ElementResultModel(BaseModel):

@@ -807,11 +807,11 @@
 
   onMounted(() => {
     nextTick(async () => {
+      await getNickName()
+      await status()
+      await scheduledName()
+      await enumCaseLevel()
       doRefresh()
-      getNickName()
-      status()
-      scheduledName()
-      enumCaseLevel()
     })
   })
 </script>

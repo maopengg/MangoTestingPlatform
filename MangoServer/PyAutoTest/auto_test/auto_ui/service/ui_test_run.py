@@ -65,8 +65,10 @@ class UiTestRun:
                                case_data=[i.case_data for i in objects_filter],
                                case_list=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
                                public_data_list=GetCommonParameters.get_ui_args(self.test_obj_id),
-                               mysql_config=GetDataBase.get_mysql_config(
-                                   self.test_obj_id) if self.test_obj.db_status == 1 else None)
+                               mysql_config=GetDataBase.get_mysql_config(self.test_obj_id) if self.test_obj.db_status == 1 else None,
+                               front_custom=case.front_custom,
+                               front_sql=case.front_sql,
+                               posterior_sql=case.posterior_sql)
         if is_send:
             model = TestSuiteModel(id=Snowflake.generate_id(),
                                    type=AutoTestTypeEnum.UI.value,

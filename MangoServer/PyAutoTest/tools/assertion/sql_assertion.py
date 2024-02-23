@@ -5,17 +5,17 @@
 # @Author : 毛鹏
 import asyncio
 
-from tools.database_tool.mysql_control import MysqlDB
+from tools.database_tool.mysql_control import MysqlConnect
 
 
 class SqlAssertion:
     """sql断言"""
-    mysql_obj: MysqlDB = None
+    mysql_connect: MysqlConnect = None
 
     @staticmethod
     async def sql_is_equal(sql: str, expect: list[dict]):
         """值相等"""
-        result = await SqlAssertion.mysql_obj.select(sql)
+        result = await SqlAssertion.mysql_connect.select(sql)
         assert all(dict2 in result for dict2 in expect), "列表不相等"
         # result = await SqlAssertion.mysql_obj.select(sql)
         # 检查list1中的每个字典是否存在于list2中

@@ -8,6 +8,7 @@ from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicSerializers
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.models.socket_model.api_model import ApiPublicModel, RequestModel
 from PyAutoTest.models.socket_model.ui_model import UiPublicModel
 
@@ -47,6 +48,7 @@ class GetCommonParameters:
         """
         data = []
         test_obj = TestObject.objects.get(id=test_obj_id)
-        for i in UiPublic.objects.filter(project_id=test_obj.project_id).order_by('type'):
+        for i in UiPublic.objects.filter(project_id=test_obj.project_id, status=StatusEnum.SUCCESS.value).order_by(
+                'type'):
             data.append(UiPublicSerializers(instance=i).data)
         return data
