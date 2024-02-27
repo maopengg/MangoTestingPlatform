@@ -60,6 +60,7 @@ class ApiCaseResultViews(ViewSet):
         for api_case_result in api_case_result_list:
             case_result_obj = {
                 'title': api_case_result.case.name,
+                'status': api_case_result.status,
                 'key': f'1-{api_case_result.id}',
                 'children': []
             }
@@ -68,6 +69,7 @@ class ApiCaseResultViews(ViewSet):
             for api_info_result in api_info_result_list:
                 case_result_obj['children'].append({
                     'title': api_info_result.api_info.name,
+                    'status': api_info_result.status,
                     'key': f'2-{api_info_result.id}',
                     'children': []
                 })
