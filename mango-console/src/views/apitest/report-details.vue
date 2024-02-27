@@ -41,8 +41,9 @@
       <div class="container">
         <a-space direction="vertical" style="width: 40%">
           <a-tree blockNode :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
-            <template #icon>
-              <IconStar />
+            <template #icon="{ node }">
+              <template v-if="node.status === 1"> <icon-check /> </template>
+              <template v-else> <icon-close /> </template>
             </template>
           </a-tree>
         </a-space>

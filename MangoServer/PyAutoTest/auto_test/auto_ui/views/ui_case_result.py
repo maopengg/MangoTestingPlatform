@@ -60,9 +60,11 @@ class UiCaseResultViews(ViewSet):
                 case_id=i.case_id)
             case_result_obj = {
                 'title': i.case_name,
+                'status': i.status,
                 'key': f'{"{"}"test_suite_id":{i.test_suite_id},"ui_case_result":{i.id},"case_id":{i.case_id}{"}"}',
                 'children': [
                     {'title': e.page_step_name,
+                     'status': e.status,
                      'key': f'{"{"}"test_suite_id":{e.test_suite_id},"page_steps_result":{e.id},"case_id":{i.case_id},"page_step_id":{e.page_step_id}{"}"}',
                      'children': []
                      } for e in page_steps_result]

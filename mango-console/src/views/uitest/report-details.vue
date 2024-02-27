@@ -45,9 +45,8 @@
             <template #header>
               <a-tree blockNode :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
                 <template #icon="{ node }">
-                  <template v-if="node.status === 'active'">
-                    <IconStar />
-                  </template>
+                  <template v-if="node.status === 1"> <icon-check /> </template>
+                  <template v-else> <icon-close /> </template>
                 </template>
               </a-tree>
             </template>
