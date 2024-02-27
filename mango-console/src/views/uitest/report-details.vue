@@ -44,8 +44,10 @@
           <TableBody ref="tableBody">
             <template #header>
               <a-tree blockNode :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
-                <template #icon>
-                  <IconStar />
+                <template #icon="{ node }">
+                  <template v-if="node.status === 'active'">
+                    <IconStar />
+                  </template>
                 </template>
               </a-tree>
             </template>
