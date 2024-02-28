@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 import logging
 
-from PyAutoTest.tools.cache_utils.redis_base import RedisBase
+from PyAutoTest.auto_test.auto_system.views.cache_data import CacheDataCRUD
+from PyAutoTest.enums.system_enum import CacheValueTypeEnum
 
 log = logging.getLogger('system')
 
@@ -14,7 +15,13 @@ class SystemConsumer:
 
     @classmethod
     def t_set_operation_options(cls, data: list[dict]):
-        redis = RedisBase('default')
+        # redis = RedisBase('default')
         for i in data:
             for key, value in i.items():
-                redis.set_key(key, value)
+                CacheDataCRUD().inside_post({
+                    'describe': key,
+                    'key': key,
+                    'value': value,
+                    'value_type': CacheValueTypeEnum.DICT.value,
+                })
+                # redis.set_key(key, value)

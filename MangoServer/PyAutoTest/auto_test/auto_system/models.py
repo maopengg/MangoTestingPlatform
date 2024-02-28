@@ -21,7 +21,8 @@ class TestObject(models.Model):
     test_type = models.SmallIntegerField(verbose_name="对应什么客户端")
     name = models.CharField(verbose_name="被测试的对象", max_length=64)
     value = models.CharField(verbose_name="被测试的对象", max_length=1024)
-    db_status = models.SmallIntegerField(verbose_name="是否启用", null=True)
+    db_c_status = models.SmallIntegerField(verbose_name="查询权限", null=True)
+    db_rud_status = models.SmallIntegerField(verbose_name="增删改权限", null=True)
 
     class Meta:
         db_table = 'test_obj'

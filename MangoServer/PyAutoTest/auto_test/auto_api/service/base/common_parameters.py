@@ -11,12 +11,12 @@ from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.exceptions.api_exception import LoginError, PublicMysqlError
-from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError
+from PyAutoTest.exceptions.api_exception import LoginError
+from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.data_processor import DataProcessor
-from PyAutoTest.tools.mysql_tools.mysql_control import MysqlClient
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0003, ERROR_MSG_0009
+from PyAutoTest.tools.mysql_tools.mysql_control import MysqlConnect
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
 from .http_request import HTTPRequest
 
 log = logging.getLogger('api')
@@ -33,7 +33,7 @@ class CommonParameters(DataProcessor):
         self.public_obj = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
                                                    project=project_id).order_by('type')
         if self.is_db:
-            self.mysql_obj = MysqlClient(GetDataBase.get_mysql_config(self.test_obj_id))
+            self.mysql_connect = MysqlConnect(GetDataBase.get_mysql_config(self.test_obj_id))
         for i in self.public_obj:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
@@ -43,6 +43,7 @@ class CommonParameters(DataProcessor):
                 self.__custom(i)
             elif i.type == ApiPublicTypeEnum.HEADERS.value:
                 self.__headers(i)
+        self.mysql_is_select = True
 
     def __login(self, api_public_obj: ApiPublic):
         key = api_public_obj.key
@@ -69,8 +70,32 @@ class CommonParameters(DataProcessor):
         self.set_cache(api_public_obj.key, value)
 
     def __sql(self, api_public_obj: ApiPublic):
-        try:
-            mysql_obj = MysqlClient(GetDataBase.get_mysql_config(self.test_obj_id))
-            res = mysql_obj.execute(api_public_obj.value)
-        except (DoesNotExistError, MysqlConfigError):
-            raise PublicMysqlError(*ERROR_MSG_0009)
+        """
+        @需要重新写，不需要重新创建mysql连接对象
+        @param api_public_obj:
+        @return:
+        """
+        result_list: list[dict] = self.mysql_connect.execute(self.replace(api_public_obj.value))
+        for result in result_list:
+            try:
+                for value, key in zip(result, eval(api_public_obj.key)):
+                    self.set_cache(key, result.get(value))
+            except SyntaxError:
+                raise SyntaxErrorError(*ERROR_MSG_0035)
+        if not result_list:
+            raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
+
+    def get_sql_statement_type(self, sql: str) -> bool:
+        if self.mysql_is_select:
+            return True
+        sql = sql.strip().upper()
+        if sql.startswith('SELECT'):
+            return True
+        elif sql.startswith('INSERT'):
+            return False
+        elif sql.startswith('UPDATE'):
+            return False
+        elif sql.startswith('DELETE'):
+            return False
+        else:
+            return False

@@ -89,10 +89,18 @@
                 <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
                   {{ record.executor_name ? record.executor_name.nickname : '-' }}
                 </template>
-                <template v-else-if="item.key === 'db_status'" #cell="{ record }">
+                <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
                   <a-switch
-                    :default-checked="record.db_status === 1"
-                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                    :default-checked="record.db_c_status === 1"
+                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'db_c_status')"
+                  />
+                </template>
+                <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
+                  <a-switch
+                    :default-checked="record.db_rud_status === 1"
+                    :beforeChange="
+                      (newValue) => onModifyStatus(newValue, record.id, 'db_rud_status')
+                    "
                   />
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
@@ -374,20 +382,25 @@
       dataIndex: 'test_type',
     },
     {
-      title: '绑定环境',
+      title: '环境类型',
       key: 'environment',
       dataIndex: 'environment',
       width: 150,
     },
     {
-      title: '项目负责人',
+      title: '负责人',
       key: 'executor_name',
       dataIndex: 'executor_name',
     },
     {
-      title: '数据库断言',
-      key: 'db_status',
-      dataIndex: 'db_status',
+      title: '查询权限',
+      key: 'db_c_status',
+      dataIndex: 'db_c_status',
+    },
+    {
+      title: '增删改权限',
+      key: 'db_rud_status',
+      dataIndex: 'db_rud_status',
     },
     {
       title: '操作',
@@ -470,7 +483,8 @@
         post({
           url: systemTestObject,
           data: () => {
-            value['db_status'] = 0
+            value['db_c_status'] = 0
+            value['db_rud_status'] = 0
             return value
           },
         })
@@ -541,7 +555,11 @@
       .catch(console.log)
   }
 
-  const onModifyStatus = async (newValue: boolean, id: number) => {
+  const onModifyStatus = async (newValue: boolean, id: number, field: string) => {
+    let dataObj: any = {
+      id: id,
+    }
+    dataObj[field] = newValue ? 1 : 0 // 使用[field]作为对象的字段键
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
         try {
@@ -549,10 +567,7 @@
           await put({
             url: systemTestObjectPutStatus,
             data: () => {
-              return {
-                id: id,
-                db_status: newValue ? 1 : 0,
-              }
+              return dataObj
             },
           })
             .then((res) => {

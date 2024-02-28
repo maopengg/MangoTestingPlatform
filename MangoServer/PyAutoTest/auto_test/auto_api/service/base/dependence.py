@@ -13,7 +13,8 @@ from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonP
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010, \
+    ERROR_MSG_0006
 
 log = logging.getLogger('api')
 
@@ -91,7 +92,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             for sql in case_detailed.dump_data:
                 if sql.strip().lower().startswith('select'):
                     raise DumpDataError(*ERROR_MSG_0010)
-                res = self.mysql_obj.execute(self.replace(sql))
+                res = self.mysql_connect.execute(self.replace(sql))
                 if isinstance(res, int):
                     log.info(f'删除成功的条数：{res}')
 
@@ -102,7 +103,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @return:
         """
         for sql_obj in sql_list:
-            res = self.mysql_obj.execute(sql_obj.get('key'))
+            res = self.mysql_connect.execute(sql_obj.get('key'))
             if isinstance(res, list):
                 for res_dict in res:
                     for key, value in res_dict.items():
@@ -118,7 +119,8 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             value = self.get_json_path_value(response_text, i['key'])
             self.set_cache(i['value'], value)
 
-    def __posterior_sleep(self, sleep: str):
+    @classmethod
+    def __posterior_sleep(cls, sleep: str):
         time.sleep(int(sleep))
 
     def __assertion_response_value(self, response_data, ass_response_value):
@@ -142,13 +144,13 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
     def __assertion_sql(self, sql_list: list[dict]):
         """
         sql断言
-        @param sql:
+        @param sql_list:
         @return:
         """
         try:
             if self.is_db:
                 for sql in sql_list:
-                    value = self.mysql_obj.execute(self.replace(sql.get('value')))
+                    value = self.mysql_connect.execute(self.replace(sql.get('value')))
                     if value:
                         _dict = {'value': str(list(value[0].values())[0])}
                     else:
@@ -175,7 +177,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
     def __sql_(self, sql_list: list, _str: str):
         if self.is_db:
             for sql in sql_list:
-                res = self.mysql_obj.execute(sql)
+                res = self.mysql_connect.execute(sql)
                 if isinstance(res, list):
                     for i in res:
                         for key, value in i.items():

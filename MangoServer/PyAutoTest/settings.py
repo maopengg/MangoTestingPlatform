@@ -24,7 +24,7 @@ with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
     mysql_password = data.get('mysql_password')
     mysql_ip = data.get('mysql_ip')
     mysql_port = data.get('mysql_port')
-    redis = data.get('redis')
+    # redis = data.get('redis')
 # ************************ ↑需要修改的内容↑ ************************ #
 
 # ************************ 时区 ************************ #
@@ -158,32 +158,32 @@ STATIC_URL = '/static/'
 # X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # ************************ redis缓存配置 ************************ #
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{redis}0",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 1000,
-                "decode_responses": True,
-                "encoding": 'utf-8'
-            }
-        }
-    },
-    "socket": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{redis}1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 1000,
-                "decode_responses": True,
-                "encoding": 'utf-8'
-            }
-        }
-    }
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": f"{redis}0",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {
+#                 "max_connections": 1000,
+#                 "decode_responses": True,
+#                 "encoding": 'utf-8'
+#             }
+#         }
+#     },
+#     "socket": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": f"{redis}1",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {
+#                 "max_connections": 1000,
+#                 "decode_responses": True,
+#                 "encoding": 'utf-8'
+#             }
+#         }
+#     }
+# }
 
 # ************************ 日志配置 ************************ #
 

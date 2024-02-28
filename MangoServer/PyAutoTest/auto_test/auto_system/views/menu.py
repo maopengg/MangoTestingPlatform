@@ -82,7 +82,7 @@ def ad_routes():
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/api-public",
-                    "menuName": "公共方法",
+                    "menuName": "公共参数",
                 },
                 {
                     "parentPath": "/apitest",

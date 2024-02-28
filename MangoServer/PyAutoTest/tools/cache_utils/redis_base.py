@@ -204,3 +204,8 @@ class RedisBase(RedisSting, RedisList, RedisDict):
 
     def all_keys(self):
         return self.conn.keys('*')
+
+
+if __name__ == '__main__':
+    # redis = RedisBase('default')
+    pass

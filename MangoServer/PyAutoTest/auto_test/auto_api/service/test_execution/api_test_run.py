@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed
+from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCase
 from PyAutoTest.auto_test.auto_api.service.base.dependence import ApiDataHandle
 from PyAutoTest.auto_test.auto_api.service.base.http_request import HTTPRequest
 from PyAutoTest.auto_test.auto_api.service.base.test_result import TestResult
@@ -14,8 +14,9 @@ from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.api_exception import CaseIsEmptyError
+from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0008
+from PyAutoTest.tools.view_utils.error_msg import *
 
 
 class ApiTestRun(ApiDataHandle, TestResult):
@@ -31,14 +32,18 @@ class ApiTestRun(ApiDataHandle, TestResult):
         执行一个用例
         @return:
         """
-        case_list = self.get_case(case_id)
-        if not case_list:
+        api_case_obj = ApiCase.objects.get(id=case_id)
+        self.__case_front(api_case_obj)
+        case_api_list = self.get_case(case_id)
+        if not case_api_list:
             raise CaseIsEmptyError(*ERROR_MSG_0008)
-        for api_info in case_list:
+        for api_info in case_api_list:
             if not self.run_api(api_info):
                 break
+
         self.api_case_result_sava(case_id)
         self.update_case_or_suite(case_id)
+        self.__case_posterior(api_case_obj)
         return {
             'test_suite': self.test_suite_data['id'],
             'ass_result': self.assertion_result,
@@ -89,3 +94,32 @@ class ApiTestRun(ApiDataHandle, TestResult):
             return ApiCaseDetailed.objects.filter(case=case_id, case_sort__lte=self.case_sort).order_by('case_sort')
         else:
             return ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
+
+    def __case_front(self, api_case_obj: ApiCase):
+        """
+        用例前置
+        @return:
+        """
+        for custom in api_case_obj.front_custom:
+            self.set_cache(custom.get('key'), custom.get('value'))
+        for i in api_case_obj.front_sql:
+            if self.test_object.db_status:
+                if self.get_sql_statement_type(i.get('sql')):
+                    sql = self.replace(i.get('sql'))
+                    result_list: list[dict] = self.mysql_connect.execute(sql)
+                    for result in result_list:
+                        try:
+                            for value, key in zip(result, eval(i.get('key_list'))):
+                                self.set_cache(key, result.get(value))
+                        except SyntaxError:
+                            raise SyntaxErrorError(*ERROR_MSG_0036)
+                    if not result_list:
+                        raise MysqlQueryIsNullError(*ERROR_MSG_0034, value=(sql,))
+
+    def __case_posterior(self, api_case_obj: ApiCase):
+        """
+        用例后置
+        @return:
+        """
+        for sql in api_case_obj.posterior_sql:
+            self.mysql_connect.execute(self.replace(sql.get('sql')))
