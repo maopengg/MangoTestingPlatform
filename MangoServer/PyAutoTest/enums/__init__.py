@@ -18,6 +18,10 @@ class BaseEnum(Enum):
         return [value for key, value in cls.obj().items()]
 
     @classmethod
+    def get_key_list(cls) -> list:
+        return [key for key, value in cls.obj().items()]
+
+    @classmethod
     def get_value(cls, key: int):
         return cls.obj().get(key)
 

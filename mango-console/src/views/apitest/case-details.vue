@@ -441,20 +441,21 @@
       apiCaseData.apiSonType = '31'
     }
     apiCaseData.apiType = key
-    console.log(apiCaseData.apiSonType)
   }
   function switchSonType(key: any) {
     apiCaseData.apiSonType = key
   }
   function addData() {
+    if (apiCaseData.apiType == '2') {
+      addApiInfo()
+      return
+    }
     if (apiCaseData.apiSonType === '11') {
       pageData.record.front_custom.push({ key: '', value: '' })
     } else if (apiCaseData.apiSonType === '12') {
       pageData.record.front_sql.push({ sql: '', key_list: '' })
     } else if (apiCaseData.apiSonType === '31') {
       pageData.record.posterior_sql.push({ sql: '' })
-    } else {
-      addApiInfo()
     }
   }
   function removeFrontSql1(item: any, index: number) {

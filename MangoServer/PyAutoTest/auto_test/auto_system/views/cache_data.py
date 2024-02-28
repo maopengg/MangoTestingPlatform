@@ -51,7 +51,7 @@ class CacheDataCRUD(ModelCRUD):
                 serializer = self.serializer(data=key)
                 if serializer.is_valid():
                     serializer.save()
-        books = self.model.objects.filter(case_id=None)
+        books = self.model.objects.filter(key__in=CacheDataKeyEnum.get_key_list())
         return ResponseData.success(RESPONSE_MSG_0001,
                                     self.get_serializer_class()(instance=books, many=True).data,
                                     len(books))

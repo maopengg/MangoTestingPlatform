@@ -10,6 +10,16 @@ class MysqlAbnormalConnection(MangoServerError):
     pass
 
 
+class MysqlQueryIsNullError(MangoServerError):
+    pass
+class MysqlConnectionError(MangoServerError):
+    pass
+
+
+class SyntaxErrorError(MangoServerError):
+    pass
+
+
 class JsonPathError(MangoServerError):
     pass
 
@@ -42,7 +52,7 @@ class MySQLConnectionFailureError(MangoServerError):
     pass
 
 
-class SQLGrammarError(MangoServerError):
+class MysqlQueryError(MangoServerError):
     pass
 
 

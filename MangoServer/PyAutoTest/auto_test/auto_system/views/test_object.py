@@ -67,12 +67,17 @@ class TestObjectViews(ViewSet):
         :param request:
         :return:
         """
-        db_status = request.data.get('db_status')
+
+        db_c_status = request.data.get('db_c_status')
+        db_rud_status = request.data.get('db_rud_status')
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
-            if db_status:
+            if db_c_status:
                 GetDataBase.get_mysql_config(obj.id)
-            obj.db_status = db_status
+            if db_c_status is not None:
+                obj.db_c_status = db_c_status
+            if db_rud_status is not None:
+                obj.db_rud_status = db_rud_status
             obj.save()
             return ResponseData.success(RESPONSE_MSG_0096)
         except MangoServerError as error:

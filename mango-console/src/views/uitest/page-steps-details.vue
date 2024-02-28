@@ -389,6 +389,8 @@
   }
 
   function doAppend() {
+    pageStepsData.isDisabledOpe = false
+    pageStepsData.isDisabledAss = true
     pageStepsData.actionTitle = '添加详细步骤'
     pageStepsData.isAdd = true
     modalDialogRef.value?.toggle()
@@ -431,6 +433,13 @@
   }
 
   function onUpdate(item: any) {
+    if (item.type === 0) {
+      pageStepsData.isDisabledOpe = false
+      pageStepsData.isDisabledAss = true
+    } else if (item.type === 1) {
+      pageStepsData.isDisabledOpe = true
+      pageStepsData.isDisabledAss = false
+    }
     pageStepsData.actionTitle = '编辑详细步骤'
     pageStepsData.isAdd = false
     pageStepsData.updateId = item.id
@@ -632,7 +641,7 @@
     }
     return undefined
   }
-  function onRunCase(record: any) {
+  function onRunCase() {
     if (testObj.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return

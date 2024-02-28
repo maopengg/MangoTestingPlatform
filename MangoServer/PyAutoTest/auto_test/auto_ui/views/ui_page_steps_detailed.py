@@ -11,11 +11,12 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.auto_test.auto_ui.models import UiPageStepsDetailed, UiPageSteps
 from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
+from PyAutoTest.enums.system_enum import CacheDataKey2Enum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
-from PyAutoTest.tools.cache_utils.redis_base import RedisBase
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 from PyAutoTest.tools.view_utils.response_msg import *
@@ -94,65 +95,67 @@ class UiPageStepsDetailedView(ViewSet):
     @action(methods=['get'], detail=False)
     def get_ope_type(self, request: Request):
         page_type = request.query_params.get('page_type')
-        redis = RedisBase('default')
+        # redis = RedisBase('default')
         data = []
         if not page_type:
             data.append({
                 'value': 'all',
                 'label': '请选择操作端',
-                'children': json.loads(redis.get('PlaywrightElementOperation'))
+                'children': CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value)
             })
-            ui_auto = redis.get('UiautomatorApplication')
+            ui_auto = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value)
             if ui_auto:
                 data.append({
                     'value': 'all',
                     'label': '请选择操作端',
-                    'children': json.loads(ui_auto)
+                    'children': ui_auto
                 })
-            desktop = redis.get('DESKTOP_OPE')
-            if desktop:
-                data.append({
-                    'value': 'all',
-                    'label': '请选择操作端',
-                    'children': json.loads(desktop)
-                })
-            ios = redis.get('IOS_OPE')
-            if ios:
-                data.append({
-                    'value': 'all',
-                    'label': '请选择操作端',
-                    'children': json.loads(ios)
-                })
+            # desktop = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.DESKTOP_OPERATION_METHOD.value)
+            # if desktop:
+            #     data.append({
+            #         'value': 'all',
+            #         'label': '请选择操作端',
+            #         'children': desktop
+            #     })
+            # ios = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.IOS_OPERATION_METHOD.value)
+            # if ios:
+            #     data.append({
+            #         'value': 'all',
+            #         'label': '请选择操作端',
+            #         'children': ios
+            #     })
             return ResponseData.success(RESPONSE_MSG_0017, data)
         if int(page_type) == DriveTypeEnum.WEB.value:
-            data = json.loads(redis.get('PlaywrightElementOperation'))
+            data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value)
         elif int(page_type) == DriveTypeEnum.ANDROID.value:
-            data = json.loads(redis.get('UiautomatorApplication'))
-        elif int(page_type) == DriveTypeEnum.DESKTOP.value:
-            data = json.loads(redis.get('DESKTOP_OPE'))
-        else:
-            data = json.loads(redis.get('IOS_OPE'))
+            data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value)
+        # elif int(page_type) == DriveTypeEnum.DESKTOP.value:
+        #     data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.DESKTOP_OPERATION_METHOD.value)
+        #
+        # else:
+        #     data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.IOS_OPERATION_METHOD.value)
+
         return ResponseData.success(RESPONSE_MSG_0017, data)
 
     @action(methods=['get'], detail=False)
     def get_ass_type(self, request: Request):
         page_type = request.query_params.get('page_type')
-        redis = RedisBase('default')
+        # redis = RedisBase('default')
         if page_type:
             if int(page_type) == DriveTypeEnum.WEB.value:
-                data = json.loads(redis.get('PlaywrightAssertion'))
+                data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value)
             elif int(page_type) == DriveTypeEnum.ANDROID.value:
-                data = json.loads(redis.get('UiautomatorAssertion'))
+                data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value)
             elif int(page_type) == DriveTypeEnum.DESKTOP.value:
-                data = json.loads(redis.get('DESKTOP_ASS'))
+                data = CacheDataValue.get_cache_value(key='DESKTOP_ASS')
             else:
-                data = json.loads(redis.get('IOS_ASS'))
+                data = CacheDataValue.get_cache_value(key='IOS_ASS')
             data.append({'value': 'PublicAssertion',
                          'label': '元素文本',
-                         'children': json.loads(redis.get('PublicAssertion'))})
-            data.append(json.loads(redis.get('SqlAssertion'))[0])
+                         'children': CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value)})
+            data.append(CacheDataValue.get_cache_value(key=CacheDataKey2Enum.SQL_ASSERTION_METHOD.value)[0])
         else:
-            data = json.loads(redis.get('PublicAssertion'))
+            data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value)
         return ResponseData.success(RESPONSE_MSG_0018, data)
 
     @action(methods=['get'], detail=False)
@@ -162,9 +165,9 @@ class UiPageStepsDetailedView(ViewSet):
         @param request:
         @return:
         """
-        redis = RedisBase('default')
-        data = redis.get('assertion')
-        return ResponseData.success(RESPONSE_MSG_0019, json.loads(data))
+        # redis = RedisBase('default')
+        return ResponseData.success(RESPONSE_MSG_0019,
+                                    CacheDataValue.get_cache_value(key=CacheDataKey2Enum.ASSERTION_METHOD.value))
 
     @action(methods=['put'], detail=False)
     def put_step_sort(self, request: Request):

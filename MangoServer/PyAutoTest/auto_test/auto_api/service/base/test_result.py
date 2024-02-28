@@ -16,6 +16,7 @@ from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 
 class TestResult:
+
     def __init__(self, project_id, test_obj_id):
         self.test_suite_data = {'id': Snowflake.generate_id(),
                                 'type': AutoTestTypeEnum.API.value,
