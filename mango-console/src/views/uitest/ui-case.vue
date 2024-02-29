@@ -87,7 +87,9 @@
                   >
                 </div>
                 <div>
-                  <a-button status="warning" @click="handleClick">设为定时任务</a-button>
+                  <a-button status="warning" size="small" @click="handleClick"
+                    >设为定时任务</a-button
+                  >
                   <a-modal v-model:visible="caseData.visible" @ok="handleOk" @cancel="handleCancel">
                     <template #title> 设为定时任务 </template>
                     <div>

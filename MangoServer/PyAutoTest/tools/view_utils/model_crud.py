@@ -107,7 +107,7 @@ class ModelCRUD(GenericAPIView):
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
             else:
-                parent_id = request.data.get('case')
+                parent_id = request.data.get('id')
             if parent_id is None:
                 parent_id = _id
             th = Thread(target=self.callback, args=(parent_id,))

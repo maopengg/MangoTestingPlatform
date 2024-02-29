@@ -30,7 +30,8 @@ class TestResult:
         self.assertion_result = []
         self.error_message = []
 
-    def save_test_result(self, case_detailed,
+    def save_test_result(self,
+                         case_detailed,
                          request_data_model: RequestDataModel | None = None,
                          response: ResponseDataModel | None = None,
                          ) -> None:
@@ -50,10 +51,14 @@ class TestResult:
                 'case_detailed': case_detailed.id,
 
                 'url': request_data_model.url,
-                'headers': json.dumps(response.headers, ensure_ascii=False) if response.headers else None,
-                'params': json.dumps(request_data_model.params, ensure_ascii=False) if request_data_model.params else None,
-                'data': json.dumps(request_data_model.data, ensure_ascii=False) if request_data_model.data else None,
-                'json': json.dumps(request_data_model.json_data, ensure_ascii=False) if request_data_model.json_data else None,
+                'headers': json.dumps(response.headers,
+                                      ensure_ascii=False) if response.headers else None,
+                'params': json.dumps(request_data_model.params,
+                                     ensure_ascii=False) if request_data_model.params else None,
+                'data': json.dumps(request_data_model.data,
+                                   ensure_ascii=False) if request_data_model.data else None,
+                'json': json.dumps(request_data_model.json_data,
+                                   ensure_ascii=False) if request_data_model.json_data else None,
                 'file': str(request_data_model.file) if request_data_model.file else None,
 
                 'response_code': response.status_code,

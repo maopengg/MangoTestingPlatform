@@ -184,7 +184,8 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         @return:
         """
         data = {'id': _id, 'case_flow': '', 'name': ''}
-        run = self.model.objects.filter(case=_id).order_by('case_sort')
+        case_id = self.model.objects.get(id=_id).case.id
+        run = self.model.objects.filter(case=case_id).order_by('case_sort')
         for i in run:
             data['case_flow'] += '->'
             if i.api_info:
@@ -192,7 +193,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
         api_case = ApiCaseCRUD()
-        res = api_case.serializer(instance=ApiCase.objects.get(pk=_id), data=data)
+        res = api_case.serializer(instance=ApiCase.objects.get(id=case_id), data=data)
         if res.is_valid():
             res.save()
         else:
