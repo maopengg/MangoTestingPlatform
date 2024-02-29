@@ -103,7 +103,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
         for custom in api_case_obj.front_custom:
             self.set_cache(custom.get('key'), custom.get('value'))
         for i in api_case_obj.front_sql:
-            if self.test_object.db_status:
+            if self.test_object.db_c_status:
                 if self.get_sql_statement_type(i.get('sql')):
                     sql = self.replace(i.get('sql'))
                     result_list: list[dict] = self.mysql_connect.execute(sql)
@@ -121,5 +121,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
         用例后置
         @return:
         """
-        for sql in api_case_obj.posterior_sql:
-            self.mysql_connect.execute(self.replace(sql.get('sql')))
+        if self.test_object.db_c_status:
+            for sql in api_case_obj.posterior_sql:
+                self.mysql_connect.execute(self.replace(sql.get('sql')))

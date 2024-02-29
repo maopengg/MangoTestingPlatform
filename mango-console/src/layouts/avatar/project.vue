@@ -6,7 +6,7 @@
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of projectList" :key="item.key" :value="item.key">
+        <a-doption v-for="item of project.projectList" :key="item.key" :value="item.key">
           {{ item.title }}
         </a-doption>
       </template>
@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
+  import { defineComponent, onMounted, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { useProject } from '@/store/modules/get-project'
   import { useDebounceFn } from '@vueuse/core'
@@ -33,7 +33,7 @@
 
       const router = useRouter()
       const route = useRoute()
-      let projectList = reactive([])
+
       function handleSelect(key: any) {
         if (key === '选择项目') {
           key = null
@@ -57,11 +57,7 @@
       }, 200)
 
       function setTitle(key: any) {
-        projectList.push({ key: null, title: '选择项目' })
-        project.data.forEach((item) => {
-          projectList.push(item)
-        })
-        projectList.forEach((item: any) => {
+        project.projectList.forEach((item: any) => {
           project.selectValue = key
           if (item.key === project.selectValue) project.selectTitle = item.title
         })
@@ -94,7 +90,6 @@
 
       return {
         userStore,
-        projectList,
         project,
         handleSelect,
       }

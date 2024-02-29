@@ -41,10 +41,10 @@
         <template #default>
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="0">
             <template #extra>
-              <a-space>
+              <div>
                 <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 <!--                <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>-->
-              </a-space>
+              </div>
             </template>
           </a-tabs>
           <a-table

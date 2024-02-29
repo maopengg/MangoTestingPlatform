@@ -29,7 +29,7 @@ class CommonParameters(DataProcessor):
         self.project_id = project_id
         self.test_obj_id = test_obj_id
         self.test_object = TestObject.objects.get(id=self.test_obj_id)
-        self.is_db = True if self.test_object.db_status else False
+        self.is_db = True if self.test_object.db_c_status else False
         self.public_obj = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
                                                    project=project_id).order_by('type')
         if self.is_db:
@@ -75,15 +75,16 @@ class CommonParameters(DataProcessor):
         @param api_public_obj:
         @return:
         """
-        result_list: list[dict] = self.mysql_connect.execute(self.replace(api_public_obj.value))
-        for result in result_list:
-            try:
-                for value, key in zip(result, eval(api_public_obj.key)):
-                    self.set_cache(key, result.get(value))
-            except SyntaxError:
-                raise SyntaxErrorError(*ERROR_MSG_0035)
-        if not result_list:
-            raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
+        if self.test_object.db_c_status:
+            result_list: list[dict] = self.mysql_connect.execute(self.replace(api_public_obj.value))
+            for result in result_list:
+                try:
+                    for value, key in zip(result, eval(api_public_obj.key)):
+                        self.set_cache(key, result.get(value))
+                except SyntaxError:
+                    raise SyntaxErrorError(*ERROR_MSG_0035)
+            if not result_list:
+                raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
 
     def get_sql_statement_type(self, sql: str) -> bool:
         if self.mysql_is_select:

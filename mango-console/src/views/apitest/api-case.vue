@@ -82,7 +82,9 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button status="warning" @click="handleClick">设为定时任务</a-button>
+                  <a-button status="warning" size="small" @click="handleClick"
+                    >设为定时任务</a-button
+                  >
                   <a-modal
                     v-model:visible="apiCaseData.visible"
                     @ok="handleOk"

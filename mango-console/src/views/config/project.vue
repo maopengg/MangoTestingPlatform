@@ -208,6 +208,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            project.getProject()
           })
           .catch(console.log)
       },

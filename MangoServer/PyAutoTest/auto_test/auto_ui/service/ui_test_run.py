@@ -65,7 +65,7 @@ class UiTestRun:
                                case_data=[i.case_data for i in objects_filter],
                                case_list=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
                                public_data_list=GetCommonParameters.get_ui_args(self.test_obj_id),
-                               mysql_config=GetDataBase.get_mysql_config(self.test_obj_id) if self.test_obj.db_status == 1 else None,
+                               mysql_config=GetDataBase.get_mysql_config(self.test_obj_id) if self.test_obj.db_c_status == 1 else None,
                                front_custom=case.front_custom,
                                front_sql=case.front_sql,
                                posterior_sql=case.posterior_sql)
@@ -148,7 +148,7 @@ class UiTestRun:
         )
         if is_page_step:
             page_steps_model.mysql_config = GetDataBase.get_mysql_config(
-                self.test_obj_id) if self.test_obj.db_status == 1 else None
+                self.test_obj_id) if self.test_obj.db_c_status == 1 else None
             page_steps_model.public_data_list = GetCommonParameters.get_ui_args(self.test_obj_id)
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
             'step_sort')
