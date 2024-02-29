@@ -4,14 +4,14 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import logging
+import time
 
 import requests
-import time
 from requests.exceptions import *
 
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0001, ERROR_MSG_0002
+from PyAutoTest.tools.view_utils.error_msg import *
 
 log = logging.getLogger('api')
 
@@ -29,13 +29,16 @@ class HTTPRequest:
                 params=request_data.params,
                 data=request_data.data,
                 json=request_data.json_data,
-                files=request_data.file
+                files=request_data.file,
+                timeout=15  # 设置超时时间为5秒
             )
             end = time.time() - s
         except ProxyError:
             raise AgentError(*ERROR_MSG_0001)
         except SSLError:
             raise AgentError(*ERROR_MSG_0001)
+        except Timeout:
+            raise UnknownError(*ERROR_MSG_0037)
         except RequestException as error:
             log.error(f'接口请求时发生未知错误，错误数据：{request_data.dict()}，报错内容：{error}')
             raise UnknownError(*ERROR_MSG_0002)
