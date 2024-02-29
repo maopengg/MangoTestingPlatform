@@ -7,7 +7,7 @@ import logging
 
 import requests
 import time
-from requests import RequestException
+from requests.exceptions import *
 
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
@@ -21,8 +21,6 @@ class HTTPRequest:
     @classmethod
     def http(cls, request_data: RequestDataModel) -> ResponseDataModel:
         s = time.time()
-        # if "/dev-api/business/workFlowInfo/remove" in request_data.url:
-        #     print(request_data.dict())
         try:
             response = requests.request(
                 method=request_data.method,
@@ -34,14 +32,16 @@ class HTTPRequest:
                 files=request_data.file
             )
             end = time.time() - s
-        except requests.exceptions.ProxyError:
+        except ProxyError:
             raise AgentError(*ERROR_MSG_0001)
-        except RequestException as e:
-            log.error(f'请求发生未知错误，请联系管理员检查！错误数据：{request_data.dict()}，报错内容：{e}')
+        except SSLError:
+            raise AgentError(*ERROR_MSG_0001)
+        except RequestException as error:
+            log.error(f'接口请求时发生未知错误，错误数据：{request_data.dict()}，报错内容：{error}')
             raise UnknownError(*ERROR_MSG_0002)
         try:
             response_json = response.json()
-        except Exception:
+        except JSONDecodeError:
             response_json = None
         return ResponseDataModel(
             url=response.url,

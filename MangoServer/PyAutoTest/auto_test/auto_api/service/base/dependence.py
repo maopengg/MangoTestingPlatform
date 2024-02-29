@@ -51,7 +51,14 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @param case_detailed:
         @return:
         """
-        self.__sql_(self.replace(case_detailed.front_sql), '前置')
+        if self.mysql_connect:
+            for sql in case_detailed.front_sql:
+                res = self.mysql_connect.condition_execute(sql)
+                if isinstance(res, list):
+                    for i in res:
+                        for key, value in i.items():
+                            self.set_cache(key, value)
+                            log.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
     def assertion(self, response: ResponseDataModel, case_detailed) -> None:
         if response.response_json:
@@ -88,11 +95,11 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @param case_detailed:
         @return:
         """
-        if self.is_db:
+        if self.mysql_connect:
             for sql in case_detailed.dump_data:
                 if sql.strip().lower().startswith('select'):
                     raise DumpDataError(*ERROR_MSG_0010)
-                res = self.mysql_connect.execute(self.replace(sql))
+                res = self.mysql_connect.condition_execute(self.replace(sql))
                 if isinstance(res, int):
                     log.info(f'删除成功的条数：{res}')
 
@@ -102,9 +109,9 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @param sql_list:
         @return:
         """
-        if self.is_db:
+        if self.mysql_connect:
             for sql_obj in sql_list:
-                res = self.mysql_connect.execute(sql_obj.get('key'))
+                res = self.mysql_connect.condition_execute(sql_obj.get('key'))
                 if isinstance(res, list):
                     for res_dict in res:
                         for key, value in res_dict.items():
@@ -149,10 +156,10 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @return:
         """
         try:
-            if self.is_db:
+            if self.mysql_connect:
                 for sql in sql_list:
-                    value = self.mysql_connect.execute(self.replace(sql.get('value')))
-                    if value:
+                    value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
+                    if isinstance(value, list):
                         _dict = {'value': str(list(value[0].values())[0])}
                     else:
                         _dict = {'value': None}
@@ -174,13 +181,3 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError:
             raise ResponseWholeAssError(*ERROR_MSG_0004)
-
-    def __sql_(self, sql_list: list, _str: str):
-        if self.is_db:
-            for sql in sql_list:
-                res = self.mysql_connect.execute(sql)
-                if isinstance(res, list):
-                    for i in res:
-                        for key, value in i.items():
-                            self.set_cache(key, value)
-                            log.info(f'{_str}sql写入的数据：{self.get_cache(key)}')

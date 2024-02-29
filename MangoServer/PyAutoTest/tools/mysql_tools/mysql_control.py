@@ -18,7 +18,9 @@ logger = logging.getLogger('system')
 class MysqlConnect:
     """mysql封装"""
 
-    def __init__(self, mysql_config: MysqlConingModel):
+    def __init__(self, mysql_config: MysqlConingModel, is_c: bool = True, is_rud: bool = True):
+        self.is_c = is_c
+        self.is_rud = is_rud
         try:
             self.connection = pymysql.connect(
                 host=mysql_config.host,
@@ -38,6 +40,19 @@ class MysqlConnect:
     def close(self):
         if self.connection:
             self.connection.close()
+
+    def condition_execute(self, sql: str) -> list[dict] | list | int | None:
+        sql = sql.strip().upper()
+        result = None
+        if sql.startswith('SELECT'):
+            if self.is_c:
+                result = self.execute(sql)
+        elif sql.startswith('INSERT') or sql.startswith('UPDATE') or sql.startswith('DELETE'):
+            if self.is_rud:
+                result = self.execute(sql)
+        else:
+            raise MysqlQueryError(*ERROR_MSG_0025)
+        return result
 
     def execute(self, sql: str) -> list[dict] | int:
         """
