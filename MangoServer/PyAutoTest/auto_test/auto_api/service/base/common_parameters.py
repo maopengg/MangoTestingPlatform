@@ -28,13 +28,17 @@ class CommonParameters(DataProcessor):
         super().__init__(project_id)
         self.project_id = project_id
         self.test_obj_id = test_obj_id
+        # 获取测试环境对象
         self.test_object = TestObject.objects.get(id=self.test_obj_id)
-        self.is_db = True if self.test_object.db_c_status else False
-        self.public_obj = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
+        self.mysql_connect = None
+        if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
+            self.mysql_connect = MysqlConnect(GetDataBase.get_mysql_config(self.test_obj_id),
+                                              bool(self.test_object.db_c_status),
+                                              bool(self.test_object.db_rud_status)
+                                              )
+        self.api_public = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
                                                    project=project_id).order_by('type')
-        if self.is_db:
-            self.mysql_connect = MysqlConnect(GetDataBase.get_mysql_config(self.test_obj_id))
-        for i in self.public_obj:
+        for i in self.api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
             elif i.type == ApiPublicTypeEnum.LOGIN.value:
@@ -43,7 +47,6 @@ class CommonParameters(DataProcessor):
                 self.__custom(i)
             elif i.type == ApiPublicTypeEnum.HEADERS.value:
                 self.__headers(i)
-        self.mysql_is_select = True
 
     def __login(self, api_public_obj: ApiPublic):
         key = api_public_obj.key
@@ -75,28 +78,14 @@ class CommonParameters(DataProcessor):
         @param api_public_obj:
         @return:
         """
-        if self.test_object.db_c_status:
-            result_list: list[dict] = self.mysql_connect.execute(self.replace(api_public_obj.value))
-            for result in result_list:
-                try:
-                    for value, key in zip(result, eval(api_public_obj.key)):
-                        self.set_cache(key, result.get(value))
-                except SyntaxError:
-                    raise SyntaxErrorError(*ERROR_MSG_0035)
-            if not result_list:
-                raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
-
-    def get_sql_statement_type(self, sql: str) -> bool:
-        if self.mysql_is_select:
-            return True
-        sql = sql.strip().upper()
-        if sql.startswith('SELECT'):
-            return True
-        elif sql.startswith('INSERT'):
-            return False
-        elif sql.startswith('UPDATE'):
-            return False
-        elif sql.startswith('DELETE'):
-            return False
-        else:
-            return False
+        if self.mysql_connect:
+            result_list: list[dict] = self.mysql_connect.condition_execute(self.replace(api_public_obj.value))
+            if isinstance(result_list, list):
+                for result in result_list:
+                    try:
+                        for value, key in zip(result, eval(api_public_obj.key)):
+                            self.set_cache(key, result.get(value))
+                    except SyntaxError:
+                        raise SyntaxErrorError(*ERROR_MSG_0035)
+                if not result_list:
+                    raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))

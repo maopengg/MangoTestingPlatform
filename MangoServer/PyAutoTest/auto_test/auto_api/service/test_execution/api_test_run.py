@@ -70,7 +70,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             response: ResponseDataModel = HTTPRequest.http(request_data_model)
         except MangoServerError as error:
             self.assertion_result.append(StatusEnum.FAIL.value)
-            self.error_message.append(f'接口：{case_detailed.api_info.name}{error.msg}')
+            self.error_message.append(error.msg)
             self.save_test_result(case_detailed)
             return False
         try:
@@ -81,7 +81,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             # 数据清除
             self.dump_data(case_detailed)
         except MangoServerError as error:
-            self.error_message.append(f'接口：{case_detailed.api_info.name}{error.msg}')
+            self.error_message.append(error.msg)
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.save_test_result(case_detailed, request_data_model, response)
             return False
@@ -103,10 +103,10 @@ class ApiTestRun(ApiDataHandle, TestResult):
         for custom in api_case_obj.front_custom:
             self.set_cache(custom.get('key'), custom.get('value'))
         for i in api_case_obj.front_sql:
-            if self.test_object.db_c_status:
-                if self.get_sql_statement_type(i.get('sql')):
-                    sql = self.replace(i.get('sql'))
-                    result_list: list[dict] = self.mysql_connect.execute(sql)
+            if self.mysql_connect:
+                sql = self.replace(i.get('sql'))
+                result_list: list[dict] = self.mysql_connect.condition_execute(sql)
+                if isinstance(result_list, list):
                     for result in result_list:
                         try:
                             for value, key in zip(result, eval(i.get('key_list'))):
@@ -121,6 +121,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
         用例后置
         @return:
         """
-        if self.test_object.db_c_status:
+        if self.mysql_connect:
             for sql in api_case_obj.posterior_sql:
-                self.mysql_connect.execute(self.replace(sql.get('sql')))
+                self.mysql_connect.condition_execute(self.replace(sql.get('sql')))
