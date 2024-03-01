@@ -48,6 +48,9 @@ class CacheDataCRUD(ModelCRUD):
             try:
                 self.model.objects.get(key=key.get('key'))
             except self.model.DoesNotExist:
+                for i, value in CacheDataKeyEnum.obj().items():
+                    if i == key.get('key') and value:
+                        key['value'] = value
                 serializer = self.serializer(data=key)
                 if serializer.is_valid():
                     serializer.save()

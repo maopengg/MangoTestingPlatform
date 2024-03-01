@@ -9,17 +9,20 @@ import time
 import requests
 from requests.exceptions import *
 
+from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.view_utils.error_msg import *
-
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 log = logging.getLogger('api')
 
 
 class HTTPRequest:
 
-    @classmethod
-    def http(cls, request_data: RequestDataModel) -> ResponseDataModel:
+    def __init__(self):
+        self.timeout = CacheDataValue.get_cache_value(CacheDataKeyEnum.API_TIMEOUT.name)
+
+    def http(self, request_data: RequestDataModel) -> ResponseDataModel:
         s = time.time()
         try:
             response = requests.request(
@@ -30,7 +33,7 @@ class HTTPRequest:
                 data=request_data.data,
                 json=request_data.json_data,
                 files=request_data.file,
-                timeout=15  # 设置超时时间为5秒
+                timeout=int(self.timeout)  # 设置超时时间为5秒
             )
             end = time.time() - s
         except ProxyError:
@@ -72,7 +75,7 @@ if __name__ == '__main__':
             "screenshot": None}, "templateFlowInfo": {"workFlowIds": None, "fromInputArr": [], "connectOutputArr": []}},
             "file": None}
 
-    print(HTTPRequest.http(RequestDataModel(**data)).response_text)
+    print(HTTPRequest().http(RequestDataModel(**data)).response_text)
 """
 data 和 json 是 requests 库中用于发送 HTTP 请求体数据的两个参数。它们的最大区别在于数据格式和发送方式。
 

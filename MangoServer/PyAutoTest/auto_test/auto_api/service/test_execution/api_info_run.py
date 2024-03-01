@@ -28,7 +28,7 @@ class ApiInfoRun(ApiDataHandle):
             data=api_info_obj.data,
             json_data=api_info_obj.json,
             file=api_info_obj.file))
-        response: ResponseDataModel = HTTPRequest.http(request_data_model)
+        response: ResponseDataModel = HTTPRequest().http(request_data_model)
         if response.status_code != 500:
             api_info_obj.status = StatusEnum.SUCCESS.value
             api_info_obj.save()

@@ -83,13 +83,17 @@ class CacheDataKeyEnum(BaseEnum):
     SEND_USER = '邮箱发送人'
     EMAIL_HOST = '邮箱域名'
     STAMP_KET = '邮箱的stamp_key'
+    API_TIMEOUT = 'API请求超时时间'
 
     @classmethod
     def obj(cls):
-        return {'DOMAIN_NAME': "本系统的URL地址",
-                'SEND_USER': "邮箱发送人",
-                'EMAIL_HOST': "邮箱域名",
-                'STAMP_KET': "邮箱的stamp_key", }
+        return {
+            'DOMAIN_NAME': None,
+            'SEND_USER': None,
+            'EMAIL_HOST': None,
+            'STAMP_KET': None,
+            'API_TIMEOUT': 15,
+        }
 
 
 class CacheDataKey2Enum(BaseEnum):

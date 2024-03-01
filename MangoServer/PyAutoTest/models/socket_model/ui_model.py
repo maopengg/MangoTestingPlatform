@@ -19,6 +19,29 @@ class UiPublicModel(BaseModel):
     status: int
 
 
+class WEBConfigModel(BaseModel):
+    """ web启动配置 """
+    browser_type: int
+    browser_port: str | None
+    browser_path: str | None
+    is_headless: int | None
+    is_header_intercept: bool = False
+    host: str | None = None
+    project: int | None = None
+
+
+class AndroidConfigModel(BaseModel):
+    equipment: str
+    package_name: str
+
+
+class RunConfigModel(BaseModel):
+    db_c_status: bool
+    db_rud_status: bool
+    mysql_config: MysqlConingModel | None = None
+    public_data_list: list[UiPublicModel] | None = None
+
+
 class ElementModel(BaseModel):
     id: int
     type: int
@@ -38,75 +61,67 @@ class ElementModel(BaseModel):
     ass_value: dict | None
 
 
-class WEBConfigModel(BaseModel):
-    """ web启动配置 """
-    browser_type: int
-    browser_port: str | None
-    browser_path: str | None
-    is_headless: int | None
-    is_header_intercept: bool = False
-    host: str | None = None
-    project_id: int | None = None
-
-
-class AndroidConfigModel(BaseModel):
-    equipment: str
-    package_name: str
+class StepsDataModel(BaseModel):
+    type: int
+    page_step_details_id: int
+    page_step_details_data: dict
+    page_step_details_name: str
 
 
 class PageStepsModel(BaseModel):
     id: int
     name: str
     case_step_details_id: int | None
-    project_id: int
-    host: str
+    project: int
+    test_object_value: str
     url: str
     type: int
+    case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
     equipment_config: AndroidConfigModel | WEBConfigModel
-    public_data_list: list[UiPublicModel] | None = None
-    mysql_config: MysqlConingModel | None = None
+    # public_data_list: list[UiPublicModel] | None = None
+    # mysql_config: MysqlConingModel | None = None
+    run_config: RunConfigModel | None = None
 
 
 class CaseModel(BaseModel):
     id: int
-    project_id: int
+    project: int
     module_name: str
     name: str
     is_batch: int
     case_people: str
-    case_data: list[list[dict] | list]
     case_list: list[PageStepsModel]
-    public_data_list: list[UiPublicModel] | None
-    mysql_config: MysqlConingModel | None
     front_custom: list
     front_sql: list
     posterior_sql: list
+    run_config: RunConfigModel
 
 
 class ElementResultModel(BaseModel):
-    test_suite_id: int | None
-    case_id: int | None
-    page_step_id: int | None
+    page_step_id: int
+    test_suite_id: int | None = None
+    case_id: int | None = None
+    case_step_details_id: int | None = None
 
-    ele_name_a: str | None
-    ele_name_b: str | None
+    ele_name_a: str | None = None
+    ele_name_b: str | None = None
     ele_quantity: int
-    error_message: str | None
-    picture_path: str | None
+    error_message: str | None = None
+    picture_path: str | None = None
     status: int
 
-    loc: str | None
-    exp: int | None
-    sleep: int | None
-    sub: int | None
+    loc: str | None = None
+    exp: int | None = None
+    sleep: int | None = None
+    sub: int | None = None
 
-    ope_type: str | None
-    ope_value: dict | str | None
-    ass_type: str | None
-    ass_value: dict | None
-    expect: str | None
-    actual: str | None
+    ope_type: str | None = None
+    ope_value: dict | str | None = None
+    ass_type: str | None = None
+    ass_value: dict | None = None
+    expect: str | None = None
+    actual: str | None = None
 
 
 class PageStepsResultModel(BaseModel):
@@ -114,6 +129,7 @@ class PageStepsResultModel(BaseModel):
     case_id: int | None
     case_step_details_id: int | None
     page_step_id: int
+
     page_step_name: str
 
     status: int
@@ -123,8 +139,9 @@ class PageStepsResultModel(BaseModel):
 
 class CaseResultModel(BaseModel):
     test_suite_id: int
-    is_batch: int
     case_id: int
+
+    is_batch: int
     case_name: str
     module_name: str
     case_people: str

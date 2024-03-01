@@ -22,10 +22,11 @@ from .http_request import HTTPRequest
 log = logging.getLogger('api')
 
 
-class CommonParameters(DataProcessor):
+class CommonParameters(DataProcessor, HTTPRequest):
 
     def __init__(self, project_id: int, test_obj_id: int):
-        super().__init__(project_id)
+        DataProcessor.__init__(self, project_id)
+        HTTPRequest.__init__(self)
         self.project_id = project_id
         self.test_obj_id = test_obj_id
         # 获取测试环境对象
@@ -59,7 +60,7 @@ class CommonParameters(DataProcessor):
                                                                 data=api_info.data,
                                                                 json_data=api_info.json,
                                                                 file=api_info.file))
-        response: ResponseDataModel = HTTPRequest.http(request_data_model)
+        response: ResponseDataModel = self.http(request_data_model)
         if response.response_json is None:
             raise LoginError(*ERROR_MSG_0003)
         value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))

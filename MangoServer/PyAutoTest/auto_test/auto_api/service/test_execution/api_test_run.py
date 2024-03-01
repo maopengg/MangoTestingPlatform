@@ -67,7 +67,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
                                  data=case_detailed.data,
                                  json_data=case_detailed.json,
                                  file=case_detailed.file))
-            response: ResponseDataModel = HTTPRequest.http(request_data_model)
+            response: ResponseDataModel = self.http(request_data_model)
         except MangoServerError as error:
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.error_message.append(error.msg)
