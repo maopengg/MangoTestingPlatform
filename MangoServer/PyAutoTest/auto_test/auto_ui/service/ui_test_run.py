@@ -3,14 +3,14 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
-from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
+from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
-from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.auto_test.auto_system.service.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
     UiElement, UiConfig, UiPage
+from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
@@ -26,9 +26,9 @@ class UiTestRun:
 
     def __init__(self, user_id: int, test_obj_id: int, is_timing: bool = False, is_notice: bool = False):
         self.user_obj = User.objects.get(id=user_id)
-        self.test_obj = TestObject.objects.get(id=test_obj_id)
+        self.test_object = TestObject.objects.get(id=test_obj_id)
         self.user_id = user_id
-        self.test_obj_id = test_obj_id
+        self.test_object_id = test_obj_id
         self.is_send = is_timing
         self.is_notice = is_notice
 
@@ -39,7 +39,7 @@ class UiTestRun:
         @param is_send: 是否选择发送
         @return:
         """
-        case_model = self.__data_ui_case(steps_id, None)
+        case_model = self.__data_ui_case(steps_id)
         if is_send:
             self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=case_model)
         return case_model
@@ -55,25 +55,24 @@ class UiTestRun:
         case = UiCase.objects.get(id=case_id)
 
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-
-        case_model = CaseModel(id=case.id,
-                               name=case.name,
-                               is_batch=StatusEnum.SUCCESS.value if is_batch else StatusEnum.FAIL.value,
-                               project_id=case.project.id,
-                               module_name=case.module_name.name,
-                               case_people=case.case_people.nickname,
-                               case_data=[i.case_data for i in objects_filter],
-                               case_list=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
-                               public_data_list=GetCommonParameters.get_ui_args(self.test_obj_id),
-                               mysql_config=GetDataBase.get_mysql_config(self.test_obj_id) if self.test_obj.db_c_status == 1 else None,
-                               front_custom=case.front_custom,
-                               front_sql=case.front_sql,
-                               posterior_sql=case.posterior_sql)
+        case_model = CaseModel(
+            id=case.id,
+            name=case.name,
+            is_batch=StatusEnum.SUCCESS.value if is_batch else StatusEnum.FAIL.value,
+            project=case.project.id,
+            module_name=case.module_name.name,
+            case_people=case.case_people.nickname,
+            front_custom=case.front_custom,
+            front_sql=case.front_sql,
+            posterior_sql=case.posterior_sql,
+            run_config=self.__get_run_config(),
+            case_list=[self.__data_ui_case(i.page_step.id, i.id, False, objects_filter) for i in objects_filter],
+        )
         if is_send:
             model = TestSuiteModel(id=Snowflake.generate_id(),
                                    type=AutoTestTypeEnum.UI.value,
                                    project=case.project.id,
-                                   test_object=self.test_obj_id,
+                                   test_object=self.test_object_id,
                                    error_message=None,
                                    run_status=0,
                                    case_list=[])
@@ -99,8 +98,8 @@ class UiTestRun:
                 case_group_list.append(self.case(case_id=case_id, is_send=False))
         model = TestSuiteModel(id=test_suite_id,
                                type=AutoTestTypeEnum.UI.value,
-                               project=case_group_list[0].project_id,
-                               test_object=self.test_obj_id,
+                               project=case_group_list[0].project,
+                               test_object=self.test_object_id,
                                is_notice=self.is_notice,
                                error_message=None,
                                run_status=0,
@@ -127,8 +126,11 @@ class UiTestRun:
             data=data,
         ))
 
-    def __data_ui_case(self, page_steps_id: int, case_step_details_id: int | None,
-                       is_page_step: bool = True) -> PageStepsModel:
+    def __data_ui_case(self,
+                       page_steps_id: int,
+                       case_step_details_id: int | None = None,
+                       is_page_step: bool = True,
+                       objects_filter: list[UiCaseStepsDetailed] = None) -> PageStepsModel:
         """
         根据test对象和步骤ID返回一个步骤测试对象
         @param page_steps_id: 步骤id
@@ -136,20 +138,20 @@ class UiTestRun:
         """
         step = UiPageSteps.objects.get(id=page_steps_id)
         page_steps_model = PageStepsModel(
-            id=page_steps_id,
+            id=step.id,
             name=step.name,
             case_step_details_id=case_step_details_id,
-            project_id=step.project.id,
-            host=self.test_obj.value,
+            project=step.project.id,
+            test_object_value=self.test_object.value,
             url=step.page.url,
             type=step.page.type,
             equipment_config=self.__get_web_config(
-                self.test_obj.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+                self.test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
         )
-        if is_page_step:
-            page_steps_model.mysql_config = GetDataBase.get_mysql_config(
-                self.test_obj_id) if self.test_obj.db_c_status == 1 else None
-            page_steps_model.public_data_list = GetCommonParameters.get_ui_args(self.test_obj_id)
+        if not is_page_step:
+            page_steps_model.run_config = self.__get_run_config()
+            for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
+                page_steps_model.case_data.append(StepsDataModel(**case_data))
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
             'step_sort')
         for i in step_sort_list:
@@ -182,12 +184,12 @@ class UiTestRun:
             id=0,
             name=f'测试元素-{element_obj.name}',
             case_step_details_id=None,
-            project_id=data['project_id'],
-            host=self.test_obj.value,
+            project=data['project_id'],
+            host=self.test_object.value,
             url=page_obj.url,
             type=page_obj.type,
             equipment_config=self.__get_web_config(
-                self.test_obj.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+                self.test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
         )
         page_steps_model.element_list.append(ElementModel(
             id=element_obj.id,
@@ -227,3 +229,14 @@ class UiTestRun:
                                               status=StatusEnum.SUCCESS.value,
                                               type=DriveTypeEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)
+
+    def __get_run_config(self) -> RunConfigModel:
+        mysql_config = None
+        if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
+            mysql_config = GetDataBase.get_mysql_config(self.test_object_id)
+        return RunConfigModel(
+            db_c_status=self.test_object.db_c_status,
+            db_rud_status=self.test_object.db_rud_status,
+            mysql_config=mysql_config,
+            public_data_list=GetCommonParameters.get_ui_args(self.test_object_id)
+        )
