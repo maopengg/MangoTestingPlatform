@@ -100,8 +100,11 @@ class Tasks:
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')
-                UiTestRun(user_id=user_id, test_obj_id=test_obj_id, is_timing=True, is_notice=is_notice).case_batch(
-                    case_id_list)
+                UiTestRun(user_id=user_id,
+                          test_obj_id=test_obj_id,
+                          tasks_id=scheduled_tasks_id,
+                          is_notice=is_notice,
+                          spare_test_object_id=test_obj_id).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行UI定时任务失败，错误消息：{error.msg}')
             if is_trigger:

@@ -33,7 +33,7 @@ class HTTPRequest:
                 data=request_data.data,
                 json=request_data.json_data,
                 files=request_data.file,
-                timeout=int(self.timeout)  # 设置超时时间为5秒
+                timeout=int(self.timeout)
             )
             end = time.time() - s
         except ProxyError:

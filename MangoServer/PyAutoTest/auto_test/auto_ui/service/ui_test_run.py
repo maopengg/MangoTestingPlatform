@@ -4,6 +4,7 @@
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
 from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
@@ -24,13 +25,15 @@ from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 class UiTestRun:
 
-    def __init__(self, user_id: int, test_obj_id: int, is_timing: bool = False, is_notice: bool = False):
+    def __init__(self, user_id: int, test_obj_id: int, tasks_id: int = None, is_notice: bool = False,
+                 spare_test_object_id: int = None):
         self.user_obj = User.objects.get(id=user_id)
         self.test_object = TestObject.objects.get(id=test_obj_id)
         self.user_id = user_id
         self.test_object_id = test_obj_id
-        self.is_send = is_timing
+        self.tasks_id = tasks_id
         self.is_notice = is_notice
+        self.spare_test_object_id = spare_test_object_id
 
     def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
         """
@@ -52,8 +55,11 @@ class UiTestRun:
         @param is_batch: 是否是批量发送
         @return:
         """
+        if self.tasks_id:
+            tasks_run_case = TasksRunCaseList.objects.get(task=self.tasks_id, case=case_id)
+            self.test_object_id = tasks_run_case.test_object.id if tasks_run_case.test_object else\
+                self.spare_test_object_id
         case = UiCase.objects.get(id=case_id)
-
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_model = CaseModel(
             id=case.id,
@@ -66,7 +72,7 @@ class UiTestRun:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             run_config=self.__get_run_config(),
-            case_list=[self.__data_ui_case(i.page_step.id, i.id, False, objects_filter) for i in objects_filter],
+            case_list=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
         )
         if is_send:
             model = TestSuiteModel(id=Snowflake.generate_id(),
@@ -129,8 +135,7 @@ class UiTestRun:
     def __data_ui_case(self,
                        page_steps_id: int,
                        case_step_details_id: int | None = None,
-                       is_page_step: bool = True,
-                       objects_filter: list[UiCaseStepsDetailed] = None) -> PageStepsModel:
+                       is_page_step: bool = True) -> PageStepsModel:
         """
         根据test对象和步骤ID返回一个步骤测试对象
         @param page_steps_id: 步骤id
@@ -147,9 +152,9 @@ class UiTestRun:
             type=step.page.type,
             equipment_config=self.__get_web_config(
                 self.test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            run_config=self.__get_run_config()
         )
         if not is_page_step:
-            page_steps_model.run_config = self.__get_run_config()
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
                 page_steps_model.case_data.append(StepsDataModel(**case_data))
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
@@ -181,11 +186,11 @@ class UiTestRun:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         element_obj = UiElement.objects.get(id=data['id'])
         page_steps_model = PageStepsModel(
-            id=0,
+            id=None,
             name=f'测试元素-{element_obj.name}',
             case_step_details_id=None,
             project=data['project_id'],
-            host=self.test_object.value,
+            test_object_value=self.test_object.value,
             url=page_obj.url,
             type=page_obj.type,
             equipment_config=self.__get_web_config(
@@ -235,8 +240,8 @@ class UiTestRun:
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
             mysql_config = GetDataBase.get_mysql_config(self.test_object_id)
         return RunConfigModel(
-            db_c_status=self.test_object.db_c_status,
-            db_rud_status=self.test_object.db_rud_status,
+            db_c_status=bool(self.test_object.db_c_status),
+            db_rud_status=bool(self.test_object.db_rud_status),
             mysql_config=mysql_config,
             public_data_list=GetCommonParameters.get_ui_args(self.test_object_id)
         )
