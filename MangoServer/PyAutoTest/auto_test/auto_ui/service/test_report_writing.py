@@ -28,11 +28,12 @@ class TestReportWriting:
         @return:
         """
         try:
-            res = UiPageSteps.objects.get(id=data.page_step_id)
+            if data.page_step_id:
+                res = UiPageSteps.objects.get(id=data.page_step_id)
+                res.type = data.status
+                res.save()
         except UiPageSteps.DoesNotExist as error:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
-        res.type = data.status
-        res.save()
 
     @classmethod
     def update_case(cls, data: CaseResultModel):

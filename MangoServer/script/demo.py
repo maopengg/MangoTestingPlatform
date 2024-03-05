@@ -1,2 +1,2 @@
 if __name__ == '__main__':
-    print(bool(1))
+    print(bool(None))

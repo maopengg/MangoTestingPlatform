@@ -61,15 +61,16 @@ class ElementModel(BaseModel):
     ass_value: dict | None
 
 
+
 class StepsDataModel(BaseModel):
-    type: int
+    type: int | None = None
     page_step_details_id: int
     page_step_details_data: dict
     page_step_details_name: str
 
 
 class PageStepsModel(BaseModel):
-    id: int
+    id: int | None = None
     name: str
     case_step_details_id: int | None
     project: int
@@ -99,7 +100,7 @@ class CaseModel(BaseModel):
 
 
 class ElementResultModel(BaseModel):
-    page_step_id: int
+    page_step_id: int | None = None
     test_suite_id: int | None = None
     case_id: int | None = None
     case_step_details_id: int | None = None
@@ -128,7 +129,7 @@ class PageStepsResultModel(BaseModel):
     test_suite_id: int | None
     case_id: int | None
     case_step_details_id: int | None
-    page_step_id: int
+    page_step_id: int | None = None
 
     page_step_name: str
 
