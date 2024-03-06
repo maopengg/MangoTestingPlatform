@@ -38,8 +38,6 @@
   })
   const handleClick = () => {
     if (settingsData.editing) {
-      // Call your API to submit data here
-      // For demonstration purposes, we'll just log the submitted value
       settingsData.data.forEach((item: any) => {
         if (item.value === '') {
           item.value = null
