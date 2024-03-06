@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
+import logging
+
 from django.forms.models import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -18,6 +20,8 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
 from PyAutoTest.tools.view_utils.response_data import ResponseData
 from PyAutoTest.tools.view_utils.response_msg import *
+
+logger = logging.getLogger('system')
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
@@ -61,6 +65,21 @@ class TasksRunCaseListCRUD(ModelCRUD):
                 _dict['case'] = ApiCase.objects.get(id=i.case).name
             data.append(_dict)
         return ResponseData.success(RESPONSE_MSG_0064, data)
+
+    def post(self, request: Request):
+        serializer = self.serializer(data=request.data)
+        try:
+            existing_object = self.model.objects.get(task=request.data['task'], case=request.data['case'])
+            if existing_object:
+                return ResponseData.fail(RESPONSE_MSG_0112)
+        except self.model.DoesNotExist:
+            if serializer.is_valid():
+                serializer.save()
+                self.asynchronous_callback(request)
+                return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+            else:
+                logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+                return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 
 class TasksRunCaseListViews(ViewSet):

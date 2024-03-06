@@ -61,7 +61,6 @@ class ElementModel(BaseModel):
     ass_value: dict | None
 
 
-
 class StepsDataModel(BaseModel):
     type: int | None = None
     page_step_details_id: int
@@ -162,3 +161,4 @@ class TestSuiteModel(BaseModel):
     status: int | None
     error_message: str | None
     case_list: list[CaseModel] | None = None
+    concurrent: int | None = None

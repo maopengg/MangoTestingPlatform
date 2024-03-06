@@ -371,19 +371,18 @@
       key: 'parallel_number',
       value: '',
       placeholder: '请输入用例并行数，建议不超过10',
-      required: true,
+      required: false,
       type: 'input',
       validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
+        if (this.value) {
+          if (/^\d+$/.test(this.value) && parseInt(this.value) > 0) {
+            return true // 返回true表示该字符串是正整数类型且大于0
+          } else {
+            Message.error('用例并行数建议请输入1-10的正整数')
+            return false // 返回false表示该字符串不是正整数类型或者小于等于0
+          }
         }
-        if (/^\d+$/.test(this.value) && parseInt(this.value) > 0) {
-          return true // 返回true表示该字符串是正整数类型且大于0
-        } else {
-          Message.error('用例并行数请输入大于0的正整数')
-          return false // 返回false表示该字符串不是正整数类型或者小于等于0
-        }
+        return true // 返回true表示该字符串是正整数类型且大于0
       },
     },
   ])
