@@ -25,8 +25,14 @@ from PyAutoTest.tools.view_utils.snowflake import Snowflake
 
 class UiTestRun:
 
-    def __init__(self, user_id: int, test_obj_id: int, tasks_id: int = None, is_notice: bool = False,
-                 spare_test_object_id: int = None):
+    def __init__(self,
+                 user_id: int,
+                 test_obj_id: int,
+                 tasks_id: int = None,
+                 is_notice: bool = False,
+                 spare_test_object_id: int = None,
+                 concurrent: int = None
+                 ):
         self.user_obj = User.objects.get(id=user_id)
         self.test_object = TestObject.objects.get(id=test_obj_id)
         self.user_id = user_id
@@ -34,6 +40,7 @@ class UiTestRun:
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.spare_test_object_id = spare_test_object_id
+        self.concurrent = concurrent
 
     def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
         """
@@ -102,6 +109,7 @@ class UiTestRun:
                 case_group_list.append(self.case(case_id=case_id, is_send=False, is_batch=True))
             else:
                 case_group_list.append(self.case(case_id=case_id, is_send=False))
+
         model = TestSuiteModel(id=test_suite_id,
                                type=AutoTestTypeEnum.UI.value,
                                project=case_group_list[0].project,
@@ -109,6 +117,7 @@ class UiTestRun:
                                is_notice=self.is_notice,
                                error_message=None,
                                run_status=0,
+                               concurrent=self.concurrent,
                                case_list=case_group_list)
         self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                            case_model=model)

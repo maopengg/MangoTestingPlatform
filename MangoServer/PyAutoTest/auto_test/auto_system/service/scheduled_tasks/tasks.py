@@ -55,6 +55,7 @@ class Tasks:
                         scheduled_tasks.executor_name.id,
                         scheduled_tasks.test_obj.id,
                         is_notice,
+                        scheduled_tasks.parallel_number,
                         True)
         else:
             log.error('开始执行性能自动化任务')
@@ -93,7 +94,7 @@ class Tasks:
                 raise error
 
     @classmethod
-    def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool,
+    def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool, concurrent: int | None,
                 is_trigger: bool = False):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
@@ -104,7 +105,8 @@ class Tasks:
                           test_obj_id=test_obj_id,
                           tasks_id=scheduled_tasks_id,
                           is_notice=is_notice,
-                          spare_test_object_id=test_obj_id).case_batch(case_id_list)
+                          spare_test_object_id=test_obj_id,
+                          concurrent=concurrent).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行UI定时任务失败，错误消息：{error.msg}')
             if is_trigger:

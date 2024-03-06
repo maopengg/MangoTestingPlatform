@@ -96,7 +96,7 @@ class ScheduledTasksNoPermissionViews(ViewSet):
     @action(methods=['get'], detail=False)
     def trigger_timing(self, request: Request):
         try:
-            data = Tasks.trigger(request.query_params.get('id'))
+            Tasks.trigger(request.query_params.get('id'))
             return ResponseData.success(RESPONSE_MSG_0100)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )
