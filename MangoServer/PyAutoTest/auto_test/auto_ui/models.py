@@ -76,6 +76,8 @@ class UiPageStepsDetailed(models.Model):
     type = models.SmallIntegerField(verbose_name="操作类型", null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
     ass_value = models.JSONField(verbose_name="操作内容", null=True)
+    key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
+    sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
 
     class Meta:
         db_table = 'ui_page_steps_detailed'

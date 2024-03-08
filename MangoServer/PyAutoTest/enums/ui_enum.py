@@ -64,6 +64,7 @@ class ElementAssEnum(BaseEnum):
     """元素断言"""
     OPE = 0
     ASS = 1
+    SQL = 2
 
 
 class UiPublicTypeEnum(BaseEnum):

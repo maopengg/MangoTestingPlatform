@@ -59,6 +59,8 @@ class ElementModel(BaseModel):
     is_iframe: int | None
     ass_type: str | None
     ass_value: dict | None
+    key_list: list | None = None
+    sql: str | None = None
 
 
 class StepsDataModel(BaseModel):

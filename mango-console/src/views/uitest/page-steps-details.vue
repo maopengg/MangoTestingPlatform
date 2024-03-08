@@ -74,9 +74,13 @@
             <template v-else-if="item.dataIndex === 'ass_value'" #cell="{ record }">
               {{ record.ass_value == null ? '-' : record.ass_value }}
             </template>
+            <template v-else-if="item.dataIndex === 'key_list'" #cell="{ record }">
+              {{ record.key_list }}
+            </template>
             <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
               <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
-              <a-tag color="purple" size="small" v-else-if="record.type === 0">操作</a-tag>
+              <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
+              <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -110,6 +114,7 @@
                 value-key="key"
                 allow-clear
                 allow-search
+                :disabled="!pageStepsData.isDisabledSql"
               />
             </template>
             <!--              <template v-else-if="item.type === 'select' && item.key === 'ele_name_b'">-->
@@ -184,6 +189,27 @@
                 :options="pageStepsData.plainOptions"
               />
             </template>
+            <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
+              <a-textarea
+                :auto-size="{ minRows: 4, maxRows: 7 }"
+                :placeholder="item.placeholder"
+                :default-value="item.value"
+                v-model="item.value"
+                allow-clear
+                :disabled="pageStepsData.isDisabledSql"
+              />
+            </template>
+
+            <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
+              <a-textarea
+                :auto-size="{ minRows: 4, maxRows: 7 }"
+                :placeholder="item.placeholder"
+                :default-value="item.value"
+                v-model="item.value"
+                allow-clear
+                :disabled="pageStepsData.isDisabledSql"
+              />
+            </template>
           </a-form-item>
         </a-form>
       </template>
@@ -227,10 +253,12 @@
     uiPageName: [],
     isDisabledOpe: false,
     isDisabledAss: true,
+    isDisabledSql: true,
     value: 0,
     plainOptions: [
       { label: '操作', value: 0 },
       { label: '断言', value: 1 },
+      { label: 'sql', value: 2 },
     ],
   })
   const columns = reactive([
@@ -268,6 +296,18 @@
     {
       title: '断言操作值',
       dataIndex: 'ass_value',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: 'key_list',
+      dataIndex: 'key_list',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: 'sql',
+      dataIndex: 'sql',
       ellipsis: true,
       tooltip: true,
     },
@@ -360,18 +400,48 @@
           try {
             this.value = JSON.parse(this.value)
           } catch (e) {
-            Message.error('断言值请输入json数据类型')
+            Message.error(this.placeholder || '')
             return false
           }
         }
         return true
       },
     },
+    {
+      label: 'key_list',
+      key: 'key_list',
+      value: '',
+      type: 'textarea',
+      required: false,
+      placeholder: '请输入sql查询结果的key_list',
+      validator: function () {
+        if (this.value !== '') {
+          try {
+            this.value = JSON.parse(this.value)
+          } catch (e) {
+            Message.error('key_list值请输入json数据类型')
+            return false
+          }
+        }
+        return true
+      },
+    },
+    {
+      label: 'sql语句',
+      key: 'sql',
+      value: '',
+      type: 'textarea',
+      required: false,
+      placeholder: '请输入sql',
+      validator: function () {
+        return true
+      },
+    },
   ])
-
   function changeStatus(event: number) {
-    pageStepsData.isDisabledOpe = event == 1
-    pageStepsData.isDisabledAss = event == 0
+    pageStepsData.isDisabledOpe = !(event == 0)
+    pageStepsData.isDisabledAss = !(event == 1)
+    pageStepsData.isDisabledSql = !(event == 2)
     formItems.forEach((item) => {
       item.value = null
     })
@@ -391,6 +461,7 @@
   function doAppend() {
     pageStepsData.isDisabledOpe = false
     pageStepsData.isDisabledAss = true
+    pageStepsData.isDisabledSql = true
     pageStepsData.actionTitle = '添加详细步骤'
     pageStepsData.isAdd = true
     modalDialogRef.value?.toggle()
@@ -436,9 +507,15 @@
     if (item.type === 0) {
       pageStepsData.isDisabledOpe = false
       pageStepsData.isDisabledAss = true
+      pageStepsData.isDisabledSql = true
     } else if (item.type === 1) {
       pageStepsData.isDisabledOpe = true
       pageStepsData.isDisabledAss = false
+      pageStepsData.isDisabledSql = true
+    } else if (item.type === 2) {
+      pageStepsData.isDisabledOpe = true
+      pageStepsData.isDisabledAss = true
+      pageStepsData.isDisabledSql = false
     }
     pageStepsData.actionTitle = '编辑详细步骤'
     pageStepsData.isAdd = false
@@ -448,7 +525,7 @@
       formItems.forEach((it: any) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
-          if (it.key === 'ope_value' || it.key === 'ass_value') {
+          if (it.key === 'ope_value' || it.key === 'ass_value' || it.key === 'key_list') {
             it.value = JSON.stringify(propName)
           } else {
             it.value = propName.id
@@ -520,6 +597,7 @@
     pageStepsData.plainOptions = [
       { label: '操作', value: 0 },
       { label: '断言', value: 1 },
+      { label: 'sql', value: 2 },
     ]
   }
 
