@@ -33,7 +33,6 @@ class RandomStringData:
     @classmethod
     def goods_name_int(cls):
         """带随机数的商品名称"""
-
         return cls.goods[random.randint(0, 104)] + str(random.randint(0, 1000))
 
     @classmethod
@@ -75,11 +74,12 @@ class RandomStringData:
     def get_random_string(cls, **kwargs):
         """随机字母数字,可传入数字获取指定位数字符串，默认为10"""
         try:
-            length = int(kwargs.get('data'))
+            data = kwargs.get('data')
+            if data is None:
+                data = 10
+            length = int(data)
         except ValueError:
             raise ValueTypeError(*ERROR_MSG_0015)
-        if length is None:
-            length = 10
         # 定义字符集合，包含大小写字母和数字
         characters = string.ascii_letters + string.digits
         # 使用random模块的choice函数从字符集合中随机选择字符，生成指定长度的随机字符串
