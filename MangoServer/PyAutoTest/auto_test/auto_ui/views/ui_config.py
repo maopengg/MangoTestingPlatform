@@ -99,7 +99,7 @@ class UiConfigViews(ViewSet):
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
                                         is_headless=config_obj.is_headless,
-                                        project_id=user_obj.selected_project,
+                                        project=user_obj.selected_project,
                                         is_header_intercept=True,
                                         host=TestObject.objects.get(id=user_obj.selected_environment).value)
         else:

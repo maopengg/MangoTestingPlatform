@@ -60,7 +60,7 @@ class ApiInfoModel(BaseModel):
     """ApiInfo模型"""
     project: int
     type: int = 0
-    module_name: int | None
+    module_name: int | None = None
     name: str
     client: int = 0
     url: str

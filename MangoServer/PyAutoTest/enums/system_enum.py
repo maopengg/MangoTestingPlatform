@@ -23,10 +23,12 @@ class EnvironmentEnum(BaseEnum):
     PRE = 1
     PRO = 2
     DEV = 3
+    UAT = 4
+    SIM = 5
 
     @classmethod
     def obj(cls):
-        return {0: "测试环境", 1: "预发环境", 2: "生产环境", 3: "开发环境"}
+        return {0: "测试环境", 1: "预发环境", 2: "生产环境", 3: "开发环境", 4: "验收环境", 5: "仿真环境"}
 
 
 class AutoTestTypeEnum(BaseEnum):
