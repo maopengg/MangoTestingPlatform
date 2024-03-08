@@ -64,7 +64,7 @@ class UiTestRun:
         """
         if self.tasks_id:
             tasks_run_case = TasksRunCaseList.objects.get(task=self.tasks_id, case=case_id)
-            self.test_object_id = tasks_run_case.test_object.id if tasks_run_case.test_object else\
+            self.test_object_id = tasks_run_case.test_object.id if tasks_run_case.test_object else \
                 self.spare_test_object_id
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
@@ -185,6 +185,8 @@ class UiTestRun:
                 ass_type=i.ass_type,
                 ass_value=i.ass_value,
                 is_iframe=i.ele_name_a.is_iframe if i.ele_name_a else None,
+                key_list=i.key_list,
+                sql=i.sql,
             ))
         return page_steps_model
 
