@@ -46,7 +46,8 @@ class UiElementCRUD(ModelCRUD):
 
     def get(self, request):
         books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
-        return ResponseData.success(RESPONSE_MSG_0077, self.get_serializer_class()(instance=books, many=True).data,
+        return ResponseData.success(RESPONSE_MSG_0077,
+                                    self.get_serializer_class()(instance=books, many=True).data,
                                     len(books))
 
 
