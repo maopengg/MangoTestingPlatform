@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-12-26 14:09
 # @Author : 毛鹏
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError

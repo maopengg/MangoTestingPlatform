@@ -33,7 +33,7 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
         if sender == "websocket":
             data = kwargs.get('data')
             if isinstance(data, QueueModel):
-                log.info(f"开始处理接收的消息：{data.json(ensure_ascii=False)}")
+                log.info(f"开始处理接收的消息：{data.model_dump_json()}")
                 future = self.executor.submit(getattr(self, data.func_name), data.func_args)
                 future.add_done_callback(self.handle_task_result)  # 添加任务完成后的回调函数
             else:

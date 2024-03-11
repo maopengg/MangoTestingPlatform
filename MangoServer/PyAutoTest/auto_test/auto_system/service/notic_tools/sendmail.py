@@ -55,9 +55,9 @@ class SendEmail:
         """
         try:
             self.send_mail(self.notice_config.send_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}通知】', content)
-            logger.info(f"邮件发送成功:{self.notice_config.json()}")
+            logger.info(f"邮件发送成功:{self.notice_config.model_dump_json()}")
         except SMTPException as error:
-            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.json()}")
+            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
             raise SendMessageError(*ERROR_MSG_0016)
 
     def send_mail(self, user_list: list, sub: str, content: str, ) -> None:
@@ -80,7 +80,7 @@ class SendEmail:
             server.sendmail(user, user_list, message.as_string())  #
             server.close()
         except gaierror as error:
-            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.json()}")
+            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
             raise SendMessageError(*ERROR_MSG_0017)
 
     def error_mail(self, error_message: str) -> None:

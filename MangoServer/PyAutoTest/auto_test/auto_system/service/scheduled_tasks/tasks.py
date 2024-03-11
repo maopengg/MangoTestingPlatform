@@ -113,4 +113,3 @@ class Tasks:
                 raise error
 
 
-Tasks.create_jobs()

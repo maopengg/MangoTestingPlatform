@@ -20,6 +20,6 @@ class QueueModel(BaseModel):
 class SocketDataModel(BaseModel):
     code: int
     msg: str
-    user: str = None
+    user: str | None = None
     is_notice: ClientTypeEnum | None | int = None
     data: QueueModel | None = None

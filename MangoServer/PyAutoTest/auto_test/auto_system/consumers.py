@@ -104,18 +104,18 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         if send_data.is_notice:
-            if send_data.is_notice.value == ClientTypeEnum.WEB.value:
+            if send_data.is_notice == ClientTypeEnum.WEB.value:
                 obj = SocketUser.get_user_web_obj(send_data.user)
                 if not obj:
                     pass
                 else:
-                    obj.send(send_data.json())
-            elif send_data.is_notice.value == ClientTypeEnum.ACTUATOR.value:
+                    obj.send(send_data.model_dump_json())
+            elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
-                obj.send(send_data.json())
+                obj.send(send_data.model_dump_json())
             logger.info(
                 f'发送的用户：{send_data.user}，发送的数据：'
-                f'{send_data.json(ensure_ascii=False) if send_data.data else None}')
+                f'{send_data.model_dump_json() if send_data.data else None}')
 
     def inside_send(self,
                     msg: str,
@@ -146,7 +146,7 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         try:
-            data_json = data.json()
+            data_json = data.model_dump_json()
         except TypeError:
             logger.error(f'序列化数据错误，请检查发送数据！')
         else:

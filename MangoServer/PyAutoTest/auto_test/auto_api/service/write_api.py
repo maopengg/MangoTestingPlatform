@@ -13,19 +13,19 @@ log = logging.getLogger('api')
 
 
 class WriteAPI:
-    api_info_list: list = [str(method) + url for url, method in ApiInfo.objects.all().values_list('url', 'method')]
+    def __init__(self):
+        self.api_info_list: list = [str(method) + url for url, method in ApiInfo.objects.all().values_list('url', 'method')]
 
-    @classmethod
-    def write(cls, data: ApiInfoModel):
+    def write(self, data: ApiInfoModel):
         data = data.dict()
         data['json'] = data['json_data']
         del data['json_data']
         check = str(data['method']) + data['url']
-        if check not in cls.api_info_list:
+        if check not in self.api_info_list:
             serializers = ApiInfoSerializers(data=data)
             if serializers.is_valid():
                 serializers.save()
-                cls.api_info_list.append(check)
+                self.api_info_list.append(check)
             else:
                 log.error(str(serializers.errors))
         else:

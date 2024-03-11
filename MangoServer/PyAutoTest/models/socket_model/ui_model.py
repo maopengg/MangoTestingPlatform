@@ -22,9 +22,9 @@ class UiPublicModel(BaseModel):
 class WEBConfigModel(BaseModel):
     """ web启动配置 """
     browser_type: int
-    browser_port: str | None
-    browser_path: str | None
-    is_headless: int | None
+    browser_port: str | None = None
+    browser_path: str | None = None
+    is_headless: int | None = None
     is_header_intercept: bool = False
     host: str | None = None
     project: int | None = None
@@ -45,20 +45,20 @@ class RunConfigModel(BaseModel):
 class ElementModel(BaseModel):
     id: int
     type: int
-    ele_name_a: str | None
-    ele_name_b: str | None
-    ele_loc_a: str | None
-    locator: str | None
+    ele_name_a: str | None = None
+    ele_name_b: str | None = None
+    ele_loc_a: str | None = None
+    locator: str | None = None
 
-    ele_loc_b: str | None
-    ele_exp: int | None
-    ele_sleep: int | None
-    ele_sub: int | None
-    ope_type: str | None
-    ope_value: dict | None
-    is_iframe: int | None
-    ass_type: str | None
-    ass_value: dict | None
+    ele_loc_b: str | None = None
+    ele_exp: int | None = None
+    ele_sleep: int | None = None
+    ele_sub: int | None = None
+    ope_type: str | None = None
+    ope_value: dict | None = None
+    is_iframe: int | None = None
+    ass_type: str | None = None
+    ass_value: dict | None = None
     key_list: list | None = None
     sql: str | None = None
 
@@ -127,15 +127,15 @@ class ElementResultModel(BaseModel):
 
 
 class PageStepsResultModel(BaseModel):
-    test_suite_id: int | None
-    case_id: int | None
-    case_step_details_id: int | None
+    test_suite_id: int | None = None
+    case_id: int | None = None
+    case_step_details_id: int | None = None
     page_step_id: int | None = None
 
     page_step_name: str
 
     status: int
-    error_message: str | None
+    error_message: str | None = None
     element_result_list: list[ElementResultModel]
 
 
@@ -149,7 +149,7 @@ class CaseResultModel(BaseModel):
     case_people: str
     test_obj: str
     status: int
-    error_message: str | None
+    error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]
 
 
@@ -159,8 +159,8 @@ class TestSuiteModel(BaseModel):
     project: int
     test_object: int
     run_status: int
-    is_notice: int | None
-    status: int | None
-    error_message: str | None
+    is_notice: int | None = None
+    status: int | None = None
+    error_message: str | None = None
     case_list: list[CaseModel] | None = None
     concurrent: int | None = None
