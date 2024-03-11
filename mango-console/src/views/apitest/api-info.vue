@@ -358,15 +358,6 @@
       reset: function () {},
     },
     {
-      key: 'project',
-      label: '项目',
-      value: '',
-      type: 'select',
-      placeholder: '请选择项目',
-      optionItems: project.data,
-      reset: function () {},
-    },
-    {
       key: 'module_name',
       label: '模块',
       value: '',

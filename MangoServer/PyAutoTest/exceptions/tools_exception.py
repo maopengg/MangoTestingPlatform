@@ -12,6 +12,8 @@ class MysqlAbnormalConnection(MangoServerError):
 
 class MysqlQueryIsNullError(MangoServerError):
     pass
+
+
 class MysqlConnectionError(MangoServerError):
     pass
 

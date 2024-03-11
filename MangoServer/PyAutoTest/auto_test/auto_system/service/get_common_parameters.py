@@ -35,7 +35,7 @@ class GetCommonParameters:
                                        method=case.method,
                                        header=case.header,
                                        body_type=case.body_type,
-                                       body=case.body).json()
+                                       body=case.body).model_dump_json()
             data.append(ApiPublicModel.from_orm(i))
         return data
 

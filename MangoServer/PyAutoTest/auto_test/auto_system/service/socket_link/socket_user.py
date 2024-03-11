@@ -14,8 +14,8 @@ from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0028
 
 class SocketUserModel(BaseModel):
     user_key: str
-    web_obj: Any | None
-    client_obj: Any | None
+    web_obj: Any | None = None
+    client_obj: Any | None = None
 
 
 class SocketUser:
