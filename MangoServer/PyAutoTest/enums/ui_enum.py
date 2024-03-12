@@ -60,7 +60,7 @@ class DriveTypeEnum(BaseEnum):
         return {0: "WEB", 1: "安卓", 2: "IOS", 3: "PC桌面"}
 
 
-class ElementAssEnum(BaseEnum):
+class ElementOperationEnum(BaseEnum):
     """元素断言"""
     OPE = 0
     ASS = 1

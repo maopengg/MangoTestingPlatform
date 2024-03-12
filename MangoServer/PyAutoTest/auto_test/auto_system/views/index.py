@@ -51,7 +51,7 @@ class IndexViews(ViewSet):
                 ) weeks
                 LEFT JOIN (
                     SELECT 
-                    id,
+                        MAX(api_case_result.id) as id,
                         YEARWEEK(create_time) AS yearweek, 
                         COUNT(YEARWEEK(create_time)) AS total_count
                     FROM api_case_result
@@ -86,7 +86,7 @@ class IndexViews(ViewSet):
                 ) weeks
                 LEFT JOIN (
                     SELECT 
-                    id,
+                        MAX(ui_case_result.id) as id,
                         YEARWEEK(create_time) AS yearweek, 
                         COUNT(YEARWEEK(create_time)) AS total_count
                     FROM ui_case_result
