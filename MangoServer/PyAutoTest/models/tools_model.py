@@ -16,7 +16,7 @@ class MysqlConingModel(BaseModel):
 
 class TestReportModel(BaseModel):
     test_suite_id: int
-    project_id: str
+    project_id: int
     project_name: str
     test_environment: str
     case_sum: int

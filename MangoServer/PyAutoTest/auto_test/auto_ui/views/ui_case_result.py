@@ -117,7 +117,7 @@ class UiCaseResultViews(ViewSet):
             ) weeks
             LEFT JOIN (
                 SELECT 
-                    id,
+                    MAX(ui_case_result.id) as id,
                     YEARWEEK(create_time) AS yearweek, 
                     COUNT(YEARWEEK(create_time)) AS total_count,
                     SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS status_0_total,
