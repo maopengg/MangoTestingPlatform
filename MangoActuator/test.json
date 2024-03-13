@@ -1,0 +1,165 @@
+{
+  "func_name": "u_page_step",
+  "func_args": {
+    "id": 231,
+    "name": "C端用户登录",
+    "case_step_details_id": null,
+    "project": 27,
+    "test_object_value": "https://sara-test.growknows.cn/",
+    "url": "/#/login?redirect=/account",
+    "type": 0,
+    "case_data": [],
+    "element_list": [
+      {
+        "id": 1725,
+        "type": 0,
+        "ele_name_a": "账号登录",
+        "ele_name_b": null,
+        "ele_loc_a": "//div[@aria-selected=\"false\"]",
+        "locator": null,
+        "ele_loc_b": null,
+        "ele_exp": 0,
+        "ele_sleep": null,
+        "ele_sub": null,
+        "ope_type": "w_click",
+        "ope_value": {
+          "locating": ""
+        },
+        "is_iframe": 0,
+        "ass_type": null,
+        "ass_value": null,
+        "key_list": null,
+        "sql": null
+      },
+      {
+        "id": 1649,
+        "type": 0,
+        "ele_name_a": "C端-账号",
+        "ele_name_b": null,
+        "ele_loc_a": "请输入手机号",
+        "locator": null,
+        "ele_loc_b": null,
+        "ele_exp": 4,
+        "ele_sleep": null,
+        "ele_sub": null,
+        "ope_type": "w_input",
+        "ope_value": {
+          "locating": "",
+          "input_value": "17798339533"
+        },
+        "is_iframe": 0,
+        "ass_type": null,
+        "ass_value": null,
+        "key_list": null,
+        "sql": null
+      },
+      {
+        "id": 1650,
+        "type": 0,
+        "ele_name_a": "C端-密码",
+        "ele_name_b": null,
+        "ele_loc_a": "请输入密码",
+        "locator": null,
+        "ele_loc_b": null,
+        "ele_exp": 4,
+        "ele_sleep": null,
+        "ele_sub": null,
+        "ope_type": "w_input",
+        "ope_value": {
+          "locating": "",
+          "input_value": "123456789"
+        },
+        "is_iframe": 0,
+        "ass_type": null,
+        "ass_value": null,
+        "key_list": null,
+        "sql": null
+      },
+      {
+        "id": 1651,
+        "type": 0,
+        "ele_name_a": "C端-登录",
+        "ele_name_b": null,
+        "ele_loc_a": "登 录",
+        "locator": null,
+        "ele_loc_b": null,
+        "ele_exp": 3,
+        "ele_sleep": null,
+        "ele_sub": null,
+        "ope_type": "w_click",
+        "ope_value": {
+          "locating": ""
+        },
+        "is_iframe": 0,
+        "ass_type": null,
+        "ass_value": null,
+        "key_list": null,
+        "sql": null
+      },
+      {
+        "id": 1731,
+        "type": 2,
+        "ele_name_a": null,
+        "ele_name_b": null,
+        "ele_loc_a": null,
+        "locator": null,
+        "ele_loc_b": null,
+        "ele_exp": null,
+        "ele_sleep": null,
+        "ele_sub": null,
+        "ope_type": null,
+        "ope_value": null,
+        "is_iframe": null,
+        "ass_type": null,
+        "ass_value": null,
+        "key_list": [
+          "id",
+          "name"
+        ],
+        "sql": "SELECT id,`name` FROM `zr_vip_info` where phone = '17798339533';"
+      }
+    ],
+    "equipment_config": {
+      "browser_type": 0,
+      "browser_port": "9222",
+      "browser_path": null,
+      "is_headless": 0,
+      "is_header_intercept": false,
+      "host": "https://sara-test.growknows.cn/",
+      "project": null
+    },
+    "run_config": {
+      "db_c_status": true,
+      "db_rud_status": true,
+      "mysql_config": {
+        "host": "39.103.149.169",
+        "port": 403,
+        "user": "root",
+        "password": "xy-cloud",
+        "db": "xy-cloud"
+      },
+      "public_data_list": [
+        {
+          "create_time": "2024-02-23 16:24:10",
+          "update_time": "2024-03-01 12:40:35",
+          "project": 27,
+          "type": 0,
+          "name": "用户ID",
+          "key": "用户ID",
+          "value": "88341082409861121",
+          "status": 1
+        },
+        {
+          "create_time": "2024-02-23 16:23:16",
+          "update_time": "2024-02-23 16:49:32",
+          "project": 27,
+          "type": 1,
+          "name": "获取用户信息",
+          "key": "[\"id\",\"phone\"]",
+          "value": "SELECT id,phone FROM `zr_vip_info` WHERE id='${用户ID}';",
+          "status": 1
+        }
+      ]
+    }
+  }
+}

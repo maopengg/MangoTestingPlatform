@@ -1,0 +1,28 @@
+# Build and Release Folders
+bin-debug/
+bin-release/
+[Oo]bj/
+[Bb]in/
+
+# Other files and folders
+.settings/
+
+# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
+# should NOT be excluded as they contain compiler settings and other important
+# information for Eclipse / Flash Builder.
+.idea/
+*.pyc
+*.log
+.logs/*
+logs/*
+cache_flie/*
+dist/*
+MangoActuator.spec
+build/*
+
+build/
+dist/
+PyQt_Fluent_Widgets.egg-info/
+PyQt6_Fluent_Widgets.egg-info/
+执行器.spec
+cache/*
