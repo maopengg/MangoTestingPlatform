@@ -65,7 +65,7 @@ class ApiInfoViews(ViewSet):
             api_info_res: ResponseDataModel = ApiInfoRun(project_id, test_obj_id).api_info_run(api_info_id)
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res.dict())
         except MangoServerError as error:
-            return ResponseData.fail((error.code,error.msg), )
+            return ResponseData.fail((error.code, error.msg), )
 
     @action(methods=['get'], detail=False)
     def get_api_name(self, request: Request):
