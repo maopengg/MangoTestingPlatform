@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
@@ -24,9 +25,10 @@ log = logging.getLogger('system')
 
 class SystemViews(ViewSet):
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['get'], detail=False)
     def test_func(self, request: Request):
-        return ResponseData.fail(request.data)
+        data = NoticeMain.test_report(393294464959)
+        return ResponseData.success(RESPONSE_MSG_0061, data.model_dump_json())
 
     @action(methods=['get'], detail=False)
     def common_variable(self, request: Request):
