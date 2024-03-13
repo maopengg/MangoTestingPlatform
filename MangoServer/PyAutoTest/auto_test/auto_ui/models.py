@@ -1,7 +1,15 @@
+from django.db import connections
 from django.db import models
 
 from PyAutoTest.auto_test.auto_user.models import Project, ProjectModule
 from PyAutoTest.auto_test.auto_user.models import User
+
+
+def close_old_connections():
+    for conn in connections.all():
+        print(12345)
+        conn.close_if_unusable_or_obsolete()
+
 
 """
      1.python manage.py makemigrations
