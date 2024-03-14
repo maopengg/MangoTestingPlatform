@@ -27,7 +27,7 @@ class BaseData:
                  page_step_id: int = None,
                  case_id: int | None = None,
 
-                 is_step: int = False,
+                 is_step: bool = False,
                  page: Page = None,
                  context: BrowserContext = None,
                  ) -> None:
@@ -40,7 +40,7 @@ class BaseData:
         self.data_processor = DataProcessor(project_id)
         self.notice_signal = signal('notice_signal')
 
-        self.is_step = is_step  # 判断是不是步骤，默认不是步骤是用例
+        self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例
         self.test_object_value = ''  # 浏览器url
         self.is_url = False  # 判断是否需要重新加载url
 

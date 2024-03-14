@@ -94,13 +94,15 @@ class UiCaseStepsDetailedViews(ViewSet):
                 if 'locating' in value_dict:
                     value_dict.pop('locating')
             elif steps_detailed.ass_type:
-                name = steps_detailed.ele_name_a.name if steps_detailed.ele_name_a else steps_detailed.ass_type
+                name = None
                 value_dict: dict = steps_detailed.ass_value
                 if 'value' in value_dict:
                     value_dict.pop('value')
             elif steps_detailed.sql:
+                name = None
                 value_dict = {'sql': steps_detailed.sql, 'key_list': steps_detailed.key_list}
             elif steps_detailed.key and steps_detailed.value:
+                name = None
                 value_dict = {'key': steps_detailed.key, 'value': steps_detailed.value}
             else:
                 return ResponseData.fail(RESPONSE_MSG_0048)
