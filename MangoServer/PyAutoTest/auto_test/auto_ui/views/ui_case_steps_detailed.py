@@ -98,6 +98,10 @@ class UiCaseStepsDetailedViews(ViewSet):
                 value_dict: dict = steps_detailed.ass_value
                 if 'value' in value_dict:
                     value_dict.pop('value')
+            elif steps_detailed.sql:
+                value_dict = {'sql': steps_detailed.sql, 'key_list': steps_detailed.key_list}
+            elif steps_detailed.key and steps_detailed.value:
+                value_dict = {'key': steps_detailed.key, 'value': steps_detailed.value}
             else:
                 return ResponseData.fail(RESPONSE_MSG_0048)
             case_data_list.append({

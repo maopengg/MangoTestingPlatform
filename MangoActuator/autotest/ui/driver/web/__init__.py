@@ -10,11 +10,11 @@ from playwright._impl._api_types import Error
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api import Locator
 
-from autotest.ui.driver.web.device_Input import PlaywrightDeviceInput
-from autotest.ui.driver.web.element_assertion import PlaywrightAssertion
-from autotest.ui.driver.web.element_operation import PlaywrightElementOperation
-from autotest.ui.driver.web.operation_browser import PlaywrightOperationBrowser
-from autotest.ui.driver.web.operation_page import PlaywrightPageOperation
+from autotest.ui.driver.web.mouse_keyboard import PlaywrightDeviceInput
+from autotest.ui.driver.web.assertion import PlaywrightAssertion
+from autotest.ui.driver.web.operation import PlaywrightElementOperation
+from autotest.ui.driver.web.browser import PlaywrightOperationBrowser
+from autotest.ui.driver.web.page import PlaywrightPageOperation
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
@@ -42,6 +42,9 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             self.ope_name = element_model.ope_type
         else:
             self.ope_name = element_model.ass_type
+        for key, value in self.element_model:
+            value = self.data_processor.replace(value)
+            setattr(self.element_model, key, value)
         self.element_test_result = ElementResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
@@ -74,8 +77,7 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                                     data=f'断言->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
         elif self.element_model.type == ElementOperationEnum.SQL.value:
             if self.mysql_connect:
-                sql = self.data_processor.replace(self.element_model.sql)
-                result_list: list[dict] = self.mysql_connect.condition_execute(sql)
+                result_list: list[dict] = self.mysql_connect.condition_execute(self.element_model.sql)
                 if isinstance(result_list, list):
                     for result in result_list:
                         try:
@@ -85,11 +87,9 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                             raise SyntaxErrorError(*ERROR_MSG_0038)
 
                     if not result_list:
-                        raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))
+                        raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(self.element_model.sql,))
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
-            value = self.data_processor.replace(self.element_model.value)
-            self.data_processor.set_cache(self.element_model.key, value)
-            print(self.data_processor.get_cache(self.element_model.key))
+            self.data_processor.set_cache(self.element_model.key, self.element_model.value)
         else:
             raise ElementTypeError(*ERROR_MSG_0015)
 
@@ -135,7 +135,8 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                 await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
             elif is_method_public:
                 if self.element_model.ass_value.get('value'):
-                    value = self.data_processor.replace(self.element_model.ass_value.get('value'))
+
+                    value = self.element_model.ass_value.get('value')
                 else:
                     value = await self.w_get_text(self.element_model.ass_value['value'])
                 getattr(PublicAssertion, self.element_model.ass_type)(
@@ -178,17 +179,20 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         @return:
         """
         if self.element_model.locator:
-            locator_str = self.data_processor.replace(self.element_model.locator)
+            locator_str = self.element_model.locator
             self.element_test_result.loc = locator_str
-
             try:
                 locator: Locator = eval(f"await self.{locator_str}")
             except SyntaxError:
                 locator: Locator = eval(f"self.{locator_str}")
+            count = await locator.count()
+            self.element_test_result.ele_quantity = count
+            if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
+                raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.ele_name_a, locator_str))
 
             return locator.nth(self.element_model.ele_sub) if self.element_model.ele_sub else locator
         else:
-            locator_str = self.data_processor.replace(self.element_model.ele_loc_a)
+            locator_str = self.element_model.ele_loc_a
             self.element_test_result.loc = locator_str
             # 是否在iframe中
             if self.element_model.is_iframe == StatusEnum.SUCCESS.value:
@@ -200,55 +204,38 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                         for nth in range(0, count):
                             ele_list.append(locator.nth(nth))
                 self.element_test_result.ele_quantity = len(ele_list)
-                if not ele_list:
-                    if self.element_model.type == ElementOperationEnum.OPE.value:
-                        raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.ele_name_a, locator_str))
-                    else:
-                        return ele_list
-                else:
-                    # 直接返回所有列表元素对象
-                    if self.element_model.ele_sub == 10000:
-                        return ele_list
+                if not ele_list and self.element_model.type == ElementOperationEnum.OPE.value:
+                    raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.ele_name_a, locator_str))
                 return ele_list[self.element_model.ele_sub - 1] if self.element_model.ele_sub else ele_list[0]
             else:
                 locator: Locator = await self.__find_ele(self.page, locator_str)
                 count = await locator.count()
                 self.element_test_result.ele_quantity = count
-                if count < 1 or locator is None:
+                if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
                     if self.element_model.type == ElementOperationEnum.OPE.value:
                         raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.ele_name_a, locator_str))
-                else:
-                    if self.element_model.ele_sub == 10000:
-                        return [locator.nth(i) for i in range(0, count)]
-
-                if self.element_model.ele_sub is None:
-                    return locator
-                else:
-                    return locator.nth(self.element_model.ele_sub - 1)
+                return locator.nth(self.element_model.ele_sub - 1) if self.element_model.ele_sub else locator
 
     async def __find_ele(self, page, ele_loc) -> Locator:
         match self.element_model.ele_exp:
             case ElementExpEnum.XPATH.value:
-                ele = page.locator(f'xpath={ele_loc}')
+                return page.locator(f'xpath={ele_loc}')
             case ElementExpEnum.TEST_ID.value:
-                ele = page.get_by_test_id(ele_loc)
+                return page.get_by_test_id(ele_loc)
             case ElementExpEnum.TEXT.value:
-                ele = page.get_by_text(ele_loc, exact=True)
+                return page.get_by_text(ele_loc, exact=True)
             case ElementExpEnum.PLACEHOLDER.value:
-                ele = page.get_by_placeholder(ele_loc)
+                return page.get_by_placeholder(ele_loc)
             case ElementExpEnum.LABEL.value:
-                ele = page.get_by_label(ele_loc)
+                return page.get_by_label(ele_loc)
             case ElementExpEnum.TITLE.value:
-                ele = page.get_by_title(ele_loc)
+                return page.get_by_title(ele_loc)
             case ElementExpEnum.ROLE.value:
-                ele = page.get_by_role(ele_loc)
+                return page.get_by_role(ele_loc)
             case ElementExpEnum.AIT_TEXT.value:
-                ele = page.get_by_alt_text(ele_loc)
+                return page.get_by_alt_text(ele_loc)
             case _:
                 raise LocatorError(*ERROR_MSG_0020)
-        if self.element_model.locator:
-            ele = ele.locator(self.element_model.locator)
-        return ele
 
     async def __web_input_value(self, key: str, value: dict | str) -> str:
         """
@@ -260,4 +247,4 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                 if ele_name == key:
                     value = case_data
                     return self.data_processor.replace(value)
-        return self.data_processor.replace(value)
+        return value

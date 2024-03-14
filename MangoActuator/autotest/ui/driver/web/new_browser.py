@@ -16,6 +16,7 @@ from playwright.async_api._generated import Route
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
 from enums.tools_enum import CacheKeyEnum
+from enums.ui_enum import BrowserTypeEnum
 from exceptions.ui_exception import BrowserPathError
 from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
@@ -33,11 +34,12 @@ class NewBrowser:
 
     async def new_browser(self) -> Browser:
         playwright = await async_playwright().start()
-        if self.web_config.browser_type == 0 or self.web_config.browser_type == 1:
+        if self.web_config.browser_type == BrowserTypeEnum.CHROMIUM.value or \
+                self.web_config.browser_type == BrowserTypeEnum.EDGE.value:
             browser = playwright.chromium
-        elif self.web_config.browser_type == 1:
+        elif self.web_config.browser_type == BrowserTypeEnum.FIREFOX.value:
             browser = playwright.firefox
-        elif self.web_config.browser_type == 2:
+        elif self.web_config.browser_type == BrowserTypeEnum.WEBKIT.value:
             browser = playwright.webkit
         else:
             raise BrowserPathError(*ERROR_MSG_0008)
