@@ -180,9 +180,10 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         """
         if self.element_model.locator:
             try:
-                locator: Locator = eval(f"await self.{self.element_model.locator}")
+
+                locator: Locator = eval(f"await self.{self.data_processor.replace(self.element_model.locator)}")
             except SyntaxError:
-                locator: Locator = eval(f"self.{self.element_model.locator}")
+                locator: Locator = eval(f"self.{self.data_processor.replace(self.element_model.locator)}")
 
             return locator.nth(self.element_model.ele_sub) if self.element_model.ele_sub else locator
 
