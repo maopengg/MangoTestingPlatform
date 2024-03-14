@@ -41,6 +41,7 @@
             <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
               <a-tag color="orangered" size="small" v-if="record.exp === 0">XPATH</a-tag>
               <a-tag color="gold" size="small" v-else-if="record.exp === 1">TestID</a-tag>
+              <a-tag color="arcoblue" size="small" v-else-if="record.exp === 2">定位器</a-tag>
               <a-tag color="lime" size="small" v-else-if="record.exp === 3">文本</a-tag>
               <a-tag color="green" size="small" v-else-if="record.exp === 4">占位符</a-tag>
               <a-tag color="cyan" size="small" v-else-if="record.exp === 5">标签</a-tag>
@@ -304,13 +305,9 @@
       key: 'loc',
       value: '',
       type: 'input',
-      required: true,
+      required: false,
       placeholder: '请输入元素表达式',
       validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
         return true
       },
     },
@@ -427,7 +424,7 @@
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此元素？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
