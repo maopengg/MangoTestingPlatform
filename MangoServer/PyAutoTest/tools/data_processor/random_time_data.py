@@ -135,11 +135,25 @@ class RandomTimeData:
         return _time_after_week
 
     @classmethod
-    def time_day(cls) -> int:
-        """获取今日日期的数字"""
+    def time_day_reduce(cls, **kwargs) -> int:
+        """获取今日日期的数字，传参可以减N"""
+        types = kwargs.get('data')
         today = datetime.today()
-        return today.day
+        if types:
+            return today.day - int(types)
+        else:
+            return today.day
+
+    @classmethod
+    def time_day_plus(cls, **kwargs) -> int:
+        """获取今日日期的数字，传参可以加N"""
+        types = kwargs.get('data')
+        today = datetime.today()
+        if types:
+            return today.day + int(types)
+        else:
+            return today.day
 
 
 if __name__ == '__main__':
-    print(type(RandomTimeData.time_day()))
+    print(RandomTimeData.time_day(**{'data': 2}))
