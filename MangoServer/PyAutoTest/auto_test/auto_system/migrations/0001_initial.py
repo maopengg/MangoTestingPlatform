@@ -122,7 +122,7 @@ class Migration(migrations.Migration):
                 ('create_time', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
                 ('update_time', models.DateTimeField(auto_now=True, verbose_name='修改时间')),
                 ('type', models.SmallIntegerField(null=True, verbose_name='类型')),
-                ('settings', models.CharField(max_length=1028, null=True, verbose_name='通知配置')),
+                ('config', models.CharField(max_length=1028, null=True, verbose_name='通知配置')),
                 ('state', models.SmallIntegerField(null=True, verbose_name='是否选中发送')),
                 ('project',
                  models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.project')),

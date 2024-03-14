@@ -41,35 +41,10 @@ class Tasks:
     @retry(max_retries=5, delay=5)
     def timing(cls, timing_strategy_id):
         log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
-        # try:
-        # 执行数据库查询操作
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
                                                             status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
             cls.distribute(scheduled_tasks)
-        # except InterfaceError as error1:
-        #     error = error1
-        #     log.error(f'数据库连接异常: {error}')
-        #     log.info('尝试重新连接数据库...')
-        #
-        #     # 重连数据库
-        #     try_count = 0
-        #     max_retries = 5
-        #     while try_count < max_retries:
-        #         try:
-        #             # 重新连接数据库
-        #             scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
-        #                                                                 status=StatusEnum.SUCCESS.value)
-        #             for scheduled_tasks in scheduled_tasks_obj:
-        #                 cls.distribute(scheduled_tasks)
-        #             break
-        #         except InterfaceError as error1:
-        #             error = error1
-        #             log.error(f'重连数据库失败: {error}')
-        #             try_count += 1
-        #             time.sleep(5)  # 等待一段时间后重试
-        #     log.error('重连数据库达到最大尝试次数，任务执行失败')
-        #     NoticeMain.mail_send(str(error))
 
     @classmethod
     def trigger(cls, scheduled_tasks_id):

@@ -137,3 +137,12 @@ class EnumOptionViews(ViewSet):
         :return:
         """
         return ResponseData.success(RESPONSE_MSG_0106, UiPublicTypeEnum.get_option())
+
+    @action(methods=['get'], detail=False)
+    def enum_ui_element_operation(self, request):
+        """
+        获取元素操作类型
+        :param request:
+        :return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0106, ElementOperationEnum.get_option(k='value', v='label'))

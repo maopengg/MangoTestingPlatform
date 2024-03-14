@@ -32,7 +32,6 @@ urlpatterns = [
     path("element/name", UiElementViews.as_view({'get': 'get_ele_name'})),
     path("element/put/is/iframe", UiElementViews.as_view({'put': 'put_is_iframe'})),
     path("element/test", UiElementViews.as_view({'post': 'test_element'})),
-    path("element/is/locator", UiElementViews.as_view({'get': 'is_element_locator'})),
     #
     path("steps", UiPageStepsCRUD.as_view()),
     path("steps/put/type", UiPageStepsViews.as_view({'put': 'put_type'})),

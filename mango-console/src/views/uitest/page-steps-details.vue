@@ -85,8 +85,8 @@
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
               <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除</a-button
-              >
+                >删除
+              </a-button>
             </template>
           </a-table-column>
         </template>
@@ -110,24 +110,12 @@
                 :placeholder="item.placeholder"
                 :options="pageStepsData.uiPageName"
                 :field-names="fieldNames"
-                @change="elementIsLocator"
                 value-key="key"
                 allow-clear
                 allow-search
-                :disabled="!pageStepsData.isDisabledSql"
               />
             </template>
-            <!--              <template v-else-if="item.type === 'select' && item.key === 'ele_name_b'">-->
-            <!--                <a-select-->
-            <!--                  v-model="item.value"-->
-            <!--                  :placeholder="item.placeholder"-->
-            <!--                  :options="pageStepsData.uiPageName"-->
-            <!--                  :field-names="fieldNames"-->
-            <!--                  value-key="key"-->
-            <!--                  allow-clear-->
-            <!--                  allow-search-->
-            <!--                />-->
-            <!--              </template>-->
+
             <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
               <a-space direction="vertical">
                 <a-cascader
@@ -141,7 +129,6 @@
                   style="width: 380px"
                   allow-search
                   allow-clear
-                  :disabled="pageStepsData.isDisabledOpe"
                 />
               </a-space>
             </template>
@@ -158,7 +145,6 @@
                   style="width: 380px"
                   allow-search
                   allow-clear
-                  :disabled="pageStepsData.isDisabledAss"
                 />
               </a-space>
             </template>
@@ -169,7 +155,6 @@
                 :default-value="item.value"
                 v-model="item.value"
                 allow-clear
-                :disabled="pageStepsData.isDisabledOpe"
               />
             </template>
             <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
@@ -179,13 +164,12 @@
                 :default-value="item.value"
                 v-model="item.value"
                 allow-clear
-                :disabled="pageStepsData.isDisabledAss"
               />
             </template>
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
               <a-radio-group
                 @change="changeStatus"
-                v-model="item.value"
+                v-model="pageStepsData.type"
                 :options="pageStepsData.plainOptions"
               />
             </template>
@@ -196,7 +180,6 @@
                 :default-value="item.value"
                 v-model="item.value"
                 allow-clear
-                :disabled="pageStepsData.isDisabledSql"
               />
             </template>
 
@@ -207,7 +190,6 @@
                 :default-value="item.value"
                 v-model="item.value"
                 allow-clear
-                :disabled="pageStepsData.isDisabledSql"
               />
             </template>
           </a-form-item>
@@ -227,7 +209,7 @@
     uiPagePutStepSort,
     uiUiElementName,
     uiStepsRun,
-    uiElementIsLocator,
+    systemEnumUiElementOperation,
   } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { ModalDialogType } from '@/types/components'
@@ -236,6 +218,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { useTestObj } from '@/store/modules/get-test-obj'
+
   const pageData = usePageData()
   const testObj = useTestObj()
 
@@ -251,15 +234,8 @@
     ope: [],
     data: [],
     uiPageName: [],
-    isDisabledOpe: false,
-    isDisabledAss: true,
-    isDisabledSql: true,
-    value: 0,
-    plainOptions: [
-      { label: '操作', value: 0 },
-      { label: '断言', value: 1 },
-      { label: 'sql', value: 2 },
-    ],
+    type: 0,
+    plainOptions: [],
   })
   const columns = reactive([
     {
@@ -323,7 +299,7 @@
     {
       label: '步骤类型',
       key: 'type',
-      value: 0,
+      value: '',
       type: 'radio',
       required: true,
       placeholder: '请选择对元素的操作类型',
@@ -331,121 +307,141 @@
         return true
       },
     },
-    {
-      label: '元素名称',
-      key: 'ele_name_a',
-      value: null,
-      placeholder: '请选择locating',
-      required: false,
-      type: 'select',
-      validator: function () {
-        return true
-      },
-    },
-    // {
-    //   label: '元素B',
-    //   key: 'ele_name_b',
-    //   value: null,
-    //   placeholder: '请在元素操作值有第二个locating再选择',
-    //   required: false,
-    //   type: 'select'
-    // },
-    {
-      label: '元素操作',
-      key: 'ope_type',
-      value: null,
-      type: 'cascader',
-      required: false,
-      placeholder: '请选择对元素的操作',
-      validator: function () {
-        return true
-      },
-    },
-    {
-      label: '元素操作值',
-      key: 'ope_value',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入对元素的操作内容',
-      validator: function () {
-        if (this.value !== '') {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('元素操作值请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: '断言类型',
-      key: 'ass_type',
-      value: null,
-      type: 'cascader',
-      required: false,
-      placeholder: '请选择断言类型',
-    },
-    {
-      label: '断言值',
-      key: 'ass_value',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入断言内容',
-      validator: function () {
-        if (this.value !== '') {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'key_list',
-      key: 'key_list',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入sql查询结果的key_list',
-      validator: function () {
-        if (this.value !== '') {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('key_list值请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'sql语句',
-      key: 'sql',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入sql',
-      validator: function () {
-        return true
-      },
-    },
   ])
+
   function changeStatus(event: number) {
-    pageStepsData.isDisabledOpe = !(event == 0)
-    pageStepsData.isDisabledAss = !(event == 1)
-    pageStepsData.isDisabledSql = !(event == 2)
-    formItems.forEach((item) => {
-      item.value = null
-    })
-    formItems[0].value = event
+    for (let i = formItems.length - 1; i >= 0; i--) {
+      if (formItems[i].key !== 'type') {
+        formItems.splice(i, 1)
+      }
+    }
+    if (event === 0) {
+      if (
+        !formItems.some(
+          (item) => item.key === 'ele_name_a' || formItems.some((item) => item.key === 'ope_type')
+        )
+      ) {
+        formItems.push(
+          {
+            label: '元素操作',
+            key: 'ope_type',
+            value: '',
+            type: 'cascader',
+            required: true,
+            placeholder: '请选择对元素的操作',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '选择元素',
+            key: 'ele_name_a',
+            value: '',
+            placeholder: '请选择locating',
+            required: false,
+            type: 'select',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else if (event === 1) {
+      if (!formItems.some((item) => item.key === 'ass_type')) {
+        formItems.push(
+          {
+            label: '断言类型',
+            key: 'ass_type',
+            value: '',
+            type: 'cascader',
+            required: true,
+            placeholder: '请选择断言类型',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '选择元素',
+            key: 'ele_name_a',
+            value: '',
+            placeholder: '请选择locating',
+            required: false,
+            type: 'select',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else if (event === 2) {
+      if (
+        !formItems.some((item) => item.key === 'sql') ||
+        !formItems.some((item) => item.key === 'key_list')
+      ) {
+        formItems.push(
+          {
+            label: 'key_list',
+            key: 'key_list',
+            value: '',
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql查询结果的key_list',
+            validator: function () {
+              if (this.value !== '') {
+                try {
+                  this.value = JSON.parse(this.value)
+                } catch (e) {
+                  Message.error('key_list值请输入json数据类型')
+                  return false
+                }
+              }
+              return true
+            },
+          },
+          {
+            label: 'sql语句',
+            key: 'sql',
+            value: '',
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else {
+      if (
+        !formItems.some((item) => item.key === 'key') ||
+        !formItems.some((item) => item.key === 'value')
+      ) {
+        formItems.push(
+          {
+            label: 'key',
+            key: 'key',
+            value: '',
+            type: 'input',
+            required: true,
+            placeholder: '请输入key',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: 'value',
+            key: 'value',
+            value: '',
+            type: 'input',
+            required: true,
+            placeholder: '请输入value',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    }
   }
 
   function getLabelByValue(data: any, value: string): string {
@@ -459,9 +455,7 @@
   }
 
   function doAppend() {
-    pageStepsData.isDisabledOpe = false
-    pageStepsData.isDisabledAss = true
-    pageStepsData.isDisabledSql = true
+    changeStatus(0)
     pageStepsData.actionTitle = '添加详细步骤'
     pageStepsData.isAdd = true
     modalDialogRef.value?.toggle()
@@ -504,18 +498,14 @@
   }
 
   function onUpdate(item: any) {
-    if (item.type === 0) {
-      pageStepsData.isDisabledOpe = false
-      pageStepsData.isDisabledAss = true
-      pageStepsData.isDisabledSql = true
-    } else if (item.type === 1) {
-      pageStepsData.isDisabledOpe = true
-      pageStepsData.isDisabledAss = false
-      pageStepsData.isDisabledSql = true
-    } else if (item.type === 2) {
-      pageStepsData.isDisabledOpe = true
-      pageStepsData.isDisabledAss = true
-      pageStepsData.isDisabledSql = false
+    pageStepsData.type = item.type
+    changeStatus(item.type)
+    if (item.ope_type) {
+      upDataOpeValue(item.ope_type)
+    }
+
+    if (item.ass_type) {
+      upDataAssValue(item.ass_type)
     }
     pageStepsData.actionTitle = '编辑详细步骤'
     pageStepsData.isAdd = false
@@ -594,11 +584,6 @@
       }
     }
     pageStepsData.eleName = []
-    pageStepsData.plainOptions = [
-      { label: '操作', value: 0 },
-      { label: '断言', value: 1 },
-      { label: 'sql', value: 2 },
-    ]
   }
 
   function doResetSearch() {
@@ -672,11 +657,27 @@
       Object.keys(parameter).forEach((key) => {
         parameter[key] = ''
       })
-      formItems.forEach((item: any) => {
-        if (item.key === 'ass_value') {
-          item.value = JSON.stringify(parameter)
-        }
-      })
+      if (!formItems.some((item) => item.key === 'ass_value')) {
+        formItems.push({
+          label: '断言值',
+          key: 'ass_value',
+          value: JSON.stringify(parameter),
+          type: 'textarea',
+          required: true,
+          placeholder: '请输入断言内容',
+          validator: function () {
+            if (this.value !== '') {
+              try {
+                this.value = JSON.parse(this.value)
+              } catch (e) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+            }
+            return true
+          },
+        })
+      }
     }
   }
 
@@ -687,11 +688,27 @@
       Object.keys(parameter).forEach((key) => {
         parameter[key] = ''
       })
-      formItems.forEach((item: any) => {
-        if (item.key === 'ope_value') {
-          item.value = JSON.stringify(parameter)
-        }
-      })
+      if (!formItems.some((item) => item.key === 'ope_value')) {
+        formItems.push({
+          label: '元素操作值',
+          key: 'ope_value',
+          value: JSON.stringify(parameter),
+          type: 'textarea',
+          required: true,
+          placeholder: '请输入对元素的操作内容',
+          validator: function () {
+            if (this.value !== '') {
+              try {
+                this.value = JSON.parse(this.value)
+              } catch (e) {
+                Message.error('元素操作值请输入json数据类型')
+                return false
+              }
+            }
+            return true
+          },
+        })
+      }
     }
   }
 
@@ -719,6 +736,7 @@
     }
     return undefined
   }
+
   function onRunCase() {
     if (testObj.selectValue == null) {
       Message.error('请先选择用例执行的环境')
@@ -738,35 +756,34 @@
       })
       .catch(console.log)
   }
-  function elementIsLocator(key: number) {
-    console.log(key)
+
+  function enumUiElementOperation() {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
     get({
-      url: uiElementIsLocator,
+      url: systemEnumUiElementOperation,
       data: () => {
         return {
-          element_id: key,
+          page_step_id: route.query.id,
+          te: testObj.selectValue,
         }
       },
     })
       .then((res) => {
-        if (res.data === '1') {
-          formItems.forEach((item: any) => {
-            if (item.key === 'ope_value') {
-              let data = JSON.parse(item.value)
-              data['element_locator'] = ''
-              item.value = JSON.stringify(data)
-            }
-          })
-        }
+        pageStepsData.plainOptions = res.data
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       await getUiRunSortAss()
       await getUiRunSortOpe()
       await getEleName()
       getUiRunSort()
+      enumUiElementOperation()
     })
   })
 </script>

@@ -86,6 +86,8 @@ class UiPageStepsDetailed(models.Model):
     ass_value = models.JSONField(verbose_name="操作内容", null=True)
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
+    key = models.CharField(verbose_name="key", max_length=1048, null=True)
+    value = models.CharField(verbose_name="value", max_length=1048, null=True)
 
     class Meta:
         db_table = 'ui_page_steps_detailed'

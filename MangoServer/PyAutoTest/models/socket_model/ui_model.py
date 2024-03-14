@@ -61,6 +61,8 @@ class ElementModel(BaseModel):
     ass_value: dict | None = None
     key_list: list | None = None
     sql: str | None = None
+    key: str | None = None
+    value: str | None = None
 
 
 class StepsDataModel(BaseModel):
