@@ -178,6 +178,14 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         基于playwright的元素查找
         @return:
         """
+        if self.element_model.locator:
+            try:
+                locator: Locator = eval(f"await self.{self.element_model.locator}")
+            except SyntaxError:
+                locator: Locator = eval(f"self.{self.element_model.locator}")
+
+            return locator.nth(self.element_model.ele_sub) if self.element_model.ele_sub else locator
+
         if self.data_processor.is_extract(ele_loc):
             element_locator = self.element_model.ope_value.get('element_locator')
             if element_locator:
