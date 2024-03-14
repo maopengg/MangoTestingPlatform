@@ -4,7 +4,7 @@
 # @Time   : 2023/4/6 13:36
 # @Author : 毛鹏
 from autotest.ui.driver.android.a_assertion import UiautomatorAssertion
-from autotest.ui.driver.web.element_assertion import PlaywrightAssertion
+from autotest.ui.driver.web.assertion import PlaywrightAssertion
 from tools.assertion.public_assertion import *
 
 

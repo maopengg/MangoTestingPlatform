@@ -46,9 +46,17 @@ class ElementLocatorError(UiError):
     pass
 
 
+class UiAttributeError(UiError):
+    pass
+
+
 class UploadElementInputError(UiError):
     pass
 
 
 class UiCacheDataIsNullError(UiError):
+    pass
+
+
+class ReplaceElementLocatorError(UiError):
     pass

@@ -139,6 +139,13 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'radio' && item.key === 'type'">
+                <a-radio-group
+                  @change="changeStatus"
+                  v-model="uiConfigData.type"
+                  :options="uiConfigData.driveType"
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
@@ -202,6 +209,7 @@
     actionTitle: '添加配置',
     updateId: 0,
     isAdd: true,
+    type: 0,
   })
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -214,7 +222,7 @@
       label: '驱动类型',
       key: 'type',
       value: '',
-      type: 'select',
+      type: 'radio',
       required: true,
       placeholder: '请选择驱动类型',
       validator: function () {
@@ -323,6 +331,140 @@
       width: 150,
     },
   ])
+  function changeStatus(event: number) {
+    for (let i = formItems.length - 1; i >= 0; i--) {
+      if (formItems[i].key !== 'type') {
+        formItems.splice(i, 1)
+      }
+    }
+    if (event === 0) {
+      if (
+        !formItems.some(
+          (item) => item.key === 'ele_name_a' || formItems.some((item) => item.key === 'ope_type')
+        )
+      ) {
+        formItems.push(
+          {
+            label: '元素操作',
+            key: 'ope_type',
+            value: '',
+            type: 'cascader',
+            required: true,
+            placeholder: '请选择对元素的操作',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '选择元素',
+            key: 'ele_name_a',
+            value: '',
+            placeholder: '请选择locating',
+            required: false,
+            type: 'select',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else if (event === 1) {
+      if (!formItems.some((item) => item.key === 'ass_type')) {
+        formItems.push(
+          {
+            label: '断言类型',
+            key: 'ass_type',
+            value: '',
+            type: 'cascader',
+            required: true,
+            placeholder: '请选择断言类型',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '选择元素',
+            key: 'ele_name_a',
+            value: '',
+            placeholder: '请选择locating',
+            required: false,
+            type: 'select',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else if (event === 2) {
+      if (
+        !formItems.some((item) => item.key === 'sql') ||
+        !formItems.some((item) => item.key === 'key_list')
+      ) {
+        formItems.push(
+          {
+            label: 'key_list',
+            key: 'key_list',
+            value: '',
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql查询结果的key_list',
+            validator: function () {
+              if (this.value !== '') {
+                try {
+                  this.value = JSON.parse(this.value)
+                } catch (e) {
+                  Message.error('key_list值请输入json数据类型')
+                  return false
+                }
+              }
+              return true
+            },
+          },
+          {
+            label: 'sql语句',
+            key: 'sql',
+            value: '',
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    } else {
+      if (
+        !formItems.some((item) => item.key === 'key') ||
+        !formItems.some((item) => item.key === 'value')
+      ) {
+        formItems.push(
+          {
+            label: 'key',
+            key: 'key',
+            value: '',
+            type: 'input',
+            required: true,
+            placeholder: '请输入key',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: 'value',
+            key: 'value',
+            value: '',
+            type: 'input',
+            required: true,
+            placeholder: '请输入value',
+            validator: function () {
+              return true
+            },
+          }
+        )
+      }
+    }
+  }
 
   function doRefresh() {
     get({
@@ -523,10 +665,6 @@
       .catch(console.log)
   }
 
-  const handleChangeIntercept = async (newValue: any) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    return true
-  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

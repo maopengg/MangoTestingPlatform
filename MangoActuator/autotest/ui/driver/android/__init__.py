@@ -15,7 +15,7 @@ from autotest.ui.driver.android.application import UiautomatorApplication
 from autotest.ui.driver.android.element import UiautomatorElementOperation
 from autotest.ui.driver.android.equipment import UiautomatorEquipmentDevice
 from autotest.ui.driver.android.page import UiautomatorPage
-from autotest.ui.driver.web.element_assertion import PlaywrightAssertion
+from autotest.ui.driver.web.assertion import PlaywrightAssertion
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from exceptions.ui_exception import *

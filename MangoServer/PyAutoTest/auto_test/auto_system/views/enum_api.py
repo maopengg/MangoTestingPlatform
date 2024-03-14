@@ -100,7 +100,7 @@ class EnumOptionViews(ViewSet):
         :param request:
         :return:
         """
-        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option())
+        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option(k='value', v='label'))
 
     @action(methods=['get'], detail=False)
     def enum_exp(self, request):

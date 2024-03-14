@@ -81,6 +81,7 @@
               <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
               <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
               <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
+              <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -229,7 +230,6 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加测试对象',
-    eleName: [],
     ass: [],
     ope: [],
     data: [],
@@ -288,6 +288,18 @@
       tooltip: true,
     },
     {
+      title: 'key',
+      dataIndex: 'key',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
+      title: 'value',
+      dataIndex: 'value',
+      ellipsis: true,
+      tooltip: true,
+    },
+    {
       title: '操作',
       dataIndex: 'actions',
       align: 'center',
@@ -310,6 +322,7 @@
   ])
 
   function changeStatus(event: number) {
+    pageStepsData.type = event
     for (let i = formItems.length - 1; i >= 0; i--) {
       if (formItems[i].key !== 'type') {
         formItems.splice(i, 1)
@@ -456,6 +469,7 @@
 
   function doAppend() {
     changeStatus(0)
+    pageStepsData.type = 0
     pageStepsData.actionTitle = '添加详细步骤'
     pageStepsData.isAdd = true
     modalDialogRef.value?.toggle()
@@ -555,6 +569,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['page_step'] = route.query.id
+      value['type'] = pageStepsData.type
       if (pageStepsData.isAdd) {
         post({
           url: uiPageStepsDetailed,
@@ -583,7 +598,6 @@
           .catch(console.log)
       }
     }
-    pageStepsData.eleName = []
   }
 
   function doResetSearch() {
