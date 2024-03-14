@@ -134,6 +134,12 @@ class RandomTimeData:
         _time_after_week = (date.today() + timedelta(days=+30)).strftime("%Y-%m-%d") + " 00:00:00"
         return _time_after_week
 
+    @classmethod
+    def time_day(cls) -> int:
+        """获取今日日期的数字"""
+        today = datetime.today()
+        return today.day
+
 
 if __name__ == '__main__':
-    print(RandomTimeData.get_before_time(**{}))
+    print(type(RandomTimeData.time_day()))

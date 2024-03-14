@@ -13,12 +13,12 @@ from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEm
 from PyAutoTest.auto_test.auto_system.service.notic_tools.weChatSend import WeChatSend
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012,ERROR_MSG_0031
-from PyAutoTest.enums.system_enum import CacheDataKeyEnum
+from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
 
 log = logging.getLogger('system')
 
@@ -57,6 +57,30 @@ class NoticeMain:
             cls.__we_chat_send(notice_obj, test_report)
         else:
             log.error('暂不支持钉钉打卡')
+
+    @classmethod
+    def mail_send(cls, content: str) -> None:
+        """
+        发送邮件
+        """
+        user_list = ['729164035@qq.com', ]
+        try:
+            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name)
+            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name)
+            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name)
+        except CacheData.DoesNotExist:
+            raise CacheKetNullError(*ERROR_MSG_0031)
+        else:
+            if send_user.value is None or email_host.value is None or stamp_key.value is None:
+                raise CacheKetNullError(*ERROR_MSG_0031)
+
+        email = SendEmail(EmailNoticeModel(
+            send_user=send_user.value,
+            email_host=email_host.value,
+            stamp_key=stamp_key.value,
+            send_list=user_list,
+        ))
+        email.send_mail(user_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}服务运行通知】', content)
 
     @classmethod
     def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
