@@ -75,7 +75,7 @@ class ModelCRUD(GenericAPIView):
             )
         if serializer.is_valid():
             serializer.save()
-            self.asynchronous_callback(request)
+            self.asynchronous_callback(request, request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
             logger.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
@@ -106,6 +106,7 @@ class ModelCRUD(GenericAPIView):
                 parent_id = request.data.get('page_step')
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
+
             else:
                 parent_id = request.data.get('id')
             if parent_id is None:

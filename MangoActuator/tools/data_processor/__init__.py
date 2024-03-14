@@ -149,6 +149,7 @@ class DataProcessor(ObtainRandomData, DataClean):
 
 
 if __name__ == '__main__':
+    str_ = "${goods_name_int(),flow名称}"
     r = DataProcessor()
-    for i in range(0, 10000):
-        print(r.get_phone())
+    print(r.replace(str_))
+    print(r.get_cache('flow名称'))

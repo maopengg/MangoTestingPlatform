@@ -10,14 +10,14 @@ from playwright._impl._api_types import Error
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api import Locator
 
-from autotest.ui.driver.web.mouse_keyboard import PlaywrightDeviceInput
 from autotest.ui.driver.web.assertion import PlaywrightAssertion
-from autotest.ui.driver.web.operation import PlaywrightElementOperation
 from autotest.ui.driver.web.browser import PlaywrightOperationBrowser
+from autotest.ui.driver.web.mouse_keyboard import PlaywrightDeviceInput
+from autotest.ui.driver.web.operation import PlaywrightElementOperation
 from autotest.ui.driver.web.page import PlaywrightPageOperation
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
-from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
+from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError, CacheIsEmptyError
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
@@ -30,7 +30,7 @@ from tools.message.error_msg import *
 class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightElementOperation, PlaywrightDeviceInput):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
-    element_data: list[dict] = None
+    element_data: dict = None
     ope_name: str = None
 
     async def element_setup(self, element_model, element_data):
@@ -43,8 +43,18 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         else:
             self.ope_name = element_model.ass_type
         for key, value in self.element_model:
-            value = self.data_processor.replace(value)
-            setattr(self.element_model, key, value)
+            try:
+                value = self.data_processor.replace(value)
+                setattr(self.element_model, key, value)
+            except CacheIsEmptyError as error:
+                if self.data_processor.is_extract(self.element_model.ele_loc_a):
+                    element_locator = self.element_model.ope_value.get('element_locator')
+                    if element_locator:
+                        self.element_model.ele_loc_a = self.data_processor.specify_replace(self.element_model.ele_loc_a,
+                                                                                           element_locator)
+                        del self.element_model.ope_value['element_locator']
+                    else:
+                        raise error
         self.element_test_result = ElementResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
@@ -76,12 +86,18 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             self.notice_signal.send(3,
                                     data=f'断言->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
         elif self.element_model.type == ElementOperationEnum.SQL.value:
+            if self.is_step:
+                sql = self.element_model.sql
+                key_list = self.element_model.key_list
+            else:
+                sql = self.element_data.get('sql')
+                key_list = self.element_data.get('key_list')
             if self.mysql_connect:
-                result_list: list[dict] = self.mysql_connect.condition_execute(self.element_model.sql)
+                result_list: list[dict] = self.mysql_connect.condition_execute(sql)
                 if isinstance(result_list, list):
                     for result in result_list:
                         try:
-                            for value, key in zip(result, self.element_model.key_list):
+                            for value, key in zip(result, key_list):
                                 self.data_processor.set_cache(key, result.get(value))
                         except SyntaxError:
                             raise SyntaxErrorError(*ERROR_MSG_0038)
@@ -89,7 +105,11 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                     if not result_list:
                         raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(self.element_model.sql,))
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
-            self.data_processor.set_cache(self.element_model.key, self.element_model.value)
+            if self.is_step:
+                self.data_processor.set_cache(self.element_model.key, self.element_model.value)
+            else:
+                self.data_processor.set_cache(self.element_data.get('key'), self.element_data.get('value'))
+
         else:
             raise ElementTypeError(*ERROR_MSG_0015)
 
@@ -122,9 +142,7 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         is_method = callable(getattr(PlaywrightAssertion, self.element_model.ass_type, None))
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
-        self.element_test_result.expect = str(
-            self.element_model.ass_value.get('value')) if self.element_model.ass_value.get('value') else None
-        self.element_test_result.actual = self.element_model.ass_value.get(
+        self.element_test_result.expect = self.element_model.ass_value.get(
             'expect') if self.element_model.ass_value.get('expect') else None
         try:
             if is_method or is_method_public:
@@ -132,13 +150,14 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                     raise ElementIsEmptyError(*ERROR_MSG_0031,
                                               value=(self.element_model.ele_name_a, self.element_model.ele_loc_a))
             if is_method:
+                self.element_test_result.actual = '判断元素是什么'
                 await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
             elif is_method_public:
                 if self.element_model.ass_value.get('value'):
-
                     value = self.element_model.ass_value.get('value')
                 else:
                     value = await self.w_get_text(self.element_model.ass_value['value'])
+                self.element_test_result.actual = value
                 getattr(PublicAssertion, self.element_model.ass_type)(
                     **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:

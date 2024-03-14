@@ -69,7 +69,7 @@ class StepsDataModel(BaseModel):
     type: int | None = None
     page_step_details_id: int
     page_step_details_data: dict
-    page_step_details_name: str
+    page_step_details_name: str | None = None
 
 
 class PageStepsModel(BaseModel):
