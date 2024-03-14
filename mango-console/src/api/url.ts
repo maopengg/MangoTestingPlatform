@@ -61,7 +61,6 @@ export const uiUiElement = '/ui/element'
 export const uiUiElementTest = '/ui/element/test'
 export const uiUiElementPutIsIframe = '/ui/element/put/is/iframe'
 export const uiUiElementName = '/ui/element/name'
-export const uiElementIsLocator = '/ui/element/is/locator'
 export const uiSteps = '/ui/steps'
 export const uiStepsPageStepsName = '/ui/steps/page/steps/name'
 export const uiCase = '/ui/case'
@@ -135,6 +134,7 @@ export const systemEnumExp = 'system/enum/exp'
 export const systemEnumAutotest = 'system/enum/autotest'
 export const systemEnumCaseLevel = 'system/enum/case/level'
 export const systemEnumUiPublic = 'system/enum/ui/public'
+export const systemEnumUiElementOperation = 'system/enum/ui/element/operation'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {

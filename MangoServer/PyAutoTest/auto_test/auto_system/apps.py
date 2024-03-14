@@ -22,8 +22,9 @@ class AutoSystemConfig(AppConfig):
         def delayed_task():
             time.sleep(10)
             try:
-                from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-                Tasks.create_jobs()
+                # from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
+                # Tasks.create_jobs()
+                pass
             except ProgrammingError:
                 log.error('您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
                 raise Exception('您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')

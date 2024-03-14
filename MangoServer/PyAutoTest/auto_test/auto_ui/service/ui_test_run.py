@@ -187,6 +187,8 @@ class UiTestRun:
                 is_iframe=i.ele_name_a.is_iframe if i.ele_name_a else None,
                 key_list=i.key_list,
                 sql=i.sql,
+                key=i.key,
+                value=i.value
             ))
         return page_steps_model
 

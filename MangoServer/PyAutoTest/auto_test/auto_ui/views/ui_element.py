@@ -88,12 +88,3 @@ class UiElementViews(ViewSet):
         obj.is_iframe = request.data.get('is_iframe')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0079, )
-
-    @action(methods=['get'], detail=False)
-    def is_element_locator(self, request: Request):
-        obj = self.model.objects.get(id=request.query_params.get('element_id'))
-        res_bool = DataProcessor.is_extract(obj.loc)
-        if res_bool:
-            return ResponseData.success(RESPONSE_MSG_0078, '1')
-        else:
-            return ResponseData.success(RESPONSE_MSG_0078, '0')
