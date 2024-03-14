@@ -9,19 +9,20 @@ from email.mime.text import MIMEText
 from smtplib import SMTPException
 from socket import gaierror
 
+from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel
 from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
-from PyAutoTest.auto_test.auto_system.models import CacheData
+
 logger = logging.getLogger('system')
 
 
 class SendEmail:
     """ 发送邮箱 """
 
-    def __init__(self, notice_config: EmailNoticeModel, test_report: TestReportModel):
+    def __init__(self, notice_config: EmailNoticeModel, test_report: TestReportModel = None):
         self.test_report = test_report
         self.notice_config = notice_config
 
