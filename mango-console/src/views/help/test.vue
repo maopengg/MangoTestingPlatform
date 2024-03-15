@@ -16,10 +16,14 @@
       </a-form-item>
     </a-form>
   </a-card>
+  <a-button @click="test">点击测试</a-button>
 </template>
 
 <script setup lang="ts">
   import { onMounted, reactive } from 'vue'
+  import { get } from '@/api/http'
+  import { systemTest } from '@/api/url'
+  import { Message, Modal } from '@arco-design/web-vue'
 
   const tags = reactive<string[]>([])
 
@@ -29,6 +33,20 @@
 
   function handleSubmit() {
     console.log('Submitted tags:', tags)
+  }
+
+  function test() {
+    get({
+      url: systemTest,
+      data: () => {
+        return {}
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        console.log(res.data)
+      })
+      .catch(console.log)
   }
 
   onMounted(() => {})

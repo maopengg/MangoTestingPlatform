@@ -5,14 +5,13 @@
 # @Author : 毛鹏
 import logging
 
-from PyAutoTest.auto_test.auto_system.service.update_test_suite import TestSuiteReportUpdate
 from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiCase, UiCaseStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultSerializers
-from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
+from PyAutoTest.tools.decorator.retry import retry
 from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0030
 
 log = logging.getLogger('ui')
@@ -21,6 +20,7 @@ log = logging.getLogger('ui')
 class TestReportWriting:
 
     @classmethod
+    @retry(func_name='update_page_step_status')
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         """
         步骤状态修改
@@ -36,6 +36,7 @@ class TestReportWriting:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
 
     @classmethod
+    @retry(func_name='update_case')
     def update_case(cls, data: CaseResultModel):
         """
         用例状态修改

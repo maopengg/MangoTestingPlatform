@@ -12,7 +12,7 @@ from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 log = logging.getLogger('system')
 
 
-def retry(max_retries=5, delay=5):
+def retry(max_retries=5, delay=5, func_name: str | None = None):
     def decorator(func):
         def wrapper(*args, **kwargs):
             try_count = 0
@@ -22,12 +22,12 @@ def retry(max_retries=5, delay=5):
                     return func(*args, **kwargs)
                 except Exception as e:
                     error = e
-                    log.error(f'重试失败: {e}')
+                    log.error(f'重试失败: 函数：{func_name}, 错误提示：{e}')
                     try_count += 1
                     time.sleep(delay)  # 等待一段时间后重试
-            log.error('达到最大重试次数，任务执行失败')
-            NoticeMain.mail_send(str(error))
+            NoticeMain.mail_send(f'重试失败: 函数：{func_name}, 错误提示：{error}，失败数据：{args, kwargs}')
 
         return wrapper
 
     return decorator
+	

@@ -665,7 +665,6 @@
       Message.error('请先选择用例执行的环境')
       return
     }
-    console.log(record)
     get({
       url: uiStepsRun,
       data: () => {
