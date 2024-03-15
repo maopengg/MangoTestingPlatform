@@ -38,9 +38,10 @@ class Tasks:
         cls.scheduler.start()
 
     @classmethod
-    @retry(max_retries=5, delay=5)
+    @retry(max_retries=5, delay=5, func_name='timing')
     def timing(cls, timing_strategy_id):
         log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
+        # 执行数据库查询操作
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
                                                             status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
@@ -96,7 +97,12 @@ class Tasks:
                 raise error
 
     @classmethod
-    def ui_task(cls, scheduled_tasks_id: int, user_id: int, test_obj_id: int, is_notice: bool, concurrent: int | None,
+    def ui_task(cls,
+                scheduled_tasks_id: int,
+                user_id: int,
+                test_obj_id: int,
+                is_notice: bool,
+                concurrent: int | None = None,
                 is_trigger: bool = False):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')

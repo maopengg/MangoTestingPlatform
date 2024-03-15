@@ -17,6 +17,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
+
 with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
     data = json.load(f)
     mysql_db_name = data.get('mysql_db_name')
@@ -24,7 +25,7 @@ with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
     mysql_password = data.get('mysql_password')
     mysql_ip = data.get('mysql_ip')
     mysql_port = data.get('mysql_port')
-    # redis = data.get('redis')
+
 # ************************ ↑需要修改的内容↑ ************************ #
 
 # ************************ 时区 ************************ #

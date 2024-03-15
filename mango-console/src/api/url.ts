@@ -113,6 +113,7 @@ export const systemNoticeTest = 'system/notice/test'
 export const systemTestSuiteReport = 'system/test/suite/report'
 export const systemTasksCaseSort = 'system/tasks/case/sort'
 export const systemTasksCaseTestObject = 'system/tasks/case/test/object'
+export const systemTest = 'system/test'
 
 export const systemCaseSum = 'system/case/sum'
 export const systemCaseRunSum = 'system/case/run/sum'
