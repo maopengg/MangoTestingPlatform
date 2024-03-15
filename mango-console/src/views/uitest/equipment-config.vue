@@ -168,6 +168,9 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'switch' && item.key === 'is_headless'">
+                <a-switch v-model="item.value" checked-value="1" unchecked-value="0" />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -225,54 +228,6 @@
       type: 'radio',
       required: true,
       placeholder: '请选择驱动类型',
-      validator: function () {
-        if (!this.value && this.value !== 0) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '浏览器',
-      key: 'browser_type',
-      value: '',
-      type: 'select',
-      required: false,
-      placeholder: '请选择浏览器',
-      validator: function () {
-        return true
-      },
-    },
-    {
-      label: '浏览器端口',
-      key: 'browser_port',
-      value: '',
-      placeholder: '请输入浏览器调试端口',
-      required: false,
-      type: 'input',
-      validator: function () {
-        return true
-      },
-    },
-    {
-      label: '浏览器路径',
-      key: 'browser_path',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入浏览器路径',
-      validator: function () {
-        return true
-      },
-    },
-    {
-      label: '安卓设备号',
-      key: 'equipment',
-      value: '',
-      placeholder: '请输入安卓设备号或IP+端口',
-      required: false,
-      type: 'input',
       validator: function () {
         return true
       },
@@ -340,28 +295,55 @@
     if (event === 0) {
       if (
         !formItems.some(
-          (item) => item.key === 'ele_name_a' || formItems.some((item) => item.key === 'ope_type')
+          (item) =>
+            item.key === 'browser_type' ||
+            formItems.some(
+              (item) =>
+                item.key === 'browser_port' || formItems.some((item) => item.key === 'browser_path')
+            )
         )
       ) {
         formItems.push(
           {
-            label: '元素操作',
-            key: 'ope_type',
+            label: '浏览器',
+            key: 'browser_type',
             value: '',
-            type: 'cascader',
-            required: true,
-            placeholder: '请选择对元素的操作',
+            type: 'select',
+            required: false,
+            placeholder: '请选择浏览器',
             validator: function () {
               return true
             },
           },
           {
-            label: '选择元素',
-            key: 'ele_name_a',
+            label: '浏览器端口',
+            key: 'browser_port',
             value: '',
-            placeholder: '请选择locating',
+            placeholder: '请输入浏览器调试端口',
             required: false,
-            type: 'select',
+            type: 'input',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '浏览器路径',
+            key: 'browser_path',
+            value: '',
+            type: 'textarea',
+            required: false,
+            placeholder: '请输入浏览器路径',
+            validator: function () {
+              return true
+            },
+          },
+          {
+            label: '无头模式',
+            key: 'is_headless',
+            value: '',
+            type: 'switch',
+            required: false,
+            placeholder: '请输入无头模式',
             validator: function () {
               return true
             },
@@ -369,100 +351,21 @@
         )
       }
     } else if (event === 1) {
-      if (!formItems.some((item) => item.key === 'ass_type')) {
-        formItems.push(
-          {
-            label: '断言类型',
-            key: 'ass_type',
-            value: '',
-            type: 'cascader',
-            required: true,
-            placeholder: '请选择断言类型',
-            validator: function () {
-              return true
-            },
+      if (!formItems.some((item) => item.key === 'equipment')) {
+        formItems.push({
+          label: '安卓设备号',
+          key: 'equipment',
+          value: '',
+          placeholder: '请输入安卓设备号或IP+端口',
+          required: false,
+          type: 'input',
+          validator: function () {
+            return true
           },
-          {
-            label: '选择元素',
-            key: 'ele_name_a',
-            value: '',
-            placeholder: '请选择locating',
-            required: false,
-            type: 'select',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        })
       }
     } else if (event === 2) {
-      if (
-        !formItems.some((item) => item.key === 'sql') ||
-        !formItems.some((item) => item.key === 'key_list')
-      ) {
-        formItems.push(
-          {
-            label: 'key_list',
-            key: 'key_list',
-            value: '',
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql查询结果的key_list',
-            validator: function () {
-              if (this.value !== '') {
-                try {
-                  this.value = JSON.parse(this.value)
-                } catch (e) {
-                  Message.error('key_list值请输入json数据类型')
-                  return false
-                }
-              }
-              return true
-            },
-          },
-          {
-            label: 'sql语句',
-            key: 'sql',
-            value: '',
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql',
-            validator: function () {
-              return true
-            },
-          }
-        )
-      }
     } else {
-      if (
-        !formItems.some((item) => item.key === 'key') ||
-        !formItems.some((item) => item.key === 'value')
-      ) {
-        formItems.push(
-          {
-            label: 'key',
-            key: 'key',
-            value: '',
-            type: 'input',
-            required: true,
-            placeholder: '请输入key',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: 'value',
-            key: 'value',
-            value: '',
-            type: 'input',
-            required: true,
-            placeholder: '请输入value',
-            validator: function () {
-              return true
-            },
-          }
-        )
-      }
     }
   }
 
@@ -485,6 +388,7 @@
   }
 
   function onAddPage() {
+    changeStatus(0)
     modalDialogRef.value?.toggle()
     uiConfigData.isAdd = true
     formItems.forEach((it: any) => {
@@ -521,6 +425,7 @@
   }
 
   function onUpdate(item: any) {
+    changeStatus(item.type)
     uiConfigData.actionTitle = '编辑配置'
     modalDialogRef.value?.toggle()
     uiConfigData.isAdd = false
@@ -538,6 +443,11 @@
   }
 
   function onDataForm() {
+    if (uiConfigData.type === 3 || uiConfigData.type === 2) {
+      Message.error('暂不支持PC客户端和IOS的配置')
+
+      return
+    }
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
@@ -545,8 +455,8 @@
         post({
           url: uiConfig,
           data: () => {
+            value['type'] = uiConfigData.type
             value['status'] = 0
-            value['is_headless'] = 0
             value['user_id'] = userStore.userId
             return value
           },
