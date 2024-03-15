@@ -54,12 +54,12 @@ class DriveTypeEnum(BaseEnum):
     """UI自动化平台枚举"""
     WEB = 0
     ANDROID = 1
-    IOS = 2
-    DESKTOP = 3
+    DESKTOP = 2
+    IOS = 3
 
     @classmethod
     def obj(cls):
-        return {0: "WEB", 1: "安卓", 2: "IOS", 3: "PC桌面"}
+        return {0: "WEB", 1: "安卓", 2: "PC桌面", 3: "IOS"}
 
 
 class ElementOperationEnum(BaseEnum):
