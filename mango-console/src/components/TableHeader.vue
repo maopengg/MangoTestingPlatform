@@ -16,51 +16,51 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, nextTick, onMounted, ref } from 'vue'
+  import { computed, defineComponent, nextTick, onMounted, ref } from 'vue'
 
-export default defineComponent({
-  name: 'TableHeader',
-  props: {
-    title: {
-      type: String,
-      default: ''
+  export default defineComponent({
+    name: 'TableHeader',
+    props: {
+      title: {
+        type: String,
+        default: '',
+      },
+      bordered: {
+        type: Boolean,
+        default: false,
+      },
     },
-    bordered: {
-      type: Boolean,
-      default: false
-    }
-  },
-  emits: ['search', 'reset-search'],
-  setup(props, { emit, slots }) {
-    const showFilter = computed(() => !!slots['search-content'])
-    const showSearchContent = ref(false)
-    const target = ref<HTMLElement | null>(null)
-    const isBordered = computed(() => props.bordered)
-    onMounted(() => {
-      nextTick(() => {
-        target.value = document.getElementById('tableHeaderContainer')
+    emits: ['search', 'reset-search'],
+    setup(props, { emit, slots }) {
+      const showFilter = computed(() => !!slots['search-content'])
+      const showSearchContent = ref(false)
+      const target = ref<HTMLElement | null>(null)
+      const isBordered = computed(() => props.bordered)
+      onMounted(() => {
+        nextTick(() => {
+          target.value = document.getElementById('tableHeaderContainer')
+        })
       })
-    })
-    function doSearch() {
-      showSearchContent.value = false
-      emit('search')
-    }
-    function doResetSearch() {
-      emit('reset-search')
-    }
-    return {
-      showFilter,
-      isBordered,
-      showSearchContent,
-      target,
-      doSearch,
-      doResetSearch
-    }
-  }
-})
+      function doSearch() {
+        showSearchContent.value = false
+        emit('search')
+      }
+      function doResetSearch() {
+        emit('reset-search')
+      }
+      return {
+        showFilter,
+        isBordered,
+        showSearchContent,
+        target,
+        doSearch,
+        doResetSearch,
+      }
+    },
+  })
 </script>
 <style lang="less" scoped>
-:deep(.arco-drawer-footer) {
-  border-bottom: 2px solid #f5f5f5;
-}
+  :deep(.arco-drawer-footer) {
+    border-bottom: 2px solid #f5f5f5;
+  }
 </style>

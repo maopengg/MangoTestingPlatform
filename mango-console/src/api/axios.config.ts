@@ -1,10 +1,8 @@
 import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
 
-export const baseURL = 'http://127.0.0.1:8000'
-// export const baseURL = 'http://172.10.0.193:8000'
-export const webSocketURL = 'ws://127.0.0.1:8000/web/socket?'
-// export const webSocketURL = 'ws://172.10.0.193:8000/web/socket?'
+export const baseURL = 'http://localhost:8000'
+export const webSocketURL = 'ws://localhost:8000/web/socket?'
 
 export const CONTENT_TYPE = 'Content-Type'
 
@@ -16,7 +14,7 @@ export const TEXT_PLAIN = 'text/plain; charset=UTF-8'
 
 const service = Axios.create({
   baseURL,
-  timeout: 10 * 60 * 1000
+  timeout: 10 * 60 * 1000,
 })
 
 // 在正式发送请求之前进行拦截配置

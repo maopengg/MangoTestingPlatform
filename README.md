@@ -29,7 +29,7 @@
 * 定时任务-定时策略：自定义不同的定时执行时间，提供给UI，API测试用例组进行绑定，定时自动执行用例！
 * 测试配置-测试对象：根据项目绑定不同的测试环境，方便自动更好测试环境进行多环境测试
 * 测试配置-数据库配置：提供给API进行数据库断言
-* 测试配置-通知配置：可将测试用例执行的测试报告结果通过指定的测试方法，发送给测试&开发人员，方便排查问题！目前支持企微群，邮箱，钉钉
+* 测试配置-通知配置：可将测试用例执行的测试报告结果通过指定的测试方法，发送给测试&开发人员，方便排查问题！目前支持企微群，邮箱
 
 ## 链接
 ##### 服务端：MangoServer（本项目）
@@ -38,18 +38,11 @@
 ##### 执行端：暂不开源，提供exe可执行文件包
 
 ## 视频介绍&演示功能
-##### B站视频链接
-
-## 产品截图
-![img_7.png](img_7.png)
-![img.png](img.png)
-![img_2.png](img_2.png)
-![img_1.png](img_1.png)
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
-
+* 演示地址：http://www.mangoautotest.club/
+* 账号：admin
+* 密码：123456
+* 线上地址后端未上线，后续会上线
+##### B站视频教程：https://space.bilibili.com/266410261?spm_id_from=333.1007.0.0
 ## 前端-控制器部署
 1. 前提准备知识：本项目需要一定前端基础知识，请确保掌握 Vue 的基础知识，以便能处理一些常见的问题。 建议在开发前先学一下以下内容，提前了解和学习这些知识，会对项目理解非常有帮助:Vue3 TypeScript VueRouter4 ArcoDesign ES6 Vitejs Pinia
 2. 环境准备：Node 版本: v16.13.1 npm 版本: v6.14.5
@@ -63,8 +56,22 @@
 2. pip install -r requirements.txt
 3. python manage.py runserver 0.0.0.0:8000
 
-## 执行器-下载
-* 阿里网盘共享下载链接地址
+## 桌面-执行器下载与使用
+* https://www.aliyundrive.com/s/2MT4bgKEojG
+* 注意：请保留config.yml配置文件，并放在与芒果执行器同级目录中，以便读取配置！
+* 注意：执行器在运行时，会自动在当前目录下创建logs目录，并在其中创建运行日志和异常截图，方便排查出现得问题。
+
+## 产品截图
+![img_7.png](img_7.png)
+![img.png](img.png)
+![img_2.png](img_2.png)
+![img_1.png](img_1.png)
+![img_3.png](img_3.png)
+![img_4.png](img_4.png)
+![img_5.png](img_5.png)
+![img_6.png](img_6.png)
+
+
 
 #### 加作者微信，进芒果自动化测试群
 ![img_8.png](img_8.png)

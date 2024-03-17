@@ -24,7 +24,7 @@ export interface SelectOptionItem {
 export interface TableSearchItem {
   key: string | number
   label: string
-  value: Ref<any>
+  value: any
   placeholder?: string
   associatedOption?: string
   onChange?: (value: any, associationItem: string) => void
@@ -59,10 +59,16 @@ export interface TablePropsType {
 
 // export type ModalDialogType = InstanceType<typeof ModalDialog>
 
-export type ModalDialogType = InstanceType<typeof import('../components/common/ModalDialog.vue').default>
+export type ModalDialogType = InstanceType<
+  typeof import('../components/common/ModalDialog.vue').default
+>
 
 // export type DataFormType = InstanceType<typeof import('../components/common/DataForm').default>
 
-export type TableHeaderType = InstanceType<typeof import('../components/common/TableHeader.vue').default>
+export type TableHeaderType = InstanceType<
+  typeof import('../components/common/TableHeader.vue').default
+>
 
-export type TableFooterType = InstanceType<typeof import('../components/common/TableFooter.vue').default>
+export type TableFooterType = InstanceType<
+  typeof import('../components/common/TableFooter.vue').default
+>

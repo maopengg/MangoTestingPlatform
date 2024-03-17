@@ -1,22 +1,27 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description:
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.models import UiElement
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
-from PyAutoTest.enum_class.ui_enum import ElementExp
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.utils.view_utils.view_tools import enum_list
+from PyAutoTest.enums.tools_enum import ClientNameEnum
+from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.data_processor import DataProcessor
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiElementSerializers(serializers.ModelSerializer):
-    page = UiPageSerializers()
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiElement
@@ -24,6 +29,10 @@ class UiElementSerializers(serializers.ModelSerializer):
 
 
 class UiElementSerializersC(serializers.ModelSerializer):
+    page = UiPageSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiElement
         fields = '__all__'  # 全部进行序列化
@@ -32,30 +41,33 @@ class UiElementSerializersC(serializers.ModelSerializer):
 class UiElementCRUD(ModelCRUD):
     model = UiElement
     queryset = UiElement.objects.all()
-    serializer_class = UiElementSerializers
-    serializer = UiElementSerializersC
+    serializer_class = UiElementSerializersC
+    serializer = UiElementSerializers
 
     def get(self, request):
-        try:
-            books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
-            return Response({
-                "code": 200,
-                "msg": "获取数据成功",
-                "data": self.get_serializer_class()(instance=books, many=True).data,
-                'totalSize': len(books)
-            })
-        except:
-            return Response({
-                'code': 300,
-                'msg': '您查询的数据不存在',
-                'data': ''
-            })
+        books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
+        return ResponseData.success(RESPONSE_MSG_0077,
+                                    self.get_serializer_class()(instance=books, many=True).data,
+                                    len(books))
 
 
 class UiElementViews(ViewSet):
+    model = UiElement
+    serializer_class = UiElementSerializers
+
+    @action(methods=['POST'], detail=False)
+    def test_element(self, request: Request):
+        """
+        获取所有的页面名称
+        """
+        try:
+            UiTestRun(request.user.get('id'), request.data.get("testing_environment")).element(request.data)
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))
+        return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
-    def get_ele_name(self, request):
+    def get_ele_name(self, request: Request):
         """
         获取
         :param request:
@@ -63,21 +75,16 @@ class UiElementViews(ViewSet):
         """
         res = UiElement.objects.filter(page=request.query_params.get('id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return Response({
-            'code': 200,
-            'msg': '获取数据成功',
-            'data': data
-        })
+        return ResponseData.success(RESPONSE_MSG_0080, data)
 
-    @action(methods=['get'], detail=False)
-    def get_exp_type(self, request):
+    @action(methods=['put'], detail=False)
+    def put_is_iframe(self, request: Request):
         """
-        获取操作类型
+        修改启停用
         :param request:
         :return:
         """
-        return Response({
-            'code': 200,
-            'msg': '获取数据成功',
-            'data': enum_list(ElementExp)
-        })
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.is_iframe = request.data.get('is_iframe')
+        obj.save()
+        return ResponseData.success(RESPONSE_MSG_0079, )

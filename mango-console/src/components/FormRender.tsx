@@ -1,4 +1,12 @@
-import { Checkbox, Input, InputNumber, Option, Select, SelectOptionData, SelectProps } from '@arco-design/web-vue'
+import {
+  Checkbox,
+  Input,
+  InputNumber,
+  Option,
+  Select,
+  SelectOptionData,
+  SelectProps,
+} from '@arco-design/web-vue'
 import { AllowedComponentProps, h, Ref } from 'vue'
 
 export default function FormRender(props: any) {
@@ -32,7 +40,11 @@ export function renderInputNumber(value: Ref<number | undefined>, props = {}) {
   )
 }
 
-export function renderCheckBox(value: Ref<boolean | (string | number | boolean)[]>, tip = '', props = {}) {
+export function renderCheckBox(
+  value: Ref<boolean | (string | number | boolean)[]>,
+  tip = '',
+  props = {}
+) {
   return (
     <Checkbox
       onUpdate:modelValue={(newVal) => {
@@ -47,7 +59,9 @@ export function renderCheckBox(value: Ref<boolean | (string | number | boolean)[
 }
 
 export function renderSelect(
-  value: Ref<string | number | Record<string, unknown> | (string | number | Record<string, unknown>)[]>,
+  value: Ref<
+    string | number | Record<string, unknown> | (string | number | Record<string, unknown>)[]
+  >,
   options: SelectOptionData[],
   props: SelectProps & AllowedComponentProps = {}
 ) {

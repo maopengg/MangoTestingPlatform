@@ -15,7 +15,7 @@ echarts.use([
   SVGRenderer,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
 ])
 
 export default echarts

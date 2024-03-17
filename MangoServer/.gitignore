@@ -4,3 +4,5 @@
 *.log
 .logs/*
 logs/*
+files/*
+database_config.json

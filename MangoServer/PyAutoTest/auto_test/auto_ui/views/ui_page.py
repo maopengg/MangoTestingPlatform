@@ -1,20 +1,25 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description:
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
+from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiPage
+from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD, ModelR
+from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class UiPageSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = UiPage
@@ -24,38 +29,67 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 
 class UiPageSerializersC(serializers.ModelSerializer):
+    module_name = ProjectModuleSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = UiPage
         fields = '__all__'
 
 
-class UiPageR(ModelR):
-    """
-    条件查
-    """
-    model = UiPage
-    serializer_class = UiPageSerializers
-
-
 class UiPageCRUD(ModelCRUD):
     model = UiPage
     queryset = UiPage.objects.all()
-    serializer_class = UiPageSerializers
+    serializer_class = UiPageSerializersC
     # post专用序列化器
-    serializer = UiPageSerializersC
+    serializer = UiPageSerializers
 
 
 class UiPageViews(ViewSet):
+    model = UiPage
+    serializer_class = UiPageSerializers
 
     @action(methods=['GET'], detail=False)
-    def get_page_name(self, request):
+    def page_name(self, request: Request):
         """
-        获取所有的页面名称
+        根据项目获取页面id和名称
         """
-        res = UiPage.objects.values_list('id', 'name')
+        module_name = request.query_params.get('module_name')
+        if module_name:
+            res = UiPage.objects.filter(module_name=module_name).values_list('id', 'name')
+        else:
+            res = UiPage.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
-        return Response({
-            'code': 200,
-            'msg': '获取数据成功',
-            'data': data
-        })
+        if data:
+            return ResponseData.success(RESPONSE_MSG_0052, data)
+
+        else:
+            return ResponseData.fail(RESPONSE_MSG_0053)
+
+    @action(methods=['post'], detail=False)
+    def page_copy(self, request: Request):
+        from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
+        page_id = request.data.get('page_id')
+        page_obj = UiPage.objects.get(id=page_id)
+        page_obj = model_to_dict(page_obj)
+        page_id = page_obj['id']
+        page_obj['name'] = '(副本)' + page_obj['name']
+        del page_obj['id']
+        serializer = self.serializer_class(data=page_obj)
+        if serializer.is_valid():
+            serializer.save()
+            page_elements = UiElement.objects.filter(page=page_id)
+            for i in page_elements:
+                page_element = model_to_dict(i)
+                del page_element['id']
+                page_element['page'] = serializer.data['id']
+                page_element_serializer = UiElementSerializers(data=page_element)
+                if page_element_serializer.is_valid():
+                    page_element_serializer.save()
+                else:
+                    return ResponseData.fail(RESPONSE_MSG_0054, serializer.errors)
+            return ResponseData.success(RESPONSE_MSG_0055, serializer.data)
+        else:
+            return ResponseData.fail(RESPONSE_MSG_0054, serializer.errors)

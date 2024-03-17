@@ -14,47 +14,47 @@ export const defaultRoutes = [
         parentPath: '/index',
         menuUrl: '/index/home',
         menuName: '主控台',
-        routeName: 'home'
+        routeName: 'home',
       },
       {
         parentPath: '/index',
         menuUrl: '/index/work-place',
         menuName: '工作台',
-        routeName: 'workPlace'
-      }
-    ]
+        routeName: 'workPlace',
+      },
+    ],
   },
   {
-    menuUrl: '/testconfig',
+    menuUrl: '/config',
     menuName: '系统管理',
     icon: 'icon-settings',
     parentPath: '',
     routeName: 'system',
     children: [
       {
-        parentPath: '/testconfig',
-        menuUrl: '/testconfig/department',
+        parentPath: '/config',
+        menuUrl: '/config/department',
         menuName: '部门管理',
         routeName: 'department',
-        localFilePath: '/testconfig/local-path/department'
+        localFilePath: '/config/local-path/department',
       },
       {
-        parentPath: '/testconfig',
-        menuUrl: '/testconfig/user',
+        parentPath: '/config',
+        menuUrl: '/config/user',
         menuName: '用户管理',
         routeName: 'user',
-        isRootPath: true
+        isRootPath: true,
       },
       {
-        parentPath: '/testconfig',
-        menuUrl: '/testconfig/role',
-        menuName: '角色管理'
+        parentPath: '/config',
+        menuUrl: '/config/role',
+        menuName: '角色管理',
       },
       {
-        parentPath: '/testconfig',
-        menuUrl: '/testconfig/menu',
-        menuName: '菜单管理'
-      }
-    ]
-  }
+        parentPath: '/config',
+        menuUrl: '/config/menu',
+        menuName: '菜单管理',
+      },
+    ],
+  },
 ]

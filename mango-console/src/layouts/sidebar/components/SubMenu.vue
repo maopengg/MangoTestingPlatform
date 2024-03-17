@@ -4,7 +4,10 @@
       <span class="sub-menu-lable">{{ menuInfo.label }}</span>
     </template>
     <template #icon>
-      <component :is="menuInfo.icon || 'icon-menu'" style="font-size: 16px; vertical-align: middle" />
+      <component
+        :is="menuInfo.icon || 'icon-menu'"
+        style="font-size: 16px; vertical-align: middle"
+      />
     </template>
     <template v-for="item in menuInfo.children" :key="item.key">
       <template v-if="!item.children">
@@ -23,21 +26,21 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+  import { defineComponent } from 'vue'
 
-export default defineComponent({
-  name: 'SubMenu',
-  props: {
-    menuInfo: {
-      type: Object,
-      default: () => ({})
-    }
-  }
-})
+  export default defineComponent({
+    name: 'SubMenu',
+    props: {
+      menuInfo: {
+        type: Object,
+        default: () => ({}),
+      },
+    },
+  })
 </script>
 <style scoped>
-.sub-menu-lable {
-  flex: 1;
-  margin-left: 3px;
-}
+  .sub-menu-lable {
+    flex: 1;
+    margin-left: 3px;
+  }
 </style>

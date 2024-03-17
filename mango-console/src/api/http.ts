@@ -2,6 +2,7 @@ import { AxiosResponse } from 'axios'
 import type { App } from 'vue'
 import request from './axios.config'
 import { Message } from '@arco-design/web-vue'
+import { userFilesDownload } from '@/api/url'
 
 // 定义请求选项
 export interface HttpOption {
@@ -22,9 +23,18 @@ export interface Response<T = any> {
 }
 
 // 通用的http请求方法，需要自己指定 'POST' 还是 'GET' 请求
-export function http<T = any>({ url, data, method, headers, beforeRequest, afterRequest }: HttpOption) {
+export function http<T = any>({
+  url,
+  data,
+  method,
+  headers,
+  beforeRequest,
+  afterRequest,
+}: HttpOption) {
   const successHandler = (res: AxiosResponse<Response<T>>) => {
     if (res.data.code === 200) {
+      return res.data
+    } else if (url === userFilesDownload) {
       return res.data
     }
     Message.error(res.data.msg)
@@ -52,13 +62,19 @@ export function http<T = any>({ url, data, method, headers, beforeRequest, after
 }
 
 // 请求方式被固定成 'GET'的请求方法
-export function get<T = any>({ url, data, method = 'GET', beforeRequest, afterRequest }: HttpOption): Promise<Response> {
+export function get<T = any>({
+  url,
+  data,
+  method = 'GET',
+  beforeRequest,
+  afterRequest,
+}: HttpOption): Promise<Response> {
   return http<T>({
     url,
     method,
     data,
     beforeRequest,
-    afterRequest
+    afterRequest,
   })
 }
 
@@ -69,7 +85,7 @@ export function post<T = any>({
   method = 'POST',
   headers,
   beforeRequest,
-  afterRequest
+  afterRequest,
 }: HttpOption): Promise<Response> {
   return http<T>({
     url,
@@ -77,27 +93,39 @@ export function post<T = any>({
     data,
     headers,
     beforeRequest,
-    afterRequest
+    afterRequest,
   })
 }
 
-export function put<T = any>({ url, data, method = 'PUT', beforeRequest, afterRequest }: HttpOption): Promise<Response> {
+export function put<T = any>({
+  url,
+  data,
+  method = 'PUT',
+  beforeRequest,
+  afterRequest,
+}: HttpOption): Promise<Response> {
   return http<T>({
     url,
     method,
     data,
     beforeRequest,
-    afterRequest
+    afterRequest,
   })
 }
 
-export function deleted<T = any>({ url, data, method = 'DELETE', beforeRequest, afterRequest }: HttpOption): Promise<Response> {
+export function deleted<T = any>({
+  url,
+  data,
+  method = 'DELETE',
+  beforeRequest,
+  afterRequest,
+}: HttpOption): Promise<Response> {
   return http<T>({
     url,
     method,
     data,
     beforeRequest,
-    afterRequest
+    afterRequest,
   })
 }
 
@@ -117,7 +145,7 @@ export default {
   get,
   post,
   put,
-  deleted
+  deleted,
 }
 
 declare module '@vue/runtime-core' {

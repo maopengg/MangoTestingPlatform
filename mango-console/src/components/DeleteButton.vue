@@ -8,18 +8,18 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+  import { defineComponent } from 'vue'
 
-export default defineComponent({
-  name: 'DeleteButton',
-  emits: ['delete'],
-  setup(props, { emit }) {
-    function onDelete() {
-      emit('delete')
-    }
-    return {
-      onDelete
-    }
-  }
-})
+  export default defineComponent({
+    name: 'DeleteButton',
+    emits: ['delete'],
+    setup(props, { emit }) {
+      function onDelete() {
+        emit('delete')
+      }
+      return {
+        onDelete,
+      }
+    },
+  })
 </script>

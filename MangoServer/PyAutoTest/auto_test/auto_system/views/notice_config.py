@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+import requests
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.enum_class.system_enum import NoticeEnum
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.utils.view_utils.view_tools import enum_list
+from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
-    team = ProjectSerializers(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = NoticeConfig
@@ -24,6 +27,10 @@ class NoticeConfigSerializers(serializers.ModelSerializer):
 
 
 class NoticeConfigSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project = ProjectSerializers(read_only=True)
+
     class Meta:
         model = NoticeConfig
         fields = '__all__'
@@ -32,36 +39,37 @@ class NoticeConfigSerializersC(serializers.ModelSerializer):
 class NoticeConfigCRUD(ModelCRUD):
     model = NoticeConfig
     queryset = NoticeConfig.objects.all()
-    serializer_class = NoticeConfigSerializers
-    serializer = NoticeConfigSerializersC
+    serializer_class = NoticeConfigSerializersC
+    serializer = NoticeConfigSerializers
 
 
 class NoticeConfigViews(ViewSet):
     model = NoticeConfig
     queryset = NoticeConfig.objects.all()
-    serializer_class = NoticeConfigSerializers
-    serializer = NoticeConfigSerializersC
+    serializer_class = NoticeConfigSerializersC
+    serializer = NoticeConfigSerializers
 
     @action(methods=['get'], detail=False)
-    def test(self, request):
-        from ..notic_tools import notice_main
+    def test(self, request: Request):
+        from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
         _id = request.query_params.get('id')
-        team_id = request.query_params.get('team_id')
-        notice_main(team_id, _id)
-        return Response({
-            'code': 200,
-            'msg': '通知发送成功',
-            'data': None
-        })
+        try:
+            NoticeMain.test_notice_send(_id)
+        except requests.exceptions.SSLError:
+            return ResponseData.fail(RESPONSE_MSG_0045)
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg))
+        else:
+            return ResponseData.success(RESPONSE_MSG_0046)
 
-    @action(methods=['get'], detail=False)
-    def get_notice_type(self, request):
-        return Response({
-            'code': 200,
-            'msg': '获取通知类型成功',
-            'data': enum_list(NoticeEnum)
-        })
-
-    # @action(methods=['get'], detail=False)
-    # def up_notice_state(self, request):
-    #     state = {request.query_params.get('state')}
+    @action(methods=['put'], detail=False)
+    def put_status(self, request: Request):
+        """
+        修改启停用
+        :param request:
+        :return:
+        """
+        obj = self.model.objects.get(id=request.data.get('id'))
+        obj.status = request.data.get('status')
+        obj.save()
+        return ResponseData.success(RESPONSE_MSG_0047, )

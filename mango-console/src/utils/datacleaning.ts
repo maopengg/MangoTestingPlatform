@@ -1,3 +1,5 @@
+import { list } from 'postcss'
+
 interface Option {
   key: number
   title: string
@@ -45,4 +47,43 @@ export function getTitleByKey(groups: Group[], key: number): string {
   } else {
     throw new Error(`找不到key为${key}的group`)
   }
+}
+
+export function convertEmptyStringToNull(obj: any): any {
+  for (const key in obj) {
+    if (obj[key] === '') {
+      obj[key] = null
+    }
+  }
+  return obj
+}
+
+import { FormItem } from '@/types/components'
+
+type KeyValueObject = {
+  [key: string]: any
+}
+
+export function getFormItems1(formItems: FormItem[]): KeyValueObject {
+  return formItems.reduce((obj: any, item) => {
+    if (item.value === '' || item.value === null) {
+      obj[item.key] = null
+    } else {
+      obj[item.key] = item.value
+      console.log(obj, item.key, item.value)
+    }
+    return obj
+  }, {})
+}
+
+export function getFormItems(formItems: FormItem[]): KeyValueObject {
+  const obj: any = {}
+  formItems.forEach((item: any) => {
+    if (item.value === '') {
+      obj[item.key] = null
+    } else {
+      obj[item.key] = item.value
+    }
+  })
+  return obj
 }

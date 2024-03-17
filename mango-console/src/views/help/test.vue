@@ -1,30 +1,53 @@
 <template>
-  <div>
-    <a-card :title="value">
-      <a-input :v-model="content" placeholder="请输入信息" />
-      <a-button @click="sendMessage">发送</a-button>
-    </a-card>
-  </div>
+  <a-card>
+    <div>
+      <a-input-tag
+        :default-value="tags"
+        :style="{ width: '380px' }"
+        placeholder="Please Enter"
+        :max-tag-count="4"
+        allow-clear
+        @change="handleTagChange"
+      />
+    </div>
+    <a-form @submit="handleSubmit">
+      <a-form-item>
+        <a-button type="primary" html-type="submit">Submit</a-button>
+      </a-form-item>
+    </a-form>
+  </a-card>
+  <a-button @click="test">点击测试</a-button>
 </template>
 
-<script lang="ts" setup>
-import { Message } from '@arco-design/web-vue'
-import { ref } from 'vue'
+<script setup lang="ts">
+  import { onMounted, reactive } from 'vue'
+  import { get } from '@/api/http'
+  import { systemTest } from '@/api/url'
+  import { Message, Modal } from '@arco-design/web-vue'
 
-const value = ref('测试页面')
-const content = ref('')
+  const tags = reactive<string[]>([])
 
-function sendMessage(msg = '执行失败') {
-  const title = '用例执行结果'
-  const msg1 = msg
-  if (Notification.permission != 'granted') {
-    Notification.requestPermission()
+  function handleTagChange(value: string[]) {
+    tags.splice(0, tags.length, ...value)
   }
-  if (Notification.permission === 'granted') {
-    const notification = new Notification(title, { body: msg1 })
-    notification.addEventListener('click', () => {
-      Message.success('请点击确认按钮，给浏览器授权发送消息到windows桌面！')
+
+  function handleSubmit() {
+    console.log('Submitted tags:', tags)
+  }
+
+  function test() {
+    get({
+      url: systemTest,
+      data: () => {
+        return {}
+      },
     })
+      .then((res) => {
+        Message.success(res.msg)
+        console.log(res.data)
+      })
+      .catch(console.log)
   }
-}
+
+  onMounted(() => {})
 </script>

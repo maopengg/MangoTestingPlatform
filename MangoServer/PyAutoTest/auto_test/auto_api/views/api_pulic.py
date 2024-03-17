@@ -1,20 +1,36 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoServer
 # @Description: 
 # @Time   : 2023-02-17 21:39
 # @Author : 毛鹏
 from rest_framework import serializers
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.api_tools.enum import PublicRelyType, End
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
-from PyAutoTest.utils.view_utils.model_crud import ModelCRUD
-from PyAutoTest.utils.view_utils.view_tools import enum_list
+from PyAutoTest.auto_test.auto_system.models import Database
+from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view_utils.response_data import ResponseData
+from PyAutoTest.tools.view_utils.response_msg import *
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
+    class Meta:
+        model = ApiPublic
+        fields = '__all__'
+
+
+class ApiPublicSerializersC(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project = ProjectSerializers(read_only=True)
+
     class Meta:
         model = ApiPublic
         fields = '__all__'
@@ -23,47 +39,34 @@ class ApiPublicSerializers(serializers.ModelSerializer):
 class ApiPublicCRUD(ModelCRUD):
     model = ApiPublic
     queryset = ApiPublic.objects.all()
-    serializer_class = ApiPublicSerializers
+    serializer_class = ApiPublicSerializersC
+    serializer = ApiPublicSerializers
 
 
 class ApiPublicViews(ViewSet):
-    # @staticmethod
-    # def get_header(request):
-    #     data = []
-    #     for i in ApiPublic.objects.filter(type=2, end=request.GET.get('end')):
-    #         da = {}
-    #         for key, value in vars(i).items():
-    #             if key != "_state":
-    #                 da[key] = value
-    #         data.append(da)
-    #     return JsonResponse({
-    #         'code': 200,
-    #         'msg': '查询成功~',
-    #         'data': data
-    #     })
+    model = ApiPublic
+    serializer_class = ApiPublicSerializers
 
-    @action(methods=['get'], detail=False)
-    def get_public_type(self, request):
+    @action(methods=['put'], detail=False)
+    def put_status(self, request: Request):
         """
-        获取公共类型
+        修改启停用
         :param request:
         :return:
         """
-        return Response({
-            'code': 200,
-            'msg': '获取类型成功',
-            'data': enum_list(PublicRelyType)
-        })
+
+        obj = self.model.objects.get(id=request.data.get('id'))
+        if request.data.get('status') == StatusEnum.SUCCESS.value:
+            try:
+                Database.objects.get(project_id=obj.project.id)
+            except Database.DoesNotExist:
+                return ResponseData.fail(RESPONSE_MSG_0110, )
+        obj.status = request.data.get('status')
+        obj.save()
+        return ResponseData.success(RESPONSE_MSG_0104, )
 
     @action(methods=['get'], detail=False)
-    def get_end_type(self, request):
-        """
-        获取客户端类型
-        :param request:
-        :return:
-        """
-        return Response({
-            'code': 200,
-            'msg': '获取类型成功',
-            'data': enum_list(End)
-        })
+    def get_set_cache(self, request: Request):
+        from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
+        CommonParameters(request.query_params.get('id'))
+        return ResponseData.success(RESPONSE_MSG_0105, )

@@ -9,28 +9,41 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import json
 import logging
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+# ************************ ↓需要修改的内容↓ ************************ #
+
+with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
+    data = json.load(f)
+    mysql_db_name = data.get('mysql_db_name')
+    mysql_user = data.get('mysql_user')
+    mysql_password = data.get('mysql_password')
+    mysql_ip = data.get('mysql_ip')
+    mysql_port = data.get('mysql_port')
+
+# ************************ ↑需要修改的内容↑ ************************ #
+
+# ************************ 时区 ************************ #
+
+USE_TZ = False
+TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
 DEBUG = True
-
-ALLOWED_HOSTS = ["*"]  # 允许所有ip或域名'*'
+# 允许所有ip或域名'*'
+ALLOWED_HOSTS = ["*"]
 # USE_TZ = False
-# TIME_ZONE = 'Asia/Shanghai'
 # ************************ app注册 ************************ #
-# Application definition
-# 使用前后端分离时需要解开'rest_framework'的注释
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,7 +59,6 @@ INSTALLED_APPS = [
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
-
 ]
 
 # ************************ 中间件 ************************ #
@@ -86,21 +98,19 @@ TEMPLATES = [
 ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 # WSGI_APPLICATION = 'PyAutoTest.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
 
 # ************************ 数据库配置 ************************ #
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'auto_test',
-        'USER': 'auto_test',
-        'PASSWORD': '729164035',
-        'HOST': '43.139.104.105',
-        'PORT': 3306,
+        'NAME': mysql_db_name,
+        'USER': mysql_user,
+        'PASSWORD': mysql_password,
+        'HOST': mysql_ip,
+        'PORT': mysql_port,
         'TEST': {
-            'NAME': 'auto_test',
+            'NAME': mysql_db_name,
             'CHARSET': 'utf8mb4',
             'COLLATION': 'utf8mb4_general_ci'
         },
@@ -109,7 +119,12 @@ DATABASES = {
         }
     }
 }
-
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
@@ -133,8 +148,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
@@ -152,28 +165,32 @@ STATIC_URL = '/static/'
 # X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # ************************ redis缓存配置 ************************ #
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://:729164035@43.139.104.105:6379/0",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 1000,
-                "decode_responses": True}
-        }
-    },
-    "socket": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://:729164035@43.139.104.105:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 1000,
-                "decode_responses": True}
-        }
-    }
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": f"{redis}0",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {
+#                 "max_connections": 1000,
+#                 "decode_responses": True,
+#                 "encoding": 'utf-8'
+#             }
+#         }
+#     },
+#     "socket": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": f"{redis}1",
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#             "CONNECTION_POOL_KWARGS": {
+#                 "max_connections": 1000,
+#                 "decode_responses": True,
+#                 "encoding": 'utf-8'
+#             }
+#         }
+#     }
+# }
 
 # ************************ 日志配置 ************************ #
 
@@ -223,7 +240,7 @@ LOGGING = {
             'backupCount': 30,
             'encoding': 'utf-8',
         },
-        'perf': {
+        'data_producer': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_perf/log.log',
@@ -254,8 +271,8 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
-        'perf': {
-            'handlers': ['perf', 'console'],
+        'data_producer': {
+            'handlers': ['data_producer', 'console'],
             'level': 'INFO',
             'propagate': True,
         }
@@ -265,17 +282,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['PyAutoTest.middleware.auth.JwtQueryParamsAuthentication', ],
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
 }
-# 'EXCEPTION_HANDLER': 'PyAutoTest.utils.exceptions.exception.custom_exception_handler',
-# 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-# 'PAGE_SIZE': 10,
-
 
 # ************************ 接口文档 ************************ #
 APPEND_SLASH = False
 
-# ************************ 允许跨域设置 ************************ #
-
-# 跨域增加忽略
+# ************************ 允许跨域设置 ************************  跨域增加忽略
 CORS_ALLOW_CREDENTIALS = True  # 指明在跨域访问中，后端是否支持对cookie的操作
 CORS_ORIGIN_ALLOW_ALL = True  # 设置支持所有域名访问,如果为False,需要指定域名
 CORS_ALLOW_HEADERS = ('*')
@@ -303,7 +314,3 @@ CORS_ALLOW_METHODS = (
 #     'x-csrftoken',
 #     'x-requested-with'
 # )
-# ************************ 三个端的名称 ************************ #
-DRIVER = 'Mango Actuator'
-SERVER = 'Mango Server'
-WEB = 'mango-console'

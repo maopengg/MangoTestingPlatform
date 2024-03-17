@@ -4,13 +4,13 @@ import { defineStore } from 'pinia'
 const useCachedRouteStore = defineStore('cached-routes', {
   state: () => {
     return {
-      cachedRoutes: [] as string[]
+      cachedRoutes: [] as string[],
     }
   },
   getters: {
     getCachedRouteName(state) {
       return state.cachedRoutes
-    }
+    },
   },
   actions: {
     initCachedRoute(routes: string[]) {
@@ -23,8 +23,8 @@ const useCachedRouteStore = defineStore('cached-routes', {
     },
     resetCachedRoutes() {
       this.$reset()
-    }
-  }
+    },
+  },
 })
 
 export default useCachedRouteStore

@@ -8,6 +8,12 @@
         <ActionItems />
       </div>
       <div class="avatar-wrapper">
+        <Project />
+      </div>
+      <div class="avatar-wrapper">
+        <TestEnvironment />
+      </div>
+      <div class="avatar-wrapper">
         <VAWavatar />
       </div>
     </div>
@@ -15,35 +21,39 @@
 </template>
 
 <script lang="ts">
-import useAppConfigStore from '@/store/modules/app-config'
-import { defineComponent } from 'vue'
-export default defineComponent({
-  name: 'NavBar',
-  setup() {
-    const appStore = useAppConfigStore()
-    return {
-      appStore
-    }
-  }
-})
+  import useAppConfigStore from '@/store/modules/app-config'
+  import { defineComponent } from 'vue'
+  import TestEnvironment from '@/layouts/avatar/testing-environment.vue'
+  import Project from '@/layouts/avatar/project.vue'
+  import VAWavatar from '@/layouts/avatar/index.vue'
+  export default defineComponent({
+    name: 'NavBar',
+    components: { VAWavatar, Project, TestEnvironment },
+    setup() {
+      const appStore = useAppConfigStore()
+      return {
+        appStore,
+      }
+    },
+  })
 </script>
 
 <style scoped lang="less">
-.vaw-nav-bar-wrapper {
-  height: @logoHeight;
-  max-height: @logoHeight;
-  min-height: @logoHeight;
-  overflow: hidden;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  .avatar-wrapper {
-    padding-right: 20px;
-    margin-left: 10px;
+  .vaw-nav-bar-wrapper {
+    height: @logoHeight;
+    max-height: @logoHeight;
+    min-height: @logoHeight;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    .avatar-wrapper {
+      padding-right: 20px;
+      margin-left: 10px;
+    }
+    .right-wrapper {
+      height: 100%;
+    }
   }
-  .right-wrapper {
-    height: 100%;
-  }
-}
 </style>

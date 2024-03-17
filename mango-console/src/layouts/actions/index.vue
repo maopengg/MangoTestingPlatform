@@ -1,15 +1,15 @@
 <template>
   <div class="action-items-wrapper">
-    <span class="action-item">
-      <a-space size="large">
-        <a-dropdown trigger="hover">
-          <a-button class="garden">{{ te }}</a-button>
-          <template #content>
-            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item.key)">{{ item.title }}</a-doption>
-          </template>
-        </a-dropdown>
-      </a-space>
-    </span>
+    <!--    <span class="action-item">-->
+    <!--      <a-space size="large">-->
+    <!--        <a-dropdown trigger="hover">-->
+    <!--          <a-button class="garden" type="text" status="normal">{{ te }}</a-button>-->
+    <!--          <template #content>-->
+    <!--            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item)">{{ item.title }}</a-doption>-->
+    <!--          </template>-->
+    <!--        </a-dropdown>-->
+    <!--      </a-space>-->
+    <!--    </span>-->
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
@@ -38,125 +38,112 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue'
-import { Message } from '@arco-design/web-vue'
-import { useRoute, useRouter } from 'vue-router'
-import {
-  IconSettings as SettingIcon,
-  IconSearch as SearchIcon,
-  IconFullscreen as ExpandIcon,
-  IconRefresh as RefreshIcon,
-  IconNotification as NotificationsIcon
-} from '@arco-design/web-vue/es/icon'
-import { useDebounceFn, useFullscreen } from '@vueuse/core'
-import useEmit from '@/hooks/useEmit'
-import useAppConfigStore from '@/store/modules/app-config'
-import { useTestObj } from '@/store/modules/get-test-obj'
+  import { defineComponent, ref } from 'vue'
+  import { Message } from '@arco-design/web-vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import {
+    IconSettings as SettingIcon,
+    IconSearch as SearchIcon,
+    IconFullscreen as ExpandIcon,
+    IconRefresh as RefreshIcon,
+    IconNotification as NotificationsIcon,
+  } from '@arco-design/web-vue/es/icon'
+  import { useDebounceFn, useFullscreen } from '@vueuse/core'
+  import useEmit from '@/hooks/useEmit'
+  import useAppConfigStore from '@/store/modules/app-config'
+  export default defineComponent({
+    name: 'ActionItems',
+    components: {
+      SearchIcon,
+      SettingIcon,
+      ExpandIcon,
+      NotificationsIcon,
+      RefreshIcon,
+    },
+    setup() {
+      const showSearchContent = ref(false)
+      const searchContent = ref('')
+      const settingRef = ref()
+      const badgeValue = ref(3)
+      const appStore = useAppConfigStore()
+      const router = useRouter()
+      const route = useRoute()
+      const emitter = useEmit()
 
-export default defineComponent({
-  name: 'ActionItems',
-  components: {
-    SearchIcon,
-    SettingIcon,
-    ExpandIcon,
-    NotificationsIcon,
-    RefreshIcon
-  },
-  setup() {
-    const showSearchContent = ref(false)
-    const searchContent = ref('')
-    const settingRef = ref()
-    const badgeValue = ref(3)
-    const appStore = useAppConfigStore()
-    const router = useRouter()
-    const route = useRoute()
-    const emitter = useEmit()
-    const testObj = useTestObj()
-    const te: any = ref('TE')
-
-    function onShowSearch() {
-      emitter?.emit('show-search')
-    }
-
-    const { isSupported, enter, isFullscreen, exit } = useFullscreen(document.documentElement)
-
-    function onScreenFull() {
-      if (!isSupported) {
-        Message.error('当前浏览器不支持全屏操作')
-        return false
+      function onShowSearch() {
+        emitter?.emit('show-search')
       }
-      if (isFullscreen.value) {
-        exit()
-      } else {
-        enter()
+
+      const { isSupported, enter, isFullscreen, exit } = useFullscreen(document.documentElement)
+
+      function onScreenFull() {
+        if (!isSupported) {
+          Message.error('当前浏览器不支持全屏操作')
+          return false
+        }
+        if (isFullscreen.value) {
+          exit()
+        } else {
+          enter()
+        }
       }
-    }
 
-    const debouncedFn = useDebounceFn(() => {
-      router.replace({ path: '/redirect' + route.path, query: route.query })
-    }, 200)
+      const debouncedFn = useDebounceFn(() => {
+        router.replace({ path: '/redirect' + route.path, query: route.query })
+      }, 200)
 
-    function onRefrehRoute() {
-      debouncedFn()
-    }
+      function onRefrehRoute() {
+        debouncedFn()
+      }
 
-    function onSelect(key: number) {
-      te.value = key
-      testObj.te = key
-    }
+      function onShowSetting() {
+        emitter?.emit('show-setting')
+      }
 
-    function onShowSetting() {
-      emitter?.emit('show-setting')
-    }
-
-    return {
-      settingRef,
-      showSearchContent,
-      searchContent,
-      badgeValue,
-      appStore,
-      testObj,
-      te,
-      onSelect,
-      onShowSearch,
-      onScreenFull,
-      onRefrehRoute,
-      onShowSetting
-    }
-  }
-})
+      return {
+        settingRef,
+        showSearchContent,
+        searchContent,
+        badgeValue,
+        appStore,
+        onShowSearch,
+        onScreenFull,
+        onRefrehRoute,
+        onShowSetting,
+      }
+    },
+  })
 </script>
 
 <style lang="less" scoped>
-.action-items-wrapper {
-  position: relative;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  z-index: 1;
-
-  .action-item {
-    min-width: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 18px;
+  .action-items-wrapper {
+    position: relative;
     height: 100%;
+    display: flex;
+    align-items: center;
+    z-index: 1;
 
-    &:hover {
-      cursor: pointer;
-      background-color: var(--color-secondary-hover);
-    }
+    .action-item {
+      min-width: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      height: 100%;
 
-    :deep(.arco-badge-number, .arco-badge-dot, .arco-badge-text, .arco-badge-custom-dot) {
-      transform: translate(10%, 20%);
+      &:hover {
+        cursor: pointer;
+        background-color: var(--color-secondary-hover);
+      }
+
+      :deep(.arco-badge-number, .arco-badge-dot, .arco-badge-text, .arco-badge-custom-dot) {
+        transform: translate(10%, 20%);
+      }
     }
   }
-}
 
-.garden {
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-}
+  .garden {
+    width: 200px;
+    height: 30px;
+  }
 </style>

@@ -16,6 +16,6 @@ export default function userCreateScript(src: string) {
     })
   })
   return {
-    createScriptPromise
+    createScriptPromise,
   }
 }

@@ -26,8 +26,10 @@ interface Table {
 export const useTableHeight = async function (currentIns: any): Promise<number> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const clientHeight = document.querySelector('.main-section')?.getBoundingClientRect().height || 0
-      const tableHeaderHeight = document.querySelector('.arco-table-header')?.getBoundingClientRect().height || 41
+      const clientHeight =
+        document.querySelector('.main-section')?.getBoundingClientRect().height || 0
+      const tableHeaderHeight =
+        document.querySelector('.arco-table-header')?.getBoundingClientRect().height || 41
       if (currentIns) {
         let tempHeight = tableHeaderHeight
         if (currentIns.refs.tableHeaderRef) {
@@ -68,7 +70,7 @@ export const useTable = function (): Table {
     tableLoading,
     handleSuccess,
     useTableColumn,
-    indexColumn: useTableIndexColumn()
+    indexColumn: useTableIndexColumn(),
   }
 }
 
@@ -87,7 +89,7 @@ export const useRowSelection = function () {
     type,
     showCheckedAll,
     selectedRowKeys,
-    onSelectionChange
+    onSelectionChange,
   }
 }
 
@@ -98,7 +100,7 @@ export const useTableColumn = function (
   return columns.map((it) => {
     return {
       ...options,
-      ...it
+      ...it,
     }
   })
 }
@@ -108,7 +110,7 @@ export const useTableIndexColumn = function () {
     title: '序号',
     key: 'index',
     width: 80,
-    dataIndex: 'index'
+    dataIndex: 'index',
   }
 }
 
@@ -122,11 +124,11 @@ export const usePagination = function (callback: () => void) {
     pageSize: 20,
     showSizePicker: true,
     pageCount: 1,
-    pageSizes: ['10', '20', '30', '40'],
+    pageSizes: ['10', '20', '50', '100'],
     onChange,
     setTotalSize(totalSize: number) {
       paginationInfo.pageCount = totalSize
-    }
+    },
   })
   return paginationInfo
 }

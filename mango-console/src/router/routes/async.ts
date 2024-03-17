@@ -8,7 +8,8 @@ export const asyncRoutes = [
     meta: {
       title: '首页',
       iconPrefix: 'iconfont',
-      icon: 'icon-dashboard'
+      icon: 'icon-dashboard',
+      isSingle: true,
     },
     children: [
       {
@@ -16,18 +17,10 @@ export const asyncRoutes = [
         name: 'Home',
         component: (): any => import('@/views/index/main.vue'),
         meta: {
-          title: '数据看板',
-          affix: true
-        }
+          title: '首页',
+          affix: true,
+        },
       },
-      {
-        path: 'work-place',
-        name: 'WorkPlace',
-        component: (): any => import('@/views/index/work-place.vue'),
-        meta: {
-          title: '任务进展'
-        }
-      }
-    ]
-  }
+    ],
+  },
 ]

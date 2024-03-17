@@ -1,54 +1,59 @@
 <template>
-  <div>
-    <a-space direction="vertical" class="w-full">
-      <a-card size="small">
-        <div class="text-lg">
-          <span> 公共变量 </span>
-          <a-space>
-            <a-input :style="{ width: '320px' }" placeholder="请输入函数名称" v-model="input" va allow-clear />
-          </a-space>
-          <a-button type="primary" @click="obtain">查看</a-button>
-        </div>
-      </a-card>
-
-      <a-card :body-style="{ padding: '10px' }">
-        <a-descriptions bordered :column="3" title="将函数名称输入到输入框中，点击查看即可获取数据" :data="randomList" />
-      </a-card>
+  <a-card>
+    <div class="container">
+      <span>公共变量</span>
+    </div>
+    <a-space>
+      <a-input :style="{ width: '320px' }" placeholder="请直接输入函数试一试" v-model="input" />
+      <a-button type="primary" @click="obtain">测试一下</a-button>
     </a-space>
-  </div>
+    <a-card
+      :body-style="{ padding: '10px' }"
+      :bordered="false"
+      v-for="item of randomList"
+      :key="item.title"
+    >
+      <a-descriptions :column="3" :title="item.title" :data="item.func_list" :bordered="true" />
+    </a-card>
+  </a-card>
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
-import { get } from '@/api/http'
-import { getRandomList, getRandomData } from '@/api/url'
-import { Notification } from '@arco-design/web-vue'
+  import { onMounted, ref } from 'vue'
+  import { get } from '@/api/http'
+  import { systemRandomList, systemRandomData } from '@/api/url'
+  import { Notification } from '@arco-design/web-vue'
 
-const randomList = ref([])
-onMounted(() => {
-  get({
-    url: getRandomList
-  })
-    .then((res) => {
-      randomList.value = res.data
+  const randomList = ref([])
+  onMounted(() => {
+    get({
+      url: systemRandomList,
     })
-    .catch(console.log)
-})
-
-const input = ref('')
-
-function obtain() {
-  get({
-    url: getRandomData,
-    data: () => {
-      return {
-        name: input.value
-      }
-    }
+      .then((res) => {
+        randomList.value = res.data
+      })
+      .catch(console.log)
   })
-    .then((res) => {
-      Notification.success(res.data)
+
+  const input = ref('')
+
+  function obtain() {
+    get({
+      url: systemRandomData,
+      data: () => {
+        return {
+          name: '${' + input.value + '}',
+        }
+      },
     })
-    .catch()
-}
+      .then((res) => {
+        Notification.success(res.data)
+      })
+      .catch()
+  }
 </script>
+<style>
+  .container span {
+    font-size: 25px;
+  }
+</style>

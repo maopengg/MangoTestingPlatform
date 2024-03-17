@@ -10,7 +10,9 @@ function useVisitedGuard() {
     }
     const visitedRouteStore = useVisitedRouteStore()
     if (!visitedRouteStore.isLoadAffix) {
-      const affixRoutes = findAffixedRoutes(router.getRoutes() as unknown as RouteLocationNormalized[])
+      const affixRoutes = findAffixedRoutes(
+        router.getRoutes() as unknown as RouteLocationNormalized[]
+      )
       visitedRouteStore.initAffixRoutes(affixRoutes)
     }
     if (to.path.startsWith('/redirect')) {
