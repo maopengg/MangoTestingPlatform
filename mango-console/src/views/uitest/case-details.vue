@@ -24,7 +24,9 @@
         </a-space>
         <a-space direction="vertical" style="width: 50%">
           <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
-          <span v-if="uiCaseDetailsData.elementLocator">元素表达式：{{ uiCaseDetailsData.elementLocator }}</span>
+          <span v-if="uiCaseDetailsData.elementLocator"
+            >元素表达式：{{ uiCaseDetailsData.elementLocator }}</span
+          >
         </a-space>
       </div>
     </a-card>
@@ -47,9 +49,17 @@
                   <a-space direction="vertical">
                     <a-space v-for="(item, index) of pageData.record.front_custom" :key="item.key">
                       <span>key</span>
-                      <a-input v-model="item.key" placeholder="请输入key的名称" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.key"
+                        placeholder="请输入key的名称"
+                        @blur="upDataCase"
+                      />
                       <span>value</span>
-                      <a-input v-model="item.value" placeholder="请输入value的名称" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.value"
+                        placeholder="请输入value的名称"
+                        @blur="upDataCase"
+                      />
                       <a-button
                         type="text"
                         size="small"
@@ -66,7 +76,11 @@
                       <span>sql语句</span>
                       <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
                       <span>key列表</span>
-                      <a-input v-model="item.key_list" placeholder="请输入查询结果缓存key" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.key_list"
+                        placeholder="请输入查询结果缓存key"
+                        @blur="upDataCase"
+                      />
                       <a-button
                         type="text"
                         size="small"
@@ -110,9 +124,15 @@
                       <a-tag color="gray" size="small" v-else>未测试</a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                      <a-button type="text" size="mini" @click="onPageStep(record)">单步执行</a-button>
-                      <a-button type="text" size="mini" @click="oeFreshSteps(record)">更新数据</a-button>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                      <a-button type="text" size="mini" @click="onPageStep(record)"
+                        >单步执行</a-button
+                      >
+                      <a-button type="text" size="mini" @click="oeFreshSteps(record)"
+                        >更新数据</a-button
+                      >
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        >删除</a-button
+                      >
                     </template>
                   </a-table-column>
                 </template>
@@ -155,7 +175,9 @@
                 <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
                   <a-space style="width: 40%">
                     <span v-if="item.page_step_details_name">元素名称：</span>
-                    <span v-if="item.page_step_details_name">{{ item.page_step_details_name }}</span>
+                    <span v-if="item.page_step_details_name">{{
+                      item.page_step_details_name
+                    }}</span>
                   </a-space>
                   <a-space style="width: 30%">
                     <span v-if="item.type === 0"
@@ -168,7 +190,10 @@
                     <span v-if="item.type === 3">类型：自定义参数</span>
                   </a-space>
                   <a-space style="width: 30%">
-                    <a-button type="text" size="mini" @click="viewElementExpressions(item.page_step_details_id)"
+                    <a-button
+                      type="text"
+                      size="mini"
+                      @click="viewElementExpressions(item.page_step_details_id)"
                       >查看元素表达式</a-button
                     >
                   </a-space>
