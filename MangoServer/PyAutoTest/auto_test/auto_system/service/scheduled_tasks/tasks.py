@@ -17,6 +17,7 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.retry import retry
+from django.db import connection
 
 log = logging.getLogger('system')
 
@@ -28,6 +29,7 @@ class Tasks:
     def create_jobs(cls):
         queryset = TimeTasks.objects.all()
         for timer in queryset:
+
             cls.scheduler.add_job(cls.timing,
                                   trigger=CronTrigger(month=timer.month,
                                                       day=timer.day,
@@ -41,6 +43,7 @@ class Tasks:
     @retry(max_retries=5, delay=5, func_name='timing')
     def timing(cls, timing_strategy_id):
         log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
+        connection.connect()
         # 执行数据库查询操作
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
                                                             status=StatusEnum.SUCCESS.value)
@@ -81,6 +84,7 @@ class Tasks:
             task.start()
         else:
             log.error('开始执行性能自动化任务')
+        connection.close()
 
     @classmethod
     def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: bool, is_trigger: bool = False):

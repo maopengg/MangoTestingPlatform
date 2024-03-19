@@ -19,6 +19,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
 from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
+from django.db import connection
 
 log = logging.getLogger('system')
 
@@ -64,16 +65,18 @@ class NoticeMain:
         发送邮件
         """
         user_list = ['729164035@qq.com', ]
+        connection.connect()
         try:
             send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name)
             email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name)
             stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name)
         except CacheData.DoesNotExist:
+            connection.close()
             raise CacheKetNullError(*ERROR_MSG_0031)
         else:
             if send_user.value is None or email_host.value is None or stamp_key.value is None:
                 raise CacheKetNullError(*ERROR_MSG_0031)
-
+        connection.close()
         email = SendEmail(EmailNoticeModel(
             send_user=send_user.value,
             email_host=email_host.value,
