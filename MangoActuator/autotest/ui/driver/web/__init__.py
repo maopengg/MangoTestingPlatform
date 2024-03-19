@@ -155,9 +155,10 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             elif is_method_public:
                 if self.element_model.ass_value.get('value'):
                     value = self.element_model.ass_value.get('value')
+                    self.element_test_result.actual = f'断言元素本身，元素：{str(value)}'
                 else:
                     value = await self.w_get_text(self.element_model.ass_value['value'])
-                self.element_test_result.actual = value
+                    self.element_test_result.actual = value
                 getattr(PublicAssertion, self.element_model.ass_type)(
                     **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
