@@ -73,10 +73,13 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         name = self.element_model.ele_name_a if self.element_model.ele_name_a else self.element_model.ass_type
         ope_type = self.element_model.ope_type if self.element_model.ope_type else self.element_model.ass_type
         if self.element_model.type == ElementOperationEnum.OPE.value:
-            for key, value in self.element_model.ope_value.items():
-                await self.__ope(key, value)
-            self.notice_signal.send(3,
-                                    data=f'操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
+            try:
+                for key, value in self.element_model.ope_value.items():
+                    await self.__ope(key, value)
+                self.notice_signal.send(3,
+                                        data=f'操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
+            except AttributeError:
+                raise ElementOpeNoneError(*ERROR_MSG_0027)
             await self.web_action_element()
         # 判断元素是断言类型
         elif self.element_model.type == ElementOperationEnum.ASS.value:
