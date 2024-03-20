@@ -18,7 +18,7 @@ from PyAutoTest.enums.system_enum import SocketEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
-from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
+
 T = TypeVar('T')
 logger = logging.getLogger('system')
 

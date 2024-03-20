@@ -6,6 +6,8 @@
 import json
 import logging
 
+from django.db import connection
+
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
@@ -19,7 +21,6 @@ from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
 from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
-from django.db import connection
 
 log = logging.getLogger('system')
 

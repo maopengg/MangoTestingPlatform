@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from PyAutoTest.auto_test.auto_api.service.write_api import WriteAPI
-from PyAutoTest.models.socket_model.api_model import ResponseModel, ApiInfoModel
+from PyAutoTest.models.socket_model.api_model import ApiInfoModel
 from PyAutoTest.tools.decorator.convert_args import convert_args
 
 

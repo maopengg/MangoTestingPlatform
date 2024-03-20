@@ -7,7 +7,7 @@ import logging
 
 import requests
 
-from PyAutoTest.auto_test.auto_system.models import TestObject, CacheData
+from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
