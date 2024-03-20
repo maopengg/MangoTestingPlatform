@@ -6,8 +6,8 @@
 
 import logging
 import threading
-
 import time
+
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 

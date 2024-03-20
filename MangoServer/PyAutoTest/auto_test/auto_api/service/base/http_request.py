@@ -10,10 +10,11 @@ import requests
 from requests.exceptions import *
 
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.view_utils.error_msg import *
-from PyAutoTest.enums.system_enum import CacheDataKeyEnum
+
 log = logging.getLogger('api')
 
 

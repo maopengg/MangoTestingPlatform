@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-10-25 17:24
 # @Author : 毛鹏
-import json
 import logging
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport

@@ -7,12 +7,11 @@ import datetime
 import hashlib
 import hmac
 import json
-
 import time
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
-from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.views.menu import ad_routes

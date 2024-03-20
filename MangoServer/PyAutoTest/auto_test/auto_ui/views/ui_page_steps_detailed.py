@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
-import json
 import logging
 
 from rest_framework import serializers

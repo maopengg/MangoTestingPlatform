@@ -8,6 +8,7 @@ from threading import Thread
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from django.db import connection
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
@@ -17,7 +18,6 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.retry import retry
-from django.db import connection
 
 log = logging.getLogger('system')
 

@@ -5,9 +5,8 @@
 # @Author : 毛鹏
 import json
 import logging
-from collections import Counter
-
 import time
+from collections import Counter
 
 from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
 from PyAutoTest.exceptions.api_exception import *

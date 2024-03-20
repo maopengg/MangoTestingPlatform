@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 import logging
 import threading
-
 import time
+
 from django.apps import AppConfig
 from django.db.utils import ProgrammingError, OperationalError
 
