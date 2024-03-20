@@ -18,13 +18,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
 
-# with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
-#     data = json.load(f)
-#     mysql_db_name = data.get('mysql_db_name')
-#     mysql_user = data.get('mysql_user')
-#     mysql_password = data.get('mysql_password')
-#     mysql_ip = data.get('mysql_ip')
-#     mysql_port = data.get('mysql_port')
+with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
+    data = json.load(f)
+    mysql_db_name = data.get('mysql_db_name')
+    mysql_user = data.get('mysql_user')
+    mysql_password = data.get('mysql_password')
+    mysql_ip = data.get('mysql_ip')
+    mysql_port = data.get('mysql_port')
 
 # ************************ ↑需要修改的内容↑ ************************ #
 
@@ -101,30 +101,30 @@ ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 
 # ************************ 数据库配置 ************************ #
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': mysql_db_name,
-#         'USER': mysql_user,
-#         'PASSWORD': mysql_password,
-#         'HOST': mysql_ip,
-#         'PORT': mysql_port,
-#         'TEST': {
-#             'NAME': mysql_db_name,
-#             'CHARSET': 'utf8mb4',
-#             'COLLATION': 'utf8mb4_general_ci'
-#         },
-#         'OPTIONS': {
-#             "init_command": "SET foreign_key_checks = 0;",
-#         }
-#     }
-# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': mysql_db_name,
+        'USER': mysql_user,
+        'PASSWORD': mysql_password,
+        'HOST': mysql_ip,
+        'PORT': mysql_port,
+        'TEST': {
+            'NAME': mysql_db_name,
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_general_ci'
+        },
+        'OPTIONS': {
+            "init_command": "SET foreign_key_checks = 0;",
+        }
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
