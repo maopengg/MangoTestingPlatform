@@ -14,6 +14,10 @@ class BrowserPathError(UiError):
     pass
 
 
+class ElementOpeNoneError(UiError):
+    pass
+
+
 class BrowserObjectClosed(UiError):
     pass
 
