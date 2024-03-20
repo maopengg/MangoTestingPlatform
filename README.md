@@ -61,16 +61,8 @@
 * 注意：请保留config.yml配置文件，并放在与芒果执行器同级目录中，以便读取配置！
 * 注意：执行器在运行时，会自动在当前目录下创建logs目录，并在其中创建运行日志和异常截图，方便排查出现得问题。
 
-## 产品截图
-![img_7.png](img_7.png)
-![img.png](img.png)
-![img_2.png](img_2.png)
-![img_1.png](img_1.png)
-![img_3.png](img_3.png)
-![img_4.png](img_4.png)
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
-
+## 功能演示
+![功能演示.gif](功能演示.gif)
 
 
 #### 加作者微信，进芒果自动化测试群
