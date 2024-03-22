@@ -23,7 +23,7 @@
   import { onMounted, reactive } from 'vue'
   import { get } from '@/api/http'
   import { systemTest } from '@/api/url'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { Message } from '@arco-design/web-vue'
 
   const tags = reactive<string[]>([])
 

@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
@@ -26,7 +27,7 @@ class SystemViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test_func(self, request: Request):
-
+        Tasks.timing(request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0061, )
 
     @action(methods=['get'], detail=False)
