@@ -39,7 +39,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
         for api_info in case_api_list:
             if not self.run_api(api_info):
                 break
-
         self.api_case_result_sava(case_id)
         self.update_case_or_suite(case_id)
         self.__case_posterior(api_case_obj)
@@ -71,7 +70,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.error_message.append(error.msg)
             self.save_test_result(case_detailed)
-            self.dump_data(case_detailed)
             return False
         try:
             # 断言
@@ -81,6 +79,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             # 数据清除
             self.dump_data(case_detailed)
         except MangoServerError as error:
+            self.dump_data(case_detailed)
             self.error_message.append(error.msg)
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.save_test_result(case_detailed, request_data_model, response)
