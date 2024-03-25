@@ -61,7 +61,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                             self.set_cache(key, value)
                             log.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000)
     def assertion(self, response: ResponseDataModel, case_detailed) -> None:
         if response.response_json:
             response_data = response.response_json
@@ -140,6 +139,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @param ass_response_value:  list[dict]
         @return:
         """
+        _dict = {}
         try:
             if ass_response_value:
                 for i in ass_response_value:
@@ -149,30 +149,28 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                         _dict['expect'] = i.get('expect')
                     getattr(self, i['method'])(**_dict)
         except AssertionError:
-            raise ResponseValueAssError(*ERROR_MSG_0005)
+            raise ResponseValueAssError(*ERROR_MSG_0005, value=(_dict.get('value'), _dict.get('expect')))
 
+    @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
         """
         sql断言
         @param sql_list:
         @return:
         """
+        _dict = {'value': None}
         try:
             if self.mysql_connect:
                 for sql in sql_list:
                     value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
-                    print( value)
-
                     if isinstance(value, list):
                         _dict = {'value': str(list(value[0].values())[0])}
-                    else:
-                        _dict = {'value': None}
                     if sql.get('expect'):
                         _dict['expect'] = sql.get('expect')
                     getattr(self, sql['method'])(**_dict)
         except AssertionError as error:
             log.error(error)
-            raise SqlAssError(*ERROR_MSG_0006)
+            raise SqlAssError(*ERROR_MSG_0006, value=(_dict.get('value'), _dict.get('expect')))
 
     @classmethod
     def __assertion_response_whole(cls, actual, expect):
@@ -186,4 +184,4 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError as error:
             log.error(error)
-            raise ResponseWholeAssError(*ERROR_MSG_0004)
+            raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))

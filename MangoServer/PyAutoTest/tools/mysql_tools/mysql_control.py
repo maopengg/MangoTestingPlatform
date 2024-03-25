@@ -27,7 +27,8 @@ class MysqlConnect:
                 port=mysql_config.port,
                 user=mysql_config.user,
                 password=mysql_config.password,
-                database=mysql_config.db
+                database=mysql_config.db,
+                autocommit=True
             )
         except OperationalError:
             raise MySQLConnectionFailureError(*ERROR_MSG_0023)
