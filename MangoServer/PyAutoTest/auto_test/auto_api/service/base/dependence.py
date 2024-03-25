@@ -5,8 +5,10 @@
 # @Author : 毛鹏
 import json
 import logging
-import time
 from collections import Counter
+
+import time
+from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
 from PyAutoTest.exceptions.api_exception import *
@@ -59,6 +61,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                             self.set_cache(key, value)
                             log.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
+    @retry(stop_max_attempt_number=5, wait_fixed=2000)
     def assertion(self, response: ResponseDataModel, case_detailed) -> None:
         if response.response_json:
             response_data = response.response_json
@@ -158,6 +161,8 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             if self.mysql_connect:
                 for sql in sql_list:
                     value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
+                    print( value)
+
                     if isinstance(value, list):
                         _dict = {'value': str(list(value[0].values())[0])}
                     else:
@@ -165,7 +170,8 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     if sql.get('expect'):
                         _dict['expect'] = sql.get('expect')
                     getattr(self, sql['method'])(**_dict)
-        except AssertionError:
+        except AssertionError as error:
+            log.error(error)
             raise SqlAssError(*ERROR_MSG_0006)
 
     @classmethod
@@ -178,5 +184,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         """
         try:
             assert Counter(actual) == Counter(json.loads(expect))
-        except AssertionError:
+        except AssertionError as error:
+            log.error(error)
             raise ResponseWholeAssError(*ERROR_MSG_0004)

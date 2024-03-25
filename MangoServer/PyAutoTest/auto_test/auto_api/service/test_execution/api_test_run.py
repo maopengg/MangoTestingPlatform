@@ -71,6 +71,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             self.assertion_result.append(StatusEnum.FAIL.value)
             self.error_message.append(error.msg)
             self.save_test_result(case_detailed)
+            self.dump_data(case_detailed)
             return False
         try:
             # 断言
