@@ -116,7 +116,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                 if isinstance(res, list):
                     for res_dict in res:
                         for key, value in res_dict.items():
-                            self.set_cache(sql_obj.get('value'), value)
+                            self.set_cache(sql_obj.get('value'), str(value))
                             log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
