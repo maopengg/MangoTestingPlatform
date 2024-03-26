@@ -67,7 +67,6 @@ class ApiCaseViews(ViewSet):
         try:
             api_case_run = ApiTestRun(project_id, test_obj_id, case_sort)
         except MangoServerError as error:
-            print(error.msg, error.code)
             return ResponseData.fail((error.code, error.msg), )
         test_result: dict = api_case_run.run_one_case(case_id)
         if StatusEnum.FAIL.value in test_result['ass_result']:

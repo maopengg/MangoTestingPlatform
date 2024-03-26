@@ -30,7 +30,7 @@ with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
 
 # ************************ 时区 ************************ #
 
-USE_TZ = False
+USE_TZ = True
 TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
@@ -38,7 +38,6 @@ TIME_ZONE = 'Asia/Shanghai'
 DEBUG = True
 # 允许所有ip或域名'*'
 ALLOWED_HOSTS = ["*"]
-# USE_TZ = False
 # ************************ app注册 ************************ #
 
 # SECURITY WARNING: keep the secret key used in production secret!
@@ -150,8 +149,6 @@ LANGUAGE_CODE = 'en-us'
 
 USE_I18N = True
 
-USE_TZ = True
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
@@ -161,8 +158,6 @@ STATIC_URL = '/static/'
 # STATICFILES_DIRS = [
 #     os.path.join(BASE_DIR, 'static')
 # ]
-# # 解决前端页面报错
-# X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # ************************ redis缓存配置 ************************ #
 # CACHES = {
@@ -302,15 +297,3 @@ CORS_ALLOW_METHODS = (
     'PUT',
     'VIEW',
 )
-# CORS_ALLOW_HEADERS = (
-#     'XMLHttpRequest',
-#     'X_FILENAME',
-#     'accept-encoding',
-#     'authorization',
-#     'content-type',
-#     'dnt',
-#     'origin',
-#     'user-agent',
-#     'x-csrftoken',
-#     'x-requested-with'
-# )

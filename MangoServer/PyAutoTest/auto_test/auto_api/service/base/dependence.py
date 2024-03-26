@@ -5,8 +5,10 @@
 # @Author : 毛鹏
 import json
 import logging
-import time
 from collections import Counter
+
+import time
+from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
 from PyAutoTest.exceptions.api_exception import *
@@ -114,7 +116,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                 if isinstance(res, list):
                     for res_dict in res:
                         for key, value in res_dict.items():
-                            self.set_cache(sql_obj.get('value'), value)
+                            self.set_cache(sql_obj.get('value'), str(value))
                             log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
@@ -137,6 +139,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         @param ass_response_value:  list[dict]
         @return:
         """
+        _dict = {}
         try:
             if ass_response_value:
                 for i in ass_response_value:
@@ -146,27 +149,28 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                         _dict['expect'] = i.get('expect')
                     getattr(self, i['method'])(**_dict)
         except AssertionError:
-            raise ResponseValueAssError(*ERROR_MSG_0005)
+            raise ResponseValueAssError(*ERROR_MSG_0005, value=(_dict.get('value'), _dict.get('expect')))
 
+    @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
         """
         sql断言
         @param sql_list:
         @return:
         """
+        _dict = {'value': None}
         try:
             if self.mysql_connect:
                 for sql in sql_list:
                     value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
                     if isinstance(value, list):
                         _dict = {'value': str(list(value[0].values())[0])}
-                    else:
-                        _dict = {'value': None}
                     if sql.get('expect'):
                         _dict['expect'] = sql.get('expect')
                     getattr(self, sql['method'])(**_dict)
-        except AssertionError:
-            raise SqlAssError(*ERROR_MSG_0006)
+        except AssertionError as error:
+            log.error(error)
+            raise SqlAssError(*ERROR_MSG_0006, value=(_dict.get('value'), _dict.get('expect')))
 
     @classmethod
     def __assertion_response_whole(cls, actual, expect):
@@ -178,5 +182,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         """
         try:
             assert Counter(actual) == Counter(json.loads(expect))
-        except AssertionError:
-            raise ResponseWholeAssError(*ERROR_MSG_0004)
+        except AssertionError as error:
+            log.error(error)
+            raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))
