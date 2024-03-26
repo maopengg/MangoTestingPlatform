@@ -27,7 +27,8 @@ class MysqlConnect:
                 port=mysql_config.port,
                 user=mysql_config.user,
                 password=mysql_config.password,
-                database=mysql_config.database
+                database=mysql_config.database,
+                autocommit=True
             )
         except OperationalError:
             raise MySQLConnectionFailureError(*ERROR_MSG_0023)
@@ -51,7 +52,7 @@ class MysqlConnect:
             if self.is_rud:
                 result = self.execute(sql)
         else:
-            raise MysqlQueryError(*ERROR_MSG_0025)
+            raise MysqlQueryError(*ERROR_MSG_0025, value=(sql,))
         return result
 
     def execute(self, sql: str) -> list[dict] | int:
@@ -64,9 +65,11 @@ class MysqlConnect:
             try:
                 cursor.execute(sql)
             except ProgrammingError:
-                raise MysqlQueryError(*ERROR_MSG_0025)
+                raise MysqlQueryError(*ERROR_MSG_0025, value=(sql,))
             except InternalError:
                 raise MysqlQueryError(*ERROR_MSG_0024)
+            except OperationalError:
+                raise MysqlQueryError(*ERROR_MSG_0025, value=(sql,))
             if sql.strip().upper().startswith('SELECT'):
                 columns = [col[0] for col in cursor.description]
                 return [dict(zip(columns, row)) for row in cursor.fetchall()]
