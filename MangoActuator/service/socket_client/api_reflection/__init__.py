@@ -15,7 +15,7 @@ from service.socket_client.api_reflection.api_consumer import APIConsumer
 from service.socket_client.api_reflection.perf_consumer import PerfConsumer
 from service.socket_client.api_reflection.tools_consumer import ToolsConsumer
 from service.socket_client.api_reflection.ui_consumer import UIConsumer
-from tools.logs.log_control import ERROR, DEBUG
+from tools.logging_tool import logger
 
 custom_signal = signal('custom_signal')
 
@@ -39,7 +39,7 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             # 处理任务执行结果
         except Exception as e:
             traceback.print_exc()  # 打印异常追踪信息
-            ERROR.logger.error(f"反射任务执行出现异常：{e}")
+            logger.error(f"反射任务执行出现异常：{e}")
 
     async def test(self):
         with open(r'..\..\..\test.json', 'r', encoding='utf-8') as f:

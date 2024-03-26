@@ -15,7 +15,7 @@ from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel, TestSuiteModel
 from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
-from tools.logs.log_control import ERROR
+from tools.logging_tool import logger
 
 
 class SplitBatchCases(NewDriverObject):
@@ -44,7 +44,7 @@ class SplitBatchCases(NewDriverObject):
             except Exception as error:
                 # 处理异常，例如打印日志或者进行其他操作
                 traceback.print_exc()  # 打印异常追踪信息
-                ERROR.logger.error(f"任务 {case.id} 出现异常：{error}")
+                logger.error(f"任务 {case.id} 出现异常：{error}")
 
         # 创建所有任务，但是受到semaphore的限制
         tasks = [run_with_semaphore(case) for case in self.test_suite_model.case_list]

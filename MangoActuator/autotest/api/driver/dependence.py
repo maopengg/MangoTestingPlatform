@@ -6,8 +6,8 @@
 
 from models.socket_model.api_model import RequestModel
 from tools.data_processor import DataProcessor
-from tools.database_tool.mysql_control import MysqlConnect
-from tools.logs.log_control import INFO
+from tools.database_tool.mysql_connect import MysqlConnect
+from tools.logging_tool import logger
 
 
 class Dependence(DataProcessor):
@@ -60,7 +60,7 @@ class Dependence(DataProcessor):
         @return:
         """
         self.set_cache(key, self.replace_text(header))
-        INFO.logger.info(f'公共参数请求头设置成功：{self.get_cache(key)}')
+        logger.info(f'公共参数请求头设置成功：{self.get_cache(key)}')
 
     async def public_ago_sql(self, key, sql):
         """
@@ -77,7 +77,7 @@ class Dependence(DataProcessor):
                 self.set_cache(f'{key}_{k}', v)
                 k_list.append(k)
         for i in k_list:
-            INFO.logger.info(f'公共参数sql设置成功：{self.get_cache(f"{key}_{i}")}')
+            logger.info(f'公共参数sql设置成功：{self.get_cache(f"{key}_{i}")}')
 
     async def public_customize(self, key, value):
         """
@@ -85,4 +85,4 @@ class Dependence(DataProcessor):
         @return:
         """
         self.set_cache(key, value)
-        INFO.logger.info(f'公共参数自定义设置成功：{self.get_cache(key)}')
+        logger.info(f'公共参数自定义设置成功：{self.get_cache(key)}')

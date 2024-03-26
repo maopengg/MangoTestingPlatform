@@ -2,13 +2,13 @@ import os
 import sqlite3
 from typing import Union
 
-from tools import Initialization
+from tools import InitializationPath
 
 
-class SQLiteHandler:
+class SQLiteConnect:
 
     def __init__(self):
-        self.db_name = os.path.join(Initialization.cache, 'cache.db')
+        self.db_name = os.path.join(InitializationPath.cache, 'cache.db')
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
 
@@ -61,7 +61,7 @@ CREATE TABLE "user_info" (
 );
 '''
 # 使用示例
-db_handler = SQLiteHandler()
+db_handler = SQLiteConnect()
 for i in [create_table_query1, create_table_query2]:
     try:
         db_handler.execute_sql(i)

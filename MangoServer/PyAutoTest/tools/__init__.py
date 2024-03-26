@@ -20,7 +20,7 @@ def ensure_path_sep(path: str) -> str:
 
 def nuw_dir():
     file = ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user', 'failure_screenshot']
-    logs_dir = ensure_path_sep('/logs')
+    logs_dir = ensure_path_sep('/logging_tool')
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
     for i in file:

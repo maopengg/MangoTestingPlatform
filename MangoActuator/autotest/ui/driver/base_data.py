@@ -14,7 +14,7 @@ from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import RunConfigModel
 from models.tools_model import MysqlConingModel
 from tools.data_processor import DataProcessor
-from tools.database_tool.mysql_control import MysqlConnect
+from tools.database_tool.mysql_connect import MysqlConnect
 from tools.message.error_msg import ERROR_MSG_0036, ERROR_MSG_0037, ERROR_MSG_0038, ERROR_MSG_0039
 
 

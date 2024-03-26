@@ -9,8 +9,6 @@ from logging import handlers
 
 import colorlog
 
-from tools import Initialization
-
 
 class LogHandler:
     """ 日志打印封装"""
@@ -66,18 +64,3 @@ class LogHandler:
             }
         )
         return format_str
-
-
-log_path = Initialization.get_log()
-DEBUG = LogHandler(fr"{log_path}\debug-log.log", 'debug')
-INFO = LogHandler(fr"{log_path}\info-log.log", 'info')
-WARNING = LogHandler(fr"{log_path}\warning-log.log", 'warning')
-ERROR = LogHandler(fr"{log_path}\error-log.log", 'error')
-CRITICAL = LogHandler(fr"{log_path}\critical-log.log", 'critical')
-
-if __name__ == '__main__':
-    DEBUG.logger.debug('DEBUG')
-    INFO.logger.info("INFO")
-    WARNING.logger.warning("WARNING")
-    ERROR.logger.error("ERROR")
-    CRITICAL.logger.critical("CRITICAL")

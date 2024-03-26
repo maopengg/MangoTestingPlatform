@@ -8,7 +8,7 @@ from uiautomator2 import UiObject
 from autotest.ui.driver.android.android_base import AndroidBase, ElementNotFoundError, \
     ElementNotDisappearError
 from tools.data_processor import CacheTool
-from tools.logs.log_control import ERROR, INFO
+from tools.logging_tool import logger
 
 
 class UiautomatorElementOperation(AndroidBase):
@@ -62,12 +62,12 @@ class UiautomatorElementOperation(AndroidBase):
         """等待元素出现"""
         try:
             if element.wait(timeout=time_):
-                INFO.logger.info("成功等待元素出现")
+                logger.info("成功等待元素出现")
             else:
-                ERROR.logger.error("等待元素出现失败 元素不存在")
+                logger.error("等待元素出现失败 元素不存在")
                 raise ElementNotFoundError("element not exists")
         except ElementNotFoundError as e:
-            ERROR.logger.error(f"元素可能不存在，元素：{element}，报错信息：{e}")
+            logger.error(f"元素可能不存在，元素：{element}，报错信息：{e}")
             return False
 
     def a_wait_gone(self, element: UiObject, time_):
