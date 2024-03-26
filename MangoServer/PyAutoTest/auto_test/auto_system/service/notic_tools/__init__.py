@@ -11,8 +11,8 @@ from django.db import connection
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
-from PyAutoTest.auto_test.auto_system.service.notic_tools.sendmail import SendEmail
-from PyAutoTest.auto_test.auto_system.service.notic_tools.weChatSend import WeChatSend
+from PyAutoTest.auto_test.auto_system.service.notic_tools.mail_send import SendEmail
+from PyAutoTest.auto_test.auto_system.service.notic_tools.wechat_send import WeChatSend
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum

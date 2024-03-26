@@ -12,7 +12,7 @@ from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel
 from service.socket_client import ClientWebSocket
 from tools.decorator.singleton import singleton
-from tools.logs.log_control import ERROR
+from tools.logging_tool import logger
 
 
 @singleton
@@ -46,7 +46,7 @@ class PageSteps(SplitStepsElements):
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:
-                ERROR.logger.error('自动化类型不存在，请联系管理员检查！')
+                logger.error('自动化类型不存在，请联系管理员检查！')
 
         try:
             self.is_step = True

@@ -23,7 +23,7 @@ from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.decorator.async_retry import async_retry
-from tools.logs.log_control import ERROR
+from tools.logging_tool import logger
 from tools.message.error_msg import *
 
 
@@ -132,7 +132,7 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
         except Exception as error:
             traceback.print_exc()  # 打印异常追踪信息
-            ERROR.logger.error(f"元素操作任务出现异常：{error}")
+            logger.error(f"元素操作任务出现异常：{error}")
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']

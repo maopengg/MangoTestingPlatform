@@ -71,7 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'PyAutoTest.middleware.logs.LogMiddleWare',
+    # 'PyAutoTest.middleware.logging_tool.LogMiddleWare',
 ]
 # ************************ django项目urls的目录 ************************ #
 ROOT_URLCONF = 'PyAutoTest.urls'
@@ -216,7 +216,7 @@ LOGGING = {
         'api': {  # 文件
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_api/log.log',  # 日志输出文件
+            'filename': BASE_DIR / 'logging_tool/auto_api/log.log',  # 日志输出文件
             'formatter': 'verbose',  # 指定formatters日志格式
             'maxBytes': 1024 * 1024 * 10,  # 文件大小.50MB
             'backupCount': 30,
@@ -225,7 +225,7 @@ LOGGING = {
         'ui': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_ui/log.log',
+            'filename': BASE_DIR / 'logging_tool/auto_ui/log.log',
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,
@@ -234,7 +234,7 @@ LOGGING = {
         'system': {  # 文件
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_system/log.log',
+            'filename': BASE_DIR / 'logging_tool/auto_system/log.log',
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 5,
             'backupCount': 30,
@@ -243,7 +243,7 @@ LOGGING = {
         'data_producer': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_perf/log.log',
+            'filename': BASE_DIR / 'logging_tool/auto_perf/log.log',
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 5,
             'backupCount': 30,

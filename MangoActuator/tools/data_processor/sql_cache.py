@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from enums.tools_enum import CacheValueTypeEnum
 from tools.database_tool.sql_statement import sql_statement_5, sql_statement_6, sql_statement_4
-from tools.database_tool.sqlite_handler import SQLiteHandler
+from tools.database_tool.sqlite_connect import SQLiteConnect
 
 
 class SqlCache:
@@ -18,7 +18,7 @@ class SqlCache:
         :param key: 缓存键
         :return:
         """
-        res = SQLiteHandler().execute_sql(sql_statement_5, (key,))
+        res = SQLiteConnect().execute_sql(sql_statement_5, (key,))
         if res:
             res = res[0]
         else:
@@ -37,10 +37,10 @@ class SqlCache:
         :param value_type: 值类型
         :return:
         """
-        res2 = SQLiteHandler().execute_sql(sql_statement_5, (key,))
+        res2 = SQLiteConnect().execute_sql(sql_statement_5, (key,))
         if res2:
-            SQLiteHandler().execute_sql(sql_statement_6, (key,))
-        SQLiteHandler().execute_sql(sql_statement_4, (key, value, value_type))
+            SQLiteConnect().execute_sql(sql_statement_6, (key,))
+        SQLiteConnect().execute_sql(sql_statement_4, (key, value, value_type))
 
     @classmethod
     def delete_persistent_cache(cls, key: str) -> None:

@@ -8,7 +8,7 @@ import os
 import sys
 
 
-class Initialization:
+class InitializationPath:
     file = ['log', 'screenshot', 'upload_files']
     current_directory = os.path.abspath(__file__)
     project_root_directory = os.path.dirname(os.path.dirname(current_directory))
@@ -28,32 +28,14 @@ class Initialization:
     log_file = os.path.join(logs_dir, "log")
     failure_screenshot_file = os.path.join(logs_dir, "screenshot")
     upload_files = os.path.join(logs_dir, 'upload_files')
-    home_directory = project_root_directory
-
-    @classmethod
-    def get_log(cls):
-        return cls.log_file
-
-    @classmethod
-    def get_home_directory(cls):
-        return cls.home_directory
-
-    @classmethod
-    def get_log_screenshot(cls):
-        return cls.failure_screenshot_file
-
-    @classmethod
-    def get_upload_files(cls):
-        return cls.upload_files
-
-    @classmethod
-    def get_logs(cls):
-        return cls.logs_dir
 
 
 if __name__ == '__main__':
-    print(GetPath.get_log())
-    print(GetPath.get_log_screenshot())
-    print(GetPath.get_home_directory())
-    print(GetPath.get_upload_files())
-    # pyuic5 -o .\scripts\mian_window.py .\scripts\login.ui
+    print(InitializationPath.project_root_directory)
+    print(InitializationPath.current_dir2)
+    print(InitializationPath.logs_dir)
+    print(InitializationPath.cache)
+    print(InitializationPath.log_file)
+    print(InitializationPath.failure_screenshot_file)
+    print(InitializationPath.upload_files)
+

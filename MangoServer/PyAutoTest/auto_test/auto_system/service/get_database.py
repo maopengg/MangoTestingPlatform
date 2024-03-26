@@ -30,6 +30,6 @@ class GetDataBase:
                 port=mysql.port,
                 user=mysql.user,
                 password=mysql.password,
-                db=mysql.name)
+                database=mysql.name)
         except ValidationError:
             raise MysqlConfigError(*ERROR_MSG_0022)

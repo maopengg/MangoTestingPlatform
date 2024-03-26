@@ -11,7 +11,7 @@ class MysqlConingModel(BaseModel):
     port: int
     user: str
     password: str
-    db: str | None
+    database: str | None
 
 
 class TestReportModel(BaseModel):

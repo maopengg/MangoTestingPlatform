@@ -22,7 +22,7 @@ from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
 from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
-from tools.logs.log_control import ERROR, INFO
+from tools.logging_tool import logger
 from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009
 
 
@@ -93,7 +93,7 @@ class NewBrowser:
 
     async def send_recording_api(self, request: Request):
         if self.web_config.project is None:
-            ERROR.logger.error('错误逻辑')
+            logger.error('错误逻辑')
             return
         parsed_url = parse.urlsplit(request.url)
 
@@ -121,7 +121,7 @@ class NewBrowser:
             await ClientWebSocket.async_send(msg="发送录制接口", func_name=ApiSocketEnum.RECORDING_API.value,
                                              func_args=api_info)
         except Exception as e:
-            INFO.logger.info(f'json_data:{json_data}\t'
+            logger.info(f'json_data:{json_data}\t'
                              f'data:{data}\t'
                              f'params:{params}\t'
                              f'报错信息：{e}\t')

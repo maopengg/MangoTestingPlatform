@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 
-from tools.database_tool.mysql_control import MysqlConnect
+from tools.database_tool.mysql_connect import MysqlConnect
 
 
 class SqlAssertion:
