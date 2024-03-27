@@ -22,7 +22,7 @@ class MysqlConnect:
                 port=mysql_config.port,
                 user=mysql_config.user,
                 password=mysql_config.password,
-                database=mysql_config.db,
+                database=mysql_config.database,
                 autocommit=True
             )
         except OperationalError:
