@@ -9,7 +9,11 @@ from tools.logging_tool import logger
 class MangoActuatorError(Exception):
 
     def __init__(self, code: int, msg: str, value: tuple = None, error: any = None, is_log: bool = True):
+        if value:
+            msg = msg.format(*value)
         if error and is_log:
-            logger.error(f'错误code码：{code}, 消息：{msg}, 系统异常消息：{error}')
+            logger.error(f'报错提示：{msg}， 报错内容：{error}')
+        else:
+            logger.error(f'报错提示：{msg}')
         self.code = code
-        self.msg = msg.format(*value) if value else msg
+        self.msg = msg
