@@ -18,11 +18,11 @@ from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSer
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.apimodel import ResponseDataModel
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('api')
+log = logging.getLogger('api')
 
 
 class ApiInfoSerializers(serializers.ModelSerializer):

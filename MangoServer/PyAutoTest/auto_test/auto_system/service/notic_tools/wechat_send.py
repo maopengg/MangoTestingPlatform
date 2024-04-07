@@ -12,10 +12,10 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
 from PyAutoTest.models.tools_model import TestReportModel, WeChatNoticeModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0013, ERROR_MSG_0014, ERROR_MSG_0018, ERROR_MSG_0019, \
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0013, ERROR_MSG_0014, ERROR_MSG_0018, ERROR_MSG_0019, \
     ERROR_MSG_0020
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class WeChatSend:
@@ -71,7 +71,7 @@ class WeChatSend:
         _data = {"msgtype": "markdown", "markdown": {"content": content}}
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
-            logger.error(res.text)
+            log.error(res.text)
             raise SendMessageError(*ERROR_MSG_0018)
 
     def send_file_msg(self, file):
@@ -83,7 +83,7 @@ class WeChatSend:
         _data = {"msgtype": "file", "file": {"media_id": self.__upload_file(file)}}
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
-            logger.error(res.json())
+            log.error(res.json())
             raise SendMessageError(*ERROR_MSG_0020)
 
     def __upload_file(self, file):
@@ -113,7 +113,7 @@ class WeChatSend:
                     if isinstance(i, str):
                         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
                         if res.json()['errcode'] != 0:
-                            logger.error(res.json())
+                            log.error(res.json())
                             raise SendMessageError(*ERROR_MSG_0019)
 
                     else:

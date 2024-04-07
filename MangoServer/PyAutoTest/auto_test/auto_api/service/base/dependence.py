@@ -14,7 +14,7 @@ from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonP
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010, \
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010, \
     ERROR_MSG_0006
 
 log = logging.getLogger('api')

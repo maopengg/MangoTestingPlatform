@@ -8,7 +8,7 @@ from typing import BinaryIO
 
 from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
 from PyAutoTest.exceptions.tools_exception import FileDoesNotEexistError
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0026
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0026
 
 
 class RandomFileData:

@@ -12,9 +12,9 @@ from PyAutoTest.auto_test.auto_api.models import ApiPublic
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class ApiPublicSerializers(serializers.ModelSerializer):

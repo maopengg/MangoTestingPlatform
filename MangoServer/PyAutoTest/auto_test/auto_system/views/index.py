@@ -12,8 +12,8 @@ from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiCaseResult
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import UserLogs
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class IndexViews(ViewSet):

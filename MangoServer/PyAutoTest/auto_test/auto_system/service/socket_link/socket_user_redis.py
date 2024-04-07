@@ -8,9 +8,9 @@ import logging
 import _ctypes
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.tools.cache_utils.redis_base import RedisBase
+from PyAutoTest.tools.redis.redis_base import RedisBase
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class SocketUserRedis(RedisBase):

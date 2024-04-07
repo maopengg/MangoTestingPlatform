@@ -10,10 +10,10 @@ from django.core.paginator import Paginator
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class ModelCRUD(GenericAPIView):
@@ -57,7 +57,7 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
     def put(self, request: Request):
@@ -78,7 +78,7 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request, request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
-            logger.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
     def delete(self, request: Request):
@@ -134,7 +134,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            logger.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
 
     def inside_put(self, _id: int, data: dict) -> dict:
         serializer = self.serializer(instance=self.model.objects.get(pk=_id), data=data)
@@ -142,7 +142,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            logger.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
 
     def inside_delete(self, _id: int) -> None:
         """

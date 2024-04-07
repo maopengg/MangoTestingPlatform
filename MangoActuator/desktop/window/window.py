@@ -14,7 +14,7 @@ from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum
 from service.socket_client.client_socket import ClientWebSocket
 from tools.assertion import Assertion
 from tools.data_processor.sql_cache import SqlCache
-from tools.other_utils.get_class_methods import GetClassMethod
+from tools.other.get_class_methods import GetClassMethod
 from .ui_window import Ui_MainWindow
 import service
 

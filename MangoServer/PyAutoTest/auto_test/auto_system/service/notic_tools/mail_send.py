@@ -14,9 +14,9 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class SendEmail:
@@ -56,7 +56,7 @@ class SendEmail:
         """
         try:
             self.send_mail(self.notice_config.send_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}通知】', content)
-            logger.info(f"邮件发送成功:{self.notice_config.model_dump_json()}")
+            log.info(f"邮件发送成功:{self.notice_config.model_dump_json()}")
         except SMTPException as error:
             logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
             raise SendMessageError(*ERROR_MSG_0016)

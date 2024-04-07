@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import logging
 
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0011
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0011
 
 log = logging.getLogger('system')
 

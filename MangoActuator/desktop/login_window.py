@@ -5,8 +5,8 @@ import service
 from desktop.login.ui_login import Ui_login
 from desktop.mian_window import MainWindow
 from service.http_client.http_api import HttpApi
-from tools.database_tool.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
-from tools.database_tool.sqlite_connect import SQLiteConnect
+from tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
+from tools.database.sqlite_connect import SQLiteConnect
 
 
 class LoginWindow(QWidget, Ui_login):

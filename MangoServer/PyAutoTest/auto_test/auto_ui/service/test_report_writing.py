@@ -12,7 +12,7 @@ from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsR
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import retry
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0030
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0030
 
 log = logging.getLogger('ui')
 

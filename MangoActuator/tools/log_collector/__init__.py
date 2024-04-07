@@ -4,10 +4,10 @@
 # @Time   : 2023-04-05 12:40
 # @Author : 毛鹏
 from tools import InitializationPath
-from tools.logging_tool.log_control import LogHandler
+from tools.log_collector.log_control import LogHandler
 
 
-class Logger:
+class Log:
     DEBUG = LogHandler(fr"{InitializationPath.log_file}\debug-log.log", 'debug')
     INFO = LogHandler(fr"{InitializationPath.log_file}\info-log.log", 'info')
     WARNING = LogHandler(fr"{InitializationPath.log_file}\warning-log.log", 'warning')
@@ -35,10 +35,10 @@ class Logger:
         cls.ERROR.logger.error(msg)
 
 
-logger = Logger
+log = Log
 if __name__ == '__main__':
-    logger.debug('DEBUG')
-    logger.info("INFO")
-    logger.warning("WARNING")
-    logger.error("ERROR")
-    logger.critical("CRITICAL")
+    log.debug('DEBUG')
+    log.info("INFO")
+    log.warning("WARNING")
+    log.error("ERROR")
+    log.critical("CRITICAL")

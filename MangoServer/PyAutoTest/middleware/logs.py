@@ -18,6 +18,6 @@ class LogMiddleWare(MiddlewareMixin):
     def process_response(self, request, response):
         cost_timer = time.time() - self.start
         if cost_timer > 1:
-            logger = logging.getLogger('system')
-            logger.warning(f'请求路径：{request.path} 耗时：{cost_timer}秒，请注意接口响应速度！')
+            log = logging.getLogger('system')
+            log.warning(f'请求路径：{request.path} 耗时：{cost_timer}秒，请注意接口响应速度！')
         return response

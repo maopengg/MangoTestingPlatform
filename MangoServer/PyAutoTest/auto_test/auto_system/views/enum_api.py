@@ -13,8 +13,8 @@ from PyAutoTest.enums.api_enum import *
 from PyAutoTest.enums.system_enum import *
 from PyAutoTest.enums.tools_enum import *
 from PyAutoTest.enums.ui_enum import *
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 log = logging.getLogger('system')
 
