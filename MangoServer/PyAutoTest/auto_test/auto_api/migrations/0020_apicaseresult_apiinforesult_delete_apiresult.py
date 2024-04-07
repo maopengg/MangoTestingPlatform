@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0019_alter_apiinfo_name'),
     ]
@@ -20,7 +19,8 @@ class Migration(migrations.Migration):
                 ('test_suite_id', models.BigIntegerField(null=True, verbose_name='测试套件id')),
                 ('status', models.SmallIntegerField(null=True, verbose_name='断言结果')),
                 ('error_message', models.CharField(max_length=1024, null=True, verbose_name='失败原因')),
-                ('case', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_api.apicase')),
+                ('case',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_api.apicase')),
             ],
             options={
                 'db_table': 'api_case_result',
@@ -48,8 +48,10 @@ class Migration(migrations.Migration):
                 ('error_message', models.CharField(max_length=1024, null=True, verbose_name='失败原因')),
                 ('all_cache', models.TextField(null=True, verbose_name='执行到这个用例时的缓存数据')),
                 ('assertion', models.TextField(null=True, verbose_name='断言')),
-                ('api_info', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_api.apiinfo')),
-                ('case_detailed', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_api.apicasedetailed')),
+                ('api_info',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_api.apiinfo')),
+                ('case_detailed', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                    to='auto_api.apicasedetailed')),
             ],
             options={
                 'db_table': 'api_info_result',

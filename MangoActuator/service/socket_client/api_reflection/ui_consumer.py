@@ -4,8 +4,8 @@
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
 
-from autotest.ui.test_runner.split_batch_cases import SplitBatchCases
 from autotest.ui.test_runner.page_steps_testing import PageSteps
+from autotest.ui.test_runner.split_batch_cases import SplitBatchCases
 from models.socket_model.ui_model import PageStepsModel, TestSuiteModel, WEBConfigModel
 from tools.decorator.convert_args import convert_args
 

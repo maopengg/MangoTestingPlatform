@@ -8,6 +8,7 @@ import json
 from PySide6.QtCore import (QThread, Signal)
 from blinker import signal
 
+import service
 from enums.socket_api_enum import ToolsSocketEnum
 from enums.system_enum import CacheDataKey2Enum
 from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum
@@ -16,7 +17,6 @@ from tools.assertion import Assertion
 from tools.data_processor.sql_cache import SqlCache
 from tools.other.get_class_methods import GetClassMethod
 from .ui_window import Ui_MainWindow
-import service
 
 custom_signal = signal('notice_signal')
 
@@ -52,7 +52,8 @@ class Window(Ui_MainWindow):
         """
         r = GetClassMethod()
         send_list: list = r.main()
-        send_list.append({CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
+        send_list.append(
+            {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
         cls = ClientWebSocket()
         cls.sync_send('设置缓存数据', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value, func_args=send_list)
 

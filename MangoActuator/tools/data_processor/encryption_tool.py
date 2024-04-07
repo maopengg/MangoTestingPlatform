@@ -21,7 +21,7 @@ class EncryptionTool:
         return encrypted_string
 
     @classmethod
-    def md5_32_large(cls,**kwargs) -> str:
+    def md5_32_large(cls, **kwargs) -> str:
         """MD5_32位大写加密"""
         md5 = hashlib.md5()
         md5.update(kwargs.get('data').encode('utf-8'))
@@ -43,4 +43,3 @@ class EncryptionTool:
         md5.update(kwargs.get('data').encode('utf-8'))
         encrypted_string = md5.hexdigest().upper()[8:-8]
         return encrypted_string
-

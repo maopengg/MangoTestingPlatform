@@ -14,7 +14,8 @@ log = logging.getLogger('api')
 
 class WriteAPI:
     def __init__(self):
-        self.api_info_list: list = [str(method) + url for url, method in ApiInfo.objects.all().values_list('url', 'method')]
+        self.api_info_list: list = [str(method) + url for url, method in
+                                    ApiInfo.objects.all().values_list('url', 'method')]
 
     def write(self, data: ApiInfoModel):
         data = data.dict()

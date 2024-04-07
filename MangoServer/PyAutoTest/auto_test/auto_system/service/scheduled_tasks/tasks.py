@@ -29,7 +29,6 @@ class Tasks:
     def create_jobs(cls):
         queryset = TimeTasks.objects.all()
         for timer in queryset:
-
             cls.scheduler.add_job(cls.timing,
                                   trigger=CronTrigger(month=timer.month,
                                                       day=timer.day,

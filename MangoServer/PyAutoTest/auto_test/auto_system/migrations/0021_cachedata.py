@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0020_rename_api_case_tasksruncaselist_case_and_more'),
     ]

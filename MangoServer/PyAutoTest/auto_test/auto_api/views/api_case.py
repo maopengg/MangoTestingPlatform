@@ -91,7 +91,7 @@ class ApiCaseViews(ViewSet):
                 res.append(True)
             else:
                 log.error(f"错误信息：{str(serializer.errors)}"
-                             f"错误数据：{i}")
+                          f"错误数据：{i}")
                 res.append(False)
         if False in res:
             return ResponseData.fail(RESPONSE_MSG_0006)

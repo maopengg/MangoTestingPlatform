@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_ui', '0033_uipagestepsdetailed_key_list_uipagestepsdetailed_sql'),
     ]

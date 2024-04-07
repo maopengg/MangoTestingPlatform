@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0022_scheduledtasks_parallel_number_tasksruncaselist_sort_and_more'),
     ]

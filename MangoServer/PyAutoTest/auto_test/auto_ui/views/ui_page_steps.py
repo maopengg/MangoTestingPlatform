@@ -64,7 +64,7 @@ class UiPageStepsViews(ViewSet):
             case_json = UiTestRun(request.user['id'], request.GET.get("te")).steps(
                 steps_id=int(request.GET.get("page_step_id")))
         except MangoServerError as error:
-            return ResponseData.fail((error.code,error.msg))
+            return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['put'], detail=False)
@@ -116,7 +116,7 @@ class UiPageStepsViews(ViewSet):
                 if ui_page_steps_serializer.is_valid():
                     ui_page_steps_serializer.save()
                 else:
-                    return ResponseData.fail(RESPONSE_MSG_0089,ui_page_steps_serializer.errors)
+                    return ResponseData.fail(RESPONSE_MSG_0089, ui_page_steps_serializer.errors)
             return ResponseData.success(RESPONSE_MSG_0088, serializer.data)
         else:
             return ResponseData.fail(RESPONSE_MSG_0089, serializer.errors)

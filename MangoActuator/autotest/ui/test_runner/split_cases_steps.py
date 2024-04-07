@@ -10,13 +10,11 @@ from autotest.ui.test_runner.split_steps_elements import SplitStepsElements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from enums.tools_enum import StatusEnum
-from enums.ui_enum import DriveTypeEnum, UiPublicTypeEnum
+from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
 from service.socket_client import ClientWebSocket
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0036, ERROR_MSG_0037, ERROR_MSG_0038, ERROR_MSG_0039
 
 
 class SplitCaseSteps(SplitStepsElements):
