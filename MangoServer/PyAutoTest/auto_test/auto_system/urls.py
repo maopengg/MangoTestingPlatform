@@ -80,4 +80,5 @@ urlpatterns = [
     path('enum/case/level', EnumOptionViews.as_view({'get': 'enum_case_level'})),
     path('enum/ui/public', EnumOptionViews.as_view({'get': 'enum_ui_public'})),
     path('enum/ui/element/operation', EnumOptionViews.as_view({'get': 'enum_ui_element_operation'})),
+    path('enum/api/parameter/type', EnumOptionViews.as_view({'get': 'enum_api_parameter_type'})),
 ]

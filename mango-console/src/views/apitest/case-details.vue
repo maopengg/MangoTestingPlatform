@@ -181,8 +181,8 @@
               <a-radio value="response">响应结果</a-radio>
               <a-radio value="assertion">接口断言</a-radio>
               <a-radio value="posterior">后置处理</a-radio>
-              <a-radio value="dump">数据清除</a-radio>
-              <a-radio value="cache">缓存数据</a-radio>
+              <!--              <a-radio value="dump">数据清除</a-radio>-->
+              <!--              <a-radio value="cache">缓存数据</a-radio>-->
               <a-button type="text" :disabled="apiCaseData.disabled" @click="clickAdd"
                 >增加一条</a-button
               >
@@ -278,6 +278,29 @@
                     </a-space>
                   </a-space>
                 </template>
+                <template v-else-if="item.type === 'textarea1'">
+                  <a-table
+                    :columns="columns1"
+                    :data="apiCaseData.parameterData"
+                    :pagination="{ pageSize: 5 }"
+                    :bordered="true"
+                    :row-selection="rowSelection"
+                    row-key="key"
+                    v-model:selectedKeys="selectedKeys"
+                  >
+                    <template #value="{ record }">
+                      <a-input v-model="record.value" />
+                    </template>
+                    <template #type="{ record }">
+                      <a-tag color="orangered" size="small" v-if="record.type === 0">参数</a-tag>
+                      <a-tag color="gold" size="small" v-else-if="record.type === 1">表单</a-tag>
+                      <a-tag color="arcoblue" size="small" v-else-if="record.type === 2"
+                        >json</a-tag
+                      >
+                      <a-tag color="lime" size="small" v-else-if="record.type === 3">文件</a-tag>
+                    </template>
+                  </a-table>
+                </template>
                 <template v-else>
                   <div>
                     <span>{{ item.data }}</span>
@@ -346,6 +369,7 @@
     uiPageStepsDetailedAss,
     apiPutRefreshApiInfo,
     apiCase,
+    apiInfoDetails,
   } from '@/api/url'
   import { useRoute } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
@@ -359,7 +383,13 @@
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const formModel = ref({})
   const pageData = usePageData()
+  const selectedKeys = ref(['code'])
 
+  const rowSelection = reactive({
+    type: 'checkbox',
+    showCheckedAll: true,
+    onlyCurrent: false,
+  })
   const route = useRoute()
   const apiCaseData: any = reactive({
     actionTitle: '新增接口',
@@ -368,6 +398,7 @@
     tabsKey: 0,
     selectDataObj: {},
     data: [],
+    parameterData: [],
     selectData: [],
     clientType: [],
     methodType: [],
@@ -400,6 +431,23 @@
       dataIndex: 'actions',
       align: 'center',
       width: 220,
+    },
+  ])
+  const columns1 = reactive([
+    {
+      title: '参数类型',
+      dataIndex: 'type',
+      slotName: 'type',
+    },
+
+    {
+      title: 'key',
+      dataIndex: 'key',
+    },
+    {
+      title: 'value',
+      dataIndex: 'value',
+      slotName: 'value',
     },
   ])
   const formItems: FormItem[] = reactive([
@@ -754,6 +802,8 @@
   }
 
   function select(record: any) {
+    doRefreshApi(record.api_info_id)
+
     apiCaseData.selectDataObj = record
     for (let key in record) {
       if (key === apiCaseData.position) {
@@ -784,7 +834,20 @@
       }
     }
   }
-
+  function doRefreshApi(api_info_id: number) {
+    get({
+      url: apiInfoDetails,
+      data: () => {
+        return {
+          api_info_id: api_info_id,
+        }
+      },
+    })
+      .then((res) => {
+        apiCaseData.parameterData = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

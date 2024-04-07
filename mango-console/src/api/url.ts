@@ -35,6 +35,8 @@ export const userFilesDelete = '/user/files/delete'
 
 // -
 export const apiInfo = '/api/info'
+export const apiInfoDetails = '/api/info/details'
+
 export const apiCaseInfoRun = '/api/case/api/info/run'
 export const apiPutApiInfoType = '/api/put/api/info/type'
 export const apiCopyInfo = '/api/copy/info'
@@ -136,6 +138,7 @@ export const systemEnumAutotest = 'system/enum/autotest'
 export const systemEnumCaseLevel = 'system/enum/case/level'
 export const systemEnumUiPublic = 'system/enum/ui/public'
 export const systemEnumUiElementOperation = 'system/enum/ui/element/operation'
+export const systemEnumApiParameterType = 'system/enum/api/parameter/type'
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
