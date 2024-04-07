@@ -73,17 +73,17 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'group',
-        component: () => import('@/views/apitest/api-case.vue'),
+        path: 'info/details',
+        component: () => import('@/views/apitest/api-info-details.vue'),
         meta: {
-          title: '用例组',
+          title: '接口详情',
         },
       },
       {
         path: 'details',
         component: () => import('@/views/apitest/case-details.vue'),
         meta: {
-          title: '接口用例详情',
+          title: '用例详情',
         },
       },
       {

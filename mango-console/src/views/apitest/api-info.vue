@@ -169,10 +169,11 @@
                     </a-modal>
                   </template>
                   <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
-                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button type="text" size="mini" @click="onStep(record)">详情</a-button>
                   <a-dropdown trigger="hover">
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
+                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                       <a-doption>
                         <a-button type="text" size="mini" @click="apiInfoCopy(record)"
                           >复制</a-button
@@ -294,6 +295,9 @@
   import { fieldNames } from '@/setting'
   import { useProject } from '@/store/modules/get-project'
   import { useProjectModule } from '@/store/modules/project_module'
+  import { usePageData } from '@/store/page-data'
+  import { useRouter } from 'vue-router'
+  const router = useRouter()
 
   const projectModule = useProjectModule()
 
@@ -935,6 +939,18 @@
         doRefresh()
       })
       .catch(console.log)
+  }
+  function onStep(record: any) {
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/apitest/info/details',
+      query: {
+        case_id: record.id,
+        project: record.project.id,
+        test_suite_id: record.test_suite_id,
+      },
+    })
   }
   onMounted(() => {
     nextTick(async () => {

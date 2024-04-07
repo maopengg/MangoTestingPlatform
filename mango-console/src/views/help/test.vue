@@ -1,53 +1,51 @@
 <template>
-  <a-card>
-    <div>
-      <a-input-tag
-        :default-value="tags"
-        :style="{ width: '380px' }"
-        placeholder="Please Enter"
-        :max-tag-count="4"
-        allow-clear
-        @change="handleTagChange"
-      />
-    </div>
-    <a-form @submit="handleSubmit">
-      <a-form-item>
-        <a-button type="primary" html-type="submit">Submit</a-button>
-      </a-form-item>
-    </a-form>
-  </a-card>
-  <a-button @click="test">点击测试</a-button>
+  <!-- support from v2.25.0  -->
+  <a-table :columns="columns" :data="data">
+    <template #name="{ record, rowIndex }">
+      <a-input v-model="record.name" />
+    </template>
+  </a-table>
 </template>
 
-<script setup lang="ts">
-  import { onMounted, reactive } from 'vue'
-  import { get } from '@/api/http'
-  import { systemTest } from '@/api/url'
-  import { Message, Modal } from '@arco-design/web-vue'
+<script>
+  import { reactive } from 'vue'
 
-  const tags = reactive<string[]>([])
+  export default {
+    setup() {
+      const columns = [
+        {
+          title: 'name',
+          dataIndex: 'name',
+          slotName: 'name',
+        },
+        {
+          title: 'Salary',
+          dataIndex: 'salary',
+        },
+      ]
 
-  function handleTagChange(value: string[]) {
-    tags.splice(0, tags.length, ...value)
+      const data = reactive([
+        {
+          key1: '1',
+          name: 'Jane Doe',
+          salary: 23000,
+          address: '32 Park Road, London',
+          province: 'Beijing',
+          city: 'Haidian',
+          email: 'jane.doe@example.com',
+        },
+        {
+          key1: '2',
+          name: 'Alisa Ross',
+          salary: 25000,
+          address: '35 Park Road, London',
+          email: 'alisa.ross@example.com',
+        },
+      ])
+      return {
+        columns,
+        data,
+      }
+    },
   }
-
-  function handleSubmit() {
-    console.log('Submitted tags:', tags)
-  }
-
-  function test() {
-    get({
-      url: systemTest,
-      data: () => {
-        return {}
-      },
-    })
-      .then((res) => {
-        Message.success(res.msg)
-        console.log(res.data)
-      })
-      .catch(console.log)
-  }
-
-  onMounted(() => {})
 </script>
