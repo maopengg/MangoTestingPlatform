@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 from desktop.login_window import LoginWindow
 from service.socket_client.api_reflection import InterfaceMethodReflection
 from tools import InitializationPath
-from tools.logging_tool import logger
+from tools.log_collector import log
 
 try:
     InitializationPath()
@@ -21,7 +21,7 @@ try:
     app.exec()
 except Exception as error:
     traceback.print_exc()
-    logger.error(f"顶级任务出现异常：{error}")
+    log.error(f"顶级任务出现异常：{error}")
 
 # pyinstaller -F -c .\执行器.py --upx-dir="E:\DevTool\Python\python-venv\upx-4.0.2-win64"
 # pyinstaller -F -w .\执行器.py

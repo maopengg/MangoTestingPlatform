@@ -8,9 +8,9 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import RESPONSE_MSG_0103
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0103
 
 
 class TimeTasksSerializers(serializers.ModelSerializer):

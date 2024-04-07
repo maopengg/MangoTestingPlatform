@@ -17,11 +17,11 @@ from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTask
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
@@ -78,7 +78,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
                 self.asynchronous_callback(request)
                 return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
             else:
-                logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+                log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
                 return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 

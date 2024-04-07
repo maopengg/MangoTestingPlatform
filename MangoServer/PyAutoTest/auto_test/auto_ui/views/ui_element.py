@@ -13,9 +13,9 @@ from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class UiElementSerializers(serializers.ModelSerializer):

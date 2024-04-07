@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError
 from PyAutoTest.models.tools_model import MysqlConingModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0021, ERROR_MSG_0022
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0021, ERROR_MSG_0022
 
 
 class GetDataBase:

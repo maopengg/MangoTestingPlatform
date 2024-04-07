@@ -12,9 +12,9 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class UiPageSerializers(serializers.ModelSerializer):

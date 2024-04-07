@@ -9,7 +9,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
 class TestSuiteReportSerializers(serializers.ModelSerializer):

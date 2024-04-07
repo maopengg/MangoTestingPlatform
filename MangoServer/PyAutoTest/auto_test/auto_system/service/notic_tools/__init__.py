@@ -20,7 +20,7 @@ from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
 
 log = logging.getLogger('system')
 

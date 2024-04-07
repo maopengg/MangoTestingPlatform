@@ -20,7 +20,7 @@ from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 
 T = TypeVar('T')
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -58,7 +58,7 @@ class ChatConsumer(WebsocketConsumer):
             user.last_login_time = datetime.datetime.now()
             user.save()
         else:
-            logger.error('请使用正确的链接域名访问！')
+            log.error('请使用正确的链接域名访问！')
 
     def websocket_receive(self, message):
         """
@@ -70,7 +70,7 @@ class ChatConsumer(WebsocketConsumer):
         try:
             msg = SocketDataModel(**json.loads(message.get('text')))
         except json.decoder.JSONDecodeError as e:
-            logger.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
+            log.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
         else:
             if msg.data:
                 if msg.data.func_name:
@@ -113,7 +113,7 @@ class ChatConsumer(WebsocketConsumer):
             elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
-            logger.info(
+            log.info(
                 f'发送的用户：{send_data.user}，发送的数据：'
                 f'{send_data.model_dump_json() if send_data.data else None}')
 
@@ -148,7 +148,7 @@ class ChatConsumer(WebsocketConsumer):
         try:
             data_json = data.model_dump_json()
         except TypeError:
-            logger.error(f'序列化数据错误，请检查发送数据！')
+            log.error(f'序列化数据错误，请检查发送数据！')
         else:
-            logger.debug(f"发送的数据：{data_json}")
+            log.debug(f"发送的数据：{data_json}")
             return data_json

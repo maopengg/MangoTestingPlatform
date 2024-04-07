@@ -21,9 +21,9 @@ from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class UserSerializers(serializers.ModelSerializer):

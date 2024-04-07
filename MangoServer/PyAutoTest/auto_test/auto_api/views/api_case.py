@@ -18,11 +18,11 @@ from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSer
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('api')
+log = logging.getLogger('api')
 
 
 class ApiCaseSerializers(serializers.ModelSerializer):
@@ -90,7 +90,7 @@ class ApiCaseViews(ViewSet):
                 serializer.save()
                 res.append(True)
             else:
-                logger.error(f"错误信息：{str(serializer.errors)}"
+                log.error(f"错误信息：{str(serializer.errors)}"
                              f"错误数据：{i}")
                 res.append(False)
         if False in res:

@@ -18,7 +18,7 @@ from exceptions.ui_exception import UiError, UiCacheDataIsNullError, BrowserObje
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
 from tools import InitializationPath
 from tools.data_processor import RandomTimeData
-from tools.logging_tool import logger
+from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 
 
@@ -96,7 +96,7 @@ class SplitStepsElements(DriveSet):
         @param error:
         @return:
         """
-        logger.error(
+        log.error(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
         path = rf'{InitializationPath.failure_screenshot_file}\{self.element_model.ele_name_a}{RandomTimeData.get_deta_hms()}.jpg'
         self.notice_signal.send(3, data=f'''元素名称：{self.element_test_result.ele_name_a}
@@ -118,7 +118,7 @@ class SplitStepsElements(DriveSet):
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:
-                logger.error('自动化类型不存在，请联系管理员检查！')
+                log.error('自动化类型不存在，请联系管理员检查！')
         self.element_test_result.error_message = error.msg
         self.element_test_result.picture_path = path
         self.page_step_result_model.status = StatusEnum.FAIL.value

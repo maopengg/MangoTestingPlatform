@@ -11,9 +11,9 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view.model_crud import ModelCRUD
 
-logger = logging.getLogger('api')
+log = logging.getLogger('api')
 
 
 class ApiInfoResultSerializers(serializers.ModelSerializer):

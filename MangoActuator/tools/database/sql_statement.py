@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-01-10 16:58
 # @Author : 毛鹏
-from tools.database_tool.sqlite_connect import SQLiteConnect
+from tools.database.sqlite_connect import SQLiteConnect
 
 sql_statement_1 = 'SELECT * FROM user_info;'
 sql_statement_2 = f'INSERT INTO "user_info" ("username", "password", "ip", "port") VALUES (?, ?, ?, ?);'

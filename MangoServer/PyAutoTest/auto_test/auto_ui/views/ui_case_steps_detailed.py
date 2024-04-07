@@ -13,11 +13,11 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, UiPageStepsDetailed, UiCase
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('system')
+log = logging.getLogger('system')
 
 
 class UiCaseStepsDetailedSerializers(serializers.ModelSerializer):
@@ -66,14 +66,14 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
         try:
             data['name'] = run[0].case.name
         except AttributeError:
-            logger.error(f'对UI用例进行排序时报错：{data}')
+            log.error(f'对UI用例进行排序时报错：{data}')
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
         ui_case = UiCaseCRUD()
         res = ui_case.serializer(instance=UiCase.objects.get(pk=_id), data=data)
         if res.is_valid():
             res.save()
         else:
-            logger.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
 
 
 class UiCaseStepsDetailedViews(ViewSet):

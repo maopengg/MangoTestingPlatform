@@ -19,8 +19,8 @@ from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0029, ERROR_MSG_0030
-from PyAutoTest.tools.view_utils.snowflake import Snowflake
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0029, ERROR_MSG_0030
+from PyAutoTest.tools.view.snowflake import Snowflake
 
 
 class UiTestRun:

@@ -25,8 +25,8 @@ from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.data_processor import DataProcessor
-from tools.database_tool.mysql_connect import MysqlConnect
-from tools.logging_tool import logger
+from tools.database.mysql_connect import MysqlConnect
+from tools.log_collector import log
 from tools import InitializationPath
 from tools.message.error_msg import ERROR_MSG_0014, ERROR_MSG_0016, ERROR_MSG_0019, ERROR_MSG_0020, ERROR_MSG_0023
 
@@ -168,7 +168,7 @@ class AndroidDriver(UiautomatorEquipmentDevice,
 
     def __error(self, error_class, msg, e=None):
         """ 操作元素失败时试用的函数 """
-        logger.error(f'元素：{self.element.ele_name_a} 操作失败\n'
+        log.error(f'元素：{self.element.ele_name_a} 操作失败\n'
                            f'报错信息：{e}\n'
                            f'元素对象：{self.element.dict()}\n')
         path = rf'{InitializationPath.failure_screenshot_file}\{self.element.ele_name_a}{DataProcessor.get_deta_hms()}.jpg'
@@ -188,7 +188,7 @@ class AndroidDriver(UiautomatorEquipmentDevice,
         if value is not None:
             self.element.ope_value[key] = value
         else:
-            logger.error(f'操作-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')
+            log.error(f'操作-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')
 
     @retry(stop_max_attempt_number=3, wait_fixed=2000)
     def __ass(self, key, expect):
@@ -201,4 +201,4 @@ class AndroidDriver(UiautomatorEquipmentDevice,
         if value is not None:
             self.element.ass_value[key] = value
         else:
-            logger.error(f'断言-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')
+            log.error(f'断言-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')

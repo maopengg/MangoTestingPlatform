@@ -15,7 +15,7 @@ from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.api_exception import CaseIsEmptyError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.view_utils.error_msg import *
+from PyAutoTest.tools.view.error_msg import *
 
 
 class ApiTestRun(ApiDataHandle, TestResult):

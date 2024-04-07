@@ -16,9 +16,9 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class UiPageStepsSerializers(serializers.ModelSerializer):

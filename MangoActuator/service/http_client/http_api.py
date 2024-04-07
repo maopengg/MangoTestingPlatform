@@ -10,7 +10,7 @@ from exceptions.tools_exception import FileNotError
 from service.http_client import HttpRequest
 from tools import InitializationPath
 from tools.message.error_msg import ERROR_MSG_0007
-from tools.other_utils.path import Path
+from tools.other.path import Path
 
 
 class HttpApi(HttpRequest):

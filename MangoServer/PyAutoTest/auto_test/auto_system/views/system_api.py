@@ -15,10 +15,10 @@ from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
-from PyAutoTest.tools.cache_utils.redis import Cache
+from PyAutoTest.tools.redis.redis import Cache
 from PyAutoTest.tools.data_processor import ObtainRandomData
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 log = logging.getLogger('system')
 

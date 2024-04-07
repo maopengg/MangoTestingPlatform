@@ -7,7 +7,7 @@
 from rest_framework import serializers
 
 from PyAutoTest.auto_test.auto_user.models import UserLogs
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
+from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
 class UserLogsSerializers(serializers.ModelSerializer):

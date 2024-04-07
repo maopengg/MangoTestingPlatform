@@ -15,8 +15,8 @@ from PyAutoTest.exceptions.api_exception import LoginError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.data_processor import DataProcessor
-from PyAutoTest.tools.mysql_tools.mysql_control import MysqlConnect
-from PyAutoTest.tools.view_utils.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
+from PyAutoTest.tools.database.mysql_control import MysqlConnect
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
 from .http_request import HTTPRequest
 
 log = logging.getLogger('api')

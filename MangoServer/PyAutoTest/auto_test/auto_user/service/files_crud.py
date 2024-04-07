@@ -7,7 +7,7 @@ import os
 import shutil
 
 from PyAutoTest.auto_test.auto_ui.models import Project
-from PyAutoTest.tools.other_utils.path import FilePath
+from PyAutoTest.tools.other.path import FilePath
 
 
 class FilesCRUD:

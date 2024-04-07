@@ -12,10 +12,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('user')
+log = logging.getLogger('user')
 
 
 class ProjectFileViews(ViewSet):

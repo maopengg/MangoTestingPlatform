@@ -15,11 +15,11 @@ from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCa
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('api')
+log = logging.getLogger('api')
 
 
 class ApiCaseDetailedSerializers(serializers.ModelSerializer):
@@ -174,7 +174,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
         else:
-            logger.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
 
     def callback(self, _id):
@@ -197,7 +197,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         if res.is_valid():
             res.save()
         else:
-            logger.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
 
 
 class ApiCaseDetailedViews(ViewSet):
@@ -240,5 +240,5 @@ class ApiCaseDetailedViews(ViewSet):
             serializer.save()
             return ResponseData.success(RESPONSE_MSG_0014, serializer.data)
         else:
-            logger.error(f'执行刷新时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行刷新时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)

@@ -12,7 +12,7 @@ from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteRe
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.view_utils.snowflake import Snowflake
+from PyAutoTest.tools.view.snowflake import Snowflake
 
 
 class TestResult:

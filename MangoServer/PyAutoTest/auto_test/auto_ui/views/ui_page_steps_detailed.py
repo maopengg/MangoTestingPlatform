@@ -16,11 +16,11 @@ from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
-from PyAutoTest.tools.view_utils.model_crud import ModelCRUD
-from PyAutoTest.tools.view_utils.response_data import ResponseData
-from PyAutoTest.tools.view_utils.response_msg import *
+from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
-logger = logging.getLogger('ui')
+log = logging.getLogger('ui')
 
 
 class UiPageStepsDetailedSerializers(serializers.ModelSerializer):
@@ -84,7 +84,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
         if res.is_valid():
             res.save()
         else:
-            logger.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
 
 
 class UiPageStepsDetailedView(ViewSet):
