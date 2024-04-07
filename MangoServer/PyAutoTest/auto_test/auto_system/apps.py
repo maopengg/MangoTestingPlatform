@@ -6,8 +6,8 @@
 
 import logging
 import threading
-import time
 
+import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
@@ -27,7 +27,10 @@ class AutoSystemConfig(AppConfig):
             except OperationalError:
                 pass
             except ProgrammingError:
-                log.error('如果您是在迁移数据库时报错请忽略报错继续迁移。您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
-                raise Exception('如果您是在迁移数据库时报错请忽略报错继续迁移。您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
+                log.error(
+                    '如果您是在迁移数据库时报错请忽略报错继续迁移。您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
+                raise Exception(
+                    '如果您是在迁移数据库时报错请忽略报错继续迁移。您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
+
         delayed_thread = threading.Thread(target=delayed_task)
         delayed_thread.start()

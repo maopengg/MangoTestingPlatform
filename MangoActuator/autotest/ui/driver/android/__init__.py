@@ -19,15 +19,15 @@ from autotest.ui.driver.web.assertion import PlaywrightAssertion
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from exceptions.ui_exception import *
-from models.tools_model import MysqlConingModel
 from models.socket_model.ui_model import AndroidConfigModel
 from models.socket_model.ui_model import ElementModel, ElementResultModel
+from models.tools_model import MysqlConingModel
+from tools import InitializationPath
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.data_processor import DataProcessor
 from tools.database.mysql_connect import MysqlConnect
 from tools.log_collector import log
-from tools import InitializationPath
 from tools.message.error_msg import ERROR_MSG_0014, ERROR_MSG_0016, ERROR_MSG_0019, ERROR_MSG_0020, ERROR_MSG_0023
 
 
@@ -169,8 +169,8 @@ class AndroidDriver(UiautomatorEquipmentDevice,
     def __error(self, error_class, msg, e=None):
         """ 操作元素失败时试用的函数 """
         log.error(f'元素：{self.element.ele_name_a} 操作失败\n'
-                           f'报错信息：{e}\n'
-                           f'元素对象：{self.element.dict()}\n')
+                  f'报错信息：{e}\n'
+                  f'元素对象：{self.element.dict()}\n')
         path = rf'{InitializationPath.failure_screenshot_file}\{self.element.ele_name_a}{DataProcessor.get_deta_hms()}.jpg'
         self.a_screenshot(path)
         self.element_test_result.msg = msg

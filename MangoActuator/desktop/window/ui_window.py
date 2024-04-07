@@ -8,18 +8,13 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
-    QMetaObject, QObject, QPoint, QRect,
-    QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
-    QCursor, QFont, QFontDatabase, QGradient,
-    QIcon, QImage, QKeySequence, QLinearGradient,
-    QPainter, QPalette, QPixmap, QRadialGradient,
-    QTransform)
-from PySide6.QtWidgets import (QApplication, QComboBox, QHBoxLayout, QLabel,
-    QMainWindow, QMenu, QMenuBar, QPushButton,
-    QRadioButton, QSizePolicy, QSpacerItem, QStatusBar,
-    QTextEdit, QVBoxLayout, QWidget)
+from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect)
+from PySide6.QtGui import (QAction)
+from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel,
+                               QMenu, QMenuBar, QPushButton,
+                               QRadioButton, QSizePolicy, QSpacerItem, QStatusBar,
+                               QTextEdit, QVBoxLayout, QWidget)
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -113,7 +108,6 @@ class Ui_MainWindow(object):
 
         self.horizontalLayout_2.addItem(self.horizontalSpacer)
 
-
         self.verticalLayout.addLayout(self.horizontalLayout_2)
 
         self.textEdit = QTextEdit(self.centralwidget)
@@ -137,6 +131,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         QMetaObject.connectSlotsByName(MainWindow)
+
     # setupUi
 
     def retranslateUi(self, MainWindow):
@@ -148,11 +143,15 @@ class Ui_MainWindow(object):
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u72b6\u6001", None))
         self.label_6.setText(QCoreApplication.translate("MainWindow", u"\u5728\u7ebf", None))
         self.test.setText(QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5", None))
-        self.sendRedisData.setText(QCoreApplication.translate("MainWindow", u"\u53d1\u9001\u7f13\u5b58\u6570\u636e", None))
+        self.sendRedisData.setText(
+            QCoreApplication.translate("MainWindow", u"\u53d1\u9001\u7f13\u5b58\u6570\u636e", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
-        self.radioButton.setText(QCoreApplication.translate("MainWindow", u"\u662f\u5426\u5f00\u542f\u6d4f\u89c8\u5668\u6700\u5927\u5316", None))
-        self.label.setText(QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5\u7528\u4f8b\u5e76\u884c\u6570", None))
+        self.radioButton.setText(
+            QCoreApplication.translate("MainWindow", u"\u662f\u5426\u5f00\u542f\u6d4f\u89c8\u5668\u6700\u5927\u5316",
+                                       None))
+        self.label.setText(
+            QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5\u7528\u4f8b\u5e76\u884c\u6570", None))
         self.comboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"1", None))
         self.comboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"2", None))
         self.comboBox.setItemText(2, QCoreApplication.translate("MainWindow", u"3", None))
@@ -166,4 +165,3 @@ class Ui_MainWindow(object):
 
         self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u6267\u884c\u5668\u8bbe\u7f6e", None))
     # retranslateUi
-

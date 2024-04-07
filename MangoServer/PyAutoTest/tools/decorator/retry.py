@@ -30,4 +30,3 @@ def retry(max_retries=5, delay=5, func_name: str | None = None):
         return wrapper
 
     return decorator
-	

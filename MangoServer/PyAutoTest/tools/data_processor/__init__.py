@@ -23,7 +23,8 @@ ObtainRandomData类的函数注释必须是： “”“中间写值”“”
 """
 
 
-class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData, RandomStringData, RandomFileData, EncryptionTool, CodingTool):
+class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData, RandomStringData, RandomFileData,
+                       EncryptionTool, CodingTool):
     """ 获取随机数据 """
 
     def __init__(self, project_id: int = None):

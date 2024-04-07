@@ -21,4 +21,3 @@ class UiSocketEnum(Enum):
 class ToolsSocketEnum(Enum):
     """ 工具类接口 """
     SET_OPERATION_OPTIONS = 't_set_operation_options'
-

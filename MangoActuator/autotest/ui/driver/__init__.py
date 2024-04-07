@@ -4,7 +4,7 @@
 # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
 
-from playwright.async_api import Page, BrowserContext, Browser
+from playwright.async_api import Page, BrowserContext
 
 from autotest.ui.driver.android import AndroidDriver
 from autotest.ui.driver.ios import IOSDriver

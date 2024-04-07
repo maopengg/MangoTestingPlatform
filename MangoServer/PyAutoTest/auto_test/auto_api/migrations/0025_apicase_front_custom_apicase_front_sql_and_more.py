@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_api', '0024_remove_apipublic_public_type_alter_apipublic_type'),
     ]

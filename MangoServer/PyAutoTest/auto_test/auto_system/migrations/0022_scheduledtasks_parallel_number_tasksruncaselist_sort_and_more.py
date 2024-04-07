@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0021_cachedata'),
     ]
@@ -24,6 +23,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tasksruncaselist',
             name='test_object',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.testobject'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='auto_system.testobject'),
         ),
     ]

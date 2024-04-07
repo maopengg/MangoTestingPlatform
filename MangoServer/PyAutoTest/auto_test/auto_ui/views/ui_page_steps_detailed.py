@@ -151,7 +151,8 @@ class UiPageStepsDetailedView(ViewSet):
                 data = CacheDataValue.get_cache_value(key='IOS_ASS')
             data.append({'value': 'PublicAssertion',
                          'label': '元素文本',
-                         'children': CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value)})
+                         'children': CacheDataValue.get_cache_value(
+                             key=CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value)})
             data.append(CacheDataValue.get_cache_value(key=CacheDataKey2Enum.SQL_ASSERTION_METHOD.value)[0])
         else:
             data = CacheDataValue.get_cache_value(key=CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value)

@@ -4,9 +4,9 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import logging
-import time
 
 import requests
+import time
 from requests.exceptions import *
 
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue

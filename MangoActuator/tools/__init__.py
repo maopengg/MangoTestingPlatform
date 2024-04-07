@@ -38,4 +38,3 @@ if __name__ == '__main__':
     print(InitializationPath.log_file)
     print(InitializationPath.failure_screenshot_file)
     print(InitializationPath.upload_files)
-
