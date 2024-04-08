@@ -108,9 +108,12 @@ class ApiTestRun(ApiDataHandle, TestResult):
                 if isinstance(result_list, list):
                     for result in result_list:
                         try:
-                            for value, key in zip(result, eval(i.get('key_list'))):
+                            key_list = eval(i.get('key_list'))
+                            for value, key in zip(result, key_list):
                                 self.set_cache(key, result.get(value))
                         except SyntaxError:
+                            raise SyntaxErrorError(*ERROR_MSG_0036)
+                        except NameError:
                             raise SyntaxErrorError(*ERROR_MSG_0036)
                     if not result_list:
                         raise MysqlQueryIsNullError(*ERROR_MSG_0034, value=(sql,))
