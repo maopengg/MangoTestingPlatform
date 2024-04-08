@@ -65,8 +65,8 @@ class TestResult:
                 'response_time': str(response.response_time),
                 'response_headers': json.dumps(response.response_headers, ensure_ascii=False),
                 'response_text': response.response_text if response.response_text else None,
-                'response_json': json.dumps(response.response_json,
-                                            ensure_ascii=False) if response.response_json else None,
+                # 'response_json': json.dumps(response.response_json,
+                #                             ensure_ascii=False) if response.response_json else None,
 
                 'status': self.assertion_result[-1],
                 'error_message': self.error_message[-1] if self.error_message else None,

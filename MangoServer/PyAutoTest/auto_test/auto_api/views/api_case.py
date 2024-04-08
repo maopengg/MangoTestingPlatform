@@ -66,9 +66,9 @@ class ApiCaseViews(ViewSet):
         project_id = request.query_params.get('project_id')
         try:
             api_case_run = ApiTestRun(project_id, test_obj_id, case_sort)
+            test_result: dict = api_case_run.run_one_case(case_id)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )
-        test_result: dict = api_case_run.run_one_case(case_id)
         if StatusEnum.FAIL.value in test_result['ass_result']:
             return ResponseData.success((200, test_result['error_message'][-1]))
         return ResponseData.success(RESPONSE_MSG_0111, test_result)

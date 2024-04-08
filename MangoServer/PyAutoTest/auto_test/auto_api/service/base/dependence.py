@@ -69,6 +69,8 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                 response_data = eval(response.response_text)
             except SyntaxError:
                 raise ResponseSyntaxError(*ERROR_MSG_0007)
+            except ValueError:
+                pass
         if case_detailed.ass_response_value:
             self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
         if case_detailed.ass_sql:
@@ -146,7 +148,11 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     value = self.get_json_path_value(response_data, i['value'])
                     _dict = {'value': str(value)}
                     if i.get('expect'):
-                        _dict['expect'] = i.get('expect')
+                        try:
+                            _dict['expect'] = str(eval(i.get('expect')))
+                        except Exception:
+                            _dict['expect'] = i.get('expect')
+                    print(_dict)
                     getattr(self, i['method'])(**_dict)
         except AssertionError:
             raise ResponseValueAssError(*ERROR_MSG_0005, value=(_dict.get('value'), _dict.get('expect')))
