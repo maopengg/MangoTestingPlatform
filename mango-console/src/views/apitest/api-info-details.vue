@@ -4,7 +4,6 @@
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
         </a-affix>
@@ -24,44 +23,53 @@
       </div>
     </a-card>
     <a-card>
-      <a-table
-        :bordered="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
-        :columns="tableColumns"
-        :pagination="false"
-        :rowKey="rowKey"
-        @selection-change="onSelectionChange"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of tableColumns"
-            :key="item.key"
-            :align="item.align"
-            :title="item.title"
-            :width="item.width"
-            :data-index="item.key"
-            :fixed="item.fixed"
-          >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 0">参数</a-tag>
-              <a-tag color="gold" size="small" v-else-if="record.type === 1">表单</a-tag>
-              <a-tag color="arcoblue" size="small" v-else-if="record.type === 2">json</a-tag>
-              <a-tag color="lime" size="small" v-else-if="record.type === 3">文件</a-tag>
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除
-              </a-button>
-            </template>
-          </a-table-column>
+      <a-tabs @tab-click="(key) => switchType(key)">
+        <template #extra>
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">新增</a-button>
+            <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+          </a-space>
         </template>
-      </a-table>
+        <a-tab-pane key="0" title="参数">
+          <a-table
+            :bordered="false"
+            :row-selection="{ selectedRowKeys, showCheckedAll }"
+            :loading="table.tableLoading.value"
+            :data="table.dataList"
+            :columns="tableColumns"
+            :pagination="false"
+            :rowKey="rowKey"
+            @selection-change="onSelectionChange"
+          >
+            <template #columns>
+              <a-table-column
+                v-for="item of tableColumns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.key"
+                :fixed="item.fixed"
+              >
+                <template v-if="item.key === 'index'" #cell="{ record }">
+                  {{ record.id }}
+                </template>
+                <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    >删除
+                  </a-button>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </a-tab-pane>
+        <a-tab-pane key="1" title="表单" />
+        <a-tab-pane key="2" title="JSON">
+          <a-textarea placeholder="Please enter something" allow-clear />
+        </a-tab-pane>
+        <a-tab-pane key="3" title="文件" />
+      </a-tabs>
     </a-card>
   </div>
   <ModalDialog ref="modalDialogRef" :title="ApiInfoDetailsData.actionTitle" @confirm="onDataForm">
@@ -122,6 +130,7 @@
     id: 0,
     isAdd: false,
     updateId: 0,
+    pageType: 0,
     actionTitle: '添加元素',
     data: [],
     apiParameterType: [],
@@ -129,11 +138,7 @@
   })
   const tableColumns = useTableColumn([
     table.indexColumn,
-    {
-      title: '参数类型',
-      key: 'type',
-      dataIndex: 'project',
-    },
+
     {
       title: 'key',
       key: 'key',
@@ -208,6 +213,11 @@
       placeholder: '请输入参数描述',
     },
   ])
+  function switchType(key: any) {
+    ApiInfoDetailsData.pageType = key
+    doRefresh()
+  }
+
   function doResetSearch() {
     window.history.back()
   }

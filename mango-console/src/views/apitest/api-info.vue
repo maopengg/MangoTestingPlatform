@@ -76,7 +76,110 @@
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
               <a-space v-else-if="apiInfoData.apiType === '1'">
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                <a-button type="primary" size="small" @click="handleClick1">新增</a-button>
+                <!--                // @click="onAddPage"-->
+                <a-drawer :width="650" :visible="visible1" @cancel="handleCancel1" unmountOnClose>
+                  <template #title> 新建接口 </template>
+                  <template #footer>
+                    <a-space>
+                      <a-button @click="handleCancel1">取消</a-button>
+                      <a-button :disabled="current === 1" @click="onPrev">
+                        <icon-left />
+                        上一步
+                      </a-button>
+                      <a-button :disabled="current === 3" @click="onNext">
+                        下一步
+                        <icon-right />
+                      </a-button>
+                      <a-button type="primary" @click="handleOk1">确定</a-button>
+                    </a-space>
+                  </template>
+                  <div class="frame-bg">
+                    <div class="frame-body">
+                      <div class="frame-aside">
+                        <a-steps :current="current">
+                          <a-step>基础信息</a-step>
+                          <a-step>请求头</a-step>
+                          <a-step>请求体</a-step>
+                        </a-steps>
+                      </div>
+                      <div class="frame-main">
+                        <div class="main-content">
+                          <a-form :model="formModel">
+                            <a-form-item
+                              :class="[
+                                item.required ? 'form-item__require' : 'form-item__no_require',
+                              ]"
+                              :label="item.label"
+                              v-for="item of formItems"
+                              :key="item.key"
+                            >
+                              <template v-if="item.type === 'input'">
+                                <a-input :placeholder="item.placeholder" v-model="item.value" />
+                              </template>
+                              <template v-else-if="item.type === 'textarea'">
+                                <a-textarea
+                                  v-model="item.value"
+                                  :placeholder="item.placeholder"
+                                  :auto-size="{ minRows: 3, maxRows: 5 }"
+                                />
+                              </template>
+                              <template
+                                v-else-if="item.type === 'select' && item.key === 'project'"
+                              >
+                                <a-select
+                                  v-model="item.value"
+                                  :placeholder="item.placeholder"
+                                  :options="project.data"
+                                  :field-names="fieldNames"
+                                  @change="getProjectModule(item.value)"
+                                  value-key="key"
+                                  allow-clear
+                                  allow-search
+                                />
+                              </template>
+                              <template
+                                v-else-if="item.type === 'select' && item.key === 'module_name'"
+                              >
+                                <a-select
+                                  v-model="item.value"
+                                  :placeholder="item.placeholder"
+                                  :options="apiInfoData.moduleList"
+                                  :field-names="fieldNames"
+                                  value-key="key"
+                                  allow-clear
+                                  allow-search
+                                />
+                              </template>
+                              <template v-else-if="item.type === 'select' && item.key === 'client'">
+                                <a-select
+                                  v-model="item.value"
+                                  :placeholder="item.placeholder"
+                                  :options="apiInfoData.apiPublicEnd"
+                                  :field-names="fieldNames"
+                                  value-key="key"
+                                  allow-clear
+                                  allow-search
+                                />
+                              </template>
+                              <template v-else-if="item.type === 'select' && item.key === 'method'">
+                                <a-select
+                                  v-model="item.value"
+                                  :placeholder="item.placeholder"
+                                  :options="apiInfoData.apiMethodType"
+                                  :field-names="fieldNames"
+                                  value-key="key"
+                                  allow-clear
+                                  allow-search
+                                />
+                              </template>
+                            </a-form-item>
+                          </a-form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </a-drawer>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('调试完成')"
                   >调试完成</a-button
@@ -331,7 +434,27 @@
   const handleCancel = () => {
     visible.value = false
   }
+  const visible1 = ref(false)
 
+  const handleClick1 = () => {
+    visible1.value = true
+  }
+  const handleOk1 = () => {
+    visible1.value = false
+  }
+  const current = ref(1)
+
+  const onPrev = () => {
+    current.value = Math.max(1, current.value - 1)
+  }
+
+  const onNext = () => {
+    current.value = Math.min(3, current.value + 1)
+  }
+
+  const handleCancel1 = () => {
+    visible1.value = false
+  }
   const conditionItems: Array<FormItem> = reactive([
     {
       key: 'id',
