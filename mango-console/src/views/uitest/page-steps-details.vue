@@ -52,8 +52,8 @@
             <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
               {{ record.page_step.name }}
             </template>
-            <template v-else-if="item.dataIndex === 'ele_name_a'" #cell="{ record }">
-              {{ record.ele_name_a == null ? '-' : record.ele_name_a.name }}
+            <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
+              {{ record.ele_name == null ? '-' : record.ele_name.name }}
             </template>
             <!--              <template v-else-if="item.dataIndex === 'ele_name_b'" #cell="{ record }">-->
             <!--                {{ record.ele_name_b == null ? '-' : record.ele_name_b.name }}-->
@@ -105,7 +105,7 @@
             <template v-if="item.type === 'input'">
               <a-input :placeholder="item.placeholder" v-model="item.value" />
             </template>
-            <template v-else-if="item.type === 'select' && item.key === 'ele_name_a'">
+            <template v-else-if="item.type === 'select' && item.key === 'ele_name'">
               <a-select
                 v-model="item.value"
                 :placeholder="item.placeholder"
@@ -240,13 +240,9 @@
   const columns = reactive([
     {
       title: '元素名称',
-      dataIndex: 'ele_name_a',
+      dataIndex: 'ele_name',
       width: 150,
     },
-    // {
-    //   title: '页面元素B',
-    //   dataIndex: 'ele_name_b'
-    // },
     {
       title: '步骤类型',
       dataIndex: 'type',
@@ -331,7 +327,7 @@
     if (event === 0) {
       if (
         !formItems.some(
-          (item) => item.key === 'ele_name_a' || formItems.some((item) => item.key === 'ope_type')
+          (item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type')
         )
       ) {
         formItems.push(
@@ -348,7 +344,7 @@
           },
           {
             label: '选择元素',
-            key: 'ele_name_a',
+            key: 'ele_name',
             value: '',
             placeholder: '请选择locating',
             required: false,
@@ -375,7 +371,7 @@
           },
           {
             label: '选择元素',
-            key: 'ele_name_a',
+            key: 'ele_name',
             value: '',
             placeholder: '请选择locating',
             required: false,

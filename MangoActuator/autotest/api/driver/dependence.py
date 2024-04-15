@@ -69,7 +69,7 @@ class Dependence(DataProcessor):
         """
         sql = self.replace_text(sql)
         my: MysqlConnect = MysqlConnect()
-        await my.connect(self.get_cache('database'))
+        await my.connect(self.get_cache('database_tool'))
         sql_res_list = await my.select(sql)
         k_list = []
         for sql_res_dict in sql_res_list:

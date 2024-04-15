@@ -122,6 +122,6 @@ class NewBrowser:
                                              func_args=api_info)
         except Exception as e:
             log.info(f'json_data:{json_data}\t'
-                     f'data:{data}\t'
-                     f'params:{params}\t'
-                     f'报错信息：{e}\t')
+                             f'data:{data}\t'
+                             f'params:{params}\t'
+                             f'报错信息：{e}\t')

@@ -79,8 +79,6 @@ class ApiCaseDetailed(models.Model):
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
     posterior_response = models.JSONField(verbose_name="后置响应处理", null=True)
     posterior_sleep = models.CharField(verbose_name="步骤顺序", max_length=64, null=True)
-    # 后置清除 目前只支持sql
-    dump_data = models.JSONField(verbose_name="数据清除", null=True)
 
     class Meta:
         db_table = 'api_case_detailed'

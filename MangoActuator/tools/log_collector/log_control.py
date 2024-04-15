@@ -1,5 +1,5 @@
 # # -*- coding: utf-8 -*-
-# # @Project: MangoActuator
+# # @Project: auto_test
 # # @Description: 日志封装，可设置不同等级的日志颜色
 # # @Time   : 2022-11-04 22:05
 # # @Author : 毛鹏

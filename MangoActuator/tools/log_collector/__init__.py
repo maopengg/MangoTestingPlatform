@@ -8,11 +8,11 @@ from tools.log_collector.log_control import LogHandler
 
 
 class Log:
-    DEBUG = LogHandler(fr"{InitializationPath.log_file}\debug-log.log", 'debug')
-    INFO = LogHandler(fr"{InitializationPath.log_file}\info-log.log", 'info')
-    WARNING = LogHandler(fr"{InitializationPath.log_file}\warning-log.log", 'warning')
-    ERROR = LogHandler(fr"{InitializationPath.log_file}\error-log.log", 'error')
-    CRITICAL = LogHandler(fr"{InitializationPath.log_file}\critical-log.log", 'critical')
+    DEBUG = LogHandler(fr"{InitializationPath.log_dir}\debug-log.log", 'debug')
+    INFO = LogHandler(fr"{InitializationPath.log_dir}\info-log.log", 'info')
+    WARNING = LogHandler(fr"{InitializationPath.log_dir}\warning-log.log", 'warning')
+    ERROR = LogHandler(fr"{InitializationPath.log_dir}\error-log.log", 'error')
+    CRITICAL = LogHandler(fr"{InitializationPath.log_dir}\critical-log.log", 'critical')
 
     @classmethod
     def debug(cls, msg: str):
