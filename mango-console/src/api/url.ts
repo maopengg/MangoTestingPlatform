@@ -35,8 +35,6 @@ export const userFilesDelete = '/user/files/delete'
 
 // -
 export const apiInfo = '/api/info'
-export const apiInfoDetails = '/api/info/details'
-
 export const apiCaseInfoRun = '/api/case/api/info/run'
 export const apiPutApiInfoType = '/api/put/api/info/type'
 export const apiCopyInfo = '/api/copy/info'

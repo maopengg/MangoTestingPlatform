@@ -18,7 +18,7 @@
         <a-space direction="vertical" style="width: 25%">
           <span>接口名称：{{ pageData.record.name }}</span>
           <span>接口URL：{{ pageData.record.url }}</span>
-          <span>接口方法：{{ ApiInfoDetailsData.apiMethodType[pageData.record.method] }}</span>
+          <span>接口方法：{{ data.apiMethodType[pageData.record.method] }}</span>
         </a-space>
       </div>
     </a-card>
@@ -27,19 +27,14 @@
         <template #extra>
           <a-space>
             <a-button type="primary" size="small" @click="doAppend">新增</a-button>
-            <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
           </a-space>
         </template>
         <a-tab-pane key="0" title="参数">
           <a-table
             :bordered="false"
-            :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
+            :data="data.dataList"
             :columns="tableColumns"
             :pagination="false"
-            :rowKey="rowKey"
-            @selection-change="onSelectionChange"
           >
             <template #columns>
               <a-table-column
@@ -64,15 +59,56 @@
             </template>
           </a-table>
         </a-tab-pane>
-        <a-tab-pane key="1" title="表单" />
-        <a-tab-pane key="2" title="JSON">
-          <a-textarea placeholder="Please enter something" allow-clear />
+        <a-tab-pane key="1" title="表单">
+          <a-table
+            :bordered="false"
+            :data="data.dataList"
+            :columns="tableColumns"
+            :pagination="false"
+          >
+            <template #columns>
+              <a-table-column
+                v-for="item of tableColumns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.key"
+                :fixed="item.fixed"
+              >
+                <template v-if="item.key === 'index'" #cell="{ record }">
+                  {{ record.id }}
+                </template>
+                <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    >删除
+                  </a-button>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
         </a-tab-pane>
-        <a-tab-pane key="3" title="文件" />
+        <a-tab-pane key="2" title="JSON">
+          <a-textarea
+            placeholder="请输入json格式的数据"
+            :model-value="data.dataValue"
+            allow-clear
+            auto-size
+          />
+        </a-tab-pane>
+        <a-tab-pane key="3" title="文件">
+          <a-textarea
+            placeholder="请输入json格式的文件上传数据"
+            :model-value="data.dataValue"
+            allow-clear
+            auto-size
+          />
+        </a-tab-pane>
       </a-tabs>
     </a-card>
   </div>
-  <ModalDialog ref="modalDialogRef" :title="ApiInfoDetailsData.actionTitle" @confirm="onDataForm">
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
         <a-form-item
@@ -88,7 +124,7 @@
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="ApiInfoDetailsData.apiParameterType"
+              :options="data.apiParameterType"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -103,42 +139,29 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { apiInfoDetails, systemEnumApiParameterType, systemEnumMethod } from '@/api/url'
+  import { apiInfo, systemEnumApiParameterType, systemEnumMethod } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { usePageData } from '@/store/page-data'
-  import {
-    usePagination,
-    useRowKey,
-    useRowSelection,
-    useTable,
-    useTableColumn,
-  } from '@/hooks/table'
-
   const pageData: any = usePageData()
-  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
-  const table = useTable()
-  const pagination = usePagination(doRefresh)
-  const rowKey = useRowKey('id')
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const ApiInfoDetailsData = reactive({
+  const data: any = reactive({
     id: 0,
     isAdd: false,
     updateId: 0,
-    pageType: 0,
+    pageType: '0',
     actionTitle: '添加元素',
-    data: [],
+    dataList: [],
     apiParameterType: [],
     apiMethodType: [],
+    dataValue: '',
   })
-  const tableColumns = useTableColumn([
-    table.indexColumn,
-
+  const tableColumns = [
     {
       title: 'key',
       key: 'key',
@@ -153,21 +176,13 @@
       tooltip: true,
     },
     {
-      title: '描述',
-      key: 'describe',
-      dataIndex: 'describe',
-      width: 200,
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
       title: '操作',
       key: 'actions',
       dataIndex: 'actions',
       align: 'center',
       width: 200,
     },
-  ])
+  ]
 
   const formItems: FormItem[] = reactive([
     {
@@ -213,17 +228,19 @@
       placeholder: '请输入参数描述',
     },
   ])
+
   function switchType(key: any) {
-    ApiInfoDetailsData.pageType = key
+    data.pageType = key
     doRefresh()
   }
 
   function doResetSearch() {
     window.history.back()
   }
+
   function doAppend() {
-    ApiInfoDetailsData.actionTitle = '添加元素'
-    ApiInfoDetailsData.isAdd = true
+    data.actionTitle = '添加元素'
+    data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
       if (it.reset) {
@@ -242,7 +259,7 @@
       okText: '删除',
       onOk: () => {
         deleted({
-          url: apiInfoDetails,
+          url: apiInfo,
           data: () => {
             return {
               id: '[' + record.id + ']',
@@ -259,9 +276,9 @@
   }
 
   function onUpdate(record: any) {
-    ApiInfoDetailsData.actionTitle = '编辑添加元素'
-    ApiInfoDetailsData.isAdd = false
-    ApiInfoDetailsData.updateId = record.id
+    data.actionTitle = '编辑添加元素'
+    data.isAdd = false
+    data.updateId = record.id
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
@@ -280,9 +297,9 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['api_info_id'] = route.query.id
-      if (ApiInfoDetailsData.isAdd) {
+      if (data.isAdd) {
         post({
-          url: apiInfoDetails,
+          url: apiInfo,
           data: () => {
             return value
           },
@@ -294,9 +311,9 @@
           .catch(console.log)
       } else {
         put({
-          url: apiInfoDetails,
+          url: apiInfo,
           data: () => {
-            value['id'] = ApiInfoDetailsData.updateId
+            value['id'] = data.updateId
             return value
           },
         })
@@ -311,22 +328,47 @@
 
   function doRefresh() {
     get({
-      url: apiInfoDetails,
+      url: apiInfo,
       data: () => {
         let value: any = {}
-        value['page'] = pagination.page
-        value['pageSize'] = pagination.pageSize
-        value['api_info_id'] = pageData.record.id
+        value['id'] = pageData.record.id
         return value
       },
     })
       .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
+        refresh(res.data[0])
       })
       .catch(console.log)
   }
-
+  function refresh(items: any) {
+    console.log(items)
+    data.dataList = []
+    data.dataValue = ''
+    if (data.pageType == '0') {
+      if (items.params) {
+        data.dataList = Object.keys(items.params).map((key) => {
+          return {
+            key: key,
+            value: items.params[key],
+          }
+        })
+      }
+    } else if (data.pageType == '1') {
+      if (items.data) {
+        data.dataList = Object.keys(items.data).map((key) => {
+          return {
+            key: key,
+            value: items.data[key],
+          }
+        })
+      }
+    } else if (data.pageType == '2') {
+      data.dataValue = JSON.stringify(items.json, null, 2)
+    } else {
+      data.dataValue = JSON.stringify(items.file, null, 2)
+    }
+    console.log(data.dataValue)
+  }
   function enumApiParameterType() {
     get({
       url: systemEnumApiParameterType,
@@ -335,10 +377,11 @@
       },
     })
       .then((res) => {
-        ApiInfoDetailsData.apiParameterType = res.data
+        data.apiParameterType = res.data
       })
       .catch(console.log)
   }
+
   function doMethod() {
     get({
       url: systemEnumMethod,
@@ -348,7 +391,7 @@
     })
       .then((res) => {
         res.data.forEach((item: any) => {
-          ApiInfoDetailsData.apiMethodType.push(item.title)
+          data.apiMethodType.push(item.title)
         })
       })
       .catch(console.log)
@@ -357,7 +400,7 @@
   onMounted(() => {
     nextTick(async () => {
       await doMethod()
-      doRefresh()
+      refresh(pageData.record)
       enumApiParameterType()
     })
   })
