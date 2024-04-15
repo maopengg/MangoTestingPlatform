@@ -6,8 +6,3 @@
 logs/*
 files/*
 database_config.json
-PyAutoTest/auto_test/auto_api/migrations/*
-PyAutoTest/auto_test/auto_ui/migrations/*
-PyAutoTest/auto_test/auto_user/migrations/*
-PyAutoTest/auto_test/auto_system/migrations/*
-PyAutoTest/auto_test/auto_perf/migrations/*
