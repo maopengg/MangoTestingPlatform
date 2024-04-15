@@ -25,14 +25,10 @@ class Initialization:
         subdirectory = os.path.join(logs_dir, i)
         if not os.path.exists(subdirectory):
             os.makedirs(subdirectory)
-    log_file = os.path.join(logs_dir, "log")
+    log_dir = os.path.join(logs_dir, "log")
     failure_screenshot_file = os.path.join(logs_dir, "screenshot")
     upload_files = os.path.join(logs_dir, 'upload_files')
     home_directory = project_root_directory
-
-    @classmethod
-    def get_log(cls):
-        return cls.log_file
 
     @classmethod
     def get_home_directory(cls):
@@ -49,11 +45,3 @@ class Initialization:
     @classmethod
     def get_logs(cls):
         return cls.logs_dir
-
-
-if __name__ == '__main__':
-    print(GetPath.get_log())
-    print(GetPath.get_log_screenshot())
-    print(GetPath.get_home_directory())
-    print(GetPath.get_upload_files())
-    # pyuic5 -o .\scripts\mian_window.py .\scripts\login.ui

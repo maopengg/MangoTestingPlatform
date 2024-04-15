@@ -9,7 +9,6 @@ from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseVie
 from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD, ApiCaseResultViews
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
-from PyAutoTest.auto_test.auto_api.views.api_info_details import ApiInfoDetailsCRUD
 from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 
@@ -19,8 +18,6 @@ urlpatterns = [
     path("info/name", ApiInfoViews.as_view({'get': 'get_api_name'})),
     path("put/api/info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     path("copy/info", ApiInfoViews.as_view({'post': 'copy_api_info'})),
-    #
-    path("info/details", ApiInfoDetailsCRUD.as_view()),
     #
     path("case", ApiCaseCRUD.as_view()),
     path("case/run", ApiCaseViews.as_view({'get': 'api_case_run'})),

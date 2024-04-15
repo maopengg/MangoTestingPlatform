@@ -725,7 +725,7 @@
       },
     })
       .then((res) => {
-        uiCaseDetailsData.elementLocator = res.data[0].ele_name_a.loc
+        uiCaseDetailsData.elementLocator = res.data[0].ele_name.loc
       })
       .catch(console.log)
   }

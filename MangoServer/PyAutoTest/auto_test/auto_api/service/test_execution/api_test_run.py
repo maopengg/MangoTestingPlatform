@@ -78,7 +78,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             # 后置处理
             self.posterior(response, case_detailed)
             # 数据清除
-            self.dump_data(case_detailed)
+            # self.dump_data(case_detailed)
         except MangoServerError as error:
             self.error_message.append(error.msg)
             self.assertion_result.append(StatusEnum.FAIL.value)

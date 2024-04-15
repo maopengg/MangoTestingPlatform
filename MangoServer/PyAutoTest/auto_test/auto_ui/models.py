@@ -1,15 +1,7 @@
-from django.db import connections
 from django.db import models
 
 from PyAutoTest.auto_test.auto_user.models import Project, ProjectModule
 from PyAutoTest.auto_test.auto_user.models import User
-
-
-def close_old_connections():
-    for conn in connections.all():
-        print(12345)
-        conn.close_if_unusable_or_obsolete()
-
 
 """
      1.python manage.py makemigrations
@@ -41,7 +33,6 @@ class UiElement(models.Model):
     name = models.CharField(verbose_name="元素名称", max_length=64)
     exp = models.SmallIntegerField(verbose_name="元素表达式")
     loc = models.CharField(verbose_name="元素定位", max_length=1048, null=True)
-    locator = models.CharField(verbose_name="元素定位", max_length=1048, null=True)
     sleep = models.IntegerField(verbose_name="等待时间", null=True)
     sub = models.IntegerField(verbose_name="下标", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
@@ -73,10 +64,7 @@ class UiPageStepsDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     page_step = models.ForeignKey(to=UiPageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
-    ele_name_a = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_a',
-                                   on_delete=models.SET_NULL, null=True)
-    ele_name_b = models.ForeignKey(to=UiElement, to_field="id", related_name='related_UiElement_b',
-                                   on_delete=models.SET_NULL, null=True)
+    ele_name = models.ForeignKey(to=UiElement, to_field="id",  on_delete=models.SET_NULL, null=True)
     step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
     ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ope_value = models.JSONField(verbose_name="操作内容", null=True)
@@ -209,8 +197,7 @@ class UiEleResult(models.Model):
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
     case_id = models.IntegerField(verbose_name="用例ID", null=True)
     page_step_id = models.IntegerField(verbose_name="步骤id", null=True)
-    ele_name_a = models.CharField(verbose_name="元素名称A", max_length=64, null=True)
-    ele_name_b = models.CharField(verbose_name="元素名称B", max_length=64, null=True)
+    ele_name = models.CharField(verbose_name="元素名称", max_length=64, null=True)
     ele_quantity = models.SmallIntegerField(verbose_name="元素个数", null=True)
     status = models.SmallIntegerField(verbose_name="元素测试结果", null=True)
     picture_path = models.CharField(verbose_name="用例名称", max_length=1000, null=True)

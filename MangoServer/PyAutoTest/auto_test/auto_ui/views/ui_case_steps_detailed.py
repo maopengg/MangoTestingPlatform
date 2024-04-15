@@ -88,7 +88,7 @@ class UiCaseStepsDetailedViews(ViewSet):
         case_data_list = []
         for steps_detailed in ui_page_steps_detailed_obj:
             if steps_detailed.ope_type:
-                name = steps_detailed.ele_name_a.name if steps_detailed.ele_name_a else steps_detailed.ope_type
+                name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_type
 
                 value_dict: dict = steps_detailed.ope_value
                 if 'locating' in value_dict:

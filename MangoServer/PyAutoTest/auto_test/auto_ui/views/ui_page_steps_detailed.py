@@ -34,8 +34,7 @@ class UiPageStepsDetailedSerializers(serializers.ModelSerializer):
 
 class UiPageStepsDetailedSerializersC(serializers.ModelSerializer):
     page_step = UiPageStepsSerializers(read_only=True)
-    ele_name_a = UiElementSerializers(read_only=True)
-    ele_name_b = UiElementSerializers(read_only=True)
+    ele_name = UiElementSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
@@ -74,7 +73,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
         for i in run:
             data['run_flow'] += '->'
             if i.ele_name_a:
-                data['run_flow'] += i.ele_name_a.name
+                data['run_flow'] += i.ele_name.name
             else:
                 data['run_flow'] += i.ope_type if i.ope_type else '无元素操作'
         data['name'] = run[0].page_step.name

@@ -65,7 +65,7 @@
               :key="item.id"
               destroy-on-hide
             >
-              <a-collapse-item :header="item.ele_name_a" :style="customStyle" :key="item.id">
+              <a-collapse-item :header="item.ele_name" :style="customStyle" :key="item.id">
                 <div>
                   <a-space direction="vertical" style="width: 50%">
                     <p

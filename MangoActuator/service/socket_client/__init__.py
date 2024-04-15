@@ -12,7 +12,7 @@ from websocket import WebSocketConnectionClosedException
 
 from enums.tools_enum import ClientNameEnum
 from service.socket_client.client_socket import ClientWebSocket
-from tools.logs.log_control import ERROR
+from tools.log_collector import log
 
 
 class SocketMain(asyncio.Protocol):
@@ -29,7 +29,7 @@ class SocketMain(asyncio.Protocol):
         except Exception as e:
             traceback.print_exc()  # 打印异常追踪信息
             # 处理异常，例如打印日志或者进行其他操作
-            ERROR.logger.error(f"主任务出现异常：{e}")
+            log.error(f"主任务出现异常：{e}")
 
     async def __main(self):
         print(f"========================={ClientNameEnum.DRIVER.value}正在启动=========================")
@@ -53,4 +53,4 @@ class SocketMain(asyncio.Protocol):
             result = task.result()
         except Exception as e:
             traceback.print_exc()  # 打印异常追踪信息
-            ERROR.error(f"socket任务执行出现异常：{e}")
+            log.error(f"socket任务执行出现异常：{e}")
