@@ -276,7 +276,8 @@
                   <a-dropdown trigger="hover">
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
-                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                      <a-doption>
+                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button></a-doption>
                       <a-doption>
                         <a-button type="text" size="mini" @click="apiInfoCopy(record)"
                           >复制</a-button

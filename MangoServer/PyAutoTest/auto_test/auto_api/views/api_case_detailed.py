@@ -78,13 +78,13 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                     {'key': 1, 'title': '请求头', 'name': 'header', 'data': i.header, 'type': 'textarea'},
                     {'key': 2, 'title': '参数', 'name': 'params',
                      'data': json.dumps(i.params, ensure_ascii=False) if i.params else None,
-                     'type': 'textarea1'},
-                    # {'key': 3, 'title': '表单', 'name': 'data',
-                    #  'data': json.dumps(i.data, ensure_ascii=False) if i.data else None, 'type': 'textarea'},
-                    # {'key': 4, 'title': 'json', 'name': 'json',
-                    #  'data': json.dumps(i.json, ensure_ascii=False) if i.json else None, 'type': 'textarea'},
-                    # {'key': 5, 'title': '文件', 'name': 'file',
-                    #  'data': json.dumps(i.file, ensure_ascii=False) if i.file else None, 'type': 'textarea'}
+                     'type': 'textarea'},
+                    {'key': 3, 'title': '表单', 'name': 'data',
+                     'data': json.dumps(i.data, ensure_ascii=False) if i.data else None, 'type': 'textarea'},
+                    {'key': 4, 'title': 'json', 'name': 'json',
+                     'data': json.dumps(i.json, ensure_ascii=False) if i.json else None, 'type': 'textarea'},
+                    {'key': 5, 'title': '文件', 'name': 'file',
+                     'data': json.dumps(i.file, ensure_ascii=False) if i.file else None, 'type': 'textarea'}
                 ],
                 'front': [{'key': 10, 'title': '前置sql', 'name': 'front_sql', 'data': i.front_sql, 'type': 'list'}],
                 'response': [{'key': 20, 'title': '基础信息',
@@ -147,14 +147,14 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 #         'type': 'list'
                 #     }
                 # ],
-                # 'cache': [
-                #     {
-                #         'key': 60,
-                #         'title': '缓存数据',
-                #         'data': api_info_result.all_cache if api_info_result else None,
-                #         'type': 'text'
-                #     }
-                # ]
+                'cache': [
+                    {
+                        'key': 60,
+                        'title': '缓存数据',
+                        'data': api_info_result.all_cache if api_info_result else None,
+                        'type': 'text'
+                    }
+                ]
             })
         return ResponseData.success(RESPONSE_MSG_0010, data)
 

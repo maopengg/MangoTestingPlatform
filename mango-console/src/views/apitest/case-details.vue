@@ -181,8 +181,7 @@
               <a-radio value="response">响应结果</a-radio>
               <a-radio value="assertion">接口断言</a-radio>
               <a-radio value="posterior">后置处理</a-radio>
-              <!--              <a-radio value="dump">数据清除</a-radio>-->
-              <!--              <a-radio value="cache">缓存数据</a-radio>-->
+              <a-radio value="cache">缓存数据</a-radio>
               <a-button type="text" :disabled="apiCaseData.disabled" @click="clickAdd"
                 >增加一条</a-button
               >
@@ -198,7 +197,7 @@
                 </template>
                 <template v-else-if="item.type === 'textarea'">
                   <a-textarea
-                    placeholder="请输入等待时间单位秒"
+                    placeholder="请输入"
                     v-model="item.data"
                     @blur="blurSave(item)"
                     auto-size
@@ -369,7 +368,6 @@
     uiPageStepsDetailedAss,
     apiPutRefreshApiInfo,
     apiCase,
-    apiInfoDetails,
   } from '@/api/url'
   import { useRoute } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
@@ -833,20 +831,6 @@
         }
       }
     }
-  }
-  function doRefreshApi(api_info_id: number) {
-    get({
-      url: apiInfoDetails,
-      data: () => {
-        return {
-          api_info_id: api_info_id,
-        }
-      },
-    })
-      .then((res) => {
-        apiCaseData.parameterData = res.data
-      })
-      .catch(console.log)
   }
   onMounted(() => {
     nextTick(async () => {
