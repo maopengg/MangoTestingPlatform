@@ -48,6 +48,7 @@
               <a-tag color="cyan" size="small" v-else-if="record.exp === 6">标题</a-tag>
               <a-tag color="cyan" size="small" v-else-if="record.exp === 7">ROLE</a-tag>
               <a-tag color="cyan" size="small" v-else-if="record.exp === 8">AIT_TEXT</a-tag>
+              <a-tag color="cyan" size="small" v-else-if="record.exp === 9">CSS</a-tag>
               <a-tag color="blue" size="small" v-else-if="record.exp === 11">A_DESCRIPTION</a-tag>
               <a-tag color="arcoblue" size="small" v-else-if="record.exp === 12">A_BOUNDS</a-tag>
               <a-tag color="purple" size="small" v-else-if="record.exp === 13"
@@ -235,13 +236,6 @@
     {
       title: '定位表达式',
       dataIndex: 'loc',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '定位器',
-      dataIndex: 'locator',
-      width: 200,
       ellipsis: true,
       tooltip: true,
     },

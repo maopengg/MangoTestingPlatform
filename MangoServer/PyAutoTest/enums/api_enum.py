@@ -53,3 +53,15 @@ class ApiTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "批量生成", 1: "调试接口", 2: "调试完成"}
+
+
+class ApiParameterTypeEnum(BaseEnum):
+    """api请求参数的类型"""
+    params = 0
+    data = 1
+    json = 2
+    file = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "参数", 1: "表单", 2: "json", 3: "文件"}

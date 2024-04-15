@@ -146,3 +146,12 @@ class EnumOptionViews(ViewSet):
         :return:
         """
         return ResponseData.success(RESPONSE_MSG_0106, ElementOperationEnum.get_option(k='value', v='label'))
+
+    @action(methods=['get'], detail=False)
+    def enum_api_parameter_type(self, request):
+        """
+        获取元素操作类型
+        :param request:
+        :return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0106, ApiParameterTypeEnum.get_option())

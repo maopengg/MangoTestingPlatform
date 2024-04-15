@@ -45,15 +45,11 @@ class RunConfigModel(BaseModel):
 class ElementModel(BaseModel):
     id: int
     type: int
-    ele_name_a: str | None
-    ele_name_b: str | None
-    ele_loc_a: str | None
-    locator: str | None
-
-    ele_loc_b: str | None
-    ele_exp: int | None
-    ele_sleep: int | None
-    ele_sub: int | None
+    name: str | None
+    loc: str | None
+    exp: int | None
+    sleep: int | None
+    sub: int | None
     ope_type: str | None
     ope_value: dict | None
     is_iframe: int | None
@@ -108,8 +104,7 @@ class ElementResultModel(BaseModel):
     case_id: int | None = None
     case_step_details_id: int | None = None
 
-    ele_name_a: str | None = None
-    ele_name_b: str | None = None
+    ele_name: str | None = None
     ele_quantity: int
     error_message: str | None = None
     picture_path: str | None = None
