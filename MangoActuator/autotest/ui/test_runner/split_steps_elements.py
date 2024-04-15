@@ -14,11 +14,12 @@ from autotest.ui.driver.ios import IOSDriver
 from autotest.ui.driver.pc import PCDriver
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
-from exceptions.ui_exception import UiError, UiCacheDataIsNullError, BrowserObjectClosed
+from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
+from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
 from tools import Initialization
 from tools.data_processor import RandomTimeData
-from tools.logs.log_control import ERROR
+from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 
 
@@ -67,7 +68,7 @@ class SplitStepsElements(DriveSet):
             try:
                 await self.element_setup(element_model, element_data)
                 await self.web_element_main()
-            except UiError as error:
+            except MangoActuatorError as error:
                 await self.__error(error)
                 return self.page_step_result_model
             except Error as error:
@@ -91,16 +92,16 @@ class SplitStepsElements(DriveSet):
     def ios_step(self, ios: Optional[IOSDriver] = None):
         pass
 
-    async def __error(self, error: UiError):
+    async def __error(self, error: MangoActuatorError):
         """
         操作元素失败时试用的函数
         @param error:
         @return:
         """
-        ERROR.logger.error(
+        log.error(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
-        path = rf'{Initialization.get_log_screenshot()}\{self.element_model.ele_name_a}{RandomTimeData.get_deta_hms()}.jpg'
-        self.notice_signal.send(3, data=f'''元素名称：{self.element_test_result.ele_name_a}
+        path = rf'{Initialization.get_log_screenshot()}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
+        self.notice_signal.send(3, data=f'''元素名称：{self.element_test_result.ele_name}
                                        元素表达式：{self.element_test_result.loc}
                                        操作类型：{self.element_test_result.ope_type}
                                        操作值：{self.element_test_result.ope_value}
@@ -119,7 +120,7 @@ class SplitStepsElements(DriveSet):
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:
-                ERROR.logger.error('自动化类型不存在，请联系管理员检查！')
+                log.error('自动化类型不存在，请联系管理员检查！')
         self.element_test_result.error_message = error.msg
         self.element_test_result.picture_path = path
         self.page_step_result_model.status = StatusEnum.FAIL.value

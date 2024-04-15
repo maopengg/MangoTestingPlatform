@@ -10,13 +10,11 @@ from autotest.ui.test_runner.split_steps_elements import SplitStepsElements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from enums.tools_enum import StatusEnum
-from enums.ui_enum import DriveTypeEnum, UiPublicTypeEnum
+from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
 from service.socket_client import ClientWebSocket
-from tools.logs.log_control import ERROR
-from tools.message.error_msg import ERROR_MSG_0036, ERROR_MSG_0037, ERROR_MSG_0038, ERROR_MSG_0039
+from tools.log_collector import log
 
 
 class SplitCaseSteps(SplitStepsElements):
@@ -68,7 +66,7 @@ class SplitCaseSteps(SplitStepsElements):
                 except MangoActuatorError as error:
                     self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
                     self.case_result.status = StatusEnum.FAIL.value
-                    ERROR.logger.error(error)
+                    log.error(error.msg)
                     break
                 else:
                     if page_steps_result_model.status:
@@ -76,7 +74,7 @@ class SplitCaseSteps(SplitStepsElements):
                     else:
                         self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{page_steps_result_model.error_message}'
                         self.case_result.status = StatusEnum.FAIL.value
-                        ERROR.logger.error(page_steps_result_model.error_message)
+                        log.error(page_steps_result_model.error_message)
                         break
             await self.case_posterior(self.case_model.posterior_sql)
         except MangoActuatorError as error:
@@ -112,7 +110,7 @@ class SplitCaseSteps(SplitStepsElements):
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:
-                ERROR.logger.error('自动化类型不存在，请联系管理员检查！')
+                log.error('自动化类型不存在，请联系管理员检查！')
 
     # async def __front(self):
     #     """

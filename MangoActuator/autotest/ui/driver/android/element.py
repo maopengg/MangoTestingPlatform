@@ -8,7 +8,7 @@ from uiautomator2 import UiObject
 from autotest.ui.driver.android.android_base import AndroidBase, ElementNotFoundError, \
     ElementNotDisappearError
 from tools.data_processor import CacheTool
-from tools.logs.log_control import ERROR, INFO
+from tools.log_collector import log
 
 
 class UiautomatorElementOperation(AndroidBase):
@@ -62,12 +62,12 @@ class UiautomatorElementOperation(AndroidBase):
         """等待元素出现"""
         try:
             if element.wait(timeout=time_):
-                INFO.logger.info("成功等待元素出现")
+                log.info("成功等待元素出现")
             else:
-                ERROR.logger.error("等待元素出现失败 元素不存在")
+                log.error("等待元素出现失败 元素不存在")
                 raise ElementNotFoundError("element not exists")
         except ElementNotFoundError as e:
-            ERROR.logger.error(f"元素可能不存在，元素：{element}，报错信息：{e}")
+            log.error(f"元素可能不存在，元素：{element}，报错信息：{e}")
             return False
 
     def a_wait_gone(self, element: UiObject, time_):
@@ -75,18 +75,18 @@ class UiautomatorElementOperation(AndroidBase):
         try:
             res = element.wait_gone(timeout=time_)
             if res:
-                INFO.logger.info("成功等待元素消失")
+                log.info("成功等待元素消失")
             else:
-                ERROR.logger.error("等待元素消失失败 元素仍存在")
+                log.error("等待元素消失失败 元素仍存在")
                 raise ElementNotDisappearError("element exists")
         except ElementNotDisappearError as e:
-            ERROR.logger.error(f"元素可能无法消失，元素：{element}，报错信息：{e}")
+            log.error(f"元素可能无法消失，元素：{element}，报错信息：{e}")
             return False
 
     def a_drag_to_ele(self, start_element: UiObject, end_element: UiObject):
         """拖动A元素到达B元素上"""
         start_element.drag_to(end_element)
-        INFO.logger.info("成功拖动到元素")
+        log.info("成功拖动到元素")
 
     def a_drag_to_coord(self, element: UiObject, x, y):
         """拖动元素到坐标上"""

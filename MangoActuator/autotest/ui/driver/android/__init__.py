@@ -26,7 +26,7 @@ from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.data_processor import DataProcessor
 from tools.database_tool.mysql_control import MysqlConnect
-from tools.logs.log_control import ERROR
+from tools.log_collector import log
 from tools import Initialization
 from tools.message.error_msg import ERROR_MSG_0014, ERROR_MSG_0016, ERROR_MSG_0019, ERROR_MSG_0020, ERROR_MSG_0023
 
@@ -54,7 +54,7 @@ class AndroidDriver(UiautomatorEquipmentDevice,
         self.element_test_result = ElementResultModel(test_suite_id=test_suite_id,
                                                       case_id=case_id,
                                                       page_step_id=page_step_id,
-                                                      ele_name_a=pages_ele.ele_name_a,
+                                                      ele_name=pages_ele.ename,
                                                       loc=pages_ele.ele_loc_a,
                                                       exp=pages_ele.ele_exp,
                                                       sub=pages_ele.ele_sub,
@@ -168,10 +168,10 @@ class AndroidDriver(UiautomatorEquipmentDevice,
 
     def __error(self, error_class, msg, e=None):
         """ 操作元素失败时试用的函数 """
-        ERROR.logger.error(f'元素：{self.element.ele_name_a} 操作失败\n'
+        log.error(f'元素：{self.element.name} 操作失败\n'
                            f'报错信息：{e}\n'
                            f'元素对象：{self.element.dict()}\n')
-        path = rf'{Initialization.get_log_screenshot()}\{self.element.ele_name_a}{DataProcessor.get_deta_hms()}.jpg'
+        path = rf'{Initialization.get_log_screenshot()}\{self.element.name}{DataProcessor.get_deta_hms()}.jpg'
         self.a_screenshot(path)
         self.element_test_result.msg = msg
         self.element_test_result.picture_path = path
@@ -184,21 +184,21 @@ class AndroidDriver(UiautomatorEquipmentDevice,
             value = self.__a_find_ele(self.element.ele_loc_a)
         elif key == 'input_value':
             # 清洗元素需要的数据
-            value = self.__web_input_value(self.element.ele_name_a, value)
+            value = self.__web_input_value(self.element.name, value)
         if value is not None:
             self.element.ope_value[key] = value
         else:
-            ERROR.logger.error(f'操作-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')
+            log.error(f'操作-{self.element.name}走到了这里，请检查。{self.element.model_dump_json()}')
 
     @retry(stop_max_attempt_number=3, wait_fixed=2000)
     def __ass(self, key, expect):
         if key == 'value':
             value = self.__a_find_ele(self.element.ele_loc_a)
         elif key == 'expect':
-            value = self.__web_expect_value(self.element.ele_name_a, expect)
+            value = self.__web_expect_value(self.element.name, expect)
         else:
             value = expect
         if value is not None:
             self.element.ass_value[key] = value
         else:
-            ERROR.logger.error(f'断言-{self.element.ele_name_a}走到了这里，请检查。{self.element.model_dump_json()}')
+            log.error(f'断言-{self.element.name}走到了这里，请检查。{self.element.model_dump_json()}')

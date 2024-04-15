@@ -14,7 +14,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 import service
 from enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from models.socket_model import SocketDataModel, QueueModel
-from tools.logs.log_control import INFO, ERROR, DEBUG
+from tools.log_collector import log
 
 T = TypeVar('T')
 custom_signal = signal('custom_signal')
@@ -35,7 +35,7 @@ class ClientWebSocket:
             response_str = await websocket.recv()
             res = self.__output_method(response_str)
             if res.code == 200:
-                INFO.logger.info("socket服务启动成功")
+                log.info("socket服务启动成功")
                 notice_signal.send(1, data='在线')
                 return True
             else:
@@ -49,7 +49,7 @@ class ClientWebSocket:
         """
         global websocket
         server_url = f"ws://{service.IP}:{service.PORT}/client/socket?{service.USERNAME}"
-        INFO.logger.info(str(f"websockets server url:{server_url}"))
+        log.info(str(f"websockets server url:{server_url}"))
         while True:
             try:
                 async with websockets.connect(server_url, max_size=50000000) as websocket:
@@ -61,13 +61,13 @@ class ClientWebSocket:
                     await asyncio.sleep(2)
             except ConnectionRefusedError:
                 notice_signal.send(1, data='已离线')
-                INFO.logger.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
+                log.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
             except OSError as error:
                 notice_signal.send(1, data='已离线')
-                INFO.logger.info(f"网络已中断，尝试重新连接中......{error}")
+                log.info(f"网络已中断，尝试重新连接中......{error}")
             except Exception as error:
                 notice_signal.send(1, data=error)
-                INFO.logger.info(f"socket发生未知错误：{error}")
+                log.info(f"socket发生未知错误：{error}")
                 await asyncio.sleep(10)
                 break
 
@@ -88,7 +88,7 @@ class ClientWebSocket:
                 await asyncio.sleep(5)
             except websockets.ConnectionClosed:
                 notice_signal.send(1, data='已离线')
-                INFO.logger.info(f'连接已关闭，正在重新连接......')
+                log.info(f'连接已关闭，正在重新连接......')
                 break
 
     @classmethod
@@ -134,12 +134,12 @@ class ClientWebSocket:
         """
         try:
             out = json.loads(recv_json)
-            DEBUG.logger.info(f'接收的消息提示:{out["msg"]}')
+            log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
-                DEBUG.logger.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
+                log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:
-            ERROR.logger.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')
+            log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')
 
     @classmethod
     def __serialize(cls, data: SocketDataModel):
@@ -151,7 +151,7 @@ class ClientWebSocket:
         try:
             data_json = data.model_dump_json()
         except TypeError:
-            ERROR.logger.error(f'序列化数据错误，请检查发送数据！')
+            log.error(f'序列化数据错误，请检查发送数据！')
         else:
-            DEBUG.logger.debug(f"发送的数据：{data_json}")
+            log.debug(f"发送的数据：{data_json}")
             return data_json
