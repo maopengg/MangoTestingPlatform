@@ -4,6 +4,7 @@
 # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import copy
+import re
 import traceback
 
 from playwright._impl._api_types import Error
@@ -17,7 +18,7 @@ from autotest.ui.driver.web.operation import PlaywrightElementOperation
 from autotest.ui.driver.web.page import PlaywrightPageOperation
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
-from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError, CacheIsEmptyError
+from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
@@ -25,6 +26,8 @@ from tools.assertion.sql_assertion import SqlAssertion
 from tools.decorator.async_retry import async_retry
 from tools.log_collector import log
 from tools.message.error_msg import *
+
+re = re
 
 
 class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightElementOperation, PlaywrightDeviceInput):

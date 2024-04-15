@@ -64,3 +64,6 @@ class UiCacheDataIsNullError(UiError):
 
 class ReplaceElementLocatorError(UiError):
     pass
+
+class ScreenshotError(UiError):
+    pass

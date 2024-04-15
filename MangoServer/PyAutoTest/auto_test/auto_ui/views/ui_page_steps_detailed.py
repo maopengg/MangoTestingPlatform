@@ -72,7 +72,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
         run = self.model.objects.filter(page_step=_id).order_by('step_sort')
         for i in run:
             data['run_flow'] += '->'
-            if i.ele_name_a:
+            if i.ele_name:
                 data['run_flow'] += i.ele_name.name
             else:
                 data['run_flow'] += i.ope_type if i.ope_type else '无元素操作'
