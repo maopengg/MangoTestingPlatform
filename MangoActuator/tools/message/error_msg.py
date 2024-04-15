@@ -43,3 +43,4 @@ ERROR_MSG_0036 = (336, '公共参数sql在数据库中查询不到结果，sql�
 ERROR_MSG_0037 = (337, '用例前置sql在数据库中查询不到结果，sql：{}')
 ERROR_MSG_0038 = (338, '公共参数的sql_key不是列表')
 ERROR_MSG_0039 = (339, '用例前置的sql_key不是列表')
+ERROR_MSG_0040 = (340, '截图失败')

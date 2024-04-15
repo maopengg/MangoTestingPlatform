@@ -8,7 +8,7 @@ import os
 import sys
 
 
-class Initialization:
+class InitializationPath:
     file = ['log', 'screenshot', 'upload_files']
     current_directory = os.path.abspath(__file__)
     project_root_directory = os.path.dirname(os.path.dirname(current_directory))
@@ -31,10 +31,10 @@ class Initialization:
 
 
 if __name__ == '__main__':
-    print(Initialization.project_root_directory)
-    print(Initialization.current_dir2)
-    print(Initialization.logs_dir)
-    print(Initialization.cache)
-    print(Initialization.log_dir)
-    print(Initialization.failure_screenshot_file)
-    print(Initialization.upload_files)
+    print(InitializationPath.project_root_directory)
+    print(InitializationPath.current_dir2)
+    print(InitializationPath.logs_dir)
+    print(InitializationPath.cache)
+    print(InitializationPath.log_dir)
+    print(InitializationPath.failure_screenshot_file)
+    print(InitializationPath.upload_files)
