@@ -222,9 +222,9 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         match self.element_model.exp:
             case ElementExpEnum.LOCATOR.value:
                 try:
-                    return eval(f"await self.{loc}")
+                    return eval(f"await page.{loc}")
                 except SyntaxError:
-                    return eval(f"self.{loc}")
+                    return eval(f"page.{loc}")
             case ElementExpEnum.XPATH.value:
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:
