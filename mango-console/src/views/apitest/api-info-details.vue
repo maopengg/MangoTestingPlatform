@@ -29,78 +29,42 @@
             <a-button type="primary" size="small" @click="doAppend">新增</a-button>
           </a-space>
         </template>
-        <a-tab-pane key="0" title="参数">
-          <a-table
-            :bordered="false"
-            :data="data.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of tableColumns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.key"
-                :fixed="item.fixed"
-              >
-                <template v-if="item.key === 'index'" #cell="{ record }">
-                  {{ record.id }}
-                </template>
-                <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除
-                  </a-button>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
-        </a-tab-pane>
-        <a-tab-pane key="1" title="表单">
-          <a-table
-            :bordered="false"
-            :data="data.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of tableColumns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.key"
-                :fixed="item.fixed"
-              >
-                <template v-if="item.key === 'index'" #cell="{ record }">
-                  {{ record.id }}
-                </template>
-                <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除
-                  </a-button>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
-        </a-tab-pane>
-        <a-tab-pane key="2" title="JSON">
+        <a-tab-pane key="0" title="请求头">
           <a-textarea
-            placeholder="请输入json格式的数据"
-            :model-value="data.dataValue"
+            placeholder="请输入请求头，字符串形式"
+            :model-value="formatJson(pageData.record.header)"
             allow-clear
             auto-size
           />
         </a-tab-pane>
-        <a-tab-pane key="3" title="文件">
+        <a-tab-pane key="1" title="参数">
+          <a-textarea
+            placeholder="请输入json格式的数据"
+            :model-value="formatJson(pageData.record.params)"
+            allow-clear
+            auto-size
+          />
+        </a-tab-pane>
+        <a-tab-pane key="2" title="表单">
+          <a-textarea
+            placeholder="请输入json格式的表单"
+            :model-value="formatJson(pageData.record.data)"
+            allow-clear
+            auto-size
+          />
+        </a-tab-pane>
+        <a-tab-pane key="3" title="JSON">
+          <a-textarea
+            placeholder="请输入json格式的JSON"
+            :model-value="formatJson(pageData.record.json)"
+            allow-clear
+            auto-size
+          />
+        </a-tab-pane>
+        <a-tab-pane key="4" title="文件">
           <a-textarea
             placeholder="请输入json格式的文件上传数据"
-            :model-value="data.dataValue"
+            :model-value="formatJson(pageData.record.file)"
             allow-clear
             auto-size
           />
@@ -140,7 +104,7 @@
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import { apiInfo, systemEnumApiParameterType, systemEnumMethod } from '@/api/url'
-  import { deleted, get, post, put } from '@/api/http'
+  import { get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
@@ -156,33 +120,9 @@
     updateId: 0,
     pageType: '0',
     actionTitle: '添加元素',
-    dataList: [],
     apiParameterType: [],
     apiMethodType: [],
-    dataValue: '',
   })
-  const tableColumns = [
-    {
-      title: 'key',
-      key: 'key',
-      dataIndex: 'key',
-    },
-    {
-      title: 'value',
-      key: 'value',
-
-      dataIndex: 'value',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      dataIndex: 'actions',
-      align: 'center',
-      width: 200,
-    },
-  ]
 
   const formItems: FormItem[] = reactive([
     {
@@ -231,7 +171,6 @@
 
   function switchType(key: any) {
     data.pageType = key
-    doRefresh()
   }
 
   function doResetSearch() {
@@ -250,48 +189,6 @@
       }
     })
   }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '是否要删除此元素？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleted({
-          url: apiInfo,
-          data: () => {
-            return {
-              id: '[' + record.id + ']',
-            }
-          },
-        })
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      },
-    })
-  }
-
-  function onUpdate(record: any) {
-    data.actionTitle = '编辑添加元素'
-    data.isAdd = false
-    data.updateId = record.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it) => {
-        const propName = record[it.key]
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
-  }
-
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
@@ -306,7 +203,6 @@
         })
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
       } else {
@@ -319,55 +215,17 @@
         })
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
       }
     }
   }
 
-  function doRefresh() {
-    get({
-      url: apiInfo,
-      data: () => {
-        let value: any = {}
-        value['id'] = pageData.record.id
-        return value
-      },
-    })
-      .then((res) => {
-        refresh(res.data[0])
-      })
-      .catch(console.log)
-  }
-  function refresh(items: any) {
-    console.log(items)
-    data.dataList = []
-    data.dataValue = ''
-    if (data.pageType == '0') {
-      if (items.params) {
-        data.dataList = Object.keys(items.params).map((key) => {
-          return {
-            key: key,
-            value: items.params[key],
-          }
-        })
-      }
-    } else if (data.pageType == '1') {
-      if (items.data) {
-        data.dataList = Object.keys(items.data).map((key) => {
-          return {
-            key: key,
-            value: items.data[key],
-          }
-        })
-      }
-    } else if (data.pageType == '2') {
-      data.dataValue = JSON.stringify(items.json, null, 2)
-    } else {
-      data.dataValue = JSON.stringify(items.file, null, 2)
+  function formatJson(items: any) {
+    if (items === null) {
+      return null
     }
-    console.log(data.dataValue)
+    return JSON.stringify(items, null, 2)
   }
   function enumApiParameterType() {
     get({
@@ -400,7 +258,6 @@
   onMounted(() => {
     nextTick(async () => {
       await doMethod()
-      refresh(pageData.record)
       enumApiParameterType()
     })
   })
