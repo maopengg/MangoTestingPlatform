@@ -176,7 +176,6 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
 
         self.element_test_result.ass_value = self.element_model.ass_value
 
-    @async_retry
     async def __ope(self, key, value):
         if key == 'locating':
             self.element_model.ope_value[key] = await self.__web_find_ele()
