@@ -24,6 +24,7 @@ class PlaywrightOperationBrowser(BaseData):
         """打开url"""
         try:
             await self.page.goto(url, timeout=60000)
+            await asyncio.sleep(2)
         except TimeoutError:
             raise UiTimeoutError(*ERROR_MSG_0013, value=(url,))
 
