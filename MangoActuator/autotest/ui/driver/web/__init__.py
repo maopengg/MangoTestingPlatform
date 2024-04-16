@@ -9,7 +9,7 @@ import traceback
 
 from playwright._impl._api_types import Error
 from playwright._impl._api_types import TimeoutError
-from playwright.async_api import Locator
+from playwright.async_api._generated import Locator
 
 from autotest.ui.driver.web.assertion import PlaywrightAssertion
 from autotest.ui.driver.web.browser import PlaywrightOperationBrowser
@@ -73,6 +73,8 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
                                         data=f'操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
             except AttributeError:
                 raise ElementOpeNoneError(*ERROR_MSG_0027)
+            except UiError as error:
+                raise error
             await self.web_action_element()
         # 判断元素是断言类型
         elif self.element_model.type == ElementOperationEnum.ASS.value:
@@ -174,7 +176,6 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
 
         self.element_test_result.ass_value = self.element_model.ass_value
 
-    @async_retry
     async def __ope(self, key, value):
         if key == 'locating':
             self.element_model.ope_value[key] = await self.__web_find_ele()
@@ -211,7 +212,10 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             return ele_list[self.element_model.sub - 1] if self.element_model.sub else ele_list[0]
         else:
             locator: Locator = await self.__find_ele(self.page, locator_str)
-            count = await locator.count()
+            try:
+                count = await locator.count()
+            except Error:
+                raise LocatorError(*ERROR_MSG_0041, )
             self.element_test_result.ele_quantity = count
             if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
                 if self.element_model.type == ElementOperationEnum.OPE.value:

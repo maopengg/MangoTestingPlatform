@@ -226,12 +226,10 @@
     {
       title: '元素名称',
       dataIndex: 'name',
-      width: 250,
     },
     {
       title: '表达式类型',
       dataIndex: 'exp',
-      width: 110,
     },
     {
       title: '定位表达式',
@@ -242,17 +240,14 @@
     {
       title: '是否在iframe中',
       dataIndex: 'is_iframe',
-      width: 200,
     },
     {
-      title: '等待时间',
+      title: '等待时间（秒）',
       dataIndex: 'sleep',
-      width: 100,
     },
     {
-      title: '元素下标',
+      title: '元素下标（1开始）',
       dataIndex: 'sub',
-      width: 100,
     },
 
     {
@@ -304,14 +299,6 @@
       validator: function () {
         return true
       },
-    },
-    {
-      label: '定位器',
-      key: 'locator',
-      value: '',
-      type: 'input',
-      required: false,
-      placeholder: '请输入定位器',
     },
     {
       label: '等待时间',

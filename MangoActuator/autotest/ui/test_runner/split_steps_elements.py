@@ -77,6 +77,8 @@ class SplitStepsElements(DriveSet):
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
                     raise BrowserObjectClosed(*ERROR_MSG_0010)
+                else:
+                    raise error
             else:
                 self.element_test_result.status = StatusEnum.SUCCESS.value
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
