@@ -63,6 +63,11 @@ class PageSteps(SplitStepsElements):
             await ClientWebSocket.async_send(code=error.code,
                                              msg=error.msg,
                                              is_notice=ClientTypeEnum.WEB.value)
+        except Exception as error:
+            log.error(str(error))
+            await ClientWebSocket.async_send(code=300,
+                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
+                                             is_notice=ClientTypeEnum.WEB.value)
         else:
             await ClientWebSocket.async_send(
                 code=200 if self.page_step_result_model.status else 300,
