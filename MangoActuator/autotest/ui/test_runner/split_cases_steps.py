@@ -80,6 +80,11 @@ class SplitCaseSteps(SplitStepsElements):
         except MangoActuatorError as error:
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
+        except Exception as error:
+            log.error(str(error))
+            await ClientWebSocket.async_send(code=300,
+                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
+                                             is_notice=ClientTypeEnum.WEB.value)
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
             await ClientWebSocket.async_send(
