@@ -42,6 +42,10 @@ class Window(Ui_MainWindow):
         TEST_CASE_PARALLELISM = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
         if TEST_CASE_PARALLELISM:
             self.comboBox.setCurrentText(TEST_CASE_PARALLELISM)
+        else:
+            SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
+            self.comboBox.setCurrentText('10')
+
         custom_signal.connect(self.setTextEdit)
         self.label_3.setText(service.USERNAME)
 
