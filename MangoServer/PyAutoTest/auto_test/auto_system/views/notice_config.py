@@ -35,6 +35,12 @@ class NoticeConfigSerializersC(serializers.ModelSerializer):
         model = NoticeConfig
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project')
+        return queryset
+
 
 class NoticeConfigCRUD(ModelCRUD):
     model = NoticeConfig

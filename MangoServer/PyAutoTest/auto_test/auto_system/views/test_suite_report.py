@@ -32,6 +32,13 @@ class TestSuiteReportSerializersC(serializers.ModelSerializer):
         model = TestSuiteReport
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'test_object')
+        return queryset
+
 
 class TestSuiteReportCRUD(ModelCRUD):
     model = TestSuiteReport

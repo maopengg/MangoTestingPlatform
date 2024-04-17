@@ -44,6 +44,13 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
         model = ApiInfo
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'module_name')
+        return queryset
+
 
 class ApiInfoCRUD(ModelCRUD):
     model = ApiInfo

@@ -38,6 +38,13 @@ class TestObjectSerializersC(serializers.ModelSerializer):
         model = TestObject
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'executor_name')
+        return queryset
+
 
 class TestObjectCRUD(ModelCRUD):
     model = TestObject

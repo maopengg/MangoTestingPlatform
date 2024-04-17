@@ -42,6 +42,12 @@ class UiConfigSerializersC(serializers.ModelSerializer):
         model = UiConfig
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'user_id')
+        return queryset
+
 
 class UiConfigCRUD(ModelCRUD):
     model = UiConfig

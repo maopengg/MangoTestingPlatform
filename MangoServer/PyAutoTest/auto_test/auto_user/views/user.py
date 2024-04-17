@@ -47,6 +47,13 @@ class UserSerializersC(serializers.ModelSerializer):
         model = User
         exclude = ['password']
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'department',
+            'role')
+        return queryset
+
 
 class UserCRUD(ModelCRUD):
     model = User

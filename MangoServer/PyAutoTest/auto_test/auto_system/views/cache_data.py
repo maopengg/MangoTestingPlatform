@@ -35,6 +35,13 @@ class CacheDataSerializersC(serializers.ModelSerializer):
         model = CacheData
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'test_obj')
+        return queryset
+
 
 class CacheDataCRUD(ModelCRUD):
     model = CacheData

@@ -114,8 +114,7 @@ class ModelCRUD(GenericAPIView):
             th = Thread(target=self.callback, args=(parent_id,))
             th.start()
 
-    @classmethod
-    def paging_list(cls, size: int, current: int, books, serializer) -> list:
+    def paging_list(self, size: int, current: int, books, serializer) -> list:
         """
         分页
         @param size:
@@ -126,6 +125,7 @@ class ModelCRUD(GenericAPIView):
         """
         if int(books.count()) <= int(size):
             current = 1
+        books = serializer.setup_eager_loading(books)
         return serializer(instance=Paginator(books, size).page(current), many=True).data
 
     def inside_post(self, data: dict) -> dict:

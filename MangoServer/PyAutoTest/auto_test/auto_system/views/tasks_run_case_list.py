@@ -43,6 +43,13 @@ class TasksRunCaseListSerializersC(serializers.ModelSerializer):
         model = TasksRunCaseList
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'task',
+            'test_object')
+        return queryset
+
 
 class TasksRunCaseListCRUD(ModelCRUD):
     model = TasksRunCaseList
