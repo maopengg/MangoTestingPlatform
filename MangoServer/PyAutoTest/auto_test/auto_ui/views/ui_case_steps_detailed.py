@@ -55,8 +55,9 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
 
     def get(self, request: Request):
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
-        data = [self.serializer_class(i).data for i in books]
-        return ResponseData.success(RESPONSE_MSG_0049, data)
+        return ResponseData.success(RESPONSE_MSG_0049,
+                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                                          many=True).data, )
 
     def callback(self, _id):
         """
