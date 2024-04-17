@@ -21,6 +21,10 @@ class TimeTasksSerializers(serializers.ModelSerializer):
         model = TimeTasks
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return queryset
+
 
 class TimeTasksCRUD(ModelCRUD):
     model = TimeTasks

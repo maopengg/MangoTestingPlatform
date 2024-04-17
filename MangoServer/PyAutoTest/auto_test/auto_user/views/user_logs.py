@@ -25,9 +25,13 @@ class UserLogsSerializersC(serializers.ModelSerializer):
         model = UserLogs
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return queryset
+
 
 class UserLogsCRUD(ModelCRUD):
     model = UserLogs
     queryset = UserLogs.objects.all()
-    serializer_class = UserLogsSerializers
+    serializer_class = UserLogsSerializersC
     serializer = UserLogsSerializers
