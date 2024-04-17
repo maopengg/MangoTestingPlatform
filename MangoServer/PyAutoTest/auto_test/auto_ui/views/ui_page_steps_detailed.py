@@ -66,8 +66,9 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
             books = self.model.objects.filter(page_step_id=page_step_id).order_by('step_sort')
         else:
             books = self.model.objects.filter(id=_id).order_by('step_sort')
-        data = [self.serializer_class(i).data for i in books]
-        return ResponseData.success(RESPONSE_MSG_0016, data)
+        return ResponseData.success(RESPONSE_MSG_0016,
+                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                                          many=True).data)
 
     def callback(self, _id):
         """

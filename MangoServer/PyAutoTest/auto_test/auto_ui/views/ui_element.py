@@ -52,8 +52,9 @@ class UiElementCRUD(ModelCRUD):
     def get(self, request):
         books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
         return ResponseData.success(RESPONSE_MSG_0077,
-                                    self.get_serializer_class()(instance=books, many=True).data,
-                                    len(books))
+                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                                          many=True).data,
+                                    books.count())
 
 
 class UiElementViews(ViewSet):

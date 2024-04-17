@@ -63,8 +63,9 @@ class CacheDataCRUD(ModelCRUD):
                     serializer.save()
         books = self.model.objects.filter(key__in=CacheDataKeyEnum.get_key_list())
         return ResponseData.success(RESPONSE_MSG_0001,
-                                    self.get_serializer_class()(instance=books, many=True).data,
-                                    len(books))
+                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                                          many=True).data,
+                                    books.count())
 
     def put(self, request: Request):
         for i in request.data:

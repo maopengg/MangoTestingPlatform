@@ -48,8 +48,9 @@ class ModelCRUD(GenericAPIView):
                                         count)
         else:
             books = self.model.objects.filter(**query_dict)
+            serializer = self.get_serializer_class()
             return ResponseData.success(RESPONSE_MSG_0001,
-                                        self.get_serializer_class()(instance=books, many=True).data,
+                                        serializer(instance=serializer.setup_eager_loading(books), many=True).data,
                                         books.count())
 
     def post(self, request: Request):
