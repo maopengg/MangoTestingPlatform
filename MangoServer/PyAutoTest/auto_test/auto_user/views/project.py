@@ -28,6 +28,10 @@ class ProjectSerializers(serializers.ModelSerializer):
         model = Project
         fields = '__all__'  # 全部进行序列化
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return queryset
+
 
 class ProjectCRUD(ModelCRUD):
     model = Project

@@ -19,6 +19,10 @@ class RoleSerializers(serializers.ModelSerializer):
         model = Role
         fields = '__all__'  # 全部进行序列化
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return queryset
+
 
 class RoleCRUD(ModelCRUD):
     model = Role

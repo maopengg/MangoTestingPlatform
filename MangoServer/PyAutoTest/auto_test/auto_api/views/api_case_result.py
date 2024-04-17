@@ -42,7 +42,7 @@ class ApiCaseResultSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.prefetch_related(
+        queryset = queryset.select_related(
             'case',
             'api_info')
         return queryset

@@ -41,7 +41,7 @@ class ScheduledTasksSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.prefetch_related(
+        queryset = queryset.select_related(
             'test_obj',
             'timing_strategy',
             'executor_name')

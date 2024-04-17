@@ -6,6 +6,7 @@
 import logging
 from threading import Thread
 
+import time
 from django.core.paginator import Paginator
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
@@ -114,7 +115,8 @@ class ModelCRUD(GenericAPIView):
             th = Thread(target=self.callback, args=(parent_id,))
             th.start()
 
-    def paging_list(self, size: int, current: int, books, serializer) -> list:
+    @classmethod
+    def paging_list(cls, size: int, current: int, books, serializer) -> list:
         """
         分页
         @param size:
@@ -125,8 +127,9 @@ class ModelCRUD(GenericAPIView):
         """
         if int(books.count()) <= int(size):
             current = 1
-        books = serializer.setup_eager_loading(books)
-        return serializer(instance=Paginator(books, size).page(current), many=True).data
+        return serializer(
+            instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
+            many=True).data
 
     def inside_post(self, data: dict) -> dict:
         serializer = self.serializer(data=data)

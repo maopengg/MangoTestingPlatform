@@ -44,7 +44,7 @@ class UiConfigSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.prefetch_related(
+        queryset = queryset.select_related(
             'user_id')
         return queryset
 

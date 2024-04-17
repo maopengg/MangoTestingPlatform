@@ -43,7 +43,7 @@ class UiCaseSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
-        queryset = queryset.prefetch_related(
+        queryset = queryset.select_related(
             'project',
             'module_name',
             'case_people')
