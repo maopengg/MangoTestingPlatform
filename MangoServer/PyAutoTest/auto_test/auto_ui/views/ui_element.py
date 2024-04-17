@@ -42,6 +42,7 @@ class UiElementSerializersC(serializers.ModelSerializer):
             'page')
         return queryset
 
+
 class UiElementCRUD(ModelCRUD):
     model = UiElement
     queryset = UiElement.objects.all()
