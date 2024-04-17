@@ -39,6 +39,14 @@ class ScheduledTasksSerializersC(serializers.ModelSerializer):
         model = ScheduledTasks
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'test_obj',
+            'timing_strategy',
+            'executor_name')
+        return queryset
+
 
 class ScheduledTasksCRUD(ModelCRUD):
     model = ScheduledTasks

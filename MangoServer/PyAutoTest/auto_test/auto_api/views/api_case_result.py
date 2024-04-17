@@ -40,6 +40,13 @@ class ApiCaseResultSerializersC(serializers.ModelSerializer):
         model = ApiCaseResult
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'case',
+            'api_info')
+        return queryset
+
 
 class ApiCaseResultCRUD(ModelCRUD):
     model = ApiCaseResult

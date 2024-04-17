@@ -39,6 +39,13 @@ class UiCaseStepsDetailedSerializersC(serializers.ModelSerializer):
         model = UiCaseStepsDetailed
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'case',
+            'page_step')
+        return queryset
+
 
 class UiCaseStepsDetailedCRUD(ModelCRUD):
     model = UiCaseStepsDetailed

@@ -35,6 +35,12 @@ class ApiPublicSerializersC(serializers.ModelSerializer):
         model = ApiPublic
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project')
+        return queryset
+
 
 class ApiPublicCRUD(ModelCRUD):
     model = ApiPublic

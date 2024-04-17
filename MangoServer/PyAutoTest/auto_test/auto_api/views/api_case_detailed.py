@@ -42,6 +42,14 @@ class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
         model = ApiCaseDetailed
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'case',
+            'api_info')
+        return queryset
+
 
 class ApiCaseDetailedCRUD(ModelCRUD):
     model = ApiCaseDetailed

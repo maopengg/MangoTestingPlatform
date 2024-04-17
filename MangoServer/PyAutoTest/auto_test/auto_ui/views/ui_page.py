@@ -38,6 +38,13 @@ class UiPageSerializersC(serializers.ModelSerializer):
         model = UiPage
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'module_name',
+            'project')
+        return queryset
+
 
 class UiPageCRUD(ModelCRUD):
     model = UiPage

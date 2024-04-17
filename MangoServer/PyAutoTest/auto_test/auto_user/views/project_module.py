@@ -33,6 +33,12 @@ class ProjectModuleSerializersC(serializers.ModelSerializer):
         model = ProjectModule
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project')
+        return queryset
+
 
 class ProjectModuleCRUD(ModelCRUD):
     model = ProjectModule

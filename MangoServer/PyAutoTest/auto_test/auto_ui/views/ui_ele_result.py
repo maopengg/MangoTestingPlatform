@@ -37,6 +37,14 @@ class UiEleResultSerializersC(serializers.ModelSerializer):
         model = UiEleResult
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'module_name',
+            'case_people')
+        return queryset
+
 
 class UiEleResultCRUD(ModelCRUD):
     model = UiEleResult

@@ -31,6 +31,13 @@ class DatabaseSerializersC(serializers.ModelSerializer):
         model = Database
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'test_obj')
+        return queryset
+
 
 class DatabaseCRUD(ModelCRUD):
     model = Database

@@ -35,6 +35,14 @@ class UiPageStepsResultSerializersC(serializers.ModelSerializer):
         model = UiPageStepsResult
         fields = '__all__'
 
+    @staticmethod
+    def setup_eager_loading(queryset):
+        queryset = queryset.prefetch_related(
+            'project',
+            'module_name',
+            'case_people')
+        return queryset
+
 
 class UiPageStepsResultCRUD(ModelCRUD):
     model = UiPageStepsResult
