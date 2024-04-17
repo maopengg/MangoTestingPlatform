@@ -6,8 +6,8 @@
 import logging
 from threading import Thread
 
-import time
 from django.core.paginator import Paginator
+from django.db.models.query import QuerySet
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
@@ -39,17 +39,18 @@ class ModelCRUD(GenericAPIView):
             del query_dict['pageSize']
             del query_dict['page']
             books = self.model.objects.filter(**query_dict)
+            data_list, count = self.paging_list(request.query_params.get("pageSize"),
+                                                request.query_params.get("page"),
+                                                books,
+                                                self.get_serializer_class())
             return ResponseData.success(RESPONSE_MSG_0001,
-                                        self.paging_list(request.query_params.get("pageSize"),
-                                                         request.query_params.get("page"),
-                                                         books,
-                                                         self.get_serializer_class()),
-                                        len(books))
+                                        data_list,
+                                        count)
         else:
             books = self.model.objects.filter(**query_dict)
             return ResponseData.success(RESPONSE_MSG_0001,
                                         self.get_serializer_class()(instance=books, many=True).data,
-                                        len(books))
+                                        books.count())
 
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
@@ -116,7 +117,7 @@ class ModelCRUD(GenericAPIView):
             th.start()
 
     @classmethod
-    def paging_list(cls, size: int, current: int, books, serializer) -> list:
+    def paging_list(cls, size: int, current: int, books: QuerySet, serializer) -> tuple[list, int]:
         """
         分页
         @param size:
@@ -125,11 +126,12 @@ class ModelCRUD(GenericAPIView):
         @param serializer:
         @return:
         """
-        if int(books.count()) <= int(size):
+        count = books.count()
+        if count <= int(size):
             current = 1
         return serializer(
             instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
-            many=True).data
+            many=True).data, count
 
     def inside_post(self, data: dict) -> dict:
         serializer = self.serializer(data=data)
