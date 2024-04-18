@@ -18,6 +18,7 @@ urlpatterns = [
     path("info/name", ApiInfoViews.as_view({'get': 'get_api_name'})),
     path("put/api/info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     path("copy/info", ApiInfoViews.as_view({'post': 'copy_api_info'})),
+    path("import/api", ApiInfoViews.as_view({'post': 'import_api'})),
     #
     path("case", ApiCaseCRUD.as_view()),
     path("case/run", ApiCaseViews.as_view({'get': 'api_case_run'})),
