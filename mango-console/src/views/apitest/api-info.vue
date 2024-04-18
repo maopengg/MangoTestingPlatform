@@ -68,7 +68,8 @@
           <a-tabs @tab-click="(key) => switchType(key)" default-active-key="1">
             <template #extra>
               <a-space v-if="apiInfoData.apiType === '0'">
-                <a-button type="primary" size="small" @click="onBatchUpload">录制请求</a-button>
+                <a-button type="primary" size="small" @click="onBatchUpload">录制</a-button>
+                <a-button type="primary" size="small" @click="onImport">导入</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('设为调试')"
                   >设为调试</a-button
@@ -277,7 +278,10 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button></a-doption>
+                        <a-button type="text" size="mini" @click="onUpdate(record)"
+                          >编辑</a-button
+                        ></a-doption
+                      >
                       <a-doption>
                         <a-button type="text" size="mini" @click="apiInfoCopy(record)"
                           >复制</a-button
@@ -861,6 +865,19 @@
             Message.success(res.msg)
           })
           .catch(console.log)
+      },
+    })
+  }
+  function onImport() {
+    Modal.input({
+      title: '请输入数据',
+      content: '请输入您要传递给后端的数据：',
+      onOk: (value: any) => {
+        // 在这里可以将输入的数据传递给后端
+        console.log(value)
+      },
+      onCancel: () => {
+        Message.success('取消输入')
       },
     })
   }

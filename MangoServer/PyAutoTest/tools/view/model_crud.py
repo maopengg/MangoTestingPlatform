@@ -134,26 +134,29 @@ class ModelCRUD(GenericAPIView):
             instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
             many=True).data, count
 
-    def inside_post(self, data: dict) -> dict:
-        serializer = self.serializer(data=data)
+    @classmethod
+    def inside_post(cls, data: dict) -> dict:
+        serializer = cls.serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return serializer.data
         else:
             log.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
 
-    def inside_put(self, _id: int, data: dict) -> dict:
-        serializer = self.serializer(instance=self.model.objects.get(pk=_id), data=data)
+    @classmethod
+    def inside_put(cls, _id: int, data: dict) -> dict:
+        serializer = cls.serializer(instance=cls.model.objects.get(pk=_id), data=data)
         if serializer.is_valid():
             serializer.save()
             return serializer.data
         else:
             log.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
 
-    def inside_delete(self, _id: int) -> None:
+    @classmethod
+    def inside_delete(cls, _id: int) -> None:
         """
         删除一条记录
         @param _id:
         @return:
         """
-        self.model.objects.get(id=_id).delete()
+        cls.model.objects.get(id=_id).delete()
