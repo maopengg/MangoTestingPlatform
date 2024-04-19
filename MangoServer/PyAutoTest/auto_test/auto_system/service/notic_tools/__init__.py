@@ -62,9 +62,6 @@ class NoticeMain:
 
     @classmethod
     def mail_send(cls, content: str) -> None:
-        """
-        发送邮件
-        """
         user_list = ['729164035@qq.com', ]
         connection.connect()
         try:
@@ -88,7 +85,6 @@ class NoticeMain:
 
     @classmethod
     def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
-
         wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report)
         wechat.send_wechat_notification()
 

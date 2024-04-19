@@ -15,11 +15,6 @@ class GetDataBase:
 
     @classmethod
     def get_mysql_config(cls, test_obj_id: int) -> MysqlConingModel:
-        """
-        获取mysql的配置参数
-        @param test_obj_id:
-        @return:
-        """
         try:
             mysql = Database.objects.get(test_obj_id=test_obj_id)
         except Database.DoesNotExist:

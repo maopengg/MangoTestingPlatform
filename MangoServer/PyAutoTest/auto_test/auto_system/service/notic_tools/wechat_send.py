@@ -19,10 +19,6 @@ log = logging.getLogger('system')
 
 
 class WeChatSend:
-    """
-    企业微信消息通知
-    """
-
     def __init__(self, notice_config: WeChatNoticeModel, test_report: TestReportModel):
         self.notice_config = notice_config
         self.test_report = test_report
@@ -30,10 +26,7 @@ class WeChatSend:
         self.headers = {"Content-Type": "application/json"}
 
     def send_wechat_notification(self):
-        """
-        发送企业微信通知
-        :return:
-        """
+
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:
             cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
@@ -63,11 +56,6 @@ class WeChatSend:
         self.send_markdown(text)
 
     def send_markdown(self, content):
-        """
-        发送 MarkDown 类型消息
-        :param content: 消息内容，markdown形式
-        :return:
-        """
         _data = {"msgtype": "markdown", "markdown": {"content": content}}
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
@@ -75,11 +63,6 @@ class WeChatSend:
             raise SendMessageError(*ERROR_MSG_0018)
 
     def send_file_msg(self, file):
-        """
-        发送文件类型的消息
-        @return:
-        """
-
         _data = {"msgtype": "file", "file": {"media_id": self.__upload_file(file)}}
         res = requests.post(url=self.notice_config.webhook, json=_data, headers=self.headers)
         if res.json()['errcode'] != 0:
@@ -87,22 +70,11 @@ class WeChatSend:
             raise SendMessageError(*ERROR_MSG_0020)
 
     def __upload_file(self, file):
-        """
-        先将文件上传到临时媒体库
-        :param file:
-        :return:
-        """
         data = {"file": open(file, "rb")}
         res = requests.post(url=self.notice_config.webhook, files=data).json()
         return res['media_id']
 
     def send_text(self, content, mentioned_mobile_list=None):
-        """
-        发送文本类型通知
-        :param content: 文本内容，最长不超过2048个字节，必须是utf8编码
-        :param mentioned_mobile_list: 手机号列表，提醒手机号对应的群成员(@某个成员)，@all表示提醒所有人
-        :return:
-        """
         _data = {"msgtype": "text", "text": {"content": content, "mentioned_list": None,
                                              "mentioned_mobile_list": mentioned_mobile_list}}
 

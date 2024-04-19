@@ -17,11 +17,6 @@ class GetCommonParameters:
 
     @classmethod
     def get_api_args(cls, test_obj_id) -> list[ApiPublicModel]:
-        """
-        获取公共数据
-        @param test_obj_id:
-        @return:
-        """
         data = []
         test_obj = TestObject.objects.get(id=test_obj_id)
         for i in ApiPublic.objects.filter(
@@ -41,11 +36,6 @@ class GetCommonParameters:
 
     @classmethod
     def get_ui_args(cls, test_obj_id) -> list[UiPublicModel]:
-        """
-        获取公共数据
-        @param test_obj_id:
-        @return:
-        """
         data = []
         test_obj = TestObject.objects.get(id=test_obj_id)
         for i in UiPublic.objects.filter(project_id=test_obj.project_id, status=StatusEnum.SUCCESS.value).order_by(

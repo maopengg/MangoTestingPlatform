@@ -20,17 +20,12 @@ log = logging.getLogger('system')
 
 
 class SendEmail:
-    """ 发送邮箱 """
 
     def __init__(self, notice_config: EmailNoticeModel, test_report: TestReportModel = None):
         self.test_report = test_report
         self.notice_config = notice_config
 
     def send_main(self) -> None:
-        """
-        发送邮件
-        :return:
-        """
         domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:
             cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
@@ -58,17 +53,10 @@ class SendEmail:
             self.send_mail(self.notice_config.send_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}通知】', content)
             log.info(f"邮件发送成功:{self.notice_config.model_dump_json()}")
         except SMTPException as error:
-            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
+            log.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
             raise SendMessageError(*ERROR_MSG_0016)
 
     def send_mail(self, user_list: list, sub: str, content: str, ) -> None:
-        """
-
-        @param user_list: 发件人邮箱
-        @param sub:
-        @param content: 发送内容
-        @return:
-        """
         try:
             user = f"{ClientNameEnum.PLATFORM_ENGLISH.value} <{self.notice_config.send_user}>"
             message = MIMEText(content, _subtype='plain', _charset='utf-8')  # MIMEText设置发送的内容
@@ -81,14 +69,10 @@ class SendEmail:
             server.sendmail(user, user_list, message.as_string())  #
             server.close()
         except gaierror as error:
-            logger.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
+            log.error(f"邮件发送失败->错误消息：{error}，错误数据：{self.notice_config.model_dump_json()}")
             raise SendMessageError(*ERROR_MSG_0017)
 
     def error_mail(self, error_message: str) -> None:
-        """
-        执行异常邮件通知
-        @param error_message: 报错信息
-        @return:
-        """
+
         content = f"自动化测试执行完毕，程序中发现异常，请悉知。报错信息如下：\n{error_message}"
         self.send_mail(self.notice_config.send_list, f'{self.test_report.project_name}接口自动化执行异常通知', content)
