@@ -20,10 +20,6 @@ class TestSuiteReportUpdate:
         self.data = data
 
     def add_test_suite_report(self):
-        """
-        新增一条测试套
-        @return:
-        """
         serializer = TestSuiteReportSerializers(data=self.data.dict())
         if serializer.is_valid():
             serializer.save()
@@ -34,11 +30,6 @@ class TestSuiteReportUpdate:
     @classmethod
     @retry(func_name='update_case_suite_status')
     def update_case_suite_status(cls, data: TestSuiteModel):
-        """
-        更新测试套
-        @param data:
-        @return:
-        """
         res = TestSuiteReport.objects.get(id=data.id)
         res.status = data.status
         res.run_status = data.run_status

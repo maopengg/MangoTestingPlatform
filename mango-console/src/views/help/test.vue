@@ -1,51 +1,17 @@
 <template>
-  <!-- support from v2.25.0  -->
-  <a-table :columns="columns" :data="data">
-    <template #name="{ record, rowIndex }">
-      <a-input v-model="record.name" />
-    </template>
-  </a-table>
+  <div>
+    <a-input v-model="name" />
+    <a-button @click="f">点击</a-button>
+  </div>
+  <span>{{ name }}</span>
 </template>
 
-<script>
-  import { reactive } from 'vue'
-
-  export default {
-    setup() {
-      const columns = [
-        {
-          title: 'name',
-          dataIndex: 'name',
-          slotName: 'name',
-        },
-        {
-          title: 'Salary',
-          dataIndex: 'salary',
-        },
-      ]
-
-      const data = reactive([
-        {
-          key1: '1',
-          name: 'Jane Doe',
-          salary: 23000,
-          address: '32 Park Road, London',
-          province: 'Beijing',
-          city: 'Haidian',
-          email: 'jane.doe@example.com',
-        },
-        {
-          key1: '2',
-          name: 'Alisa Ross',
-          salary: 25000,
-          address: '35 Park Road, London',
-          email: 'alisa.ross@example.com',
-        },
-      ])
-      return {
-        columns,
-        data,
-      }
-    },
+<script lang="ts" setup>
+  import { ref } from 'vue'
+  import curlconverter from 'curlconverter'
+  const name = ref('')
+  function f() {
+    name.value = curlconverter.toJsonString(name.value)
+    console.log(name.value)
   }
 </script>
