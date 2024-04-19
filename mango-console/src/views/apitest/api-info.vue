@@ -77,110 +77,7 @@
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
               <a-space v-else-if="apiInfoData.apiType === '1'">
-                <a-button type="primary" size="small" @click="handleClick1">新增</a-button>
-                <!--                // @click="onAddPage"-->
-                <a-drawer :width="650" :visible="visible1" @cancel="handleCancel1" unmountOnClose>
-                  <template #title> 新建接口 </template>
-                  <template #footer>
-                    <a-space>
-                      <a-button @click="handleCancel1">取消</a-button>
-                      <a-button :disabled="current === 1" @click="onPrev">
-                        <icon-left />
-                        上一步
-                      </a-button>
-                      <a-button :disabled="current === 3" @click="onNext">
-                        下一步
-                        <icon-right />
-                      </a-button>
-                      <a-button type="primary" @click="handleOk1">确定</a-button>
-                    </a-space>
-                  </template>
-                  <div class="frame-bg">
-                    <div class="frame-body">
-                      <div class="frame-aside">
-                        <a-steps :current="current">
-                          <a-step>基础信息</a-step>
-                          <a-step>请求头</a-step>
-                          <a-step>请求体</a-step>
-                        </a-steps>
-                      </div>
-                      <div class="frame-main">
-                        <div class="main-content">
-                          <a-form :model="formModel">
-                            <a-form-item
-                              :class="[
-                                item.required ? 'form-item__require' : 'form-item__no_require',
-                              ]"
-                              :label="item.label"
-                              v-for="item of formItems"
-                              :key="item.key"
-                            >
-                              <template v-if="item.type === 'input'">
-                                <a-input :placeholder="item.placeholder" v-model="item.value" />
-                              </template>
-                              <template v-else-if="item.type === 'textarea'">
-                                <a-textarea
-                                  v-model="item.value"
-                                  :placeholder="item.placeholder"
-                                  :auto-size="{ minRows: 3, maxRows: 5 }"
-                                />
-                              </template>
-                              <template
-                                v-else-if="item.type === 'select' && item.key === 'project'"
-                              >
-                                <a-select
-                                  v-model="item.value"
-                                  :placeholder="item.placeholder"
-                                  :options="project.data"
-                                  :field-names="fieldNames"
-                                  @change="getProjectModule(item.value)"
-                                  value-key="key"
-                                  allow-clear
-                                  allow-search
-                                />
-                              </template>
-                              <template
-                                v-else-if="item.type === 'select' && item.key === 'module_name'"
-                              >
-                                <a-select
-                                  v-model="item.value"
-                                  :placeholder="item.placeholder"
-                                  :options="apiInfoData.moduleList"
-                                  :field-names="fieldNames"
-                                  value-key="key"
-                                  allow-clear
-                                  allow-search
-                                />
-                              </template>
-                              <template v-else-if="item.type === 'select' && item.key === 'client'">
-                                <a-select
-                                  v-model="item.value"
-                                  :placeholder="item.placeholder"
-                                  :options="apiInfoData.apiPublicEnd"
-                                  :field-names="fieldNames"
-                                  value-key="key"
-                                  allow-clear
-                                  allow-search
-                                />
-                              </template>
-                              <template v-else-if="item.type === 'select' && item.key === 'method'">
-                                <a-select
-                                  v-model="item.value"
-                                  :placeholder="item.placeholder"
-                                  :options="apiInfoData.apiMethodType"
-                                  :field-names="fieldNames"
-                                  value-key="key"
-                                  allow-clear
-                                  allow-search
-                                />
-                              </template>
-                            </a-form-item>
-                          </a-form>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </a-drawer>
+                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('调试完成')"
                   >调试完成</a-button
@@ -199,7 +96,6 @@
             :pagination="false"
             :rowKey="rowKey"
             @selection-change="onSelectionChange"
-            :scroll="scrollPercent"
           >
             <template #columns>
               <a-table-column
@@ -216,9 +112,6 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project?.name }}
-                </template>
                 <template v-else-if="item.key === 'module_name'" #cell="{ record }">
                   {{ record.module_name?.name }}
                 </template>
@@ -232,21 +125,6 @@
                   <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
                   <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
                   <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
-                </template>
-                <template v-else-if="item.key === 'header'" #cell="{ record }">
-                  {{ record.header }}
-                </template>
-                <template v-else-if="item.key === 'params'" #cell="{ record }">
-                  {{ record.params }}
-                </template>
-                <template v-else-if="item.key === 'data'" #cell="{ record }">
-                  {{ record.data }}
-                </template>
-                <template v-else-if="item.key === 'json'" #cell="{ record }">
-                  {{ record.json }}
-                </template>
-                <template v-else-if="item.key === 'file'" #cell="{ record }">
-                  {{ record.file }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -417,10 +295,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const scrollPercent = {
-    x: 2000,
-    y: 540,
-  }
+
   const apiInfoData = reactive({
     actionTitle: '添加接口',
     isAdd: false,
@@ -438,27 +313,6 @@
   }
   const handleCancel = () => {
     visible.value = false
-  }
-  const visible1 = ref(false)
-
-  const handleClick1 = () => {
-    visible1.value = true
-  }
-  const handleOk1 = () => {
-    visible1.value = false
-  }
-  const current = ref(1)
-
-  const onPrev = () => {
-    current.value = Math.max(1, current.value - 1)
-  }
-
-  const onNext = () => {
-    current.value = Math.min(3, current.value + 1)
-  }
-
-  const handleCancel1 = () => {
-    visible1.value = false
   }
   const conditionItems: Array<FormItem> = reactive([
     {
@@ -592,101 +446,6 @@
         return true
       },
     },
-    {
-      label: 'header',
-      key: 'header',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入header',
-      validator: function () {
-        if (this.value) {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'params',
-      key: 'params',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入params',
-      validator: function () {
-        if (this.value) {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'data',
-      key: 'data',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入data',
-      validator: function () {
-        if (this.value) {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'json',
-      key: 'json',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入json',
-      validator: function () {
-        if (this.value) {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
-    {
-      label: 'file',
-      key: 'file',
-      value: '',
-      type: 'textarea',
-      required: false,
-      placeholder: '请输入文件地址',
-      validator: function () {
-        if (this.value) {
-          try {
-            this.value = JSON.parse(this.value)
-          } catch (e) {
-            Message.error('请输入json数据类型')
-            return false
-          }
-        }
-        return true
-      },
-    },
   ])
 
   const tableColumns = useTableColumn([
@@ -733,47 +492,6 @@
       dataIndex: 'status',
       width: 80,
     },
-    {
-      title: '请求头',
-      key: 'header',
-      dataIndex: 'header',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '参数',
-      key: 'params',
-      dataIndex: 'params',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '表单',
-      key: 'data',
-      dataIndex: 'data',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: 'json',
-      key: 'json',
-      dataIndex: 'json',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-    {
-      title: '文件',
-      key: 'file',
-      dataIndex: 'file',
-      align: 'left',
-      ellipsis: true,
-      tooltip: true,
-    },
-
     {
       title: '操作',
       key: 'actions',

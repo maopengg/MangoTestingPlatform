@@ -3,20 +3,26 @@
 # @Description: 
 # @Time   : 2024-04-18 16:29
 # @Author : 毛鹏
+import json
+import re
 from urllib.parse import urlparse, parse_qs
 
 import uncurl
 from uncurl.api import ParsedContext
 
+from PyAutoTest.enums.api_enum import MethodEnum
+
 
 class ImportApi:
-    def curl_import(self, curl_command: str):
+
+    @classmethod
+    def curl_import(cls, curl_command: str):
         try:
             print(uncurl.parse(curl_command))
         except Exception as error:
             print(error)
         r: ParsedContext = uncurl.parse_context(curl_command)
-        host, path, query_params = self.url(r.url)
+        host, path, query_params = cls.url(r.url)
         from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
         return ApiInfoCRUD.inside_post({
             'url': path,
@@ -25,6 +31,43 @@ class ImportApi:
             'params': query_params,
             'data': None,
             'json': r.data
+        })
+
+    @classmethod
+    def curl_import_(cls, data: dict):
+        fetch_string = data.get('data')
+        url = re.search(r'fetch\("(.*?)"', fetch_string).group(1)
+        # headers = json.loads(re.search(r'"headers":\s*({.*?})', fetch_string, re.DOTALL).group(1))
+        body_match = re.search(r'"body":\s*(.*?)(,|\n|\r)', fetch_string, re.DOTALL)
+        print(body_match.group(1))
+        print(type(body_match))
+        body = json.loads(body_match.group(1)) if body_match else None
+        method = re.search(r'"method":\s*"(.*?)"', fetch_string).group(1)
+
+        # 提取请求头字符串
+        headers_match = re.search(r'"headers":\s*({.*?})', fetch_string, re.DOTALL)
+        headers_str = headers_match.group(1) if headers_match else None
+
+        # 将请求头字符串转换为字典
+        headers = {}
+        if headers_str:
+            header_pairs = re.findall(r'"(.*?)":\s*"(.*?)"', headers_str)
+            headers = {key: value for key, value in header_pairs}
+
+        host, path, query_params = cls.url(url)
+        from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
+        return ApiInfoCRUD.inside_post({
+            'project': data.get('project'),
+            'type': data.get('type'),
+            'module_name': data.get('module_name'),
+            'name': data.get('name'),
+            'client': data.get('client'),
+            'url': path,
+            'method': MethodEnum.get_key(method),
+            'header': headers,
+            'params': query_params,
+            'data': None,
+            'json': body
         })
 
     @classmethod

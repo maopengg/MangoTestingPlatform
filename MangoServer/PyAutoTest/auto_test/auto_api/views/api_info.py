@@ -3,9 +3,7 @@
 # @Description: 
 # @Time   : 2023-11-13 10:42
 # @Author : 毛鹏
-import argparse
 import logging
-import shlex
 
 from django.forms import model_to_dict
 from rest_framework import serializers
@@ -111,28 +109,30 @@ class ApiInfoViews(ViewSet):
         else:
             return ResponseData.fail(RESPONSE_MSG_0068, serializer.errors)
 
-    # data = ImportApi().curl_import(request.data.get('data'))
     # import subprocess
     #
     # data = subprocess.run(request.data.get('data'), shell=True)
 
     @action(methods=['POST'], detail=False)
     def import_api(self, request: Request):
-        data = request.data.get('data')
-        import re
-
-        # 使用正则表达式匹配URL
-        # urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
-        # 编译一个正则表达式模式，匹配 fetch(...) 中的内容
-        pattern = re.compile(r'fetch\((.*?)\);')
-
-        # 使用 findall 方法查找所有匹配的内容
-        matches = pattern.findall(data)
-
-        # 将匹配的内容转换为元组
-        result_tuple = tuple(matches)
-
-        print(result_tuple)
+        data = f"""
+        {request.data.get('data')}
+        """
+        import argparse
+        import shlex
+        parser = argparse.ArgumentParser()
+        parser.add_argument('command')
+        parser.add_argument('url')
+        parser.add_argument('-d', '--data')
+        parser.add_argument('-b', '--data-binary', '--data-raw', default=None)
+        parser.add_argument('-X', default='')
+        parser.add_argument('-H', '--header', action='append', default=[])
+        parser.add_argument('--compressed', action='store_true')
+        parser.add_argument('-k', '--insecure', action='store_true')
+        parser.add_argument('--user', '-u', default=())
+        parser.add_argument('-i', '--include', action='store_true')
+        parser.add_argument('-s', '--silent', action='store_true')
+        tokens = shlex.split(data)
+        parsed_args = parser.parse_args(tokens)
+        print(parsed_args)
         return ResponseData.success(RESPONSE_MSG_0069)
-
-

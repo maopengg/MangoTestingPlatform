@@ -35,13 +35,6 @@ class TestResult:
                          request_data_model: RequestDataModel | None = None,
                          response: ResponseDataModel | None = None,
                          ) -> None:
-        """
-        测试结果存储
-        @param request_data_model:
-        @param response:
-        @param case_detailed:
-        @return:
-        """
         if request_data_model and response:
             data = {
                 'test_suite_id': self.test_suite_data['id'],
@@ -85,10 +78,6 @@ class TestResult:
         ApiCaseResultCRUD().inside_post(data)
 
     def update_case_or_suite(self, case_id: int):
-        """
-        更新用例状态和测试套
-        @return:
-        """
         api_case = ApiCase.objects.get(id=case_id)
         api_case.test_suite_id = self.test_suite_report.get('id')
         if StatusEnum.FAIL.value in self.assertion_result:
@@ -101,22 +90,11 @@ class TestResult:
 
     @classmethod
     def update_api_info(cls, api_info_id: int, status: int):
-        """
-        修改api_info表的状态
-        @param api_info_id: api_info_id
-        @param status: status
-        @return:
-        """
         api_info_obj = ApiInfo.objects.get(id=api_info_id)
         api_info_obj.status = status
         api_info_obj.save()
 
     def update_test_suite(self, status: int):
-        """
-        更新测试套表
-        @param status:
-        @return:
-        """
         test_suite_data = {
             'id': self.test_suite_data['id'],
             'error_message': json.dumps(self.error_message, ensure_ascii=False) if self.error_message else None,

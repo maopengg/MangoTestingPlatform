@@ -23,210 +23,101 @@
       </div>
     </a-card>
     <a-card>
-      <a-tabs @tab-click="(key) => switchType(key)">
-        <template #extra>
-          <a-space>
-            <a-button type="primary" size="small" @click="doAppend">新增</a-button>
-          </a-space>
-        </template>
+      <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
         <a-tab-pane key="0" title="请求头">
           <a-textarea
             placeholder="请输入请求头，字符串形式"
-            :model-value="formatJson(pageData.record.header)"
+            v-model="data.header"
             allow-clear
             auto-size
+            @blur="upDate('header', data.header)"
           />
         </a-tab-pane>
         <a-tab-pane key="1" title="参数">
           <a-textarea
             placeholder="请输入json格式的数据"
-            :model-value="formatJson(pageData.record.params)"
+            v-model="data.params"
             allow-clear
             auto-size
+            @blur="upDate('params', data.params)"
           />
         </a-tab-pane>
         <a-tab-pane key="2" title="表单">
           <a-textarea
             placeholder="请输入json格式的表单"
-            :model-value="formatJson(pageData.record.data)"
+            v-model="data.data"
             allow-clear
             auto-size
+            @blur="upDate('data', data.data)"
           />
         </a-tab-pane>
         <a-tab-pane key="3" title="JSON">
           <a-textarea
             placeholder="请输入json格式的JSON"
-            :model-value="formatJson(pageData.record.json)"
+            v-model="data.json"
             allow-clear
             auto-size
+            @blur="upDate('json', data.json)"
           />
         </a-tab-pane>
         <a-tab-pane key="4" title="文件">
           <a-textarea
             placeholder="请输入json格式的文件上传数据"
-            :model-value="formatJson(pageData.record.file)"
+            v-model="data.file"
             allow-clear
             auto-size
+            @blur="upDate('file', data.file)"
           />
         </a-tab-pane>
       </a-tabs>
     </a-card>
   </div>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
-          v-for="item of formItems"
-          :key="item.key"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.apiParameterType"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { nextTick, onMounted, reactive } from 'vue'
+  import { Message } from '@arco-design/web-vue'
   import { apiInfo, systemEnumApiParameterType, systemEnumMethod } from '@/api/url'
-  import { get, post, put } from '@/api/http'
-  import { FormItem, ModalDialogType } from '@/types/components'
-  import { useRoute } from 'vue-router'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { fieldNames } from '@/setting'
+  import { get, put } from '@/api/http'
   import { usePageData } from '@/store/page-data'
   const pageData: any = usePageData()
-  const route = useRoute()
-  const formModel = ref({})
-  const modalDialogRef = ref<ModalDialogType | null>(null)
   const data: any = reactive({
     id: 0,
-    isAdd: false,
-    updateId: 0,
     pageType: '0',
-    actionTitle: '添加元素',
     apiParameterType: [],
     apiMethodType: [],
+    header: formatJson(pageData.record.header),
+    params: formatJson(pageData.record.params),
+    json: formatJson(pageData.record.json),
+    data: formatJson(pageData.record.data),
+    file: formatJson(pageData.record.file),
   })
 
-  const formItems: FormItem[] = reactive([
-    {
-      label: '参数类型',
-      key: 'type',
-      value: null,
-      type: 'select',
-      required: true,
-      placeholder: '请选择参数类型',
-      validator: function () {
-        if (!this.value && this.value !== 0) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: 'key',
-      key: 'key',
-      value: '',
-      type: 'input',
-      required: false,
-      placeholder: '请输入key',
-      validator: function () {
-        return true
-      },
-    },
-    {
-      label: 'value',
-      key: 'value',
-      value: '',
-      type: 'input',
-      required: false,
-      placeholder: '请输入value',
-    },
-    {
-      label: '描述',
-      key: 'describe',
-      value: '',
-      type: 'input',
-      required: false,
-      placeholder: '请输入参数描述',
-    },
-  ])
-
-  function switchType(key: any) {
+  function switchType(key: string) {
     data.pageType = key
   }
-
+  function switchPageType() {
+    if (pageData.record.params) {
+      data.pageType = '1'
+    } else if (pageData.record.data) {
+      data.pageType = '2'
+    } else if (pageData.record.json) {
+      data.pageType = '3'
+    } else if (pageData.record.file) {
+      data.pageType = '4'
+    } else {
+      data.pageType = '0'
+    }
+  }
   function doResetSearch() {
     window.history.back()
   }
-
-  function doAppend() {
-    data.actionTitle = '添加元素'
-    data.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
-      }
-    })
-  }
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
-      value['api_info_id'] = route.query.id
-      if (data.isAdd) {
-        post({
-          url: apiInfo,
-          data: () => {
-            return value
-          },
-        })
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      } else {
-        put({
-          url: apiInfo,
-          data: () => {
-            value['id'] = data.updateId
-            return value
-          },
-        })
-          .then((res) => {
-            Message.success(res.msg)
-          })
-          .catch(console.log)
-      }
-    }
-  }
-
   function formatJson(items: any) {
     if (items === null) {
       return null
     }
     return JSON.stringify(items, null, 2)
   }
+
   function enumApiParameterType() {
     get({
       url: systemEnumApiParameterType,
@@ -255,8 +146,41 @@
       .catch(console.log)
   }
 
+  function upDate(key: string, value1: string) {
+    let value = pageData.record
+    try {
+      if (value1) {
+        const parsedValue = JSON.parse(value1)
+        if (typeof parsedValue === 'object') {
+          value[key] = parsedValue
+        } else {
+          Message.error(`请输入json格式的：${key}`)
+          return
+        }
+      } else {
+        value[key] = null
+      }
+    } catch (e) {
+      Message.error(`请输入json格式的：${key}`)
+      return
+    }
+    delete value.module_name
+    delete value.project
+    put({
+      url: apiInfo,
+      data: () => {
+        return value
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+
   onMounted(() => {
     nextTick(async () => {
+      switchPageType()
       await doMethod()
       enumApiParameterType()
     })

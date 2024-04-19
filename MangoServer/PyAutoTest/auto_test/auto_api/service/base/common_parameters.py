@@ -74,11 +74,6 @@ class CommonParameters(DataProcessor, HTTPRequest):
         self.set_cache(api_public_obj.key, value)
 
     def __sql(self, api_public_obj: ApiPublic):
-        """
-        @需要重新写，不需要重新创建mysql连接对象
-        @param api_public_obj:
-        @return:
-        """
         if self.mysql_connect:
             result_list: list[dict] = self.mysql_connect.condition_execute(self.replace(api_public_obj.value))
             if isinstance(result_list, list):
