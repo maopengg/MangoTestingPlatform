@@ -23,11 +23,6 @@ log = logging.getLogger('api')
 class ApiDataHandle(CommonParameters, PublicAssertion):
 
     def request_data(self, request_data_model: RequestDataModel):
-        """
-        检查请求信息中是否存在变量进行替换
-        @param request_data_model:
-        @return:
-        """
         for key, value in request_data_model:
             if value is not None and key != 'file':
                 value = self.replace(value)
@@ -47,11 +42,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         return request_data_model
 
     def front_sql(self, case_detailed):
-        """
-        前置sql
-        @param case_detailed:
-        @return:
-        """
         if self.mysql_connect:
             for sql in case_detailed.front_sql:
                 res = self.mysql_connect.condition_execute(sql)
@@ -79,12 +69,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             self.__assertion_response_whole(response_data, self.replace(case_detailed.ass_response_whole))
 
     def posterior(self, response: ResponseDataModel, case_detailed):
-        """
-        后置处理
-        @param response:
-        @param case_detailed:
-        @return:
-        """
         if case_detailed.posterior_response:
             self.__posterior_response(response.response_json, self.replace(case_detailed.posterior_response))
         if case_detailed.posterior_sql:
@@ -93,11 +77,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             self.__posterior_sleep(self.replace(case_detailed.posterior_sleep))
 
     def dump_data(self, case_detailed):
-        """
-        后置数据清除
-        @param case_detailed:
-        @return:
-        """
         if self.mysql_connect:
             for sql in case_detailed.dump_data:
                 if sql.strip().lower().startswith('select'):
@@ -107,11 +86,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     log.info(f'删除成功的条数：{res}')
 
     def __posterior_sql(self, sql_list: list[dict]):
-        """
-        后置sql
-        @param sql_list:
-        @return:
-        """
         if self.mysql_connect:
             for sql_obj in sql_list:
                 res = self.mysql_connect.condition_execute(sql_obj.get('key'))
@@ -122,10 +96,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                             log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
-        """
-        后置响应
-        @return:
-        """
         for i in posterior_response:
             value = self.get_json_path_value(response_text, i['key'])
             self.set_cache(i['value'], value)
@@ -135,12 +105,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         time.sleep(int(sleep))
 
     def __assertion_response_value(self, response_data, ass_response_value):
-        """
-        响应jsonpath断言
-        @param response_data:
-        @param ass_response_value:  list[dict]
-        @return:
-        """
         _dict = {}
         try:
             if ass_response_value:
@@ -159,11 +123,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
-        """
-        sql断言
-        @param sql_list:
-        @return:
-        """
         _dict = {'value': None}
         try:
             if self.mysql_connect:
@@ -180,12 +139,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
 
     @classmethod
     def __assertion_response_whole(cls, actual, expect):
-        """
-        响应全匹配断言
-        @param actual:
-        @param expect:
-        @return:
-        """
         try:
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError as error:

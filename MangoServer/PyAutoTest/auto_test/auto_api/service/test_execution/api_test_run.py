@@ -27,10 +27,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
         self.is_notice = is_notice
 
     def run_one_case(self, case_id: int) -> dict:
-        """
-        执行一个用例
-        @return:
-        """
         api_case_obj = ApiCase.objects.get(id=case_id)
         self.__case_front(api_case_obj)
         case_api_list = self.get_case(case_id)
@@ -95,10 +91,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
             return ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
 
     def __case_front(self, api_case_obj: ApiCase):
-        """
-        用例前置
-        @return:
-        """
         for custom in api_case_obj.front_custom:
             self.set_cache(custom.get('key'), custom.get('value'))
         for i in api_case_obj.front_sql:
@@ -119,10 +111,6 @@ class ApiTestRun(ApiDataHandle, TestResult):
                         raise MysqlQueryIsNullError(*ERROR_MSG_0034, value=(sql,))
 
     def __case_posterior(self, api_case_obj: ApiCase):
-        """
-        用例后置
-        @return:
-        """
         if self.mysql_connect:
             for sql in api_case_obj.posterior_sql:
                 self.mysql_connect.condition_execute(self.replace(sql.get('sql')))
