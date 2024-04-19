@@ -800,8 +800,6 @@
   }
 
   function select(record: any) {
-    doRefreshApi(record.api_info_id)
-
     apiCaseData.selectDataObj = record
     for (let key in record) {
       if (key === apiCaseData.position) {
