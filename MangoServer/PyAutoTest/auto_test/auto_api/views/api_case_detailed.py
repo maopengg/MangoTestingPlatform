@@ -45,7 +45,6 @@ class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
             'case',
             'api_info')
         return queryset
@@ -58,6 +57,105 @@ class ApiCaseDetailedCRUD(ModelCRUD):
     serializer = ApiCaseDetailedSerializers
 
     def get(self, request: Request):
+        case_id = request.query_params.get('case_id')
+        api_info_id = request.query_params.get('api_info_id')
+        if api_info_id:
+            api_case_detailed = ApiCaseDetailed.objects.filter(case=case_id, api_info=api_info_id).order_by(
+                'case_sort')
+        else:
+            api_case_detailed = ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
+        api_case_detailed = self.serializer_class.setup_eager_loading(api_case_detailed)
+        data = self.serializer_class(instance=api_case_detailed, many=True).data
+        return ResponseData.success(RESPONSE_MSG_0010, data)
+
+    def post(self, request: Request):
+        data = request.data
+        if data['module_name']:
+            del data['module_name']
+        api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
+        data['url'] = api_info_obj.url
+        data['params'] = api_info_obj.params
+        data['data'] = api_info_obj.data
+        data['json'] = api_info_obj.json
+        data['file'] = api_info_obj.file
+        data['header'] = json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
+
+        serializer = self.serializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            self.asynchronous_callback(request)
+            return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
+        else:
+            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
+
+    def callback(self, _id):
+        """
+        排序
+        @param _id: 用例ID
+        @return:
+        """
+        data = {'id': _id, 'case_flow': '', 'name': ''}
+        case_id = self.model.objects.get(id=_id).case.id
+        run = self.model.objects.filter(case=case_id).order_by('case_sort')
+        for i in run:
+            data['case_flow'] += '->'
+            if i.api_info:
+                data['case_flow'] += i.api_info.name
+        data['name'] = run[0].case.name
+        from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
+        api_case = ApiCaseCRUD()
+        res = api_case.serializer(instance=ApiCase.objects.get(id=case_id), data=data)
+        if res.is_valid():
+            res.save()
+        else:
+            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+
+
+class ApiCaseDetailedViews(ViewSet):
+    model = ApiCaseDetailed
+    serializer_class = ApiCaseDetailedSerializers
+
+    @action(methods=['put'], detail=False)
+    def put_case_sort(self, request: Request):
+        """
+        修改排序
+        @param request:
+        @return:
+        """
+        case_id = None
+        for i in request.data.get('case_sort_list'):
+            obj = self.model.objects.get(id=i['id'])
+            obj.case_sort = i['case_sort']
+            case_id = obj.case.id
+            obj.save()
+        ApiCaseDetailedCRUD().callback(case_id)
+        return ResponseData.success(RESPONSE_MSG_0013, )
+
+    @action(methods=['put'], detail=False)
+    def put_refresh_api_info(self, request: Request):
+        api_info_detailed_obj = self.model.objects.get(id=request.data.get('id'))
+        api_info_obj = ApiInfo.objects.get(id=api_info_detailed_obj.api_info.id)
+        data = {
+            'url': api_info_obj.url,
+            'params': api_info_obj.params,
+            'data': api_info_obj.data,
+            'json': api_info_obj.json,
+            'file': api_info_obj.file,
+            'header': json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
+        }
+        serializer = self.serializer_class(
+            instance=api_info_detailed_obj,
+            data=data
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return ResponseData.success(RESPONSE_MSG_0014, serializer.data)
+        else:
+            log.error(f'执行刷新时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)
+
+    def _get(self, request: Request):
         case_id = request.query_params.get('case_id')
         api_info_id = request.query_params.get('api_info_id')
         test_suite_id = request.query_params.get('test_suite_id')
@@ -147,14 +245,6 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                     {'key': 42, 'title': '后置等待', 'name': 'posterior_sleep', 'data': i.posterior_sleep,
                      'type': 'textarea'}
                 ],
-                # 'dump': [
-                #     {
-                #         'key': 50,
-                #         'title': 'sql清除', 'name': 'dump_data',
-                #         'data': i.dump_data,
-                #         'type': 'list'
-                #     }
-                # ],
                 'cache': [
                     {
                         'key': 60,
@@ -165,90 +255,3 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 ]
             })
         return ResponseData.success(RESPONSE_MSG_0010, data)
-
-    def post(self, request: Request):
-        data = request.data
-        if data['module_name']:
-            del data['module_name']
-        api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
-        data['url'] = api_info_obj.url
-        data['params'] = api_info_obj.params
-        data['data'] = api_info_obj.data
-        data['json'] = api_info_obj.json
-        data['file'] = api_info_obj.file
-        data['header'] = json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
-
-        serializer = self.serializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            self.asynchronous_callback(request)
-            return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
-        else:
-            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
-
-    def callback(self, _id):
-        """
-        排序
-        @param _id: 用例ID
-        @return:
-        """
-        data = {'id': _id, 'case_flow': '', 'name': ''}
-        case_id = self.model.objects.get(id=_id).case.id
-        run = self.model.objects.filter(case=case_id).order_by('case_sort')
-        for i in run:
-            data['case_flow'] += '->'
-            if i.api_info:
-                data['case_flow'] += i.api_info.name
-        data['name'] = run[0].case.name
-        from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
-        api_case = ApiCaseCRUD()
-        res = api_case.serializer(instance=ApiCase.objects.get(id=case_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
-
-
-class ApiCaseDetailedViews(ViewSet):
-    model = ApiCaseDetailed
-    serializer_class = ApiCaseDetailedSerializers
-
-    @action(methods=['put'], detail=False)
-    def put_case_sort(self, request: Request):
-        """
-        修改排序
-        @param request:
-        @return:
-        """
-        case_id = None
-        for i in request.data.get('case_sort_list'):
-            obj = self.model.objects.get(id=i['id'])
-            obj.case_sort = i['case_sort']
-            case_id = obj.case.id
-            obj.save()
-        ApiCaseDetailedCRUD().callback(case_id)
-        return ResponseData.success(RESPONSE_MSG_0013, )
-
-    @action(methods=['put'], detail=False)
-    def put_refresh_api_info(self, request: Request):
-        api_info_detailed_obj = self.model.objects.get(id=request.data.get('id'))
-        api_info_obj = ApiInfo.objects.get(id=api_info_detailed_obj.api_info.id)
-        data = {
-            'url': api_info_obj.url,
-            'params': api_info_obj.params,
-            'data': api_info_obj.data,
-            'json': api_info_obj.json,
-            'file': api_info_obj.file,
-            'header': json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
-        }
-        serializer = self.serializer_class(
-            instance=api_info_detailed_obj,
-            data=data
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseData.success(RESPONSE_MSG_0014, serializer.data)
-        else:
-            log.error(f'执行刷新时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
-            return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)

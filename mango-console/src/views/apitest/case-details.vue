@@ -3,11 +3,9 @@
     <a-card title="组合用例场景">
       <template #extra>
         <a-space>
-          <!--          <a-button type="primary" size="small" @click="addApiInfo">增加接口</a-button>-->
-          <a-button status="success" size="small" @click="caseRun(null)">全部执行</a-button>
           <a-button type="primary" status="warning" size="small" @click="doResetSearch"
-            >返回</a-button
-          >
+            >返回
+          </a-button>
         </a-space>
       </template>
       <div class="container">
@@ -27,10 +25,11 @@
     <a-card>
       <div class="container">
         <div class="left">
-          <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
+          <a-tabs :active-key="apiCaseData.apiType" @tab-click="(key) => switchType(key)">
             <template #extra>
               <a-space>
-                <a-button type="primary" size="small" @click="addData">增加</a-button>
+                <a-button status="success" size="small" @click="caseRun(null)">全部执行</a-button>
+                <a-button type="primary" size="small" @click="addData">增加用例</a-button>
               </a-space>
             </template>
             <a-tab-pane key="1" title="前置数据">
@@ -108,22 +107,22 @@
                     :data-index="item.dataIndex"
                     :fixed="item.fixed"
                   >
-                    <template v-if="item.dataIndex === 'client'" #cell="{ record }">
-                      <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
-                      <a-tag color="magenta" size="small" v-else-if="record.client === 1"
-                        >APP</a-tag
-                      >
-                      <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
+                    <template v-if="item.dataIndex === 'name'" #cell="{ record }">
+                      {{ record.api_info.name }}
                     </template>
                     <template v-else-if="item.dataIndex === 'method'" #cell="{ record }">
-                      <a-tag color="green" size="small" v-if="record.method === 0">GET</a-tag>
-                      <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
-                      <a-tag color="arcoblue" size="small" v-else-if="record.method === 2"
-                        >PUT</a-tag
-                      >
-                      <a-tag color="magenta" size="small" v-else-if="record.method === 3"
-                        >DELETE</a-tag
-                      >
+                      <a-tag color="green" size="small" v-if="record.api_info.method === 0"
+                        >GET
+                      </a-tag>
+                      <a-tag color="gold" size="small" v-else-if="record.api_info.method === 1"
+                        >POST
+                      </a-tag>
+                      <a-tag color="arcoblue" size="small" v-else-if="record.api_info.method === 2"
+                        >PUT
+                      </a-tag>
+                      <a-tag color="magenta" size="small" v-else-if="record.api_info.method === 3"
+                        >DELETE
+                      </a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                       <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -132,12 +131,12 @@
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <a-button type="text" size="mini" @click="caseRun(record.case_sort)"
-                        >执行到此处</a-button
-                      >
+                        >执行到此处
+                      </a-button>
                       <a-button type="text" size="mini" @click="refresh(record.id)">刷新</a-button>
                       <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                        >删除</a-button
-                      >
+                        >删除
+                      </a-button>
                     </template>
                   </a-table-column>
                 </template>
@@ -169,145 +168,314 @@
           </a-tabs>
         </div>
         <div class="right">
-          <a-space direction="vertical" fill>
-            <a-radio-group
-              v-model="apiCaseData.position"
-              type="button"
-              @change="clickRadioGroup"
-              size="large"
-            >
-              <a-radio value="request" :default-checked="true">请求信息</a-radio>
-              <a-radio value="front">前置处理</a-radio>
-              <a-radio value="response">响应结果</a-radio>
-              <a-radio value="assertion">接口断言</a-radio>
-              <a-radio value="posterior">后置处理</a-radio>
-              <a-radio value="cache">缓存数据</a-radio>
-              <a-button type="text" :disabled="apiCaseData.disabled" @click="clickAdd"
-                >增加一条</a-button
-              >
-            </a-radio-group>
-            <a-tabs position="left" @tab-click="tabsChange">
-              <a-tab-pane
-                v-for="item of apiCaseData.selectData"
-                :key="item.key"
-                :title="item.title"
-              >
-                <template v-if="item.type === 'descriptions'">
-                  <a-descriptions style="margin-top: 20px" :data="item.data" :column="1" />
-                </template>
-                <template v-else-if="item.type === 'textarea'">
+          <a-tabs
+            @tab-click="(key) => switchApiInfoType(key)"
+            :active-key="apiCaseData.caseDetailsTypeKey"
+          >
+            <a-tab-pane key="0" title="请求配置">
+              <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="apiCaseData.tabsKey">
+                <a-tab-pane key="00" title="请求头">
                   <a-textarea
-                    placeholder="请输入"
-                    v-model="item.data"
-                    @blur="blurSave(item)"
-                    auto-size
+                    placeholder="请输入请求头，json格式或字符串"
+                    v-model="apiCaseData.request.headers"
                     allow-clear
-                    show-word-limit
+                    auto-size
+                    @blur="blurSave('header', apiCaseData.request.headers)"
                   />
+                </a-tab-pane>
+                <a-tab-pane key="01" title="参数">
+                  <a-textarea
+                    placeholder="请输入参数，json格式"
+                    v-model="apiCaseData.request.params"
+                    allow-clear
+                    auto-size
+                    @blur="blurSave('params', apiCaseData.request.params)"
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="02" title="表单">
+                  <a-textarea
+                    placeholder="请输入表单，json格式"
+                    v-model="apiCaseData.request.data"
+                    allow-clear
+                    auto-size
+                    @blur="blurSave('data', apiCaseData.request.data)"
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="03" title="JSON">
+                  <a-textarea
+                    placeholder="请输入JSON，json格式"
+                    v-model="apiCaseData.request.json"
+                    allow-clear
+                    auto-size
+                    @blur="blurSave('json', apiCaseData.request.json)"
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="04" title="file">
+                  <a-textarea
+                    placeholder="请输入file，json格式"
+                    v-model="apiCaseData.request.file"
+                    allow-clear
+                    auto-size
+                    @blur="blurSave('file', apiCaseData.request.file)"
+                  />
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+            <a-tab-pane key="1" title="前置处理">
+              <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="apiCaseData.tabsKey">
+                <template #extra>
+                  <a-space>
+                    <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                  </a-space>
                 </template>
-                <template v-else-if="item.type === 'list'">
+                <a-tab-pane key="10" title="前置sql">
                   <a-space direction="vertical" fill>
-                    <a-space v-for="(inputObj, index) of item.data" :key="index">
+                    <a-space
+                      v-for="(inputObj, index) of apiCaseData.selectDataObj.front_sql"
+                      :key="index"
+                    >
                       <a-space>
                         <a-input
-                          placeholder="请输入"
-                          v-model="item.data[index]"
-                          @blur="blurSave(item)"
+                          placeholder="请输入前置sql语句"
+                          v-model="apiCaseData.selectDataObj.front_sql[index]"
+                          @blur="blurSave('front_sql', apiCaseData.selectDataObj.front_sql)"
                         />
                         <a-button
                           type="text"
                           size="small"
                           status="danger"
-                          @click="removeFrontSql(item, index)"
+                          @click="
+                            removeFrontSql(apiCaseData.selectDataObj.front_sql, index, 'front_sql')
+                          "
                           >移除
                         </a-button>
                       </a-space>
                     </a-space>
                   </a-space>
-                </template>
-                <template v-else-if="item.type === 'assertion'">
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+            <a-tab-pane key="2" title="响应结果">
+              <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="apiCaseData.tabsKey">
+                <a-tab-pane key="20" title="基础信息">
                   <a-space direction="vertical">
-                    <a-space v-for="(value, index) of item.data" :key="index">
+                    <span>URL：{{ apiCaseData.result?.url }}</span>
+                    <span>响应code：{{ apiCaseData.result?.response_code }}</span>
+                    <span>响应时间：{{ apiCaseData.result?.response_time }}</span>
+                    <span>失败原因：{{ apiCaseData.result?.error_message }}</span>
+                  </a-space>
+                </a-tab-pane>
+                <a-tab-pane key="21" title="请求头">
+                  <pre>{{ strJson(apiCaseData.result?.headers) }}</pre>
+                </a-tab-pane>
+                <a-tab-pane key="22" title="响应头">
+                  <pre>{{ strJson(apiCaseData.result?.response_headers) }}</pre>
+                </a-tab-pane>
+                <a-tab-pane key="23" title="响应体">
+                  <pre>{{ strJson(apiCaseData.result?.response_text) }}</pre>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+            <a-tab-pane key="3" title="接口断言">
+              <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="apiCaseData.tabsKey">
+                <template #extra>
+                  <a-space>
+                    <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                  </a-space>
+                </template>
+                <a-tab-pane key="30" title="响应一致断言">
+                  <a-textarea
+                    placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
+                    v-model="apiCaseData.selectDataObj.ass_response_whole"
+                    allow-clear
+                    :auto-size="{ minRows: 9, maxRows: 9 }"
+                    @blur="
+                      blurSave('ass_response_whole', apiCaseData.selectDataObj.ass_response_whole)
+                    "
+                  />
+                </a-tab-pane>
+                <a-tab-pane key="31" title="响应条件断言">
+                  <a-space direction="vertical">
+                    <a-space
+                      v-for="(value, index) of apiCaseData.selectDataObj.ass_response_value"
+                      :key="index"
+                    >
                       <a-input
-                        placeholder="请输入"
-                        v-model="item.data[index].value"
-                        @blur="blurSave(item)"
+                        placeholder="请输入jsonpath表达式"
+                        v-model="apiCaseData.selectDataObj.ass_response_value[index].value"
+                        @blur="
+                          blurSave(
+                            'ass_response_value',
+                            apiCaseData.selectDataObj.ass_response_value
+                          )
+                        "
                       />
                       <a-cascader
-                        v-model="item.data[index].method"
+                        v-model="apiCaseData.selectDataObj.ass_response_value[index].method"
                         :options="apiCaseData.ass"
-                        :default-value="item.data[index].method"
+                        :default-value="apiCaseData.selectDataObj.ass_response_value[index].method"
                         expand-trigger="hover"
                         placeholder="请选择断言方法"
                         value-key="key"
-                        @blur="blurSave(item)"
+                        @blur="
+                          blurSave(
+                            'ass_response_value',
+                            apiCaseData.selectDataObj.ass_response_value
+                          )
+                        "
                       />
                       <a-input
-                        placeholder="请输入"
-                        v-model="item.data[index].expect"
-                        @blur="blurSave(item)"
+                        placeholder="请输入想要判断的值"
+                        v-model="apiCaseData.selectDataObj.ass_response_value[index].expect"
+                        @blur="
+                          blurSave(
+                            'ass_response_value',
+                            apiCaseData.selectDataObj.ass_response_value
+                          )
+                        "
                       />
-                      <a-button type="text" status="danger" @click="removeFrontSql(item, index)"
-                        >移除</a-button
-                      >
+                      <a-button
+                        type="text"
+                        status="danger"
+                        @click="
+                          removeFrontSql(
+                            apiCaseData.selectDataObj.ass_response_value,
+                            index,
+                            'ass_response_value'
+                          )
+                        "
+                        >移除
+                      </a-button>
                     </a-space>
                   </a-space>
-                </template>
-                <template v-else-if="item.type === 'posterior'">
+                </a-tab-pane>
+                <a-tab-pane key="32" title="sql条件断言">
                   <a-space direction="vertical">
-                    <a-space v-for="(value, index) of item.data" :key="index">
+                    <a-space
+                      v-for="(value, index) of apiCaseData.selectDataObj.ass_sql"
+                      :key="index"
+                    >
                       <a-input
-                        placeholder="请输入"
-                        v-model="item.data[index].key"
-                        @blur="blurSave(item)"
+                        placeholder="请输入sql查询语句，只能查询一个字段"
+                        v-model="apiCaseData.selectDataObj.ass_sql[index].value"
+                        @blur="blurSave('ass_sql', apiCaseData.selectDataObj.ass_sql)"
+                      />
+                      <a-cascader
+                        v-model="apiCaseData.selectDataObj.ass_sql[index].method"
+                        :options="apiCaseData.ass"
+                        :default-value="apiCaseData.selectDataObj.ass_sql[index].method"
+                        expand-trigger="hover"
+                        placeholder="请选择断言方法"
+                        value-key="key"
+                        @blur="blurSave('ass_sql', apiCaseData.selectDataObj.ass_sql)"
                       />
                       <a-input
-                        placeholder="请输入"
-                        v-model="item.data[index].value"
-                        @blur="blurSave(item)"
+                        placeholder="请输入想要判断的值"
+                        v-model="apiCaseData.selectDataObj.ass_sql[index].expect"
+                        @blur="blurSave('ass_sql', apiCaseData.selectDataObj.ass_sql)"
+                      />
+                      <a-button
+                        type="text"
+                        status="danger"
+                        @click="removeFrontSql(apiCaseData.selectDataObj.ass_sql, index, 'ass_sql')"
+                        >移除
+                      </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+            <a-tab-pane key="4" title="后置处理">
+              <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="apiCaseData.tabsKey">
+                <template #extra>
+                  <a-space>
+                    <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                  </a-space>
+                </template>
+                <a-tab-pane key="40" title="响应结果提取">
+                  <a-space direction="vertical">
+                    <a-space
+                      v-for="(value, index) of apiCaseData.selectDataObj.posterior_response"
+                      :key="index"
+                    >
+                      <a-input
+                        placeholder="请输入jsonpath语法"
+                        v-model="apiCaseData.selectDataObj.posterior_response[index].key"
+                        @blur="
+                          blurSave(
+                            'posterior_response',
+                            apiCaseData.selectDataObj.posterior_response
+                          )
+                        "
+                      />
+                      <a-input
+                        placeholder="请输入缓存key"
+                        v-model="apiCaseData.selectDataObj.posterior_response[index].value"
+                        @blur="
+                          blurSave(
+                            'posterior_response',
+                            apiCaseData.selectDataObj.posterior_response
+                          )
+                        "
                       />
 
                       <a-button
                         type="text"
                         size="small"
                         status="danger"
-                        @click="removeFrontSql(item, index)"
+                        @click="
+                          removeFrontSql(
+                            apiCaseData.selectDataObj.posterior_response,
+                            index,
+                            'posterior_response'
+                          )
+                        "
                         >移除
                       </a-button>
                     </a-space>
                   </a-space>
-                </template>
-                <template v-else-if="item.type === 'textarea1'">
-                  <a-table
-                    :columns="columns1"
-                    :data="apiCaseData.parameterData"
-                    :pagination="{ pageSize: 5 }"
-                    :bordered="true"
-                    :row-selection="rowSelection"
-                    row-key="key"
-                    v-model:selectedKeys="selectedKeys"
-                  >
-                    <template #value="{ record }">
-                      <a-input v-model="record.value" />
-                    </template>
-                    <template #type="{ record }">
-                      <a-tag color="orangered" size="small" v-if="record.type === 0">参数</a-tag>
-                      <a-tag color="gold" size="small" v-else-if="record.type === 1">表单</a-tag>
-                      <a-tag color="arcoblue" size="small" v-else-if="record.type === 2"
-                        >json</a-tag
+                </a-tab-pane>
+                <a-tab-pane key="41" title="后置sql处理">
+                  <a-space direction="vertical">
+                    <a-space direction="vertical">
+                      <a-space
+                        v-for="(value, index) of apiCaseData.selectDataObj.posterior_sql"
+                        :key="index"
                       >
-                      <a-tag color="lime" size="small" v-else-if="record.type === 3">文件</a-tag>
-                    </template>
-                  </a-table>
-                </template>
-                <template v-else>
-                  <div>
-                    <span>{{ item.data }}</span>
-                  </div>
-                </template>
-              </a-tab-pane>
-            </a-tabs>
-          </a-space>
+                        <a-input
+                          placeholder="请输入sql"
+                          v-model="apiCaseData.selectDataObj.posterior_sql[index].key"
+                          @blur="blurSave('posterior_sql', apiCaseData.selectDataObj.posterior_sql)"
+                        />
+                        <a-input
+                          placeholder="请输入缓存key，删除语句则不用"
+                          v-model="apiCaseData.selectDataObj.posterior_sql[index].value"
+                          @blur="blurSave('posterior_sql', apiCaseData.selectDataObj.posterior_sql)"
+                        />
+
+                        <a-button
+                          type="text"
+                          size="small"
+                          status="danger"
+                          @click="
+                            removeFrontSql(
+                              apiCaseData.selectDataObj.posterior_sql,
+                              index,
+                              'posterior_sql'
+                            )
+                          "
+                          >移除
+                        </a-button>
+                      </a-space>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+              </a-tabs>
+            </a-tab-pane>
+            <a-tab-pane key="5" title="缓存数据">
+              <pre>{{ strJson(apiCaseData.result?.all_cache) }}</pre>
+            </a-tab-pane>
+          </a-tabs>
         </div>
       </div>
     </a-card>
@@ -359,7 +527,6 @@
 
   import {
     apiCaseDetailed,
-    systemEnumEnd,
     systemEnumMethod,
     apiCaseRun,
     userProjectModuleGetAll,
@@ -368,6 +535,7 @@
     uiPageStepsDetailedAss,
     apiPutRefreshApiInfo,
     apiCase,
+    apiInfoCaseResult,
   } from '@/api/url'
   import { useRoute } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
@@ -376,35 +544,35 @@
   import { fieldNames } from '@/setting'
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
+  import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
 
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const formModel = ref({})
-  const pageData = usePageData()
-  const selectedKeys = ref(['code'])
+  const pageData: any = usePageData()
 
-  const rowSelection = reactive({
-    type: 'checkbox',
-    showCheckedAll: true,
-    onlyCurrent: false,
-  })
   const route = useRoute()
   const apiCaseData: any = reactive({
     actionTitle: '新增接口',
-    position: 'request',
-    disabled: true,
-    tabsKey: 0,
+    request: {
+      headers: null,
+      params: null,
+      data: null,
+      json: null,
+      file: null,
+    },
+    results: null,
     selectDataObj: {},
     data: [],
-    parameterData: [],
-    selectData: [],
-    clientType: [],
     methodType: [],
     moduleList: [],
     apiList: [],
     ass: [],
+
     apiType: '2',
-    apiSonType: '11',
+    apiSonType: '0',
+    caseDetailsTypeKey: '0',
+    tabsKey: '10',
   })
   const columns = reactive([
     {
@@ -417,10 +585,6 @@
       dataIndex: 'method',
     },
     {
-      title: '端类型',
-      dataIndex: 'client',
-    },
-    {
       title: '测试结果',
       dataIndex: 'status',
     },
@@ -429,23 +593,6 @@
       dataIndex: 'actions',
       align: 'center',
       width: 220,
-    },
-  ])
-  const columns1 = reactive([
-    {
-      title: '参数类型',
-      dataIndex: 'type',
-      slotName: 'type',
-    },
-
-    {
-      title: 'key',
-      dataIndex: 'key',
-    },
-    {
-      title: 'value',
-      dataIndex: 'value',
-      slotName: 'value',
     },
   ])
   const formItems: FormItem[] = reactive([
@@ -480,6 +627,7 @@
       },
     },
   ])
+
   function switchType(key: any) {
     if (key === '1') {
       apiCaseData.apiSonType = '11'
@@ -488,9 +636,55 @@
     }
     apiCaseData.apiType = key
   }
+
+  function switchApiInfoType(key: any) {
+    apiCaseData.caseDetailsTypeKey = key
+    if (key === '0') {
+      if (apiCaseData.request.params) {
+        apiCaseData.tabsKey = '01'
+      } else if (apiCaseData.request.data) {
+        apiCaseData.tabsKey = '02'
+      } else if (apiCaseData.request.json) {
+        apiCaseData.tabsKey = '03'
+      } else if (apiCaseData.request.file) {
+        apiCaseData.tabsKey = '04'
+      } else {
+        apiCaseData.tabsKey = '00'
+      }
+    } else if (key === '1') {
+      apiCaseData.tabsKey = '10'
+    } else if (key === '2') {
+      getResponseResults()
+      apiCaseData.tabsKey = '23'
+    } else if (key === '3') {
+      apiCaseData.tabsKey = '30'
+    } else if (key === '4') {
+      apiCaseData.tabsKey = '40'
+    } else if (key === '5') {
+      getResponseResults()
+      apiCaseData.tabsKey = '50'
+    }
+  }
+
+  function getResponseResults() {
+    get({
+      url: apiInfoCaseResult,
+      data: () => {
+        return {
+          case_detailed_id: apiCaseData.selectDataObj.id,
+        }
+      },
+    })
+      .then((res) => {
+        apiCaseData.result = res.data
+      })
+      .catch(console.log)
+  }
+
   function switchSonType(key: any) {
     apiCaseData.apiSonType = key
   }
+
   function addData() {
     if (apiCaseData.apiType == '2') {
       addApiInfo()
@@ -504,10 +698,12 @@
       pageData.record.posterior_sql.push({ sql: '' })
     }
   }
+
   function removeFrontSql1(item: any, index: number) {
     item.splice(index, 1)
     upDataCase()
   }
+
   function upDataCase() {
     put({
       url: apiCase,
@@ -527,48 +723,25 @@
       })
       .catch(console.log)
   }
-  function clickRadioGroup() {
-    for (let key in apiCaseData.selectDataObj) {
-      if (key === apiCaseData.position) {
-        apiCaseData.selectData = apiCaseData.selectDataObj[key]
-        break
-      }
-    }
-  }
 
-  function blurSave(item: any) {
-    let data: any = {
-      id: apiCaseData.selectDataObj.id,
-    }
-    if (
-      [2, 3, 4, 5].includes(item.key) &&
-      typeof item.data !== 'number' &&
-      item.data !== null &&
-      item.data !== ''
-    ) {
-      try {
-        data[item.name] = JSON.parse(item.data)
-        if (data[item.name] && typeof data[item.name] === 'object') {
-        } else {
-          throw new Error('Invalid JSON data')
-        }
-      } catch (e) {
-        Message.error(`字段：${item.title}，转换JSON失败，请检查数据`)
+  function blurSave(key: string, item: string | null) {
+    if (key === 'header') {
+      apiCaseData.selectDataObj[key] = item
+    } else if (typeof item !== 'object') {
+      let jsonObj = formatJsonObj(key, item)
+      if (jsonObj === false) {
         return
       }
-    } else if ([31].includes(item.key)) {
-      if (item.data === '') {
-        data[item.name] = null
-      } else {
-        data[item.name] = item.data
-      }
+      apiCaseData.selectDataObj[key] = jsonObj
     } else {
-      data[item.name] = item.data
+      apiCaseData.selectDataObj[key] = item
     }
     put({
       url: apiCaseDetailed,
       data: () => {
-        return data
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-unused-vars
+        const { case: b, api_info: c, ...newSelectDataObj } = apiCaseData.selectDataObj
+        return newSelectDataObj
       },
     })
       .then((res) => {
@@ -577,9 +750,9 @@
       .catch(console.log)
   }
 
-  function removeFrontSql(item: any, index: number) {
-    item.data.splice(index, 1)
-    blurSave(item)
+  function removeFrontSql(item: any, index: number, key: string) {
+    item.splice(index, 1)
+    blurSave(key, item)
   }
 
   function getUiRunSortAss() {
@@ -607,37 +780,19 @@
       .catch(console.log)
   }
 
-  function doClientType() {
-    get({
-      url: systemEnumEnd,
-    })
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          apiCaseData.clientType.push(item.title)
-        })
-      })
-      .catch(console.log)
-  }
-
-  function doRefresh(test_suite: any = null) {
-    let test_suite_id = route.query.test_suite_id
-    if (test_suite) {
-      test_suite_id = test_suite
-    }
+  function doRefresh() {
     get({
       url: apiCaseDetailed,
       data: () => {
         return {
           case_id: route.query.case_id,
-          test_suite_id: test_suite_id,
         }
       },
     })
       .then((res) => {
         apiCaseData.data = res.data
         if (res.data.length !== 0) {
-          apiCaseData.selectDataObj = res.data[0]
-          apiCaseData.selectData = res.data[0][apiCaseData.position]
+          select(res.data[0])
         }
       })
       .catch(console.log)
@@ -658,7 +813,7 @@
     })
       .then((res) => {
         Message.success(res.msg)
-        doRefresh(res.data.test_suite)
+        doRefresh()
       })
       .catch(console.log)
   }
@@ -730,7 +885,6 @@
           value['ass_response_value'] = []
           value['posterior_sql'] = []
           value['posterior_response'] = []
-          value['dump_data'] = []
           return value
         },
       })
@@ -801,40 +955,40 @@
 
   function select(record: any) {
     apiCaseData.selectDataObj = record
-    for (let key in record) {
-      if (key === apiCaseData.position) {
-        apiCaseData.selectData = record[apiCaseData.position]
-      }
+    try {
+      apiCaseData.request.headers = formatJson(JSON.parse(record.header))
+    } catch (e) {
+      apiCaseData.request.headers = record.header
     }
+    apiCaseData.request.data = formatJson(record.data)
+    apiCaseData.request.params = formatJson(record.params)
+    apiCaseData.request.json = formatJson(record.json)
+    apiCaseData.request.file = formatJson(record.file)
+    switchApiInfoType(apiCaseData.caseDetailsTypeKey)
   }
 
-  function tabsChange(key: number) {
-    apiCaseData.disabled = false
-    const list = [10, 30, 32, 40, 41, 50]
-    if (!list.includes(key)) {
-      apiCaseData.disabled = true
-    }
+  function tabsChange(key: string) {
     apiCaseData.tabsKey = key
   }
 
   function clickAdd() {
-    for (let obj of apiCaseData.selectData) {
-      if (obj.key === apiCaseData.tabsKey) {
-        if ([10, 50].includes(apiCaseData.tabsKey)) {
-          obj.data.push('请添加sql语句')
-        } else if ([30, 32].includes(apiCaseData.tabsKey)) {
-          obj.data.push({ value: '', method: '', expect: '' })
-        } else if ([40, 41].includes(apiCaseData.tabsKey)) {
-          obj.data.push({ key: '', value: '' })
-        }
-      }
+    if ('10' === apiCaseData.tabsKey) {
+      apiCaseData.selectDataObj.front_sql.push('请添加sql语句')
+    } else if ('31' === apiCaseData.tabsKey) {
+      apiCaseData.selectDataObj.ass_response_value.push({ value: '', method: '', expect: '' })
+    } else if ('32' === apiCaseData.tabsKey) {
+      apiCaseData.selectDataObj.ass_sql.push({ value: '', method: '', expect: '' })
+    } else if ('40' === apiCaseData.tabsKey) {
+      apiCaseData.selectDataObj.posterior_response.push({ key: '', value: '' })
+    } else if ('41' === apiCaseData.tabsKey) {
+      apiCaseData.selectDataObj.posterior_sql.push({ key: '', value: '' })
     }
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       doMethodType()
-      doClientType()
       getProjectModule(route.query.project)
       getUiRunSortAss()
     })

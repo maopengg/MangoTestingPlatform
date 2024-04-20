@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseVie
 from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD, ApiCaseResultViews
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
-from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
+from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD, ApiInfoResultViews
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 
 urlpatterns = [
@@ -38,8 +38,6 @@ urlpatterns = [
     path("result/suite/case", ApiCaseResultViews.as_view({'get': 'suite_case_result'})),
     #
     path("info/result", ApiInfoResultCRUD.as_view()),
-    #
-
-    # path("synchronous", ApiAutoInterface.as_view({'get': 'api_synchronous_interface'})),
+    path("info/result/case", ApiInfoResultViews.as_view({'get': 'get_case_result'})),
 
 ]
