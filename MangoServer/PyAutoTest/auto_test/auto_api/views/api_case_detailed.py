@@ -6,6 +6,7 @@
 import json
 import logging
 
+from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -64,7 +65,11 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 'case_sort')
         else:
             api_case_detailed = ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
-        api_case_detailed = self.serializer_class.setup_eager_loading(api_case_detailed)
+
+        try:
+            api_case_detailed = self.serializer_class.setup_eager_loading(api_case_detailed)
+        except FieldError:
+            pass
         data = self.serializer_class(instance=api_case_detailed, many=True).data
         return ResponseData.success(RESPONSE_MSG_0010, data)
 

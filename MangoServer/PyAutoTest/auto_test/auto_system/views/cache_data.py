@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -62,10 +63,16 @@ class CacheDataCRUD(ModelCRUD):
                 if serializer.is_valid():
                     serializer.save()
         books = self.model.objects.filter(key__in=CacheDataKeyEnum.get_key_list())
-        return ResponseData.success(RESPONSE_MSG_0001,
-                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
-                                                          many=True).data,
-                                    books.count())
+        try:
+            return ResponseData.success(RESPONSE_MSG_0001,
+                                        self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                                              many=True).data,
+                                        books.count())
+        except FieldError:
+            return ResponseData.success(RESPONSE_MSG_0001,
+                                        self.serializer_class(instance=books,
+                                                              many=True).data,
+                                        books.count())
 
     def put(self, request: Request):
         for i in request.data:

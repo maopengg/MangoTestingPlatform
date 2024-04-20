@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import logging
 
+from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -66,8 +67,13 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
             books = self.model.objects.filter(page_step_id=page_step_id).order_by('step_sort')
         else:
             books = self.model.objects.filter(id=_id).order_by('step_sort')
+
+        try:
+            books = self.serializer_class.setup_eager_loading(books)
+        except FieldError:
+            pass
         return ResponseData.success(RESPONSE_MSG_0016,
-                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                    self.serializer_class(instance=books,
                                                           many=True).data)
 
     def callback(self, _id):
