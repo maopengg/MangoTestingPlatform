@@ -768,10 +768,6 @@
   }
 
   function enumUiElementOperation() {
-    if (testObj.selectValue == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
     get({
       url: systemEnumUiElementOperation,
       data: () => {
