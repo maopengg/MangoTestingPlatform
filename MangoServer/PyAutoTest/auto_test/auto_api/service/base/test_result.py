@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiInfo
+from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiInfo, ApiCaseDetailed
 from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD
 from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
@@ -60,13 +60,13 @@ class TestResult:
                 'response_text': response.response_text if response.response_text else None,
                 # 'response_json': json.dumps(response.response_json,
                 #                             ensure_ascii=False) if response.response_json else None,
-
                 'status': self.assertion_result[-1],
                 'error_message': self.error_message[-1] if self.error_message else None,
                 'all_cache': json.dumps(self.get_all(), ensure_ascii=False) if self.get_all() else None,
             }
             ApiInfoResultCRUD().inside_post(data)
         self.update_api_info(case_detailed.api_info.id, self.assertion_result[-1])
+        self.update_case_detailed(case_detailed.id, self.assertion_result[-1])
 
     def api_case_result_sava(self, case_id: int) -> None:
         data = {
@@ -91,6 +91,12 @@ class TestResult:
     @classmethod
     def update_api_info(cls, api_info_id: int, status: int):
         api_info_obj = ApiInfo.objects.get(id=api_info_id)
+        api_info_obj.status = status
+        api_info_obj.save()
+
+    @classmethod
+    def update_case_detailed(cls, _id: int, status: int):
+        api_info_obj = ApiCaseDetailed.objects.get(id=_id)
         api_info_obj.status = status
         api_info_obj.save()
 

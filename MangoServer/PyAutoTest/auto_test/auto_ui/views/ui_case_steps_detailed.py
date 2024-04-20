@@ -60,11 +60,6 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
                                                           many=True).data, )
 
     def callback(self, _id):
-        """
-        排序
-        @param _id: 用例ID
-        @return:
-        """
         data = {'id': _id, 'case_flow': '', 'name': ''}
         run = self.model.objects.filter(case=_id).order_by('case_sort')
         for i in run:

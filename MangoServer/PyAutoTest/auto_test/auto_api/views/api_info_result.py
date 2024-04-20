@@ -6,12 +6,16 @@
 import logging
 
 from rest_framework import serializers
+from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0113
 
 log = logging.getLogger('api')
 
@@ -52,4 +56,11 @@ class ApiInfoResultCRUD(ModelCRUD):
 
 class ApiInfoResultViews(ViewSet):
     model = ApiInfoResult
-    serializer_class = ApiInfoResultSerializers
+    serializer_class = ApiInfoResultSerializersC
+    serializer = ApiInfoResultSerializers
+
+    @action(methods=['get'], detail=False)
+    def get_case_result(self, request: Request):
+        case_detailed_id = request.query_params.get('case_detailed_id')
+        latest_result = ApiInfoResult.objects.filter(case_detailed_id=case_detailed_id).order_by('-id').first()
+        return ResponseData.success(RESPONSE_MSG_0113, self.serializer(instance=latest_result, many=False).data)

@@ -51,6 +51,7 @@ export const apiCaseRun = '/api/case/run'
 export const apiResult = '/api/result'
 export const apiInfoResult = '/api/info/result'
 export const apiResultWeek = '/api/result/week'
+export const apiInfoCaseResult = '/api/info/result/case'
 export const apiResultSuiteCase = '/api/result/suite/case'
 
 // -
