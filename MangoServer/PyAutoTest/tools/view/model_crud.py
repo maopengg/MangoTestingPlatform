@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import logging
 from threading import Thread
-
+from django.core.exceptions import FieldError
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from rest_framework.generics import GenericAPIView
@@ -49,8 +49,12 @@ class ModelCRUD(GenericAPIView):
         else:
             books = self.model.objects.filter(**query_dict)
             serializer = self.get_serializer_class()
+            try:
+                books = serializer.setup_eager_loading(books)
+            except FieldError:
+                pass
             return ResponseData.success(RESPONSE_MSG_0001,
-                                        serializer(instance=serializer.setup_eager_loading(books), many=True).data,
+                                        serializer(instance=books, many=True).data,
                                         books.count())
 
     def post(self, request: Request):
@@ -130,9 +134,14 @@ class ModelCRUD(GenericAPIView):
         count = books.count()
         if count <= int(size):
             current = 1
-        return serializer(
-            instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
-            many=True).data, count
+        try:
+            return serializer(
+                instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
+                many=True).data, count
+        except FieldError:
+            return serializer(
+                instance=Paginator(books, size).page(current),
+                many=True).data, count
 
     @classmethod
     def inside_post(cls, data: dict) -> dict:

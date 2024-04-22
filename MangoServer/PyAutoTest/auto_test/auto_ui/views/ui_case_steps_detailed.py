@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import logging
 
+from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -55,8 +56,12 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
 
     def get(self, request: Request):
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
+        try:
+            books = self.serializer_class.setup_eager_loading(books)
+        except FieldError:
+            pass
         return ResponseData.success(RESPONSE_MSG_0049,
-                                    self.serializer_class(instance=self.serializer_class.setup_eager_loading(books),
+                                    self.serializer_class(instance=books,
                                                           many=True).data, )
 
     def callback(self, _id):
