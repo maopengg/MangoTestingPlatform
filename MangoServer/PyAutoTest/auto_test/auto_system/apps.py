@@ -26,6 +26,8 @@ class AutoSystemConfig(AppConfig):
                 Tasks.create_jobs()
             except OperationalError:
                 pass
+            except RuntimeError:
+                pass
             except ProgrammingError:
                 log.error(
                     '如果您是在迁移数据库时报错请忽略报错继续迁移。您还未迁移数据库！请先初始化数据库后再操作。迁移数据库之前，请先清空PyAutoTet/auto_test/auto_{*}/migrations目录的所有文件')
