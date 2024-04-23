@@ -3,16 +3,16 @@
 # @Description: 
 # @Time   : 2023-04-05 12:40
 # @Author : 毛鹏
-from tools import InitializationPath
+from tools import InitPath
 from tools.log_collector.log_control import LogHandler
 
 
 class Log:
-    DEBUG = LogHandler(fr"{InitializationPath.log_dir}\debug-log.log", 'debug')
-    INFO = LogHandler(fr"{InitializationPath.log_dir}\info-log.log", 'info')
-    WARNING = LogHandler(fr"{InitializationPath.log_dir}\warning-log.log", 'warning')
-    ERROR = LogHandler(fr"{InitializationPath.log_dir}\error-log.log", 'error')
-    CRITICAL = LogHandler(fr"{InitializationPath.log_dir}\critical-log.log", 'critical')
+    DEBUG = LogHandler(fr"{InitPath.log_dir}\debug-log.log", 'debug')
+    INFO = LogHandler(fr"{InitPath.log_dir}\info-log.log", 'info')
+    WARNING = LogHandler(fr"{InitPath.log_dir}\warning-log.log", 'warning')
+    ERROR = LogHandler(fr"{InitPath.log_dir}\error-log.log", 'error')
+    CRITICAL = LogHandler(fr"{InitPath.log_dir}\critical-log.log", 'critical')
 
     @classmethod
     def debug(cls, msg: str):

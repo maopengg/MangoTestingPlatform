@@ -2,13 +2,13 @@ import os
 import sqlite3
 from typing import Union
 
-from tools import InitializationPath
+from tools import InitPath
 
 
 class SQLiteConnect:
 
     def __init__(self):
-        self.db_name = os.path.join(InitializationPath.cache, 'cache.db')
+        self.db_name = os.path.join(InitPath.cache, 'cache.db')
         self.conn = sqlite3.connect(self.db_name)
         self.cursor = self.conn.cursor()
 

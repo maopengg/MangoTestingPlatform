@@ -17,7 +17,7 @@ from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed, ScreenshotError
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
-from tools import InitializationPath
+from tools import InitPath
 from tools.data_processor import RandomTimeData
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0040
@@ -101,7 +101,7 @@ class SplitStepsElements(DriveSet):
         """
         log.error(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
-        path = rf'{InitializationPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
+        path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
         self.notice_signal.send(3, data=f'''元素名称：{self.element_test_result.ele_name}
                                        元素表达式：{self.element_test_result.loc}
                                        操作类型：{self.element_test_result.ope_type}

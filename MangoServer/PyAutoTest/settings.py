@@ -17,12 +17,13 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
-
-mysql_db_name = 'test'
-mysql_user = 'root'
-mysql_password = '123456'
-mysql_ip = '127.0.0.1'
-mysql_port = 3306
+with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
+    data = json.load(f)
+    mysql_db_name = data.get('mysql_db_name')
+    mysql_user = data.get('mysql_user')
+    mysql_password = data.get('mysql_password')
+    mysql_ip = data.get('mysql_ip')
+    mysql_port = data.get('mysql_port')
 
 # ************************ ↑需要修改的内容↑ ************************ #
 

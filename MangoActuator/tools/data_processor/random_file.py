@@ -8,7 +8,7 @@ from typing import BinaryIO
 
 from exceptions.tools_exception import FileDoesNotEexistError
 from service.http_client.http_api import HttpApi
-from tools import InitializationPath
+from tools import InitPath
 from tools.message.error_msg import ERROR_MSG_0026
 
 
@@ -20,7 +20,7 @@ class RandomFileData:
         """传入文件名称，返回文件对象"""
         project_id = kwargs.get('project_id')
         file_name = kwargs.get('data')
-        file_path = os.path.join(InitializationPath.upload_files, file_name)
+        file_path = os.path.join(InitPath.upload_files, file_name)
         if os.path.exists(file_path):
             return open(file_path, 'rb')
         else:
@@ -32,7 +32,7 @@ class RandomFileData:
         file_name = kwargs.get('data')
         project_id = kwargs.get('project_id')
         HttpApi().download_file(project_id, file_name)
-        file_path = os.path.join(InitializationPath.upload_files, file_name)
+        file_path = os.path.join(InitPath.upload_files, file_name)
         if os.path.exists(file_path):
             return file_path
         else:

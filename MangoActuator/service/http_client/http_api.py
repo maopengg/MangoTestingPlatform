@@ -8,7 +8,7 @@ import requests
 from enums.tools_enum import ClientTypeEnum
 from exceptions.tools_exception import FileNotError
 from service.http_client import HttpRequest
-from tools import InitializationPath
+from tools import InitPath
 from tools.message.error_msg import ERROR_MSG_0007
 from tools.other.path import Path
 
@@ -34,7 +34,7 @@ class HttpApi(HttpRequest):
             'project_id': project_id
         }
         response = requests.request("GET", url, headers=self.headers, params=params)
-        file_path = InitializationPath.upload_files
+        file_path = InitPath.upload_files
         file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
             with open(file_path, 'wb') as f:
