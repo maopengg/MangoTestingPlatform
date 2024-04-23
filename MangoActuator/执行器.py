@@ -9,11 +9,11 @@ from PySide6.QtWidgets import QApplication
 
 from desktop.login_window import LoginWindow
 from service.socket_client.api_reflection import InterfaceMethodReflection
-from tools import InitializationPath
+from tools import InitPath
 from tools.log_collector import log
 
 try:
-    InitializationPath()
+    InitPath()
     InterfaceMethodReflection()
     app = QApplication([])
     window = LoginWindow()

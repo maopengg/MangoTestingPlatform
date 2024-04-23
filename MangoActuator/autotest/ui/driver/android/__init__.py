@@ -22,7 +22,7 @@ from exceptions.ui_exception import *
 from models.socket_model.ui_model import AndroidConfigModel
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from models.tools_model import MysqlConingModel
-from tools import InitializationPath
+from tools import InitPath
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.data_processor import DataProcessor
@@ -171,7 +171,7 @@ class AndroidDriver(UiautomatorEquipmentDevice,
         log.error(f'元素：{self.element.name} 操作失败\n'
                   f'报错信息：{e}\n'
                   f'元素对象：{self.element.dict()}\n')
-        path = rf'{InitializationPath.failure_screenshot_file}\{self.element.name}{DataProcessor.get_deta_hms()}.jpg'
+        path = rf'{InitPath.failure_screenshot_file}\{self.element.name}{DataProcessor.get_deta_hms()}.jpg'
         self.a_screenshot(path)
         self.element_test_result.msg = msg
         self.element_test_result.picture_path = path
