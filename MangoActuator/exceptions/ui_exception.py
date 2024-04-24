@@ -80,3 +80,7 @@ class ElementNotDisappearError(UiError):
 
 class NewObjectError(UiError):
     pass
+
+
+class PackageNameError(UiError):
+    pass

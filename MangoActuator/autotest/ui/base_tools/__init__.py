@@ -12,6 +12,7 @@ from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementResultModel, ElementModel
 from tools.decorator.async_retry import async_retry
+from tools.desktop.signal_send import SignalSend
 from tools.message.error_msg import *
 
 
@@ -69,7 +70,7 @@ class DriveSet(WebDevice, AndroidDriver):
         if self.drive_type == DriveTypeEnum.WEB.value:
             await self.web_action_element()
         elif self.drive_type == DriveTypeEnum.ANDROID.value:
-            pass
+            self.a_action_element()
         elif self.drive_type == DriveTypeEnum.IOS.value:
             pass
         elif self.drive_type == DriveTypeEnum.DESKTOP.value:
@@ -81,7 +82,7 @@ class DriveSet(WebDevice, AndroidDriver):
         if self.drive_type == DriveTypeEnum.WEB.value:
             await self.web_assertion_element()
         elif self.drive_type == DriveTypeEnum.ANDROID.value:
-            pass
+            self.a_assertion_element()
         elif self.drive_type == DriveTypeEnum.IOS.value:
             pass
         elif self.drive_type == DriveTypeEnum.DESKTOP.value:
@@ -101,7 +102,7 @@ class DriveSet(WebDevice, AndroidDriver):
             raise ElementOpeNoneError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
-        await self.send_notice_signal(
+        SignalSend.notice_signal_c(
             f'准备操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
         await self.action_element()
 
@@ -111,7 +112,7 @@ class DriveSet(WebDevice, AndroidDriver):
                 self.element_model.ass_value[key] = await self.__find_element()
             else:
                 self.element_model.ass_value[key] = await self.__input_value(key, expect)
-        await self.send_notice_signal(
+        SignalSend.notice_signal_c(
             f'准备断言->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
         await self.assertion_element()
 
@@ -124,7 +125,8 @@ class DriveSet(WebDevice, AndroidDriver):
             key_list = self.element_data.get('key_list')
         if self.mysql_connect:
             result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-            await self.send_notice_signal(f'SQL->：sql:{sql}，缓存key列表：{key_list}，查询结果：{result_list}')
+            SignalSend.notice_signal_c(
+                f'SQL->：sql:{sql}，缓存key列表：{key_list}，查询结果：{result_list}')
             if isinstance(result_list, list):
                 for result in result_list:
                     try:
@@ -143,7 +145,8 @@ class DriveSet(WebDevice, AndroidDriver):
         else:
             key = self.element_data.get('key')
             value = self.element_data.get('value')
-        await self.send_notice_signal(f'自定义操作->key：{key}， value：{value}')
+        SignalSend.notice_signal_c(
+            f'自定义操作->key：{key}， value：{value}')
         self.data_processor.set_cache(key, value)
 
     async def __find_element(self):

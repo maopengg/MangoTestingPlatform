@@ -19,14 +19,29 @@ class SystemConsumer:
         # redis = RedisBase('default')
         for i in data:
             for key, value in i.items():
-                if not CacheData.objects.filter(key=key):
-                    serializer = CacheDataSerializers(data={
+                try:
+                    cache_data = CacheData.objects.get(key=key)
+                except CacheData.DoesNotExist:
+                    CacheDataCRUD.inside_post({
                         'describe': key,
                         'key': key,
                         'value': value,
                         'value_type': CacheValueTypeEnum.DICT.value,
                     })
-                    if serializer.is_valid():
-                        serializer.save()
-                    else:
-                        log.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+                except CacheData.MultipleObjectsReturned:
+                    cache_data_list = CacheData.objects.filter(key=key)
+                    for cache_data in cache_data_list:
+                        cache_data.delete()
+                    CacheDataCRUD.inside_post({
+                        'describe': key,
+                        'key': key,
+                        'value': value,
+                        'value_type': CacheValueTypeEnum.DICT.value,
+                    })
+                else:
+                    CacheDataCRUD.inside_put(cache_data.id, {
+                        'describe': key,
+                        'key': key,
+                        'value': value,
+                        'value_type': CacheValueTypeEnum.DICT.value,
+                    })

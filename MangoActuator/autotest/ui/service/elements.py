@@ -12,12 +12,13 @@ from autotest.ui.base_tools import DriveSet
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed, ScreenshotError
+from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
 from tools import InitPath
 from tools.data_processor import RandomTimeData
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0040
+from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 
 
 class Elements(DriveSet):
@@ -39,8 +40,8 @@ class Elements(DriveSet):
         self.page_step_id = page_step_model.id
         self.case_step_details_id = page_step_model.case_step_details_id
 
-    async def web_step(self) -> PageStepsResultModel:
-        await self.__web_init()
+    async def steps_main(self) -> PageStepsResultModel:
+        SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
         for element_model in self.page_step_model.element_list:
             element_data = None
             if not self.is_step:
@@ -74,7 +75,7 @@ class Elements(DriveSet):
         log.error(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
         path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
-        self.notice_signal.send(3, data=f'''元素名称：{self.element_test_result.ele_name}
+        SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
                                        元素表达式：{self.element_test_result.loc}
                                        操作类型：{self.element_test_result.ope_type}
                                        操作值：{self.element_test_result.ope_value}
@@ -104,7 +105,20 @@ class Elements(DriveSet):
         #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
         #     raise ScreenshotError(*ERROR_MSG_0040)
 
-    async def __web_init(self):
+    async def driver_init(self):
+        match self.page_step_model.type:
+            case DriveTypeEnum.WEB.value:
+                await self.web_init()
+            case DriveTypeEnum.ANDROID.value:
+                self.android_init()
+            case DriveTypeEnum.IOS.value:
+                pass
+            case DriveTypeEnum.DESKTOP.value:
+                pass
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
+
+    async def web_init(self):
         self.test_object_value = urljoin(self.page_step_model.test_object_value, self.page_step_model.url)
 
         try:
@@ -118,11 +132,12 @@ class Elements(DriveSet):
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
 
-    def __android_init(self, page_step_model):
+    def android_init(self):
+        self.test_object_value = self.page_step_model.test_object_value
+        self.a_start_app(self.test_object_value)
+
+    def ios_init(self, ):
         pass
 
-    def __ios_init(self, ):
-        pass
-
-    def __desktop_init(self, ):
+    def desktop_init(self, ):
         pass

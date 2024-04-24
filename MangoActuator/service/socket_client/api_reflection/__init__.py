@@ -8,23 +8,20 @@ import json
 import os
 import traceback
 
-from blinker import signal
-
 from models.socket_model import QueueModel
 from service.socket_client.api_reflection.api_consumer import APIConsumer
 from service.socket_client.api_reflection.perf_consumer import PerfConsumer
 from service.socket_client.api_reflection.tools_consumer import ToolsConsumer
 from service.socket_client.api_reflection.ui_consumer import UIConsumer
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-
-custom_signal = signal('custom_signal')
 
 
 class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
 
     def __init__(self):
         # custom_signal.disconnect(self.consumer)
-        custom_signal.connect(self.consumer)
+        SignalSend.custom.connect(self.consumer)
 
     def consumer(self, sender, data: dict):
         if sender == "break":

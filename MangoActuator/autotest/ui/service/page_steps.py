@@ -26,19 +26,15 @@ class PageSteps(Elements):
         self.new_driver_object = DriverObject()
 
     async def debug_case_distribution(self, page_step_model: PageStepsModel) -> None:
-        """
-        处理调试用例，开始用例对象，并调用分发用例方法
-        @param page_step_model:
-        @return:
-        """
         match page_step_model.type:
             case DriveTypeEnum.WEB.value:
                 self.new_driver_object.web_config = page_step_model.equipment_config
                 if not self.context and not self.page:
                     self.context, self.page = await self.new_driver_object.new_web_page()
-                    # self.browser = self.new_driver_object.browser
             case DriveTypeEnum.ANDROID.value:
-                pass
+                self.new_driver_object.android_config = page_step_model.equipment_config
+                if self.android is None:
+                    self.android = self.new_driver_object.new_android()
             case DriveTypeEnum.IOS.value:
                 pass
             case DriveTypeEnum.DESKTOP.value:
@@ -51,7 +47,8 @@ class PageSteps(Elements):
             if page_step_model.run_config:
                 await self.public_front(page_step_model.run_config)
             await self.steps_setup(page_step_model)
-            await self.web_step()
+            await self.driver_init()
+            await self.steps_main()
         except MangoActuatorError as error:
             if error.code == 310:
                 await self.context.close()
