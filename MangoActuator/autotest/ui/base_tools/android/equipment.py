@@ -29,14 +29,14 @@ class UiautomatorEquipment(BaseData):
     def a_swipe_left(self):
         """获取屏幕开关状态"""
         self.android.info.get('screenOn')
-
-    def a_home(self):
-        """返回首页"""
-        self.android.keyevent("home")
-
-    def a_back(self):
-        """返回一步"""
-        self.android.keyevent("back")
+    #
+    # def a_home(self):
+    #     """返回首页"""
+    #     self.android.keyevent("home")
+    #
+    # def a_back(self):
+    #     """返回一步"""
+    #     self.android.keyevent("back")
 
     def a_get_window_size(self):
         """提取屏幕尺寸"""
@@ -52,7 +52,7 @@ class UiautomatorEquipment(BaseData):
         self.android.pull(feli_path, catalogue)
 
     def a_unlock(self):
-        """解锁屏幕-未测试"""
+        """解锁屏幕"""
         self.android.unlock()
 
     def a_press_home(self):

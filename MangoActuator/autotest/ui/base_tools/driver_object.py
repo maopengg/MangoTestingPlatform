@@ -59,6 +59,7 @@ class DriverObject:
         if self.android_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
         android = us.connect(self.android_config.equipment)
+
         try:
             SignalSend.notice_signal_c(f"设备启动成功！产品名称：{android.info.get('productName')}")
         except RuntimeError:

@@ -33,7 +33,8 @@ class PlaywrightElement(BaseData):
             self.data_processor.set_cache(key=set_cache_key, value=value)
         return value
 
-    async def w_upload_files(self, locating: Locator, file_path: str | list):
+    @classmethod
+    async def w_upload_files(cls, locating: Locator, file_path: str | list):
         """点击元素上传文件"""
         try:
             if isinstance(file_path, str):
@@ -48,7 +49,8 @@ class PlaywrightElement(BaseData):
         # file_chooser = fc_info.value
         # file_chooser.set_files(file_path)
 
-    async def w_drag_to(self, locating1: Locator, locating2: Locator):
+    @classmethod
+    async def w_drag_to(cls, locating1: Locator, locating2: Locator):
         """拖动A元素到达B"""
         await locating1.drag_to(locating2)
 

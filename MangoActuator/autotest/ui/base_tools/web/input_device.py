@@ -13,7 +13,8 @@ from autotest.ui.base_tools.base_data import BaseData
 class PlaywrightDeviceInput(BaseData):
     """输入设备操作"""
 
-    async def w_hover(self, locating: Locator):
+    @classmethod
+    async def w_hover(cls, locating: Locator):
         """鼠标悬停"""
         await locating.hover()
         await asyncio.sleep(1)
