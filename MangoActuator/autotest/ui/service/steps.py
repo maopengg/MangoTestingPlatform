@@ -6,7 +6,7 @@
 
 import asyncio
 
-from autotest.ui.test_runner.split_steps_elements import SplitStepsElements
+from autotest.ui.service.elements import Elements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from enums.tools_enum import StatusEnum
@@ -17,8 +17,7 @@ from service.socket_client import ClientWebSocket
 from tools.log_collector import log
 
 
-class SplitCaseSteps(SplitStepsElements):
-    """执行一个完整的用例"""
+class Steps(Elements):
     case_model: CaseModel = None
     case_result: CaseResultModel = None
 
@@ -29,11 +28,6 @@ class SplitCaseSteps(SplitStepsElements):
         await self.base_close()
 
     async def case_setup(self, case_model: CaseModel):
-        """
-        初始化用例对象
-        @param case_model:
-        @return:
-        """
         self.case_model: CaseModel = case_model
         self.is_step = self.case_model.is_batch
         self.case_id = case_model.id
@@ -50,10 +44,6 @@ class SplitCaseSteps(SplitStepsElements):
         await self.case_page_step()
 
     async def case_page_step(self) -> None:
-        """
-        执行用例，分发步骤给步骤类
-        @return:
-        """
         try:
             if self.case_model.run_config:
                 await self.public_front(self.case_model.run_config)

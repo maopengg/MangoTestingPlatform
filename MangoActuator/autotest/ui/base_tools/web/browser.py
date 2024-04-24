@@ -8,15 +8,16 @@ import asyncio
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api import Locator
 
-from autotest.ui.driver.base_data import BaseData
+from autotest.ui.base_tools.base_data import BaseData
 from exceptions.ui_exception import UiTimeoutError
 from tools.message.error_msg import ERROR_MSG_0013
 
 
-class PlaywrightOperationBrowser(BaseData):
+class PlaywrightBrowser(BaseData):
     """浏览器操作"""
 
-    async def w_wait_for_timeout(self, _time: int):
+    @classmethod
+    async def w_wait_for_timeout(cls, _time: int):
         """强制等待"""
         await asyncio.sleep(int(_time))
 
@@ -30,15 +31,10 @@ class PlaywrightOperationBrowser(BaseData):
 
     async def w_screenshot(self, path: str, full_page=True):
         """整个页面截图"""
-        # try:
         await self.page.screenshot(path=path, full_page=full_page)
-        # except Error:
-        #     self.browser = None
-        #     self.page = None
-        #     self.context = None
-        #     raise BrowserObjectClosed(*ERROR_MSG_0010)
 
-    async def w_ele_screenshot(self, locating: Locator, path: str):
+    @classmethod
+    async def w_ele_screenshot(cls, locating: Locator, path: str):
         """元素截图"""
         await locating.screenshot(path=path)
 

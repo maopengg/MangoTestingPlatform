@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from autotest.ui.driver import NewDriverObject
-from autotest.ui.test_runner.split_steps_elements import SplitStepsElements
+from autotest.ui.base_tools.driver_object import DriverObject
+from autotest.ui.service.elements import Elements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from enums.ui_enum import DriveTypeEnum
@@ -16,16 +16,14 @@ from tools.log_collector import log
 
 
 @singleton
-class PageSteps(SplitStepsElements):
-    """
-    用例分发
-    """
+class PageSteps(Elements):
+    """用例分发"""
 
     def __init__(self, project_id: int):
         super().__init__(project_id, )
         self.project_id = project_id
         self.msg = ''
-        self.new_driver_object = NewDriverObject()
+        self.new_driver_object = DriverObject()
 
     async def debug_case_distribution(self, page_step_model: PageStepsModel) -> None:
         """

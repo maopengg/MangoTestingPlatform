@@ -6,13 +6,14 @@
 import inspect
 import json
 
-from autotest.ui.driver.android import *
-from autotest.ui.driver.android.a_assertion import UiautomatorAssertion
-from autotest.ui.driver.web import PlaywrightPageOperation, PlaywrightDeviceInput, PlaywrightElementOperation, \
-    PlaywrightOperationBrowser
+from autotest.ui.base_tools.android import UiautomatorApplication, UiautomatorElement, UiautomatorEquipment, \
+    UiautomatorPage
+from autotest.ui.base_tools.android.assertion import UiautomatorAssertion
+from autotest.ui.base_tools.web import PlaywrightElement, PlaywrightPage, PlaywrightDeviceInput, \
+    PlaywrightBrowser, PlaywrightCustomization
 from enums.system_enum import CacheDataKey2Enum
-from tools.assertion import PlaywrightAssertion
-from tools.assertion.public_assertion import *
+from tools.assertion import PlaywrightAssertion, WhatIsItAssertion, ContainAssertion, MatchingAssertion, \
+    WhatIsEqualToAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 
 
@@ -20,14 +21,27 @@ class GetClassMethod:
     """获取对不同的类的操作方法"""
 
     def __init__(self):
-        self.android_ope = [UiautomatorApplication, UiautomatorElementOperation, UiautomatorEquipmentDevice,
-                            UiautomatorPage]
-        self.web_ope = [PlaywrightElementOperation, PlaywrightDeviceInput, PlaywrightOperationBrowser,
-                        PlaywrightPageOperation]
-        self.web_ass = [PlaywrightAssertion, ]
-        self.android_ass = [UiautomatorAssertion, ]
-        self.sql_all = [SqlAssertion, ]
-        self.public_ass = [WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEqualToAssertion]
+        self.android_ope = [
+            UiautomatorApplication,
+            UiautomatorElement,
+            UiautomatorEquipment,
+            UiautomatorPage
+        ]
+        self.web_ope = [
+            PlaywrightElement,
+            PlaywrightDeviceInput,
+            PlaywrightBrowser,
+            PlaywrightPage,
+            PlaywrightCustomization]
+        self.web_ass = [PlaywrightAssertion]
+        self.android_ass = [UiautomatorAssertion]
+        self.sql_all = [SqlAssertion]
+        self.public_ass = [
+            WhatIsItAssertion,
+            ContainAssertion,
+            MatchingAssertion,
+            WhatIsEqualToAssertion
+        ]
 
     def main(self):
         return [
