@@ -4,6 +4,8 @@
 # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
 
+from uiautomator2 import Direction
+
 from autotest.ui.base_tools.base_data import BaseData
 
 
@@ -12,15 +14,35 @@ class UiautomatorPage(BaseData):
 
     def a_swipe_right(self):
         """右滑"""
-        self.android.swipe_ext("right")
+        self.android.swipe_ext(Direction.HORIZ_FORWARD)
+
+    def a_swipe_left(self):
+        """左滑"""
+        self.android.swipe_ext(Direction.HORIZ_BACKWARD)
 
     def a_swipe_up(self):
         """上滑"""
-        self.android.swipe_ext("up")
+        self.android.swipe_ext(Direction.FORWARD)
 
     def a_swipe_down(self):
         """下滑"""
-        self.android.swipe_ext("down")
+        self.android.swipe_ext(Direction.BACKWARD)
+
+    def a_swipe(self, sx, sy, ex, ey):
+        """坐标滑动"""
+        self.android.swipe(sx, sy, ex, ey, 0.5)
+
+    def a_drag(self, sx, sy, ex, ey):
+        """坐标拖动"""
+        self.android.drag(sx, sy, ex, ey, 0.5)
+
+    def a_open_notification(self):
+        """打开通知"""
+        self.android.open_notification()
+
+    def a_open_quick_settings(self):
+        """打开快速通知"""
+        self.android.open_quick_settings()
 
     def a_screenshot(self, filepath: str):
         """屏幕截图"""
@@ -29,14 +51,6 @@ class UiautomatorPage(BaseData):
     def a_long_click(self, x, y, time_=3):
         """长按屏幕3秒"""
         self.android.long_click(x, y, time_)
-
-    def a_swipe(self, sx, sy, ex, ey, time_=0.5):
-        """坐标滑动"""
-        self.android.swipe(sx, sy, ex, ey, time_)
-
-    def a_drag_to_ele(self, sx, sy, ex, ey):
-        """坐标拖动"""
-        self.android.drag(sx, sy, ex, ey)
 
     def a_set_orientation_natural(self):
         """设置为natural"""
