@@ -4,7 +4,6 @@
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 
-from typing import Optional
 from urllib.parse import urljoin
 
 from playwright._impl._api_types import Error

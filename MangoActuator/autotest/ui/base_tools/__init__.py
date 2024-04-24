@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 from autotest.ui.base_tools.web import WebDevice
+from autotest.ui.base_tools.android import AndroidDriver
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
@@ -14,7 +15,7 @@ from tools.decorator.async_retry import async_retry
 from tools.message.error_msg import *
 
 
-class DriveSet(WebDevice):
+class DriveSet(WebDevice, AndroidDriver):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
     element_data: dict = None
@@ -149,7 +150,7 @@ class DriveSet(WebDevice):
         if self.drive_type == DriveTypeEnum.WEB.value:
             return await self.web_find_ele()
         elif self.drive_type == DriveTypeEnum.ANDROID.value:
-            pass
+            return self.a_find_ele()
         elif self.drive_type == DriveTypeEnum.IOS.value:
             pass
         elif self.drive_type == DriveTypeEnum.DESKTOP.value:

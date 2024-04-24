@@ -36,15 +36,9 @@ class WebDevice(PlaywrightBrowser,
                 PlaywrightCustomization):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
-    element_data: dict = None
-    ope_name: str = None
 
     @async_retry
     async def web_action_element(self) -> None:
-        """
-        处理元素的一些事件，包括点击，输入，移动
-        @return:
-        """
         try:
             await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
         except TimeoutError as error:
@@ -70,11 +64,11 @@ class WebDevice(PlaywrightBrowser,
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
         self.element_test_result.expect = self.element_model.ass_value.get(
             'expect') if self.element_model.ass_value.get('expect') else None
+        if is_method or is_method_public:
+            if self.element_model.ass_value['value'] is None:
+                raise ElementIsEmptyError(*ERROR_MSG_0031,
+                                          value=(self.element_model.name, self.element_model.loc))
         try:
-            if is_method or is_method_public:
-                if self.element_model.ass_value['value'] is None:
-                    raise ElementIsEmptyError(*ERROR_MSG_0031,
-                                              value=(self.element_model.name, self.element_model.loc))
             if is_method:
                 self.element_test_result.actual = '判断元素是什么'
                 await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
@@ -101,15 +95,10 @@ class WebDevice(PlaywrightBrowser,
             raise UiAssertionError(*ERROR_MSG_0018, error=error)
         if 'value' in self.element_model.ass_value:
             del self.element_model.ass_value['value']
-
         self.element_test_result.ass_value = self.element_model.ass_value
 
     @async_retry
     async def web_find_ele(self) -> Locator | list[Locator]:
-        """
-        基于playwright的元素查找
-        @return:
-        """
         locator_str = self.element_model.loc
         self.element_test_result.loc = locator_str
         # 是否在iframe中
@@ -164,4 +153,3 @@ class WebDevice(PlaywrightBrowser,
                 return page.get_by_alt_text(loc)
             case _:
                 raise LocatorError(*ERROR_MSG_0020)
-
