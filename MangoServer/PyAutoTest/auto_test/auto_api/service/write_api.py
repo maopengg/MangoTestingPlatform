@@ -16,10 +16,10 @@ class WriteAPI:
 
     @classmethod
     def write(cls, data: ApiInfoModel):
-        data = data.dict()
-        data['json'] = data['json_data']
-        del data['json_data']
         try:
-            api_info_obj = ApiInfo.objects.get(url=data['url'], method=data['method'])
+            ApiInfo.objects.get(url=data.url, method=data.method, project_id=data.project)
         except ApiInfo.DoesNotExist:
+            data = data.dict()
+            data['json'] = data['json_data']
+            del data['json_data']
             ApiInfoCRUD.inside_post(data)
