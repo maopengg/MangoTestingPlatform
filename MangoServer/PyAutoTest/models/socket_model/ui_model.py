@@ -32,7 +32,6 @@ class WEBConfigModel(BaseModel):
 
 class AndroidConfigModel(BaseModel):
     equipment: str
-    package_name: str
 
 
 class RunConfigModel(BaseModel):

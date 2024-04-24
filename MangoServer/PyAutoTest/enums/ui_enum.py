@@ -37,19 +37,21 @@ class ElementExpEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "W_XPATH",
-                1: "W_TestID",
-                2: "W_定位器",
-                3: "W_文本",
-                4: "W_占位符",
-                5: "W_标签",
-                6: "W_标题",
-                7: "W_ROLE",
-                8: "W_AIT_TEXT",
-                9: "W_CSS",
-                11: "W_DESCRIPTION",
-                12: "A_BOUNDS",
-                13: "A_百分比坐标点击"}
+        return {
+            2: "定位器",
+            0: "XPATH",
+            1: "W_TestID",
+            3: "W_文本",
+            4: "W_占位符",
+            5: "W_标签",
+            6: "W_标题",
+            7: "W_ROLE",
+            8: "W_AIT_TEXT",
+            9: "W_CSS",
+            11: "A_DESCRIPTION",
+            12: "A_BOUNDS",
+            13: "A_百分比坐标点击"}
+
 
 class DriveTypeEnum(BaseEnum):
     """UI自动化平台枚举"""

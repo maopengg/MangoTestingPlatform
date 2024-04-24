@@ -1,6 +1,6 @@
 playwright==1.32.1
 weditor==0.6.4
-uiautomator2 == 2.16.22
+uiautomator2 == 3.0.8
 psutil==5.9.5
 
 websockets==10.4

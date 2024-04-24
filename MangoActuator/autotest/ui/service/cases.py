@@ -15,6 +15,7 @@ from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel, TestSuiteModel
 from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 

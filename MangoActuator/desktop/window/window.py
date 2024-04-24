@@ -5,35 +5,23 @@
 # @Author : 毛鹏
 import json
 
-from PySide6.QtCore import (QThread, Signal)
-from blinker import signal
-
 import service
 from enums.socket_api_enum import ToolsSocketEnum
 from enums.system_enum import CacheDataKey2Enum
-from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum
+from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum
 from service.socket_client.client_socket import ClientWebSocket
 from tools.assertion import Assertion
 from tools.data_processor.sql_cache import SqlCache
+from tools.desktop.signal_send import SignalSend
 from tools.other.get_class_methods import GetClassMethod
 from .ui_window import Ui_MainWindow
 
-custom_signal = signal('notice_signal')
-
-
-class MyThread(QThread):
-    my_signal = Signal()
-
 
 class Window(Ui_MainWindow):
-    signal = Signal(object)  # 定义信号
 
     def setup(self):
         self.setupUi(self)
         self.sendRedisData.clicked.connect(self.clickSendRedisData)
-        self.test.clicked.connect(self.clickTest)
-        self.signal.connect(self.signalLabel6)
-
         self.radioButton.clicked.connect(self.signalTextEdit1)
         BROWSER_IS_MAXIMIZE = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
         if BROWSER_IS_MAXIMIZE:
@@ -46,7 +34,7 @@ class Window(Ui_MainWindow):
             SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
             self.comboBox.setCurrentText('10')
 
-        custom_signal.connect(self.setTextEdit)
+        SignalSend.notice.connect(self.setTextEdit)
         self.label_3.setText(service.USERNAME)
 
     def clickSendRedisData(self):
@@ -60,9 +48,6 @@ class Window(Ui_MainWindow):
             {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
         cls = ClientWebSocket()
         cls.sync_send('设置缓存数据', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value, func_args=send_list)
-
-    def clickTest(self):
-        self.signal.emit("hello, is happy!")
 
     # 接受信号的槽函数
     def signalLabel6(self, text):
@@ -84,7 +69,7 @@ class Window(Ui_MainWindow):
         self.textEdit.append(f'设置用例并行数为{text}成功')
 
     def setTextEdit(self, sender, data: str):
-        if sender == 1:
+        if sender == SignalTypeEnum.A:
             self.label_6.setText(data)
         else:
             self.textEdit.append(data)

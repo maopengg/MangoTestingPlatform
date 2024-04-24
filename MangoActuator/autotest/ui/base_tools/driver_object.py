@@ -6,6 +6,7 @@
 import ctypes
 import os
 import string
+import time
 from urllib import parse
 
 from playwright._impl._api_types import Error
@@ -24,8 +25,9 @@ from models.socket_model.ui_model import AndroidConfigModel
 from models.socket_model.ui_model import WEBConfigModel
 from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042
+from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0045
 
 """
 python -m uiautomator2 init
@@ -47,18 +49,26 @@ class DriverObject:
             raise NewObjectError(*ERROR_MSG_0042)
         if self.browser is None:
             self.browser = await self.new_browser()
+        SignalSend.notice_signal_c('正在创建浏览器窗口')
         context = await self.new_context(self.browser)
         page = await self.new_page(context)
         return context, page
 
     def new_android(self):
+        SignalSend.notice_signal_c('正在创建安卓设备')
         if self.android_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
         android = Device(self.android_config.equipment)
+        try:
+            SignalSend.notice_signal_c(f"设备启动成功！产品名称：{android.info.get('productName')}")
+        except RuntimeError:
+            SignalSend.notice_signal_c(f"设备启动超时！请检查设备是否已成功连接电脑，设备号：{self.android_config.equipment}")
+            raise NewObjectError(*ERROR_MSG_0045, value=(self.android_config.equipment, ))
         android.implicitly_wait(10)
         return android
 
     async def new_browser(self) -> Browser:
+        SignalSend.notice_signal_c('正在启动浏览器')
         playwright = await async_playwright().start()
         if self.web_config.browser_type == BrowserTypeEnum.CHROMIUM.value or \
                 self.web_config.browser_type == BrowserTypeEnum.EDGE.value:

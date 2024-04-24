@@ -4,7 +4,6 @@
 # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import re
-import traceback
 
 from playwright._impl._api_types import Error
 from playwright._impl._api_types import TimeoutError
@@ -23,7 +22,6 @@ from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.decorator.async_retry import async_retry
-from tools.log_collector import log
 from tools.message.error_msg import *
 
 re = re
@@ -47,9 +45,6 @@ class WebDevice(PlaywrightBrowser,
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
-        except Exception as error:
-            traceback.print_exc()  # 打印异常追踪信息
-            log.error(f"元素操作任务出现异常：{error}")
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
@@ -58,12 +53,15 @@ class WebDevice(PlaywrightBrowser,
                 await self.w_wait_for_timeout(self.element_model.sleep)
 
     @async_retry
-    async def web_assertion_element(self):
+    async def web_assertion_element(self) -> None:
         is_method = callable(getattr(PlaywrightAssertion, self.element_model.ass_type, None))
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
-        self.element_test_result.expect = self.element_model.ass_value.get(
-            'expect') if self.element_model.ass_value.get('expect') else None
+        self.element_test_result.expect = self.element_model \
+            .ass_value \
+            .get('expect') if self.element_model \
+            .ass_value \
+            .get('expect') else None
         if is_method or is_method_public:
             if self.element_model.ass_value['value'] is None:
                 raise ElementIsEmptyError(*ERROR_MSG_0031,

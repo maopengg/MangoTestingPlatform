@@ -8,17 +8,15 @@ import json
 from typing import Union, Optional, TypeVar
 
 import websockets
-from blinker import signal
 from websockets.legacy.client import WebSocketClientProtocol
 
 import service
 from enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from models.socket_model import SocketDataModel, QueueModel
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 T = TypeVar('T')
-custom_signal = signal('custom_signal')
-notice_signal = signal('notice_signal')
 
 websocket: Optional[WebSocketClientProtocol] = None
 
@@ -36,10 +34,10 @@ class ClientWebSocket:
             res = self.__output_method(response_str)
             if res.code == 200:
                 log.info("socket服务启动成功")
-                notice_signal.send(1, data='在线')
+                SignalSend.notice_signal_a('在线')
                 return True
             else:
-                notice_signal.send(1, data='已离线')
+                SignalSend.notice_signal_a('已离线')
                 return False
 
     async def client_run(self):
@@ -60,13 +58,15 @@ class ClientWebSocket:
                         await self.client_recv()
                     await asyncio.sleep(2)
             except ConnectionRefusedError:
-                notice_signal.send(1, data='已离线')
+                SignalSend.notice_signal_a('已离线')
                 log.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
+                SignalSend.notice_signal_c("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
             except OSError as error:
-                notice_signal.send(1, data='已离线')
+                SignalSend.notice_signal_a('已离线')
                 log.info(f"网络已中断，尝试重新连接中......{error}")
+                SignalSend.notice_signal_c("网络已中断，尝试重新连接中......")
             except Exception as error:
-                notice_signal.send(1, data=error)
+                SignalSend.notice_signal_a('已离线')
                 log.info(f"socket发生未知错误：{error}")
                 await asyncio.sleep(10)
                 break
@@ -81,13 +81,10 @@ class ClientWebSocket:
                 recv_json = await websocket.recv()
                 data = self.__output_method(recv_json)
                 if data.data:
-                    custom_signal.send(data.data.func_name, data=data.data.func_args)
-                    notice_signal.send(
-                        0,
-                        data=f"开始处理用户：{data.user}的消息，准备开始：{data.msg}，测试套ID：{data.data.func_args.get('id')}")
+                    SignalSend.func_signal(data.data.func_name, data=data.data.func_args)
                 await asyncio.sleep(5)
             except websockets.ConnectionClosed:
-                notice_signal.send(1, data='已离线')
+                SignalSend.notice_signal_a('已离线')
                 log.info(f'连接已关闭，正在重新连接......')
                 break
 

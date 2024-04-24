@@ -14,6 +14,7 @@ from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
 from service.socket_client import ClientWebSocket
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 
@@ -44,6 +45,7 @@ class Steps(Elements):
         await self.case_page_step()
 
     async def case_page_step(self) -> None:
+        SignalSend.notice_signal_c(f'正在准备执行用例：{self.case_model.name}')
         try:
             if self.case_model.run_config:
                 await self.public_front(self.case_model.run_config)
@@ -89,72 +91,9 @@ class Steps(Elements):
         分发用例方法，根据用例对象，来发给不同的对象来执行用例
         @return:
         """
-        match page_step_model.type:
-            case DriveTypeEnum.WEB.value:
-                await self.steps_setup(page_step_model)
-                return await self.web_step()
-            case DriveTypeEnum.ANDROID.value:
-                pass
-                # self.__android_init(page_step_model)
-                # loop = asyncio.get_event_loop()
-                # with ThreadPoolExecutor() as pool:
-                #     new_func = partial(page_step_model.android_step, )
-                #     await loop.run_in_executor(pool, new_func)
-            case DriveTypeEnum.IOS.value:
-                pass
-            case DriveTypeEnum.DESKTOP.value:
-                pass
-            case _:
-                log.error('自动化类型不存在，请联系管理员检查！')
-
-    # async def __front(self):
-    #     """
-    #     用例前置
-    #     @return:
-    #     """
-    #     self.set_mysql(self.case_model.run_config)
-    #     if self.case_model.run_config.public_data_list:
-    #         for cache_data in self.case_model.run_config.public_data_list:
-    #             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-    #                 self.data_processor.set_cache(cache_data.key, cache_data.value)
-    #             elif cache_data.type == UiPublicTypeEnum.SQL.value:
-    #                 if self.mysql_connect:
-    #                     sql = self.data_processor.replace(cache_data.value)
-    #                     result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-    #                     if isinstance(result_list, list):
-    #                         for result in result_list:
-    #                             try:
-    #                                 for value, key in zip(result, eval(cache_data.key)):
-    #                                     self.data_processor.set_cache(key, result.get(value))
-    #                             except SyntaxError:
-    #                                 raise SyntaxErrorError(*ERROR_MSG_0038)
-    #
-    #                         if not result_list:
-    #                             raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))
-    #
-    #     for i in self.case_model.front_custom:
-    #         self.data_processor.set_cache(i.get('key'), i.get('value'))
-    #     for i in self.case_model.front_sql:
-    #         if self.mysql_connect:
-    #             sql = self.data_processor.replace(i.get('sql'))
-    #             result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-    #             if isinstance(result_list, list):
-    #                 for result in result_list:
-    #                     try:
-    #                         for value, key in zip(result, eval(i.get('key_list'))):
-    #                             self.data_processor.set_cache(key, result.get(value))
-    #                     except SyntaxError:
-    #                         raise SyntaxErrorError(*ERROR_MSG_0039)
-    #                 if not result_list:
-    #                     raise MysqlQueryIsNullError(*ERROR_MSG_0037, value=(sql,))
-    #
-    # async def __posterior(self):
-    #     """
-    #     用例后置，只支持删除sql
-    #     @return:
-    #     """
-    #     for sql in self.case_model.posterior_sql:
-    #         self.mysql_connect.condition_execute(sql.get('sql'))
+        await self.steps_setup(page_step_model)
+        await self.driver_init()
+        return await self.steps_main()
 
 
 if __name__ == '__main__':

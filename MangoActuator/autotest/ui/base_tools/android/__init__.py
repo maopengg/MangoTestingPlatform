@@ -4,7 +4,7 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from retrying import retry
-from uiautomator2 import UiObject
+from uiautomator2 import UiObject, NullPointerExceptionError
 from uiautomator2.xpath import XPathSelector
 
 from autotest.ui.base_tools.android.application import UiautomatorApplication
@@ -14,12 +14,10 @@ from autotest.ui.base_tools.android.element import UiautomatorElement
 from autotest.ui.base_tools.android.equipment import UiautomatorEquipment
 from autotest.ui.base_tools.android.page import UiautomatorPage
 from enums.ui_enum import ElementExpEnum
-from exceptions.ui_exception import LocatorError, UiAssertionError, ElementIsEmptyError, UiSqlAssertionError
+from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
-from tools.assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
-from tools.message.error_msg import ERROR_MSG_0020, ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0019, ERROR_MSG_0030, \
-    ERROR_MSG_0018
+from tools.message.error_msg import *
 
 
 class AndroidDriver(UiautomatorEquipment,
@@ -30,9 +28,9 @@ class AndroidDriver(UiautomatorEquipment,
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
 
-    @retry(stop_max_attempt_number=3, wait_fixed=2000)
+    @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_find_ele(self) -> UiObject | XPathSelector:
-        match self.element_model.ele_exp:
+        match self.element_model.exp:
             case ElementExpEnum.XPATH.value:
                 return self.android.xpath(self.element_model.loc)
             case ElementExpEnum.BOUNDS.value:
@@ -44,28 +42,37 @@ class AndroidDriver(UiautomatorEquipment,
             case _:
                 raise LocatorError(*ERROR_MSG_0020)
 
-    @retry(stop_max_attempt_number=3, wait_fixed=2000)
+    @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_action_element(self) -> None:
-        getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
-
+        try:
+            getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
+        except ValueError as error:
+            raise UiTimeoutError(*ERROR_MSG_0012, error=error)
+        except NullPointerExceptionError as error:
+            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         if 'locating' in self.element_model.ope_value:
             del self.element_model.ope_value['locating']
         self.element_test_result.ope_value = self.element_model.ope_value
         if self.element_model.ele_sleep:
             self.a_sleep(self.element_model.ele_sleep)
 
-    @retry(stop_max_attempt_number=3, wait_fixed=2000)
-    def a_assertion_element(self):
+    @retry(stop_max_attempt_number=10, wait_fixed=500)
+    def a_assertion_element(self) -> None:
         is_method = callable(getattr(UiautomatorAssertion, self.element_model.ass_type, None))
+        from tools.assertion import PublicAssertion
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
-        self.element_test_result.expect = self.element_model.ass_value.get(
-            'expect') if self.element_model.ass_value.get('expect') else None
+        self.element_test_result.expect = self.element_model \
+            .ass_value \
+            .get('expect') if self.element_model \
+            .ass_value \
+            .get('expect') else None
+
         if is_method or is_method_public:
             if self.element_model.ass_value['value'] is None:
                 raise ElementIsEmptyError(*ERROR_MSG_0031,
                                           value=(self.element_model.name, self.element_model.loc))
-            
+
         try:
             if is_method:
                 self.element_test_result.actual = '判断元素是什么'
