@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
+# @Project: auto_test
 # @Description: 
-# @Time   : 2023-04-25 22:33
+# @Time   : 2024-04-24 10:43
 # @Author : 毛鹏
 import ctypes
 import os
@@ -12,25 +12,51 @@ from playwright._impl._api_types import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
+from uiautomator2 import Device
 
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
-from enums.tools_enum import CacheKeyEnum
+from enums.tools_enum import CacheKeyEnum, StatusEnum
 from enums.ui_enum import BrowserTypeEnum
-from exceptions.ui_exception import BrowserPathError
+from exceptions.ui_exception import BrowserPathError, NewObjectError
 from models.socket_model.api_model import ApiInfoModel
+from models.socket_model.ui_model import AndroidConfigModel
 from models.socket_model.ui_model import WEBConfigModel
 from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009
+from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042
+
+"""
+python -m uiautomator2 init
+python -m weditor
+
+"""
 
 
-class NewBrowser:
+class DriverObject:
 
-    def __init__(self, web_config: WEBConfigModel):
+    def __init__(self, web_config: WEBConfigModel = None, android_config: AndroidConfigModel = None):
+        self.browser = None
         self.web_config = web_config
         self.browser_path = ['chrome.exe', 'msedge.exe', 'firefox.exe', '苹果', '360se.exe']
+        self.android_config = android_config
+        
+    async def new_web_page(self) -> tuple[BrowserContext, Page]:
+        if self.web_config is None:
+            raise NewObjectError(*ERROR_MSG_0042)
+        if self.browser is None:
+            self.browser = await self.new_browser()
+        context = await self.new_context(self.browser)
+        page = await self.new_page(context)
+        return context, page
+
+    def new_android(self):
+        if self.android_config is None:
+            raise NewObjectError(*ERROR_MSG_0042)
+        android = Device(self.android_config.equipment)
+        android.implicitly_wait(10)
+        return android
 
     async def new_browser(self) -> Browser:
         playwright = await async_playwright().start()
@@ -44,18 +70,27 @@ class NewBrowser:
         else:
             raise BrowserPathError(*ERROR_MSG_0008)
         try:
-            self.web_config.browser_path = self.web_config.browser_path if self.web_config.browser_path else self.__search_path()
-            if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
-                return await browser.launch(headless=self.web_config.is_headless == 1,
-                                            executable_path=self.web_config.browser_path,
-                                            args=['--start-maximized'])
-            else:
-                return await browser.launch(headless=self.web_config.is_headless == 1,
-                                            executable_path=self.web_config.browser_path)
-        except Error as error:
-            raise BrowserPathError(*ERROR_MSG_0009, error=error)
+            self.web_config \
+                .browser_path = self.web_config \
+                .browser_path if self.web_config \
+                .browser_path else self.__search_path()
 
-    async def new_context(self, browser: Browser) -> BrowserContext:
+            if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
+                return await browser.launch(
+                    headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
+                    executable_path=self.web_config.browser_path,
+                    args=['--start-maximized']
+                )
+            else:
+                return await browser.launch(
+                    headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
+                    executable_path=self.web_config.browser_path
+                )
+        except Error:
+            raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.browser_path,))
+
+    @classmethod
+    async def new_context(cls, browser: Browser) -> BrowserContext:
         return await browser.new_context(no_viewport=True)
 
     async def new_page(self, context: BrowserContext) -> Page:
@@ -63,6 +98,13 @@ class NewBrowser:
         if self.web_config.is_header_intercept:
             await page.route("**/*", self.__intercept_request)  # 应用拦截函数到页面的所有请求
         return page
+
+    async def close(self):
+        if self.web_config:
+            if self.browser:
+                await self.browser.close()
+        if self.android_config:
+            pass
 
     def __search_path(self, ):
         drives = []
@@ -88,10 +130,10 @@ class NewBrowser:
             return
         if self.web_config.host in request.url:  # 检查请求的URL是否包含目标路径
             if request.resource_type == "document" or request.resource_type == "xhr" or request.resource_type == "fetch":
-                await self.send_recording_api(request)
+                await self.__send_recording_api(request)
         await route.continue_()  # 继续请求，不做修改
 
-    async def send_recording_api(self, request: Request):
+    async def __send_recording_api(self, request: Request):
         if self.web_config.project is None:
             log.error('错误逻辑')
             return
@@ -125,3 +167,24 @@ class NewBrowser:
                      f'data:{data}\t'
                      f'params:{params}\t'
                      f'报错信息：{e}\t')
+
+
+async def test_main():
+    r = DriverObject(web_config=WEBConfigModel(**{
+        "browser_type": 0,
+        "browser_port": "9222",
+        "browser_path": None,
+        "is_headless": 0,
+        "is_header_intercept": False,
+        "host": "https://app-test.growknows.cn/",
+        "project_id": None
+    }))
+    for i in range(10):
+        context1, page1 = await r.new_web_page()
+        await page1.goto('https://www.baidu.com/')
+
+
+if __name__ == '__main__':
+    import asyncio
+
+    asyncio.run(test_main())

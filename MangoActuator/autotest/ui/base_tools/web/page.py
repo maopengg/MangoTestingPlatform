@@ -7,10 +7,10 @@ import asyncio
 
 from playwright.async_api import Locator
 
-from autotest.ui.driver.base_data import BaseData
+from autotest.ui.base_tools.base_data import BaseData
 
 
-class PlaywrightPageOperation(BaseData):
+class PlaywrightPage(BaseData):
     """页面操作"""
 
     async def w_switch_tabs(self, individual: int):

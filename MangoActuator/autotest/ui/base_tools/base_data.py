@@ -7,8 +7,9 @@ from typing import Optional
 
 from blinker import signal
 from playwright.async_api import Page, BrowserContext
+from uiautomator2 import Device
 
-from enums.tools_enum import StatusEnum
+from enums.tools_enum import StatusEnum, SignalTypeEnum
 from enums.ui_enum import UiPublicTypeEnum
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import RunConfigModel
@@ -30,6 +31,7 @@ class BaseData:
                  is_step: bool = False,
                  page: Page = None,
                  context: BrowserContext = None,
+                 android: Device = None
                  ) -> None:
         self.project_id = project_id
         self.test_suite_id = test_suite_id
@@ -46,16 +48,13 @@ class BaseData:
 
         self.page: Optional[Page] = page  # 页面对象
         self.context: Optional[BrowserContext] = context  # 浏览器上下文对象
-        # self.browser: Optional[Browser] = browser
+
         self.mysql_config: Optional[MysqlConingModel] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect] = None  # mysql连接对象
 
+        self.android: Device = android
+
     def set_mysql(self, run_config: RunConfigModel):
-        """
-        设置mysql配置
-        @param run_config:
-        @return:
-        """
         self.mysql_config = run_config.mysql_config
         if StatusEnum.SUCCESS.value in [run_config.db_c_status, run_config.db_rud_status]:
             self.mysql_connect = MysqlConnect(run_config.mysql_config,
@@ -63,10 +62,6 @@ class BaseData:
                                               bool(run_config.db_rud_status))
 
     async def base_close(self):
-        """
-        执行用例完成后，关闭所有对象回收资源
-        @return:
-        """
         if self.context and isinstance(self.context, BrowserContext):
             await self.context.close()
         if self.page and isinstance(self.page, Page):
@@ -75,10 +70,7 @@ class BaseData:
             self.mysql_connect.close()
 
     async def public_front(self, run_config: RunConfigModel):
-        """
-        用例前置
-        @return:
-        """
+
         self.set_mysql(run_config)
         if run_config.public_data_list:
             for cache_data in run_config.public_data_list:
@@ -100,7 +92,6 @@ class BaseData:
                                 raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
-
         for i in front_custom:
             self.data_processor.set_cache(i.get('key'), i.get('value'))
         for i in front_sql:
@@ -118,9 +109,8 @@ class BaseData:
                         raise MysqlQueryIsNullError(*ERROR_MSG_0037, value=(sql,))
 
     async def case_posterior(self, posterior_sql: list[dict]):
-        """
-        用例后置，只支持删除sql
-        @return:
-        """
         for sql in posterior_sql:
             self.mysql_connect.condition_execute(sql.get('sql'))
+
+    async def send_notice_signal(self, msg: str):
+        self.notice_signal.send(SignalTypeEnum.C, data=msg)

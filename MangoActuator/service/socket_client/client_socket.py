@@ -83,7 +83,7 @@ class ClientWebSocket:
                 if data.data:
                     custom_signal.send(data.data.func_name, data=data.data.func_args)
                     notice_signal.send(
-                        'receive',
+                        0,
                         data=f"开始处理用户：{data.user}的消息，准备开始：{data.msg}，测试套ID：{data.data.func_args.get('id')}")
                 await asyncio.sleep(5)
             except websockets.ConnectionClosed:

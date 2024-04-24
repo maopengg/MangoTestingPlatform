@@ -3,11 +3,18 @@
 # @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
-from autotest.ui.driver.android.android_base import AndroidBase
+from time import sleep
+
+from autotest.ui.base_tools.base_data import BaseData
 
 
-class UiautomatorEquipmentDevice(AndroidBase):
+class UiautomatorEquipment(BaseData):
     """设备操作"""
+
+    @classmethod
+    def a_sleep(cls, time_: int):
+        """强制等待"""
+        sleep(time_)
 
     def a_screen_on(self):
         """打开屏幕"""
@@ -47,7 +54,6 @@ class UiautomatorEquipmentDevice(AndroidBase):
     def a_unlock(self):
         """解锁屏幕-未测试"""
         self.android.unlock()
-        self.press_home()
 
     def a_press_home(self):
         """按home键"""

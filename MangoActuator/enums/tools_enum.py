@@ -66,3 +66,15 @@ class CacheValueTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "字符串", 1: "整数", 2: "小数", 3: "布尔", 4: "null", 5: "列表", 6: "字典", 7: "元组", 8: "JSON"}
+
+
+class SignalTypeEnum(BaseEnum):
+    """缓存数据类型"""
+    A = 0
+    B = 1
+    C = 2
+    D = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "字符串", 1: "整数", 2: "小数", 3: "用例展示"}

@@ -7,8 +7,8 @@
 from aiohttp import ClientSession
 from aiohttp.client_reqrep import ClientResponse
 
-from autotest.api.driver.dependence import Dependence
-from autotest.api.driver.http_request import HTTPRequest
+from autotest.api.base_tools.dependence import Dependence
+from autotest.api.base_tools.http_request import HTTPRequest
 from models.socket_model.api_model import RequestModel
 from tools.log_collector import log
 

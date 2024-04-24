@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
-import copy
 import re
 import traceback
 
@@ -11,14 +10,14 @@ from playwright._impl._api_types import Error
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api._generated import Locator
 
-from autotest.ui.driver.web.assertion import PlaywrightAssertion
-from autotest.ui.driver.web.browser import PlaywrightOperationBrowser
-from autotest.ui.driver.web.mouse_keyboard import PlaywrightDeviceInput
-from autotest.ui.driver.web.operation import PlaywrightElementOperation
-from autotest.ui.driver.web.page import PlaywrightPageOperation
+from autotest.ui.base_tools.web.assertion import PlaywrightAssertion
+from autotest.ui.base_tools.web.browser import PlaywrightBrowser
+from autotest.ui.base_tools.web.customization import PlaywrightCustomization
+from autotest.ui.base_tools.web.element import PlaywrightElement
+from autotest.ui.base_tools.web.input_device import PlaywrightDeviceInput
+from autotest.ui.base_tools.web.page import PlaywrightPage
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementExpEnum, ElementOperationEnum
-from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
@@ -30,86 +29,15 @@ from tools.message.error_msg import *
 re = re
 
 
-class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightElementOperation, PlaywrightDeviceInput):
+class WebDevice(PlaywrightBrowser,
+                PlaywrightPage,
+                PlaywrightElement,
+                PlaywrightDeviceInput,
+                PlaywrightCustomization):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
     element_data: dict = None
     ope_name: str = None
-
-    async def element_setup(self, element_model, element_data):
-        self.element_model = copy.deepcopy(element_model)
-        self.element_data = element_data
-        if element_model.name:
-            self.ope_name = element_model.name
-        elif element_model.ope_type:
-            self.ope_name = element_model.ope_type
-        else:
-            self.ope_name = element_model.ass_type
-        for key, value in self.element_model:
-            value = self.data_processor.replace(value)
-            setattr(self.element_model, key, value)
-        self.element_test_result = ElementResultModel(
-            test_suite_id=self.test_suite_id,
-            case_id=self.case_id,
-            page_step_id=self.page_step_id,
-            ele_name=self.ope_name,
-            exp=element_model.exp,
-            sub=element_model.sub,
-            sleep=element_model.sleep,
-            ope_type=element_model.ope_type,
-            ass_type=element_model.ass_type,
-            status=StatusEnum.FAIL.value,
-            ele_quantity=0,
-        )
-
-    async def web_element_main(self) -> None:
-        name = self.element_model.name if self.element_model.name else self.element_model.ass_type
-        ope_type = self.element_model.ope_type if self.element_model.ope_type else self.element_model.ass_type
-        if self.element_model.type == ElementOperationEnum.OPE.value:
-            try:
-                for key, value in self.element_model.ope_value.items():
-                    await self.__ope(key, value)
-                self.notice_signal.send(3,
-                                        data=f'操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
-            except AttributeError:
-                raise ElementOpeNoneError(*ERROR_MSG_0027)
-            except UiError as error:
-                raise error
-            await self.web_action_element()
-        # 判断元素是断言类型
-        elif self.element_model.type == ElementOperationEnum.ASS.value:
-            for key, expect in self.element_model.ass_value.items():
-                await self.__ass(key, expect)
-            await self.web_assertion_element()
-            self.notice_signal.send(3,
-                                    data=f'断言->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
-        elif self.element_model.type == ElementOperationEnum.SQL.value:
-            if self.is_step:
-                sql = self.element_model.sql
-                key_list = self.element_model.key_list
-            else:
-                sql = self.element_data.get('sql')
-                key_list = self.element_data.get('key_list')
-            if self.mysql_connect:
-                result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-                if isinstance(result_list, list):
-                    for result in result_list:
-                        try:
-                            for value, key in zip(result, key_list):
-                                self.data_processor.set_cache(key, result.get(value))
-                        except SyntaxError:
-                            raise SyntaxErrorError(*ERROR_MSG_0038)
-
-                    if not result_list:
-                        raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(self.element_model.sql,))
-        elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
-            if self.is_step:
-                self.data_processor.set_cache(self.element_model.key, self.element_model.value)
-            else:
-                self.data_processor.set_cache(self.element_data.get('key'), self.element_data.get('value'))
-
-        else:
-            raise ElementTypeError(*ERROR_MSG_0015)
 
     @async_retry
     async def web_action_element(self) -> None:
@@ -177,21 +105,7 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
         self.element_test_result.ass_value = self.element_model.ass_value
 
     @async_retry
-    async def __ope(self, key, value):
-        if key == 'locating':
-            self.element_model.ope_value[key] = await self.__web_find_ele()
-        else:
-            # 清洗元素需要的数据
-            self.element_model.ope_value[key] = await self.__web_input_value(key, value)
-
-    @async_retry
-    async def __ass(self, key, expect):
-        if key == 'value' and self.element_model.loc:
-            self.element_model.ass_value[key] = await self.__web_find_ele()
-        else:
-            self.element_model.ass_value[key] = await self.__web_input_value(key, expect)
-
-    async def __web_find_ele(self) -> Locator | list[Locator]:
+    async def web_find_ele(self) -> Locator | list[Locator]:
         """
         基于playwright的元素查找
         @return:
@@ -251,14 +165,3 @@ class WebDevice(PlaywrightPageOperation, PlaywrightOperationBrowser, PlaywrightE
             case _:
                 raise LocatorError(*ERROR_MSG_0020)
 
-    async def __web_input_value(self, key: str, value: dict | str) -> str:
-        """
-        输入依赖解决
-        @return:
-        """
-        if self.element_data:
-            for ele_name, case_data in self.element_data.items():
-                if ele_name == key:
-                    value = case_data
-                    return self.data_processor.replace(value)
-        return value

@@ -9,9 +9,7 @@ from urllib.parse import urljoin
 
 from playwright._impl._api_types import Error
 
-from autotest.ui.driver import AndroidDriver, DriveSet
-from autotest.ui.driver.ios import IOSDriver
-from autotest.ui.driver.pc import PCDriver
+from autotest.ui.base_tools import DriveSet
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
@@ -23,18 +21,11 @@ from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0040
 
 
-class SplitStepsElements(DriveSet):
-    """执行一个完整的步骤"""
+class Elements(DriveSet):
     page_step_model: PageStepsModel = None
     page_step_result_model: PageStepsResultModel = None
 
     async def steps_setup(self, page_step_model: PageStepsModel):
-        """
-        初始化步骤对象
-        @param page_step_model:
-        @param step_data:
-        @return:
-        """
         self.page_step_model = page_step_model
         self.page_step_result_model = PageStepsResultModel(
             test_suite_id=self.test_suite_id,
@@ -50,10 +41,6 @@ class SplitStepsElements(DriveSet):
         self.case_step_details_id = page_step_model.case_step_details_id
 
     async def web_step(self) -> PageStepsResultModel:
-        """
-        处理一个步骤的元素
-        @return:
-        """
         await self.__web_init()
         for element_model in self.page_step_model.element_list:
             element_data = None
@@ -65,8 +52,8 @@ class SplitStepsElements(DriveSet):
                     raise UiCacheDataIsNullError(*ERROR_MSG_0025)
             # 执行用例
             try:
-                await self.element_setup(element_model, element_data)
-                await self.web_element_main()
+                await self.element_setup(element_model, element_data, self.page_step_model.type)
+                await self.element_main()
             except MangoActuatorError as error:
                 await self.__error(error)
                 return self.page_step_result_model
@@ -84,21 +71,7 @@ class SplitStepsElements(DriveSet):
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
         return self.page_step_result_model
 
-    def android_step(self, android: Optional[AndroidDriver] = None):
-        pass
-
-    def pc_step(self, pc: Optional[PCDriver] = None, ):
-        pass
-
-    def ios_step(self, ios: Optional[IOSDriver] = None):
-        pass
-
     async def __error(self, error: MangoActuatorError):
-        """
-        操作元素失败时试用的函数
-        @param error:
-        @return:
-        """
         log.error(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
         path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
@@ -111,32 +84,28 @@ class SplitStepsElements(DriveSet):
                                        元素个数：{self.element_test_result.ele_quantity}
                                        截图路径：{path}
                                        元素失败提示：{error.msg}''')
-        try:
-            match self.page_step_model.type:
-                case DriveTypeEnum.WEB.value:
-                    await self.w_screenshot(path)
-                case DriveTypeEnum.ANDROID.value:
-                    pass
-                case DriveTypeEnum.IOS.value:
-                    pass
-                case DriveTypeEnum.DESKTOP.value:
-                    pass
-                case _:
-                    log.error('自动化类型不存在，请联系管理员检查！')
-            self.element_test_result.error_message = error.msg
-            self.element_test_result.picture_path = path
-            self.page_step_result_model.status = StatusEnum.FAIL.value
-            self.page_step_result_model.error_message = error.msg
-            self.page_step_result_model.element_result_list.append(self.element_test_result)
-        except Exception as error:
-            log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
-            raise ScreenshotError(*ERROR_MSG_0040)
+        # try:
+        match self.page_step_model.type:
+            case DriveTypeEnum.WEB.value:
+                await self.w_screenshot(path)
+            case DriveTypeEnum.ANDROID.value:
+                pass
+            case DriveTypeEnum.IOS.value:
+                pass
+            case DriveTypeEnum.DESKTOP.value:
+                pass
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
+        self.element_test_result.error_message = error.msg
+        self.element_test_result.picture_path = path
+        self.page_step_result_model.status = StatusEnum.FAIL.value
+        self.page_step_result_model.error_message = error.msg
+        self.page_step_result_model.element_result_list.append(self.element_test_result)
+        # except Exception as error:
+        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
+        #     raise ScreenshotError(*ERROR_MSG_0040)
 
     async def __web_init(self):
-        """
-        初始化web，访问一个网页，检测浏览器是否已关闭
-        @return:
-        """
         self.test_object_value = urljoin(self.page_step_model.test_object_value, self.page_step_model.url)
 
         try:

@@ -4,10 +4,10 @@
 # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
 
-from autotest.ui.driver.android.android_base import AndroidBase
+from autotest.ui.base_tools.base_data import BaseData
 
 
-class UiautomatorPage(AndroidBase):
+class UiautomatorPage(BaseData):
     """页面操作"""
 
     def a_swipe_right(self):

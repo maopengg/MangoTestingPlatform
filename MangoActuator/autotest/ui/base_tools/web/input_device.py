@@ -7,7 +7,7 @@ import asyncio
 
 from playwright.async_api import Locator
 
-from autotest.ui.driver.base_data import BaseData
+from autotest.ui.base_tools.base_data import BaseData
 
 
 class PlaywrightDeviceInput(BaseData):

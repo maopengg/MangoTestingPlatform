@@ -7,7 +7,7 @@
 import aiohttp
 from aiohttp.client_exceptions import ClientResponse
 
-from autotest.api.test_runner.case_run import ApiCaseRun
+from autotest.api.service.case_run import ApiCaseRun
 from models.socket_model.api_model import RequestModel
 from tools.decorator.convert_args import convert_args
 

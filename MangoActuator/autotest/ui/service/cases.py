@@ -7,8 +7,8 @@ import asyncio
 import json
 import traceback
 
-from autotest.ui.driver import NewDriverObject
-from autotest.ui.test_runner.split_cases_steps import SplitCaseSteps
+from autotest.ui.base_tools.driver_object import DriverObject
+from autotest.ui.service.steps import Steps
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import StatusEnum, ClientTypeEnum, CacheKeyEnum
 from enums.ui_enum import DriveTypeEnum
@@ -18,7 +18,7 @@ from tools.data_processor.sql_cache import SqlCache
 from tools.log_collector import log
 
 
-class SplitBatchCases(NewDriverObject):
+class Cases(DriverObject):
 
     def __init__(self, test_suite_model: TestSuiteModel):
         super().__init__()
@@ -67,16 +67,14 @@ class SplitBatchCases(NewDriverObject):
             func_name=UiSocketEnum.CASE_BATCH_RESULT.value,
             func_args=self.test_suite_model
         )
-        # await self.close()
 
     async def run(self, case_model: CaseModel):
-        async with SplitCaseSteps(self.test_suite_model.project, test_suite_id=self.test_suite_model.id) as obj:
+        async with Steps(self.test_suite_model.project, test_suite_id=self.test_suite_model.id) as obj:
             for step in case_model.case_list:
                 match step.type:
                     case DriveTypeEnum.WEB.value:
                         self.web_config = step.equipment_config
                         obj.context, obj.page = await self.new_web_page()
-                        # obj.browser = self.browser
                         break
                     case DriveTypeEnum.ANDROID.value:
                         pass
