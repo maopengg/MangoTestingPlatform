@@ -26,22 +26,27 @@ class PageSteps(Elements):
         self.new_driver_object = DriverObject()
 
     async def debug_case_distribution(self, page_step_model: PageStepsModel) -> None:
-        match page_step_model.type:
-            case DriveTypeEnum.WEB.value:
-                self.new_driver_object.web_config = page_step_model.equipment_config
-                if not self.context and not self.page:
-                    self.context, self.page = await self.new_driver_object.new_web_page()
-            case DriveTypeEnum.ANDROID.value:
-                self.new_driver_object.android_config = page_step_model.equipment_config
-                if self.android is None:
-                    self.android = self.new_driver_object.new_android()
-            case DriveTypeEnum.IOS.value:
-                pass
-            case DriveTypeEnum.DESKTOP.value:
-                pass
-            case _:
-                log.error('自动化类型不存在，请联系管理员检查！')
-
+        try:
+            match page_step_model.type:
+                case DriveTypeEnum.WEB.value:
+                    self.new_driver_object.web_config = page_step_model.equipment_config
+                    if not self.context and not self.page:
+                        self.context, self.page = await self.new_driver_object.new_web_page()
+                case DriveTypeEnum.ANDROID.value:
+                    self.new_driver_object.android_config = page_step_model.equipment_config
+                    if self.android is None:
+                        self.android = self.new_driver_object.new_android()
+                case DriveTypeEnum.IOS.value:
+                    pass
+                case DriveTypeEnum.DESKTOP.value:
+                    pass
+                case _:
+                    log.error('自动化类型不存在，请联系管理员检查！')
+        except MangoActuatorError as error:
+            await ClientWebSocket.async_send(code=error.code,
+                                             msg=error.msg,
+                                             is_notice=ClientTypeEnum.WEB.value)
+            return
         try:
             self.is_step = True
             if page_step_model.run_config:

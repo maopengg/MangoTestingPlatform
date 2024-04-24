@@ -4,7 +4,7 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from retrying import retry
-from uiautomator2 import UiObject, NullPointerExceptionError
+from uiautomator2 import UiObject, NullPointerExceptionError, UiObjectNotFoundError
 from uiautomator2.xpath import XPathSelector
 
 from autotest.ui.base_tools.android.application import UiautomatorApplication
@@ -51,6 +51,8 @@ class AndroidDriver(UiautomatorEquipment,
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
         except NullPointerExceptionError as error:
+            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+        except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         else:
             if 'locating' in self.element_model.ope_value:

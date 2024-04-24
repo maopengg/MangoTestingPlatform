@@ -42,7 +42,7 @@ class BaseData:
         self.data_processor = DataProcessor(project_id)
 
         self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例
-        self.test_object_value = None  # 浏览器url
+        self.test_object_value = ''  # 浏览器url
         self.is_url = False  # 判断是否需要重新加载url
 
         self.page: Optional[Page] = page  # 页面对象
