@@ -4,7 +4,6 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from uiautomator2 import UiObject
-from uiautomator2.xpath import XPath
 
 from autotest.ui.base_tools.base_data import BaseData
 from exceptions.ui_exception import ElementNotFoundError, ElementNotDisappearError
@@ -29,10 +28,11 @@ class UiautomatorElement(BaseData):
         """长按元素"""
         locating.long_click(duration=time_)
 
-    @classmethod
-    def a_input(cls, locating: UiObject, text):
+    def a_input(self, locating: UiObject, text):
         """输入"""
-        locating.set_text(text)
+        locating.click()
+        self.android.set_fastinput_ime(True)
+        self.android.send_keys(text)
 
     def a_get_text(self, locating: UiObject, set_cache_key=None):
         """获取元素文本"""

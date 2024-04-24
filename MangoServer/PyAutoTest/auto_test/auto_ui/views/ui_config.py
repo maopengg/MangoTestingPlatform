@@ -71,18 +71,18 @@ class UiConfigViews(ViewSet):
         is_headless = request.data.get('is_headless')
         obj = self.model.objects.get(id=request.data.get('id'))
 
-        if status:
+        if status is not None:
             obj_list = self.model.objects.filter(user_id=obj.user_id)
             for i in obj_list:
                 if i.status == StatusEnum.SUCCESS.value and i.type == obj.type and i.id != obj.id:
                     return ResponseData.fail(RESPONSE_MSG_0056)
-
-            obj.status = request.data.get('status')
+            obj.status = status
             obj.save()
+            return ResponseData.success(RESPONSE_MSG_0057, )
         if is_headless is not None:
-            obj.is_headless = request.data.get('is_headless')
+            obj.is_headless = is_headless
             obj.save()
-        return ResponseData.success(RESPONSE_MSG_0057, )
+            return ResponseData.success(RESPONSE_MSG_0057, )
 
     @action(methods=['get'], detail=False)
     def new_browser_obj(self, request: Request):

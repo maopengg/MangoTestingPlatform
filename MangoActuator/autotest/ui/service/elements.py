@@ -69,6 +69,7 @@ class Elements(DriveSet):
             else:
                 self.element_test_result.status = StatusEnum.SUCCESS.value
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
+        SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
         return self.page_step_result_model
 
     async def __error(self, error: MangoActuatorError):

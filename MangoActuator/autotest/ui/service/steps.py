@@ -85,6 +85,7 @@ class Steps(Elements):
                 is_notice=ClientTypeEnum.WEB.value,
                 func_name=UiSocketEnum.CASE_RESULT.value,
                 func_args=self.case_result)
+        SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
 
     async def case_steps_distribute(self, page_step_model: PageStepsModel) -> PageStepsResultModel:
         """

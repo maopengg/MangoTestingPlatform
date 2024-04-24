@@ -31,6 +31,8 @@ class AndroidDriver(UiautomatorEquipment,
     @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_find_ele(self) -> UiObject | XPathSelector:
         match self.element_model.exp:
+            case ElementExpEnum.LOCATOR.value:
+                return eval(f"self.android{self.element_model.loc}")
             case ElementExpEnum.XPATH.value:
                 return self.android.xpath(self.element_model.loc)
             case ElementExpEnum.BOUNDS.value:
@@ -50,11 +52,12 @@ class AndroidDriver(UiautomatorEquipment,
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
         except NullPointerExceptionError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
-        if 'locating' in self.element_model.ope_value:
-            del self.element_model.ope_value['locating']
-        self.element_test_result.ope_value = self.element_model.ope_value
-        if self.element_model.ele_sleep:
-            self.a_sleep(self.element_model.ele_sleep)
+        else:
+            if 'locating' in self.element_model.ope_value:
+                del self.element_model.ope_value['locating']
+            self.element_test_result.ope_value = self.element_model.ope_value
+            if self.element_model.sleep:
+                self.a_sleep(self.element_model.sleep)
 
     @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_assertion_element(self) -> None:

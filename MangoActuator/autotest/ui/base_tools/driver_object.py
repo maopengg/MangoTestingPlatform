@@ -13,7 +13,7 @@ from playwright._impl._api_types import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
-from uiautomator2 import Device
+import uiautomator2 as us
 
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
@@ -58,7 +58,7 @@ class DriverObject:
         SignalSend.notice_signal_c('正在创建安卓设备')
         if self.android_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
-        android = Device(self.android_config.equipment)
+        android = us.connect(self.android_config.equipment)
         try:
             SignalSend.notice_signal_c(f"设备启动成功！产品名称：{android.info.get('productName')}")
         except RuntimeError:
