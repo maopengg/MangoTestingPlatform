@@ -90,6 +90,9 @@ class TestSuiteReport(models.Model):
     run_status = models.SmallIntegerField(verbose_name="执行状态", null=True)
     # null是待测试完成，0是失败，1是成功
     status = models.SmallIntegerField(verbose_name="测试结果", null=True)
+    case_list = models.JSONField(verbose_name='测试套包含的用例列表', null=True)
+    is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
+    user = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'test_suite_report'
@@ -101,12 +104,12 @@ class ScheduledTasks(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="任务名称", max_length=64)
-    executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
+    case_executor = models.JSONField(verbose_name='用例执行人', null=True)
     type = models.SmallIntegerField(verbose_name="任务类型", null=True)
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
-    parallel_number = models.SmallIntegerField(verbose_name="用例执行并行数", null=True)
 
     class Meta:
         db_table = 'scheduled_tasks'

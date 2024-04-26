@@ -57,10 +57,10 @@ class Tasks:
             cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, is_notice, True)
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             cls.ui_task(scheduled_tasks.id,
-                        scheduled_tasks.executor_name.id,
+                        scheduled_tasks.case_people.id,
                         scheduled_tasks.test_obj.id,
                         is_notice,
-                        scheduled_tasks.parallel_number,
+                        scheduled_tasks.case_executor,
                         True)
         else:
             log.error('开始执行性能自动化任务')
@@ -68,25 +68,26 @@ class Tasks:
     @classmethod
     def distribute(cls, scheduled_tasks):
         # scheduled_tasks: ScheduledTasks = scheduled_tasks
-        is_notice = True if scheduled_tasks.is_notice == StatusEnum.SUCCESS.value else False
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
             task = Thread(target=cls.api_task, args=(scheduled_tasks.id,
                                                      scheduled_tasks.test_obj.id,
-                                                     is_notice))
+                                                     scheduled_tasks.is_notice))
             task.start()
 
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             task = Thread(target=cls.ui_task, args=(scheduled_tasks.id,
-                                                    scheduled_tasks.executor_name.id,
+                                                    scheduled_tasks.case_people.id,
                                                     scheduled_tasks.test_obj.id,
-                                                    is_notice))
+                                                    scheduled_tasks.is_notice,
+                                                    scheduled_tasks.case_executor
+                                                    ))
             task.start()
         else:
             log.error('开始执行性能自动化任务')
         connection.close()
 
     @classmethod
-    def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: bool, is_trigger: bool = False):
+    def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: int, is_trigger: bool = False):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
@@ -104,20 +105,23 @@ class Tasks:
                 scheduled_tasks_id: int,
                 user_id: int,
                 test_obj_id: int,
-                is_notice: bool,
-                concurrent: int | None = None,
-                is_trigger: bool = False):
+                is_notice: int,
+                case_executor: list,
+                is_trigger: bool = False,
+                ):
         try:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')
-                UiTestRun(user_id=user_id,
-                          test_obj_id=test_obj_id,
-                          tasks_id=scheduled_tasks_id,
-                          is_notice=is_notice,
-                          spare_test_object_id=test_obj_id,
-                          concurrent=concurrent).case_batch(case_id_list)
+                UiTestRun(
+                    user_id=user_id,
+                    test_obj_id=test_obj_id,
+                    tasks_id=scheduled_tasks_id,
+                    is_notice=is_notice,
+                    spare_test_object_id=test_obj_id,
+                    case_executor=case_executor
+                ).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行UI定时任务失败，错误消息：{error.msg}')
             if is_trigger:

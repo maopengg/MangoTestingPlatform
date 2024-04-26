@@ -38,7 +38,6 @@ class BaseData:
         self.case_step_details_id = case_step_details_id
         self.page_step_id = page_step_id
         self.case_id = case_id
-
         self.data_processor = DataProcessor(project_id)
 
         self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例

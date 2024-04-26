@@ -3,13 +3,17 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
+import json
 import logging
 
-from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiCase, UiCaseStepsDetailed
-from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultSerializers
+from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
+from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiCase, UiCaseStepsDetailed, UiCaseResult
+from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultCRUD
+from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultCRUD
+from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultCRUD
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError
+from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import retry
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0030
@@ -22,11 +26,6 @@ class TestReportWriting:
     @classmethod
     @retry(func_name='update_page_step_status')
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
-        """
-        步骤状态修改
-        @param data:
-        @return:
-        """
         try:
             if data.page_step_id:
                 res = UiPageSteps.objects.get(id=data.page_step_id)
@@ -38,38 +37,19 @@ class TestReportWriting:
     @classmethod
     @retry(func_name='update_case')
     def update_case(cls, data: CaseResultModel):
-        """
-        用例状态修改
-        @param data:CaseResultModel
-        @return:
-        """
         case = UiCase.objects.get(id=data.case_id)
         case.status = data.status
         case.test_suite_id = data.test_suite_id
         case.save()
         # 保存用例结果
-        # error_message = []
         for page_steps_result in data.page_steps_result_list:
-            # 保存测试步骤结果
-            serializer = UiPageStepsResultSerializers(data=page_steps_result.dict())
-            if serializer.is_valid():
-                serializer.save()
-            else:
-                log.error(f'增加用例步骤结果，请联系管理员进行查看，错误信息：{serializer.errors}')
+            UiPageStepsResultCRUD.inside_post(page_steps_result.dict())
             cls.update_step(page_steps_result)
             for element_result in page_steps_result.element_result_list:
-                # 保存元素测试结果
-                serializer = UiEleResultSerializers(data=element_result.dict())
-                if serializer.is_valid():
-                    serializer.save()
-                else:
-                    log.error(f'增加元素结果，请联系管理员进行查看，错误信息：{serializer.errors}')
+                UiEleResultCRUD.inside_post(element_result.dict())
 
-        case_result_serializer = UiCaseResultSerializers(data=data.dict())
-        if case_result_serializer.is_valid():
-            case_result_serializer.save()
-        else:
-            log.error(f'增加用例结果，请联系管理员进行查看，错误信息：{case_result_serializer.errors}')
+        UiCaseResultCRUD.inside_post(data.dict())
+        cls.update_test_suite(data.test_suite_id)
 
     @classmethod
     def update_step(cls, step_data: PageStepsResultModel):
@@ -81,3 +61,37 @@ class TestReportWriting:
         page_step = UiPageSteps.objects.get(id=step_data.page_step_id)
         page_step.type = step_data.status
         page_step.save()
+
+    @classmethod
+    def update_test_suite(cls, test_suite_id: int):
+        test_suite_obj = TestSuiteReport.objects.get(id=test_suite_id)
+        case_id_status = UiCaseResult \
+            .objects \
+            .filter(test_suite_id=test_suite_id) \
+            .values_list('case_id', 'status', 'error_message')
+        case_id_list = []
+        status_list = []
+        error_message_list = []
+        for case_id, status, error_message in case_id_status:
+            case_id_list.append(case_id)
+            status_list.append(status)
+            error_message_list.append(error_message)
+        if set(test_suite_obj.case_list) == set(case_id_list):
+            test_suite_obj.run_status = StatusEnum.SUCCESS.value
+            if StatusEnum.FAIL.value in status_list:
+                test_suite_obj.status = StatusEnum.FAIL.value
+                code = 300
+                msg = f'测试套：{test_suite_id}执行完成，测试结果全部成功，请前往测试报告查询！'
+            else:
+                code = 200
+                msg = f'测试套：{test_suite_id}执行完成，测试结果全部成功，请前往测试报告查询！'
+                test_suite_obj.status = StatusEnum.SUCCESS.value
+            test_suite_obj.error_message = json.dumps(error_message_list, ensure_ascii=False)
+            test_suite_obj.save()
+            from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
+            ChatConsumer.active_send(SocketDataModel(
+                code=code,
+                msg=msg,
+                user=test_suite_obj.user.username,
+                is_notice=ClientTypeEnum.WEB.value,
+            ))

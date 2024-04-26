@@ -15,7 +15,6 @@ class UiSocketEnum(Enum):
     """ UI自动化接口 """
     PAGE_STEPS = 'u_page_steps'  # 步骤详情
     CASE_RESULT = 'u_case_result'  #
-    CASE_BATCH_RESULT = 'u_case_batch_result'
 
 
 class ToolsSocketEnum(Enum):

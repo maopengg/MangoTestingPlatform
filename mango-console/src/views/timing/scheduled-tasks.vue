@@ -86,11 +86,14 @@
                 <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
                   {{ record.timing_strategy?.name }}
                 </template>
-                <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
-                  {{ record.executor_name?.nickname }}
+                <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+                  {{ record.case_people?.nickname }}
                 </template>
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj?.name }}
+                </template>
+                <template v-else-if="item.key === 'case_executor'" #cell="{ record }">
+                  {{ record.case_executor }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
@@ -161,9 +164,6 @@
               <template v-else-if="item.type === 'input' && item.key === 'name'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'input' && item.key === 'parallel_number'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
-              </template>
 
               <template v-else-if="item.type === 'select' && item.key === 'timing_strategy'">
                 <a-select
@@ -187,7 +187,7 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
+              <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -208,6 +208,18 @@
                   allow-clear
                   allow-search
                 />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'case_executor'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  multiple
+                  :scrollbar="true"
+                >
+                  <a-option v-for="user of scheduledTasksData.userList" :key="user.key">{{
+                    user.title
+                  }}</a-option>
+                </a-select>
               </template>
             </a-form-item>
           </a-form>
@@ -352,10 +364,10 @@
       },
     },
     {
-      label: '定时器',
-      key: 'executor_name',
+      label: '负责人',
+      key: 'case_people',
       value: '',
-      placeholder: '请选择绑定执行的定时器',
+      placeholder: '请选择定时任务负责人',
       required: true,
       type: 'select',
       validator: function () {
@@ -367,22 +379,21 @@
       },
     },
     {
-      label: '用例并行数',
-      key: 'parallel_number',
+      label: '执行器',
+      key: 'case_executor',
       value: '',
-      placeholder: '请输入用例并行数，建议不超过10',
-      required: false,
-      type: 'input',
+      placeholder: '请选择定执行器',
+      required: true,
+      type: 'select',
       validator: function () {
-        if (this.value) {
-          if (/^\d+$/.test(this.value) && parseInt(this.value) > 0) {
-            return true // 返回true表示该字符串是正整数类型且大于0
-          } else {
-            Message.error('用例并行数建议请输入1-10的正整数')
-            return false // 返回false表示该字符串不是正整数类型或者小于等于0
-          }
+        if (this.value.length === 0) {
+          Message.error(this.placeholder || '')
+          return false
         }
-        return true // 返回true表示该字符串是正整数类型且大于0
+        this.value = this.value.filter(
+          (item: any) => item !== null && item !== undefined && item !== ''
+        )
+        return true
       },
     },
   ])
@@ -413,15 +424,16 @@
       align: 'left',
     },
     {
-      title: '执行器',
-      key: 'executor_name',
-      dataIndex: 'executor_name',
+      title: '负责人',
+      key: 'case_people',
+      dataIndex: 'case_people',
       align: 'left',
     },
     {
-      title: '用例并行数',
-      key: 'parallel_number',
-      dataIndex: 'parallel_number',
+      title: '执行器',
+      key: 'case_executor',
+      dataIndex: 'case_executor',
+      align: 'left',
     },
     {
       title: '任务状态',
@@ -429,7 +441,7 @@
       dataIndex: 'status',
     },
     {
-      title: '是否开启通知',
+      title: '通知',
       key: 'is_notice',
       dataIndex: 'is_notice',
     },
@@ -528,8 +540,10 @@
         if (typeof propName === 'object' && propName !== null) {
           if (propName.name) {
             it.value = propName.id
-          } else {
+          } else if (propName.id) {
             it.value = propName.id
+          } else {
+            it.value = propName
           }
         } else {
           it.value = propName

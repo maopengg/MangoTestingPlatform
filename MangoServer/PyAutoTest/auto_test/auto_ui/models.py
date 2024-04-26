@@ -163,7 +163,6 @@ class UiCaseResult(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
-    is_batch = models.SmallIntegerField(verbose_name="是否是批量", null=True)
     case_id = models.IntegerField(verbose_name="用例ID", null=True)
     case_name = models.CharField(verbose_name="用例名称", max_length=64, null=True)
     module_name = models.CharField(verbose_name="模块名称", max_length=64, null=True)

@@ -69,11 +69,13 @@ class UiCaseViews(ViewSet):
         @return:
         """
         try:
-            case_json = UiTestRun(request.user['id'], request.GET.get("testing_environment")).case(
-                case_id=int(request.GET.get("case_id")))
+            UiTestRun(
+                request.user['id'],
+                request.GET.get("testing_environment")
+            ).case_batch([int(request.GET.get("case_id"))])
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
-        return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
+        return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
     def ui_batch_run(self, request: Request):
@@ -83,11 +85,13 @@ class UiCaseViews(ViewSet):
         @return:
         """
         try:
-            case_json = UiTestRun(request.user['id'], request.GET.get("testing_environment")).case_batch(
-                case_id_list=eval(request.GET.get("case_id_list")))
+             UiTestRun(
+                 request.user['id'],
+                 request.GET.get("testing_environment")
+             ).case_batch(case_id_list=eval(request.GET.get("case_id_list")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
-        return ResponseData.success(RESPONSE_MSG_0074, case_json, value=(ClientNameEnum.DRIVER.value,))
+        return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)
     def cody_case(self, request: Request):
