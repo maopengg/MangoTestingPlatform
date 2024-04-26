@@ -91,37 +91,37 @@ def ad_routes():
                 },
             ],
         },
-        # {
-        #     "menuUrl": "/data_producer",
-        #     "menuName": "性能自动化",
-        #     "icon": "IconMinus",
-        #     "parentPath": "",
-        #     "children": [
-        #         {
-        #             "parentPath": "/data_producer",
-        #             "menuUrl": "/data_producer/prepare",
-        #             "menuName": "接口准备",
-        #         },
-        #         {
-        #             "parentPath": "/data_producer",
-        #             "menuUrl": "/data_producer/report",
-        #             "menuName": "测试报告",
-        #         },
-        #     ],
-        # },
-        # {
-        #     "menuUrl": "/equipment",
-        #     "menuName": "设备中心",
-        #     "icon": "IconMobile",
-        #     "parentPath": "",
-        #     "children": [
-        #         {
-        #             "parentPath": "/equipment",
-        #             "menuUrl": "/equipment/actuator",
-        #             "menuName": "执行器",
-        #         }
-        #     ],
-        # },
+        {
+            "menuUrl": "/perf",
+            "menuName": "性能自动化",
+            "icon": "IconMinus",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/perf",
+                    "menuUrl": "/perf/prepare",
+                    "menuName": "接口准备",
+                },
+                {
+                    "parentPath": "/perf",
+                    "menuUrl": "/perf/report",
+                    "menuName": "测试报告",
+                },
+            ],
+        },
+        {
+            "menuUrl": "/equipment",
+            "menuName": "设备中心",
+            "icon": "IconMobile",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/equipment",
+                    "menuUrl": "/equipment/actuator",
+                    "menuName": "执行器",
+                }
+            ],
+        },
         {
             "menuUrl": "/config",
             "menuName": "测试配置",
