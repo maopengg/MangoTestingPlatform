@@ -1,96 +1,98 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: MangoActuator
 # @Description: 
-# @Time   : 2024-02-04 11:16
+# @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
-import asyncio
-import json
-import traceback
 
-from autotest.ui.base_tools.driver_object import DriverObject
-from autotest.ui.service.steps import Steps
+import asyncio
+
+from autotest.ui.service.steps import StepsMain
 from enums.socket_api_enum import UiSocketEnum
-from enums.tools_enum import StatusEnum, ClientTypeEnum, CacheKeyEnum
-from enums.ui_enum import DriveTypeEnum
+from enums.tools_enum import ClientTypeEnum
+from enums.tools_enum import StatusEnum
 from exceptions import MangoActuatorError
-from models.socket_model.ui_model import CaseModel, TestSuiteModel
+from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
 from service.socket_client import ClientWebSocket
-from tools.data_processor.sql_cache import SqlCache
+from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 
-class Cases(DriverObject):
+class CasesMain(StepsMain):
 
-    def __init__(self, test_suite_model: TestSuiteModel):
-        super().__init__()
-        self.test_suite_model = test_suite_model
-        self.msg = []
-        self.status = []
+    def __init__(self, case_model: CaseModel):
+        super().__init__(case_model.project)
+        self.case_model: CaseModel = case_model
+        self.case_id = case_model.id
+        self.test_suite_id = self.case_model.test_suite_id
+        self.case_result = CaseResultModel(test_suite_id=self.case_model.test_suite_id,
+                                           case_id=self.case_model.id,
+                                           case_name=self.case_model.name,
+                                           module_name=self.case_model.module_name,
+                                           case_people=self.case_model.case_people,
+                                           error_message=None,
+                                           test_obj=self.test_object_value,
+                                           status=StatusEnum.SUCCESS.value,
+                                           page_steps_result_list=[])
 
-    async def case_distribute(self):
-        # 创建一个Semaphore来限制并发数
-        test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
-        if self.test_suite_model.concurrent:
-            semaphore = asyncio.Semaphore(self.test_suite_model.concurrent)
-        elif test_case_parallelism:
-            semaphore = asyncio.Semaphore(int(test_case_parallelism))
-        else:
-            semaphore = asyncio.Semaphore(10)
+    async def __aenter__(self):
+        return self
 
-        async def run_with_semaphore(case):
-            try:
-                async with semaphore:
-                    # 在这里执行你的run方法
-                    return await self.run(case)
-            except Exception as error:
-                # 处理异常，例如打印日志或者进行其他操作
-                traceback.print_exc()  # 打印异常追踪信息
-                log.error(f"任务 {case.id} 出现异常：{error}")
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.base_close()
 
-        # 创建所有任务，但是受到semaphore的限制
-        tasks = [run_with_semaphore(case) for case in self.test_suite_model.case_list]
-
-        # 并发运行所有任务并等待它们完成
-        await asyncio.gather(*tasks)
-
-        del self.test_suite_model.case_list
-        if StatusEnum.SUCCESS.value in self.status or any(status != 200 for status in self.status):
-            self.test_suite_model.status = StatusEnum.FAIL.value
-            self.test_suite_model.error_message = json.dumps(self.msg, ensure_ascii=False)
-        else:
-            self.test_suite_model.status = StatusEnum.SUCCESS.value
-        self.test_suite_model.run_status = StatusEnum.SUCCESS.value
-        msg = f'编号：{self.test_suite_model.id}的批次用例执行完成，请前往测试报告查看' if self.test_suite_model.status else f'编号：{self.test_suite_model.id}的批次用例包含失败，请前往首页查看'
-        await ClientWebSocket.async_send(
-            code=200 if self.test_suite_model.status else 300,
-            msg=msg,
-            is_notice=ClientTypeEnum.WEB.value,
-            func_name=UiSocketEnum.CASE_BATCH_RESULT.value,
-            func_args=self.test_suite_model
-        )
-
-    async def run(self, case_model: CaseModel):
+    async def case_page_step(self) -> None:
+        SignalSend.notice_signal_c(f'正在准备执行用例：{self.case_model.name}')
         try:
-            async with Steps(self.test_suite_model.project, test_suite_id=self.test_suite_model.id) as obj:
-                for step in case_model.case_list:
-                    match step.type:
-                        case DriveTypeEnum.WEB.value:
-                            self.web_config = step.equipment_config
-                            obj.context, obj.page = await self.new_web_page()
-                            break
-                        case DriveTypeEnum.ANDROID.value:
-                            self.android_config = step.equipment_config
-                            obj.android = self.new_android()
-                            break
-                        case DriveTypeEnum.IOS.value:
-                            pass
-                        case DriveTypeEnum.DESKTOP.value:
-                            pass
-                        case _:
-                            log.error('自动化类型不存在，请联系管理员检查！')
-                await obj.case_setup(case_model)
-                self.msg.append(obj.case_result.error_message)
-                self.status.append(obj.case_result.status)
+            if self.case_model.run_config:
+                await self.public_front(self.case_model.run_config)
+            await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
+            for page_step_model in self.case_model.steps:
+                try:
+                    page_steps_result_model = await self.case_steps_distribute(page_step_model)
+                    self.case_result.page_steps_result_list.append(page_steps_result_model)
+                    self.case_result.test_obj = self.test_object_value
+                except MangoActuatorError as error:
+                    self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
+                    self.case_result.status = StatusEnum.FAIL.value
+                    log.error(error.msg)
+                    break
+                else:
+                    if page_steps_result_model.status:
+                        await asyncio.sleep(0.5)
+                    else:
+                        self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{page_steps_result_model.error_message}'
+                        self.case_result.status = StatusEnum.FAIL.value
+                        log.error(page_steps_result_model.error_message)
+                        break
+            await self.case_posterior(self.case_model.posterior_sql)
         except MangoActuatorError as error:
-            self.msg.append(error.msg)
-            self.status.append(error.code)
+            self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
+            self.case_result.status = StatusEnum.FAIL.value
+        except Exception as error:
+            log.error(str(error))
+            await ClientWebSocket.async_send(code=300,
+                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
+                                             is_notice=ClientTypeEnum.WEB.value)
+        else:
+            msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
+            await ClientWebSocket.async_send(
+                code=200 if self.case_result.status else 300,
+                msg=msg,
+                is_notice=ClientTypeEnum.WEB.value,
+                func_name=UiSocketEnum.CASE_RESULT.value,
+                func_args=self.case_result)
+        SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
+
+    async def case_steps_distribute(self, page_step_model: PageStepsModel) -> PageStepsResultModel:
+        """
+        分发用例方法，根据用例对象，来发给不同的对象来执行用例
+        @return:
+        """
+        await self.steps_setup(page_step_model)
+        await self.driver_init()
+        return await self.steps_main()
+
+
+if __name__ == '__main__':
+    list__ = '["213","43132]'
+    print(eval(list__))

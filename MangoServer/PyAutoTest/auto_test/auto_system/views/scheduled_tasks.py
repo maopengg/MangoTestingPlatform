@@ -33,7 +33,7 @@ class ScheduledTasksSerializersC(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
-    executor_name = UserSerializers(read_only=True)
+    case_people = UserSerializers(read_only=True)
 
     class Meta:
         model = ScheduledTasks
@@ -44,7 +44,7 @@ class ScheduledTasksSerializersC(serializers.ModelSerializer):
         queryset = queryset.select_related(
             'test_obj',
             'timing_strategy',
-            'executor_name')
+            'case_people')
         return queryset
 
 

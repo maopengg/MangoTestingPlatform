@@ -1,102 +1,144 @@
 # -*- coding: utf-8 -*-
 # @Project: MangoActuator
 # @Description: 
-# @Time   : 2023/5/4 14:33
+# @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 
-import asyncio
+from urllib.parse import urljoin
 
-from autotest.ui.service.elements import Elements
-from enums.socket_api_enum import UiSocketEnum
-from enums.tools_enum import ClientTypeEnum
+from playwright._impl._api_types import Error
+
+from autotest.ui.base_tools import ElementMain
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
-from service.socket_client import ClientWebSocket
+from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
+from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
+from tools import InitPath
+from tools.data_processor import RandomTimeData
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
+from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 
 
-class Steps(Elements):
-    case_model: CaseModel = None
-    case_result: CaseResultModel = None
+class StepsMain(ElementMain):
+    page_step_model: PageStepsModel = None
+    page_step_result_model: PageStepsResultModel = None
 
-    async def __aenter__(self):
-        return self
+    async def steps_setup(self, page_step_model: PageStepsModel):
+        self.page_step_model = page_step_model
+        self.page_step_result_model = PageStepsResultModel(
+            test_suite_id=self.test_suite_id,
+            case_id=self.case_id,
+            case_step_details_id=self.page_step_model.case_step_details_id,
+            page_step_id=page_step_model.id,
+            page_step_name=page_step_model.name,
+            status=StatusEnum.SUCCESS.value,
+            element_result_list=[],
+            error_message=None)
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.base_close()
+        self.page_step_id = page_step_model.id
+        self.case_step_details_id = page_step_model.case_step_details_id
 
-    async def case_setup(self, case_model: CaseModel):
-        self.case_model: CaseModel = case_model
-        self.is_step = self.case_model.is_batch
-        self.case_id = case_model.id
-        self.case_result = CaseResultModel(test_suite_id=self.test_suite_id,
-                                           is_batch=self.case_model.is_batch,
-                                           case_id=self.case_model.id,
-                                           case_name=self.case_model.name,
-                                           module_name=self.case_model.module_name,
-                                           case_people=self.case_model.case_people,
-                                           error_message=None,
-                                           test_obj=self.test_object_value,
-                                           status=StatusEnum.SUCCESS.value,
-                                           page_steps_result_list=[])
-        await self.case_page_step()
-
-    async def case_page_step(self) -> None:
-        SignalSend.notice_signal_c(f'正在准备执行用例：{self.case_model.name}')
-        try:
-            if self.case_model.run_config:
-                await self.public_front(self.case_model.run_config)
-            await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
-            for page_step_model in self.case_model.case_list:
-                try:
-                    page_steps_result_model = await self.case_steps_distribute(page_step_model)
-                    self.case_result.page_steps_result_list.append(page_steps_result_model)
-                    self.case_result.test_obj = self.test_object_value
-                except MangoActuatorError as error:
-                    self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
-                    self.case_result.status = StatusEnum.FAIL.value
-                    log.error(error.msg)
-                    break
+    async def steps_main(self) -> PageStepsResultModel:
+        SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
+        for element_model in self.page_step_model.element_list:
+            element_data = None
+            if not self.is_step:
+                for _element_data in self.page_step_model.case_data:
+                    if _element_data.page_step_details_id == element_model.id:
+                        element_data = _element_data.page_step_details_data
+                if element_data is None:
+                    raise UiCacheDataIsNullError(*ERROR_MSG_0025)
+            # 执行用例
+            try:
+                await self.element_setup(element_model, element_data, self.page_step_model.type)
+                await self.element_main()
+            except MangoActuatorError as error:
+                await self.__error(error)
+                return self.page_step_result_model
+            except Error as error:
+                if error.message == "Target page, context or browser has been closed":
+                    self.element_test_result.error_message = error.message
+                    self.page_step_result_model.status = StatusEnum.FAIL.value
+                    self.page_step_result_model.error_message = error.message
+                    self.page_step_result_model.element_result_list.append(self.element_test_result)
+                    raise BrowserObjectClosed(*ERROR_MSG_0010)
                 else:
-                    if page_steps_result_model.status:
-                        await asyncio.sleep(0.5)
-                    else:
-                        self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{page_steps_result_model.error_message}'
-                        self.case_result.status = StatusEnum.FAIL.value
-                        log.error(page_steps_result_model.error_message)
-                        break
-            await self.case_posterior(self.case_model.posterior_sql)
-        except MangoActuatorError as error:
-            self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
-            self.case_result.status = StatusEnum.FAIL.value
-        except Exception as error:
-            log.error(str(error))
-            await ClientWebSocket.async_send(code=300,
-                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
-                                             is_notice=ClientTypeEnum.WEB.value)
-        else:
-            msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
-            await ClientWebSocket.async_send(
-                code=200 if self.case_result.status else 300,
-                msg=msg,
-                is_notice=ClientTypeEnum.WEB.value,
-                func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result)
-        SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
+                    raise error
+            else:
+                self.element_test_result.status = StatusEnum.SUCCESS.value
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+        SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
+        return self.page_step_result_model
 
-    async def case_steps_distribute(self, page_step_model: PageStepsModel) -> PageStepsResultModel:
-        """
-        分发用例方法，根据用例对象，来发给不同的对象来执行用例
-        @return:
-        """
-        await self.steps_setup(page_step_model)
-        await self.driver_init()
-        return await self.steps_main()
+    async def __error(self, error: MangoActuatorError):
+        log.error(
+            f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
+        path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
+        SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
+                                       元素表达式：{self.element_test_result.loc}
+                                       操作类型：{self.element_test_result.ope_type}
+                                       操作值：{self.element_test_result.ope_value}
+                                       断言类型：{self.element_test_result.ass_type}
+                                       断言值：{self.element_test_result.ass_value}
+                                       元素个数：{self.element_test_result.ele_quantity}
+                                       截图路径：{path}
+                                       元素失败提示：{error.msg}''')
+        # try:
+        match self.page_step_model.type:
+            case DriveTypeEnum.WEB.value:
+                await self.w_screenshot(path)
+            case DriveTypeEnum.ANDROID.value:
+                pass
+            case DriveTypeEnum.IOS.value:
+                pass
+            case DriveTypeEnum.DESKTOP.value:
+                pass
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
+        self.element_test_result.error_message = error.msg
+        self.element_test_result.picture_path = path
+        self.page_step_result_model.status = StatusEnum.FAIL.value
+        self.page_step_result_model.error_message = error.msg
+        self.page_step_result_model.element_result_list.append(self.element_test_result)
+        # except Exception as error:
+        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
+        #     raise ScreenshotError(*ERROR_MSG_0040)
 
+    async def driver_init(self):
+        match self.page_step_model.type:
+            case DriveTypeEnum.WEB.value:
+                await self.web_init()
+            case DriveTypeEnum.ANDROID.value:
+                self.android_init()
+            case DriveTypeEnum.IOS.value:
+                pass
+            case DriveTypeEnum.DESKTOP.value:
+                pass
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
 
-if __name__ == '__main__':
-    list__ = '["213","43132]'
-    print(eval(list__))
+    async def web_init(self):
+        self.test_object_value = urljoin(self.page_step_model.test_object_value, self.page_step_model.url)
+
+        try:
+            if self.page and not self.is_url:
+                await self.w_goto(self.test_object_value)
+                self.is_url = True
+        except Error as error:
+            if error.message == "Target page, context or browser has been closed":
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
+
+    def android_init(self):
+        self.test_object_value = self.page_step_model.test_object_value
+        self.a_start_app(self.test_object_value)
+
+    def ios_init(self, ):
+        pass
+
+    def desktop_init(self, ):
+        pass

@@ -20,11 +20,11 @@ from PyAutoTest.tools.view.error_msg import *
 
 class ApiTestRun(ApiDataHandle, TestResult):
 
-    def __init__(self, project_id: int, test_obj_id: int, case_sort: int = None, is_notice: bool = False):
+    def __init__(self, project_id: int, test_obj_id: int, case_sort: int = None, is_notice: int = 0):
         ApiDataHandle.__init__(self, project_id, test_obj_id)
         TestResult.__init__(self, project_id, test_obj_id)
         self.case_sort = case_sort
-        self.is_notice = is_notice
+        self.is_notice = bool(is_notice)
 
     def run_one_case(self, case_id: int) -> dict:
         api_case_obj = ApiCase.objects.get(id=case_id)

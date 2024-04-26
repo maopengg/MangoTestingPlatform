@@ -6,14 +6,14 @@
 import ctypes
 import os
 import string
-import time
 from urllib import parse
 
+import uiautomator2 as us
+from adbutils import AdbTimeout
 from playwright._impl._api_types import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
-import uiautomator2 as us
 
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
@@ -27,7 +27,7 @@ from service.socket_client import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0045
+from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
 
 """
 python -m uiautomator2 init
@@ -43,7 +43,7 @@ class DriverObject:
         self.web_config = web_config
         self.browser_path = ['chrome.exe', 'msedge.exe', 'firefox.exe', '苹果', '360se.exe']
         self.android_config = android_config
-        
+
     async def new_web_page(self) -> tuple[BrowserContext, Page]:
         if self.web_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
@@ -63,10 +63,14 @@ class DriverObject:
         try:
             SignalSend.notice_signal_c(f"设备启动成功！产品名称：{android.info.get('productName')}")
         except RuntimeError:
-            SignalSend.notice_signal_c(f"设备启动超时！请检查设备是否已成功连接电脑，设备号：{self.android_config.equipment}")
-            raise NewObjectError(*ERROR_MSG_0045, value=(self.android_config.equipment, ))
-        android.implicitly_wait(10)
-        return android
+            SignalSend.notice_signal_c(ERROR_MSG_0045[1].format(self.android_config.equipment))
+            raise NewObjectError(*ERROR_MSG_0045, value=(self.android_config.equipment,))
+        except (AdbTimeout, TimeoutError):
+            SignalSend.notice_signal_c(ERROR_MSG_0047[1].format(self.android_config.equipment))
+            raise NewObjectError(*ERROR_MSG_0047, value=(self.android_config.equipment,))
+        else:
+            android.implicitly_wait(10)
+            return android
 
     async def new_browser(self) -> Browser:
         SignalSend.notice_signal_c('正在启动浏览器')

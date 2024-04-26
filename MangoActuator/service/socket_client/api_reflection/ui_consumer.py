@@ -3,14 +3,22 @@
 # @Description: 
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
-
+from autotest.ui.service.case_run import CaseRun
 from autotest.ui.service.page_steps import PageSteps
-from autotest.ui.service.cases import Cases
-from models.socket_model.ui_model import PageStepsModel, TestSuiteModel, WEBConfigModel
+from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
+from exceptions import MangoActuatorError
+from models.socket_model.ui_model import PageStepsModel, WEBConfigModel, CaseModel
+from service.socket_client import ClientWebSocket
+from settings.settings import GLOBAL_EXCEPTION_CAPTURE
+from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.convert_args import convert_args
+from tools.desktop.signal_send import SignalSend
+from tools.log_collector import log
 
 
 class UIConsumer:
+    page_steps: PageSteps = None
+    case_run: CaseRun = None
 
     @classmethod
     @convert_args(PageStepsModel)
@@ -20,7 +28,24 @@ class UIConsumer:
         @param data:
         @return:
         """
-        await PageSteps(data.project).debug_case_distribution(data)
+        try:
+            if cls.page_steps is None:
+                cls.page_steps = PageSteps(data.project)
+            await cls.page_steps.page_steps_setup(data)
+            await cls.page_steps.page_steps_mian()
+        except MangoActuatorError as error:
+            await ClientWebSocket.async_send(code=error.code,
+                                             msg=error.msg,
+                                             is_notice=ClientTypeEnum.WEB.value)
+        except Exception as error:
+            if GLOBAL_EXCEPTION_CAPTURE:
+                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
+                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
+                await ClientWebSocket.async_send(code=300,
+                                                 msg="执行UI步骤时，发送未知异常！请联系管理员",
+                                                 is_notice=ClientTypeEnum.WEB.value)
+            else:
+                raise error
 
     @classmethod
     @convert_args(WEBConfigModel)
@@ -30,14 +55,43 @@ class UIConsumer:
         @param data:
         @return:
         """
-        await PageSteps(data.project).new_web_obj(data)
+        try:
+            if cls.page_steps is None:
+                cls.page_steps = PageSteps(data.project)
+            await cls.page_steps.new_web_obj(data)
+        except Exception as error:
+            if GLOBAL_EXCEPTION_CAPTURE:
+                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
+                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
+                await ClientWebSocket.async_send(code=300,
+                                                 msg="实例化浏览器对象时，发送未知异常！请联系管理员",
+                                                 is_notice=ClientTypeEnum.WEB.value)
+            else:
+                raise error
 
     @classmethod
-    @convert_args(TestSuiteModel)
-    async def u_case_batch(cls, data: TestSuiteModel):
+    @convert_args(CaseModel)
+    async def u_case(cls, data: CaseModel):
         """
         执行测试用例
         @param data:
         @return:
         """
-        await Cases(data).case_distribute()
+        try:
+            if cls.case_run is None:
+                max_tasks = 2
+                test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
+                if test_case_parallelism:
+                    max_tasks = int(test_case_parallelism)
+                cls.case_run = CaseRun(max_tasks)
+            await cls.case_run.queue.put(data)
+        except Exception as error:
+            if GLOBAL_EXCEPTION_CAPTURE:
+                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
+                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
+                await ClientWebSocket.async_send(code=300,
+                                                 msg="实例化浏览器对象时，发送未知异常！请联系管理员",
+                                                 is_notice=ClientTypeEnum.WEB.value)
+            else:
+                raise error
+

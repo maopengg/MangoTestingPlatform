@@ -8,14 +8,15 @@ from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
 from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
-from PyAutoTest.auto_test.auto_system.service.update_test_suite import TestSuiteReportUpdate
+from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
+from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
     UiElement, UiConfig, UiPage
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
-from PyAutoTest.exceptions.tools_exception import DoesNotExistError
+from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
@@ -28,10 +29,10 @@ class UiTestRun:
     def __init__(self,
                  user_id: int,
                  test_obj_id: int,
+                 case_executor: list | None = None,
                  tasks_id: int = None,
-                 is_notice: bool = False,
+                 is_notice: int = 0,
                  spare_test_object_id: int = None,
-                 concurrent: int = None
                  ):
         self.user_obj = User.objects.get(id=user_id)
         self.test_object = TestObject.objects.get(id=test_obj_id)
@@ -40,38 +41,66 @@ class UiTestRun:
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.spare_test_object_id = spare_test_object_id
-        self.concurrent = concurrent
+        self.case_executor = case_executor
+        if self.case_executor:
+            username_list = []
+            for nickname in self.case_executor:
+                user_obj = User.objects.get(nickname=nickname)
+                try:
+                    SocketUser.get_user_client_obj(user_obj.username)
+                except SocketClientNotPresentError as error:
+                    self.error = error
+                else:
+                    username_list.append(user_obj.username)
+            if username_list:
+                self.case_executor = username_list
+            else:
+                raise self.error
 
-    def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
-        """
-        收集步骤数据
-        @param steps_id: 步骤id
-        @param is_send: 是否选择发送
-        @return:
-        """
-        case_model = self.__data_ui_case(steps_id)
-        if is_send:
-            self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=case_model)
-        return case_model
+    def case_batch(self, case_id_list: list) -> None:
+        test_suite_id = Snowflake.generate_id()
+        TestSuiteReportCRUD.inside_post({
+            'id': test_suite_id,
+            'type': AutoTestTypeEnum.UI.value,
+            'project': self.test_object.project.id,
+            'test_object': self.test_object_id,
+            'error_message': None,
+            'run_status': StatusEnum.FAIL.value,
+            'status': None,
+            'case_list': case_id_list,
+            'is_notice': self.is_notice,
+            'user': self.user_id
+        })
+        if self.case_executor:
+            max_len = max(len(case_id_list), len(self.case_executor))
+            for i in range(max_len):
+                case_id = case_id_list[i % len(case_id_list)]
+                username = self.case_executor[i % len(self.case_executor)]
+                case_model = self.send_case(case_id, test_suite_id)
+                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                   case_model=case_model,
+                                   username=username)
+        else:
+            for case_id in case_id_list:
+                case_model = self.send_case(case_id, test_suite_id)
+                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                   case_model=case_model)
 
-    def case(self, case_id: int, is_send: bool = True, is_batch: bool = False) -> CaseModel:
-        """
-        执行一个用例组
-        @param case_id: 用例ID
-        @param is_send: 是否发送
-        @param is_batch: 是否是批量发送
-        @return:
-        """
+    def send_case(self, case_id: int, test_suite_id) -> CaseModel:
         if self.tasks_id:
             tasks_run_case = TasksRunCaseList.objects.get(task=self.tasks_id, case=case_id)
-            self.test_object_id = tasks_run_case.test_object.id if tasks_run_case.test_object else \
+            self.test_object_id = tasks_run_case \
+                .test_object \
+                .id if tasks_run_case \
+                .test_object else \
                 self.spare_test_object_id
+
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-        case_model = CaseModel(
+        return CaseModel(
+            test_suite_id=test_suite_id,
             id=case.id,
             name=case.name,
-            is_batch=StatusEnum.SUCCESS.value if is_batch else StatusEnum.FAIL.value,
             project=case.project.id,
             module_name=case.module_name.name,
             case_people=case.case_people.nickname,
@@ -79,64 +108,59 @@ class UiTestRun:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             run_config=self.__get_run_config(),
-            case_list=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
+            steps=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
         )
+
+    def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
+
+        case_model = self.__data_ui_case(steps_id)
         if is_send:
-            model = TestSuiteModel(id=Snowflake.generate_id(),
-                                   type=AutoTestTypeEnum.UI.value,
-                                   project=case.project.id,
-                                   test_object=self.test_object_id,
-                                   error_message=None,
-                                   run_status=0,
-                                   case_list=[])
-            model.case_list.append(case_model)
-            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                               case_model=model)
-            TestSuiteReportUpdate(model).add_test_suite_report()
+            self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=case_model)
         return case_model
 
-    def case_batch(self, case_id_list: list) -> list[CaseModel]:
-        """
-        批量执行用例组用例
-        @param case_id_list: 用例组的list或int
-        @return:
-        """
-        test_suite_id = Snowflake.generate_id()
-        case_group_list: list[CaseModel] = []
-        for index, case_id in enumerate(case_id_list):
-            is_last = (index == len(case_id_list) - 1)
-            if is_last:
-                case_group_list.append(self.case(case_id=case_id, is_send=False, is_batch=True))
-            else:
-                case_group_list.append(self.case(case_id=case_id, is_send=False))
+    def element(self, data: dict) -> None:
+        try:
+            page_obj = UiPage.objects.get(id=data['page_id'])
+        except UiPage.DoesNotExist as error:
+            raise DoesNotExistError(*ERROR_MSG_0030, error=error)
+        element_obj = UiElement.objects.get(id=data['id'])
+        page_steps_model = PageStepsModel(
+            id=None,
+            name=f'测试元素-{element_obj.name}',
+            case_step_details_id=None,
+            project=data['project_id'],
+            test_object_value=self.test_object.value,
+            url=page_obj.url,
+            type=page_obj.type,
+            equipment_config=self.__get_web_config(
+                self.test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+        )
+        page_steps_model.element_list.append(ElementModel(
+            id=element_obj.id,
+            type=data['type'],
+            ele_name_a=element_obj.name,
+            ele_name_b=None,
+            ele_loc_a=element_obj.loc,
+            locator=element_obj.locator,
+            ele_loc_b=None,
+            ele_exp=element_obj.exp,
+            ele_sleep=element_obj.sleep,
+            ele_sub=element_obj.sub,
+            ope_type=data['ope_type'] if data.get('ope_type') else None,
+            ope_value=data['ope_value'] if data.get('ope_value') else None,
+            ass_type=data['ass_type'] if data.get('ass_type') else None,
+            ass_value=data['ass_value'] if data.get('ass_value') else None,
+            is_iframe=element_obj.is_iframe,
+        ))
+        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=page_steps_model)
 
-        model = TestSuiteModel(id=test_suite_id,
-                               type=AutoTestTypeEnum.UI.value,
-                               project=case_group_list[0].project,
-                               test_object=self.test_object_id,
-                               is_notice=self.is_notice,
-                               error_message=None,
-                               run_status=0,
-                               concurrent=self.concurrent,
-                               case_list=case_group_list)
-        self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                           case_model=model)
-        TestSuiteReportUpdate(model).add_test_suite_report()
+    def __socket_send(self, case_model, func_name: str, username: str = None) -> None:
 
-        return case_group_list
-
-    def __socket_send(self, case_model, func_name: str) -> None:
-        """
-        发送给第三方工具方法
-        @param case_model: 需要发送的json数据
-        @param func_name: 需要执行的函数
-        @return:
-        """
         data = QueueModel(func_name=func_name, func_args=case_model)
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-            user=self.user_obj.username,
+            user=username if username else self.user_obj.username,
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=data,
         ))
@@ -145,11 +169,7 @@ class UiTestRun:
                        page_steps_id: int,
                        case_step_details_id: int | None = None,
                        is_page_step: bool = True) -> PageStepsModel:
-        """
-        根据test对象和步骤ID返回一个步骤测试对象
-        @param page_steps_id: 步骤id
-        @return: 返回一个数据处理好的测试对象
-        """
+
         step = UiPageSteps.objects.get(id=page_steps_id)
         page_steps_model = PageStepsModel(
             id=step.id,
@@ -188,42 +208,6 @@ class UiTestRun:
                 value=i.value
             ))
         return page_steps_model
-
-    def element(self, data: dict) -> None:
-        try:
-            page_obj = UiPage.objects.get(id=data['page_id'])
-        except UiPage.DoesNotExist as error:
-            raise DoesNotExistError(*ERROR_MSG_0030, error=error)
-        element_obj = UiElement.objects.get(id=data['id'])
-        page_steps_model = PageStepsModel(
-            id=None,
-            name=f'测试元素-{element_obj.name}',
-            case_step_details_id=None,
-            project=data['project_id'],
-            test_object_value=self.test_object.value,
-            url=page_obj.url,
-            type=page_obj.type,
-            equipment_config=self.__get_web_config(
-                self.test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-        )
-        page_steps_model.element_list.append(ElementModel(
-            id=element_obj.id,
-            type=data['type'],
-            ele_name_a=element_obj.name,
-            ele_name_b=None,
-            ele_loc_a=element_obj.loc,
-            locator=element_obj.locator,
-            ele_loc_b=None,
-            ele_exp=element_obj.exp,
-            ele_sleep=element_obj.sleep,
-            ele_sub=element_obj.sub,
-            ope_type=data['ope_type'] if data.get('ope_type') else None,
-            ope_value=data['ope_value'] if data.get('ope_value') else None,
-            ass_type=data['ass_type'] if data.get('ass_type') else None,
-            ass_value=data['ass_value'] if data.get('ass_value') else None,
-            is_iframe=element_obj.is_iframe,
-        ))
-        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=page_steps_model)
 
     def __get_web_config(self, host: str) -> WEBConfigModel:
         try:

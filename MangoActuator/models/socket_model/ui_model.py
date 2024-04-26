@@ -84,13 +84,13 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
+    test_suite_id: int
     id: int
     project: int
     module_name: str
     name: str
-    is_batch: int
     case_people: str
-    case_list: list[PageStepsModel]
+    steps: list[PageStepsModel]
     front_custom: list
     front_sql: list
     posterior_sql: list
@@ -138,8 +138,6 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
-
-    is_batch: int
     case_name: str
     module_name: str
     case_people: str
@@ -147,16 +145,3 @@ class CaseResultModel(BaseModel):
     status: int
     error_message: str | None
     page_steps_result_list: list[PageStepsResultModel]
-
-
-class TestSuiteModel(BaseModel):
-    id: int
-    type: int
-    project: int
-    test_object: int
-    run_status: int
-    is_notice: int | None
-    status: int | None
-    error_message: str | None
-    case_list: list[CaseModel] | None = None
-    concurrent: int | None = None

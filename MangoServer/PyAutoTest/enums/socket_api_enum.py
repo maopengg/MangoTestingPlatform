@@ -13,7 +13,7 @@ class ApiSocketEnum(Enum):
 
 class UiSocketEnum(Enum):
     PAGE_STEPS = 'u_page_step'
-    CASE_BATCH = 'u_case_batch'
+    CASE_BATCH = 'u_case'
     NEW_PAGE_OBJ = 'u_page_new_obj'
 
 

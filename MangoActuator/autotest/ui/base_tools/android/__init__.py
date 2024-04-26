@@ -54,6 +54,8 @@ class AndroidDriver(UiautomatorEquipment,
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+        except Exception as error:
+            print(error)
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']

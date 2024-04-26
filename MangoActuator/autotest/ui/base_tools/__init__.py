@@ -16,7 +16,7 @@ from tools.desktop.signal_send import SignalSend
 from tools.message.error_msg import *
 
 
-class DriveSet(WebDevice, AndroidDriver):
+class ElementMain(WebDevice, AndroidDriver):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
     element_data: dict = None
