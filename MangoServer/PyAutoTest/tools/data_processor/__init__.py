@@ -139,13 +139,3 @@ class DataProcessor(ObtainRandomData, DataClean):
     @classmethod
     def is_extract(cls, string: str) -> bool:
         return True if re.search(r'\$\{.*\}', string) else False
-
-
-if __name__ == '__main__':
-    r = DataProcessor()
-    r.set_cache('文档ID', 'maopeng')
-    r.set_cache('新建知识库ID', 'maopeng2')
-    data1 = {'code': '${文档ID}', 'mode': 'none', 'uuid': '21cfcf8feaf84ed4a831c80662227d8c', 'scope': 'service',
-             'password': '${文档ID}', 'userName': '${文档ID}', 'grant_type': 'password', 'account_type': 'admin',
-             'enterpriseName': '${文档ID}'}
-    print(r.replace(data1))
