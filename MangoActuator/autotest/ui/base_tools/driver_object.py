@@ -15,6 +15,7 @@ from playwright.async_api import async_playwright, Page, BrowserContext, Browser
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
+import service
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
 from enums.tools_enum import CacheKeyEnum, StatusEnum
@@ -166,6 +167,7 @@ class DriverObject:
         try:
             api_info = ApiInfoModel(
                 project=self.web_config.project,
+                username=service.USERNAME,
                 type=ApiTypeEnum.batch.value,
                 name=parsed_url.path,
                 client=ClientEnum.WEB.value,
@@ -177,11 +179,8 @@ class DriverObject:
             )
             await ClientWebSocket.async_send(msg="发送录制接口", func_name=ApiSocketEnum.RECORDING_API.value,
                                              func_args=api_info)
-        except Exception as e:
-            log.info(f'json_data:{json_data}\t'
-                     f'data:{data}\t'
-                     f'params:{params}\t'
-                     f'报错信息：{e}\t')
+        except Exception as error:
+            log.error(error)
 
 
 async def test_main():

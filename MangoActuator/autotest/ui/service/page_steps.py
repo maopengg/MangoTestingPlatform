@@ -19,6 +19,7 @@ class PageSteps(StepsMain, DriverObject):
 
     def __init__(self, project_id: int):
         super().__init__(project_id, )
+        DriverObject.__init__(self, )
         self.project_id = project_id
         self.msg = ''
         self.page_step_model: PageStepsModel = None
