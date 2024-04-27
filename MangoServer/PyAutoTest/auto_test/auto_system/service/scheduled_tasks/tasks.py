@@ -52,14 +52,13 @@ class Tasks:
     @classmethod
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
-        is_notice = True if scheduled_tasks.is_notice == StatusEnum.SUCCESS.value else False
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
-            cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, is_notice, True)
+            cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, scheduled_tasks.is_notice, True)
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             cls.ui_task(scheduled_tasks.id,
                         scheduled_tasks.case_people.id,
                         scheduled_tasks.test_obj.id,
-                        is_notice,
+                        scheduled_tasks.is_notice,
                         scheduled_tasks.case_executor,
                         True)
         else:

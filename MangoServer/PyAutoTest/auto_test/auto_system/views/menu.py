@@ -200,7 +200,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/system",
-                    "menuUrl": "/system/user-logging_tool",
+                    "menuUrl": "/system/user_logs",
                     "menuName": "登录日志",
                     "badge": "13",
                 }

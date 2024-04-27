@@ -21,7 +21,7 @@ urlpatterns = [
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
     #
-    path("user/logging_tool", UserLogsCRUD.as_view()),
+    path("user/logs", UserLogsCRUD.as_view()),
     #
     path("info", UserCRUD.as_view()),
     path("nickname", UserViews.as_view({'get': 'get_nickname'})),
