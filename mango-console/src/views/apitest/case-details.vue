@@ -725,7 +725,7 @@
   }
 
   function blurSave(key: string, item: string | null) {
-    if (key === 'header') {
+    if (key === 'header' || key === 'ass_response_whole') {
       apiCaseData.selectDataObj[key] = item
     } else if (typeof item !== 'object') {
       let jsonObj = formatJsonObj(key, item)

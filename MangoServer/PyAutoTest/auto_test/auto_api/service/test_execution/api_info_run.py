@@ -23,7 +23,7 @@ class ApiInfoRun(ApiDataHandle):
         request_data_model = self.request_data(RequestDataModel(
             method=MethodEnum(api_info_obj.method).name,
             url=urljoin(self.test_object.value, api_info_obj.url),
-            headers=api_info_obj.header if api_info_obj.header else '${headers}',
+            headers=api_info_obj.header,
             params=api_info_obj.params,
             data=api_info_obj.data,
             json_data=api_info_obj.json,
