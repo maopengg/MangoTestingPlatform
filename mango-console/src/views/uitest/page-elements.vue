@@ -51,6 +51,7 @@
               <a-tag color="cyan" size="small" v-else-if="record.exp === 9">CSS</a-tag>
               <a-tag color="blue" size="small" v-else-if="record.exp === 11">A_DESCRIPTION</a-tag>
               <a-tag color="arcoblue" size="small" v-else-if="record.exp === 12">A_BOUNDS</a-tag>
+              <a-tag color="arcoblue" size="small" v-else-if="record.exp === 14">resourceId</a-tag>
               <a-tag color="purple" size="small" v-else-if="record.exp === 13"
                 >A_百分比坐标点击</a-tag
               >

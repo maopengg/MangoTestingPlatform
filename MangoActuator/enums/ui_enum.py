@@ -33,7 +33,8 @@ class ElementExpEnum(BaseEnum):
     # APP专属
     DESCRIPTION = 11
     BOUNDS = 12
-    PERCENTAGE = 13
+    # PERCENTAGE = 13
+    RESOURCE_ID = 14
 
     @classmethod
     def obj(cls):
@@ -50,7 +51,9 @@ class ElementExpEnum(BaseEnum):
             9: "W_CSS",
             11: "A_DESCRIPTION",
             12: "A_BOUNDS",
-            13: "A_百分比坐标点击"}
+            # 13: "A_百分比坐标点击",
+            14: "A_resourceId",
+        }
 
 
 class DriveTypeEnum(BaseEnum):

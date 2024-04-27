@@ -32,15 +32,20 @@ class AndroidDriver(UiautomatorEquipment,
     def a_find_ele(self) -> UiObject | XPathSelector:
         match self.element_model.exp:
             case ElementExpEnum.LOCATOR.value:
-                return eval(f"self.android{self.element_model.loc}")
+                try:
+                    return eval(f"self.android{self.element_model.loc}")
+                except SyntaxError:
+                    raise LocatorError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
                 return self.android.xpath(self.element_model.loc)
             case ElementExpEnum.BOUNDS.value:
                 return self.android(text=self.element_model.loc)
             case ElementExpEnum.DESCRIPTION.value:
                 return self.android(description=self.element_model.loc)
-            case ElementExpEnum.PERCENTAGE.value:
-                return self.android(description=self.element_model.loc)
+            # case ElementExpEnum.PERCENTAGE.value:
+            #     return self.android(resourceId=self.element_model.loc)
+            case ElementExpEnum.RESOURCE_ID.value:
+                return self.android(resourceId=self.element_model.loc)
             case _:
                 raise LocatorError(*ERROR_MSG_0020)
 

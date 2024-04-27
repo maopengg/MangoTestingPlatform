@@ -83,7 +83,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         data['data'] = api_info_obj.data
         data['json'] = api_info_obj.json
         data['file'] = api_info_obj.file
-        data['header'] = json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
+        data['header'] = json.dumps(api_info_obj.header) if api_info_obj.header else None
 
         serializer = self.serializer(data=data)
         if serializer.is_valid():
