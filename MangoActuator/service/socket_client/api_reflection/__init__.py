@@ -41,8 +41,9 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
     async def test(self):
         with open(r'..\..\..\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
-            data = QueueModel(**out)
-            await getattr(self, data.func_name)(data.func_args)
+            for i in out:
+                data = QueueModel(**i)
+                await getattr(self, data.func_name)(data.func_args)
 
 
 r = InterfaceMethodReflection()
