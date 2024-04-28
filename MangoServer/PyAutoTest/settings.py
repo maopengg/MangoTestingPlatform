@@ -17,13 +17,13 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
-with open(str(BASE_DIR) + rf"/database_config.json", 'r') as f:
-    data = json.load(f)
-    mysql_db_name = data.get('mysql_db_name')
-    mysql_user = data.get('mysql_user')
-    mysql_password = data.get('mysql_password')
-    mysql_ip = data.get('mysql_ip')
-    mysql_port = data.get('mysql_port')
+
+mysql_db_name = 'mango_server'
+mysql_user = 'root'
+# mysql_password = 'root'
+mysql_password = 'mP123456&'
+mysql_ip = '36.213.11.72'
+mysql_port = 3306
 
 # ************************ ↑需要修改的内容↑ ************************ #
 
