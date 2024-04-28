@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "scripts": {
     "dev": "vite --host",
-    "build": "NODE_OPTIONS=--max_old_space_size=4096 vite build",
+    "build": "vite build",
     "staging": "vite build --mode staging",
     "tsc": "vue-tsc --noEmit",
     "serve": "vite preview"
