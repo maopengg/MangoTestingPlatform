@@ -103,19 +103,26 @@ class ChatConsumer(WebsocketConsumer):
         :param send_data: 发送的数据
         :return:
         """
-        if send_data.is_notice:
+        if send_data.is_notice is not None:
             if send_data.is_notice == ClientTypeEnum.WEB.value:
                 obj = SocketUser.get_user_web_obj(send_data.user)
                 if not obj:
                     pass
                 else:
                     obj.send(send_data.model_dump_json())
+                    log.info(
+                        f'发送的用户：{send_data.user}\n'
+                        f'发送的客户端类型：{ClientTypeEnum.get_value(1)}\n'
+                        f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                    )
             elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
-            log.info(
-                f'发送的用户：{send_data.user}，发送的数据：'
-                f'{send_data.model_dump_json() if send_data.data else None}')
+                log.info(
+                    f'发送的用户：{send_data.user}\n'
+                    f'发送的客户端类型：{ClientTypeEnum.get_value(2)}\n'
+                    f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                )
 
     def inside_send(self,
                     msg: str,
