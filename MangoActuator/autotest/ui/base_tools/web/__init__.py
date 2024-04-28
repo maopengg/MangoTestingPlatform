@@ -130,7 +130,10 @@ class WebDevice(PlaywrightBrowser,
                 try:
                     return eval(f"await page.{loc}")
                 except SyntaxError:
-                    return eval(f"page.{loc}")
+                    try:
+                        return eval(f"page.{loc}")
+                    except SyntaxError:
+                        raise LocatorError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:

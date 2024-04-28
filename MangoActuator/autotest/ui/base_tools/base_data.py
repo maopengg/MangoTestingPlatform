@@ -5,11 +5,10 @@
 # @Author : 毛鹏
 from typing import Optional
 
-from blinker import signal
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
 
-from enums.tools_enum import StatusEnum, SignalTypeEnum
+from enums.tools_enum import StatusEnum
 from enums.ui_enum import UiPublicTypeEnum
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import RunConfigModel
@@ -109,4 +108,3 @@ class BaseData:
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
             self.mysql_connect.condition_execute(sql.get('sql'))
-
