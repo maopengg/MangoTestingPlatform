@@ -17,7 +17,7 @@ pydantic==2.6.0
 
 cachetools==5.3.1
 diskcache==5.6.3
-pyside6==6.5.2
+pyside6==6.7.0
 jsonpath==0.82
 Faker==17.6.0
 colorlog==6.7.0

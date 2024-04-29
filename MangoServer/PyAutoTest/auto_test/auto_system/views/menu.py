@@ -91,24 +91,24 @@ def ad_routes():
                 },
             ],
         },
-        {
-            "menuUrl": "/perf",
-            "menuName": "性能自动化",
-            "icon": "IconMinus",
-            "parentPath": "",
-            "children": [
-                {
-                    "parentPath": "/perf",
-                    "menuUrl": "/perf/prepare",
-                    "menuName": "接口准备",
-                },
-                {
-                    "parentPath": "/perf",
-                    "menuUrl": "/perf/report",
-                    "menuName": "测试报告",
-                },
-            ],
-        },
+        # {
+        #     "menuUrl": "/perf",
+        #     "menuName": "性能自动化",
+        #     "icon": "IconMinus",
+        #     "parentPath": "",
+        #     "children": [
+        #         {
+        #             "parentPath": "/perf",
+        #             "menuUrl": "/perf/prepare",
+        #             "menuName": "接口准备",
+        #         },
+        #         {
+        #             "parentPath": "/perf",
+        #             "menuUrl": "/perf/report",
+        #             "menuName": "测试报告",
+        #         },
+        #     ],
+        # },
         {
             "menuUrl": "/equipment",
             "menuName": "设备中心",

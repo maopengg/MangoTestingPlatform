@@ -4,8 +4,6 @@
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
 
-import os
-
 from PySide6.QtCore import QThread
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QMainWindow, QApplication, QSystemTrayIcon, QMenu, QLabel
@@ -31,7 +29,6 @@ class WebSocketThread(QThread):
     def stop(self):
         if self.socket is not None:
             self.socket.cancel_tasks()
-        os._exit(0)
         self.quit()
         self.wait()
 
@@ -44,7 +41,7 @@ class MainWindow(QMainWindow, Window):
 
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon(r"D:\GitCode\MangoActuator\scripts\微信头像.jpg"))  # 设置托盘图标
+        self.tray_icon.setIcon(QIcon('"D:\测试文件\测试素材\header.jpg"'))  # 设置托盘图标
 
         # 创建托盘图标菜单
         tray_menu = QMenu(self)
@@ -86,7 +83,8 @@ if __name__ == "__main__":
     LoginModel(ip='127.0.0.1',
                port='8000',
                nickname='毛鹏',
-               username='18071710220',
+               username='17798339533',
+               password='123456',
                user_id='1',
                token='123')
     app = QApplication([])

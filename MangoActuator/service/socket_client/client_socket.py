@@ -76,12 +76,14 @@ class ClientWebSocket:
         接受消息
         @return:
         """
+        from service.socket_client.api_reflection import r
         while True:
             try:
                 recv_json = await websocket.recv()
                 data = self.__output_method(recv_json)
                 if data.data:
-                    SignalSend.func_signal(data.data.func_name, data=data.data.func_args)
+                    await r.queue.put(data.data)
+                    # SignalSend.func_signal(data.data.func_name, data=data.data.func_args)
                 await asyncio.sleep(5)
             except websockets.ConnectionClosed:
                 SignalSend.notice_signal_a('已离线')
