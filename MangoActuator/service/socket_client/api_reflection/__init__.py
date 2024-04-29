@@ -13,21 +13,26 @@ from service.socket_client.api_reflection.api_consumer import APIConsumer
 from service.socket_client.api_reflection.perf_consumer import PerfConsumer
 from service.socket_client.api_reflection.tools_consumer import ToolsConsumer
 from service.socket_client.api_reflection.ui_consumer import UIConsumer
-from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 
 class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
 
     def __init__(self):
-        # custom_signal.disconnect(self.consumer)
-        SignalSend.custom.connect(self.consumer)
+        self.queue = asyncio.Queue()
+        self.loop = asyncio.get_event_loop()
+        self.loop.create_task(self.consumer())
 
-    def consumer(self, sender, data: dict):
-        if sender == "break":
-            os._exit(0)
-        task = asyncio.create_task(getattr(self, sender)(data))
-        task.add_done_callback(self.handle_task_result)
+    async def consumer(self):
+        while True:
+            if not self.queue.empty():
+                data: QueueModel = await self.queue.get()
+                if data.func_name == "break":
+                    os._exit(0)
+                task = self.loop.create_task(getattr(self, data.func_name)(data.func_args))
+                task.add_done_callback(self.handle_task_result)
+            else:
+                await asyncio.sleep(0.1)
 
     @classmethod
     def handle_task_result(cls, task):
@@ -39,15 +44,18 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             log.error(f"反射任务执行出现异常：{e}")
 
     async def test(self):
-        with open(r'..\..\..\test.json', 'r', encoding='utf-8') as f:
+        with open(r'test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             for i in out:
-                data = QueueModel(**i)
-                await getattr(self, data.func_name)(data.func_args)
+                await getattr(self, 'u_case')(i)
+
+        while True:
+            await asyncio.sleep(1)
 
 
 r = InterfaceMethodReflection()
 
 if __name__ == '__main__':
     asyncio.run(r.test())
+
     # pass

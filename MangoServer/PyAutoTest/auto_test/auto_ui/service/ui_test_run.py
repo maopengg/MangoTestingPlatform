@@ -85,6 +85,8 @@ class UiTestRun:
                 case_model = self.send_case(case_id, test_suite_id)
                 self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                    case_model=case_model)
+                # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\test.json', 'w') as f:
+                #     json.dump(case_model_list, f, indent=4, ensure_ascii=False)
 
     def send_case(self, case_id: int, test_suite_id) -> CaseModel:
         if self.tasks_id:
