@@ -24,6 +24,7 @@ urlpatterns = [
     path('docs/', include_docs_urls(title='PyAutoTest', authentication_classes=[])),
     #
     path("login", LoginViews.as_view({'post': 'login'})),  # 登录
+    path("register", LoginViews.as_view({'post': 'register'})),  # 登录
     path("menu", LoginViews.as_view({'get': 'menu'})),
     #
     path('system/', include("PyAutoTest.auto_test.auto_system.urls")),

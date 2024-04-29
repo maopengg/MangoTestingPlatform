@@ -6,125 +6,215 @@
         <img src="../../assets/bg_left.png" class="left-bg-img" />
       </div>
       <div class="form-wrapper">
-        <div class="title">账号登录</div>
-        <div class="item-wrapper mt-6">
-          <a-input v-model="username" placeholder="请输入用户名/手机号" allow-clear size="large">
-            <template #prefix>
-              <icon-mobile />
-            </template>
-          </a-input>
-        </div>
-        <div class="item-wrapper mt-4">
-          <a-input-password
-            v-model="password"
-            placeholder="请输入密码"
-            allow-clear
-            size="large"
-            @keyup.enter="onLogin"
-          >
-            <template #prefix>
-              <icon-lock />
-            </template>
-          </a-input-password>
-        </div>
-        <div class="flex-1"></div>
-        <div class="mt-10">
-          <a-button type="primary" class="login" :loading="loading" @click="onLogin">
-            登录</a-button
-          >
+        <div v-if="baseData.isLogin === true">
+          <div class="title">账号登录</div>
+          <div class="item-wrapper mt-6">
+            <a-input
+              v-model="baseData.username"
+              placeholder="请输入用户名/手机号"
+              allow-clear
+              size="large"
+            >
+              <template #prefix>
+                <icon-mobile />
+              </template>
+            </a-input>
+          </div>
+          <div class="item-wrapper mt-4">
+            <a-input-password
+              v-model="baseData.password"
+              placeholder="请输入密码"
+              allow-clear
+              size="large"
+              @keyup.enter="onLogin"
+            >
+              <template #prefix>
+                <icon-lock />
+              </template>
+            </a-input-password>
+          </div>
+          <div class="flex-1"></div>
+          <div class="mt-10">
+            <a-button type="primary" class="login" :loading="baseData.loading" @click="onLogin">
+              登录</a-button
+            >
+          </div></div
+        >
+        <div v-else>
+          <div class="title">注册用户</div>
+          <div class="item-wrapper mt-6">
+            <a-input
+              v-model="baseData.nickname"
+              placeholder="请输入用户昵称"
+              allow-clear
+              size="large"
+            />
+          </div>
+          <div class="item-wrapper mt-6">
+            <a-input
+              v-model="baseData.username"
+              placeholder="请输入登录用户名"
+              allow-clear
+              size="large"
+            >
+              <template #prefix>
+                <icon-mobile />
+              </template>
+            </a-input>
+          </div>
+          <div class="item-wrapper mt-4">
+            <a-input-password
+              v-model="baseData.password"
+              placeholder="请输入密码"
+              allow-clear
+              size="large"
+              @keyup.enter="onLogin"
+            >
+              <template #prefix>
+                <icon-lock />
+              </template>
+            </a-input-password>
+          </div>
+          <div class="item-wrapper mt-4">
+            <a-input-password
+              v-model="baseData.confirm_password"
+              placeholder="再次输入密码"
+              allow-clear
+              size="large"
+              @keyup.enter="onLogin"
+            >
+              <template #prefix>
+                <icon-lock />
+              </template>
+            </a-input-password>
+          </div>
+          <div class="flex-1"></div>
+          <div class="mt-10">
+            <a-button type="primary" class="login" :loading="baseData.loading" @click="onRegister">
+              注册</a-button
+            >
+          </div>
         </div>
         <div class="my-width flex-1 mt-4 mb-8">
           <div class="flex justify-between">
-            <!--            <a-checkbox v-model="autoLogin">自动登录</a-checkbox>-->
-            <!--            <a-link :underline="false" type="primary">忘记密码？</a-link>-->
+            <a-link :underline="false" type="primary">忘记密码？</a-link>
+            <a-link
+              v-if="baseData.isLogin === true"
+              :underline="false"
+              type="primary"
+              @click="register1"
+              >注册用户</a-link
+            >
+            <a-link
+              v-if="baseData.isLogin === false"
+              :underline="false"
+              type="primary"
+              @click="returnToLogin"
+              >返回登录</a-link
+            >
           </div>
         </div>
-        <!--        <a-divider orientation="center">第三方登录</a-divider>-->
-        <!--        <div class="text-center text-lg">-->
-        <!--          <icon-alipay-circle />-->
-        <!--          <icon-github class="mr-6 ml-6" />-->
-        <!--          <icon-weibo-circle-fill />-->
-        <!--        </div>-->
       </div>
     </div>
     <div class="bottom">
-      {{
-        'Vue3 + Vite + Typescript + Arco Design  ©   ' +
-        projectName +
-        '    ' +
-        version +
-        ' · Made by 芒果味'
-      }}
+      {{ '©   ' + projectName + '    ' + version + ' · 芒果味' }}
     </div>
   </div>
 </template>
 
-<script lang="ts">
-  import { defineComponent, ref } from 'vue'
+<script lang="ts" setup>
+  import { reactive } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import ImageBg1 from '@/assets/img_login_bg_01.png'
-  import logo from '@/assets/logo.png'
   import { post, Response } from '@/api/http'
-  import { login } from '@/api/url'
+  import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
   import { UserState } from '@/store/types'
   import setting from '../../setting'
   import useAppInfo from '@/hooks/useAppInfo'
   import useUserStore from '@/store/modules/user'
-
-  export default defineComponent({
-    name: 'Login',
-    setup() {
-      const projectName = setting.projectName
-      const { version } = useAppInfo()
-      const username = ref('')
-      const password = ref('')
-      const autoLogin = ref(true)
-      const loading = ref(false)
-      const router = useRouter()
-      const route = useRoute()
-      const userStore = useUserStore()
-
-      const onLogin = () => {
-        loading.value = true
-        post({
-          url: login,
-          data: {
-            username: username.value,
-            password: password.value,
-            type: 1,
-          },
-        })
-          .then(({ data }: Response) => {
-            userStore.saveUser(data as UserState).then(() => {
-              router
-                .replace({
-                  path: route.query.redirect ? (route.query.redirect as string) : '/index/home',
-                })
-                .then(() => {
-                  Message.success('登录成功，欢迎：' + data.nickName)
-                  loading.value = false
-                })
-            })
-          })
-          .catch((error) => {
-            loading.value = false
-            Message.error(error.message)
-          })
-      }
-      return {
-        projectName,
-        version,
-        username,
-        password,
-        autoLogin,
-        loading,
-        onLogin,
-        ImageBg1,
-        logo,
-      }
-    },
+  const projectName = setting.projectName
+  const { version } = useAppInfo()
+  const router = useRouter()
+  const route = useRoute()
+  const userStore = useUserStore()
+  const baseData: any = reactive({
+    nickname: '',
+    username: '',
+    password: '',
+    confirm_password: '',
+    loading: false,
+    isLogin: true,
   })
+
+  const onLogin = () => {
+    baseData.loading = true
+    post({
+      url: login,
+      data: {
+        username: baseData.username,
+        password: baseData.password,
+        type: 1,
+      },
+    })
+      .then(({ data }: Response) => {
+        userStore.saveUser(data as UserState).then(() => {
+          router
+            .replace({
+              path: route.query.redirect ? (route.query.redirect as string) : '/index/home',
+            })
+            .then(() => {
+              Message.success('登录成功，欢迎：' + data.nickName)
+              baseData.loading = false
+            })
+        })
+      })
+      .catch((error) => {
+        baseData.loading = false
+        Message.error(error.message)
+      })
+  }
+  function register1() {
+    baseData.isLogin = false
+  }
+  function returnToLogin() {
+    baseData.isLogin = true
+  }
+  function onRegister() {
+    if (
+      baseData.username === '' ||
+      baseData.nickname === '' ||
+      baseData.password === '' ||
+      baseData.confirm_password === ''
+    ) {
+      Message.error('用户昵称，用户名，密码不允许为空')
+      return
+    } else {
+      console.log(typeof baseData.password, typeof baseData.confirm_password)
+      if (baseData.password !== baseData.confirm_password) {
+        Message.error('两次密码输入不一致')
+        return
+      }
+      baseData.loading = true
+      post({
+        url: register,
+        data: {
+          nickname: baseData.nickname,
+          username: baseData.username,
+          password: baseData.password,
+        },
+      })
+        .then((data) => {
+          if (data.code === 200) {
+            Message.success(data.msg)
+            returnToLogin()
+            baseData.loading = false
+          }
+        })
+        .catch((error) => {
+          baseData.loading = false
+        })
+    }
+  }
 </script>
 
 <style lang="less" scoped>
