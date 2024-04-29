@@ -15,7 +15,7 @@ from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsMo
 from service.socket_client import ClientWebSocket
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-
+from tools.public_methods import async_global_exception
 
 class CasesMain(StepsMain):
 
@@ -54,7 +54,7 @@ class CasesMain(StepsMain):
                 except MangoActuatorError as error:
                     self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
                     self.case_result.status = StatusEnum.FAIL.value
-                    log.error(error.msg)
+                    log.warning(error.msg)
                     break
                 else:
                     if page_steps_result_model.status:
@@ -62,17 +62,14 @@ class CasesMain(StepsMain):
                     else:
                         self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{page_steps_result_model.error_message}'
                         self.case_result.status = StatusEnum.FAIL.value
-                        log.error(page_steps_result_model.error_message)
+                        log.warning(page_steps_result_model.error_message)
                         break
             await self.case_posterior(self.case_model.posterior_sql)
         except MangoActuatorError as error:
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
         except Exception as error:
-            log.error(str(error))
-            await ClientWebSocket.async_send(code=300,
-                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
-                                             is_notice=ClientTypeEnum.WEB.value)
+            await async_global_exception(error)
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
             await ClientWebSocket.async_send(

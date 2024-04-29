@@ -29,7 +29,7 @@ from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
-
+from tools.public_methods import async_global_exception
 """
 python -m uiautomator2 init
 python -m weditor
@@ -180,7 +180,7 @@ class DriverObject:
             await ClientWebSocket.async_send(msg="发送录制接口", func_name=ApiSocketEnum.RECORDING_API.value,
                                              func_args=api_info)
         except Exception as error:
-            log.error(error)
+            await async_global_exception(error)
 
 
 async def test_main():

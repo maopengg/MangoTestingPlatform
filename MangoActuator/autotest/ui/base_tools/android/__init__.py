@@ -18,6 +18,7 @@ from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.message.error_msg import *
+from tools.public_methods import sync_global_exception
 
 
 class AndroidDriver(UiautomatorEquipment,
@@ -60,7 +61,7 @@ class AndroidDriver(UiautomatorEquipment,
         except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except Exception as error:
-            print(error)
+            sync_global_exception(error, False)
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']

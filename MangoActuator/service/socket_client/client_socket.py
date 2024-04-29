@@ -134,8 +134,8 @@ class ClientWebSocket:
         try:
             out = json.loads(recv_json)
             log.info(f'接收的消息提示:{out["msg"]}')
-            if out['data']:
-                log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
+            # if out['data']:
+            #     log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:
             log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')
