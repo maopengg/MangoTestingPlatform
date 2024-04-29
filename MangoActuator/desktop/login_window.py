@@ -21,7 +21,7 @@ class LoginWindow(QWidget, Ui_login):
         username = ''
         password = ''
         ip = '填写IP'
-        port = '填写后端端口'
+        port = '8000'
         if len(user_info) > 1:
             self.show_login_failed_message('请联系管理员检查该问题，点击取消弹窗后，请输入正确的账号密码即可使用')
         elif user_info:
