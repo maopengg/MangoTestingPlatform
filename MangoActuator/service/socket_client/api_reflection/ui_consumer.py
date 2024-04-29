@@ -9,12 +9,9 @@ from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel, CaseModel
 from service.socket_client import ClientWebSocket
-from settings.settings import GLOBAL_EXCEPTION_CAPTURE
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.convert_args import convert_args
-from tools.desktop.signal_send import SignalSend
-from tools.log_collector import log
-
+from tools.public_methods import async_global_exception
 
 class UIConsumer:
     page_steps: PageSteps = None
@@ -38,14 +35,7 @@ class UIConsumer:
                                              msg=error.msg,
                                              is_notice=ClientTypeEnum.WEB.value)
         except Exception as error:
-            if GLOBAL_EXCEPTION_CAPTURE:
-                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
-                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
-                await ClientWebSocket.async_send(code=300,
-                                                 msg="执行UI步骤时，发送未知异常！请联系管理员",
-                                                 is_notice=ClientTypeEnum.WEB.value)
-            else:
-                raise error
+            await async_global_exception(error)
 
     @classmethod
     @convert_args(WEBConfigModel)
@@ -60,14 +50,7 @@ class UIConsumer:
                 cls.page_steps = PageSteps(data.project)
             await cls.page_steps.new_web_obj(data)
         except Exception as error:
-            if GLOBAL_EXCEPTION_CAPTURE:
-                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
-                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
-                await ClientWebSocket.async_send(code=300,
-                                                 msg="实例化浏览器对象时，发送未知异常！请联系管理员",
-                                                 is_notice=ClientTypeEnum.WEB.value)
-            else:
-                raise error
+            await async_global_exception(error)
 
     @classmethod
     @convert_args(CaseModel)
@@ -86,12 +69,4 @@ class UIConsumer:
                 cls.case_run = CaseRun(max_tasks)
             await cls.case_run.queue.put(data)
         except Exception as error:
-            if GLOBAL_EXCEPTION_CAPTURE:
-                SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！异常类型：{type(error)}')
-                log.error(f'发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
-                await ClientWebSocket.async_send(code=300,
-                                                 msg="实例化浏览器对象时，发送未知异常！请联系管理员",
-                                                 is_notice=ClientTypeEnum.WEB.value)
-            else:
-                raise error
-
+            await async_global_exception(error)

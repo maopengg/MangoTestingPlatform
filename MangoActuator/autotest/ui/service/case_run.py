@@ -8,11 +8,10 @@ import asyncio
 
 from autotest.ui.base_tools.driver_object import DriverObject
 from autotest.ui.service.cases import CasesMain
-from enums.tools_enum import ClientTypeEnum
 from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
-from service.socket_client import ClientWebSocket
 from tools.log_collector import log
+from tools.public_methods import async_global_exception
 
 
 class CaseRun(DriverObject):
@@ -55,9 +54,7 @@ class CaseRun(DriverObject):
                             log.error('自动化类型不存在，请联系管理员检查！')
                 await obj.case_page_step()
         except Exception as error:
-            log.error(str(error))
-            await ClientWebSocket.async_send(code=300,
-                                             msg="执行元素步骤时发生未知异常，请检查数据或者联系管理员",
-                                             is_notice=ClientTypeEnum.WEB.value)
+            await async_global_exception(error)
+
         finally:
             self.running_tasks -= 1

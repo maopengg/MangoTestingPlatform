@@ -73,7 +73,7 @@ class StepsMain(ElementMain):
         return self.page_step_result_model
 
     async def __error(self, error: MangoActuatorError):
-        log.error(
+        log.warning(
             f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
         path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
         SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}

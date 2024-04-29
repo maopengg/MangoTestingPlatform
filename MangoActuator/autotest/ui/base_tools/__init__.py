@@ -4,8 +4,8 @@
 # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
 
-from autotest.ui.base_tools.web import WebDevice
 from autotest.ui.base_tools.android import AndroidDriver
+from autotest.ui.base_tools.web import WebDevice
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
@@ -13,6 +13,7 @@ from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementResultModel, ElementModel
 from tools.decorator.async_retry import async_retry
 from tools.desktop.signal_send import SignalSend
+from tools.log_collector import log
 from tools.message.error_msg import *
 
 
@@ -76,6 +77,7 @@ class ElementMain(WebDevice, AndroidDriver):
         elif self.drive_type == DriveTypeEnum.DESKTOP.value:
             pass
         else:
+            log.error('不存在的设备类型')
             raise Exception('不存在的设备类型')
 
     async def assertion_element(self):
@@ -88,6 +90,7 @@ class ElementMain(WebDevice, AndroidDriver):
         elif self.drive_type == DriveTypeEnum.DESKTOP.value:
             pass
         else:
+            log.error('不存在的设备类型')
             raise Exception('不存在的设备类型')
 
     async def __ope(self, name, ope_type):
