@@ -27,6 +27,7 @@ class Tasks:
 
     @classmethod
     def create_jobs(cls):
+        connection.ensure_connection()
         queryset = TimeTasks.objects.all()
         for timer in queryset:
             cls.scheduler.add_job(cls.timing,
@@ -42,8 +43,9 @@ class Tasks:
     @retry(max_retries=5, delay=5, func_name='timing')
     def timing(cls, timing_strategy_id):
         log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
-        connection.connect()
+        connection.ensure_connection()
         # 执行数据库查询操作
+
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
                                                             status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
@@ -51,6 +53,8 @@ class Tasks:
 
     @classmethod
     def trigger(cls, scheduled_tasks_id):
+        connection.ensure_connection()
+
         scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
             cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, scheduled_tasks.is_notice, True)
@@ -88,10 +92,14 @@ class Tasks:
     @classmethod
     def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: int, is_trigger: bool = False):
         try:
+            connection.ensure_connection()
+
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
+                connection.ensure_connection()
+
                 project_id = ApiCase.objects.get(id=case_id_list[0]).project.id
                 ApiTestRun(project_id=project_id, test_obj_id=test_obj_id, is_notice=is_notice).case_batch(case_id_list)
         except MangoServerError as error:
@@ -109,6 +117,8 @@ class Tasks:
                 is_trigger: bool = False,
                 ):
         try:
+            connection.ensure_connection()
+
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
