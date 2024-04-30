@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-09-28 16:45
 # @Author : 毛鹏
-from typing import Any
 
 from pydantic import BaseModel
 
@@ -22,12 +21,6 @@ def singleton(cls):
         return _instance[cls]
 
     return _singleton
-
-
-@singleton
-class ServiceModel(BaseModel):
-    window: Any
-    socket: Any
 
 
 @singleton

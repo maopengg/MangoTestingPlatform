@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import asyncio
 import json
-import os
 import traceback
 
 from models.socket_model import QueueModel
@@ -27,12 +26,9 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
         while True:
             if not self.queue.empty():
                 data: QueueModel = await self.queue.get()
-                if data.func_name == "break":
-                    os._exit(0)
                 task = self.loop.create_task(getattr(self, data.func_name)(data.func_args))
                 task.add_done_callback(self.handle_task_result)
-            else:
-                await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
 
     @classmethod
     def handle_task_result(cls, task):
@@ -53,9 +49,9 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             await asyncio.sleep(1)
 
 
-r = InterfaceMethodReflection()
-
 if __name__ == '__main__':
+    r = InterfaceMethodReflection()
+
     asyncio.run(r.test())
 
     # pass

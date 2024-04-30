@@ -8,6 +8,7 @@ import asyncio
 
 from autotest.ui.base_tools.driver_object import DriverObject
 from autotest.ui.service.cases import CasesMain
+from enums.socket_api_enum import UiSocketEnum
 from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
 from tools.log_collector import log
@@ -30,12 +31,11 @@ class CaseRun(DriverObject):
                 case_model = await self.queue.get()
                 self.running_tasks += 1
                 self.loop.create_task(self.execute_task(case_model))
-            else:
-                await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
 
     async def execute_task(self, case_model: CaseModel):
-        try:
-            async with CasesMain(case_model) as obj:
+        async with CasesMain(case_model) as obj:
+            try:
                 for step in case_model.steps:
                     match step.type:
                         case DriveTypeEnum.WEB.value:
@@ -53,8 +53,12 @@ class CaseRun(DriverObject):
                         case _:
                             log.error('自动化类型不存在，请联系管理员检查！')
                 await obj.case_page_step()
-        except Exception as error:
-            await async_global_exception(error)
-
-        finally:
-            self.running_tasks -= 1
+            except Exception as error:
+                await async_global_exception(
+                    'execute_task',
+                    error,
+                    UiSocketEnum.CASE_RESULT.value,
+                    obj.case_result
+                )
+            finally:
+                self.running_tasks -= 1

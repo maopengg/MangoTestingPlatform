@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-12-12 12:42
 # @Author : 毛鹏
+import asyncio
 from enum import Enum
 
 
@@ -20,3 +21,8 @@ class UiSocketEnum(Enum):
 class ToolsSocketEnum(Enum):
     """ 工具类接口 """
     SET_OPERATION_OPTIONS = 't_set_operation_options'
+
+
+class QueueEnum(Enum):
+    """ 队列 """
+    WEB_SOCKET = asyncio.Queue()

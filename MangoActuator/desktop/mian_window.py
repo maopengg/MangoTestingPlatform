@@ -3,34 +3,48 @@
 # @Description: 
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
+import asyncio
 
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QThreadPool, QRunnable, Signal, Slot, QObject
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QMainWindow, QApplication, QSystemTrayIcon, QMenu, QLabel
 
 from desktop.window.window import Window
 from models.service_http_model import LoginModel
-from models.service_http_model import ServiceModel
 from service.socket_client import SocketMain
+from tools.log_collector import log
 
 
-class WebSocketThread(QThread):
-
-    def __init__(self, cls):
+class SocketTask(QRunnable):
+    def __init__(self, socket):
         super().__init__()
-        self.cls = cls
-        self.socket = None
+        self.socket = socket
 
     def run(self):
-        self.socket = SocketMain()
-        ServiceModel(window=self.cls, socket=self.socket)
-        self.socket.main()
+        try:
+            asyncio.run(self.socket.main())
+        except Exception as e:
+            # 在此处添加错误处理逻辑
+            log.error(f"Socket task error: {e}")
 
+
+class WebSocketThread(QObject):
+    finished = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.socket = SocketMain()
+        self.thread_pool = QThreadPool()
+
+    def start(self):
+        task = SocketTask(self.socket)
+        self.thread_pool.start(task)
+
+    @Slot()
     def stop(self):
-        if self.socket is not None:
-            self.socket.cancel_tasks()
-        self.quit()
-        self.wait()
+        self.socket.cancel_tasks()
+        self.thread_pool.waitForDone()
+        self.finished.emit()
 
 
 class MainWindow(QMainWindow, Window):
@@ -60,7 +74,10 @@ class MainWindow(QMainWindow, Window):
         # 显示系统托盘图标
         self.tray_icon.show()
         # 创建并启动WebSocketThread线程
+
+        # 创建并启动WebSocketThread线程
         self.websocket_thread = WebSocketThread(self)
+        self.websocket_thread.finished.connect(self.quit)
         self.websocket_thread.start()
 
     def closeEvent(self, event):
