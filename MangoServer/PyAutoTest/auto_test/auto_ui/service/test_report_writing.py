@@ -6,6 +6,8 @@
 import json
 import logging
 
+from django.db import connection
+
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiCase, UiCaseStepsDetailed, UiCaseResult
@@ -38,6 +40,7 @@ class TestReportWriting:
     @classmethod
     @retry(func_name='update_case')
     def update_case(cls, data: CaseResultModel):
+        connection.ensure_connection()
         case = UiCase.objects.get(id=data.case_id)
         case.status = data.status
         case.test_suite_id = data.test_suite_id
