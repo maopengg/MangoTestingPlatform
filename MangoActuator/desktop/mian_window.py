@@ -51,7 +51,7 @@ class MainWindow(QMainWindow, Window):
     def __init__(self):
         super().__init__()
         self.setup()
-        self.resize(1250, 800)
+        self.resize(1000, 640)
 
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
