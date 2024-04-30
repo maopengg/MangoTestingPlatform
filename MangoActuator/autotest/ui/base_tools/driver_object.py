@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-04-24 10:43
 # @Author : 毛鹏
+import asyncio
 import ctypes
 import os
 import string
@@ -24,12 +25,13 @@ from exceptions.ui_exception import BrowserPathError, NewObjectError
 from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import AndroidConfigModel
 from models.socket_model.ui_model import WEBConfigModel
-from service.socket_client import ClientWebSocket
+from service.socket_client.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
 from tools.public_methods import async_global_exception
+
 """
 python -m uiautomator2 init
 python -m weditor
@@ -44,12 +46,15 @@ class DriverObject:
         self.web_config = web_config
         self.browser_path = ['chrome.exe', 'msedge.exe', 'firefox.exe', '苹果', '360se.exe']
         self.android_config = android_config
+        self.lock = asyncio.Lock()
 
     async def new_web_page(self) -> tuple[BrowserContext, Page]:
         if self.web_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
         if self.browser is None:
-            self.browser = await self.new_browser()
+            async with self.lock:
+                if self.browser is None:
+                    self.browser = await self.new_browser()
         SignalSend.notice_signal_c('正在创建浏览器窗口')
         context = await self.new_context(self.browser)
         page = await self.new_page(context)
@@ -177,10 +182,16 @@ class DriverObject:
                 data=None if data == {} else data,
                 json_data=json_data
             )
-            await ClientWebSocket.async_send(msg="发送录制接口", func_name=ApiSocketEnum.RECORDING_API.value,
-                                             func_args=api_info)
+            await ClientWebSocket().async_send(
+                msg="发送录制接口",
+                func_name=ApiSocketEnum.RECORDING_API.value,
+                func_args=api_info
+            )
         except Exception as error:
-            await async_global_exception(error)
+            await async_global_exception(
+                '__send_recording_api',
+                error
+            )
 
 
 async def test_main():
@@ -199,6 +210,4 @@ async def test_main():
 
 
 if __name__ == '__main__':
-    import asyncio
-
     asyncio.run(test_main())

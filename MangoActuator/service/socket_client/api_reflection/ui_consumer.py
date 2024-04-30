@@ -8,10 +8,11 @@ from autotest.ui.service.page_steps import PageSteps
 from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel, CaseModel
-from service.socket_client import ClientWebSocket
+from service.socket_client.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.convert_args import convert_args
 from tools.public_methods import async_global_exception
+
 
 class UIConsumer:
     page_steps: PageSteps = None
@@ -31,11 +32,16 @@ class UIConsumer:
             await cls.page_steps.page_steps_setup(data)
             await cls.page_steps.page_steps_mian()
         except MangoActuatorError as error:
-            await ClientWebSocket.async_send(code=error.code,
-                                             msg=error.msg,
-                                             is_notice=ClientTypeEnum.WEB.value)
+            await ClientWebSocket().async_send(
+                code=error.code,
+                msg=error.msg,
+                is_notice=ClientTypeEnum.WEB.value
+            )
         except Exception as error:
-            await async_global_exception(error)
+            await async_global_exception(
+                'u_page_step',
+                error
+            )
 
     @classmethod
     @convert_args(WEBConfigModel)
@@ -50,7 +56,10 @@ class UIConsumer:
                 cls.page_steps = PageSteps(data.project)
             await cls.page_steps.new_web_obj(data)
         except Exception as error:
-            await async_global_exception(error)
+            await async_global_exception(
+                'u_page_new_obj',
+                error
+            )
 
     @classmethod
     @convert_args(CaseModel)
@@ -69,4 +78,7 @@ class UIConsumer:
                 cls.case_run = CaseRun(max_tasks)
             await cls.case_run.queue.put(data)
         except Exception as error:
-            await async_global_exception(error)
+            await async_global_exception(
+                'u_case',
+                error
+            )

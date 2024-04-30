@@ -12,10 +12,11 @@ from enums.tools_enum import ClientTypeEnum
 from enums.tools_enum import StatusEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel, PageStepsModel, PageStepsResultModel
-from service.socket_client import ClientWebSocket
+from service.socket_client.client_socket import ClientWebSocket
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.public_methods import async_global_exception
+
 
 class CasesMain(StepsMain):
 
@@ -69,15 +70,21 @@ class CasesMain(StepsMain):
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
         except Exception as error:
-            await async_global_exception(error)
+            await async_global_exception(
+                'case_page_step',
+                error,
+                UiSocketEnum.CASE_RESULT.value,
+                self.case_result
+            )
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
-            await ClientWebSocket.async_send(
+            await ClientWebSocket().async_send(
                 code=200 if self.case_result.status else 300,
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB.value,
                 func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result)
+                func_args=self.case_result
+            )
         SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
 
     async def case_steps_distribute(self, page_step_model: PageStepsModel) -> PageStepsResultModel:

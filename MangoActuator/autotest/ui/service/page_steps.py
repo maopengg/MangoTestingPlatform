@@ -10,7 +10,7 @@ from enums.tools_enum import ClientTypeEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel
-from service.socket_client import ClientWebSocket
+from service.socket_client.client_socket import ClientWebSocket
 from tools.log_collector import log
 
 
@@ -58,11 +58,13 @@ class PageSteps(StepsMain, DriverObject):
                 await self.page.close()
                 self.context = None
                 self.page = None
-            await ClientWebSocket.async_send(code=error.code,
-                                             msg=error.msg,
-                                             is_notice=ClientTypeEnum.WEB.value)
+            await ClientWebSocket().async_send(
+                code=error.code,
+                msg=error.msg,
+                is_notice=ClientTypeEnum.WEB.value
+            )
         else:
-            await ClientWebSocket.async_send(
+            await ClientWebSocket().async_send(
                 code=200 if self.page_step_result_model.status else 300,
                 msg=f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}',
                 is_notice=ClientTypeEnum.WEB.value,
@@ -79,5 +81,7 @@ class PageSteps(StepsMain, DriverObject):
             msg = 'WEB对象实例化成功'
             if data.host:
                 await self.w_goto(data.host)
-        await ClientWebSocket.async_send(msg=msg,
-                                         is_notice=ClientTypeEnum.WEB.value)
+        await ClientWebSocket().async_send(
+            msg=msg,
+            is_notice=ClientTypeEnum.WEB.value
+        )

@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 import json
 
+from PySide6.QtCore import QThread
+
 import service
 from enums.socket_api_enum import ToolsSocketEnum
 from enums.system_enum import CacheDataKey2Enum
@@ -34,8 +36,9 @@ class Window(Ui_MainWindow):
             SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
             self.comboBox.setCurrentText('10')
 
-        SignalSend.notice.connect(self.setTextEdit)
         self.label_3.setText(service.USERNAME)
+        self.ui_update_thread = UIUpdateThread(self.label_6, self.textEdit)
+        self.ui_update_thread.start()
 
     def clickSendRedisData(self):
         """
@@ -73,3 +76,23 @@ class Window(Ui_MainWindow):
             self.label_6.setText(data)
         else:
             self.textEdit.append(data)
+
+
+class UIUpdateThread(QThread):
+    def __init__(self, label_6, text_edit, parent=None):
+        super().__init__(parent)
+        self.label_6 = label_6
+        self.textEdit = text_edit
+
+    def run(self):
+
+        SignalSend.notice.connect(self.setTextEdit)
+
+    def setTextEdit(self, sender, data: str):
+        try:
+            if sender == SignalTypeEnum.A:
+                self.label_6.setText(data)
+            else:
+                self.textEdit.append(data)
+        except Exception as error:
+            print(error)

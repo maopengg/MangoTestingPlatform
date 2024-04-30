@@ -8,20 +8,24 @@ import json
 from typing import Union, Optional, TypeVar
 
 import websockets
+from websockets.exceptions import ConnectionClosedError
 from websockets.legacy.client import WebSocketClientProtocol
 
 import service
 from enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from models.socket_model import SocketDataModel, QueueModel
+from tools.decorator.singleton import singleton
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
 T = TypeVar('T')
 
-websocket: Optional[WebSocketClientProtocol] = None
 
-
+@singleton
 class ClientWebSocket:
+
+    def __init__(self):
+        self.websocket: Optional[WebSocketClientProtocol] = None
 
     async def client_hands(self):
         """
@@ -30,7 +34,7 @@ class ClientWebSocket:
         """
         while True:
             await self.async_send(f'{ClientNameEnum.DRIVER.value} 请求连接！')
-            response_str = await websocket.recv()
+            response_str = await self.websocket.recv()
             res = self.__output_method(response_str)
             if res.code == 200:
                 log.info("socket服务启动成功")
@@ -45,16 +49,12 @@ class ClientWebSocket:
         进行websocket连接
         @return:
         """
-        global websocket
         server_url = f"ws://{service.IP}:{service.PORT}/client/socket?{service.USERNAME}"
         log.info(str(f"websockets server url:{server_url}"))
         while True:
             try:
-                async with websockets.connect(server_url, max_size=50000000) as websocket:
-                    websocket = websocket
-                    # 下面两行同步进行
-                    hands_ = await self.client_hands()
-                    if hands_:  # 握手
+                async with websockets.connect(server_url, max_size=50000000) as self.websocket:
+                    if await self.client_hands():
                         await self.client_recv()
                     await asyncio.sleep(2)
             except ConnectionRefusedError:
@@ -69,29 +69,28 @@ class ClientWebSocket:
                 SignalSend.notice_signal_a('已离线')
                 log.info(f"socket发生未知错误：{error}")
                 await asyncio.sleep(10)
-                break
+                raise error
 
     async def client_recv(self):
         """
         接受消息
         @return:
         """
-        from service.socket_client.api_reflection import r
+        from service.socket_client.api_reflection import InterfaceMethodReflection
+        r = InterfaceMethodReflection()
         while True:
             try:
-                recv_json = await websocket.recv()
+                recv_json = await self.websocket.recv()
                 data = self.__output_method(recv_json)
                 if data.data:
                     await r.queue.put(data.data)
-                    # SignalSend.func_signal(data.data.func_name, data=data.data.func_args)
-                await asyncio.sleep(5)
+                await asyncio.sleep(0.1)
             except websockets.ConnectionClosed:
                 SignalSend.notice_signal_a('已离线')
                 log.info(f'连接已关闭，正在重新连接......')
                 break
 
-    @classmethod
-    async def async_send(cls,
+    async def async_send(self,
                          msg: str,
                          code: int = 200,
                          func_name: None = None,
@@ -108,10 +107,13 @@ class ClientWebSocket:
         )
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
-        await websocket.send(cls.__serialize(send_data))
+        try:
+            await self.websocket.send(self.__serialize(send_data))
+        except ConnectionClosedError:
+            await self.client_run()
+            await self.websocket.send(self.__serialize(send_data))
 
-    @classmethod
-    def sync_send(cls,
+    def sync_send(self,
                   msg: str,
                   code: int = 200,
                   func_name: None = None,
@@ -119,7 +121,7 @@ class ClientWebSocket:
                   is_notice: ClientTypeEnum | None = None,
                   ):
         async def send_message():
-            await cls.async_send(msg, code, func_name, func_args, is_notice)
+            await self.async_send(msg, code, func_name, func_args, is_notice)
 
         event_loop = asyncio.get_event_loop()
         event_loop.run_until_complete(send_message())
@@ -140,8 +142,8 @@ class ClientWebSocket:
         except json.decoder.JSONDecodeError:
             log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')
 
-    @classmethod
-    def __serialize(cls, data: SocketDataModel):
+    @staticmethod
+    def __serialize(data: SocketDataModel):
         """
         主动发送消息
         :param data: 发送的数据
@@ -154,3 +156,6 @@ class ClientWebSocket:
         else:
             log.debug(f"发送的数据：{data_json}")
             return data_json
+
+
+client_socket = ClientWebSocket()
