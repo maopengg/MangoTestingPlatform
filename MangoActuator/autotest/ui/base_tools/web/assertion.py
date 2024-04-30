@@ -58,8 +58,8 @@ class PlaywrightAssertion:
         """元素计数"""
         if value is None:
             assert count == 0
-        # if count is None:
-        #     count = 0
+        if count is None:
+            count = 0
         await expect(value).to_have_count(int(count))
 
     @staticmethod
