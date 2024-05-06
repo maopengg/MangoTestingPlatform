@@ -43,7 +43,12 @@
           <span class="span">测试套</span>
           <TableBody ref="tableBody">
             <template #header>
-              <a-tree blockNode :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
+              <a-tree
+                blockNode
+                ref="childRef"
+                :data="reportDetailsData.treeData"
+                @select="(key) => click(key[0])"
+              >
                 <template #icon="{ node }">
                   <template v-if="node.status === 1"> <icon-check /> </template>
                   <template v-else> <icon-close /> </template>
@@ -107,7 +112,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { reactive, onMounted, nextTick } from 'vue'
+  import { reactive, onMounted, nextTick, ref } from 'vue'
   import {
     systemEnumExp,
     uiCaseResultSuiteGetCase,
@@ -118,6 +123,7 @@
   import { get } from '@/api/http'
   import { usePageData } from '@/store/page-data'
   import { useRoute } from 'vue-router'
+  const childRef: any = ref(null)
 
   const pageData: any = usePageData()
   const route = useRoute()
@@ -140,6 +146,7 @@
   })
 
   function click(key: string) {
+    childRef.value.expandNode(key, true) // 调用子组件的方法
     let obj = JSON.parse(key)
     reportDetailsData.treeData.forEach((item: any) => {
       if (item.children.length !== 0) {
