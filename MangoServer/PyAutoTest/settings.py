@@ -22,8 +22,8 @@ mysql_db_name = 'mango_server'
 mysql_user = 'root'
 # mysql_password = 'root'
 mysql_password = 'mP123456&'
-# mysql_ip = 'localhost'
-mysql_ip = '36.213.11.72'
+mysql_ip = 'localhost'
+# mysql_ip = '36.213.11.72'
 mysql_port = 3306
 
 # ************************ ↑需要修改的内容↑ ************************ #
