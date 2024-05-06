@@ -82,6 +82,11 @@
             <template #extra>
               <a-space>
                 <div>
+                  <a-button status="success" size="small" @click="onCaseBatchRun"
+                    >批量执行</a-button
+                  >
+                </div>
+                <div>
                   <a-button status="warning" size="small" @click="handleClick"
                     >设为定时任务</a-button
                   >
@@ -273,6 +278,7 @@
     systemTasksBatchSetCases,
     systemScheduledName,
     systemEnumCaseLevel,
+    apiCaseBatchRun,
   } from '@/api/url'
   import {
     usePagination,
@@ -291,6 +297,7 @@
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { useProjectModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
+  import DataItem from '@/views/index/components/DataItem.vue'
 
   const projectModule = useProjectModule()
 
@@ -638,6 +645,10 @@
   }
 
   function caseRun(record: any) {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
     Message.loading('正在执行用例请稍后~')
     get({
       url: apiCaseRun,
@@ -645,8 +656,32 @@
         return {
           case_id: record.id,
           test_obj_id: testObj.selectValue,
-          project_id: record.project.id,
           case_sort: null,
+        }
+      },
+    })
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
+  function onCaseBatchRun() {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要' + name + '的用例数据')
+      return
+    }
+    Message.loading('正在执行用例请稍后~')
+    post({
+      url: apiCaseBatchRun,
+      data: () => {
+        return {
+          case_id_list: selectedRowKeys.value,
+          test_obj_id: testObj.selectValue,
         }
       },
     })

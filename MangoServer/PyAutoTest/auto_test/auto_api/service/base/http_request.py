@@ -70,7 +70,6 @@ class HTTPRequest:
     @classmethod
     def test_http(cls, request_data: RequestDataModel) -> Response:
         s = time.time()
-        print(request_data.model_dump_json())
         response = requests.request(
             method=request_data.method,
             url=request_data.url,

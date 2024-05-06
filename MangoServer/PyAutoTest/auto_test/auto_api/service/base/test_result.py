@@ -17,18 +17,23 @@ from PyAutoTest.tools.view.snowflake import Snowflake
 
 class TestResult:
 
-    def __init__(self, project_id, test_obj_id):
+    def __init__(self, test_obj_id):
+        self.project_id = None
         self.test_suite_data = {'id': Snowflake.generate_id(),
                                 'type': AutoTestTypeEnum.API.value,
-                                'project': project_id,
+                                'project': self.project_id,
                                 'test_object': test_obj_id,
                                 'error_message': None,
                                 'run_status': StatusEnum.FAIL.value}
 
         self.test_suite_report = TestSuiteReportCRUD().inside_post(self.test_suite_data)
 
-        self.assertion_result = []
-        self.error_message = []
+        self.case_status = 0
+        self.case_error_message = None
+
+    def result_init(self):
+        self.case_status = 0
+        self.case_error_message = None
 
     def save_test_result(self,
                          case_detailed,
@@ -60,32 +65,27 @@ class TestResult:
                 'response_text': response.response_text if response.response_text else None,
                 # 'response_json': json.dumps(response.response_json,
                 #                             ensure_ascii=False) if response.response_json else None,
-                'status': self.assertion_result[-1],
-                'error_message': self.error_message[-1] if self.error_message else None,
+                'status': self.case_status,
+                'error_message': self.case_error_message,
                 'all_cache': json.dumps(self.get_all(), ensure_ascii=False) if self.get_all() else None,
             }
             ApiInfoResultCRUD().inside_post(data)
-        self.update_api_info(case_detailed.api_info.id, self.assertion_result[-1])
-        self.update_case_detailed(case_detailed.id, self.assertion_result[-1])
+        self.update_api_info(case_detailed.api_info.id, self.case_status)
+        self.update_case_detailed(case_detailed.id, self.case_status)
 
     def api_case_result_sava(self, case_id: int) -> None:
         data = {
             'case': case_id,
             'test_suite_id': self.test_suite_data['id'],
-            'error_message': self.error_message[-1] if self.error_message else None,
-            'status': self.assertion_result[-1],
+            'error_message': self.case_error_message,
+            'status': self.case_status,
         }
         ApiCaseResultCRUD().inside_post(data)
 
     def update_case_or_suite(self, case_id: int):
         api_case = ApiCase.objects.get(id=case_id)
         api_case.test_suite_id = self.test_suite_report.get('id')
-        if StatusEnum.FAIL.value in self.assertion_result:
-            self.update_test_suite(StatusEnum.FAIL.value)
-            api_case.status = StatusEnum.FAIL.value
-        else:
-            self.update_test_suite(StatusEnum.SUCCESS.value)
-            api_case.status = StatusEnum.SUCCESS.value
+        api_case.status = self.case_status
         api_case.save()
 
     @classmethod
@@ -103,7 +103,8 @@ class TestResult:
     def update_test_suite(self, status: int):
         test_suite_data = {
             'id': self.test_suite_data['id'],
-            'error_message': json.dumps(self.error_message, ensure_ascii=False) if self.error_message else None,
+            'error_message': json.dumps(self.case_error_message,
+                                        ensure_ascii=False) if self.case_error_message else None,
             'run_status': StatusEnum.SUCCESS.value,
             'status': status
         }
