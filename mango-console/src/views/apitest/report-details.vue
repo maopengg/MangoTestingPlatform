@@ -67,12 +67,20 @@
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="2" title="请求头">
-              {{ reportDetailsData.apiResult.headers }}</a-tab-pane
-            >
-            <a-tab-pane key="3" title="参数"> {{ reportDetailsData.apiResult.params }}</a-tab-pane>
-            <a-tab-pane key="4" title="data"> {{ reportDetailsData.apiResult.data }}</a-tab-pane>
-            <a-tab-pane key="5" title="json"> {{ reportDetailsData.apiResult.json }}</a-tab-pane>
-            <a-tab-pane key="6" title="文件"> {{ reportDetailsData.apiResult.file }}</a-tab-pane>
+              <pre>{{ strJson(reportDetailsData.apiResult.headers) }}</pre>
+            </a-tab-pane>
+            <a-tab-pane key="3" title="参数">
+              <pre>{{ strJson(reportDetailsData.apiResult.params) }}</pre>
+            </a-tab-pane>
+            <a-tab-pane key="4" title="data">
+              <pre>{{ strJson(reportDetailsData.apiResult.data) }}</pre>
+            </a-tab-pane>
+            <a-tab-pane key="5" title="json">
+              <pre>{{ strJson(reportDetailsData.apiResult.json) }}</pre>
+            </a-tab-pane>
+            <a-tab-pane key="6" title="文件">
+              <pre>{{ strJson(reportDetailsData.apiResult.file) }}</pre>
+            </a-tab-pane>
             <a-tab-pane key="7" title="响应信息">
               <a-space direction="vertical">
                 <p>响应code码：{{ reportDetailsData.apiResult.response_code }}</p>
@@ -86,17 +94,17 @@
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="8" title="响应头">
-              {{ reportDetailsData.apiResult.response_headers }}</a-tab-pane
-            >
+              <pre>{{ strJson(reportDetailsData.apiResult.response_headers) }}</pre>
+            </a-tab-pane>
             <a-tab-pane key="9" title="响应体">
-              {{ reportDetailsData.apiResult.response_text }}</a-tab-pane
-            >
+              <pre>{{ strJson(reportDetailsData.apiResult.response_text) }}</pre>
+            </a-tab-pane>
             <a-tab-pane key="10" title="缓存数据">
-              {{ reportDetailsData.apiResult.all_cache }}</a-tab-pane
-            >
+              <pre>{{ strJson(reportDetailsData.apiResult.all_cache) }}</pre>
+            </a-tab-pane>
             <a-tab-pane key="11" title="断言数据">
-              {{ reportDetailsData.apiResult.all_cache }}</a-tab-pane
-            >
+              <pre>{{ strJson(reportDetailsData.apiResult.all_cache) }}</pre>
+            </a-tab-pane>
           </a-tabs>
         </a-space>
       </div>
@@ -108,6 +116,7 @@
   import { apiResultSuiteCase, apiInfoResult, systemEnumMethod, systemEnumEnd } from '@/api/url'
   import { get } from '@/api/http'
   import { usePageData } from '@/store/page-data'
+  import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
 
   const pageData: any = usePageData()
 
