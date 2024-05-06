@@ -40,7 +40,7 @@
     <a-card title="测试套数据">
       <div class="container">
         <a-space direction="vertical" style="width: 40%">
-          <a-tree blockNode :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
+          <a-tree blockNode ref="childRef" :data="reportDetailsData.treeData" @select="click">
             <template #icon="{ node }">
               <template v-if="node.status === 1"> <icon-check /> </template>
               <template v-else> <icon-close /> </template>
@@ -112,11 +112,11 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { reactive, onMounted, nextTick } from 'vue'
+  import { reactive, onMounted, nextTick, ref } from 'vue'
   import { apiResultSuiteCase, apiInfoResult, systemEnumMethod, systemEnumEnd } from '@/api/url'
   import { get } from '@/api/http'
   import { usePageData } from '@/store/page-data'
-  import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
+  import { strJson } from '@/utils/tools'
 
   const pageData: any = usePageData()
 
@@ -127,16 +127,18 @@
     clientType: [],
     methodType: [],
   })
+  const childRef: any = ref(null)
 
-  function click(key: string) {
-    if (key[0] === '1') {
+  function click(key: any) {
+    if (key[0][0] === '1') {
+      childRef.value.expandNode(key, true) // 调用子组件的方法
       return
     }
     get({
       url: apiInfoResult,
       data: () => {
         return {
-          id: key.substring(2),
+          id: key[0].substring(2),
         }
       },
     })
