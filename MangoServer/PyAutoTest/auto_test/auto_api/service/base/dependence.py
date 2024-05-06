@@ -76,14 +76,14 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         if case_detailed.posterior_sleep:
             self.__posterior_sleep(self.replace(case_detailed.posterior_sleep))
 
-    def dump_data(self, case_detailed):
-        if self.mysql_connect:
-            for sql in case_detailed.dump_data:
-                if sql.strip().lower().startswith('select'):
-                    raise DumpDataError(*ERROR_MSG_0010)
-                res = self.mysql_connect.condition_execute(self.replace(sql))
-                if isinstance(res, int):
-                    log.info(f'删除成功的条数：{res}')
+    # def dump_data(self, case_detailed):
+    #     if self.mysql_connect:
+    #         for sql in case_detailed.dump_data:
+    #             if sql.strip().lower().startswith('select'):
+    #                 raise DumpDataError(*ERROR_MSG_0010)
+    #             res = self.mysql_connect.condition_execute(self.replace(sql))
+    #             if isinstance(res, int):
+    #                 log.info(f'删除成功的条数：{res}')
 
     def __posterior_sql(self, sql_list: list[dict]):
         if self.mysql_connect:
@@ -116,7 +116,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                             _dict['expect'] = str(eval(i.get('expect')))
                         except Exception:
                             _dict['expect'] = i.get('expect')
-                    print(_dict)
                     getattr(self, i['method'])(**_dict)
         except AssertionError:
             raise ResponseValueAssError(*ERROR_MSG_0005, value=(_dict.get('value'), _dict.get('expect')))

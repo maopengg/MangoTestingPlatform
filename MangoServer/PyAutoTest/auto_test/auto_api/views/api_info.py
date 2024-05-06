@@ -142,7 +142,6 @@ class ApiInfoViews(ViewSet):
   -H 'x-time: 1713507951432'
         """
         assert data == d
-        print(data)
         import argparse
         import shlex
         parser = argparse.ArgumentParser()
@@ -159,7 +158,6 @@ class ApiInfoViews(ViewSet):
         parser.add_argument('-s', '--silent', action='store_true')
         tokens = shlex.split(data)
         parsed_args = parser.parse_args(tokens)
-        print(parsed_args)
         return ResponseData.success(RESPONSE_MSG_0069)
 
 

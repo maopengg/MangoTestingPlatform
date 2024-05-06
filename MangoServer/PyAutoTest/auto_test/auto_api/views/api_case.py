@@ -71,14 +71,25 @@ class ApiCaseViews(ViewSet):
         case_id = request.query_params.get('case_id')
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
-        project_id = request.query_params.get('project_id')
         try:
-            api_case_run = ApiTestRun(project_id, test_obj_id, case_sort)
+            api_case_run = ApiTestRun(test_obj_id, case_sort)
             test_result: dict = api_case_run.run_one_case(case_id)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )
-        if StatusEnum.FAIL.value in test_result['ass_result']:
-            return ResponseData.success((200, test_result['error_message'][-1]))
+        if StatusEnum.FAIL.value == test_result['status']:
+            return ResponseData.fail((300, test_result['error_message']), test_result)
+        return ResponseData.success(RESPONSE_MSG_0111, test_result)
+
+    @action(methods=['post'], detail=False)
+    def api_case_batch_run(self, request: Request):
+        from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
+        case_id_list = request.data.get('case_id_list')
+        test_obj_id = request.data.get('test_obj_id')
+        try:
+            api_case_run = ApiTestRun(test_obj_id, username=request.user.get('username'))
+            test_result: dict = api_case_run.case_batch(case_id_list)
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg), )
         return ResponseData.success(RESPONSE_MSG_0111, test_result)
 
     @action(methods=['get'], detail=False)

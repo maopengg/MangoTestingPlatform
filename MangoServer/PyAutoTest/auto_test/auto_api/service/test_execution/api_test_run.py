@@ -8,26 +8,32 @@ from urllib.parse import urljoin
 from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCase
 from PyAutoTest.auto_test.auto_api.service.base.dependence import ApiDataHandle
 from PyAutoTest.auto_test.auto_api.service.base.test_result import TestResult
+from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.enums.api_enum import MethodEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.api_exception import CaseIsEmptyError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.tools.view.error_msg import *
 
 
 class ApiTestRun(ApiDataHandle, TestResult):
 
-    def __init__(self, project_id: int, test_obj_id: int, case_sort: int = None, is_notice: int = 0):
-        ApiDataHandle.__init__(self, project_id, test_obj_id)
-        TestResult.__init__(self, project_id, test_obj_id)
+    def __init__(self, test_obj_id: int, case_sort: int = None, is_notice: int = 0, username: str = None):
+        ApiDataHandle.__init__(self, test_obj_id)
+        TestResult.__init__(self, test_obj_id)
+        self.username = username
         self.case_sort = case_sort
         self.is_notice = bool(is_notice)
+        self.is_batch = False
 
     def run_one_case(self, case_id: int) -> dict:
         api_case_obj = ApiCase.objects.get(id=case_id)
+        self.init(api_case_obj.project_id)
+        self.result_init()
         self.__case_front(api_case_obj)
         case_api_list = self.get_case(case_id)
         if not case_api_list:
@@ -37,16 +43,31 @@ class ApiTestRun(ApiDataHandle, TestResult):
                 break
         self.api_case_result_sava(case_id)
         self.update_case_or_suite(case_id)
+        if not self.is_batch:
+            self.update_test_suite(self.case_status)
+        else:
+            ChatConsumer.active_send(SocketDataModel(
+                code=200 if self.case_status == StatusEnum.SUCCESS.value else 300,
+                msg=f'用例：{api_case_obj.name}，测试结果：{self.case_error_message}' if self.case_error_message else f'用例：{api_case_obj.name}测试成功',
+                user=self.username,
+                is_notice=ClientTypeEnum.WEB.value, ))
         self.__case_posterior(api_case_obj)
         return {
             'test_suite': self.test_suite_data['id'],
-            'ass_result': self.assertion_result,
-            'error_message': self.error_message
+            'status': self.case_status,
+            'error_message': self.case_error_message
         }
 
     def case_batch(self, case_list: list):
+        self.is_batch = True
+        case_result_list = []
         for case_id in case_list:
             self.run_one_case(case_id)
+            case_result_list.append(self.case_status)
+        if StatusEnum.FAIL.value in case_result_list:
+            self.update_test_suite(StatusEnum.FAIL.value)
+        else:
+            self.update_test_suite(StatusEnum.SUCCESS.value)
         if self.is_notice:
             NoticeMain.notice_main(self.project_id, self.test_suite_data['id'])
 
@@ -63,8 +84,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
                                  file=case_detailed.file))
             response: ResponseDataModel = self.http(request_data_model)
         except MangoServerError as error:
-            self.assertion_result.append(StatusEnum.FAIL.value)
-            self.error_message.append(error.msg)
+            self.case_error_message = error.msg
             self.save_test_result(case_detailed)
             return False
         try:
@@ -72,15 +92,11 @@ class ApiTestRun(ApiDataHandle, TestResult):
             self.assertion(response, case_detailed)
             # 后置处理
             self.posterior(response, case_detailed)
-            # 数据清除
-            # self.dump_data(case_detailed)
         except MangoServerError as error:
-            self.dump_data(case_detailed)
-            self.error_message.append(error.msg)
-            self.assertion_result.append(StatusEnum.FAIL.value)
+            self.case_error_message = error.msg
             self.save_test_result(case_detailed, request_data_model, response)
             return False
-        self.assertion_result.append(StatusEnum.SUCCESS.value)
+        self.case_status = StatusEnum.SUCCESS.value
         self.save_test_result(case_detailed, request_data_model, response)
         return True
 

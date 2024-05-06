@@ -24,10 +24,9 @@ log = logging.getLogger('api')
 
 class CommonParameters(DataProcessor, HTTPRequest):
 
-    def __init__(self, project_id: int, test_obj_id: int):
-        DataProcessor.__init__(self, project_id)
+    def __init__(self, test_obj_id: int):
+        DataProcessor.__init__(self, None)
         HTTPRequest.__init__(self)
-        self.project_id = project_id
         self.test_obj_id = test_obj_id
         # 获取测试环境对象
         self.test_object = TestObject.objects.get(id=self.test_obj_id)
@@ -37,9 +36,12 @@ class CommonParameters(DataProcessor, HTTPRequest):
                                               bool(self.test_object.db_c_status),
                                               bool(self.test_object.db_rud_status)
                                               )
-        self.api_public = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
-                                                   project=project_id).order_by('type')
-        for i in self.api_public:
+
+    def init(self, project_id: int):
+        self.project_id = project_id
+        api_public = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
+                                              project=self.project_id).order_by('type')
+        for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
             elif i.type == ApiPublicTypeEnum.LOGIN.value:
