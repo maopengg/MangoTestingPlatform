@@ -42,10 +42,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             case_api_list = self.get_case(case_id)
             for api_info in case_api_list:
                 if not self.run_api(api_info):
-                    self.case_status = StatusEnum.FAIL.value
                     break
-                else:
-                    self.case_status = StatusEnum.SUCCESS.value
             self.add_api_case_result(case_id)
             self.update_case(case_id)
             if not self.is_batch:
@@ -100,13 +97,16 @@ class ApiTestRun(ApiDataHandle, TestResult):
                                  file=case_detailed.file))
             response: ResponseDataModel = self.http(request_data_model)
         except MangoServerError as error:
+            self.case_status = StatusEnum.FAIL.value
             self.case_error_message = error.msg
-            self.add_api_info_result(case_detailed, StatusEnum.FAIL)
+            self.add_api_info_result(case_detailed)
             return False
         except Exception as error:
             log.info(f'执行接口请求时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
+            self.case_status = StatusEnum.FAIL.value
+
             self.case_error_message = ERROR_MSG_0040[1]
-            self.add_api_info_result(case_detailed, StatusEnum.FAIL)
+            self.add_api_info_result(case_detailed)
             raise UnknownError(*ERROR_MSG_0040)
         try:
             # 断言
@@ -114,15 +114,18 @@ class ApiTestRun(ApiDataHandle, TestResult):
             # 后置处理
             self.posterior(response, case_detailed)
         except MangoServerError as error:
+            self.case_status = StatusEnum.FAIL.value
             self.case_error_message = error.msg
-            self.add_api_info_result(case_detailed, StatusEnum.FAIL, request_data_model, response)
+            self.add_api_info_result(case_detailed, request_data_model, response)
             return False
         except Exception as error:
             log.info(f'执行接口断言时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
+            self.case_status = StatusEnum.FAIL.value
             self.case_error_message = ERROR_MSG_0040[1]
-            self.add_api_info_result(case_detailed, StatusEnum.FAIL, request_data_model, response)
+            self.add_api_info_result(case_detailed, request_data_model, response)
             raise UnknownError(*ERROR_MSG_0040)
-        self.add_api_info_result(case_detailed, StatusEnum.SUCCESS, request_data_model, response)
+        self.case_status = StatusEnum.SUCCESS.value
+        self.add_api_info_result(case_detailed, request_data_model, response)
         return True
 
     def get_case(self, case_id: int):

@@ -52,7 +52,6 @@ class TestResult:
 
     def add_api_info_result(self,
                             case_detailed,
-                            status: StatusEnum,
                             request_data_model: RequestDataModel | None = None,
                             response: ResponseDataModel | None = None,
                             ) -> None:
@@ -62,7 +61,7 @@ class TestResult:
             'case': case_detailed.case.id,
             'api_info': case_detailed.api_info.id,
             'case_detailed': case_detailed.id,
-            'status': status.value,
+            'status': self.case_status,
             'all_cache': self.json_none(self.get_all())
         }
         if request_data_model:
@@ -99,7 +98,6 @@ class TestResult:
         api_info_obj.save()
 
     def update_case(self, _id: int):
-        print(self.case_status)
         api_case = ApiCase.objects.get(id=_id)
         api_case.test_suite_id = self.test_suite_id
         api_case.status = self.case_status
