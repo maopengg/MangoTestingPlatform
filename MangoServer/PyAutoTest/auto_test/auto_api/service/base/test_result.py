@@ -17,82 +17,92 @@ from PyAutoTest.tools.view.snowflake import Snowflake
 
 class TestResult:
 
-    def __init__(self, test_obj_id):
+    def __init__(self, test_obj_id: int):
+        self.test_obj_id = test_obj_id
+        self.test_suite_id = Snowflake.generate_id()
+
         self.project_id = None
-        self.test_suite_data = {'id': Snowflake.generate_id(),
-                                'type': AutoTestTypeEnum.API.value,
-                                'project': self.project_id,
-                                'test_object': test_obj_id,
-                                'error_message': None,
-                                'run_status': StatusEnum.FAIL.value}
-
-        self.test_suite_report = TestSuiteReportCRUD().inside_post(self.test_suite_data)
-
-        self.case_status = 0
+        self.case_status = StatusEnum.FAIL.value
         self.case_error_message = None
+        self.test_suite_data = None
 
-    def result_init(self):
-        self.case_status = 0
+    def result_init(self, project_id: int, case_id_list: list):
+        self.project_id = project_id
+        self.case_status = StatusEnum.FAIL.value
         self.case_error_message = None
+        if self.test_suite_data is None:
+            self.test_suite_data = TestSuiteReportCRUD.inside_post({
+                'id': self.test_suite_id,
+                'type': AutoTestTypeEnum.API.value,
+                'project': self.project_id,
+                'test_object': self.test_obj_id,
+                'error_message': None,
+                'run_status': StatusEnum.FAIL.value,
+                'status': None,
+                'case_list': case_id_list,
+                'is_notice': self.is_notice,
+                'user': self.user_obj['id']
+            })
 
-    def save_test_result(self,
-                         case_detailed,
-                         request_data_model: RequestDataModel | None = None,
-                         response: ResponseDataModel | None = None,
-                         ) -> None:
-        if request_data_model and response:
-            data = {
-                'test_suite_id': self.test_suite_data['id'],
-                'case_sort': case_detailed.case_sort,
-                'case': case_detailed.case.id,
-                'api_info': case_detailed.api_info.id,
-                'case_detailed': case_detailed.id,
+    @staticmethod
+    def json_none(data: dict | list | None):
+        if data is None:
+            return data
+        return json.dumps(data, ensure_ascii=False)
 
-                'url': request_data_model.url,
-                'headers': json.dumps(response.headers,
-                                      ensure_ascii=False) if response.headers else None,
-                'params': json.dumps(request_data_model.params,
-                                     ensure_ascii=False) if request_data_model.params else None,
-                'data': json.dumps(request_data_model.data,
-                                   ensure_ascii=False) if request_data_model.data else None,
-                'json': json.dumps(request_data_model.json_data,
-                                   ensure_ascii=False) if request_data_model.json_data else None,
-                'file': str(request_data_model.file) if request_data_model.file else None,
+    def add_api_info_result(self,
+                            case_detailed,
+                            status: StatusEnum,
+                            request_data_model: RequestDataModel | None = None,
+                            response: ResponseDataModel | None = None,
+                            ) -> None:
+        data = {
+            'test_suite_id': self.test_suite_id,
+            'case_sort': case_detailed.case_sort,
+            'case': case_detailed.case.id,
+            'api_info': case_detailed.api_info.id,
+            'case_detailed': case_detailed.id,
+            'status': status.value,
+            'all_cache': self.json_none(self.get_all())
+        }
+        if request_data_model:
+            data['url'] = request_data_model.url
+            data['headers'] = self.json_none(response.headers)
+            data['params'] = self.json_none(request_data_model.params)
+            data['data'] = self.json_none(request_data_model.data)
+            data['json'] = self.json_none(request_data_model.json_data)
+            data['file'] = str(request_data_model.file) if request_data_model.file else None
+        if response:
+            data['response_code'] = response.status_code
+            data['response_time'] = str(response.response_time)
+            data['response_headers'] = self.json_none(response.response_headers)
+            data['response_text'] = response.response_text if response.response_text else None
+            data['error_message'] = self.case_error_message
+            data['assertion'] = self.json_none(self.ass_result)
 
-                'response_code': response.status_code,
-                'response_time': str(response.response_time),
-                'response_headers': json.dumps(response.response_headers, ensure_ascii=False),
-                'response_text': response.response_text if response.response_text else None,
-                # 'response_json': json.dumps(response.response_json,
-                #                             ensure_ascii=False) if response.response_json else None,
-                'status': self.case_status,
-                'error_message': self.case_error_message,
-                'all_cache': json.dumps(self.get_all(), ensure_ascii=False) if self.get_all() else None,
-            }
-            ApiInfoResultCRUD().inside_post(data)
+        ApiInfoResultCRUD.inside_post(data)
         self.update_api_info(case_detailed.api_info.id, self.case_status)
         self.update_case_detailed(case_detailed.id, self.case_status)
 
-    def api_case_result_sava(self, case_id: int) -> None:
-        data = {
+    def add_api_case_result(self, case_id: int) -> None:
+        ApiCaseResultCRUD.inside_post({
             'case': case_id,
-            'test_suite_id': self.test_suite_data['id'],
+            'test_suite_id': self.test_suite_id,
             'error_message': self.case_error_message,
             'status': self.case_status,
-        }
-        ApiCaseResultCRUD().inside_post(data)
-
-    def update_case_or_suite(self, case_id: int):
-        api_case = ApiCase.objects.get(id=case_id)
-        api_case.test_suite_id = self.test_suite_report.get('id')
-        api_case.status = self.case_status
-        api_case.save()
+        })
 
     @classmethod
-    def update_api_info(cls, api_info_id: int, status: int):
-        api_info_obj = ApiInfo.objects.get(id=api_info_id)
+    def update_api_info(cls, _id: int, status: int):
+        api_info_obj = ApiInfo.objects.get(id=_id)
         api_info_obj.status = status
         api_info_obj.save()
+
+    def update_case(self, _id: int):
+        api_case = ApiCase.objects.get(id=_id)
+        api_case.test_suite_id = self.test_suite_id
+        api_case.status = self.case_status
+        api_case.save()
 
     @classmethod
     def update_case_detailed(cls, _id: int, status: int):
@@ -100,12 +110,11 @@ class TestResult:
         api_info_obj.status = status
         api_info_obj.save()
 
-    def update_test_suite(self, status: int):
+    def update_test_suite(self, status: int, error_message: list):
         test_suite_data = {
-            'id': self.test_suite_data['id'],
-            'error_message': json.dumps(self.case_error_message,
-                                        ensure_ascii=False) if self.case_error_message else None,
+            'id': self.test_suite_id,
+            'error_message': json.dumps(error_message, ensure_ascii=False) if error_message else None,
             'run_status': StatusEnum.SUCCESS.value,
             'status': status
         }
-        self.test_suite_report = TestSuiteReportCRUD().inside_put(self.test_suite_data['id'], test_suite_data)
+        TestSuiteReportCRUD.inside_put(self.test_suite_id, test_suite_data)

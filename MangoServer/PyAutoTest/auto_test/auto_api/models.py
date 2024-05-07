@@ -110,7 +110,7 @@ class ApiCaseResult(models.Model):
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
     status = models.SmallIntegerField(verbose_name="断言结果", null=True)
-    error_message = models.CharField(verbose_name="失败原因", max_length=1024, null=True)
+    error_message = models.TextField(verbose_name="失败原因", max_length=1024, null=True)
 
     class Meta:
         db_table = 'api_case_result'

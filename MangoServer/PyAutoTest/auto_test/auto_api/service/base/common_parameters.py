@@ -37,7 +37,7 @@ class CommonParameters(DataProcessor, HTTPRequest):
                                               bool(self.test_object.db_rud_status)
                                               )
 
-    def init(self, project_id: int):
+    def common_init(self, project_id: int):
         self.project_id = project_id
         api_public = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
                                               project=self.project_id).order_by('type')
