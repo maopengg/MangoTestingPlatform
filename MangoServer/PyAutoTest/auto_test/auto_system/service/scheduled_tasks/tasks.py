@@ -10,7 +10,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from django.db import connection
 
-from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
 from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
@@ -57,7 +56,12 @@ class Tasks:
 
         scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
-            cls.api_task(scheduled_tasks.id, scheduled_tasks.test_obj.id, scheduled_tasks.is_notice, True)
+            cls.api_task(
+                scheduled_tasks_id=scheduled_tasks.id,
+                test_obj_id=scheduled_tasks.test_obj.id,
+                is_notice=scheduled_tasks.is_notice,
+                user_obj={'id': scheduled_tasks.case_people.id, 'username': scheduled_tasks.case_people.username},
+                is_trigger=True)
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             cls.ui_task(scheduled_tasks.id,
                         scheduled_tasks.case_people.id,
@@ -72,9 +76,14 @@ class Tasks:
     def distribute(cls, scheduled_tasks):
         # scheduled_tasks: ScheduledTasks = scheduled_tasks
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
-            task = Thread(target=cls.api_task, args=(scheduled_tasks.id,
-                                                     scheduled_tasks.test_obj.id,
-                                                     scheduled_tasks.is_notice))
+            task = Thread(
+                target=cls.api_task,
+                args=(scheduled_tasks.id,
+                      scheduled_tasks.test_obj.id,
+                      scheduled_tasks.is_notice,
+                      {'id': scheduled_tasks.case_people.id, 'username': scheduled_tasks.case_people.username}
+                      )
+            )
             task.start()
 
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
@@ -90,7 +99,12 @@ class Tasks:
         connection.close()
 
     @classmethod
-    def api_task(cls, scheduled_tasks_id: int, test_obj_id: int, is_notice: int, is_trigger: bool = False):
+    def api_task(cls,
+                 scheduled_tasks_id: int,
+                 test_obj_id: int,
+                 is_notice: int,
+                 user_obj: dict,
+                 is_trigger: bool = False):
         try:
             connection.ensure_connection()
 
@@ -100,7 +114,8 @@ class Tasks:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
                 connection.ensure_connection()
 
-                ApiTestRun(test_obj_id=test_obj_id, is_notice=is_notice).case_batch(case_id_list)
+                ApiTestRun(test_obj_id=test_obj_id, is_notice=is_notice, user_obj=user_obj).case_batch(
+                    case_id_list)
         except MangoServerError as error:
             log.error(f'执行API定时任务失败，错误消息：{error.msg}')
             if is_trigger:
