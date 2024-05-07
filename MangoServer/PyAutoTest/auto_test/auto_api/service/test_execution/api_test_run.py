@@ -47,6 +47,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
                 else:
                     self.case_status = StatusEnum.SUCCESS.value
             self.add_api_case_result(case_id)
+            self.update_case(case_id)
             if not self.is_batch:
                 self.update_test_suite(self.case_status, [self.case_error_message])
             else:

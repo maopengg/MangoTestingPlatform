@@ -99,6 +99,7 @@ class TestResult:
         api_info_obj.save()
 
     def update_case(self, _id: int):
+        print(self.case_status)
         api_case = ApiCase.objects.get(id=_id)
         api_case.test_suite_id = self.test_suite_id
         api_case.status = self.case_status
