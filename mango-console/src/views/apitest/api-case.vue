@@ -662,9 +662,9 @@
     })
       .then((res) => {
         Message.success(res.msg)
-        doRefresh()
       })
       .catch(console.log)
+    doRefresh()
   }
   function onCaseBatchRun() {
     if (testObj.selectValue == null) {
