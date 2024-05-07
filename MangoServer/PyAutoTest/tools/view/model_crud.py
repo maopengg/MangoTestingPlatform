@@ -5,12 +5,14 @@
 # @Author : 毛鹏
 import logging
 from threading import Thread
+
 from django.core.exceptions import FieldError
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
+from PyAutoTest.exceptions.tools_exception import InsideSaveError
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
@@ -21,12 +23,12 @@ class ModelCRUD(GenericAPIView):
     model = None
     # post专用
     serializer = None
+    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module_name', 'case_people']
 
     def get(self, request: Request):
-        not_matching_str = ['pageSize', 'page', 'type', 'project', 'module_name', 'case_people']
         query_dict = {}
         for k, v in dict(request.query_params.lists()).items():
-            if k and isinstance(v[0], str) and k not in not_matching_str and 'id' not in k:
+            if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
                 query_dict[f'{k}__contains'] = v[0]
             else:
                 query_dict[k] = v[0]
@@ -151,6 +153,7 @@ class ModelCRUD(GenericAPIView):
             return serializer.data
         else:
             log.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            raise InsideSaveError(*RESPONSE_MSG_0116, value=(serializer.errors,))
 
     @classmethod
     def inside_put(cls, _id: int, data: dict) -> dict:
@@ -160,6 +163,7 @@ class ModelCRUD(GenericAPIView):
             return serializer.data
         else:
             log.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
+            raise InsideSaveError(*RESPONSE_MSG_0117, value=(serializer.errors,))
 
     @classmethod
     def inside_delete(cls, _id: int) -> None:

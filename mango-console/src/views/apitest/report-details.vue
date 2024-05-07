@@ -103,7 +103,7 @@
               <pre>{{ strJson(reportDetailsData.apiResult.all_cache) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="11" title="断言数据">
-              <pre>{{ strJson(reportDetailsData.apiResult.all_cache) }}</pre>
+              <pre>{{ strJson(reportDetailsData.apiResult.assertion) }}</pre>
             </a-tab-pane>
           </a-tabs>
         </a-space>

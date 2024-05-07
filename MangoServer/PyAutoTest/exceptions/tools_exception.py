@@ -68,3 +68,7 @@ class CacheIsEmptyError(MangoServerError):
 
 class SocketClientNotPresentError(MangoServerError):
     pass
+
+
+class InsideSaveError(MangoServerError):
+    pass

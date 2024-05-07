@@ -72,7 +72,7 @@ class ApiCaseViews(ViewSet):
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
         try:
-            api_case_run = ApiTestRun(test_obj_id, case_sort)
+            api_case_run = ApiTestRun(test_obj_id, case_sort, user_obj=request.user)
             test_result: dict = api_case_run.run_one_case(case_id)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )
@@ -86,7 +86,7 @@ class ApiCaseViews(ViewSet):
         case_id_list = request.data.get('case_id_list')
         test_obj_id = request.data.get('test_obj_id')
         try:
-            api_case_run = ApiTestRun(test_obj_id, username=request.user.get('username'))
+            api_case_run = ApiTestRun(test_obj_id, user_obj=request.user)
             test_result: dict = api_case_run.case_batch(case_id_list)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )

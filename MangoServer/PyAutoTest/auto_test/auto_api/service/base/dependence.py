@@ -14,13 +14,13 @@ from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonP
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0004, ERROR_MSG_0005, ERROR_MSG_0007, ERROR_MSG_0010, \
-    ERROR_MSG_0006
+from PyAutoTest.tools.view.error_msg import *
 
 log = logging.getLogger('api')
 
 
 class ApiDataHandle(CommonParameters, PublicAssertion):
+    ass_result = []
 
     def request_data(self, request_data_model: RequestDataModel):
         for key, value in request_data_model:
@@ -60,7 +60,8 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
             except SyntaxError:
                 raise ResponseSyntaxError(*ERROR_MSG_0007)
             except ValueError:
-                pass
+                raise ResponseSyntaxError(*ERROR_MSG_0039)
+        self.ass_result = []
         if case_detailed.ass_response_value:
             self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
         if case_detailed.ass_sql:
@@ -106,6 +107,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
 
     def __assertion_response_value(self, response_data, ass_response_value):
         _dict = {}
+        method = None
         try:
             if ass_response_value:
                 for i in ass_response_value:
@@ -114,32 +116,41 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     if i.get('expect'):
                         try:
                             _dict['expect'] = str(eval(i.get('expect')))
-                        except Exception:
+                        except Exception as error:
+                            log.error(f'发生未知错误：{error}')
                             _dict['expect'] = i.get('expect')
-                    getattr(self, i['method'])(**_dict)
-        except AssertionError:
-            raise ResponseValueAssError(*ERROR_MSG_0005, value=(_dict.get('value'), _dict.get('expect')))
+                    method = i.get('method')
+                    getattr(self, method)(**_dict)
+        except AssertionError as error:
+            log.error(error)
+            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
+            raise ResponseValueAssError(*ERROR_MSG_0005)
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
         _dict = {'value': None}
+        method = None
         try:
             if self.mysql_connect:
                 for sql in sql_list:
                     value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
+                    if not value:
+                        raise SqlResultIsNoneError(*ERROR_MSG_0041)
                     if isinstance(value, list):
                         _dict = {'value': str(list(value[0].values())[0])}
                     if sql.get('expect'):
                         _dict['expect'] = sql.get('expect')
-                    getattr(self, sql['method'])(**_dict)
+                    method = sql.get('method')
+                    getattr(self, method)(**_dict)
         except AssertionError as error:
             log.error(error)
-            raise SqlAssError(*ERROR_MSG_0006, value=(_dict.get('value'), _dict.get('expect')))
+            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
+            raise SqlAssError(*ERROR_MSG_0006)
 
-    @classmethod
-    def __assertion_response_whole(cls, actual, expect):
+    def __assertion_response_whole(self, actual, expect):
         try:
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError as error:
             log.error(error)
+            self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
             raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))

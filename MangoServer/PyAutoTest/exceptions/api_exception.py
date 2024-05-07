@@ -52,3 +52,7 @@ class PublicMysqlError(MangoServerError):
 
 class DumpDataError(MangoServerError):
     pass
+
+
+class SqlResultIsNoneError(MangoServerError):
+    pass
