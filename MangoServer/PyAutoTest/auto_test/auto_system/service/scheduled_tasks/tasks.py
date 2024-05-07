@@ -100,8 +100,7 @@ class Tasks:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
                 connection.ensure_connection()
 
-                project_id = ApiCase.objects.get(id=case_id_list[0]).project.id
-                ApiTestRun(project_id=project_id, test_obj_id=test_obj_id, is_notice=is_notice).case_batch(case_id_list)
+                ApiTestRun(test_obj_id=test_obj_id, is_notice=is_notice).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行API定时任务失败，错误消息：{error.msg}')
             if is_trigger:
