@@ -75,7 +75,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
                 self.run_one_case(case_id, case_list)
                 case_status_list.append(self.case_status)
                 case_error_message_list.append(self.case_error_message)
-            except UnknownError:
+            except (UnknownError, CaseIsEmptyError):
                 pass
         if StatusEnum.FAIL.value in case_status_list:
             self.update_test_suite(StatusEnum.FAIL.value, case_error_message_list)
@@ -102,7 +102,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             self.add_api_info_result(case_detailed)
             return False
         except Exception as error:
-            log.info(f'执行接口请求时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
+            log.error(f'执行接口请求时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
             self.case_status = StatusEnum.FAIL.value
 
             self.case_error_message = ERROR_MSG_0040[1]
@@ -119,7 +119,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
             self.add_api_info_result(case_detailed, request_data_model, response)
             return False
         except Exception as error:
-            log.info(f'执行接口断言时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
+            log.error(f'执行接口断言时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
             self.case_status = StatusEnum.FAIL.value
             self.case_error_message = ERROR_MSG_0040[1]
             self.add_api_info_result(case_detailed, request_data_model, response)

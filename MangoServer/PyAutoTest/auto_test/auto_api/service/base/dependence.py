@@ -116,13 +116,12 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     if i.get('expect'):
                         try:
                             _dict['expect'] = str(eval(i.get('expect')))
-                        except Exception as error:
-                            log.error(f'发生未知错误：{error}')
+                        except NameError:
                             _dict['expect'] = i.get('expect')
                     method = i.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.error(error)
+            log.warning(error)
             self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
             raise ResponseValueAssError(*ERROR_MSG_0005)
 
@@ -143,7 +142,7 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                     method = sql.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.error(error)
+            log.warning(error)
             self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
             raise SqlAssError(*ERROR_MSG_0006)
 
@@ -151,6 +150,6 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
         try:
             assert Counter(actual) == Counter(json.loads(expect))
         except AssertionError as error:
-            log.error(error)
+            log.warning(error)
             self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
             raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))
