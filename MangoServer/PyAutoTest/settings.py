@@ -35,7 +35,7 @@ TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
-DEBUG = True
+DEBUG = False
 # 允许所有ip或域名'*'
 ALLOWED_HOSTS = ["*"]
 # ************************ app注册 ************************ #
@@ -97,7 +97,11 @@ TEMPLATES = [
 ASGI_APPLICATION = 'PyAutoTest.asgi.application'
 # WSGI_APPLICATION = 'PyAutoTest.wsgi.application'
 
-
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 # ************************ 数据库配置 ************************ #
 
 DATABASES = {

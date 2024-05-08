@@ -30,6 +30,6 @@ urlpatterns = [
     path('system/', include("PyAutoTest.auto_test.auto_system.urls")),
     path('api/', include("PyAutoTest.auto_test.auto_api.urls")),
     path('ui/', include("PyAutoTest.auto_test.auto_ui.urls")),
-    path('data_producer/', include("PyAutoTest.auto_test.auto_perf.urls")),
+    path('perf/', include("PyAutoTest.auto_test.auto_perf.urls")),
     path('user/', include("PyAutoTest.auto_test.auto_user.urls")),
 ]
