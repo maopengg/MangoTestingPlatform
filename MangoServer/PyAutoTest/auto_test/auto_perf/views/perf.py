@@ -7,11 +7,12 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_perf.service.perf_run.perf_run import perf_run
+# from PyAutoTest.auto_test.auto_perf.service.perf_run.perf_run import perf_run
 
 
 class PerfViews(ViewSet):
 
     @action(methods=['POST'], detail=False)
     def perf_run(self, request: Request):
-        perf_run()
+        # perf_run()
+        pass
