@@ -3,6 +3,8 @@
 # @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
+import time
+
 from uiautomator2 import UiObject
 
 from autotest.ui.base_tools.base_data import BaseData
@@ -27,6 +29,7 @@ class UiautomatorElement(BaseData):
         """单击输入"""
         locating.click()
         self.android.set_fastinput_ime(True)
+        time.sleep(1)
         self.android.send_keys(text)
 
     @classmethod

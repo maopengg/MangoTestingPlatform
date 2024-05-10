@@ -3,8 +3,7 @@
 # @Description: 
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
-
-from urllib.parse import urljoin
+from urllib.parse import urlparse, urljoin
 
 from playwright._impl._api_types import Error
 
@@ -12,13 +11,13 @@ from autotest.ui.base_tools import ElementMain
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
+from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed, UrlError
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
 from tools import InitPath
 from tools.data_processor import RandomTimeData
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
+from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0049
 
 
 class StepsMain(ElementMain):
@@ -121,6 +120,9 @@ class StepsMain(ElementMain):
 
     async def web_init(self):
         self.test_object_value = urljoin(self.page_step_model.test_object_value, self.page_step_model.url)
+        result = urlparse(self.test_object_value)
+        if not all([result.scheme, result.netloc]):
+            raise UrlError(*ERROR_MSG_0049)
 
         try:
             if self.page and not self.is_url:

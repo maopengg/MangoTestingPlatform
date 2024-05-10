@@ -84,3 +84,7 @@ class NewObjectError(UiError):
 
 class PackageNameError(UiError):
     pass
+
+
+class UrlError(UiError):
+    pass

@@ -17,10 +17,11 @@ from tools.log_collector import log
 
 class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
 
-    def __init__(self):
+    def __init__(self, debug: bool = False):
         self.queue = asyncio.Queue()
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self.consumer())
+        if not debug:
+            self.loop = asyncio.get_event_loop()
+            self.loop.create_task(self.consumer())
 
     async def consumer(self):
         while True:
@@ -42,15 +43,14 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
     async def test(self):
         with open(r'test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
-            for i in out:
-                await getattr(self, 'u_case')(i)
+            await getattr(self, out['func_name'])(out['func_args'])
 
         while True:
             await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
-    r = InterfaceMethodReflection()
+    r = InterfaceMethodReflection(True)
 
     asyncio.run(r.test())
 
