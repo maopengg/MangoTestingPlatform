@@ -8,7 +8,6 @@ from threading import Thread
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from django.db import connection
 
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
@@ -16,7 +15,7 @@ from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.tools.decorator.retry import retry
+from PyAutoTest.tools.decorator.retry import orm_retry
 
 log = logging.getLogger('system')
 
@@ -26,7 +25,6 @@ class Tasks:
 
     @classmethod
     def create_jobs(cls):
-        connection.ensure_connection()
         queryset = TimeTasks.objects.all()
         for timer in queryset:
             cls.scheduler.add_job(cls.timing,
@@ -39,10 +37,9 @@ class Tasks:
         cls.scheduler.start()
 
     @classmethod
-    @retry(max_retries=5, delay=5, func_name='timing')
+    @orm_retry('timing')
     def timing(cls, timing_strategy_id):
         log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
-        connection.ensure_connection()
         # 执行数据库查询操作
 
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
@@ -50,10 +47,8 @@ class Tasks:
         for scheduled_tasks in scheduled_tasks_obj:
             cls.distribute(scheduled_tasks)
 
-    @classmethod
+    @orm_retry('trigger')
     def trigger(cls, scheduled_tasks_id):
-        connection.ensure_connection()
-
         scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
             cls.api_task(
@@ -96,9 +91,9 @@ class Tasks:
             task.start()
         else:
             log.error('开始执行性能自动化任务')
-        connection.close()
 
     @classmethod
+    @orm_retry('api_task')
     def api_task(cls,
                  scheduled_tasks_id: int,
                  test_obj_id: int,
@@ -106,13 +101,11 @@ class Tasks:
                  user_obj: dict,
                  is_trigger: bool = False):
         try:
-            connection.ensure_connection()
 
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
-                connection.ensure_connection()
 
                 ApiTestRun(test_obj_id=test_obj_id, is_notice=is_notice, user_obj=user_obj).case_batch(
                     case_id_list)
@@ -122,6 +115,7 @@ class Tasks:
                 raise error
 
     @classmethod
+    @orm_retry('ui_task')
     def ui_task(cls,
                 scheduled_tasks_id: int,
                 user_id: int,
@@ -131,7 +125,6 @@ class Tasks:
                 is_trigger: bool = False,
                 ):
         try:
-            connection.ensure_connection()
 
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
