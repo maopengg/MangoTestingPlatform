@@ -47,6 +47,7 @@ class Tasks:
         for scheduled_tasks in scheduled_tasks_obj:
             cls.distribute(scheduled_tasks)
 
+    @classmethod
     @orm_retry('trigger')
     def trigger(cls, scheduled_tasks_id):
         scheduled_tasks = ScheduledTasks.objects.get(id=scheduled_tasks_id)
