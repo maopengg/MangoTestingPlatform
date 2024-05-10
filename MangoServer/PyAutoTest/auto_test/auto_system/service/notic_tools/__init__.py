@@ -6,8 +6,6 @@
 import json
 import logging
 
-from django.db import connection
-
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
@@ -63,22 +61,11 @@ class NoticeMain:
     @classmethod
     def mail_send(cls, content: str) -> None:
         user_list = ['729164035@qq.com', ]
-        connection.connect()
-        try:
-            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name)
-            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name)
-            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name)
-        except CacheData.DoesNotExist:
-            connection.close()
-            raise CacheKetNullError(*ERROR_MSG_0031)
-        else:
-            if send_user.value is None or email_host.value is None or stamp_key.value is None:
-                raise CacheKetNullError(*ERROR_MSG_0031)
-        connection.close()
+        send_user, email_host, stamp_key = cls.mail_config()
         email = SendEmail(EmailNoticeModel(
-            send_user=send_user.value,
-            email_host=email_host.value,
-            stamp_key=stamp_key.value,
+            send_user=send_user,
+            email_host=email_host,
+            stamp_key=stamp_key,
             send_list=user_list,
         ))
         email.send_mail(user_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}服务运行通知】', content)
@@ -94,20 +81,12 @@ class NoticeMain:
             send_list = json.loads(i.config)
         except json.decoder.JSONDecodeError:
             raise JsonSerializeError(*ERROR_MSG_0012)
-        try:
-            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name)
-            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name)
-            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name)
-        except CacheData.DoesNotExist:
-            raise CacheKetNullError(*ERROR_MSG_0031)
-        else:
-            if send_user.value is None or email_host.value is None or stamp_key.value is None:
-                raise CacheKetNullError(*ERROR_MSG_0031)
 
+        send_user, email_host, stamp_key = cls.mail_config()
         email = SendEmail(EmailNoticeModel(
-            send_user=send_user.value,
-            email_host=email_host.value,
-            stamp_key=stamp_key.value,
+            send_user=send_user,
+            email_host=email_host,
+            stamp_key=stamp_key,
             send_list=send_list,
         ), test_report)
         email.send_main()
@@ -136,3 +115,16 @@ class NoticeMain:
             test_environment=test_suite.test_object.name,
             project_name=test_suite.project.name,
             project_id=test_suite.project.id)
+
+    @staticmethod
+    def mail_config():
+        try:
+            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name).value
+            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name).value
+            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name).value
+        except CacheData.DoesNotExist:
+            raise CacheKetNullError(*ERROR_MSG_0031)
+        else:
+            if send_user is None or email_host is None or stamp_key is None:
+                raise CacheKetNullError(*ERROR_MSG_0031)
+        return send_user, email_host, stamp_key

@@ -18,7 +18,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
-from PyAutoTest.tools.decorator.retry import retry
+from PyAutoTest.tools.decorator.retry import orm_retry
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0030
 
 log = logging.getLogger('ui')
@@ -27,7 +27,7 @@ log = logging.getLogger('ui')
 class TestReportWriting:
 
     @classmethod
-    @retry(func_name='update_page_step_status')
+    @orm_retry('update_page_step_status')
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         try:
             if data.page_step_id:
@@ -38,7 +38,7 @@ class TestReportWriting:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
 
     @classmethod
-    @retry(func_name='update_case')
+    @orm_retry('update_case')
     def update_case(cls, data: CaseResultModel):
         connection.ensure_connection()
         case = UiCase.objects.get(id=data.case_id)
@@ -56,6 +56,7 @@ class TestReportWriting:
         cls.update_test_suite(data.test_suite_id)
 
     @classmethod
+    @orm_retry('update_step')
     def update_step(cls, step_data: PageStepsResultModel):
         case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
         case_step_detailed.status = step_data.status
@@ -67,6 +68,7 @@ class TestReportWriting:
         page_step.save()
 
     @classmethod
+    @orm_retry('update_test_suite')
     def update_test_suite(cls, test_suite_id: int):
         test_suite_obj = TestSuiteReport.objects.get(id=test_suite_id)
         case_id_status = UiCaseResult \
