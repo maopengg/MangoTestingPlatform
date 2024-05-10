@@ -105,8 +105,13 @@ class ElementMain(WebDevice, AndroidDriver):
             raise ElementOpeNoneError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
+        try:
+            func_doc = getattr(self, ope_type).__doc__
+        except AttributeError:
+            raise ElementOpeNoneError(*ERROR_MSG_0048)
+
         SignalSend.notice_signal_c(
-            f'准备操作->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
+            f'准备操作->元素：{name}正在进行{func_doc}，元素个数：{self.element_test_result.ele_quantity}')
         await self.action_element()
 
     async def __ass(self, name, ope_type):
