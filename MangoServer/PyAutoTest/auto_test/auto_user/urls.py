@@ -8,18 +8,24 @@ from django.urls import path
 
 from .views.project import ProjectCRUD, ProjectViews
 from .views.project_file import ProjectFileViews
-from .views.project_module import ProjectModuleViews, ProjectModuleCRUD
+from .views.product_module import ProductModuleViews, ProductModuleCRUD
+from .views.project_product import ProjectProductCRUD
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
 
 urlpatterns = [
     #
-    path("role", RoleCRUD.as_view()),
-    path("role/all", RoleViews.as_view({'get': 'get_all_role'})),
-    #
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
+    #
+    path("product", ProjectProductCRUD.as_view()),
+    #
+    path("module", ProductModuleCRUD.as_view()),
+    path("module/get/all", ProductModuleViews.as_view({'get': 'get_module_name_all'})),
+    #
+    path("role", RoleCRUD.as_view()),
+    path("role/all", RoleViews.as_view({'get': 'get_all_role'})),
     #
     path("user/logs", UserLogsCRUD.as_view()),
     #
@@ -29,9 +35,6 @@ urlpatterns = [
     path("environment", UserViews.as_view({'put': 'put_environment'})),
     path("password", UserViews.as_view({'put': 'put_password'})),
     path("project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
-    #
-    path("project/module", ProjectModuleCRUD.as_view()),
-    path("project/module/get/all", ProjectModuleViews.as_view({'get': 'get_module_name_all'})),
     #
     path("files/test", ProjectFileViews.as_view({'get': 'test'})),
     path("files/all/list", ProjectFileViews.as_view({'get': 'get_project_all_list'})),

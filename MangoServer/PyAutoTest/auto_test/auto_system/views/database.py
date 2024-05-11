@@ -8,7 +8,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
@@ -24,7 +24,7 @@ class DatabaseSerializers(serializers.ModelSerializer):
 class DatabaseSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializers(read_only=True)
     test_obj = TestObjectSerializers(read_only=True)
 
     class Meta:
@@ -34,7 +34,7 @@ class DatabaseSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
+            'project_product',
             'test_obj')
         return queryset
 

@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiEleResult
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -30,7 +30,7 @@ class UiEleResultSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
-    module_name = ProjectModuleSerializers(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
 
     class Meta:
@@ -41,7 +41,7 @@ class UiEleResultSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project',
-            'module_name',
+            'module',
             'case_people')
         return queryset
 

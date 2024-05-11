@@ -2,7 +2,41 @@
   <div>
     <div class="main-container">
       <TableBody ref="tableBody">
-        <template #header></template>
+        <template #header>
+          <TableHeader
+            :show-filter="true"
+            title="项目管理"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
+            <template #search-content>
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+                <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+                  <template v-if="item.type === 'input'">
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="project.data"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                </a-form-item>
+              </a-form>
+            </template>
+          </TableHeader>
+        </template>
 
         <template #default>
           <a-tabs>
@@ -46,7 +80,6 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">增加模块</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除</a-button
                     >
@@ -94,8 +127,8 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
-  import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
+  import { fieldNames } from '@/setting'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -103,7 +136,6 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const router = useRouter()
   const project = useProject()
 
   const projectData = reactive({
@@ -125,6 +157,28 @@
           return false
         }
         return true
+      },
+    },
+  ])
+  const conditionItems: Array<FormItem> = reactive([
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入项目ID',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'name',
+      label: '项目名称',
+      type: 'input',
+      placeholder: '请输入项目名称',
+      value: '',
+      reset: function () {
+        this.value = ''
       },
     },
   ])
@@ -159,15 +213,19 @@
       width: 150,
     },
   ])
-
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+  }
   function doRefresh() {
     get({
       url: userDepartmentList,
       data: () => {
-        return {
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-        }
+        let value = getFormItems(conditionItems)
+        value['page'] = pagination.page
+        value['pageSize'] = pagination.pageSize
+        return value
       },
     })
       .then((res) => {
@@ -231,17 +289,6 @@
       })
     })
   }
-
-  function onClick(record: any) {
-    router.push({
-      path: '/config/project-module',
-      query: {
-        id: record.id,
-        name: record.name,
-      },
-    })
-  }
-
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()

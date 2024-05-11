@@ -70,8 +70,8 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project?.name }}
+                <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                  {{ record.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
                   {{ record.test_obj.name }}
@@ -302,15 +302,17 @@
   const tableColumns = useTableColumn([
     table.indexColumn,
     {
-      title: '项目名称',
-      key: 'project',
-      dataIndex: 'project',
-      width: 110,
+      title: '产品',
+      key: 'project_product',
+      dataIndex: 'project_product',
+      align: 'left',
+      width: 150,
     },
     {
       title: '对应环境',
       key: 'test_obj',
       dataIndex: 'test_obj',
+      align: 'left',
     },
     {
       title: '域名',

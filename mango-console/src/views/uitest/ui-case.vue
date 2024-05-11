@@ -271,7 +271,6 @@
   import { get, post, put, deleted } from '@/api/http'
   import {
     userNickname,
-    userProjectModuleGetAll,
     uiCase,
     uiCaseRun,
     uiRunCaseBatch,
@@ -280,6 +279,7 @@
     systemTasksBatchSetCases,
     systemScheduledName,
     systemEnumCaseLevel,
+    userModuleGetAll,
   } from '@/api/url'
   import {
     usePagination,
@@ -711,7 +711,7 @@
   function getProjectModule(projectId: number) {
     doRefresh()
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

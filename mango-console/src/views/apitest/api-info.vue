@@ -261,7 +261,7 @@
     apiCaseInfoRun,
     systemEnumEnd,
     systemEnumMethod,
-    userProjectModuleGetAll,
+    userModuleGetAll,
     uiConfigNewBrowserObj,
     apiPutApiInfoType,
     apiCopyInfo,
@@ -772,7 +772,7 @@
   function getProjectModule(projectId: number) {
     doRefresh()
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

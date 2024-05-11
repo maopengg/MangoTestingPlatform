@@ -14,7 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.apimodel import ResponseDataModel
@@ -38,7 +38,7 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
-    module_name = ProjectModuleSerializers(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
 
     class Meta:
         model = ApiInfo
@@ -48,7 +48,7 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project',
-            'module_name')
+            'module')
         return queryset
 
 
@@ -81,7 +81,7 @@ class ApiInfoViews(ViewSet):
         :param request:
         :return:
         """
-        res = self.model.objects.filter(module_name=request.query_params.get('module_id')).values_list('id', 'name')
+        res = self.model.objects.filter(module=request.query_params.get('module_id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0071, data)
 

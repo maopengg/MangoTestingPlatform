@@ -131,12 +131,16 @@ def ad_routes():
                 {
                     "parentPath": "/config",
                     "menuUrl": "/config/project",
-                    "menuName": "测试项目",
+                    "menuName": "项目配置",
+                }, {
+                    "parentPath": "/config",
+                    "menuUrl": "/config/product",
+                    "menuName": "产品配置",
                 },
                 {
                     "parentPath": "/config",
                     "menuUrl": "/config/test-obj",
-                    "menuName": "测试环境",
+                    "menuName": "环境配置",
                 },
                 {
                     "parentPath": "/config",

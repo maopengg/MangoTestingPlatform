@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { get } from '@/api/http'
-import { userProjectModuleGetAll } from '@/api/url'
+import { userModuleGetAll } from '@/api/url'
 // 1.定义容器
 export const useProjectModule = defineStore('project-module', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -15,7 +15,7 @@ export const useProjectModule = defineStore('project-module', {
   actions: {
     getProjectModule() {
       get({
-        url: userProjectModuleGetAll,
+        url: userModuleGetAll,
         data: () => {
           return {}
         },

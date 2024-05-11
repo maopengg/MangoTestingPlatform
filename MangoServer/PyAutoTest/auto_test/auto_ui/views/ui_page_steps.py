@@ -13,7 +13,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiPageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -31,11 +31,11 @@ class UiPageStepsSerializers(serializers.ModelSerializer):
 
 
 class UiPageStepsSerializersC(serializers.ModelSerializer):
-    project = ProjectSerializers(read_only=True)
-    page = UiPageSerializers(read_only=True)
-    module_name = ProjectModuleSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project = ProjectSerializers(read_only=True)
+    page = UiPageSerializers(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
 
     class Meta:
         model = UiPageSteps
@@ -46,7 +46,7 @@ class UiPageStepsSerializersC(serializers.ModelSerializer):
         queryset = queryset.select_related(
             'project',
             'page',
-            'module_name')
+            'module')
         return queryset
 
 
