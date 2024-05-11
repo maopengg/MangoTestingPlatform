@@ -20,16 +20,28 @@ class Project(models.Model):
         ordering = ['-id']
 
 
-class ProjectModule(models.Model):
-    """ 项目模块表 """
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+class ProjectProduct(models.Model):
+    """项目产品表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="产品名称", max_length=64)
+
+    class Meta:
+        db_table = 'project_product'
+        ordering = ['-id']
+
+
+class ProductModule(models.Model):
+    """ 产品模块表 """
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="模块名称", max_length=64)
     superior_module = models.CharField(verbose_name="上级模块名称", max_length=64, null=True)
 
     class Meta:
-        db_table = 'project_module'
+        db_table = 'product_module'
         ordering = ['-id']
 
 
