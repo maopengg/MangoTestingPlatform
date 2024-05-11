@@ -10,7 +10,7 @@ class Project(models.Model):
     """项目表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    name = models.CharField(verbose_name="项目名称", max_length=64)
+    name = models.CharField(verbose_name="项目名称", max_length=64, unique=True)
     upload_folder = models.CharField(verbose_name="上传文件存放的文件夹", max_length=64, null=True)
     screenshot_folder = models.CharField(verbose_name="执行失败的截图文件夹", max_length=64, null=True)
     status = models.SmallIntegerField(verbose_name="状态", null=True)
@@ -26,6 +26,8 @@ class ProjectProduct(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="产品名称", max_length=64)
+    # 0是web， 1是app， 2是小程序
+    type = models.SmallIntegerField(verbose_name="对应什么客户端")
 
     class Meta:
         db_table = 'project_product'
@@ -62,7 +64,7 @@ class User(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     nickname = models.CharField(verbose_name="昵称", max_length=64, null=True)
-    username = models.CharField(verbose_name="登录账号", max_length=64, null=True)
+    username = models.CharField(verbose_name="登录账号", max_length=64, null=True, unique=True)
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     role = models.ForeignKey(to=Role, to_field="id", on_delete=models.SET_NULL, null=True)
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)

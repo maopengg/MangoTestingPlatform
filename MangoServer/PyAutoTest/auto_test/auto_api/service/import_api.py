@@ -59,7 +59,7 @@ class ImportApi:
         return ApiInfoCRUD.inside_post({
             'project': data.get('project'),
             'type': data.get('type'),
-            'module_name': data.get('module_name'),
+            'module': data.get('module'),
             'name': data.get('name'),
             'client': data.get('client'),
             'url': path,

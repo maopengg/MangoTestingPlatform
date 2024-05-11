@@ -75,8 +75,8 @@ class ApiCaseDetailedCRUD(ModelCRUD):
 
     def post(self, request: Request):
         data = request.data
-        if data['module_name']:
-            del data['module_name']
+        if data['module']:
+            del data['module']
         api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
         data['url'] = api_info_obj.url
         data['params'] = api_info_obj.params

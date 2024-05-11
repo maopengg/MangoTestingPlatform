@@ -8,49 +8,49 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProjectModule, User
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.models import ProductModule, User
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class ProjectModuleSerializers(serializers.ModelSerializer):
+class ProductModuleSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = ProjectModule
+        model = ProductModule
         fields = '__all__'
 
 
-class ProjectModuleSerializersC(serializers.ModelSerializer):
-    project = ProjectSerializers(read_only=True)
+class ProductModuleSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project_product = ProjectProductSerializers(read_only=True)
 
     class Meta:
-        model = ProjectModule
+        model = ProductModule
         fields = '__all__'
 
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project')
+            'project_product')
         return queryset
 
 
-class ProjectModuleCRUD(ModelCRUD):
-    model = ProjectModule
-    queryset = ProjectModule.objects.all()
-    serializer_class = ProjectModuleSerializersC
+class ProductModuleCRUD(ModelCRUD):
+    model = ProductModule
+    queryset = ProductModule.objects.all()
+    serializer_class = ProductModuleSerializersC
     # post专用序列化器
-    serializer = ProjectModuleSerializers
+    serializer = ProductModuleSerializers
 
 
-class ProjectModuleViews(ViewSet):
-    model = ProjectModule
-    serializer_class = ProjectModuleSerializers
+class ProductModuleViews(ViewSet):
+    model = ProductModule
+    serializer_class = ProductModuleSerializers
 
     @action(methods=['GET'], detail=False)
     def get_module_name_all(self, request: Request):

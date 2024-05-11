@@ -2,7 +2,7 @@ from django.db import models
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.auto_test.auto_user.models import Project, User, ProjectModule
+from PyAutoTest.auto_test.auto_user.models import ProjectProduct, User, ProductModule
 
 """
      1.python manage.py makemigrations
@@ -14,10 +14,11 @@ class ApiInfo(models.Model):
     """api用例表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module_name = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+
     # 0和空等于录制，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型')
-    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="接口名称", max_length=1024)
     client = models.SmallIntegerField(verbose_name="什么端")
     url = models.CharField(verbose_name="请求url", max_length=1024)
@@ -38,8 +39,8 @@ class ApiInfo(models.Model):
 class ApiCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module_name = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="测试用例名称", max_length=64)
     case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
@@ -89,7 +90,7 @@ class ApiPublic(models.Model):
     """api公共"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0等于自定义，1等于sql，2等于登录，3等于header
     type = models.SmallIntegerField(verbose_name="自定义变量类型", null=True)
     client = models.SmallIntegerField(verbose_name="什么端", null=True)

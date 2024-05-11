@@ -22,7 +22,7 @@ class PlaywrightBrowser(BaseData):
         await asyncio.sleep(int(_time))
 
     async def w_goto(self, url: str):
-        """打开url"""
+        """打开URL"""
         try:
             await self.page.goto(url, timeout=60000)
             await asyncio.sleep(2)

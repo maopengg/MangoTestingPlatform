@@ -121,8 +121,8 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'project-module',
-        component: () => import('@/views/config/project-module.vue'),
+        path: 'product-module',
+        component: () => import('@/views/config/product-module.vue'),
         meta: {
           title: '测试项目',
         },

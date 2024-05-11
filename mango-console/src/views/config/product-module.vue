@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'项目：' + route.query.name">
+      <a-card :title="'产品名称：' + route.query.name">
         <template #extra>
           <a-affix :offsetTop="80">
             <a-space>
@@ -53,7 +53,7 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { userProjectModule } from '@/api/url'
+  import { userModule } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
@@ -152,7 +152,7 @@
       okText: '删除',
       onOk: () => {
         deleted({
-          url: userProjectModule,
+          url: userModule,
           data: () => {
             return {
               id: '[' + record.id + ']',
@@ -192,7 +192,7 @@
       value['project'] = route.query.id
       if (runCaseData.isAdd) {
         post({
-          url: userProjectModule,
+          url: userModule,
           data: () => {
             return value
           },
@@ -204,7 +204,7 @@
           .catch(console.log)
       } else {
         put({
-          url: userProjectModule,
+          url: userModule,
           data: () => {
             value['id'] = runCaseData.updateId
             return value
@@ -225,10 +225,10 @@
 
   function doRefresh() {
     get({
-      url: userProjectModule,
+      url: userModule,
       data: () => {
         return {
-          project: route.query.id,
+          project_product: route.query.id,
         }
       },
     })

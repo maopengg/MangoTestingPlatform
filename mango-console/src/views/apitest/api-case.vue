@@ -273,7 +273,7 @@
     apiCaseCody,
     apiCaseRun,
     userNickname,
-    userProjectModuleGetAll,
+    userModuleGetAll,
     systemEnumStatus,
     systemTasksBatchSetCases,
     systemScheduledName,
@@ -297,7 +297,6 @@
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { useProjectModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
-  import DataItem from '@/views/index/components/DataItem.vue'
 
   const projectModule = useProjectModule()
 
@@ -582,7 +581,7 @@
   function getProjectModule(projectId: number) {
     doRefresh()
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

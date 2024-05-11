@@ -284,7 +284,6 @@
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import {
-    userProjectModuleGetAll,
     uiPageName,
     uiCasePutCaseSort,
     uiCaseStepsDetailed,
@@ -296,6 +295,7 @@
     uiPageStepsDetailedOpe,
     uiPageStepsDetailedAss,
     uiCase,
+    userModuleGetAll,
   } from '@/api/url'
   import { deleted, get, post, put } from '@/api/http'
   import { FormItem, ModalDialogType } from '@/types/components'
@@ -604,7 +604,7 @@
 
   function doUiModuleNameAll(project_id: number) {
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: project_id,

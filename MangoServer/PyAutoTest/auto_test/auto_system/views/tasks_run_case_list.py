@@ -96,11 +96,11 @@ class TasksRunCaseListViews(ViewSet):
     @action(methods=['get'], detail=False)
     def get_type_case_name(self, request: Request):
         _type = request.query_params.get('type')
-        module_name = request.query_params.get('module_name')
+        module = request.query_params.get('module')
         if int(_type) == AutoTestTypeEnum.UI.value:
-            res = UiCase.objects.filter(module_name=module_name).values_list('id', 'name')
+            res = UiCase.objects.filter(module=module).values_list('id', 'name')
         else:
-            res = ApiCase.objects.filter(module_name=module_name).values_list('id', 'name')
+            res = ApiCase.objects.filter(module=module).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0065, data)
 

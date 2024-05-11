@@ -1,7 +1,7 @@
 from django.db import models
 
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_user.models import Project
+from PyAutoTest.auto_test.auto_user.models import ProjectProduct, Project
 from PyAutoTest.auto_test.auto_user.models import User
 
 """
@@ -14,11 +14,9 @@ class TestObject(models.Model):
     """测试对象"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     environment = models.SmallIntegerField(verbose_name="环境备注")
-    # 0是web， 1是app， 2是小程序
-    test_type = models.SmallIntegerField(verbose_name="对应什么客户端")
     name = models.CharField(verbose_name="被测试的对象", max_length=64)
     value = models.CharField(verbose_name="被测试的对象", max_length=1024)
     db_c_status = models.SmallIntegerField(verbose_name="查询权限", null=True)
@@ -47,7 +45,7 @@ class Database(models.Model):
     """数据库表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     test_obj = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="数据库名称", max_length=64)
     user = models.CharField(verbose_name="登录用户名", max_length=64, null=True)
@@ -82,7 +80,7 @@ class TestSuiteReport(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     # type=0是UI,=1是接口,=2是性能
     type = models.SmallIntegerField(verbose_name="类型", null=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
 
     error_message = models.TextField(verbose_name="错误提示", null=True)

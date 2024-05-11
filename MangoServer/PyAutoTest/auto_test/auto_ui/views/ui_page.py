@@ -11,7 +11,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -29,10 +29,10 @@ class UiPageSerializers(serializers.ModelSerializer):
 
 
 class UiPageSerializersC(serializers.ModelSerializer):
-    module_name = ProjectModuleSerializers(read_only=True)
-    project = ProjectSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    module = ProductModuleSerializers(read_only=True)
+    project = ProjectSerializers(read_only=True)
 
     class Meta:
         model = UiPage
@@ -41,7 +41,7 @@ class UiPageSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'module_name',
+            'module',
             'project')
         return queryset
 
@@ -63,9 +63,9 @@ class UiPageViews(ViewSet):
         """
         根据项目获取页面id和名称
         """
-        module_name = request.query_params.get('module_name')
-        if module_name:
-            res = UiPage.objects.filter(module_name=module_name).values_list('id', 'name')
+        module = request.query_params.get('module')
+        if module:
+            res = UiPage.objects.filter(module=module).values_list('id', 'name')
         else:
             res = UiPage.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]

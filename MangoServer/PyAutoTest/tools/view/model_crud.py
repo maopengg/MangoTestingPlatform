@@ -23,7 +23,7 @@ class ModelCRUD(GenericAPIView):
     model = None
     # post专用
     serializer = None
-    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module_name', 'case_people']
+    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people']
 
     def get(self, request: Request):
         query_dict = {}

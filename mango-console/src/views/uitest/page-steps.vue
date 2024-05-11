@@ -227,9 +227,9 @@
     uiPageName,
     uiStepsRun,
     uiPageStepsCopy,
-    userProjectModuleGetAll,
     uiStepsPutType,
     systemEnumStatus,
+    userModuleGetAll,
   } from '@/api/url'
   import {
     usePagination,
@@ -677,7 +677,7 @@
       doRefresh()
     }
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

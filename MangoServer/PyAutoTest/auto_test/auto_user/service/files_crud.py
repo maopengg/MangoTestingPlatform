@@ -6,7 +6,7 @@
 import os
 import shutil
 
-from PyAutoTest.auto_test.auto_ui.models import Project
+from PyAutoTest.auto_test.auto_user.models import Project
 from PyAutoTest.tools.other.path import FilePath
 
 

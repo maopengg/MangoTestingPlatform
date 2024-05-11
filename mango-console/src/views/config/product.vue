@@ -5,7 +5,7 @@
         <template #header>
           <TableHeader
             :show-filter="true"
-            title="配置测试对象"
+            title="项目产品配置"
             @search="doRefresh"
             @reset-search="onResetSearch"
           >
@@ -32,19 +32,6 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-if="item.type === 'date'">
-                    <a-date-picker v-model="item.value" />
-                  </template>
-                  <template v-if="item.type === 'time'">
-                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                  </template>
-                  <template v-if="item.type === 'check-group'">
-                    <a-checkbox-group v-model="item.value">
-                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                        {{ item.label }}
-                      </a-checkbox>
-                    </a-checkbox-group>
-                  </template>
                 </a-form-item>
               </a-form>
             </template>
@@ -55,9 +42,10 @@
           <a-tabs>
             <template #extra>
               <a-space>
-                <div>
-                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                <div class="title-container">
+                  <span>项目管理</span>
                 </div>
+                <a-button type="primary" size="small" @click="onAdd">新增</a-button>
               </a-space>
             </template>
           </a-tabs>
@@ -83,40 +71,19 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.name }}
+                <template v-else-if="item.key === 'project'" #cell="{ record }">
+                  {{ record.project.name }}
                 </template>
-                <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
-                  {{ record.executor_name ? record.executor_name.nickname : '-' }}
-                </template>
-                <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
-                  <a-switch
-                    :default-checked="record.db_c_status === 1"
-                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'db_c_status')"
-                  />
-                </template>
-                <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
-                  <a-switch
-                    :default-checked="record.db_rud_status === 1"
-                    :beforeChange="
-                      (newValue) => onModifyStatus(newValue, record.id, 'db_rud_status')
-                    "
-                  />
-                </template>
-                <template v-else-if="item.key === 'environment'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.environment === 0"
-                    >测试环境</a-tag
-                  >
-                  <a-tag color="cyan" size="small" v-else-if="record.environment === 1"
-                    >预发环境</a-tag
-                  >
-                  <a-tag color="green" size="small" v-else-if="record.environment === 2"
-                    >生产环境</a-tag
-                  >
+                <template v-else-if="item.key === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 0">WEB</a-tag>
+                  <a-tag color="cyan" size="small" v-else-if="record.type === 1">安卓</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 2">IOS</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.type === 3">PC桌面</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button type="text" size="mini" @click="onClick(record)">增加模块</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除</a-button
                     >
@@ -130,7 +97,7 @@
           <TableFooter :pagination="pagination" />
         </template>
       </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="testObjData.actionTitle" @confirm="onDataForm">
+      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
         <template #content>
           <a-form :model="formModel">
             <a-form-item
@@ -153,22 +120,11 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'environment'">
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="uEnvironment.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="testObjData.nickname"
+                  :options="data.platformEnum"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -185,7 +141,7 @@
 
 <script lang="ts" setup>
   import { get, post, put, deleted } from '@/api/http'
-  import { systemTestObject, userNickname, systemTestObjectPutStatus } from '@/api/url'
+  import { systemEnumPlatform, userProduct } from '@/api/url'
   import {
     usePagination,
     useRowKey,
@@ -196,49 +152,26 @@
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
-  import { useEnvironment } from '@/store/modules/get-environment'
   import { getFormItems } from '@/utils/datacleaning'
+  import { useRouter } from 'vue-router'
+  import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
-  import { useTestObj } from '@/store/modules/get-test-obj'
 
-  const project = useProject()
-  const uEnvironment = useEnvironment()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const testObj = useTestObj()
-  const testObjData = reactive({
-    nickname: [],
+  const router = useRouter()
+  const project = useProject()
+
+  const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加测试对象',
+    actionTitle: '添加项目',
+    platformEnum: [],
   })
-  const conditionItems: Array<FormItem> = reactive([
-    {
-      key: 'id',
-      label: 'ID',
-      type: 'input',
-      placeholder: '请输入测试对象ID',
-      value: '',
-      reset: function () {
-        this.value = ''
-      },
-    },
-    {
-      key: 'name',
-      label: '环境名称',
-      type: 'input',
-      placeholder: '请输入环境名称',
-      value: '',
-      reset: function () {
-        this.value = ''
-      },
-    },
-  ])
   const formItems: FormItem[] = reactive([
     {
       label: '项目名称',
@@ -248,7 +181,7 @@
       required: true,
       type: 'select',
       validator: function () {
-        if (!this.value) {
+        if (!this.value && this.value !== '0') {
           Message.error(this.placeholder || '')
           return false
         }
@@ -256,60 +189,29 @@
       },
     },
     {
-      label: '环境名称',
+      label: '客户端类型',
+      key: 'type',
+      value: '',
+      type: 'select',
+      required: true,
+      placeholder: '请选择客户端类型',
+      validator: function () {
+        if (this.value === null && this.value === '') {
+          Message.error(this.placeholder || '')
+          return false
+        }
+        return true
+      },
+    },
+    {
+      label: '产品名称',
       key: 'name',
       value: '',
       type: 'input',
       required: true,
-      placeholder: '请输入环境名称',
+      placeholder: '请输入产品名称',
       validator: function () {
         if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '测试对象',
-      key: 'value',
-      value: '',
-      type: 'input',
-      required: true,
-      placeholder: '请输入域名/名称/对象',
-      validator: function () {
-        if (!this.value) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-
-    {
-      label: '绑定环境',
-      key: 'environment',
-      value: '',
-      type: 'select',
-      required: true,
-      placeholder: '请选择绑定环境',
-      validator: function () {
-        if (this.value === null && this.value === '') {
-          Message.error(this.placeholder || '')
-          return false
-        }
-        return true
-      },
-    },
-    {
-      label: '负责人名称',
-      key: 'executor_name',
-      value: '',
-      type: 'select',
-      required: true,
-      placeholder: '请输入负责人名称',
-      validator: function () {
-        if (this.value === null && this.value === '') {
           Message.error(this.placeholder || '')
           return false
         }
@@ -317,48 +219,54 @@
       },
     },
   ])
-
+  const conditionItems: Array<FormItem> = reactive([
+    {
+      key: 'id',
+      label: 'ID',
+      type: 'input',
+      placeholder: '请输入产品ID',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+    {
+      key: 'name',
+      label: '产品名称',
+      type: 'input',
+      placeholder: '请输入产品名称',
+      value: '',
+      reset: function () {
+        this.value = ''
+      },
+    },
+  ])
   const tableColumns = useTableColumn([
     table.indexColumn,
     {
-      title: '产品',
-      key: 'project_product',
-      dataIndex: 'project_product',
-      align: 'left',
-      width: 150,
+      title: '创建时间',
+      key: 'create_time',
+      dataIndex: 'create_time',
     },
     {
-      title: '环境名称',
+      title: '更新时间',
+      key: 'update_time',
+      dataIndex: 'update_time',
+    },
+    {
+      title: '项目名称',
+      key: 'project',
+      dataIndex: 'project',
+    },
+    {
+      title: '产品名称',
       key: 'name',
       dataIndex: 'name',
-      align: 'left',
     },
     {
-      title: '域名/包名',
-      key: 'value',
-      dataIndex: 'value',
-      align: 'left',
-    },
-    {
-      title: '环境类型',
-      key: 'environment',
-      dataIndex: 'environment',
-      width: 150,
-    },
-    {
-      title: '负责人',
-      key: 'executor_name',
-      dataIndex: 'executor_name',
-    },
-    {
-      title: '查询权限',
-      key: 'db_c_status',
-      dataIndex: 'db_c_status',
-    },
-    {
-      title: '增删改权限',
-      key: 'db_rud_status',
-      dataIndex: 'db_rud_status',
+      title: '产品类型',
+      key: 'type',
+      dataIndex: 'type',
     },
     {
       title: '操作',
@@ -368,16 +276,31 @@
       width: 150,
     },
   ])
-
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
   }
+  function doRefresh() {
+    get({
+      url: userProduct,
+      data: () => {
+        let value = getFormItems(conditionItems)
+        value['page'] = pagination.page
+        value['pageSize'] = pagination.pageSize
+        return value
+      },
+    })
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
 
-  function onAddPage() {
-    testObjData.actionTitle = '添加测试对象'
-    testObjData.isAdd = true
+  function onAdd() {
+    data.actionTitle = '添加项目'
+    data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
       if (it.reset) {
@@ -396,7 +319,7 @@
       okText: '删除',
       onOk: () => {
         deleted({
-          url: systemTestObject,
+          url: userProduct,
           data: () => {
             return {
               id: '[' + data.id + ']',
@@ -406,6 +329,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            project.getProject()
           })
           .catch(console.log)
       },
@@ -413,19 +337,15 @@
   }
 
   function onUpdate(item: any) {
-    testObjData.actionTitle = '编辑测试对象'
-    testObjData.isAdd = false
-    testObjData.updateId = item.id
+    data.actionTitle = '编辑项目'
+    data.isAdd = false
+    data.updateId = item.id
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
-          if (propName.name) {
-            it.value = propName.id
-          } else {
-            it.value = propName.id
-          }
+          it.value = propName.id
         } else {
           it.value = propName
         }
@@ -433,105 +353,76 @@
     })
   }
 
+  function onClick(record: any) {
+    router.push({
+      path: '/config/product-module',
+      query: {
+        id: record.id,
+        name: record.name,
+      },
+    })
+  }
+
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      if (testObjData.isAdd) {
+      if (data.isAdd) {
         post({
-          url: systemTestObject,
+          url: userProduct,
           data: () => {
-            value['db_c_status'] = 0
-            value['db_rud_status'] = 0
+            value['status'] = 1
             return value
           },
         })
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            testObj.getEnvironment()
+            project.getProject()
           })
           .catch(console.log)
       } else {
         put({
-          url: systemTestObject,
+          url: userProduct,
           data: () => {
-            value['id'] = testObjData.updateId
+            value['id'] = data.updateId
             return value
           },
         })
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            testObj.getEnvironment()
+            project.getProject()
           })
           .catch(console.log)
       }
     }
   }
-
-  function doRefresh() {
+  function getPlatform() {
     get({
-      url: systemTestObject,
-      data: () => {
-        let value = getFormItems(conditionItems)
-        value['page'] = pagination.page
-        value['pageSize'] = pagination.pageSize
-        return value
-      },
-    })
-      .then((res) => {
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-
-  function getNickName() {
-    get({
-      url: userNickname,
+      url: systemEnumPlatform,
       data: () => {
         return {}
       },
     })
       .then((res) => {
-        testObjData.nickname = res.data
+        data.platformEnum = res.data
       })
       .catch(console.log)
   }
 
-  const onModifyStatus = async (newValue: boolean, id: number, field: string) => {
-    let dataObj: any = {
-      id: id,
-    }
-    dataObj[field] = newValue ? 1 : 0 // 使用[field]作为对象的字段键
-    return new Promise<any>((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          let value: any = false
-          await put({
-            url: systemTestObjectPutStatus,
-            data: () => {
-              return dataObj
-            },
-          })
-            .then((res) => {
-              Message.success(res.msg)
-              value = res.code === 200
-            })
-            .catch(reject)
-          resolve(value)
-        } catch (error) {
-          reject(error)
-        }
-      }, 300)
-    })
-  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getNickName()
-      uEnvironment.getEnvironment()
+      getPlatform()
     })
   })
 </script>
+
+<style>
+  .title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+</style>

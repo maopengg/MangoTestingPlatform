@@ -17,7 +17,7 @@ from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 
 class TestObjectSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -31,7 +31,7 @@ class TestObjectSerializers(serializers.ModelSerializer):
 class TestObjectSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializers(read_only=True)
     executor_name = UserSerializers(read_only=True)
 
     class Meta:
@@ -41,7 +41,7 @@ class TestObjectSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
+            'project_product',
             'executor_name')
         return queryset
 

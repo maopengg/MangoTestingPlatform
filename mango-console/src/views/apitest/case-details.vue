@@ -529,13 +529,13 @@
     apiCaseDetailed,
     systemEnumMethod,
     apiCaseRun,
-    userProjectModuleGetAll,
     apiInfoName,
     apiPutCaseSort,
     uiPageStepsDetailedAss,
     apiPutRefreshApiInfo,
     apiCase,
     apiInfoCaseResult,
+    userModuleGetAll,
   } from '@/api/url'
   import { useRoute } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
@@ -823,7 +823,7 @@
 
   function getProjectModule(projectId: any) {
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

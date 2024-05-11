@@ -14,7 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_user.views.project_module import ProjectModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -39,7 +39,7 @@ class ApiCaseSerializersC(serializers.ModelSerializer):
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project = ProjectSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
-    module_name = ProjectModuleSerializers(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
 
     class Meta:
         model = ApiCase
@@ -50,7 +50,7 @@ class ApiCaseSerializersC(serializers.ModelSerializer):
         queryset = queryset.select_related(
             'project',
             'case_people',
-            'module_name')
+            'module')
         return queryset
 
 

@@ -174,7 +174,7 @@
 
 <script lang="ts" setup>
   import { get, post, put, deleted } from '@/api/http'
-  import { userProjectModuleGetAll, uiPage, uiPageCopy } from '@/api/url'
+  import { userModuleGetAll, uiPage, uiPageCopy } from '@/api/url'
   import {
     usePagination,
     useRowKey,
@@ -513,7 +513,7 @@
   function getProjectModule(projectId: number) {
     doRefresh()
     get({
-      url: userProjectModuleGetAll,
+      url: userModuleGetAll,
       data: () => {
         return {
           project_id: projectId,

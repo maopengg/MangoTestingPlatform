@@ -1,6 +1,6 @@
 from django.db import models
 
-from PyAutoTest.auto_test.auto_user.models import Project, ProjectModule
+from PyAutoTest.auto_test.auto_user.models import ProjectProduct, ProductModule
 from PyAutoTest.auto_test.auto_user.models import User
 
 """
@@ -13,8 +13,8 @@ class UiPage(models.Model):
     """页面表"""
     create_Time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="页面名称", max_length=64)
     url = models.CharField(verbose_name="url", max_length=128)
     # 0是web，1是小程序， 3是app
@@ -46,9 +46,9 @@ class UiPageSteps(models.Model):
     """页面步骤表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     page = models.ForeignKey(to=UiPage, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=64)
     run_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
     # 0和空等于调试用例，1等于调试完成
@@ -64,7 +64,7 @@ class UiPageStepsDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     page_step = models.ForeignKey(to=UiPageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
-    ele_name = models.ForeignKey(to=UiElement, to_field="id",  on_delete=models.SET_NULL, null=True)
+    ele_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
     step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
     ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ope_value = models.JSONField(verbose_name="操作内容", null=True)
@@ -86,12 +86,11 @@ class UiCase(models.Model):
     """用例表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProjectModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="用例组名称", max_length=64)
     case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', related_name='related_case_people',
-                                    on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
     # 0失败，1成功，2警告
     status = models.SmallIntegerField(verbose_name="状态", null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
@@ -126,7 +125,7 @@ class UiCaseStepsDetailed(models.Model):
 class UiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0等于自定义，1等于sql，2等于登录，3等于header
     type = models.SmallIntegerField(verbose_name="自定义变量类型", null=True)
     name = models.CharField(verbose_name="名称", max_length=64)
