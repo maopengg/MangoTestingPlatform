@@ -22,7 +22,7 @@ urlpatterns = [
     path("product", ProjectProductCRUD.as_view()),
     #
     path("module", ProductModuleCRUD.as_view()),
-    path("module/get/all", ProductModuleViews.as_view({'get': 'get_module_name_all'})),
+    path("project/module/get/all", ProductModuleViews.as_view({'get': 'get_module_name_all'})),
     #
     path("role", RoleCRUD.as_view()),
     path("role/all", RoleViews.as_view({'get': 'get_all_role'})),
