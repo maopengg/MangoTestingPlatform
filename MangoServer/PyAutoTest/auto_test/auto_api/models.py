@@ -15,7 +15,7 @@ class ApiInfo(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
 
     # 0和空等于录制，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型')
@@ -40,7 +40,7 @@ class ApiCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    module_name = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="测试用例名称", max_length=64)
     case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)

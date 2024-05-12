@@ -27,7 +27,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/uitest",
-                    "menuUrl": "/uitest/page",
+                    "menuUrl": "/uitest/page/index",
                     "menuName": "页面元素",
                     "cacheable": True,
                 },

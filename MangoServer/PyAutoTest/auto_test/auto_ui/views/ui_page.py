@@ -10,8 +10,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -32,7 +32,7 @@ class UiPageSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     module = ProductModuleSerializers(read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
         model = UiPage
@@ -42,7 +42,7 @@ class UiPageSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'module',
-            'project')
+            'project_product')
         return queryset
 
 
