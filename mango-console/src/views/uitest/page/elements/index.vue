@@ -182,22 +182,23 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import {
-    uiUiElement,
-    uiUiElementPutIsIframe,
-    uiPageStepsDetailedAss,
-    uiUiElementTest,
-  } from '@/api/url'
   import { formItems1, columns, formItems } from './config'
-
-  import { deleted, get, post, put } from '@/api/http'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { usePageData } from '@/store/page-data'
-  import { getUiElement, getUiPageStepsDetailedOpe } from '@/api/uitest'
+  import {
+    deleteUiElement,
+    getUiElement,
+    getUiPageStepsDetailedAss,
+    getUiPageStepsDetailedOpe,
+    postUiElement,
+    putUiElement,
+    putUiUiElementPutIsIframe,
+    putUiUiElementTest,
+  } from '@/api/uitest'
   import { getSystemEnumExp } from '@/api/system'
 
   const testObj = useTestObj()
@@ -246,14 +247,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleted({
-          url: uiUiElement,
-          data: () => {
-            return {
-              id: '[' + record.id + ']',
-            }
-          },
-        })
+        deleteUiElement(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -286,26 +280,16 @@
       let value = getFormItems(formItems)
       value['page'] = route.query.id
       if (data.isAdd) {
-        post({
-          url: uiUiElement,
-          data: () => {
-            value['is_iframe'] = 0
-            return value
-          },
-        })
+        value['is_iframe'] = 0
+        postUiElement(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
           })
           .catch(console.log)
       } else {
-        put({
-          url: uiUiElement,
-          data: () => {
-            value['id'] = data.updateId
-            return value
-          },
-        })
+        value['id'] = data.updateId
+        putUiElement(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -343,15 +327,7 @@
       setTimeout(async () => {
         try {
           let value: any = false
-          await put({
-            url: uiUiElementPutIsIframe,
-            data: () => {
-              return {
-                id: id,
-                is_iframe: newValue ? 1 : 0,
-              }
-            },
-          })
+          await putUiUiElementPutIsIframe(id, newValue ? 1 : 0)
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200
@@ -374,14 +350,7 @@
   }
 
   function getUiRunSortAss() {
-    get({
-      url: uiPageStepsDetailedAss,
-      data: () => {
-        return {
-          page_type: route.query.pageType,
-        }
-      },
-    })
+    getUiPageStepsDetailedAss(route.query.pageType)
       .then((res) => {
         data.ass = res.data
       })
@@ -405,12 +374,7 @@
       value['id'] = data.id
       value['page_id'] = pageData.record.id
       value['project_id'] = pageData.record.project.id
-      post({
-        url: uiUiElementTest,
-        data: () => {
-          return value
-        },
-      })
+      putUiUiElementTest(value)
         .then((res) => {
           Message.success(res.msg)
         })

@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -33,7 +34,7 @@ class UiPageStepsSerializers(serializers.ModelSerializer):
 class UiPageStepsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     page = UiPageSerializers(read_only=True)
     module = ProductModuleSerializers(read_only=True)
 
@@ -44,7 +45,7 @@ class UiPageStepsSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
+            'project_product',
             'page',
             'module')
         return queryset

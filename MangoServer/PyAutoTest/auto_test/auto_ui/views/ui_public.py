@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -30,7 +31,7 @@ class UiPublicSerializers(serializers.ModelSerializer):
 class UiPublicSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
         model = UiPublic
@@ -39,7 +40,7 @@ class UiPublicSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project')
+            'project_product')
         return queryset
 
 

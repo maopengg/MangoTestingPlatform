@@ -15,7 +15,6 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -35,7 +34,6 @@ class ApiCaseDetailedSerializers(serializers.ModelSerializer):
 class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
     case = ApiCaseSerializers(read_only=True)
     api_info = ApiInfoSerializers(read_only=True)
 

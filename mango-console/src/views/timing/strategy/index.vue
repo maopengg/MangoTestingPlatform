@@ -1,0 +1,233 @@
+<template>
+  <div>
+    <div class="main-container">
+      <TableBody ref="tableBody">
+        <template #header>
+          <TableHeader
+            :show-filter="true"
+            title="定时策略"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
+            <template #search-content>
+              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+                <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+                  <template v-if="item.type === 'input'">
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-if="item.type === 'date'">
+                    <a-date-picker v-model="item.value" />
+                  </template>
+                  <template v-if="item.type === 'time'">
+                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+                  </template>
+                  <template v-if="item.type === 'check-group'">
+                    <a-checkbox-group v-model="item.value">
+                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                        {{ item.label }}
+                      </a-checkbox>
+                    </a-checkbox-group>
+                  </template>
+                </a-form-item>
+              </a-form>
+            </template>
+          </TableHeader>
+        </template>
+
+        <template #default>
+          <a-tabs>
+            <template #extra>
+              <a-space>
+                <div>
+                  <span>注意：新增的定时策略需要联系管理员重启服务才会生效！</span>
+                </div>
+                <div>
+                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+                </div>
+              </a-space>
+            </template>
+          </a-tabs>
+          <a-table
+            :bordered="false"
+            :loading="table.tableLoading.value"
+            :data="table.dataList"
+            :columns="tableColumns"
+            :pagination="false"
+            :rowKey="rowKey"
+            @selection-change="onSelectionChange"
+          >
+            <template #columns>
+              <a-table-column
+                v-for="item of tableColumns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.key"
+                :fixed="item.fixed"
+              >
+                <template v-if="item.key === 'index'" #cell="{ record }">
+                  {{ record.id }}
+                </template>
+                <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                  <a-space>
+                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除</a-button
+                    >
+                  </a-space>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </template>
+        <template #footer>
+          <TableFooter :pagination="pagination" />
+        </template>
+      </TableBody>
+      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+        <template #content>
+          <a-form :model="formModel">
+            <a-form-item
+              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+              :label="item.label"
+              v-for="item of formItems"
+              :key="item.key"
+            >
+              <template v-if="item.type === 'input' && item.key === 'trigger_type'">
+                <a-input :placeholder="item.placeholder" v-model="item.value" disabled />
+              </template>
+              <template v-else-if="item.type === 'input'">
+                <a-input :placeholder="item.placeholder" v-model="item.value" />
+              </template>
+            </a-form-item>
+          </a-form>
+        </template>
+      </ModalDialog>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+  import { get, post, put, deleted } from '@/api/http'
+  import { systemTime } from '@/api/url'
+  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { ModalDialogType } from '@/types/components'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { getFormItems } from '@/utils/datacleaning'
+  import { tableColumns, formItems, conditionItems } from './config'
+  import { deleteSystemTime, getSystemTime, postSystemTime, putSystemTime } from '@/api/system'
+
+  const modalDialogRef = ref<ModalDialogType | null>(null)
+  const pagination = usePagination(doRefresh)
+  const { onSelectionChange } = useRowSelection()
+  const table = useTable()
+  const rowKey = useRowKey('id')
+  const formModel = ref({})
+
+  const data = reactive({
+    isAdd: false,
+    updateId: 0,
+    actionTitle: '添加定时器',
+  })
+
+  function doRefresh() {
+    let value = getFormItems(conditionItems)
+    value['page'] = pagination.page
+    value['pageSize'] = pagination.pageSize
+    getSystemTime(value)
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
+
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+  }
+
+  function onAdd() {
+    data.actionTitle = '添加定时器'
+    modalDialogRef.value?.toggle()
+    data.isAdd = true
+    formItems.forEach((it) => {
+      if (it.reset) {
+        it.reset()
+      } else {
+        it.value = ''
+      }
+    })
+  }
+
+  function onDelete(data: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此页面？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleteSystemTime(data.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+
+  function onUpdate(item: any) {
+    data.actionTitle = '编辑定时器'
+    modalDialogRef.value?.toggle()
+    data.isAdd = false
+    data.updateId = item.id
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = item[it.key]
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName
+        }
+      })
+    })
+  }
+
+  function onDataForm() {
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      value['trigger_type'] = 'cron'
+      if (data.isAdd) {
+        postSystemTime(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        value['id'] = data.updateId
+        putSystemTime(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      }
+    }
+  }
+
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh()
+    })
+  })
+</script>

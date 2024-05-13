@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.views.menu import ad_routes
+from PyAutoTest.auto_test.auto_system.service.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
