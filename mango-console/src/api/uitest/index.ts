@@ -1,48 +1,33 @@
 import { deleted, get, post, put } from '@/api/http'
-import { Message } from '@arco-design/web-vue'
 import * as url from './url'
-import { uiPageStepsDetailedOpe, uiUiElement } from '@/api/url'
 
-export function getUiPage(data: object, table: any, pagination: any) {
-  get({
+export function getUiPage(data: object) {
+  return get({
     url: url.uiPage,
     data: () => {
       return data
     },
   })
-    .then((res) => {
-      table.handleSuccess(res)
-      pagination.setTotalSize((res as any).totalSize)
-    })
-    .catch(console.log)
 }
 
 export function postUiPage(data: object) {
-  post({
+  return post({
     url: url.uiPage,
     data: () => {
       return data
     },
   })
-    .then((res) => {
-      Message.success(res.msg)
-    })
-    .catch(console.log)
 }
 export function putUiPage(data: object) {
-  put({
+  return put({
     url: url.uiPage,
     data: () => {
       return data
     },
   })
-    .then((res) => {
-      Message.success(res.msg)
-    })
-    .catch(console.log)
 }
 export function deleteUiPage(id: number | string[] | number[]) {
-  deleted({
+  return deleted({
     url: url.uiPage,
     data: () => {
       return {
@@ -50,13 +35,9 @@ export function deleteUiPage(id: number | string[] | number[]) {
       }
     },
   })
-    .then((res) => {
-      Message.success(res.msg)
-    })
-    .catch(console.log)
 }
 export function postUiPageCopy(pageId: number | string) {
-  post({
+  return post({
     url: url.uiPageCopy,
     data: () => {
       return {
@@ -64,14 +45,10 @@ export function postUiPageCopy(pageId: number | string) {
       }
     },
   })
-    .then((res) => {
-      Message.success(res.msg)
-    })
-    .catch(console.log)
 }
 
-export function getUiElement(pageId: any, pageEleData: any) {
-  get({
+export function getUiElement(pageId: any) {
+  return get({
     url: url.uiUiElement,
     data: () => {
       return {
@@ -79,14 +56,9 @@ export function getUiElement(pageId: any, pageEleData: any) {
       }
     },
   })
-    .then((res) => {
-      pageEleData.data = res.data
-      pageEleData.totalSize = res.totalSize
-    })
-    .catch(console.log)
 }
 export function getUiPageStepsDetailedOpe(pageType: any) {
-  get({
+  return get({
     url: url.uiPageStepsDetailedOpe,
     data: () => {
       return {
@@ -94,8 +66,4 @@ export function getUiPageStepsDetailedOpe(pageType: any) {
       }
     },
   })
-    .then((res) => {
-      data.ope = res.data
-    })
-    .catch(console.log)
 }

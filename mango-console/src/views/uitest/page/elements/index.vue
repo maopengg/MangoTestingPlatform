@@ -185,7 +185,6 @@
   import {
     uiUiElement,
     uiUiElementPutIsIframe,
-    uiPageStepsDetailedOpe,
     uiPageStepsDetailedAss,
     uiUiElementTest,
   } from '@/api/url'
@@ -321,7 +320,12 @@
   }
 
   function doRefresh() {
-    getUiElement(route.query.id, data)
+    getUiElement(route.query.id)
+      .then((res) => {
+        data.data = res.data
+        data.totalSize = res.totalSize
+      })
+      .catch(console.log)
   }
 
   function getEleExp() {
@@ -362,7 +366,11 @@
   }
 
   function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(route.query.pageType, data)
+    getUiPageStepsDetailedOpe(route.query.pageType)
+      .then((res) => {
+        data.ope = res.data
+      })
+      .catch(console.log)
   }
 
   function getUiRunSortAss() {

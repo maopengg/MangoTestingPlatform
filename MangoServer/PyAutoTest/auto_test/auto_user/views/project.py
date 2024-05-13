@@ -15,7 +15,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from ..models import Project
+from ..models import Project, ProjectProduct
 
 log = logging.getLogger('user')
 
@@ -66,8 +66,23 @@ class ProjectViews(ViewSet):
     model = Project
     serializer_class = ProjectSerializers
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['GET'], detail=False)
     def get_all_items(self, request: Request):
         items = Project.objects.filter(status=StatusEnum.SUCCESS.value)
         data = [{'title': i.name, 'key': i.pk} for i in items]
         return ResponseData.success(RESPONSE_MSG_0025, data)
+
+    @action(methods=['GET'], detail=False)
+    def project_product_name(self, request: Request):
+        book = Project.objects.values_list('id', 'name').all()
+        options = []
+        for _id, name in book:
+            product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
+            options.append({
+                'value': _id,
+                'label': name,
+                'children': [{'value': product_id,
+                              'label': product_name,
+                              } for product_id, product_name in product_list]
+            })
+        return ResponseData.success(RESPONSE_MSG_0025, options)

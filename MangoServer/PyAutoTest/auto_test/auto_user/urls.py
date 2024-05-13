@@ -18,6 +18,7 @@ urlpatterns = [
     #
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
+    path("project/product/name", ProjectViews.as_view({'get': 'project_product_name'})),
     #
     path("product", ProjectProductCRUD.as_view()),
     #
