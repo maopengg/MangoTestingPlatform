@@ -109,10 +109,16 @@ export const formItems: FormItem[] = reactive([
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '产品/模块',
+    title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 150,
+    width: 130,
+  },
+  {
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    width: 160,
   },
   {
     title: '页面名称',

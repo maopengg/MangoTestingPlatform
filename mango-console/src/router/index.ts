@@ -35,29 +35,29 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'page-steps-details',
-        component: () => import('@/views/uitest/page-steps-details.vue'),
+        path: 'page/steps/details',
+        component: () => import('@/views/uitest/page-steps/details/index.vue'),
         meta: {
           title: '页面步骤详情',
         },
       },
       {
-        path: 'pageel',
-        component: () => import('@/views/uitest/page-elements.vue'),
+        path: 'page/elements',
+        component: () => import('@/views/uitest/page/elements/index.vue'),
         meta: {
           title: '页面元素详情页',
         },
       },
       {
-        path: 'ui-case-details',
-        component: () => import('@/views/uitest/case-details.vue'),
+        path: 'case/details',
+        component: () => import('@/views/uitest/case/details/index.vue'),
         meta: {
           title: '测试用例详情',
         },
       },
       {
         path: 'report/details',
-        component: () => import('@/views/uitest/report-details.vue'),
+        component: () => import('@/views/uitest/report/details/index.vue'),
         meta: {
           title: '界面测试报告详情',
         },
@@ -74,21 +74,21 @@ export const extraRoutes = [
     children: [
       {
         path: 'info/details',
-        component: () => import('@/views/apitest/api-info-details.vue'),
+        component: () => import('@/views/apitest/info/details/index.vue'),
         meta: {
           title: '接口详情',
         },
       },
       {
-        path: 'details',
-        component: () => import('@/views/apitest/case-details.vue'),
+        path: 'case/details',
+        component: () => import('@/views/apitest/case/details/index.vue'),
         meta: {
           title: '用例详情',
         },
       },
       {
         path: 'report/details',
-        component: () => import('@/views/apitest/report-details.vue'),
+        component: () => import('@/views/apitest/report/details/index.vue'),
         meta: {
           title: '接口测试报告详情',
         },
@@ -104,8 +104,8 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'runcase',
-        component: () => import('@/views/timing/runcase.vue'),
+        path: 'case',
+        component: () => import('@/views/timing/scheduled-tasks/case/index.vue'),
         meta: {
           title: '添加用例',
         },
@@ -121,8 +121,8 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'product-module',
-        component: () => import('@/views/config/product-module.vue'),
+        path: 'product/module',
+        component: () => import('@/views/config/product/module/index.vue'),
         meta: {
           title: '测试项目',
         },

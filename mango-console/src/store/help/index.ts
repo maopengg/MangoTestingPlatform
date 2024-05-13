@@ -88,8 +88,8 @@ export function isMenu(it: OriginRoute) {
 }
 
 export function getNameByUrl(menuUrl: string) {
-  const temp = menuUrl.split('/')
-  return toHump(temp[temp.length - 1])
+  const temp = menuUrl.replaceAll('/', '')
+  return toHump(temp.replaceAll('-', ''))
 }
 
 export function generatorRoutes(res: Array<OriginRoute>) {

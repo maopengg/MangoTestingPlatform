@@ -76,12 +76,12 @@
 <script lang="ts" setup>
   import useUserStore from '@/store/modules/user'
   import { nextTick, onMounted, reactive, ref } from 'vue'
-  import { get, put } from '@/api/http'
-  import { userPassword, userInfo } from '@/api/url'
+
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message } from '@arco-design/web-vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { websocket } from '@/utils/socket'
+  import { getUserInfo, postUserPassword } from '@/api/user'
   const userStore = useUserStore()
   const touched = ref(false)
   const uploaded = ref(false)
@@ -150,7 +150,6 @@
     }, 1000)
   }
   function onUpdate() {
-    console.log(formItems)
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
@@ -159,13 +158,8 @@
     })
   }
   function doRefresh() {
-    get({
-      url: userInfo,
-      data: () => {
-        return {
-          id: userStore.userId,
-        }
-      },
+    getUserInfo({
+      id: userStore.userId,
     })
       .then((res) => {
         if (res.data) {
@@ -179,12 +173,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       value['id'] = userStore.userId
-      put({
-        url: userPassword,
-        data: () => {
-          return value
-        },
-      })
+      postUserPassword(value)
         .then((res) => {
           Message.success(res.msg)
           userStore.logout().then(() => {

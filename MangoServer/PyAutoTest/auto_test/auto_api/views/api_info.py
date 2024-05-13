@@ -15,6 +15,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.apimodel import ResponseDataModel
@@ -37,7 +38,7 @@ class ApiInfoSerializers(serializers.ModelSerializer):
 class ApiInfoSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     module = ProductModuleSerializers(read_only=True)
 
     class Meta:
@@ -47,7 +48,7 @@ class ApiInfoSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
+            'project_product',
             'module')
         return queryset
 

@@ -88,7 +88,11 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.name + '/' + record.module?.name }}
+                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                </template>
+                <template v-else-if="item.key === 'module'" #cell="{ record }">
+                  {{ record.module?.superior_module ? record.module?.superior_module + '/' : ''
+                  }}{{ record.module?.name }}
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -183,7 +187,6 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useRouter } from 'vue-router'
-  import { useProject } from '@/store/modules/get-project'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProjectModule } from '@/store/modules/project_module'
@@ -192,7 +195,6 @@
   import { getUserProjectModuleGetAll, getUserProjectProductName } from '@/api/user'
 
   const projectModule = useProjectModule()
-  const project = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -356,7 +358,7 @@
     const pageData = usePageData()
     pageData.setRecord(record)
     router.push({
-      path: '/uitest/pageel',
+      path: '/uitest/page/elements',
       query: {
         id: record.id,
         pageType: data.pageType,
