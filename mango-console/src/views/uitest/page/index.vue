@@ -97,7 +97,7 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="postUiPageCopy(record.id)"
+                        <a-button type="text" size="mini" @click="PageCopy(record.id)"
                           >复制</a-button
                         >
                       </a-doption>
@@ -136,19 +136,28 @@
                   :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
                   @change="getProjectModule(item.value)"
-                  value-key="key"
-                  allow-clear
+                  :placeholder="item.placeholder"
+                  :options="data.projectProductName"
                   allow-search
+                  allow-clear
                 />
+
+                <!--                <a-select-->
+                <!--                  v-model="item.value"-->
+                <!--                  :placeholder="item.placeholder"-->
+                <!--                  :options="data.projectProductName"-->
+                <!--                  :field-names="fieldNames"-->
+                <!--                  @change="getProjectModule(item.value)"-->
+                <!--                  value-key="key"-->
+                <!--                  allow-clear-->
+                <!--                  allow-search-->
+                <!--                />-->
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -180,7 +189,7 @@
   import { useProjectModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getUserProjectModuleGetAll } from '@/api/user'
+  import { getUserProjectModuleGetAll, getUserProjectProductName } from '@/api/user'
 
   const projectModule = useProjectModule()
   const project = useProject()
@@ -198,6 +207,7 @@
     actionTitle: '添加页面',
     pageType: 0,
     moduleList: projectModule.data,
+    projectProductName: [],
   })
 
   function switchType(key: any) {
@@ -232,7 +242,11 @@
       okText: '删除',
       onOk: () => {
         deleteUiPage(data.id)
-        doRefresh()
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
       },
     })
   }
@@ -249,7 +263,11 @@
       okText: '删除',
       onOk: () => {
         deleteUiPage(selectedRowKeys.value)
-        doRefresh()
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
       },
     })
   }
@@ -260,11 +278,20 @@
       value['type'] = data.pageType
       if (data.isAdd) {
         postUiPage(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
       } else {
         value['id'] = data.updateId
         putUiPage(value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
       }
-      doRefresh()
     }
   }
 
@@ -290,12 +317,39 @@
     value['type'] = data.pageType
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getUiPage(value, table, pagination)
+    getUiPage(value)
+      .then((res) => {
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
+      })
+      .catch(console.log)
+  }
+  function PageCopy(id: number) {
+    postUiPageCopy(id)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
 
-  function getProjectModule(projectId: number) {
+  function getProjectModule(projectProductId: number) {
     doRefresh()
-    data.moduleList = getUserProjectModuleGetAll(projectId)
+    getUserProjectModuleGetAll(projectProductId)
+      .then((res) => {
+        data.moduleList = res.data
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+  }
+  function projectProductName() {
+    getUserProjectProductName()
+      .then((res) => {
+        data.projectProductName = res.data
+      })
+      .catch((error) => {
+        console.error(error)
+      })
   }
 
   function onClick(record: any) {
@@ -313,6 +367,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      projectProductName()
     })
   })
 </script>

@@ -8,12 +8,11 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProductModule, User
+from PyAutoTest.auto_test.auto_user.models import ProductModule, User, Project
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
 
 class ProductModuleSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -54,12 +53,13 @@ class ProductModuleViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def get_module_name_all(self, request: Request):
-        project_id = request.query_params.get('project_id')
-        if project_id is None:
-            project_id = User.objects.get(id=request.user['id']).selected_project
-        if project_id:
-            res = self.model.objects.values_list('id', 'name').filter(project=project_id)
+        project_product_id = request.query_params.get('project_product_id')
+        if project_product_id is None:
+            project_product_id = User.objects.get(id=request.user['id']).selected_project
+        if project_product_id:
+            res = self.model.objects.values_list('id', 'name').filter(project_product=project_product_id)
         else:
             res = self.model.objects.values_list('id', 'name').all()
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0031, data)
+
