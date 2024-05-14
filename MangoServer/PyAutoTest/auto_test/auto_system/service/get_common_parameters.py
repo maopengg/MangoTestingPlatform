@@ -38,7 +38,7 @@ class GetCommonParameters:
     def get_ui_args(cls, test_obj_id) -> list[UiPublicModel]:
         data = []
         test_obj = TestObject.objects.get(id=test_obj_id)
-        for i in UiPublic.objects.filter(project_id=test_obj.project_id, status=StatusEnum.SUCCESS.value).order_by(
+        for i in UiPublic.objects.filter(project_product=test_obj.project_product_id, status=StatusEnum.SUCCESS.value).order_by(
                 'type'):
             data.append(UiPublicSerializers(instance=i).data)
         return data

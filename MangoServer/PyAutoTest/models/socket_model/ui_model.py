@@ -11,7 +11,7 @@ from PyAutoTest.models.tools_model import MysqlConingModel
 class UiPublicModel(BaseModel):
     create_time: str
     update_time: str
-    project: int
+    project_product: int
     type: int
     name: str
     key: str
@@ -71,28 +71,27 @@ class PageStepsModel(BaseModel):
     id: int | None = None
     name: str
     case_step_details_id: int | None
-    project: int
+    project_product: int
     test_object_value: str
     url: str
     type: int
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
     equipment_config: AndroidConfigModel | WEBConfigModel
-    run_config: RunConfigModel | None = None
+    run_config: RunConfigModel
 
 
 class CaseModel(BaseModel):
     test_suite_id: int
     id: int
-    project: int
+    project_product: int
     module_name: str
     name: str
     case_people: str
-    steps: list[PageStepsModel]
     front_custom: list
     front_sql: list
     posterior_sql: list
-    run_config: RunConfigModel
+    steps: list[PageStepsModel]
 
 
 class ElementResultModel(BaseModel):
