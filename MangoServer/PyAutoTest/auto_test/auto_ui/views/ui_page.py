@@ -63,9 +63,9 @@ class UiPageViews(ViewSet):
         """
         根据项目获取页面id和名称
         """
-        module = request.query_params.get('module')
-        if module:
-            res = UiPage.objects.filter(module=module).values_list('id', 'name')
+        module_id = request.query_params.get('module_id')
+        if module_id:
+            res = UiPage.objects.filter(module=module_id).values_list('id', 'name')
         else:
             res = UiPage.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]

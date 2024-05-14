@@ -463,7 +463,7 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
@@ -517,7 +517,7 @@
   } from '@/api/apitest'
   import { getUiPageStepsDetailedAss } from '@/api/uitest'
   import { getSystemEnumMethod } from '@/api/system'
-  import { getUserProjectModuleGetAll } from '@/api/user'
+  import { getUserModuleName } from '@/api/user'
 
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -700,7 +700,7 @@
   }
 
   function getProjectModule(projectId: any) {
-    getUserProjectModuleGetAll(projectId)
+    getUserModuleName(projectId)
       .then((res) => {
         data.moduleList = res.data
       })
@@ -829,7 +829,7 @@
     nextTick(async () => {
       doRefresh()
       doMethodType()
-      getProjectModule(route.query.project)
+      getProjectModule(route.query.project_product)
       getUiRunSortAss()
     })
   })

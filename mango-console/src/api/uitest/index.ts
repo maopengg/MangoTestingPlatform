@@ -171,7 +171,7 @@ export function getUiStepsRun(id: any, testObj: number) {
 }
 
 export function deleteUiStepsPutType(id: number | string[] | number[]) {
-  return deleted({
+  return put({
     url: url.uiStepsPutType,
     data: () => {
       return {
@@ -186,7 +186,7 @@ export function getUiPageName(moduleId: number) {
     url: url.uiPageName,
     data: () => {
       return {
-        module_name: moduleId,
+        module_id: moduleId,
       }
     },
   })

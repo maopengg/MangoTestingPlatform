@@ -26,7 +26,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'module_name',
+    key: 'module',
     label: '模块',
     value: '',
     type: 'select',
@@ -55,14 +55,14 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
-    label: '项目名称',
-    key: 'project',
+    label: '项目/产品',
+    key: 'project_product',
     value: '',
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
-      if (!this.value) {
+      if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
         return false
       }
@@ -71,7 +71,7 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '模块',
-    key: 'module_name',
+    key: 'module',
     value: '',
     placeholder: '请选择测试模块',
     required: true,

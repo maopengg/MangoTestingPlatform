@@ -84,7 +84,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.name }}
+                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
                   {{ record.executor_name ? record.executor_name.nickname : '-' }}
@@ -142,15 +142,13 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
+                  :options="projectInfo.projectProduct"
                   allow-search
+                  allow-clear
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'environment'">
@@ -203,7 +201,7 @@
   } from '@/api/system'
   import { getUserNickname } from '@/api/user'
 
-  const project = useProject()
+  const projectInfo = useProject()
   const uEnvironment = useEnvironment()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)

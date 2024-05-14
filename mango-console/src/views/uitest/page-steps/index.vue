@@ -19,7 +19,7 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                  <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -29,7 +29,7 @@
                       value-key="key"
                       allow-clear
                       allow-search
-                      @change="onQueryProjectPage(item.value, true)"
+                      @change="onModulePage(item.value, true)"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'page'">
@@ -141,7 +141,7 @@
                         <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                       </a-doption>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="pageStepsCopy(record)"
+                        <a-button type="text" size="mini" @click="onPageStepsCopy(record)"
                           >复制</a-button
                         >
                       </a-doption>
@@ -173,19 +173,18 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
+                  @change="productModuleName(item.value)"
                   :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
+                  :options="projectInfo.projectProduct"
                   value-key="key"
-                  allow-clear
                   allow-search
-                  @change="getProjectModule(item.value, false)"
+                  allow-clear
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -194,7 +193,7 @@
                   value-key="key"
                   allow-clear
                   allow-search
-                  @change="onQueryProjectPage(item.value, true)"
+                  @change="onModulePage(item.value, false)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'page'">
@@ -239,16 +238,16 @@
     putUiSteps,
   } from '@/api/uitest'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getUserModuleGetAll } from '@/api/user'
+  import { getUserModuleName } from '@/api/user'
   import { getSystemEnumStatus } from '@/api/system'
   const projectModule = useProjectModule()
+  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const testObj = useTestObj()
-  const project = useProject()
   const formModel = ref({})
   const data = reactive({
     isAdd: false,
@@ -334,7 +333,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    getProjectModule(item.project.id, false)
+    productModuleName(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -421,7 +420,7 @@
     })
   }
 
-  function onQueryProjectPage(moduleId: any, refresh: boolean) {
+  function onModulePage(moduleId: any, refresh: boolean) {
     if (refresh) {
       doRefresh()
     }
@@ -439,7 +438,7 @@
       })
   }
 
-  function pageStepsCopy(record: any) {
+  function onPageStepsCopy(record: any) {
     getUiPageStepsCopy(record.id)
       .then((res) => {
         Message.success(res.msg)
@@ -448,11 +447,8 @@
       .catch(console.log)
   }
 
-  function getProjectModule(projectId: number, isRefresh: boolean | null) {
-    if (isRefresh) {
-      doRefresh()
-    }
-    getUserModuleGetAll(projectId)
+  function productModuleName(projectId: number) {
+    getUserModuleName(projectId)
       .then((res) => {
         data.moduleList = res.data
       })
@@ -470,7 +466,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      onQueryProjectPage(null, false)
+      onModulePage(null, false)
       status()
     })
   })

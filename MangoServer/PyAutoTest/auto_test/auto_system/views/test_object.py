@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -31,7 +31,7 @@ class TestObjectSerializers(serializers.ModelSerializer):
 class TestObjectSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     executor_name = UserSerializers(read_only=True)
 
     class Meta:

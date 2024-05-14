@@ -561,13 +561,13 @@ export function putSystemTasksCaseSort(sortList: any) {
     },
   })
 }
-export function getSystemTasksTypeCaseName(type: any, module_name: number) {
+export function getSystemTasksTypeCaseName(type: any, moduleId: number) {
   return get({
     url: url.systemTasksTypeCaseName,
     data: () => {
       return {
         type: type,
-        module_name: module_name,
+        module_id: moduleId,
       }
     },
   })

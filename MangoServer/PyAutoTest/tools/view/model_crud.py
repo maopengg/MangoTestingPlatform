@@ -91,14 +91,15 @@ class ModelCRUD(GenericAPIView):
             return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
     def delete(self, request: Request):
-
+        _id = request.query_params.get('id')
+        id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
         # 批量删
-        if '[' in request.query_params.get('id'):
-            for i in eval(request.query_params.get('id')):
+        if not _id and id_list:
+            for i in id_list:
                 self.model.objects.get(pk=i).delete()
         else:
             # 一条删
-            model = self.model.objects.get(id=request.query_params.get('id'))
+            model = self.model.objects.get(id=_id)
             model.delete()
             self.asynchronous_callback(request, request.query_params.get('parent_id'))
         return ResponseData.success(RESPONSE_MSG_0005)

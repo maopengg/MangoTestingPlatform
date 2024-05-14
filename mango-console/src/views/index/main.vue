@@ -111,11 +111,13 @@
   import { useRouter } from 'vue-router'
   import { useProjectModule } from '@/store/modules/project_module'
   import { getSystemScheduledTasks } from '@/api/system'
+  import { useProject } from '@/store/modules/get-project'
 
   const appStore = useAppConfigStore()
   const mainHeight = computed(() => {
     return appStore.mainHeight + 'px'
   })
+  const projectInfo = useProject()
   const projectModule = useProjectModule()
   const reportSum = ref()
   const caseSum = ref()
@@ -201,6 +203,8 @@
     nextTick(async () => {
       doRefresh()
       projectModule.getProjectModule()
+      projectInfo.getProject()
+      projectInfo.projectProductName()
     })
   })
 </script>

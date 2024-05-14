@@ -314,8 +314,8 @@
 
   function getEleExp() {
     getSystemEnumExp()
-      .then((result) => {
-        data.eleExp = result
+      .then((res) => {
+        data.eleExp = res.data
       })
       .catch((error) => {
         console.error(error)

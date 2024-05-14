@@ -119,15 +119,13 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
+                  :options="projectInfo.projectProduct"
                   allow-search
+                  allow-clear
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'test_obj'">
@@ -166,7 +164,7 @@
     putSystemDatabase,
   } from '@/api/system'
 
-  const project = useProject()
+  const projectInfo = useProject()
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)

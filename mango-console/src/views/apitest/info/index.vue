@@ -19,7 +19,7 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                  <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -89,6 +89,7 @@
             <a-tab-pane key="1" title="调试接口" />
           </a-tabs>
           <a-table
+            :bordered="false"
             :row-selection="{ selectedRowKeys, showCheckedAll }"
             :loading="table.tableLoading.value"
             :data="table.dataList"
@@ -204,19 +205,17 @@
                   :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
+                  @change="onProductModuleName(item.value)"
                   :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  @change="getProjectModule(item.value)"
-                  value-key="key"
-                  allow-clear
+                  :options="projectInfo.projectProduct"
                   allow-search
+                  allow-clear
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -258,8 +257,6 @@
 </template>
 
 <script lang="ts" setup>
-  // import {Search} from '@/components/ListSearch.vue'
-
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
@@ -283,13 +280,13 @@
   } from '@/api/apitest'
   import { getUiConfigNewBrowserObj } from '@/api/uitest'
   import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
-  import { getUserModuleGetAll } from '@/api/user'
+  import { getUserModuleName } from '@/api/user'
 
   const router = useRouter()
 
   const projectModule = useProjectModule()
 
-  const project = useProject()
+  const projectInfo = useProject()
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -359,16 +356,12 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    getProjectModule(item.project.id)
+    onProductModuleName(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
-          if (it.type === 'select') {
-            it.value = propName.id
-          } else {
-            it.value = JSON.stringify(propName, null, '\t')
-          }
+          it.value = propName.id
         } else {
           it.value = propName
         }
@@ -530,9 +523,8 @@
       .catch(console.log)
   }
 
-  function getProjectModule(projectId: number) {
-    doRefresh()
-    getUserModuleGetAll(projectId)
+  function onProductModuleName(projectId: number) {
+    getUserModuleName(projectId)
       .then((res) => {
         data.moduleList = res.data
       })
