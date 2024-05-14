@@ -8,11 +8,12 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProductModule, User, Project
+from PyAutoTest.auto_test.auto_user.models import ProductModule, User
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+
 
 class ProductModuleSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -62,4 +63,3 @@ class ProductModuleViews(ViewSet):
             res = self.model.objects.values_list('id', 'name').all()
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0031, data)
-

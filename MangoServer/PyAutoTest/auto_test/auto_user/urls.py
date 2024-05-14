@@ -6,9 +6,9 @@
 
 from django.urls import path
 
+from .views.product_module import ProductModuleViews, ProductModuleCRUD
 from .views.project import ProjectCRUD, ProjectViews
 from .views.project_file import ProjectFileViews
-from .views.product_module import ProductModuleViews, ProductModuleCRUD
 from .views.project_product import ProjectProductCRUD
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews

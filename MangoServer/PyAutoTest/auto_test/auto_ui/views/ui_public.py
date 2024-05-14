@@ -11,7 +11,6 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD
