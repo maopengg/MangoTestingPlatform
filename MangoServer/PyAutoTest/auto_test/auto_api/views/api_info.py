@@ -13,7 +13,6 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.test_execution.api_info_run import ApiInfoRun
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -160,5 +159,3 @@ class ApiInfoViews(ViewSet):
         tokens = shlex.split(data)
         parsed_args = parser.parse_args(tokens)
         return ResponseData.success(RESPONSE_MSG_0069)
-
-

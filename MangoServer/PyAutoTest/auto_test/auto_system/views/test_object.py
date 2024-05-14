@@ -10,14 +10,14 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
+
 
 class TestObjectSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
