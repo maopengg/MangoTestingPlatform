@@ -8,6 +8,30 @@ export function getSystemEnumExp() {
     },
   })
 }
+export function getSystemTestObjName() {
+  return get({
+    url: url.systemTestObjName,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemSocketAllUserSum() {
+  return get({
+    url: url.systemSocketAllUserSum,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemEnumEnvironment() {
+  return get({
+    url: url.systemEnumEnvironment,
+    data: () => {
+      return {}
+    },
+  })
+}
 export function getSystemEnumClient() {
   return get({
     url: url.systemEnumClient,
@@ -447,6 +471,115 @@ export function getSystemRandomData(name: string) {
     url: url.systemRandomData,
     data: () => {
       return { name: name }
+    },
+  })
+}
+export function getSystemCacheKeyValue(key: string) {
+  return get({
+    url: url.systemCacheKeyValue,
+    data: () => {
+      return { key: key }
+    },
+  })
+}
+export function getSystemActivityLevel() {
+  return get({
+    url: url.systemActivityLevel,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemCaseResultWeekSum() {
+  return get({
+    url: url.systemCaseResultWeekSum,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemCaseRunSum() {
+  return get({
+    url: url.systemCaseRunSum,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemCaseSum() {
+  return get({
+    url: url.systemCaseSum,
+    data: () => {
+      return {}
+    },
+  })
+}
+
+export function getSystemTasksRunCase(data: object) {
+  return get({
+    url: url.systemTasksRunCase,
+    data: () => {
+      return data
+    },
+  })
+}
+
+export function postSystemTasksRunCase(data: object) {
+  return post({
+    url: url.systemTasksRunCase,
+    data: () => {
+      return data
+    },
+  })
+}
+export function putSystemTasksRunCase(data: object) {
+  return put({
+    url: url.systemTasksRunCase,
+    data: () => {
+      return data
+    },
+  })
+}
+
+export function deleteSystemTasksRunCase(id: number | string[] | number[]) {
+  return deleted({
+    url: url.systemTasksRunCase,
+    data: () => {
+      return {
+        id: id,
+      }
+    },
+  })
+}
+export function putSystemTasksCaseSort(sortList: any) {
+  return put({
+    url: url.systemTasksCaseSort,
+    data: () => {
+      return {
+        sort_list: sortList,
+      }
+    },
+  })
+}
+export function getSystemTasksTypeCaseName(type: any, module_name: number) {
+  return get({
+    url: url.systemTasksTypeCaseName,
+    data: () => {
+      return {
+        type: type,
+        module_name: module_name,
+      }
+    },
+  })
+}
+export function putSystemTasksCaseTestObject(caseList: any, testObj: any) {
+  return put({
+    url: url.systemTasksCaseTestObject,
+    data: () => {
+      return {
+        case_list: caseList,
+        test_obj_id: testObj,
+      }
     },
   })
 }

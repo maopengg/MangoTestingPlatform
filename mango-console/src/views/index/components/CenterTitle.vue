@@ -1,8 +1,7 @@
 <script lang="tsx">
   import { getNowDate } from '@/utils'
   import { defineComponent, onUnmounted, ref, onMounted } from 'vue'
-  import { get } from '@/api/http'
-  import { systemSocketAllUserSum } from '@/api/url'
+  import { getSystemSocketAllUserSum } from '@/api/system'
 
   export default defineComponent({
     setup() {
@@ -18,12 +17,7 @@
       let userSum = ref(0)
 
       function getAllUserSum() {
-        get({
-          url: systemSocketAllUserSum,
-          data: () => {
-            return {}
-          },
-        })
+        getSystemSocketAllUserSum()
           .then((res) => {
             userSum.value = res.data['sum']
           })

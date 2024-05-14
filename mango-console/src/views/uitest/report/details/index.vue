@@ -113,16 +113,15 @@
 </template>
 <script lang="ts" setup>
   import { reactive, onMounted, nextTick, ref } from 'vue'
-  import {
-    systemEnumExp,
-    uiCaseResultSuiteGetCase,
-    uiEleResultEle,
-    uiPageStepsDetailedAss,
-    uiPageStepsDetailedOpe,
-  } from '@/api/url'
-  import { get } from '@/api/http'
   import { usePageData } from '@/store/page-data'
   import { useRoute } from 'vue-router'
+  import {
+    getUiCaseResultSuiteGetCase,
+    getUiEleResultEle,
+    getUiPageStepsDetailedAss,
+    getUiPageStepsDetailedOpe,
+  } from '@/api/uitest'
+  import { getSystemEnumExp } from '@/api/system'
   const childRef: any = ref(null)
 
   const pageData: any = usePageData()
@@ -163,16 +162,7 @@
       }
     })
     if (obj.page_steps_result) {
-      get({
-        url: uiEleResultEle,
-        data: () => {
-          return {
-            test_suite_id: obj.test_suite_id,
-            page_step_id: obj.page_step_id,
-            case_id: obj.case_id,
-          }
-        },
-      })
+      getUiEleResultEle(obj.test_suite_id, obj.page_step_id, obj.case_id)
         .then((res) => {
           reportDetailsData.eleResult = res.data
           res.data.forEach((item: any) => {
@@ -193,14 +183,7 @@
   }
 
   function doRefresh() {
-    get({
-      url: uiCaseResultSuiteGetCase,
-      data: () => {
-        return {
-          test_suite_id: route.query.id,
-        }
-      },
-    })
+    getUiCaseResultSuiteGetCase(route.query.id)
       .then((res) => {
         reportDetailsData.treeData = res.data.data
         reportDetailsData.summary = res.data.summary
@@ -219,12 +202,7 @@
   }
 
   function getEleExp() {
-    get({
-      url: systemEnumExp,
-      data: () => {
-        return {}
-      },
-    })
+    getSystemEnumExp()
       .then((res) => {
         reportDetailsData.eleExp = res.data
       })
@@ -232,12 +210,7 @@
   }
 
   function getUiRunSortAss() {
-    get({
-      url: uiPageStepsDetailedAss,
-      data: () => {
-        return {}
-      },
-    })
+    getUiPageStepsDetailedAss(null)
       .then((res) => {
         reportDetailsData.ass = res.data
       })
@@ -245,12 +218,7 @@
   }
 
   function getUiRunSortOpe() {
-    get({
-      url: uiPageStepsDetailedOpe,
-      data: () => {
-        return {}
-      },
-    })
+    getUiPageStepsDetailedOpe(null)
       .then((res) => {
         reportDetailsData.ope = res.data
       })

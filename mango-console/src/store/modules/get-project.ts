@@ -1,7 +1,5 @@
 import { defineStore } from 'pinia'
-import { get } from '@/api/http'
-import { userProjectAll } from '@/api/url'
-import { reactive } from 'vue/dist/vue'
+import { getUserProjectAll } from '@/api/user'
 // 1.定义容器
 export const useProject = defineStore('get-project', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -18,9 +16,7 @@ export const useProject = defineStore('get-project', {
   // 封装业务逻辑，修改state
   actions: {
     getProject() {
-      get({
-        url: userProjectAll,
-      })
+      getUserProjectAll()
         .then((res) => {
           this.data = res.data
           this.initialization()

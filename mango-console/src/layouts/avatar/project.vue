@@ -20,9 +20,8 @@
   import { useProject } from '@/store/modules/get-project'
   import { useDebounceFn } from '@vueuse/core'
   import { useRoute, useRouter } from 'vue-router'
-  import { get, put } from '@/api/http'
-  import { userProjectEnvironment, userPutProject } from '@/api/url'
   import { useProjectModule } from '@/store/modules/project_module'
+  import { getUserProjectEnvironment, putUserPutProject } from '@/api/user'
 
   export default defineComponent({
     name: 'Project',
@@ -38,12 +37,7 @@
         if (key === '选择项目') {
           key = null
         }
-        put({
-          url: userPutProject,
-          data: () => {
-            return { id: userStore.userId, selected_project: key }
-          },
-        })
+        putUserPutProject(userStore.userId, key)
           .then((res) => {
             userStore.selected_project = res.data.selected_project
             setTitle(key)
@@ -69,14 +63,7 @@
       })
 
       function doRefresh() {
-        get({
-          url: userProjectEnvironment,
-          data: () => {
-            return {
-              id: userStore.userId,
-            }
-          },
-        })
+        getUserProjectEnvironment(userStore.userId)
           .then((res) => {
             userStore.selected_environment = res.data.selected_environment
             userStore.selected_project = res.data.selected_project

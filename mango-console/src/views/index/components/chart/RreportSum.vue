@@ -8,8 +8,7 @@
   import useEcharts from '@/hooks/useEcharts'
   import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
   import { dispose } from 'echarts/core'
-  import { get } from '@/api/http'
-  import { systemCaseRunSum } from '@/api/url'
+  import { getSystemCaseRunSum } from '@/api/system'
 
   export default defineComponent({
     name: 'ReportSum',
@@ -19,12 +18,7 @@
       let data: any = reactive([])
 
       function getAllReportSum() {
-        get({
-          url: systemCaseRunSum,
-          data: () => {
-            return {}
-          },
-        })
+        getSystemCaseRunSum()
           .then((res) => {
             data = res.data
             init()

@@ -7,17 +7,7 @@
   import useEcharts from '@/hooks/useEcharts'
   import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { dispose, graphic } from 'echarts/core'
-  import { random } from 'lodash-es'
-  import { get } from '@/api/http'
-  import { systemCaseResultWeekSum } from '@/api/url'
-
-  function getData() {
-    const data: number[] = []
-    while (data.length < 12) {
-      data.push(random(80, 250))
-    }
-    return data
-  }
+  import { getSystemCaseResultWeekSum } from '@/api/system'
 
   const months = [
     '1周',
@@ -41,12 +31,7 @@
       let interval: any = null
       let data: any = reactive([])
       function caseResultWeekSum() {
-        get({
-          url: systemCaseResultWeekSum,
-          data: () => {
-            return {}
-          },
-        })
+        getSystemCaseResultWeekSum()
           .then((res) => {
             data = res.data
             init()

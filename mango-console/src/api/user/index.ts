@@ -1,5 +1,6 @@
 import { deleted, get, post, put, Response } from '@/api/http'
 import * as url from './url'
+
 export function getUserProjectModuleGetAll(
   projectProductId: number | string | null
 ): Promise<Response> {
@@ -15,6 +16,24 @@ export function getUserProjectModuleGetAll(
 export function getUserProjectProductName(): Promise<Response> {
   return get({
     url: url.userProjectProductName,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getUserProjectEnvironment(userId: number): Promise<Response> {
+  return get({
+    url: url.userProjectEnvironment,
+    data: () => {
+      return {
+        id: userId,
+      }
+    },
+  })
+}
+export function getUserProjectAll(): Promise<Response> {
+  return get({
+    url: url.userProjectAll,
     data: () => {
       return {}
     },
@@ -266,6 +285,22 @@ export function deleteUserLogs(id: number | string[] | number[]) {
       return {
         id: id,
       }
+    },
+  })
+}
+export function putUserPutProject(userId: number, key: any) {
+  return put({
+    url: url.userPutProject,
+    data: () => {
+      return { id: userId, selected_project: key }
+    },
+  })
+}
+export function putUserEnvironment(userId: number, key: any) {
+  return put({
+    url: url.userEnvironment,
+    data: () => {
+      return { id: userId, selected_environment: key }
     },
   })
 }

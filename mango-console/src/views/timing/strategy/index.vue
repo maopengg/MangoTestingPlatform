@@ -113,8 +113,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { get, post, put, deleted } from '@/api/http'
-  import { systemTime } from '@/api/url'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
