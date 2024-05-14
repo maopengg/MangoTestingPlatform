@@ -131,7 +131,6 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-
         return ResponseData.success(RESPONSE_MSG_0094,
                                     [
                                         {'value': UiCaseResult.objects.count(),
