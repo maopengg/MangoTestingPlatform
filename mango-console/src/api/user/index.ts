@@ -1,5 +1,6 @@
 import { deleted, get, post, put, Response } from '@/api/http'
 import * as url from './url'
+import { userTestObjName } from './url'
 
 export function getUserModuleName(projectProductId: number | string | null): Promise<Response> {
   return get({
@@ -8,6 +9,14 @@ export function getUserModuleName(projectProductId: number | string | null): Pro
       return {
         project_product_id: projectProductId,
       }
+    },
+  })
+}
+export function getUserTestObjName() {
+  return get({
+    url: url.userTestObjName,
+    data: () => {
+      return {}
     },
   })
 }

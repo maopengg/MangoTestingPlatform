@@ -6,16 +6,37 @@
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of testObjList" :key="item.key" :value="item.key">
-          {{ item.title }}
-        </a-doption>
+        <template v-for="item of testObj.data">
+          <template v-if="item.children && item.children.length > 0">
+            <a-dsubmenu :value="item.label" :key="item.value">
+              <template #default>
+                {{ item.label }}
+              </template>
+              <template #content>
+                <a-doption v-for="n of item.children" :key="n.value" :value="n.value">
+                  {{ n.label }}
+                </a-doption>
+              </template>
+            </a-dsubmenu>
+          </template>
+          <template v-else-if="item.value === -1">
+            <a-doption :key="item.value" :value="item.value">
+              {{ item.label }}
+            </a-doption>
+          </template>
+          <template v-else>
+            <a-doption :key="item.value" :value="item.value" disabled>
+              {{ item.label }}
+            </a-doption>
+          </template>
+        </template>
       </template>
     </a-dropdown>
   </div>
 </template>
 
 <script lang="ts">
-  import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
+  import { defineComponent, onMounted, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { useTestObj } from '@/store/modules/get-test-obj'
 
@@ -26,26 +47,29 @@
     setup() {
       const userStore = useUserStore()
       const testObj = useTestObj()
-      let testObjList = reactive([])
       function handleSelect(key: any) {
-        if (key === '选择测试环境') {
+        if (key === -1) {
           key = null
         }
         putUserEnvironment(userStore.userId, key)
           .then((res) => {
             userStore.selected_environment = res.data.selected_environment
+            testObj.selectValue = key
             setTitle(key)
           })
           .catch(console.log)
       }
       function setTitle(key: any) {
-        testObjList.push({ key: null, title: '选择测试环境' })
-        testObj.data.forEach((item) => {
-          testObjList.push(item)
-        })
-        testObjList.forEach((item: any) => {
-          testObj.selectValue = key
-          if (item.key === testObj.selectValue) testObj.selectTitle = item.title
+        if (key === null) {
+          testObj.selectTitle = '请选择测试环境'
+          return
+        }
+        testObj.data.forEach((item: any) => {
+          if (item.children.length > 0) {
+            item.children.forEach((children: any) => {
+              if (children.value === key) testObj.selectTitle = `${item.label}/${children.label}`
+            })
+          }
         })
       }
       watchEffect(() => {
@@ -60,7 +84,6 @@
       return {
         userStore,
         testObj,
-        testObjList,
         handleSelect,
       }
     },
