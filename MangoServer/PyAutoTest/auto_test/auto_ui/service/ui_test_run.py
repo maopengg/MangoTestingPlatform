@@ -9,6 +9,7 @@ from PyAutoTest.auto_test.auto_system.models import TestObject, User
 from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
 from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
+from PyAutoTest.auto_test.auto_system.service.test_object_get import TestObjectGet
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
     UiElement, UiConfig, UiPage
@@ -35,7 +36,6 @@ class UiTestRun:
                  spare_test_object_id: int = None,
                  ):
         self.user_obj = User.objects.get(id=user_id)
-        self.test_object = TestObject.objects.get(id=test_obj_id)
         self.user_id = user_id
         self.test_object_id = test_obj_id
         self.tasks_id = tasks_id
@@ -62,7 +62,6 @@ class UiTestRun:
         TestSuiteReportCRUD.inside_post({
             'id': test_suite_id,
             'type': AutoTestTypeEnum.UI.value,
-            'project': self.test_object.project.id,
             'test_object': self.test_object_id,
             'error_message': None,
             'run_status': StatusEnum.FAIL.value,
@@ -99,23 +98,23 @@ class UiTestRun:
 
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
+
         return CaseModel(
             test_suite_id=test_suite_id,
             id=case.id,
             name=case.name,
-            project=case.project.id,
-            module_name=case.module_name.name,
+            module_name=case.module.name,
+            project_product=case.project_product.id,
             case_people=case.case_people.nickname,
             front_custom=case.front_custom,
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
-            run_config=self.__get_run_config(),
-            steps=[self.__data_ui_case(i.page_step.id, i.id, False) for i in objects_filter],
+            steps=[self.__page_steps(i.page_step.id, i.id) for i in objects_filter],
         )
 
     def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
 
-        case_model = self.__data_ui_case(steps_id)
+        case_model = self.__page_steps(steps_id)
         if is_send:
             self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=case_model)
         return case_model
@@ -126,28 +125,27 @@ class UiTestRun:
         except UiPage.DoesNotExist as error:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         element_obj = UiElement.objects.get(id=data['id'])
+        test_object: TestObject = TestObjectGet.get_test_object(self.test_object_id, data['project_product_id'])
         page_steps_model = PageStepsModel(
             id=None,
             name=f'测试元素-{element_obj.name}',
             case_step_details_id=None,
-            project=data['project_id'],
-            test_object_value=self.test_object.value,
+            project_product=data['project_product_id'],
+            test_object_value=test_object.value,
             url=page_obj.url,
             type=page_obj.type,
             equipment_config=self.__get_web_config(
-                self.test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+                test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            run_config=self.__get_run_config(test_object)
         )
         page_steps_model.element_list.append(ElementModel(
             id=element_obj.id,
             type=data['type'],
-            ele_name_a=element_obj.name,
-            ele_name_b=None,
-            ele_loc_a=element_obj.loc,
-            locator=element_obj.locator,
-            ele_loc_b=None,
-            ele_exp=element_obj.exp,
-            ele_sleep=element_obj.sleep,
-            ele_sub=element_obj.sub,
+            name=element_obj.name,
+            loc=element_obj.loc,
+            exp=element_obj.exp,
+            sleep=element_obj.sleep,
+            sub=element_obj.sub ,
             ope_type=data['ope_type'] if data.get('ope_type') else None,
             ope_value=data['ope_value'] if data.get('ope_value') else None,
             ass_type=data['ass_type'] if data.get('ass_type') else None,
@@ -167,25 +165,25 @@ class UiTestRun:
             data=data,
         ))
 
-    def __data_ui_case(self,
-                       page_steps_id: int,
-                       case_step_details_id: int | None = None,
-                       is_page_step: bool = True) -> PageStepsModel:
+    def __page_steps(self,
+                     page_steps_id: int,
+                     case_step_details_id: int | None = None) -> PageStepsModel:
 
         step = UiPageSteps.objects.get(id=page_steps_id)
+        test_object: TestObject = TestObjectGet.get_test_object(self.test_object_id, step.project_product.id)
         page_steps_model = PageStepsModel(
             id=step.id,
             name=step.name,
             case_step_details_id=case_step_details_id,
-            project=step.project.id,
-            test_object_value=self.test_object.value,
+            project_product=step.project_product.id,
+            test_object_value=test_object.value,
             url=step.page.url,
             type=step.page.type,
             equipment_config=self.__get_web_config(
-                self.test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-            run_config=self.__get_run_config()
+                test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            run_config=self.__get_run_config(test_object)
         )
-        if not is_page_step:
+        if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
                 page_steps_model.case_data.append(StepsDataModel(**case_data))
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
@@ -231,13 +229,13 @@ class UiTestRun:
                                               type=DriveTypeEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)
 
-    def __get_run_config(self) -> RunConfigModel:
+    def __get_run_config(self, test_object: TestObject) -> RunConfigModel:
         mysql_config = None
-        if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
+        if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
             mysql_config = GetDataBase.get_mysql_config(self.test_object_id)
         return RunConfigModel(
-            db_c_status=bool(self.test_object.db_c_status),
-            db_rud_status=bool(self.test_object.db_rud_status),
+            db_c_status=bool(test_object.db_c_status),
+            db_rud_status=bool(test_object.db_rud_status),
             mysql_config=mysql_config,
             public_data_list=GetCommonParameters.get_ui_args(self.test_object_id)
         )

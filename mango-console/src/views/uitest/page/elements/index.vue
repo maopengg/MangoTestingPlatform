@@ -373,7 +373,8 @@
       value['testing_environment'] = testObj.selectValue
       value['id'] = data.id
       value['page_id'] = pageData.record.id
-      value['project_id'] = pageData.record.project.id
+      value['project_product_id'] = pageData.record.project_product.id
+      value['type'] = pageData.record.type
       putUiUiElementTest(value)
         .then((res) => {
           Message.success(res.msg)
