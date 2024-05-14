@@ -8,14 +8,7 @@ export function getSystemEnumExp() {
     },
   })
 }
-export function getSystemTestObjName() {
-  return get({
-    url: url.systemTestObjName,
-    data: () => {
-      return {}
-    },
-  })
-}
+
 export function getSystemSocketAllUserSum() {
   return get({
     url: url.systemSocketAllUserSum,

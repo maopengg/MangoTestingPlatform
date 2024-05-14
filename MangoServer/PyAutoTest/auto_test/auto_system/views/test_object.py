@@ -64,8 +64,9 @@ class TestObjectViews(ViewSet):
          :param request:
          :return:
          """
-        res = TestObject.objects.values_list('id', 'name')
-        data = [{'key': _id, 'title': name} for _id, name in res]
+
+        res = TestObject.objects.values_list('id', 'project_product', 'environment')
+        data = [{'key': _id, 'title': name} for _id, project_product, environment  in res]
         return ResponseData.success(RESPONSE_MSG_0095, data)
 
     @action(methods=['put'], detail=False)
