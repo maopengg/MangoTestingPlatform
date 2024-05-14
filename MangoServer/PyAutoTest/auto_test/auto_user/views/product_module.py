@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProductModule, User
+from PyAutoTest.auto_test.auto_user.models import ProductModule
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -55,8 +55,6 @@ class ProductModuleViews(ViewSet):
     @action(methods=['GET'], detail=False)
     def get_module_name(self, request: Request):
         project_product_id = request.query_params.get('project_product_id')
-        if project_product_id is None:
-            project_product_id = User.objects.get(id=request.user['id']).selected_project
         if project_product_id:
             res = self.model.objects.values_list('id', 'name').filter(project_product=project_product_id)
         else:
