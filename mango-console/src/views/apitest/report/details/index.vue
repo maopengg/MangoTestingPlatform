@@ -100,10 +100,10 @@
 </template>
 <script lang="ts" setup>
   import { reactive, onMounted, nextTick, ref } from 'vue'
-  import { apiResultSuiteCase, apiInfoResult, systemEnumMethod, systemEnumEnd } from '@/api/url'
-  import { get } from '@/api/http'
   import { usePageData } from '@/store/page-data'
   import { strJson } from '@/utils/tools'
+  import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
+  import { getApiInfoResult, getApiResultSuiteCase } from '@/api/apitest'
 
   const pageData: any = usePageData()
 
@@ -121,14 +121,7 @@
       childRef.value.expandNode(key, true) // 调用子组件的方法
       return
     }
-    get({
-      url: apiInfoResult,
-      data: () => {
-        return {
-          id: key[0].substring(2),
-        }
-      },
-    })
+    getApiInfoResult(key[0].substring(2))
       .then((res) => {
         data.apiResult = res.data[0]
       })
@@ -140,14 +133,7 @@
   }
 
   function doRefresh() {
-    get({
-      url: apiResultSuiteCase,
-      data: () => {
-        return {
-          test_suite_id: pageData.record.id,
-        }
-      },
-    })
+    getApiResultSuiteCase(pageData.record.id)
       .then((res) => {
         data.treeData = res.data.data
         data.summary = res.data.summary
@@ -155,9 +141,7 @@
       .catch(console.log)
   }
   function doMethodType() {
-    get({
-      url: systemEnumMethod,
-    })
+    getSystemEnumMethod()
       .then((res) => {
         res.data.forEach((item: any) => {
           data.methodType.push(item.title)
@@ -167,9 +151,7 @@
   }
 
   function doClientType() {
-    get({
-      url: systemEnumEnd,
-    })
+    getSystemEnumEnd()
       .then((res) => {
         res.data.forEach((item: any) => {
           data.clientType.push(item.title)

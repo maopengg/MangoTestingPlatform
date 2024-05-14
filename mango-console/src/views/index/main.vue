@@ -109,9 +109,8 @@
     useTableColumn,
   } from '@/hooks/table'
   import { useRouter } from 'vue-router'
-  import { get } from '@/api/http'
-  import { systemScheduledTasks } from '@/api/url'
   import { useProjectModule } from '@/store/modules/project_module'
+  import { getSystemScheduledTasks } from '@/api/system'
 
   const appStore = useAppConfigStore()
   const mainHeight = computed(() => {
@@ -187,14 +186,9 @@
   }
 
   function doRefresh() {
-    get({
-      url: systemScheduledTasks,
-      data: () => {
-        return {
-          pageSize: pagination.pageSize,
-          page: pagination.page,
-        }
-      },
+    getSystemScheduledTasks({
+      pageSize: pagination.pageSize,
+      page: pagination.page,
     })
       .then((res) => {
         table.handleSuccess(res)

@@ -511,3 +511,25 @@ export function getUiPageAssMethod() {
     },
   })
 }
+export function getUiCaseResultSuiteGetCase(testSuiteId: any) {
+  return get({
+    url: url.uiCaseResultSuiteGetCase,
+    data: () => {
+      return {
+        test_suite_id: testSuiteId,
+      }
+    },
+  })
+}
+export function getUiEleResultEle(testSuiteId: any, pageStepId: number, caseId: number) {
+  return get({
+    url: url.uiEleResultEle,
+    data: () => {
+      return {
+        test_suite_id: testSuiteId,
+        page_step_id: pageStepId,
+        case_id: caseId,
+      }
+    },
+  })
+}

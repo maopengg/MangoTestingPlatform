@@ -114,13 +114,6 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import {
-    systemTasksCaseSort,
-    systemTasksCaseTestObject,
-    systemTasksRunCase,
-    systemTasksTypeCaseName,
-  } from '@/api/url'
-  import { deleted, get, post, put } from '@/api/http'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
@@ -129,6 +122,15 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { formItems, tableColumns } from './config'
+  import {
+    deleteSystemTasksRunCase,
+    getSystemTasksRunCase,
+    getSystemTasksTypeCaseName,
+    postSystemTasksRunCase,
+    putSystemTasksCaseSort,
+    putSystemTasksCaseTestObject,
+    putSystemTasksRunCase,
+  } from '@/api/system'
   const testObj = useTestObj()
   const projectModule = useProjectModule()
   const pagination = usePagination(doRefresh)
@@ -161,14 +163,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleted({
-          url: systemTasksRunCase,
-          data: () => {
-            return {
-              id: JSON.stringify(selectedRowKeys.value),
-            }
-          },
-        })
+        deleteSystemTasksRunCase(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
             selectedRowKeys.value = []
@@ -199,14 +194,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleted({
-          url: systemTasksRunCase,
-          data: () => {
-            return {
-              id: '[' + record.id + ']',
-            }
-          },
-        })
+        deleteSystemTasksRunCase(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -224,7 +212,6 @@
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = record[it.key]
-        console.log(propName)
         if (propName) {
           it.value = record.case
         }
@@ -237,28 +224,17 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        post({
-          url: systemTasksRunCase,
-          data: () => {
-            value['task'] = route.query.id
-            value['sort'] = data.data.length
-
-            return value
-          },
-        })
+        value['task'] = route.query.id
+        value['sort'] = data.data.length
+        postSystemTasksRunCase(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
           })
           .catch(console.log)
       } else {
-        put({
-          url: systemTasksRunCase,
-          data: () => {
-            value['id'] = data.updateId
-            return value
-          },
-        })
+        value['id'] = data.updateId
+        putSystemTasksRunCase(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -275,14 +251,7 @@
         sort: index,
       })
     })
-    put({
-      url: systemTasksCaseSort,
-      data: () => {
-        return {
-          sort_list: data,
-        }
-      },
-    })
+    putSystemTasksCaseSort(data)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -293,16 +262,11 @@
   }
 
   function doRefresh() {
-    get({
-      url: systemTasksRunCase,
-      data: () => {
-        return {
-          id: route.query.id,
-          type: route.query.type,
-          page: pagination.page,
-          pageSize: pagination.pageSize,
-        }
-      },
+    getSystemTasksRunCase({
+      id: route.query.id,
+      type: route.query.type,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
     })
       .then((res) => {
         data.data = res.data
@@ -313,15 +277,7 @@
   }
 
   function tasksTypeCaseName(value: number) {
-    get({
-      url: systemTasksTypeCaseName,
-      data: () => {
-        return {
-          type: route.query.type,
-          module_name: value,
-        }
-      },
-    })
+    getSystemTasksTypeCaseName(route.query.type, value)
       .then((res) => {
         data.caseList = res.data
       })
@@ -338,15 +294,7 @@
     data.visible = true
   }
   const handleOk = () => {
-    put({
-      url: systemTasksCaseTestObject,
-      data: () => {
-        return {
-          case_list: selectedRowKeys.value,
-          test_obj_id: data.value,
-        }
-      },
-    })
+    putSystemTasksCaseTestObject(selectedRowKeys.value, data.value)
       .then((res) => {
         Message.success(res.msg)
         data.visible = false

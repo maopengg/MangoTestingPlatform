@@ -282,3 +282,23 @@ export function getApiResultWeek() {
     },
   })
 }
+export function getApiResultSuiteCase(testSuiteId: any) {
+  return get({
+    url: url.apiResultSuiteCase,
+    data: () => {
+      return {
+        test_suite_id: testSuiteId,
+      }
+    },
+  })
+}
+export function getApiInfoResult(id: any) {
+  return get({
+    url: url.apiInfoResult,
+    data: () => {
+      return {
+        id: id,
+      }
+    },
+  })
+}

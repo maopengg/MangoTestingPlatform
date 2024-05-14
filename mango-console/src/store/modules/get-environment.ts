@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { get } from '@/api/http'
-import { systemEnumEnvironment } from '@/api/url'
+import { getSystemEnumEnvironment } from '@/api/system'
 // 1.定义容器
 export const useEnvironment = defineStore('get-environment', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -14,9 +13,7 @@ export const useEnvironment = defineStore('get-environment', {
   // 封装业务逻辑，修改state
   actions: {
     getEnvironment() {
-      get({
-        url: systemEnumEnvironment,
-      })
+      getSystemEnumEnvironment()
         .then((res) => {
           this.data = res.data
         })

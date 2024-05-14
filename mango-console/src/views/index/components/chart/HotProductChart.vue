@@ -7,15 +7,8 @@
   import useEcharts from '@/hooks/useEcharts'
   import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
   import { dispose } from 'echarts/core'
-  import { get } from '@/api/http'
-  import { systemActivityLevel } from '@/api/url'
+  import { getSystemActivityLevel } from '@/api/system'
 
-  function getData() {
-    return [19, 90, 80, 70, 60]
-  }
-  function getData1() {
-    return ['毛鹏', '吴强', '丁锦城', '李元', '陶丹']
-  }
   export default defineComponent({
     name: 'HotProdChart',
     setup() {
@@ -24,12 +17,7 @@
       let interval: any = null
       let data: any = reactive([])
       function activityLevel() {
-        get({
-          url: systemActivityLevel,
-          data: () => {
-            return {}
-          },
-        })
+        getSystemActivityLevel()
           .then((res) => {
             data = res.data
             init()

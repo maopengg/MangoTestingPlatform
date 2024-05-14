@@ -18,8 +18,8 @@
   import { defineComponent, onMounted, reactive, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { useTestObj } from '@/store/modules/get-test-obj'
-  import { put } from '@/api/http'
-  import { userEnvironment } from '@/api/url'
+
+  import { putUserEnvironment } from '@/api/user'
 
   export default defineComponent({
     name: 'TestEnvironment',
@@ -31,12 +31,7 @@
         if (key === '选择测试环境') {
           key = null
         }
-        put({
-          url: userEnvironment,
-          data: () => {
-            return { id: userStore.userId, selected_environment: key }
-          },
-        })
+        putUserEnvironment(userStore.userId, key)
           .then((res) => {
             userStore.selected_environment = res.data.selected_environment
             setTitle(key)

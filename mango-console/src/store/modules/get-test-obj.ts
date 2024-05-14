@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { get } from '@/api/http'
-import { systemTestObjName } from '@/api/url'
+import { getSystemTestObjName } from '@/api/system'
 // 1.定义容器
 export const useTestObj = defineStore('get-test-obj', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -16,9 +15,7 @@ export const useTestObj = defineStore('get-test-obj', {
   // 封装业务逻辑，修改state
   actions: {
     getEnvironment() {
-      get({
-        url: systemTestObjName,
-      })
+      getSystemTestObjName()
         .then((res) => {
           this.data = res.data
         })
