@@ -42,10 +42,9 @@
           <a-tabs>
             <template #extra>
               <a-space>
-                <div class="title-container">
-                  <span>项目管理</span>
+                <div>
+                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
                 </div>
-                <a-button type="primary" size="small" @click="onAdd">新增</a-button>
               </a-space>
             </template>
           </a-tabs>
@@ -285,10 +284,4 @@
   })
 </script>
 
-<style>
-  .title-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-</style>
+<style></style>

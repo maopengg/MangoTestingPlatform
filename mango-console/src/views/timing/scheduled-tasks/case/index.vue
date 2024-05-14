@@ -82,11 +82,21 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
+                  v-model="item.value"
+                  @change="onProductModuleName(item.value)"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  allow-search
+                  allow-clear
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectModule.data"
+                  :options="data.moduleList"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -118,7 +128,6 @@
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProjectModule } from '@/store/modules/project_module'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { formItems, tableColumns } from './config'
@@ -131,8 +140,10 @@
     putSystemTasksCaseTestObject,
     putSystemTasksRunCase,
   } from '@/api/system'
+  import { getUserModuleName } from '@/api/user'
+  import { useProject } from '@/store/modules/get-project'
   const testObj = useTestObj()
-  const projectModule = useProjectModule()
+  const projectInfo = useProject()
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -149,6 +160,7 @@
     actionTitle: '添加定时任务',
     caseList: [],
     data: [],
+    moduleList: [],
   })
 
   function onDeleteItems() {
@@ -292,6 +304,15 @@
       return
     }
     data.visible = true
+  }
+  function onProductModuleName(projectProductId: number) {
+    getUserModuleName(projectProductId)
+      .then((res) => {
+        data.moduleList = res.data
+      })
+      .catch((error) => {
+        console.error(error)
+      })
   }
   const handleOk = () => {
     putSystemTasksCaseTestObject(selectedRowKeys.value, data.value)

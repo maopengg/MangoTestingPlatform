@@ -121,7 +121,7 @@
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['project'] = route.query.id
+      value['project_product'] = route.query.id
       if (data.isAdd) {
         postUserModule(value)
           .then((res) => {

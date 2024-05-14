@@ -77,7 +77,7 @@ class UiPageStepsViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     def put_type(self, request: Request):
-        for i in eval(request.data.get('id')):
+        for i in request.data.get('id'):
             case = self.model.objects.get(id=i)
             case.type = 0 if case.type == 1 else 1 if not case.type else 1
             case.save()

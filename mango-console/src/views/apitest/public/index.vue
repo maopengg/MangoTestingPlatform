@@ -19,7 +19,7 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                  <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -67,9 +67,14 @@
         <template #default>
           <a-tabs>
             <template #extra>
-              <div>
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-              </div>
+              <a-space>
+                <div>
+                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                </div>
+                <div>
+                  <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+                </div></a-space
+              >
             </template>
           </a-tabs>
           <a-table
@@ -150,15 +155,13 @@
                   :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
+                  :options="projectInfo.projectProduct"
                   allow-search
+                  allow-clear
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'client'">
@@ -209,7 +212,7 @@
   } from '@/api/apitest'
   import { getSystemEnumApiPublic, getSystemEnumEnd } from '@/api/system'
 
-  const project = useProject()
+  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -288,7 +291,26 @@
       },
     })
   }
-
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleteApiPublic(selectedRowKeys.value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
   function onUpdate(item: any) {
     data.actionTitle = '编辑公共参数'
     data.isAdd = false

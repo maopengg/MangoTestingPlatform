@@ -19,7 +19,7 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'module_name'">
+                  <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -101,7 +101,7 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="PageCopy(record.id)"
+                        <a-button type="text" size="mini" @click="onPageCopy(record.id)"
                           >复制</a-button
                         >
                       </a-doption>
@@ -140,26 +140,15 @@
                   :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
               </template>
-              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+              <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
-                  @change="getProjectModule(item.value)"
+                  @change="onProductModuleName(item.value)"
                   :placeholder="item.placeholder"
-                  :options="data.projectProductName"
+                  :options="projectInfo.projectProduct"
                   allow-search
                   allow-clear
                 />
-
-                <!--                <a-select-->
-                <!--                  v-model="item.value"-->
-                <!--                  :placeholder="item.placeholder"-->
-                <!--                  :options="data.projectProductName"-->
-                <!--                  :field-names="fieldNames"-->
-                <!--                  @change="getProjectModule(item.value)"-->
-                <!--                  value-key="key"-->
-                <!--                  allow-clear-->
-                <!--                  allow-search-->
-                <!--                />-->
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
@@ -192,9 +181,11 @@
   import { useProjectModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getUserProjectModuleGetAll, getUserProjectProductName } from '@/api/user'
+  import { getUserModuleName } from '@/api/user'
+  import { useProject } from '@/store/modules/get-project'
 
   const projectModule = useProjectModule()
+  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -209,7 +200,6 @@
     actionTitle: '添加页面',
     pageType: 0,
     moduleList: projectModule.data,
-    projectProductName: [],
   })
 
   function switchType(key: any) {
@@ -302,7 +292,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    getProjectModule(item.project.id)
+    onProductModuleName(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -326,28 +316,19 @@
       })
       .catch(console.log)
   }
-  function PageCopy(id: number) {
+  function onPageCopy(id: number) {
     postUiPageCopy(id)
       .then((res) => {
         Message.success(res.msg)
+        doRefresh()
       })
       .catch(console.log)
   }
 
-  function getProjectModule(projectProductId: number) {
-    doRefresh()
-    getUserProjectModuleGetAll(projectProductId)
+  function onProductModuleName(projectProductId: number) {
+    getUserModuleName(projectProductId)
       .then((res) => {
         data.moduleList = res.data
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-  }
-  function projectProductName() {
-    getUserProjectProductName()
-      .then((res) => {
-        data.projectProductName = res.data
       })
       .catch((error) => {
         console.error(error)
@@ -369,7 +350,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      projectProductName()
     })
   })
 </script>

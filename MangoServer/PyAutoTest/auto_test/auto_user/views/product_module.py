@@ -53,7 +53,7 @@ class ProductModuleViews(ViewSet):
     serializer_class = ProductModuleSerializers
 
     @action(methods=['GET'], detail=False)
-    def get_module_name_all(self, request: Request):
+    def get_module_name(self, request: Request):
         project_product_id = request.query_params.get('project_product_id')
         if project_product_id is None:
             project_product_id = User.objects.get(id=request.user['id']).selected_project

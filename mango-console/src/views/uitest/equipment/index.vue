@@ -169,7 +169,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'switch' && item.key === 'is_headless'">
-                <a-switch v-model="item.value" checked-value="1" unchecked-value="0" />
+                <a-switch v-model="item.value" :checked-value="1" :unchecked-value="0" />
               </template>
             </a-form-item>
           </a-form>

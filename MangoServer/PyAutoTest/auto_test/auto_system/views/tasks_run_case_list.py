@@ -96,17 +96,17 @@ class TasksRunCaseListViews(ViewSet):
     @action(methods=['get'], detail=False)
     def get_type_case_name(self, request: Request):
         _type = request.query_params.get('type')
-        module = request.query_params.get('module')
+        module_id = request.query_params.get('module_id')
         if int(_type) == AutoTestTypeEnum.UI.value:
-            res = UiCase.objects.filter(module=module).values_list('id', 'name')
+            res = UiCase.objects.filter(module=module_id).values_list('id', 'name')
         else:
-            res = ApiCase.objects.filter(module=module).values_list('id', 'name')
+            res = ApiCase.objects.filter(module=module_id).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0065, data)
 
     @action(methods=['post'], detail=False)
     def batch_set_cases(self, request: Request):
-        case_id_list = eval(request.data.get('case_id_list'))
+        case_id_list = request.data.get('case_id_list')
         scheduled_tasks_id = request.data.get('scheduled_tasks_id')
         tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list('case')
         tasks_run_case_list = [i[0] for i in list(tasks_run_case_list)]

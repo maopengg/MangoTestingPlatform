@@ -16,7 +16,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
+from PyAutoTest.enums.ui_enum import UiPublicTypeEnum
 
 class UiPublicSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -62,11 +62,12 @@ class UiPublicViews(ViewSet):
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
-        if request.data.get('status') == StatusEnum.SUCCESS.value:
-            try:
-                Database.objects.get(project_id=obj.project.id)
-            except Database.DoesNotExist:
-                return ResponseData.fail(RESPONSE_MSG_0110, )
+        if obj.type == UiPublicTypeEnum.SQL.value:
+            if request.data.get('status') == StatusEnum.SUCCESS.value:
+                try:
+                    Database.objects.get(project_product=obj.project_product.id)
+                except Database.DoesNotExist:
+                    return ResponseData.fail(RESPONSE_MSG_0110, )
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0021, )

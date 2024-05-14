@@ -226,16 +226,14 @@
           v-for="item of formItems"
           :key="item.key"
         >
-          <template v-if="item.type === 'select' && item.key === 'project'">
-            <a-select
+          <template v-if="item.type === 'cascader'">
+            <a-cascader
               v-model="item.value"
+              @change="onProductModuleName(item.value)"
               :placeholder="item.placeholder"
-              :options="project.data"
-              :field-names="fieldNames"
-              @change="doUiModuleNameAll(item.value)"
-              value-key="key"
-              allow-clear
+              :options="projectInfo.projectProduct"
               allow-search
+              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
@@ -307,10 +305,10 @@
     putUiCase,
     deleteUiCaseStepsDetailed,
   } from '@/api/uitest'
-  import { getUserModuleGetAll } from '@/api/user'
+  import { getUserModuleName } from '@/api/user'
   const pageData: any = usePageData()
   const testObj = useTestObj()
-  const project = useProject()
+  const projectInfo = useProject()
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -420,12 +418,13 @@
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['case_data'] = []
+      value['case'] = route.query.id
+      value['case_cache_data'] = []
+      value['case_cache_ass'] = []
       value['case_sort'] = data.data.length
       postUiCaseStepsDetailed(value)
         .then((res) => {
           Message.success(res.msg)
-          doRefresh()
           getUiCaseStepsRefreshCacheData(res.data.id)
             .then((res) => {
               Message.success(res.msg)
@@ -469,8 +468,8 @@
     })
   }
 
-  function doUiModuleNameAll(projectId: number) {
-    getUserModuleGetAll(projectId)
+  function onProductModuleName(projectId: number) {
+    getUserModuleName(projectId)
       .then((res) => {
         data.moduleName = res.data
       })

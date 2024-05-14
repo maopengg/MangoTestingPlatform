@@ -35,7 +35,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'module_name',
+    key: 'module',
     label: '模块',
     value: '',
     type: 'select',

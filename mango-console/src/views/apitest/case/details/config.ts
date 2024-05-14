@@ -26,7 +26,7 @@ export const columns = reactive([
 export const formItems: FormItem[] = reactive([
   {
     label: '模块',
-    key: 'module_name',
+    key: 'module',
     value: '',
     placeholder: '请选择测试模块',
     required: true,

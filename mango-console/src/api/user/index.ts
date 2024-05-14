@@ -1,11 +1,9 @@
 import { deleted, get, post, put, Response } from '@/api/http'
 import * as url from './url'
 
-export function getUserProjectModuleGetAll(
-  projectProductId: number | string | null
-): Promise<Response> {
+export function getUserModuleName(projectProductId: number | string | null): Promise<Response> {
   return get({
-    url: url.userModuleGetAll,
+    url: url.userModuleName,
     data: () => {
       return {
         project_product_id: projectProductId,
@@ -39,17 +37,6 @@ export function getUserProjectAll(): Promise<Response> {
     },
   })
 }
-export function getUserModuleGetAll(projectId: number) {
-  return get({
-    url: url.userModuleGetAll,
-    data: () => {
-      return {
-        project_id: projectId,
-      }
-    },
-  })
-}
-
 export function getUserNickname() {
   return get({
     url: url.userNickname,
