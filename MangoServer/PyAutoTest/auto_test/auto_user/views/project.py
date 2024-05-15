@@ -76,7 +76,7 @@ class ProjectViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def project_product_name(self, request: Request):
-        book = Project.objects.values_list('id', 'name').all()
+        book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
         options = []
         for _id, name in book:
             product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
@@ -91,7 +91,7 @@ class ProjectViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def project_environment_name(self, request: Request):
-        book = Project.objects.values_list('id', 'name').all()
+        book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
         options = [{
                 'value': -1,
                 'label': '请选择测试环境',

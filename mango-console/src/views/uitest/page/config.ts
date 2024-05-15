@@ -112,13 +112,13 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 130,
+    width: 180,
   },
   {
     title: '模块',
     key: 'module',
     dataIndex: 'module',
-    width: 160,
+    width: 180,
   },
   {
     title: '页面名称',
@@ -137,6 +137,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 250,
+    width: 190,
   },
 ])
