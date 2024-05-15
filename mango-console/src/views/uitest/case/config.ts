@@ -136,13 +136,13 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 130,
+    width: 180,
   },
   {
     title: '模块',
     key: 'module',
     dataIndex: 'modul',
-    width: 160,
+    width: 180,
   },
   {
     title: '用例名称',
@@ -156,11 +156,14 @@ export const tableColumns = useTableColumn([
     key: 'case_flow',
     dataIndex: 'case_flow',
     align: 'left',
+    ellipsis: true,
+    tooltip: true,
   },
   {
     title: '级别',
     key: 'level',
     dataIndex: 'level',
+    width: 60,
   },
   {
     title: '负责人',
@@ -173,12 +176,13 @@ export const tableColumns = useTableColumn([
     title: '结果',
     key: 'status',
     dataIndex: 'status',
+    width: 70,
   },
   {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 150,
+    width: 170,
   },
 ])

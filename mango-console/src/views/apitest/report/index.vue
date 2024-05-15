@@ -82,6 +82,9 @@
                   <template v-else-if="item.key === 'test_object'" #cell="{ record }">
                     {{ record.test_object?.name }}
                   </template>
+                  <template v-else-if="item.key === 'user'" #cell="{ record }">
+                    {{ record.user?.nickname }}
+                  </template>
                   <template v-else-if="item.key === 'run_status'" #cell="{ record }">
                     <a-tag color="red" size="small" v-if="record.run_status === 0">进行中</a-tag>
                     <a-tag color="green" size="small" v-else-if="record.run_status === 1"

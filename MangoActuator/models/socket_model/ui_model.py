@@ -11,7 +11,7 @@ from models.tools_model import MysqlConingModel
 class UiPublicModel(BaseModel):
     create_time: str
     update_time: str
-    project: int
+    project_product: int
     type: int
     name: str
     key: str
@@ -22,9 +22,9 @@ class UiPublicModel(BaseModel):
 class WEBConfigModel(BaseModel):
     """ web启动配置 """
     browser_type: int
-    browser_port: str | None
-    browser_path: str | None
-    is_headless: int | None
+    browser_port: str | None = None
+    browser_path: str | None = None
+    is_headless: int | None = None
     is_header_intercept: bool = False
     host: str | None = None
     project: int | None = None
@@ -71,30 +71,27 @@ class PageStepsModel(BaseModel):
     id: int | None = None
     name: str
     case_step_details_id: int | None
-    project: int
+    project_product: int
     test_object_value: str
     url: str
     type: int
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
     equipment_config: AndroidConfigModel | WEBConfigModel
-    # public_data_list: list[UiPublicModel] | None = None
-    # mysql_config: MysqlConingModel | None = None
-    run_config: RunConfigModel | None = None
+    run_config: RunConfigModel
 
 
 class CaseModel(BaseModel):
     test_suite_id: int
     id: int
-    project: int
+    project_product: int
     module_name: str
     name: str
     case_people: str
-    steps: list[PageStepsModel]
     front_custom: list
     front_sql: list
     posterior_sql: list
-    run_config: RunConfigModel
+    steps: list[PageStepsModel]
 
 
 class ElementResultModel(BaseModel):
@@ -123,25 +120,26 @@ class ElementResultModel(BaseModel):
 
 
 class PageStepsResultModel(BaseModel):
-    test_suite_id: int | None
-    case_id: int | None
-    case_step_details_id: int | None
+    test_suite_id: int | None = None
+    case_id: int | None = None
+    case_step_details_id: int | None = None
     page_step_id: int | None = None
 
     page_step_name: str
 
     status: int
-    error_message: str | None
+    error_message: str | None = None
     element_result_list: list[ElementResultModel]
 
 
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
+
     case_name: str
     module_name: str
     case_people: str
     test_obj: str
     status: int
-    error_message: str | None
+    error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]

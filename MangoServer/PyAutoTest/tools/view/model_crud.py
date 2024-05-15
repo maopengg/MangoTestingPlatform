@@ -34,9 +34,13 @@ class ModelCRUD(GenericAPIView):
                 query_dict[k] = v[0]
         #
         project_id = request.headers.get('Project')
-        if project_id and hasattr(self.model, 'project') and not query_dict.get('project'):
-            query_dict['project'] = project_id
-
+        if project_id and hasattr(self.model, 'project_product'):
+            from PyAutoTest.auto_test.auto_user.models import ProjectProduct
+            project_product = ProjectProduct.objects.filter(project_id=project_id)
+            if project_product:
+                query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
+            else:
+                raise Exception('11')
         if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']

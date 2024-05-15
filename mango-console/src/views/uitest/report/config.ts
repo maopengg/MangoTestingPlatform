@@ -31,7 +31,7 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 200,
+    width: 220,
   },
   {
     title: '执行环境',
@@ -49,16 +49,19 @@ export const tableColumns = useTableColumn([
     title: '执行人',
     key: 'user',
     dataIndex: 'user',
+    width: 100,
   },
   {
     title: '执行状态',
     key: 'run_status',
     dataIndex: 'run_status',
+    width: 90,
   },
   {
     title: '结果',
     key: 'status',
     dataIndex: 'status',
+    width: 70,
   },
   {
     title: '失败原因',
@@ -67,7 +70,6 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
-    width: 400,
   },
   {
     title: '操作',
