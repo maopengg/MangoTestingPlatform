@@ -1,5 +1,15 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
+export function getSystemTestObjectName(projectProductId: number | null) {
+  return get({
+    url: url.systemTestObjectName,
+    data: () => {
+      return {
+        project_product_id: projectProductId,
+      }
+    },
+  })
+}
 export function getSystemEnumExp() {
   return get({
     url: url.systemEnumExp,

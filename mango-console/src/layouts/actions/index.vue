@@ -1,15 +1,5 @@
 <template>
   <div class="action-items-wrapper">
-    <!--    <span class="action-item">-->
-    <!--      <a-space size="large">-->
-    <!--        <a-dropdown trigger="hover">-->
-    <!--          <a-button class="garden" type="text" status="normal">{{ te }}</a-button>-->
-    <!--          <template #content>-->
-    <!--            <a-doption v-for="item in testObj.data" :key="item.key" @click="onSelect(item)">{{ item.title }}</a-doption>-->
-    <!--          </template>-->
-    <!--        </a-dropdown>-->
-    <!--      </a-space>-->
-    <!--    </span>-->
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>

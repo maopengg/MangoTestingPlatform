@@ -499,12 +499,24 @@
       .then((res) => {
         data.caseResult = res.data
         visible.value = true
+        doRefresh()
       })
       .catch(console.log)
   }
 
   function onConcurrency() {
-    Message.loading('调用了并发按钮')
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    Message.loading('开始批量执行中~')
+    getApiCaseInfoRun(selectedRowKeys.value, testObj.selectValue)
+      .then((res) => {
+        data.caseResult = res.data
+        Message.success('批量执行全部完成啦~')
+        doRefresh()
+      })
+      .catch(console.log)
   }
 
   function doEnd() {

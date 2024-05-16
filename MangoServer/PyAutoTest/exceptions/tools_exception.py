@@ -72,3 +72,10 @@ class SocketClientNotPresentError(MangoServerError):
 
 class InsideSaveError(MangoServerError):
     pass
+
+
+class MiniIoConnError(MangoServerError):
+    pass
+
+class MiniIoFileError(MangoServerError):
+    pass

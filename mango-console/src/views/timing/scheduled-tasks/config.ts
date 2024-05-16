@@ -86,7 +86,7 @@ export const formItems: FormItem[] = reactive([
     value: '',
     placeholder: '请选择执行环境',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
       if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')

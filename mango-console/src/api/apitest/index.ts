@@ -193,9 +193,9 @@ export function deleteApiInfo(id: number | string[] | number[]) {
     },
   })
 }
-export function getApiCaseInfoRun(id: number, testObj: any) {
+export function getApiCaseInfoRun(id: number | string[], testObj: any) {
   return get({
-    url: url.apiCaseInfoRun,
+    url: url.apiInfoRun,
     data: () => {
       return {
         id: id,

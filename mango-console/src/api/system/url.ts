@@ -1,4 +1,5 @@
 export const systemTestObject = '/system/test/object'
+export const systemTestObjectName = '/system/test/object/name'
 export const systemNotice = '/system/notice'
 export const systemNoticePutStatus = '/system/notice/put/status'
 export const systemDatabase = '/system/database'

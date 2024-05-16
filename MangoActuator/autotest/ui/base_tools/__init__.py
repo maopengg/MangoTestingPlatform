@@ -66,6 +66,7 @@ class ElementMain(WebDevice, AndroidDriver):
 
         else:
             raise ElementTypeError(*ERROR_MSG_0015)
+        self.element_test_result.status = StatusEnum.SUCCESS.value
 
     async def action_element(self):
         if self.drive_type == DriveTypeEnum.WEB.value:

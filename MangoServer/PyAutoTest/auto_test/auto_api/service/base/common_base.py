@@ -4,11 +4,12 @@
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 import logging
+from typing import Optional
 from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
+from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.api_exception import LoginError
@@ -17,30 +18,32 @@ from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
-from .http_request import HTTPRequest
+from .http_base import HTTPRequest
 
 log = logging.getLogger('api')
 
 
-class CommonParameters(DataProcessor, HTTPRequest):
+class CommonBase(HTTPRequest, DataProcessor):
 
-    def __init__(self, test_obj_id: int):
-        DataProcessor.__init__(self, None)
-        HTTPRequest.__init__(self)
-        self.test_obj_id = test_obj_id
-        # 获取测试环境对象
-        self.test_object = TestObject.objects.get(id=self.test_obj_id)
-        self.mysql_connect = None
+    def __init__(self):
+        super().__init__()
+        self.project_product_id = None
+        self.test_object = Optional[TestObject]
+        self.mysql_connect: MysqlConnect = Optional[None]
+
+    def common_init(self, test_obj_id: int, project_product_id: int):
+        self.test_object = PublicMethods.get_test_object(test_obj_id, project_product_id)
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
-            self.mysql_connect = MysqlConnect(GetDataBase.get_mysql_config(self.test_obj_id),
-                                              bool(self.test_object.db_c_status),
-                                              bool(self.test_object.db_rud_status)
-                                              )
-
-    def common_init(self, project_id: int):
-        self.project_id = project_id
-        api_public = ApiPublic.objects.filter(status=StatusEnum.SUCCESS.value,
-                                              project=self.project_id).order_by('type')
+            self.mysql_connect = MysqlConnect(
+                PublicMethods.get_mysql_config(self.test_object.id),
+                bool(self.test_object.db_c_status),
+                bool(self.test_object.db_rud_status)
+            )
+        self.project_product_id = project_product_id
+        api_public = ApiPublic.objects \
+            .filter(status=StatusEnum.SUCCESS.value,
+                    project_product=self.project_product_id) \
+            .order_by('type')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)

@@ -155,7 +155,7 @@ class DriverObject:
         await route.continue_()  # 继续请求，不做修改
 
     async def __send_recording_api(self, request: Request):
-        if self.web_config.project is None:
+        if self.web_config.project_product_id is None:
             log.error('错误逻辑')
             return
         parsed_url = parse.urlsplit(request.url)
@@ -171,7 +171,7 @@ class DriverObject:
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
         try:
             api_info = ApiInfoModel(
-                project=self.web_config.project,
+                project=self.web_config.project_product_id,
                 username=service.USERNAME,
                 type=ApiTypeEnum.batch.value,
                 name=parsed_url.path,

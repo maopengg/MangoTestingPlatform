@@ -7,7 +7,7 @@ import logging
 from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCase
-from PyAutoTest.auto_test.auto_api.service.base.dependence import ApiDataHandle
+from PyAutoTest.auto_test.auto_api.service.base.dependence import CaseMethod
 from PyAutoTest.auto_test.auto_api.service.base.test_result import TestResult
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
@@ -23,11 +23,12 @@ from PyAutoTest.tools.view.error_msg import *
 log = logging.getLogger('api')
 
 
-class ApiTestRun(ApiDataHandle, TestResult):
+class ApiTestRun(CaseMethod, TestResult):
 
     def __init__(self, test_obj_id: int, case_sort: int = None, is_notice: int = 0, user_obj: dict = None):
-        ApiDataHandle.__init__(self, test_obj_id)
-        TestResult.__init__(self, test_obj_id)
+        CaseMethod.__init__(self)
+        TestResult.__init__(self)
+        self.test_obj_id = test_obj_id
         self.user_obj = user_obj
         self.case_sort = case_sort
         self.is_notice = is_notice
@@ -35,8 +36,9 @@ class ApiTestRun(ApiDataHandle, TestResult):
 
     def run_one_case(self, case_id: int, case_list: list = None) -> dict:
         api_case_obj = ApiCase.objects.get(id=case_id)
-        self.common_init(api_case_obj.project_id)
-        self.result_init(api_case_obj.project_id, case_list if case_list else [case_id])
+        self.common_init(self.test_obj_id, api_case_obj.project_product_id)
+
+        self.result_init(api_case_obj.project_product_id, case_list if case_list else [case_id])
         self.__case_front(api_case_obj)
         try:
             case_api_list = self.get_case(case_id)
@@ -82,7 +84,7 @@ class ApiTestRun(ApiDataHandle, TestResult):
         else:
             self.update_test_suite(StatusEnum.SUCCESS.value, case_error_message_list)
         if self.is_notice:
-            NoticeMain.notice_main(self.project_id, self.test_suite_id)
+            NoticeMain.notice_main(self.project_product_id, self.test_suite_id)
 
     def run_api(self, case_detailed: ApiCaseDetailed) -> bool:
         try:

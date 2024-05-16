@@ -21,7 +21,7 @@ from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 urlpatterns = [
     #
     path('test/object', TestObjectCRUD.as_view()),
-    path('test/obj/name', TestObjectViews.as_view({'get': 'get_test_obj_name'})),
+    path('test/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
     path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path('notice', NoticeConfigCRUD.as_view()),

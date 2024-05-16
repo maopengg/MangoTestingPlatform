@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getUserTestObjName, putUserEnvironment } from '@/api/user'
+import { getUserTestObjName } from '@/api/user'
 // 1.定义容器
 export const useTestObj = defineStore('get-test-obj', {
   // 类似于data，用来存储全局状态，必须是箭头函数

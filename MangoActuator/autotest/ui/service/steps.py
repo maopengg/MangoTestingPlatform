@@ -32,12 +32,14 @@ class StepsMain(ElementMain):
             case_step_details_id=self.page_step_model.case_step_details_id,
             page_step_id=page_step_model.id,
             page_step_name=page_step_model.name,
-            status=StatusEnum.SUCCESS.value,
+            status=StatusEnum.FAIL.value,
             element_result_list=[],
             error_message=None)
 
         self.page_step_id = page_step_model.id
         self.case_step_details_id = page_step_model.case_step_details_id
+        if self.page_step_model.environment_config:
+            self.set_mysql(self.page_step_model.environment_config)
 
     async def steps_main(self) -> PageStepsResultModel:
         SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
@@ -59,48 +61,54 @@ class StepsMain(ElementMain):
             except Error as error:
                 if error.message == "Target page, context or browser has been closed":
                     self.element_test_result.error_message = error.message
-                    self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
                     raise BrowserObjectClosed(*ERROR_MSG_0010)
                 else:
                     raise error
             else:
-                self.element_test_result.status = StatusEnum.SUCCESS.value
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
+        self.page_step_result_model.status = StatusEnum.SUCCESS.value
         SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
         return self.page_step_result_model
 
     async def __error(self, error: MangoActuatorError):
         log.warning(
-            f'元素操作失败，element_model：{self.element_model.dict()}，element_test_result：{self.element_test_result.dict()}，error：{error.msg}')
-        path = rf'{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
-        SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
-                                       元素表达式：{self.element_test_result.loc}
-                                       操作类型：{self.element_test_result.ope_type}
-                                       操作值：{self.element_test_result.ope_value}
-                                       断言类型：{self.element_test_result.ass_type}
-                                       断言值：{self.element_test_result.ass_value}
-                                       元素个数：{self.element_test_result.ele_quantity}
-                                       截图路径：{path}
-                                       元素失败提示：{error.msg}''')
-        # try:
-        match self.page_step_model.type:
-            case DriveTypeEnum.WEB.value:
-                await self.w_screenshot(path)
-            case DriveTypeEnum.ANDROID.value:
-                pass
-            case DriveTypeEnum.IOS.value:
-                pass
-            case DriveTypeEnum.DESKTOP.value:
-                pass
-            case _:
-                log.error('自动化类型不存在，请联系管理员检查！')
-        self.element_test_result.error_message = error.msg
-        self.element_test_result.picture_path = path
+            f"""
+            元素操作失败->
+            element_model：{self.element_model.dict() if self.element_model else self.element_model}
+            element_test_result：{self.element_test_result.dict() if self.element_test_result else self.element_test_result}
+            error：{error.msg}
+            """
+        )
+        if self.element_test_result:
+            path = rf"{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg"
+            self.element_test_result.picture_path = path
+            self.page_step_result_model.element_result_list.append(self.element_test_result)
+            self.element_test_result.error_message = error.msg
+            SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
+                                           元素表达式：{self.element_test_result.loc}
+                                           操作类型：{self.element_test_result.ope_type}
+                                           操作值：{self.element_test_result.ope_value}
+                                           断言类型：{self.element_test_result.ass_type}
+                                           断言值：{self.element_test_result.ass_value}
+                                           元素个数：{self.element_test_result.ele_quantity}
+                                           截图路径：{path}
+                                           元素失败提示：{error.msg}''')
+            # try:
+            match self.page_step_model.type:
+                case DriveTypeEnum.WEB.value:
+                    await self.w_screenshot(path)
+                case DriveTypeEnum.ANDROID.value:
+                    pass
+                case DriveTypeEnum.IOS.value:
+                    pass
+                case DriveTypeEnum.DESKTOP.value:
+                    pass
+                case _:
+                    log.error('自动化类型不存在，请联系管理员检查！')
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg
-        self.page_step_result_model.element_result_list.append(self.element_test_result)
         # except Exception as error:
         #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
         #     raise ScreenshotError(*ERROR_MSG_0040)
@@ -119,7 +127,7 @@ class StepsMain(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
 
     async def web_init(self):
-        self.test_object_value = urljoin(self.page_step_model.test_object_value, self.page_step_model.url)
+        self.test_object_value = urljoin(self.page_step_model.environment_config.test_object_value, self.page_step_model.url)
         result = urlparse(self.test_object_value)
         if not all([result.scheme, result.netloc]):
             raise UrlError(*ERROR_MSG_0049)
@@ -136,7 +144,7 @@ class StepsMain(ElementMain):
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def android_init(self):
-        self.test_object_value = self.page_step_model.test_object_value
+        self.test_object_value = self.page_step_model.environment_config.test_object_value
         self.a_start_app(self.test_object_value)
 
     def ios_init(self, ):
@@ -144,3 +152,5 @@ class StepsMain(ElementMain):
 
     def desktop_init(self, ):
         pass
+
+

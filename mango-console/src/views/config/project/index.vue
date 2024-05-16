@@ -245,6 +245,7 @@
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200
+              project.getProject()
             })
             .catch(reject)
           resolve(value)

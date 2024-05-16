@@ -208,7 +208,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       },
@@ -252,17 +252,16 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-
         putUserProduct(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       }

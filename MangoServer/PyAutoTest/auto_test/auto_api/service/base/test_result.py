@@ -17,24 +17,22 @@ from PyAutoTest.tools.view.snowflake import Snowflake
 
 class TestResult:
 
-    def __init__(self, test_obj_id: int):
-        self.test_obj_id = test_obj_id
+    def __init__(self):
         self.test_suite_id = Snowflake.generate_id()
-
-        self.project_id = None
+        self.project_product_id = None
         self.case_status = StatusEnum.FAIL.value
         self.case_error_message = None
         self.test_suite_data = None
 
-    def result_init(self, project_id: int, case_id_list: list):
-        self.project_id = project_id
+    def result_init(self, project_product_id: int, case_id_list: list):
+        self.project_product_id = project_product_id
         self.case_status = StatusEnum.FAIL.value
         self.case_error_message = None
         if self.test_suite_data is None:
             self.test_suite_data = TestSuiteReportCRUD.inside_post({
                 'id': self.test_suite_id,
                 'type': AutoTestTypeEnum.API.value,
-                'project': self.project_id,
+                'project': self.project_product_id,
                 'test_object': self.test_obj_id,
                 'error_message': None,
                 'run_status': StatusEnum.FAIL.value,

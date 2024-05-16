@@ -10,10 +10,12 @@ from django.http import FileResponse
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-
+from PyAutoTest.auto_test.auto_user.models import Project
 from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from PyAutoTest.auto_test.auto_system.service.mini_io.mini_io import MiniIo
 
 log = logging.getLogger('user')
 
@@ -31,12 +33,16 @@ class ProjectFileViews(ViewSet):
 
     @action(methods=['post'], detail=False)
     def upload_files(self, request: Request):
-        file_obj = request.FILES['file']
         project_id = request.headers.get('Project')
-        if project_id:
-            FilesCRUD(project_id).upload_files(file_obj)
+        if not project_id:
+            return ResponseData.fail(RESPONSE_MSG_0028, )
+        project = Project.objects.get(project_id)
+        try:
+            file_obj = request.FILES['file']
+            MiniIo().file_object_write(project.bucket_name, file_obj.name, file_obj)
             return ResponseData.success(RESPONSE_MSG_0027, )
-        return ResponseData.fail(RESPONSE_MSG_0028, )
+        except MangoServerError as error:
+            return ResponseData.fail((error.code, error.msg), )
 
     @action(methods=['get'], detail=False)
     def download_file(self, request: Request):
