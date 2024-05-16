@@ -10,8 +10,9 @@ from collections import Counter
 import time
 from retrying import retry
 
-from PyAutoTest.auto_test.auto_api.service.base.common_parameters import CommonParameters
+from PyAutoTest.auto_test.auto_api.service.base.common_base import CommonBase
 from PyAutoTest.exceptions.api_exception import *
+from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 from PyAutoTest.tools.view.error_msg import *
@@ -19,15 +20,23 @@ from PyAutoTest.tools.view.error_msg import *
 log = logging.getLogger('api')
 
 
-class ApiDataHandle(CommonParameters, PublicAssertion):
+class CaseMethod(CommonBase, PublicAssertion):
     ass_result = []
 
-    def request_data(self, request_data_model: RequestDataModel):
+    def request_data(self, request_data_model: RequestDataModel, is_debug: bool = False):
         for key, value in request_data_model:
-            if value is not None and key != 'file':
-                value = self.replace(value)
-                if key == 'headers' and isinstance(value, str):
-                    value = self.replace(self.loads(value))
+            if key == 'headers' and isinstance(value, str):
+                if is_debug:
+                    try:
+                        value = self.replace(value)
+                    except CacheIsEmptyError:
+                        pass
+                else:
+                    value = self.replace(value)
+                if value == '${headers}':
+                    value = None
+                if value and isinstance(value, str):
+                    value = self.loads(value) if value else value
                 setattr(request_data_model, key, value)
             elif key == 'file':
                 if request_data_model.file:
@@ -39,6 +48,10 @@ class ApiDataHandle(CommonParameters, PublicAssertion):
                             path = self.replace(v)
                             file.append((k, (file_name, open(path, 'rb'))))
                     request_data_model.file = file
+            else:
+                value = self.replace(value)
+                setattr(request_data_model, key, value)
+
         return request_data_model
 
     def front_sql(self, case_detailed):

@@ -12,7 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
-from PyAutoTest.auto_test.auto_api.service.test_execution.api_info_run import ApiInfoRun
+from PyAutoTest.auto_test.auto_api.service.test_execution.info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -65,12 +65,20 @@ class ApiInfoViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def get_api_info_run(self, request: Request):
-        project_id = request.query_params.get('project_id')
         api_info_id = request.query_params.get('id')
         test_obj_id = request.query_params.get('test_obj_id')
+        api_info_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
+
         try:
-            api_info_res: ResponseDataModel = ApiInfoRun(project_id, test_obj_id).api_info_run(api_info_id)
-            return ResponseData.success(RESPONSE_MSG_0072, api_info_res.dict())
+            if not api_info_id and api_info_list:
+                api_info_res_list = []
+                for api_info_id in api_info_list:
+                    api_info_res: ResponseDataModel = ApiInfoRun(test_obj_id, api_info_id).api_info_run()
+                    api_info_res_list.append(api_info_res.model_dump_json())
+                return ResponseData.success(RESPONSE_MSG_0072, api_info_res_list)
+            else:
+                api_info_res: ResponseDataModel = ApiInfoRun(test_obj_id, api_info_id).api_info_run()
+                return ResponseData.success(RESPONSE_MSG_0072, api_info_res.dict())
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg), )
 

@@ -81,7 +81,8 @@ class TestReportWriting:
         for case_id, status, error_message in case_id_status:
             case_id_list.append(case_id)
             status_list.append(status)
-            error_message_list.append(error_message)
+            if error_message:
+                error_message_list.append(error_message)
         if set(test_suite_obj.case_list) == set(case_id_list):
             test_suite_obj.run_status = StatusEnum.SUCCESS.value
             if StatusEnum.FAIL.value in status_list:
@@ -95,7 +96,7 @@ class TestReportWriting:
             test_suite_obj.error_message = json.dumps(error_message_list, ensure_ascii=False)
             test_suite_obj.save()
             if test_suite_obj.is_notice:
-                NoticeMain.notice_main(test_suite_obj.project.id, test_suite_id)
+                NoticeMain.notice_main(test_suite_obj.project_id, test_suite_id)
             from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
             ChatConsumer.active_send(SocketDataModel(
                 code=code,

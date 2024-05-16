@@ -9,7 +9,7 @@ from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
+from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
 from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum

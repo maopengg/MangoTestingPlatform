@@ -1,5 +1,5 @@
 export const apiInfo = '/api/info'
-export const apiCaseInfoRun = '/api/case/api/info/run'
+export const apiInfoRun = '/api/info/run'
 export const apiPutApiInfoType = '/api/put/api/info/type'
 export const apiCopyInfo = '/api/copy/info'
 export const apiCase = '/api/case'

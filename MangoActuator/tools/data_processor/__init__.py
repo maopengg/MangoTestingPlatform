@@ -87,7 +87,9 @@ class DataProcessor(ObtainRandomData, DataClean):
         ObtainRandomData.__init__(self, project_id)
         DataClean.__init__(self)
 
-    def replace(self, data: list | dict | str) -> list | dict | str:
+    def replace(self, data: list | dict | str | None) -> list | dict | str | None:
+        if not data:
+            return data
         if isinstance(data, list):
             return [self.replace(item) for item in data]
         elif isinstance(data, dict):

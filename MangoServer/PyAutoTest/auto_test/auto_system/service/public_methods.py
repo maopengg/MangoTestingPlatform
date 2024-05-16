@@ -5,17 +5,19 @@
 # @Author : 毛鹏
 from pydantic import ValidationError
 
-from PyAutoTest.auto_test.auto_system.models import Database
+from PyAutoTest.auto_test.auto_system.models import Database, TestObject
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError
 from PyAutoTest.models.tools_model import MysqlConingModel
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0021, ERROR_MSG_0022
 
 
-class GetDataBase:
+class PublicMethods:
 
     @classmethod
-    def get_mysql_config(cls, test_obj_id: int) -> MysqlConingModel:
+    def get_mysql_config(cls, test_obj_id: int, real=True, project_product: int = None) -> MysqlConingModel:
         try:
+            if not real and project_product:
+                test_obj_id = cls.get_test_object(test_obj_id, project_product)
             mysql = Database.objects.get(test_obj_id=test_obj_id)
         except Database.DoesNotExist:
             raise DoesNotExistError(*ERROR_MSG_0021)
@@ -28,3 +30,8 @@ class GetDataBase:
                 database=mysql.name)
         except ValidationError:
             raise MysqlConfigError(*ERROR_MSG_0022)
+
+    @classmethod
+    def get_test_object(cls, _id: int, project_product: int) -> TestObject:
+        test_object = TestObject.objects.get(id=_id)
+        return TestObject.objects.get(project_product=project_product, environment=test_object.environment)

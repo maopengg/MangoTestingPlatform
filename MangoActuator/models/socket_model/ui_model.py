@@ -9,14 +9,9 @@ from models.tools_model import MysqlConingModel
 
 
 class UiPublicModel(BaseModel):
-    create_time: str
-    update_time: str
-    project_product: int
     type: int
-    name: str
     key: str
     value: str
-    status: int
 
 
 class WEBConfigModel(BaseModel):
@@ -34,11 +29,11 @@ class AndroidConfigModel(BaseModel):
     equipment: str
 
 
-class RunConfigModel(BaseModel):
+class EnvironmentConfigModel(BaseModel):
+    test_object_value: str
     db_c_status: bool
     db_rud_status: bool
     mysql_config: MysqlConingModel | None = None
-    public_data_list: list[UiPublicModel] | None = None
 
 
 class ElementModel(BaseModel):
@@ -72,13 +67,13 @@ class PageStepsModel(BaseModel):
     name: str
     case_step_details_id: int | None
     project_product: int
-    test_object_value: str
-    url: str
     type: int
+    url: str
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
     equipment_config: AndroidConfigModel | WEBConfigModel
-    run_config: RunConfigModel
+    environment_config: EnvironmentConfigModel
+    public_data_list: list[UiPublicModel] = []
 
 
 class CaseModel(BaseModel):
@@ -92,6 +87,7 @@ class CaseModel(BaseModel):
     front_sql: list
     posterior_sql: list
     steps: list[PageStepsModel]
+    public_data_list: list[UiPublicModel] = []
 
 
 class ElementResultModel(BaseModel):
@@ -124,9 +120,7 @@ class PageStepsResultModel(BaseModel):
     case_id: int | None = None
     case_step_details_id: int | None = None
     page_step_id: int | None = None
-
     page_step_name: str
-
     status: int
     error_message: str | None = None
     element_result_list: list[ElementResultModel]
@@ -135,7 +129,6 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
-
     case_name: str
     module_name: str
     case_people: str

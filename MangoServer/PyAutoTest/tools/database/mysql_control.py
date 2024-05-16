@@ -39,7 +39,7 @@ class MysqlConnect:
         self.close()
 
     def close(self):
-        if self.connection:
+        if hasattr(self, 'connection') and self.connection:
             self.connection.close()
 
     def condition_execute(self, sql: str) -> list[dict] | list | int | None:

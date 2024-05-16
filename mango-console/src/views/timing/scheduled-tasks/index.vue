@@ -90,7 +90,11 @@
                   {{ record.case_people?.nickname }}
                 </template>
                 <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
-                  {{ record.test_obj?.name }}
+                  {{
+                    record.test_obj?.project_product?.project?.name +
+                    '/' +
+                    uEnvironment.data[record.test_obj?.environment].title
+                  }}
                 </template>
                 <template v-else-if="item.key === 'case_executor'" #cell="{ record }">
                   {{ record.case_executor }}
@@ -172,17 +176,27 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'test_obj'">
-                <a-select
+              <!--              <template v-else-if="item.type === 'select' && item.key === 'test_obj'">-->
+              <!--                <a-select-->
+              <!--                  v-model="item.value"-->
+              <!--                  :placeholder="item.placeholder"-->
+              <!--                  :options="testObj.data"-->
+              <!--                  :field-names="fieldNames"-->
+              <!--                  value-key="key"-->
+              <!--                  allow-clear-->
+              <!--                  allow-search-->
+              <!--                />-->
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="testObj.data"
-                  :field-names="fieldNames"
                   value-key="key"
-                  allow-clear
                   allow-search
+                  allow-clear
                 />
               </template>
+              <!--              </template>-->
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
                   v-model="item.value"
@@ -247,6 +261,7 @@
     putSystemScheduledTasks,
   } from '@/api/system'
   import { getUserNickname } from '@/api/user'
+  import { useEnvironment } from '@/store/modules/get-environment'
 
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -255,6 +270,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
+  const uEnvironment = useEnvironment()
 
   const data = reactive({
     isAdd: false,

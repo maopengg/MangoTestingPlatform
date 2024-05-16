@@ -52,6 +52,7 @@ class CaseRun(DriverObject):
                             pass
                         case _:
                             log.error('自动化类型不存在，请联系管理员检查！')
+                await obj.case_init()
                 await obj.case_page_step()
             except Exception as error:
                 await async_global_exception(

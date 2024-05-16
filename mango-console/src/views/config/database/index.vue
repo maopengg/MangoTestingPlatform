@@ -124,6 +124,7 @@
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
+                  @change="onTestObjectName(item.value)"
                   allow-search
                   allow-clear
                 />
@@ -132,7 +133,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="testObj.data"
+                  :options="data.dataSelect"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -153,19 +154,18 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useProject } from '@/store/modules/get-project'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteSystemDatabase,
     getSystemDatabase,
+    getSystemTestObjectName,
     postSystemDatabase,
     putSystemDatabase,
   } from '@/api/system'
 
   const projectInfo = useProject()
-  const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
@@ -176,6 +176,7 @@
     actionTitle: '添加配置',
     isAdd: false,
     updateId: 0,
+    dataSelect: [],
   })
 
   function doRefresh() {
@@ -189,7 +190,13 @@
       })
       .catch(console.log)
   }
-
+  function onTestObjectName(projectProductId: number) {
+    getSystemTestObjectName(projectProductId)
+      .then((res) => {
+        data.dataSelect = res.data
+      })
+      .catch(console.log)
+  }
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''

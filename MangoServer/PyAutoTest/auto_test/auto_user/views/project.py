@@ -103,13 +103,17 @@ class ProjectViews(ViewSet):
                 'label': name,
                 'children': []
             }
+            test_object_environment_list = []
+
             product_id_list = ProjectProduct.objects.values_list('id').filter(project=_id)
             for product_id in product_id_list:
                 test_object_list = TestObject.objects \
                     .filter(project_product=product_id)
                 for test_object in test_object_list:
-                    project_obj['children'].append({'value': test_object.id,
-                                                    'label': EnvironmentEnum.get_value(test_object.environment),
-                                                    })
+                    if test_object.environment not in test_object_environment_list:
+                        test_object_environment_list.append(test_object.environment)
+                        project_obj['children'].append({'value': test_object.id,
+                                                        'label': EnvironmentEnum.get_value(test_object.environment),
+                                                        })
             options.append(project_obj)
         return ResponseData.success(RESPONSE_MSG_0095, options)

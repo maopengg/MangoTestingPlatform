@@ -14,7 +14,7 @@ from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPubl
 
 urlpatterns = [
     path("info", ApiInfoCRUD.as_view()),
-    path("case/api/info/run", ApiInfoViews.as_view({'get': 'get_api_info_run'})),
+    path("info/run", ApiInfoViews.as_view({'get': 'get_api_info_run'})),
     path("info/name", ApiInfoViews.as_view({'get': 'get_api_name'})),
     path("put/api/info/type", ApiInfoViews.as_view({'put': 'put_api_info_type'})),
     path("copy/info", ApiInfoViews.as_view({'post': 'copy_api_info'})),

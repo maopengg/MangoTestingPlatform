@@ -6,13 +6,11 @@
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.models import TestObject, User
-from PyAutoTest.auto_test.auto_system.service.get_common_parameters import GetCommonParameters
-from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
+from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
-from PyAutoTest.auto_test.auto_system.service.test_object_get import TestObjectGet
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
-    UiElement, UiConfig, UiPage
+    UiElement, UiConfig, UiPage, UiPublic
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
@@ -58,6 +56,7 @@ class UiTestRun:
                 raise self.error
 
     def case_batch(self, case_id_list: list) -> None:
+
         test_suite_id = Snowflake.generate_id()
         TestSuiteReportCRUD.inside_post({
             'id': test_suite_id,
@@ -68,7 +67,8 @@ class UiTestRun:
             'status': None,
             'case_list': case_id_list,
             'is_notice': self.is_notice,
-            'user': self.user_id
+            'user': self.user_id,
+            'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
         })
         if self.case_executor:
             max_len = max(len(case_id_list), len(self.case_executor))
@@ -110,6 +110,7 @@ class UiTestRun:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             steps=[self.__page_steps(i.page_step.id, i.id) for i in objects_filter],
+            public_data_list=self.__public_data(case.project_product_id)
         )
 
     def steps(self, steps_id: int, is_send: bool = True) -> PageStepsModel:
@@ -125,18 +126,17 @@ class UiTestRun:
         except UiPage.DoesNotExist as error:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         element_obj = UiElement.objects.get(id=data['id'])
-        test_object: TestObject = TestObjectGet.get_test_object(self.test_object_id, data['project_product_id'])
+        test_object: TestObject = PublicMethods.get_test_object(self.test_object_id, data['project_product_id'])
         page_steps_model = PageStepsModel(
             id=None,
             name=f'测试元素-{element_obj.name}',
             case_step_details_id=None,
             project_product=data['project_product_id'],
-            test_object_value=test_object.value,
             url=page_obj.url,
             type=page_obj.type,
             equipment_config=self.__get_web_config(
                 test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-            run_config=self.__get_run_config(test_object)
+            environment_config=self.__environment_config(test_object)
         )
         page_steps_model.element_list.append(ElementModel(
             id=element_obj.id,
@@ -145,7 +145,7 @@ class UiTestRun:
             loc=element_obj.loc,
             exp=element_obj.exp,
             sleep=element_obj.sleep,
-            sub=element_obj.sub ,
+            sub=element_obj.sub,
             ope_type=data['ope_type'] if data.get('ope_type') else None,
             ope_value=data['ope_value'] if data.get('ope_value') else None,
             ass_type=data['ass_type'] if data.get('ass_type') else None,
@@ -170,7 +170,7 @@ class UiTestRun:
                      case_step_details_id: int | None = None) -> PageStepsModel:
 
         step = UiPageSteps.objects.get(id=page_steps_id)
-        test_object: TestObject = TestObjectGet.get_test_object(self.test_object_id, step.project_product.id)
+        test_object: TestObject = PublicMethods.get_test_object(self.test_object_id, step.project_product.id)
         page_steps_model = PageStepsModel(
             id=step.id,
             name=step.name,
@@ -181,11 +181,14 @@ class UiTestRun:
             type=step.page.type,
             equipment_config=self.__get_web_config(
                 test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-            run_config=self.__get_run_config(test_object)
+            environment_config=self.__environment_config(test_object)
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
                 page_steps_model.case_data.append(StepsDataModel(**case_data))
+        else:
+            page_steps_model.public_data_list = self.__public_data(step.project_product_id)
+
         step_sort_list: list[UiPageStepsDetailed] = UiPageStepsDetailed.objects.filter(page_step=step.id).order_by(
             'step_sort')
         for i in step_sort_list:
@@ -229,13 +232,22 @@ class UiTestRun:
                                               type=DriveTypeEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)
 
-    def __get_run_config(self, test_object: TestObject) -> RunConfigModel:
+    def __environment_config(self, test_object: TestObject) -> EnvironmentConfigModel:
         mysql_config = None
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = GetDataBase.get_mysql_config(self.test_object_id)
-        return RunConfigModel(
+            mysql_config = PublicMethods.get_mysql_config(self.test_object_id)
+        return EnvironmentConfigModel(
+            test_object_value=test_object.value,
             db_c_status=bool(test_object.db_c_status),
             db_rud_status=bool(test_object.db_rud_status),
             mysql_config=mysql_config,
-            public_data_list=GetCommonParameters.get_ui_args(self.test_object_id)
         )
+
+    @classmethod
+    def __public_data(cls, project_product_id) -> list[UiPublicModel]:
+        ui_public_list = UiPublic.objects \
+            .filter(project_product=project_product_id, status=StatusEnum.SUCCESS.value) \
+            .order_by('type')
+        return [UiPublicModel(type=i.type,
+                              key=i.key,
+                              value=i.value) for i in ui_public_list]

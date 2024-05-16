@@ -34,11 +34,3 @@ class GetCommonParameters:
             data.append(ApiPublicModel.from_orm(i))
         return data
 
-    @classmethod
-    def get_ui_args(cls, test_obj_id) -> list[UiPublicModel]:
-        data = []
-        test_obj = TestObject.objects.get(id=test_obj_id)
-        for i in UiPublic.objects.filter(project_product=test_obj.project_product_id, status=StatusEnum.SUCCESS.value).order_by(
-                'type'):
-            data.append(UiPublicSerializers(instance=i).data)
-        return data

@@ -17,19 +17,18 @@ from tools.log_collector import log
 class PageSteps(StepsMain, DriverObject):
     """用例分发"""
 
-    def __init__(self, project_id: int):
-        super().__init__(project_id, )
+    def __init__(self, project_product_id: int):
+        super().__init__(project_product_id, )
         DriverObject.__init__(self, )
-        self.project_id = project_id
+        self.project_product_id = project_product_id
         self.msg = ''
         self.page_step_model: PageStepsModel = None
 
     async def page_steps_setup(self, data: PageStepsModel):
         self.page_step_model: PageStepsModel = data
-        self.project_id = self.page_step_model.project
+        self.project_product_id = self.page_step_model.project_product
         self.is_step = True
-        if self.page_step_model.run_config:
-            await self.public_front(self.page_step_model.run_config)
+        await self.public_front(self.page_step_model.public_data_list)
 
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:

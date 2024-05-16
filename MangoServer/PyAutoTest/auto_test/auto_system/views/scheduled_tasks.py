@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions import MangoServerError
@@ -31,7 +31,7 @@ class ScheduledTasksSerializers(serializers.ModelSerializer):
 class ScheduledTasksSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    test_obj = TestObjectSerializers(read_only=True)
+    test_obj = TestObjectSerializersC(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
 

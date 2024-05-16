@@ -41,7 +41,8 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             log.error(f"反射任务执行出现异常：{e}")
 
     async def test(self):
-        with open(r'test.json', 'r', encoding='utf-8') as f:
+        from tools import InitPath
+        with open(rf'{InitPath.project_root_directory}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             await getattr(self, out['func_name'])(out['func_args'])
 

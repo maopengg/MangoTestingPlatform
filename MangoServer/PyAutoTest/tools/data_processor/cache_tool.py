@@ -9,50 +9,54 @@ from cachetools import LRUCache
 
 class CacheTool:
     """ 内存缓存 """
+    _cache: LRUCache = LRUCache(maxsize=500)
 
-    def __init__(self):
-        self._cache: LRUCache = LRUCache(maxsize=500)
-
-    def get_cache(self, key: str) -> any:
+    @classmethod
+    def get_cache(cls, key: str) -> any:
         """
         得到缓存key的value
         @param key: key
         @return: 任意
         """
-        return self._cache.get(key)
+        return cls._cache.get(key)
 
-    def set_cache(self, key: str, value: any) -> None:
+    @classmethod
+    def set_cache(cls, key: str, value: any) -> None:
         """
         设置一个内容到缓存
         @param key: key
         @param value: value
         @return: None
         """
-        self._cache[key] = value
+        cls._cache[key] = value
 
-    def delete_cache(self, key: str) -> None:
+    @classmethod
+    def delete_cache(cls, key: str) -> None:
         """
         删除一个缓存
         @param key: key
         @return: None
         """
-        if key in self._cache:
-            del self._cache[key]
+        if key in cls._cache:
+            del cls._cache[key]
 
-    def clear_cache(self) -> None:
+    @classmethod
+    def clear_cache(cls) -> None:
         """
         清理所有缓存
         @return: None
         """
-        self._cache.clear()
+        cls._cache.clear()
 
-    def has_cache(self, key: str) -> bool:
+    @classmethod
+    def has_cache(cls, key: str) -> bool:
         """
         判断缓存是否存在
         @param key: key
         @return: ture | false
         """
-        return key in self._cache
+        return key in cls._cache
 
-    def get_all(self, ) -> dict:
-        return {k: v for k, v in self._cache.items()}
+    @classmethod
+    def get_all(cls, ) -> dict:
+        return {k: v for k, v in cls._cache.items()}

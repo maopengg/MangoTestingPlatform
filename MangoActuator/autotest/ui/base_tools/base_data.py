@@ -11,17 +11,17 @@ from uiautomator2 import Device
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import UiPublicTypeEnum
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
-from models.socket_model.ui_model import RunConfigModel
+from models.socket_model.ui_model import EnvironmentConfigModel, UiPublicModel
 from models.tools_model import MysqlConingModel
 from tools.data_processor import DataProcessor
 from tools.database.mysql_connect import MysqlConnect
-from tools.message.error_msg import ERROR_MSG_0036, ERROR_MSG_0037, ERROR_MSG_0038, ERROR_MSG_0039
+from tools.message.error_msg import ERROR_MSG_0036, ERROR_MSG_0038
 
 
 class BaseData:
 
     def __init__(self,
-                 project_id: int,
+                 project_product_id: int,
                  test_suite_id: int | None = None,
                  case_step_details_id: int = None,
                  page_step_id: int = None,
@@ -32,12 +32,12 @@ class BaseData:
                  context: BrowserContext = None,
                  android: Device = None
                  ) -> None:
-        self.project_id = project_id
+        self.project_product_id = project_product_id
         self.test_suite_id = test_suite_id
         self.case_step_details_id = case_step_details_id
         self.page_step_id = page_step_id
         self.case_id = case_id
-        self.data_processor = DataProcessor(project_id)
+        self.data_processor = DataProcessor(project_product_id)
 
         self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例
         self.test_object_value = ''  # 浏览器url
@@ -51,7 +51,7 @@ class BaseData:
 
         self.android: Device = android
 
-    def set_mysql(self, run_config: RunConfigModel):
+    def set_mysql(self, run_config: EnvironmentConfigModel):
         self.mysql_config = run_config.mysql_config
         if StatusEnum.SUCCESS.value in [run_config.db_c_status, run_config.db_rud_status]:
             self.mysql_connect = MysqlConnect(run_config.mysql_config,
@@ -66,45 +66,21 @@ class BaseData:
         if self.mysql_connect:
             self.mysql_connect.close()
 
-    async def public_front(self, run_config: RunConfigModel):
+    async def public_front(self, public_model: list[UiPublicModel]):
+        for cache_data in public_model:
+            if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
+                self.data_processor.set_cache(cache_data.key, cache_data.value)
+            elif cache_data.type == UiPublicTypeEnum.SQL.value:
+                if self.mysql_connect:
+                    sql = self.data_processor.replace(cache_data.value)
+                    result_list: list[dict] = self.mysql_connect.condition_execute(sql)
+                    if isinstance(result_list, list):
+                        for result in result_list:
+                            try:
+                                for value, key in zip(result, eval(cache_data.key)):
+                                    self.data_processor.set_cache(key, result.get(value))
+                            except SyntaxError:
+                                raise SyntaxErrorError(*ERROR_MSG_0038)
 
-        self.set_mysql(run_config)
-        if run_config.public_data_list:
-            for cache_data in run_config.public_data_list:
-                if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                    self.data_processor.set_cache(cache_data.key, cache_data.value)
-                elif cache_data.type == UiPublicTypeEnum.SQL.value:
-                    if self.mysql_connect:
-                        sql = self.data_processor.replace(cache_data.value)
-                        result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-                        if isinstance(result_list, list):
-                            for result in result_list:
-                                try:
-                                    for value, key in zip(result, eval(cache_data.key)):
-                                        self.data_processor.set_cache(key, result.get(value))
-                                except SyntaxError:
-                                    raise SyntaxErrorError(*ERROR_MSG_0038)
-
-                            if not result_list:
-                                raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))
-
-    async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
-        for i in front_custom:
-            self.data_processor.set_cache(i.get('key'), i.get('value'))
-        for i in front_sql:
-            if self.mysql_connect:
-                sql = self.data_processor.replace(i.get('sql'))
-                result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-                if isinstance(result_list, list):
-                    for result in result_list:
-                        try:
-                            for value, key in zip(result, eval(i.get('key_list'))):
-                                self.data_processor.set_cache(key, result.get(value))
-                        except SyntaxError:
-                            raise SyntaxErrorError(*ERROR_MSG_0039)
-                    if not result_list:
-                        raise MysqlQueryIsNullError(*ERROR_MSG_0037, value=(sql,))
-
-    async def case_posterior(self, posterior_sql: list[dict]):
-        for sql in posterior_sql:
-            self.mysql_connect.condition_execute(sql.get('sql'))
+                        if not result_list:
+                            raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))

@@ -67,7 +67,7 @@ class ApiCaseViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def api_case_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
+        from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
         case_id = request.query_params.get('case_id')
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
@@ -82,7 +82,7 @@ class ApiCaseViews(ViewSet):
 
     @action(methods=['post'], detail=False)
     def api_case_batch_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.test_execution.api_test_run import ApiTestRun
+        from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
         case_id_list = request.data.get('case_id_list')
         test_obj_id = request.data.get('test_obj_id')
         try:

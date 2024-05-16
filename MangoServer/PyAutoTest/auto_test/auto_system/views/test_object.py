@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.get_database import GetDataBase
+from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -58,15 +58,22 @@ class TestObjectViews(ViewSet):
     serializer_class = TestObjectSerializers
 
     @action(methods=['get'], detail=False)
-    def get_test_obj_name(self, request: Request):
+    def get_test_object_name(self, request: Request):
         """
          获取平台枚举
          :param request:
          :return:
          """
-
-        res = TestObject.objects.values_list('id', 'project_product', 'environment')
-        data = [{'key': _id, 'title': name} for _id, project_product, environment  in res]
+        project_product_id = request.query_params.get('project_product_id')
+        if project_product_id:
+            res = TestObject.objects \
+                .values_list('id', 'name') \
+                .filter(project_product=project_product_id)
+        else:
+            res = TestObject.objects \
+                .values_list('id', 'name') \
+                .all()
+        data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0095, data)
 
     @action(methods=['put'], detail=False)
@@ -82,7 +89,7 @@ class TestObjectViews(ViewSet):
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
             if db_c_status == StatusEnum.SUCCESS.value or db_rud_status == StatusEnum.SUCCESS.value:
-                GetDataBase.get_mysql_config(request.data.get('id'))
+                PublicMethods.get_mysql_config(request.data.get('id'))
             if db_c_status is not None:
                 obj.db_c_status = db_c_status
             if db_rud_status is not None:
