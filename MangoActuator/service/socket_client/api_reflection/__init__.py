@@ -12,6 +12,7 @@ from service.socket_client.api_reflection.api_consumer import APIConsumer
 from service.socket_client.api_reflection.perf_consumer import PerfConsumer
 from service.socket_client.api_reflection.tools_consumer import ToolsConsumer
 from service.socket_client.api_reflection.ui_consumer import UIConsumer
+from settings import settings
 from tools.log_collector import log
 
 
@@ -22,6 +23,8 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
         if not debug:
             self.loop = asyncio.get_event_loop()
             self.loop.create_task(self.consumer())
+        else:
+            settings.IS_DEBUG = debug
 
     async def consumer(self):
         while True:

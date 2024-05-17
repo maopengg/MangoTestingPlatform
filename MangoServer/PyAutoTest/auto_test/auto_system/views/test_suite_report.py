@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD

@@ -18,7 +18,8 @@ from django.urls import path, include
 from rest_framework.documentation import include_docs_urls
 
 from PyAutoTest.auto_test.auto_user.views.user import LoginViews
-
+from django.conf import settings
+from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('docs/', include_docs_urls(title='PyAutoTest', authentication_classes=[])),
@@ -32,4 +33,4 @@ urlpatterns = [
     path('ui/', include("PyAutoTest.auto_test.auto_ui.urls")),
     path('perf/', include("PyAutoTest.auto_test.auto_perf.urls")),
     path('user/', include("PyAutoTest.auto_test.auto_user.urls")),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

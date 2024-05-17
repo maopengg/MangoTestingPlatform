@@ -9,14 +9,10 @@ import service
 
 
 class HttpRequest:
-    def __init__(self):
-        self.ip = service.IP
-        self.port = service.PORT
-        self.username = service.USERNAME
-        self.password = service.PASSWORD
-        self.headers = {
-            'Auth': ''
-        }
+    headers = {
+        'Authorization': ''
+    }
 
-    def url(self, url):
-        return urljoin(f'http://{self.ip}:{self.port}', url)
+    @classmethod
+    def url(cls, url):
+        return urljoin(f'http://{service.IP}:{service.PORT}', url)

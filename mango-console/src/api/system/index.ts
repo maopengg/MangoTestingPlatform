@@ -1,15 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
-export function getSystemTestObjectName(projectProductId: number | null) {
-  return get({
-    url: url.systemTestObjectName,
-    data: () => {
-      return {
-        project_product_id: projectProductId,
-      }
-    },
-  })
-}
+
 export function getSystemEnumExp() {
   return get({
     url: url.systemEnumExp,
@@ -284,51 +275,6 @@ export function getSystemNoticeTest(id: number) {
       return {
         id: id,
       }
-    },
-  })
-}
-
-export function getSystemTestObject(data: object) {
-  return get({
-    url: url.systemTestObject,
-    data: () => {
-      return data
-    },
-  })
-}
-
-export function postSystemTestObject(data: object) {
-  return post({
-    url: url.systemTestObject,
-    data: () => {
-      return data
-    },
-  })
-}
-export function putSystemTestObject(data: object) {
-  return put({
-    url: url.systemTestObject,
-    data: () => {
-      return data
-    },
-  })
-}
-
-export function deleteSystemTestObject(id: number | string[] | number[]) {
-  return deleted({
-    url: url.systemTestObject,
-    data: () => {
-      return {
-        id: id,
-      }
-    },
-  })
-}
-export function putSystemTestObjectPutStatus(data: object) {
-  return put({
-    url: url.systemTestObjectPutStatus,
-    data: () => {
-      return data
     },
   })
 }

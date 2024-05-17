@@ -11,7 +11,6 @@ class Project(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     name = models.CharField(verbose_name="项目名称", max_length=64, unique=True)
-    bucket_name = models.CharField(verbose_name="上传文件存放的文件夹", max_length=64, null=True)
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
@@ -90,3 +89,34 @@ class UserLogs(models.Model):
     class Meta:
         db_table = 'user_logs'
         ordering = ['-create_time']
+
+
+class TestObject(models.Model):
+    """测试对象"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
+    environment = models.SmallIntegerField(verbose_name="环境备注")
+    name = models.CharField(verbose_name="被测试的对象", max_length=64)
+    value = models.CharField(verbose_name="被测试的对象", max_length=1024)
+    db_c_status = models.SmallIntegerField(verbose_name="查询权限", null=True)
+    db_rud_status = models.SmallIntegerField(verbose_name="增删改权限", null=True)
+
+    class Meta:
+        db_table = 'test_object'
+        ordering = ['-id']
+
+
+class FileData(models.Model):
+    """ 文件表 """
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    type = models.SmallIntegerField(verbose_name="类型", null=True)
+    name = models.CharField(verbose_name="文件名称", max_length=64, null=True)
+    price = models.DecimalField(verbose_name="文件大小", max_digits=10, decimal_places=2, null=True)
+    file = models.FileField(verbose_name='文件', upload_to='files/', null=True)
+
+    class Meta:
+        db_table = 'file_data'

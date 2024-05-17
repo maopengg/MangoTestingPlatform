@@ -160,10 +160,10 @@
   import {
     deleteSystemDatabase,
     getSystemDatabase,
-    getSystemTestObjectName,
     postSystemDatabase,
     putSystemDatabase,
   } from '@/api/system'
+  import { getUserTestObjectName } from '@/api/user'
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -191,7 +191,7 @@
       .catch(console.log)
   }
   function onTestObjectName(projectProductId: number) {
-    getSystemTestObjectName(projectProductId)
+    getUserTestObjectName(projectProductId)
       .then((res) => {
         data.dataSelect = res.data
       })

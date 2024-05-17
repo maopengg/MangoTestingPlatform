@@ -193,12 +193,12 @@
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
-    deleteSystemTestObject,
-    getSystemTestObject,
-    postSystemTestObject,
-    putSystemTestObject,
-    putSystemTestObjectPutStatus,
-  } from '@/api/system'
+    deleteUserTestObject,
+    getUserTestObject,
+    postUserTestObject,
+    putUserTestObject,
+    putUserTestObjectPutStatus,
+  } from '@/api/user'
   import { getUserNickname } from '@/api/user'
 
   const projectInfo = useProject()
@@ -243,7 +243,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteSystemTestObject(data.id)
+        deleteUserTestObject(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -281,7 +281,7 @@
       if (data.isAdd) {
         value['db_c_status'] = 0
         value['db_rud_status'] = 0
-        postSystemTestObject(value)
+        postUserTestObject(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -290,7 +290,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putSystemTestObject(value)
+        putUserTestObject(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -305,7 +305,7 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getSystemTestObject(value)
+    getUserTestObject(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -330,7 +330,7 @@
       setTimeout(async () => {
         try {
           let value: any = false
-          await putSystemTestObjectPutStatus(dataObj)
+          await putUserTestObjectPutStatus(dataObj)
             .then((res) => {
               Message.success(res.msg)
               value = res.code === 200

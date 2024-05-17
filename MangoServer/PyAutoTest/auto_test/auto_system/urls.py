@@ -16,13 +16,8 @@ from ..auto_system.views.database import DatabaseCRUD
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
 from ..auto_system.views.system_api import SystemViews
-from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
-    #
-    path('test/object', TestObjectCRUD.as_view()),
-    path('test/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
-    path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path('notice', NoticeConfigCRUD.as_view()),
     path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),

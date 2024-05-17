@@ -1,19 +1,21 @@
-import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
-import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目名称',
-    key: 'project_name',
-    dataIndex: 'project_name',
+    key: 'project',
+    dataIndex: 'project',
   },
   {
     title: '文件名称',
-    key: 'file_name',
-    dataIndex: 'file_name',
+    key: 'name',
+    dataIndex: 'name',
+  },
+  {
+    title: '文件地址',
+    key: 'file',
+    dataIndex: 'file',
   },
   {
     title: '操作',

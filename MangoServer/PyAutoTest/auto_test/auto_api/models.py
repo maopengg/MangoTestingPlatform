@@ -1,8 +1,7 @@
 from django.db import models
-
-from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
-from PyAutoTest.auto_test.auto_user.models import ProjectProduct, User, ProductModule
+from PyAutoTest.auto_test.auto_user.models import TestObject, ProductModule, ProjectProduct
+from PyAutoTest.auto_test.auto_user.models import User
 
 """
      1.python manage.py makemigrations

@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializersC
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions import MangoServerError
