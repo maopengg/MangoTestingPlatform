@@ -6,7 +6,7 @@
 import os
 import shutil
 
-from PyAutoTest.auto_test.auto_user.models import Project
+from PyAutoTest.auto_test.auto_system.models import Project
 from PyAutoTest.tools.other.path import FilePath
 
 
@@ -106,4 +106,4 @@ class FilesCRUD:
 
 
 if __name__ == '__main__':
-    print(FilesCRUD(2).delete_file("新建 文本文档.txt"))
+    pass

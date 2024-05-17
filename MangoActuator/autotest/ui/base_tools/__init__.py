@@ -28,29 +28,45 @@ class ElementMain(WebDevice, AndroidDriver):
         self.element_model = element_model
         self.element_data = element_data
         self.drive_type = drive_type
-
-        if element_model.name:
-            self.ope_name = element_model.name
-        elif element_model.ope_type:
-            self.ope_name = element_model.ope_type
+        try:
+            if element_model.name:
+                self.ope_name = element_model.name
+            elif element_model.ope_type:
+                self.ope_name = element_model.ope_type
+            else:
+                self.ope_name = element_model.ass_type
+            for key, value in self.element_model:
+                value = self.data_processor.replace(value)
+                setattr(self.element_model, key, value)
+        except MangoActuatorError as error:
+            self.element_test_result = ElementResultModel(
+                test_suite_id=self.test_suite_id,
+                case_id=self.case_id,
+                page_step_id=self.page_step_id,
+                ele_name=self.ope_name,
+                exp=element_model.exp,
+                sub=element_model.sub,
+                sleep=element_model.sleep,
+                ope_type=element_model.ope_type,
+                ass_type=element_model.ass_type,
+                status=StatusEnum.FAIL.value,
+                ele_quantity=0,
+            )
+            raise error
         else:
-            self.ope_name = element_model.ass_type
-        for key, value in self.element_model:
-            value = self.data_processor.replace(value)
-            setattr(self.element_model, key, value)
-        self.element_test_result = ElementResultModel(
-            test_suite_id=self.test_suite_id,
-            case_id=self.case_id,
-            page_step_id=self.page_step_id,
-            ele_name=self.ope_name,
-            exp=element_model.exp,
-            sub=element_model.sub,
-            sleep=element_model.sleep,
-            ope_type=element_model.ope_type,
-            ass_type=element_model.ass_type,
-            status=StatusEnum.FAIL.value,
-            ele_quantity=0,
-        )
+            self.element_test_result = ElementResultModel(
+                test_suite_id=self.test_suite_id,
+                case_id=self.case_id,
+                page_step_id=self.page_step_id,
+                ele_name=self.ope_name,
+                exp=element_model.exp,
+                sub=element_model.sub,
+                sleep=element_model.sleep,
+                ope_type=element_model.ope_type,
+                ass_type=element_model.ass_type,
+                status=StatusEnum.FAIL.value,
+                ele_quantity=0,
+            )
 
     async def element_main(self) -> None:
         name = self.element_model.name if self.element_model.name else self.element_model.ass_type
@@ -63,7 +79,6 @@ class ElementMain(WebDevice, AndroidDriver):
             await self.__sql()
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
             await self.__custom()
-
         else:
             raise ElementTypeError(*ERROR_MSG_0015)
         self.element_test_result.status = StatusEnum.SUCCESS.value
@@ -102,8 +117,8 @@ class ElementMain(WebDevice, AndroidDriver):
                 else:
                     # 清洗元素需要的数据
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
-        except AttributeError:
-            raise ElementOpeNoneError(*ERROR_MSG_0027)
+        # except AttributeError:
+        #     raise ElementOpeNoneError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
         try:

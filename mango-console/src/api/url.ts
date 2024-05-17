@@ -15,11 +15,6 @@ export const getMenuListByRoleId = '/menu'
 export const getAllMenuByRoleId = '/role'
 export const test = '/config/test'
 
-export const userFilesAllList = '/user/files/all/list'
-export const userFilesUpload = '/user/files/upload'
-export const userFilesDownload = '/user/files/download'
-export const userFilesDelete = '/user/files/delete'
-
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
     $urlPath: Record<string, string>

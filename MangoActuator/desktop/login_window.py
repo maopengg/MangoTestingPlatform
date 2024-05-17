@@ -53,7 +53,7 @@ class LoginWindow(QWidget, Ui_login):
             self.db_handler.execute_sql(sql_statement_2,
                                         (service.USERNAME, service.PASSWORD, service.IP, service.PORT))
         try:
-            res = HttpApi().login()
+            res = HttpApi.login(service.USERNAME, service.PASSWORD)
             if res.get('code') == 200:
                 self.main_window = MainWindow()
                 self.close()

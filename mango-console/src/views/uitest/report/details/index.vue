@@ -99,7 +99,38 @@
                     <p>断言值：{{ item.ass_value ? item.ass_value : '-' }}</p>
                     <p>元素个数：{{ item.ele_quantity }}</p>
                     <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                    <p v-if="item.status === 0">失败截图：{{ item.picture_path }}</p>
+                    <div v-if="item.status === 0">
+                      <a-image
+                        :src="baseURL + '/' + item.picture_path"
+                        title="失败截图"
+                        width="260"
+                        style="margin-right: 67px; vertical-align: top"
+                        :preview-visible="visible1"
+                        @preview-visible-change="
+                          () => {
+                            visible1 = false
+                          }
+                        "
+                      >
+                        <template #extra>
+                          <div class="actions">
+                            <span
+                              class="action"
+                              @click="
+                                () => {
+                                  visible1 = true
+                                }
+                              "
+                              ><icon-eye
+                            /></span>
+                            <span class="action" @click="onDownLoad"><icon-download /></span>
+                            <a-tooltip content="失败截图">
+                              <span class="action"><icon-info-circle /></span>
+                            </a-tooltip>
+                          </div>
+                        </template>
+                      </a-image>
+                    </div>
                     <p v-if="item.expect">实际：{{ item.actual }}</p>
                   </a-space>
                 </div>
@@ -122,6 +153,7 @@
     getUiPageStepsDetailedOpe,
   } from '@/api/uitest'
   import { getSystemEnumExp } from '@/api/system'
+  import { baseURL } from '@/api/axios.config'
   const childRef: any = ref(null)
 
   const pageData: any = usePageData()
@@ -143,7 +175,11 @@
     border: 'none',
     overflow: 'hidden',
   })
+  const visible1 = ref(false)
 
+  function onDownLoad() {
+    console.log('download')
+  }
   function click(key: string) {
     childRef.value.expandNode(key, true) // 调用子组件的方法
     let obj = JSON.parse(key)

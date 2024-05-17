@@ -1,7 +1,6 @@
 from django.db import models
 
-from PyAutoTest.auto_test.auto_user.models import ProjectProduct, ProductModule
-from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.auto_test.auto_user.models import User, ProjectProduct, ProductModule
 
 """
      1.python manage.py makemigrations

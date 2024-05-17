@@ -1,30 +1,12 @@
 from django.db import models
 
-from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_user.models import ProjectProduct, Project
+from PyAutoTest.auto_test.auto_user.models import ProjectProduct, TestObject, Project
 from PyAutoTest.auto_test.auto_user.models import User
 
 """
      1.python manage.py makemigrations
      2.python manage.py migrate
 """
-
-
-class TestObject(models.Model):
-    """测试对象"""
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    executor_name = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
-    environment = models.SmallIntegerField(verbose_name="环境备注")
-    name = models.CharField(verbose_name="被测试的对象", max_length=64)
-    value = models.CharField(verbose_name="被测试的对象", max_length=1024)
-    db_c_status = models.SmallIntegerField(verbose_name="查询权限", null=True)
-    db_rud_status = models.SmallIntegerField(verbose_name="增删改权限", null=True)
-
-    class Meta:
-        db_table = 'test_obj'
-        ordering = ['-id']
 
 
 class NoticeConfig(models.Model):

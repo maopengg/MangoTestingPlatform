@@ -139,7 +139,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/config",
-                    "menuUrl": "/config/test-obj/index",
+                    "menuUrl": "/config/test-object/index",
                     "menuName": "环境配置",
                 },
                 {

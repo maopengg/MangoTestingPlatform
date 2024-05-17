@@ -6,7 +6,6 @@
 import os
 from typing import BinaryIO
 
-from PyAutoTest.auto_test.auto_user.service.files_crud import FilesCRUD
 from PyAutoTest.exceptions.tools_exception import FileDoesNotEexistError
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0026
 
@@ -19,7 +18,7 @@ class RandomFileData:
         """传入文件名称，返回文件对象"""
         project_id = kwargs.get('project_id')
         file_name = kwargs.get('data')
-        file_obj = FilesCRUD(project_id)
+        # file_obj = FilesCRUD(project_id)
         file_path = os.path.join(file_obj.project_upload_folder, file_name)
         if os.path.exists(file_path):
             return open(file_path, 'rb')
@@ -31,7 +30,7 @@ class RandomFileData:
         """传入文件名称获取文件路径"""
         project_id = kwargs.get('project_id')
         file_name = kwargs.get('data')
-        file_obj = FilesCRUD(project_id)
+        # file_obj = FilesCRUD(project_id)
         file_path = os.path.join(file_obj.project_upload_folder, file_name)
         if os.path.exists(file_path):
             return file_path

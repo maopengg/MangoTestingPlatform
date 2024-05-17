@@ -17,7 +17,7 @@ from models.socket_model import SocketDataModel, QueueModel
 from tools.decorator.singleton import singleton
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-
+from settings import settings
 T = TypeVar('T')
 
 
@@ -108,7 +108,11 @@ class ClientWebSocket:
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
         try:
-            await self.websocket.send(self.__serialize(send_data))
+            if not settings.IS_DEBUG:
+                await self.websocket.send(self.__serialize(send_data))
+            else:
+                self.__serialize(send_data)
+
         except ConnectionClosedError:
             await self.client_run()
             await self.websocket.send(self.__serialize(send_data))

@@ -14,7 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTasksSerializers
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD

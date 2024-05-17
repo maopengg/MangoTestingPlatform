@@ -537,11 +537,11 @@
   }
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
       getNickName()
       status()
       scheduledName()
-      enumCaseLevel()
+      await enumCaseLevel()
+      await doRefresh()
     })
   })
 </script>

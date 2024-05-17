@@ -6,15 +6,23 @@
 
 from django.urls import path
 
+from .views.file_data import FileDataCRUD
 from .views.product_module import ProductModuleViews, ProductModuleCRUD
 from .views.project import ProjectCRUD, ProjectViews
-from .views.project_file import ProjectFileViews
+# from .views.project_file import ProjectFileViews
 from .views.project_product import ProjectProductCRUD
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
+from .views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
+    #
+    path('file', FileDataCRUD.as_view()),
+    #
+    path('test/object', TestObjectCRUD.as_view()),
+    path('test/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
+    path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
@@ -38,9 +46,9 @@ urlpatterns = [
     path("password", UserViews.as_view({'put': 'put_password'})),
     path("project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
     #
-    path("files/test", ProjectFileViews.as_view({'get': 'test'})),
-    path("files/all/list", ProjectFileViews.as_view({'get': 'get_project_all_list'})),
-    path("files/upload", ProjectFileViews.as_view({'post': 'upload_files'})),
-    path("files/download", ProjectFileViews.as_view({'get': 'download_file'})),
-    path("files/delete", ProjectFileViews.as_view({'delete': 'delete_file'})),
+    # path("files/test", ProjectFileViews.as_view({'get': 'test'})),
+    # path("files/all/list", ProjectFileViews.as_view({'get': 'get_project_all_list'})),
+    # path("files/upload", ProjectFileViews.as_view({'post': 'upload_files'})),
+    # path("files/download", ProjectFileViews.as_view({'get': 'download_file'})),
+    # path("files/delete", ProjectFileViews.as_view({'delete': 'delete_file'})),
 ]

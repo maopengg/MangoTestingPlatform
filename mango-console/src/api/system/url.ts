@@ -1,9 +1,7 @@
-export const systemTestObject = '/system/test/object'
-export const systemTestObjectName = '/system/test/object/name'
 export const systemNotice = '/system/notice'
 export const systemNoticePutStatus = '/system/notice/put/status'
 export const systemDatabase = '/system/database'
-export const systemTestObjectPutStatus = '/system/test/object/put/status'
+
 export const systemRandomList = 'system/variable/random/list'
 export const systemRandomData = 'system/variable/value'
 export const systemTime = 'system/time'

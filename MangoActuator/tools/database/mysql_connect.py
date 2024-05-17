@@ -28,10 +28,10 @@ class MysqlConnect:
         except OperationalError:
             raise MysqlConnectionError(*ERROR_MSG_0001)
         except InternalError:
-            raise MysqlConnectionError(*ERROR_MSG_0033, value=(mysql_config.db,))
+            raise MysqlConnectionError(*ERROR_MSG_0033, value=(mysql_config.database,))
 
     def __del__(self):
-        if self.connection:
+        if hasattr(self, 'connection') and self.connection:
             self.close()
 
     def close(self):

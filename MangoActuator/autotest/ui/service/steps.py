@@ -13,12 +13,13 @@ from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed, UrlError
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
+from service.http_client.http_api import HttpApi
 from tools import InitPath
 from tools.data_processor import RandomTimeData
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0049
-
+from settings import settings
 
 class StepsMain(ElementMain):
     page_step_model: PageStepsModel = None
@@ -82,8 +83,9 @@ class StepsMain(ElementMain):
             """
         )
         if self.element_test_result:
-            path = rf"{InitPath.failure_screenshot_file}\{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg"
-            self.element_test_result.picture_path = path
+            file_name = f'{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
+            file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
+            self.element_test_result.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
             self.element_test_result.error_message = error.msg
             SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
@@ -93,12 +95,12 @@ class StepsMain(ElementMain):
                                            断言类型：{self.element_test_result.ass_type}
                                            断言值：{self.element_test_result.ass_value}
                                            元素个数：{self.element_test_result.ele_quantity}
-                                           截图路径：{path}
+                                           截图路径：{file_path}
                                            元素失败提示：{error.msg}''')
             # try:
             match self.page_step_model.type:
                 case DriveTypeEnum.WEB.value:
-                    await self.w_screenshot(path)
+                    await self.w_screenshot(file_path)
                 case DriveTypeEnum.ANDROID.value:
                     pass
                 case DriveTypeEnum.IOS.value:
@@ -107,6 +109,8 @@ class StepsMain(ElementMain):
                     pass
                 case _:
                     log.error('自动化类型不存在，请联系管理员检查！')
+            if not settings.IS_DEBUG:
+                HttpApi().upload_file(self.project_product_id, file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg
         # except Exception as error:
