@@ -12,6 +12,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
+from PyAutoTest.auto_test.auto_api.service.import_api.curl import Curl
 from PyAutoTest.auto_test.auto_api.service.test_execution.info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
@@ -123,47 +124,6 @@ class ApiInfoViews(ViewSet):
 
     @action(methods=['POST'], detail=False)
     def import_api(self, request: Request):
-        data = f"""
-        {request.data.get('data')}
-        """
-        d = """
-        curl 'https://cdxppre.zalldata.cn/backend/api-user/user/info' \
-  -H 'authority: cdxppre.zalldata.cn' \
-  -H 'accept: application/json, text/plain, */*' \
-  -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
-  -H 'authorization: Bearer 9f02351c-9382-4d0c-99aa-3aead4401cef' \
-  -H 'cache-control: no-cache' \
-  -H 'currentproject: precheck' \
-  -H 'pragma: no-cache' \
-  -H 'referer: https://cdxppre.zalldata.cn/operate/userJourneyInfo?id=2377&type=look&status=2&hasStart=0&projectName=precheck' \
-  -H 'sec-ch-ua: "Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "Windows"' \
-  -H 'sec-fetch-dest: empty' \
-  -H 'sec-fetch-mode: cors' \
-  -H 'sec-fetch-site: same-origin' \
-  -H 'service: zall' \
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' \
-  -H 'userid: 201' \
-  -H 'x-nonce: JcD7zXMl4xEk6YUr6gzll1YLfuZtsjmu' \
-  -H 'x-sign: 812f6a242139173822e8e5451bbcca83e36c93f70898dd6bc98b73f81747c1f6' \
-  -H 'x-time: 1713507951432'
-        """
-        assert data == d
-        import argparse
-        import shlex
-        parser = argparse.ArgumentParser()
-        parser.add_argument('command')
-        parser.add_argument('url')
-        parser.add_argument('-d', '--data')
-        parser.add_argument('-b', '--data-binary', '--data-raw', default=None)
-        parser.add_argument('-X', default='')
-        parser.add_argument('-H', '--header', action='append', default=[])
-        parser.add_argument('--compressed', action='store_true')
-        parser.add_argument('-k', '--insecure', action='store_true')
-        parser.add_argument('--user', '-u', default=())
-        parser.add_argument('-i', '--include', action='store_true')
-        parser.add_argument('-s', '--silent', action='store_true')
-        tokens = shlex.split(data)
-        parsed_args = parser.parse_args(tokens)
+        url = "http://localhost:8000/api/import/api"
+        Curl.curl(url, request.data)
         return ResponseData.success(RESPONSE_MSG_0069)

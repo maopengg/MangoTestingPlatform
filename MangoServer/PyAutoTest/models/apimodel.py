@@ -12,7 +12,7 @@ class RequestDataModel(BaseModel):
     method: str | None
     url: str | None
     headers: str | dict | list | None = None
-    params: dict | list | None = None
+    params: dict | list | str | None = None
     data: dict | list | None = None
     json_data: dict | list | None = None
     file: list[dict] | Any | None = None
