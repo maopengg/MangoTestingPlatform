@@ -14,7 +14,7 @@ from PyAutoTest.models.socket_model.api_model import ApiInfoModel
 log = logging.getLogger('api')
 
 
-class WriteAPI:
+class Recording:
 
     @classmethod
     def write(cls, data: ApiInfoModel):
@@ -24,7 +24,6 @@ class WriteAPI:
             api_info_obj = ApiInfo.objects.get(url=data.url, method=data.method, project_id=data.project)
         except ApiInfo.DoesNotExist:
             msg = f'项目ID：{data.project}-接口URL:{data.url}已经存在，所以不需要进行录制到数据库中！'
-
             data = data.dict()
             data['json'] = data['json_data']
             del data['json_data']
