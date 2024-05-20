@@ -25,10 +25,6 @@ mysql_password = 'root'
 mysql_ip = 'localhost'
 # mysql_ip = '36.213.11.72'
 mysql_port = 3306
-# miniio配置
-endpoint = "127.0.0.1:9005",
-access_key = "minioadmin",
-secret_key = "minioadmin",
 # ************************ ↑需要修改的内容↑ ************************ #
 
 # ************************ 时区 ************************ #
