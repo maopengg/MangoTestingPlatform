@@ -33,13 +33,9 @@ class HttpApi(HttpRequest):
         return response_dict
 
     @classmethod
-    def download_file(cls, project_id, file_name):
-        url = cls.url('/user/files/download')
-        params = {
-            'file_name': f'{file_name}',
-            'project_id': project_id
-        }
-        response = requests.request("GET", url, headers=cls.headers, params=params)
+    def download_file(cls, file_name):
+        url = cls.url(f'/{file_name}')
+        response = requests.request("GET", url, headers=cls.headers)
         file_path = InitPath.upload_files
         file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
