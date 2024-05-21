@@ -84,11 +84,12 @@ class UiCaseViews(ViewSet):
         @param request:
         @return:
         """
+        case_id_list = [int(id_str) for id_str in request.query_params.getlist('case_id_list[]')]
         try:
             UiTestRun(
                 request.user['id'],
                 request.GET.get("testing_environment")
-            ).case_batch(case_id_list=eval(request.GET.get("case_id_list")))
+            ).case_batch(case_id_list=case_id_list)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
