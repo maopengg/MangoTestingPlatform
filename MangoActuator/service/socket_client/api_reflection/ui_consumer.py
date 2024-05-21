@@ -28,7 +28,7 @@ class UIConsumer:
         """
         try:
             if cls.page_steps is None:
-                cls.page_steps = PageSteps(data.project_product_id)
+                cls.page_steps = PageSteps(data.project_product)
             await cls.page_steps.page_steps_setup(data)
             await cls.page_steps.page_steps_mian()
         except MangoActuatorError as error:
@@ -53,7 +53,7 @@ class UIConsumer:
         """
         try:
             if cls.page_steps is None:
-                cls.page_steps = PageSteps(data.project_product_id)
+                cls.page_steps = PageSteps(data.project_product)
             await cls.page_steps.new_web_obj(data)
         except Exception as error:
             await async_global_exception(
