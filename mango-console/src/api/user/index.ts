@@ -1,6 +1,5 @@
 import { deleted, get, post, put, Response } from '@/api/http'
 import * as url from './url'
-import { userFile } from './url'
 
 export function getUserModuleName(projectProductId: number | string | null): Promise<Response> {
   return get({
@@ -68,7 +67,6 @@ export function getUserProduct(data: object) {
     },
   })
 }
-
 export function postUserProduct(data: object) {
   return post({
     url: url.userProduct,
@@ -93,6 +91,17 @@ export function deleteUserProduct(id: number | string[] | number[]) {
     data: () => {
       return {
         id: id,
+      }
+    },
+  })
+}
+
+export function getUserProductName(projectId: number | null = null) {
+  return get({
+    url: url.userProductName,
+    data: () => {
+      return {
+        project_id: projectId,
       }
     },
   })

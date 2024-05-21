@@ -14,6 +14,7 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
+
   {
     key: 'name',
     label: '接口名称',
@@ -29,7 +30,16 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'url',
     value: '',
     type: 'input',
-    placeholder: '请先选择项目',
+    placeholder: '请选择产品',
+    reset: function () {},
+  },
+  {
+    key: 'project_product',
+    label: '产品',
+    value: '',
+    type: 'select',
+    placeholder: '请选择产品',
+    optionItems: [],
     reset: function () {},
   },
   {
@@ -37,7 +47,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '模块',
     value: '',
     type: 'select',
-    placeholder: '请先选择项目',
+    placeholder: '请选择产品',
     optionItems: [],
     reset: function () {},
   },
@@ -47,6 +57,15 @@ export const conditionItems: Array<FormItem> = reactive([
     value: '',
     type: 'select',
     placeholder: '请选择客户端类型',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'status',
+    label: '状态',
+    value: '',
+    type: 'select',
+    placeholder: '请选择步骤状态',
     optionItems: [],
     reset: function () {},
   },

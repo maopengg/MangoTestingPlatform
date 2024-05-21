@@ -23,7 +23,8 @@ class ModelCRUD(GenericAPIView):
     model = None
     # post专用
     serializer = None
-    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people']
+    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people', 'test_obj',
+                        'status']
 
     def get(self, request: Request):
         query_dict = {}
@@ -39,8 +40,7 @@ class ModelCRUD(GenericAPIView):
             project_product = ProjectProduct.objects.filter(project_id=project_id)
             if project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
-            else:
-                raise Exception('11')
+        print(query_dict)
         if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']
