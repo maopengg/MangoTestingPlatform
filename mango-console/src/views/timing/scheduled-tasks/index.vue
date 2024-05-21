@@ -16,16 +16,14 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select'">
-                    <a-select
-                      style="width: 150px"
+                  <template v-else-if="item.type === 'cascader'">
+                    <a-cascader
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="item.optionItems"
-                      :field-names="fieldNames"
+                      :options="testObj.data"
                       value-key="key"
                       allow-clear
                       allow-search
@@ -176,16 +174,7 @@
                   allow-search
                 />
               </template>
-              <!--              <template v-else-if="item.type === 'select' && item.key === 'test_obj'">-->
-              <!--                <a-select-->
-              <!--                  v-model="item.value"-->
-              <!--                  :placeholder="item.placeholder"-->
-              <!--                  :options="testObj.data"-->
-              <!--                  :field-names="fieldNames"-->
-              <!--                  value-key="key"-->
-              <!--                  allow-clear-->
-              <!--                  allow-search-->
-              <!--                />-->
+
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
@@ -196,7 +185,6 @@
                   allow-clear
                 />
               </template>
-              <!--              </template>-->
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
                   v-model="item.value"

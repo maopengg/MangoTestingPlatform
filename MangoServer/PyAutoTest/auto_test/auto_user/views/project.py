@@ -49,6 +49,7 @@ class ProjectViews(ViewSet):
     def get_all_items(self, request: Request):
         items = Project.objects.filter(status=StatusEnum.SUCCESS.value)
         data = [{'title': i.name, 'key': i.pk} for i in items]
+        data.insert(0, {'title': '选择项目', 'key': None})
         return ResponseData.success(RESPONSE_MSG_0025, data)
 
     @action(methods=['GET'], detail=False)

@@ -16,7 +16,20 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project_product'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="projectInfo.projectProductList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh(item.value, true)"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module'">
@@ -24,7 +37,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.moduleList"
+                      :options="productModule.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -50,7 +63,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.systemStatus"
+                      :options="status.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -178,7 +191,7 @@
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
-                  @change="productModuleName(item.value)"
+                  @change="onModuleSelect(item.value)"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
                   value-key="key"
@@ -190,7 +203,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.moduleList"
+                  :options="productModule.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -219,7 +232,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useRouter } from 'vue-router'
@@ -227,7 +240,7 @@
   import { fieldNames } from '@/setting'
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { getFormItems } from '@/utils/datacleaning'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import {
     deleteUiSteps,
@@ -240,10 +253,10 @@
     putUiSteps,
   } from '@/api/uitest'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getUserModuleName } from '@/api/user'
-  import { getSystemEnumStatus } from '@/api/system'
-  const projectModule = useProjectModule()
+  import { useStatus } from '@/store/modules/status'
+  const productModule = useProductModule()
   const projectInfo = useProject()
+  const status = useStatus()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -256,14 +269,17 @@
     updateId: 0,
     actionTitle: '添加测试对象',
     pageName: [],
-    moduleList: projectModule.data,
     systemStatus: [],
   })
 
-  function doRefresh() {
+  function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      productModule.getProjectModule(projectProductId)
+    }
     getUiSteps(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -335,7 +351,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    productModuleName(item.project_product.id)
+    productModule.getProjectModule(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -432,7 +448,7 @@
       })
       .catch(() => {
         data.pageName = []
-        formItems.forEach((obj: any) => {
+        formItems.forEach((obj: FormItem) => {
           if (obj.key == 'page') {
             obj.value = null
           }
@@ -449,27 +465,19 @@
       .catch(console.log)
   }
 
-  function productModuleName(projectId: number) {
-    getUserModuleName(projectId)
-      .then((res) => {
-        data.moduleList = res.data
-      })
-      .catch(console.log)
-  }
-
-  function status() {
-    getSystemEnumStatus()
-      .then((res) => {
-        data.systemStatus = res.data
-      })
-      .catch(console.log)
+  function onModuleSelect(projectProductId: number) {
+    productModule.getProjectModule(projectProductId)
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
   }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       onModulePage(null, false)
-      status()
     })
   })
 </script>

@@ -109,7 +109,7 @@
     useTableColumn,
   } from '@/hooks/table'
   import { useRouter } from 'vue-router'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { getSystemScheduledTasks } from '@/api/system'
   import { useProject } from '@/store/modules/get-project'
 
@@ -118,7 +118,7 @@
     return appStore.mainHeight + 'px'
   })
   const projectInfo = useProject()
-  const projectModule = useProjectModule()
+  const productModule = useProductModule()
   const reportSum = ref()
   const caseSum = ref()
   const hotProductChart = ref()
@@ -202,7 +202,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      projectModule.getProjectModule()
+      productModule.getProjectModule()
       projectInfo.getProject()
       projectInfo.projectProductName()
     })

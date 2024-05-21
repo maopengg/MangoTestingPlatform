@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getUserProjectAll, getUserProjectProductName } from '@/api/user'
+import { getUserProductName, getUserProjectAll, getUserProjectProductName } from '@/api/user'
 // 1.定义容器
 export const useProject = defineStore('get-project', {
   // 类似于data，用来存储全局状态，必须是箭头函数
@@ -10,6 +10,7 @@ export const useProject = defineStore('get-project', {
       selectValue: null as number | null,
       projectList: [],
       projectProduct: [],
+      projectProductList: [],
     }
   },
   // 类似于computed，用来封装计算属性
@@ -20,7 +21,6 @@ export const useProject = defineStore('get-project', {
       getUserProjectAll()
         .then((res) => {
           this.data = res.data
-          this.initialization()
         })
         .catch(console.log)
     },
@@ -33,14 +33,12 @@ export const useProject = defineStore('get-project', {
           console.error(error)
         })
     },
-    initialization() {
-      if (this.data) {
-        this.projectList.splice(0, this.projectList.length)
-        this.projectList.push({ key: null, title: '选择项目' })
-        this.data.forEach((item) => {
-          this.projectList.push(item)
+    projectProductNameList(projectId: number | null = null) {
+      getUserProductName(projectId)
+        .then((res) => {
+          this.projectProductList = res.data
         })
-      }
+        .catch(console.log)
     },
   },
   presist: {
