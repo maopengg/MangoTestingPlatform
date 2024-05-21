@@ -13,6 +13,7 @@ from enums.system_enum import CacheDataKey2Enum
 from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum
 from service.socket_client.client_socket import ClientWebSocket
 from tools.assertion import Assertion
+from tools.data_processor import RandomFileData
 from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
 from tools.other.get_class_methods import GetClassMethod
@@ -39,6 +40,7 @@ class Window(Ui_MainWindow):
         self.label_3.setText(service.USERNAME)
         self.ui_update_thread = UIUpdateThread(self.label_6, self.textEdit)
         self.ui_update_thread.start()
+        self.test.clicked.connect(self.clickTest)
 
     def clickSendRedisData(self):
         """
@@ -76,6 +78,9 @@ class Window(Ui_MainWindow):
             self.label_6.setText(data)
         else:
             self.textEdit.append(data)
+
+    def clickTest(self):
+        print(RandomFileData.get_file(**{'data': '文本.txt'}))
 
 
 class UIUpdateThread(QThread):

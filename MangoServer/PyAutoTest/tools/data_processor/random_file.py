@@ -3,8 +3,6 @@
 # @Description: 
 # @Time   : 2023-12-21 11:15
 # @Author : 毛鹏
-import os
-from typing import BinaryIO
 
 from PyAutoTest.exceptions.tools_exception import FileDoesNotEexistError
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0026
@@ -14,28 +12,10 @@ class RandomFileData:
     """ 获取文件对象 """
 
     @classmethod
-    def get_file_obj(cls, **kwargs) -> BinaryIO:
+    def get_file(cls, **kwargs) -> None:
         """传入文件名称，返回文件对象"""
-        project_id = kwargs.get('project_id')
         file_name = kwargs.get('data')
-        # file_obj = FilesCRUD(project_id)
-        file_path = os.path.join(file_obj.project_upload_folder, file_name)
-        if os.path.exists(file_path):
-            return open(file_path, 'rb')
-        else:
-            raise FileDoesNotEexistError(*ERROR_MSG_0026)
-
-    @classmethod
-    def get_file_path(cls, **kwargs) -> str:
-        """传入文件名称获取文件路径"""
-        project_id = kwargs.get('project_id')
-        file_name = kwargs.get('data')
-        # file_obj = FilesCRUD(project_id)
-        file_path = os.path.join(file_obj.project_upload_folder, file_name)
-        if os.path.exists(file_path):
-            return file_path
-        else:
-            raise FileDoesNotEexistError(*ERROR_MSG_0026)
+        raise FileDoesNotEexistError(*ERROR_MSG_0026, value=(file_name,))
 
 
 if __name__ == '__main__':

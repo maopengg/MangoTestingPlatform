@@ -49,8 +49,7 @@ class SystemViews(ViewSet):
         match = re.search(r'\((.*?)\)', name)
         if match:
             try:
-                obj = ObtainRandomData(request.headers.get('Project'))
-                return ResponseData.success(RESPONSE_MSG_0062, str(obj.regular(name)))
+                return ResponseData.success(RESPONSE_MSG_0062, str(ObtainRandomData.regular(name)))
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg), )
         else:
