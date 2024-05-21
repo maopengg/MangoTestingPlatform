@@ -16,15 +16,28 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project_product'">
+                    <a-select
+                      style="width: 140px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="projectInfo.projectProductList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh(item.value, true)"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
-                      style="width: 150px"
+                      style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.moduleList"
+                      :options="productModule.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -34,7 +47,7 @@
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                     <a-select
-                      style="width: 150px"
+                      style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
                       :options="data.userList"
@@ -47,10 +60,10 @@
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'status'">
                     <a-select
-                      style="width: 150px"
+                      style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.systemStatus"
+                      :options="status.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -214,7 +227,7 @@
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
-                  @change="onProductModuleName(item.value)"
+                  @change="onModuleSelect(item.value)"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
                   allow-search
@@ -225,7 +238,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.moduleList"
+                  :options="productModule.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -264,7 +277,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useProject } from '@/store/modules/get-project'
@@ -272,7 +285,7 @@
   import { fieldNames } from '@/setting'
   import { useRouter } from 'vue-router'
   import { useTestObj } from '@/store/modules/get-test-obj'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { tableColumns, formItems, conditionItems } from './config'
   import {
@@ -284,15 +297,16 @@
     postApiCaseCody,
     putApiCase,
   } from '@/api/apitest'
-  import { getUserNickname, getUserModuleName } from '@/api/user'
+  import { getUserNickname } from '@/api/user'
   import {
     getSystemEnumCaseLevel,
-    getSystemEnumStatus,
     getSystemScheduledName,
     postSystemTasksBatchSetCases,
   } from '@/api/system'
+  import { useStatus } from '@/store/modules/status'
 
-  const projectModule = useProjectModule()
+  const productModule = useProductModule()
+  const status = useStatus()
 
   const router = useRouter()
   const projectInfo = useProject()
@@ -309,18 +323,20 @@
     isAdd: false,
     updateId: 0,
     userList: [],
-    systemStatus: [],
-    moduleList: projectModule.data,
     scheduledName: [],
     enumCaseLevel: [],
     value: null,
     visible: false,
   })
 
-  function doRefresh() {
+  function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      productModule.getProjectModule(projectProductId)
+    }
     getApiCase(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -388,7 +404,7 @@
     data.actionTitle = '编辑用例'
     data.isAdd = false
     data.updateId = item.id
-    onProductModuleName(item.project_product.id)
+    productModule.getProjectModule(item.project_product.id)
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it) => {
@@ -400,15 +416,6 @@
         }
       })
     })
-  }
-
-  function onProductModuleName(projectId: number) {
-    doRefresh()
-    getUserModuleName(projectId)
-      .then((res) => {
-        data.moduleList = res.data
-      })
-      .catch(console.log)
   }
 
   function onDataForm() {
@@ -521,13 +528,15 @@
       })
       .catch(console.log)
   }
-  function status() {
-    getSystemEnumStatus()
-      .then((res) => {
-        data.systemStatus = res.data
-      })
-      .catch(console.log)
+  function onModuleSelect(projectProductId: number) {
+    productModule.getProjectModule(projectProductId)
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
   }
+
   function enumCaseLevel() {
     getSystemEnumCaseLevel()
       .then((res) => {
@@ -538,10 +547,10 @@
   onMounted(() => {
     nextTick(async () => {
       getNickName()
-      status()
       scheduledName()
       await enumCaseLevel()
       await doRefresh()
+      productModule.getProjectModule(null)
     })
   })
 </script>

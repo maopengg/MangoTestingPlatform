@@ -16,7 +16,7 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module'">

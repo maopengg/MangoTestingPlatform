@@ -10,7 +10,7 @@ from .views.file_data import FileDataCRUD
 from .views.product_module import ProductModuleViews, ProductModuleCRUD
 from .views.project import ProjectCRUD, ProjectViews
 # from .views.project_file import ProjectFileViews
-from .views.project_product import ProjectProductCRUD
+from .views.project_product import ProjectProductCRUD, ProjectProductViews
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
@@ -30,6 +30,7 @@ urlpatterns = [
     path("project/environment/name", ProjectViews.as_view({'get': 'project_environment_name'})),
     #
     path("product", ProjectProductCRUD.as_view()),
+    path("product/name", ProjectProductViews.as_view({'get': 'get_project_name'})),
     #
     path("module", ProductModuleCRUD.as_view()),
     path("module/name", ProductModuleViews.as_view({'get': 'get_module_name'})),

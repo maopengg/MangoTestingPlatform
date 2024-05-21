@@ -6,8 +6,13 @@
 import logging
 
 from rest_framework import serializers
+from rest_framework.decorators import action
+from rest_framework.request import Request
+from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 from .project import ProjectSerializers
 from ..models import ProjectProduct
 
@@ -45,4 +50,17 @@ class ProjectProductCRUD(ModelCRUD):
     serializer_class = ProjectProductSerializersC
     serializer = ProjectProductSerializers
 
-    pass
+
+class ProjectProductViews(ViewSet):
+    model = ProjectProduct
+    serializer_class = ProjectProductSerializers
+
+    @action(methods=['GET'], detail=False)
+    def get_project_name(self, request: Request):
+        project_id = request.query_params.get('project_id')
+        if project_id:
+            res = self.model.objects.values_list('id', 'name').filter(project=project_id)
+        else:
+            res = self.model.objects.values_list('id', 'name').all()
+        data = [{'key': _id, 'title': name} for _id, name in res]
+        return ResponseData.success(RESPONSE_MSG_0118, data)

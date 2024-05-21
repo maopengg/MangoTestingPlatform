@@ -16,7 +16,7 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
                     />
                   </template>
                   <template v-else-if="item.type === 'select'">
@@ -121,14 +121,14 @@
   import { onMounted, nextTick, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import * as echarts from 'echarts'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
   import { getSystemEnumStatus, getSystemTestSuiteReport } from '@/api/system'
   import { getUiCaseResultWeekSum } from '@/api/uitest'
-  const projectModule = useProjectModule()
+  const productModule = useProductModule()
 
   const pagination = usePagination(doRefresh)
   pagination.pageSize = 10
@@ -138,7 +138,7 @@
   const router = useRouter()
 
   const uiTestReportData = reactive({
-    moduleList: projectModule.data,
+    moduleList: productModule.data,
     systemStatus: [],
   })
 
