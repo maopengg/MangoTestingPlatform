@@ -6,7 +6,7 @@
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of project.projectList" :key="item.key" :value="item.key">
+        <a-doption v-for="item of project.data" :key="item.key" :value="item.key">
           {{ item.title }}
         </a-doption>
       </template>
@@ -20,20 +20,23 @@
   import { useProject } from '@/store/modules/get-project'
   import { useDebounceFn } from '@vueuse/core'
   import { useRoute, useRouter } from 'vue-router'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { getUserProjectEnvironment, putUserPutProject } from '@/api/user'
+  import { useStatus } from '@/store/modules/status'
 
   export default defineComponent({
     name: 'Project',
     setup() {
       const userStore = useUserStore()
       const project = useProject()
-      const projectModule = useProjectModule()
+      const productModule = useProductModule()
+      const status = useStatus()
 
       const router = useRouter()
       const route = useRoute()
 
       function handleSelect(key: any) {
+        console.log(key)
         if (key === '选择项目') {
           key = null
         }
@@ -41,7 +44,7 @@
           .then((res) => {
             userStore.selected_project = res.data.selected_project
             setTitle(key)
-            projectModule.getProjectModule()
+            productModule.getProjectModule()
           })
           .catch(console.log)
         debouncedFn()
@@ -51,10 +54,15 @@
       }, 200)
 
       function setTitle(key: any) {
+        if (key === null) {
+          project.selectTitle = '选择项目'
+          return
+        }
         project.projectList.forEach((item: any) => {
           project.selectValue = key
           if (item.key === project.selectValue) project.selectTitle = item.title
         })
+        project.projectProductNameList(project.selectValue)
       }
       watchEffect(() => {
         if (project.data.length > 0) {
@@ -67,12 +75,14 @@
           .then((res) => {
             userStore.selected_environment = res.data.selected_environment
             userStore.selected_project = res.data.selected_project
+            project.projectProductNameList(userStore.selected_project)
           })
           .catch(console.log)
       }
       onMounted(async () => {
         await project.getProject()
         await doRefresh()
+        await status.refresh()
       })
 
       return {

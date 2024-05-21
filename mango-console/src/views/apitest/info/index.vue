@@ -16,15 +16,28 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project_product'">
+                    <a-select
+                      style="width: 140px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="projectInfo.projectProductList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh(item.value, true)"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module'">
                     <a-select
-                      style="width: 150px"
+                      style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.moduleList"
+                      :options="productModule.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -34,10 +47,23 @@
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'client'">
                     <a-select
-                      style="width: 150px"
+                      style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
                       :options="data.apiPublicEnd"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'status'">
+                    <a-select
+                      style="width: 140px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="status.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -208,7 +234,7 @@
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
-                  @change="onProductModuleName(item.value)"
+                  @change="onModuleSelect(item.value)"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
                   allow-search
@@ -219,7 +245,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.moduleList"
+                  :options="productModule.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -258,14 +284,14 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, reactive, nextTick } from 'vue'
   import { useTestObj } from '@/store/modules/get-test-obj'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProject } from '@/store/modules/get-project'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
   import { tableColumns, formItems, conditionItems } from './config'
@@ -280,12 +306,12 @@
   } from '@/api/apitest'
   import { getUiConfigNewBrowserObj } from '@/api/uitest'
   import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
-  import { getUserModuleName } from '@/api/user'
+  import { useStatus } from '@/store/modules/status'
 
   const router = useRouter()
 
-  const projectModule = useProjectModule()
-
+  const productModule = useProductModule()
+  const status = useStatus()
   const projectInfo = useProject()
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -303,7 +329,6 @@
     caseResult: {},
     apiPublicEnd: [],
     apiMethodType: [],
-    moduleList: projectModule.data,
   })
   const visible = ref(false)
 
@@ -319,11 +344,15 @@
     doRefresh()
   }
 
-  function doRefresh() {
+  function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['type'] = data.apiType
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      productModule.getProjectModule(projectProductId)
+    }
     getApiInfo(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -356,7 +385,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    onProductModuleName(item.project_product.id)
+    productModule.getProjectModule(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -535,13 +564,6 @@
       .catch(console.log)
   }
 
-  function onProductModuleName(projectId: number) {
-    getUserModuleName(projectId)
-      .then((res) => {
-        data.moduleList = res.data
-      })
-      .catch(console.log)
-  }
   function apiInfoCopy(record: any) {
     postApiCopyInfo(record.id)
       .then((res) => {
@@ -550,6 +572,16 @@
       })
       .catch(console.log)
   }
+
+  function onModuleSelect(projectProductId: number) {
+    productModule.getProjectModule(projectProductId)
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
+  }
+
   function onStep(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
@@ -566,6 +598,7 @@
       doRefresh()
       doEnd()
       doMethod()
+      productModule.getProjectModule(null)
     })
   })
 </script>

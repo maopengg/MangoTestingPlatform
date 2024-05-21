@@ -16,7 +16,20 @@
                     <a-input
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      @change="doRefresh"
+                      @blur="doRefresh"
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key === 'project_product'">
+                    <a-select
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="projectInfo.projectProductList"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
+                      @change="doRefresh(item.value, true)"
                     />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'module'">
@@ -24,26 +37,13 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.moduleList"
+                      :options="productModule.data"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
                       allow-search
                       @change="doRefresh"
                     />
-                  </template>
-                  <template v-if="item.type === 'date'">
-                    <a-date-picker v-model="item.value" />
-                  </template>
-                  <template v-if="item.type === 'time'">
-                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                  </template>
-                  <template v-if="item.type === 'check-group'">
-                    <a-checkbox-group v-model="item.value">
-                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                        {{ item.label }}
-                      </a-checkbox>
-                    </a-checkbox-group>
                   </template>
                 </a-form-item>
               </a-form>
@@ -143,7 +143,7 @@
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
                   v-model="item.value"
-                  @change="onProductModuleName(item.value)"
+                  @change="onModuleSelect(item.value)"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
                   allow-search
@@ -154,7 +154,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.moduleList"
+                  :options="productModule.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -172,19 +172,18 @@
 <script lang="ts" setup>
   import { getUiPage, deleteUiPage, postUiPage, putUiPage, postUiPageCopy } from '@/api/uitest'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProjectModule } from '@/store/modules/project_module'
+  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getUserModuleName } from '@/api/user'
   import { useProject } from '@/store/modules/get-project'
 
-  const projectModule = useProjectModule()
+  const productModule = useProductModule()
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -199,7 +198,6 @@
     updateId: 0,
     actionTitle: '添加页面',
     pageType: 0,
-    moduleList: projectModule.data,
   })
 
   function switchType(key: any) {
@@ -292,7 +290,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    onProductModuleName(item.project_product.id)
+    productModule.getProjectModule(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -304,17 +302,29 @@
       })
     })
   }
-  function doRefresh() {
+  function doRefresh(projectProductId: number | null = null, bool_ = false) {
     const value = getFormItems(conditionItems)
     value['type'] = data.pageType
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      productModule.getProjectModule(projectProductId)
+    }
     getUiPage(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+  }
+  function onModuleSelect(projectProductId: number) {
+    productModule.getProjectModule(projectProductId)
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
   }
   function onPageCopy(id: number) {
     postUiPageCopy(id)
@@ -324,17 +334,6 @@
       })
       .catch(console.log)
   }
-
-  function onProductModuleName(projectProductId: number) {
-    getUserModuleName(projectProductId)
-      .then((res) => {
-        data.moduleList = res.data
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-  }
-
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
@@ -350,6 +349,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      productModule.getProjectModule(null)
     })
   })
 </script>

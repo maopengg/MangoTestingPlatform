@@ -28,7 +28,7 @@ export const conditionItems: Array<FormItem> = reactive([
     key: 'test_obj',
     label: '测试环境',
     value: '',
-    type: 'select',
+    type: 'cascader',
     placeholder: '请选择测试环境',
     optionItems: [],
     reset: function () {},

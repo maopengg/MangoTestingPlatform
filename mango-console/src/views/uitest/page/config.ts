@@ -35,6 +35,15 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
+    key: 'project_product',
+    label: '产品',
+    value: '',
+    type: 'select',
+    placeholder: '请选择产品',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'module',
     label: '模块',
     value: '',
