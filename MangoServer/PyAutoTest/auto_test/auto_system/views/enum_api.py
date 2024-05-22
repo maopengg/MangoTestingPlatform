@@ -155,3 +155,12 @@ class EnumOptionViews(ViewSet):
         :return:
         """
         return ResponseData.success(RESPONSE_MSG_0106, ApiParameterTypeEnum.get_option())
+
+    @action(methods=['get'], detail=False)
+    def enum_ui_device_type(self, request):
+        """
+        获取元素操作类型
+        :param request:
+        :return:
+        """
+        return ResponseData.success(RESPONSE_MSG_0106, DeviceEnum.obj())

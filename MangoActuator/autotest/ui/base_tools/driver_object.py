@@ -7,12 +7,13 @@ import asyncio
 import ctypes
 import os
 import string
+from typing import Optional
 from urllib import parse
 
 import uiautomator2 as us
 from adbutils import AdbTimeout
 from playwright._impl._api_types import Error
-from playwright.async_api import async_playwright, Page, BrowserContext, Browser
+from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
@@ -42,11 +43,14 @@ python -m weditor
 class DriverObject:
 
     def __init__(self, web_config: WEBConfigModel = None, android_config: AndroidConfigModel = None):
-        self.browser = None
+        self.lock = asyncio.Lock()
+
+        self.android_config = android_config
+
         self.web_config = web_config
         self.browser_path = ['chrome.exe', 'msedge.exe', 'firefox.exe', '苹果', '360se.exe']
-        self.android_config = android_config
-        self.lock = asyncio.Lock()
+        self.browser: Optional[None | Browser] = None
+        self.playwright: Optional[None | Playwright] = None
 
     async def new_web_page(self) -> tuple[BrowserContext, Page]:
         if self.web_config is None:
@@ -56,7 +60,7 @@ class DriverObject:
                 if self.browser is None:
                     self.browser = await self.new_browser()
         SignalSend.notice_signal_c('正在创建浏览器窗口')
-        context = await self.new_context(self.browser)
+        context = await self.new_context()
         page = await self.new_page(context)
         return context, page
 
@@ -80,14 +84,14 @@ class DriverObject:
 
     async def new_browser(self) -> Browser:
         SignalSend.notice_signal_c('正在启动浏览器')
-        playwright = await async_playwright().start()
-        if self.web_config.browser_type == BrowserTypeEnum.CHROMIUM.value or \
-                self.web_config.browser_type == BrowserTypeEnum.EDGE.value:
-            browser = playwright.chromium
+        self.playwright = await async_playwright().start()
+        if self.web_config.browser_type \
+                == BrowserTypeEnum.CHROMIUM.value or self.web_config.browser_type == BrowserTypeEnum.EDGE.value:
+            self.browser = self.playwright.chromium
         elif self.web_config.browser_type == BrowserTypeEnum.FIREFOX.value:
-            browser = playwright.firefox
+            self.browser = self.playwright.firefox
         elif self.web_config.browser_type == BrowserTypeEnum.WEBKIT.value:
-            browser = playwright.webkit
+            self.browser = self.playwright.webkit
         else:
             raise BrowserPathError(*ERROR_MSG_0008)
         try:
@@ -97,22 +101,25 @@ class DriverObject:
                 .browser_path else self.__search_path()
 
             if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
-                return await browser.launch(
+                return await self.browser.launch(
                     headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
                     executable_path=self.web_config.browser_path,
                     args=['--start-maximized']
                 )
             else:
-                return await browser.launch(
+                return await self.browser.launch(
                     headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
                     executable_path=self.web_config.browser_path
                 )
         except Error:
             raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.browser_path,))
 
-    @classmethod
-    async def new_context(cls, browser: Browser) -> BrowserContext:
-        return await browser.new_context(no_viewport=True)
+    async def new_context(self) -> BrowserContext:
+        if self.web_config.device:
+            return await self.browser\
+                .new_context(**self.playwright.devices[self.web_config.device])
+        else:
+            return await self.browser.new_context(no_viewport=True)
 
     async def new_page(self, context: BrowserContext) -> Page:
         page = await context.new_page()
@@ -202,7 +209,8 @@ async def test_main():
         "is_headless": 0,
         "is_header_intercept": False,
         "host": "https://app-test.growknows.cn/",
-        "project_id": None
+        "project_id": None,
+        'device': 'BlackBerry Z30 landscape'
     }))
     for i in range(10):
         context1, page1 = await r.new_web_page()
