@@ -105,6 +105,7 @@ class UiConfigViews(ViewSet):
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
                                         is_headless=config_obj.is_headless,
+                                        device=config_obj.device,
                                         project_product=user_obj.selected_project,
                                         is_header_intercept=True,
                                         host=TestObject.objects.get(id=user_obj.selected_environment).value)
@@ -113,6 +114,7 @@ class UiConfigViews(ViewSet):
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
+                                        device=config_obj.device,
                                         is_headless=config_obj.is_headless)
 
         send_socket_data = SocketDataModel(

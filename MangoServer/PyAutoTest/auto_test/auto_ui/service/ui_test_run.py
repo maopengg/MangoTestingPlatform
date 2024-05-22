@@ -224,6 +224,7 @@ class UiTestRun:
             browser_path=user_ui_config.browser_path,
             browser_type=user_ui_config.browser_type,
             is_headless=user_ui_config.is_headless,
+            device=user_ui_config.device,
             host=host)
 
     def __get_app_config(self) -> AndroidConfigModel:
