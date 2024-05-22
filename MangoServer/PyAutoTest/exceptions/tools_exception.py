@@ -77,5 +77,10 @@ class InsideSaveError(MangoServerError):
 class MiniIoConnError(MangoServerError):
     pass
 
+
 class MiniIoFileError(MangoServerError):
+    pass
+
+
+class TestObjectNullError(MangoServerError):
     pass

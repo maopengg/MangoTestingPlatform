@@ -6,9 +6,9 @@
 from pydantic import ValidationError
 
 from PyAutoTest.auto_test.auto_system.models import Database, TestObject
-from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError
+from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError, TestObjectNullError
 from PyAutoTest.models.tools_model import MysqlConingModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0021, ERROR_MSG_0022
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046
 
 
 class PublicMethods:
@@ -33,5 +33,8 @@ class PublicMethods:
 
     @classmethod
     def get_test_object(cls, _id: int, project_product: int) -> TestObject:
-        test_object = TestObject.objects.get(id=_id)
-        return TestObject.objects.get(project_product=project_product, environment=test_object.environment)
+        try:
+            test_object = TestObject.objects.get(id=_id)
+            return TestObject.objects.get(project_product=project_product, environment=test_object.environment)
+        except TestObject.DoesNotExist:
+            raise TestObjectNullError(*ERROR_MSG_0046)
