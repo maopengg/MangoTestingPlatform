@@ -151,7 +151,13 @@ class DataProcessor(ObtainRandomData, DataClean):
 
 
 if __name__ == '__main__':
+    # 把变量进行使用，并且存到环境中
     str_ = "${goods_name_int(),flow名称}"
     r = DataProcessor()
     print(r.replace(str_))
     print(r.get_cache('flow名称'))
+    # 多层嵌套
+    str_ = "${姓名：${name}}"
+    r.set_cache('name', 'maopeng')
+    r.set_cache('姓名：maopeng', '27')
+    print(r.replace(str_))
