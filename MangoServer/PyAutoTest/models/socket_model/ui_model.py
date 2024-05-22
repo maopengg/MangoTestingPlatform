@@ -23,6 +23,7 @@ class WEBConfigModel(BaseModel):
     is_header_intercept: bool = False
     host: str | None = None
     project_product: int | None = None
+    device: str | None = None
 
 
 class AndroidConfigModel(BaseModel):

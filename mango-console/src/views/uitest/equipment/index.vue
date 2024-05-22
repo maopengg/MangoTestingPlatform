@@ -168,6 +168,16 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'device'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="data.device"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
               <template v-else-if="item.type === 'switch' && item.key === 'is_headless'">
                 <a-switch v-model="item.value" :checked-value="1" :unchecked-value="0" />
               </template>
@@ -187,9 +197,9 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import useUserStore from '@/store/modules/user'
-  import { tableColumns, formItems } from './config'
+  import { tableColumns, formItems, webFormItems, androidFormItems } from './config'
   import { getUserNickname } from '@/api/user'
-  import { getSystemEnumBrowser, getSystemEnumDrive } from '@/api/system'
+  import { getSystemEnumBrowser, getSystemEnumDrive, getSystemEnumUiDevice } from '@/api/system'
   import {
     deleteUiConfig,
     getUiConfig,
@@ -203,6 +213,7 @@
     userList: [],
     browserType: [],
     driveType: [],
+    device: [],
     loading: false,
     actionTitle: '添加配置',
     updateId: 0,
@@ -233,66 +244,11 @@
             )
         )
       ) {
-        formItems.push(
-          {
-            label: '浏览器',
-            key: 'browser_type',
-            value: '',
-            type: 'select',
-            required: false,
-            placeholder: '请选择浏览器',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: '浏览器端口',
-            key: 'browser_port',
-            value: '',
-            placeholder: '请输入浏览器调试端口',
-            required: false,
-            type: 'input',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: '浏览器路径',
-            key: 'browser_path',
-            value: '',
-            type: 'textarea',
-            required: false,
-            placeholder: '请输入浏览器路径',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: '无头模式',
-            key: 'is_headless',
-            value: '',
-            type: 'switch',
-            required: false,
-            placeholder: '请输入无头模式',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        formItems.push(...webFormItems)
       }
     } else if (event === 1) {
       if (!formItems.some((item) => item.key === 'equipment')) {
-        formItems.push({
-          label: '安卓设备号',
-          key: 'equipment',
-          value: '',
-          placeholder: '请输入安卓设备号或IP+端口',
-          required: false,
-          type: 'input',
-          validator: function () {
-            return true
-          },
-        })
+        formItems.push(...androidFormItems)
       }
     } else if (event === 2) {
     } else {
@@ -457,6 +413,13 @@
       })
       .catch(console.log)
   }
+  function onEnumUiEquipment() {
+    getSystemEnumUiDevice()
+      .then((res) => {
+        data.device = res.data
+      })
+      .catch(console.log)
+  }
 
   onMounted(() => {
     nextTick(async () => {
@@ -464,6 +427,7 @@
       getUiConfigGetBrowserType()
       getUiConfigGetDriveType()
       getNickName()
+      onEnumUiEquipment()
     })
   })
 </script>

@@ -146,6 +146,7 @@ class UiConfig(models.Model):
     browser_port = models.CharField(verbose_name="web端口", max_length=64, null=True)
     browser_path = models.CharField(verbose_name="chrome路径", max_length=1024, null=True)
     browser_type = models.SmallIntegerField(verbose_name="浏览器类型", null=True)
+    device = models.CharField(verbose_name="浏览器模式", max_length=64, null=True)
     equipment = models.CharField(verbose_name="安卓设备名称", max_length=64, null=True)
     # 0关闭，1开启
     is_headless = models.SmallIntegerField(verbose_name="状态", null=True)

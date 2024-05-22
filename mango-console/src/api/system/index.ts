@@ -1,5 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
+import { systemEnumUiDevice, systemEnumUiEquipment } from './url'
 
 export function getSystemEnumExp() {
   return get({
@@ -101,7 +102,15 @@ export function getSystemEnumEnd() {
 }
 export function getSystemEnumApiParameterType() {
   return get({
-    url: url.systemEnumApiParameterType,
+    url: url.systemEnumApiParameter,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemEnumUiDevice() {
+  return get({
+    url: url.systemEnumUiDevice,
     data: () => {
       return {}
     },
