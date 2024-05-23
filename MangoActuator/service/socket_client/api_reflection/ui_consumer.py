@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
-from autotest.ui.service.case_run import CaseRun
+from autotest.ui.service.case_main import CaseMain
 from autotest.ui.service.page_steps import PageSteps
 from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from exceptions import MangoActuatorError
@@ -16,7 +16,7 @@ from tools.public_methods import async_global_exception
 
 class UIConsumer:
     page_steps: PageSteps = None
-    case_run: CaseRun = None
+    case_run: CaseMain = None
 
     @classmethod
     @convert_args(PageStepsModel)
@@ -75,7 +75,7 @@ class UIConsumer:
                 test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
                 if test_case_parallelism:
                     max_tasks = int(test_case_parallelism)
-                cls.case_run = CaseRun(max_tasks)
+                cls.case_run = CaseMain(max_tasks)
             await cls.case_run.queue.put(data)
         except Exception as error:
             await async_global_exception(

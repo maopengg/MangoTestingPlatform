@@ -4,6 +4,7 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import time
+
 import uiautomator2
 
 from autotest.ui.base_tools.base_data import BaseData
@@ -16,14 +17,10 @@ class UiautomatorApplication(BaseData):
 
     def a_start_app(self, package_name: str):
         """启动应用"""
-        # 获取当前运行的应用信息
-        current_app = self.android.app_current()
-        if current_app.get("package") == package_name:
-            self.a_close_app(package_name)
         if package_name:
             try:
                 self.android.app_start(package_name)
-                time.sleep(3)
+                time.sleep(4)
             except uiautomator2.exceptions.BaseError:
                 raise PackageNameError(*ERROR_MSG_0046)
         else:

@@ -6,7 +6,7 @@
 
 import asyncio
 
-from autotest.ui.service.steps import StepsMain
+from autotest.ui.service.step_elements import StepElements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from enums.tools_enum import StatusEnum
@@ -20,7 +20,7 @@ from tools.message.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
 from tools.public_methods import async_global_exception
 
 
-class CasesMain(StepsMain):
+class CaseSteps(StepElements):
 
     def __init__(self, case_model: CaseModel):
         super().__init__(case_model.project_product)
@@ -33,7 +33,7 @@ class CasesMain(StepsMain):
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
                                            error_message=None,
-                                           test_obj=self.test_object_value,
+                                           test_obj=self.url,
                                            status=StatusEnum.SUCCESS.value,
                                            page_steps_result_list=[])
 
@@ -52,11 +52,11 @@ class CasesMain(StepsMain):
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
             for page_step_model in self.case_model.steps:
                 try:
-                    await self.steps_setup(page_step_model)
+                    await self.steps_init(page_step_model)
                     await self.driver_init()
                     page_steps_result_model = await self.steps_main()
                     self.case_result.page_steps_result_list.append(page_steps_result_model)
-                    self.case_result.test_obj = self.test_object_value
+                    self.case_result.test_obj = self.url
                 except MangoActuatorError as error:
                     self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
                     self.case_result.status = StatusEnum.FAIL.value

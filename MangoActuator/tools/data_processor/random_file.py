@@ -4,7 +4,6 @@
 # @Time   : 2023-12-21 11:15
 # @Author : 毛鹏
 import os
-from typing import BinaryIO
 
 from exceptions.tools_exception import FileDoesNotEexistError
 from service.http_client.http_api import HttpApi

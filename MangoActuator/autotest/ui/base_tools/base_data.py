@@ -8,6 +8,7 @@ from typing import Optional
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
 
+# from autotest.ui.base_tools.driver_object import DriverObject
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import UiPublicTypeEnum
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
@@ -37,19 +38,20 @@ class BaseData:
         self.case_step_details_id = case_step_details_id
         self.page_step_id = page_step_id
         self.case_id = case_id
+
         self.data_processor = DataProcessor(project_product_id)
+        # self.driver_object = DriverObject()
 
         self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例
-        self.test_object_value = ''  # 浏览器url
-        self.is_url = False  # 判断是否需要重新加载url
+        self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
+        self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
 
-        self.page: Optional[Page] = page  # 页面对象
-        self.context: Optional[BrowserContext] = context  # 浏览器上下文对象
+        self.url = ''  # 浏览器url
+        self.page: Optional[Page | None] = page  # 页面对象
+        self.context: Optional[BrowserContext | None] = context  # 浏览器上下文对象
 
-        self.mysql_config: Optional[MysqlConingModel] = None  # mysql连接配置
-        self.mysql_connect: Optional[MysqlConnect] = None  # mysql连接对象
-
-        self.android: Device = android
+        self.android: Optional[Device | None] = android
+        self.package_name = ''
 
     def set_mysql(self, run_config: EnvironmentConfigModel):
         self.mysql_config = run_config.mysql_config

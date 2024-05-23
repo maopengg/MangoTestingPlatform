@@ -72,6 +72,7 @@ class ChatConsumer(WebsocketConsumer):
         except json.decoder.JSONDecodeError as e:
             log.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
         else:
+            log.info(msg.model_dump_json())
             if msg.data:
                 if msg.data.func_name:
                     self.api_reflection.server_data_received.send(sender='websocket', data=msg.data)
