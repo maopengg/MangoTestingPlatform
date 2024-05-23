@@ -12,6 +12,7 @@ import asyncio
 import ctypes
 import os
 import string
+import time
 from typing import Optional
 from urllib import parse
 
@@ -58,6 +59,7 @@ class NewBrowser:
             async with self.lock:
                 if self.browser is None:
                     self.browser = await self.new_browser()
+                    time.sleep(1)
         SignalSend.notice_signal_c('正在创建浏览器窗口')
         context = await self.new_context()
         page = await self.new_page(context)
@@ -68,11 +70,11 @@ class NewBrowser:
         self.playwright = await async_playwright().start()
         if self.web_config.browser_type \
                 == BrowserTypeEnum.CHROMIUM.value or self.web_config.browser_type == BrowserTypeEnum.EDGE.value:
-            self.browser = self.playwright.chromium
+            browser = self.playwright.chromium
         elif self.web_config.browser_type == BrowserTypeEnum.FIREFOX.value:
-            self.browser = self.playwright.firefox
+            browser = self.playwright.firefox
         elif self.web_config.browser_type == BrowserTypeEnum.WEBKIT.value:
-            self.browser = self.playwright.webkit
+            browser = self.playwright.webkit
         else:
             raise BrowserPathError(*ERROR_MSG_0008)
         try:
@@ -82,13 +84,13 @@ class NewBrowser:
                 .browser_path else self.__search_path()
 
             if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
-                return await self.browser.launch(
+                return await browser.launch(
                     headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
                     executable_path=self.web_config.browser_path,
                     args=['--start-maximized']
                 )
             else:
-                return await self.browser.launch(
+                return await browser.launch(
                     headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
                     executable_path=self.web_config.browser_path
                 )
@@ -97,8 +99,7 @@ class NewBrowser:
 
     async def new_context(self) -> BrowserContext:
         if self.web_config.device:
-            return await self.browser \
-                .new_context(**self.playwright.devices[self.web_config.device])
+            return await self.browser.new_context(**self.playwright.devices[self.web_config.device])
         else:
             return await self.browser.new_context(no_viewport=True)
 
@@ -112,8 +113,6 @@ class NewBrowser:
         if self.web_config:
             if self.browser:
                 await self.browser.close()
-        if self.android_config:
-            pass
 
     def __search_path(self, ):
         drives = []
@@ -183,7 +182,7 @@ class NewBrowser:
 
 
 async def test_main():
-    r = DriverObject(web_config=WEBConfigModel(**{
+    r = NewBrowser(web_config=WEBConfigModel(**{
         "browser_type": 0,
         "browser_port": "9222",
         "browser_path": None,
