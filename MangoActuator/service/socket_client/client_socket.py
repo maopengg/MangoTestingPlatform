@@ -72,7 +72,8 @@ class ClientWebSocket:
                 SignalSend.notice_signal_c("连接已关闭，正在重新连接......")
             except Exception as error:
                 SignalSend.notice_signal_a('已离线')
-                log.info(f"socket发生未知错误：{error}")
+                log.info(f"socket发生未知错误，请截图并联系管理员：{error}")
+                SignalSend.notice_signal_c(f"socket发生未知错误，请截图并联系管理员：{error}")
                 await asyncio.sleep(10)
                 raise error
 
@@ -84,16 +85,11 @@ class ClientWebSocket:
         from service.socket_client.api_reflection import InterfaceMethodReflection
         r = InterfaceMethodReflection()
         while True:
-            # try:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
             if data.data:
                 await r.queue.put(data.data)
             await asyncio.sleep(0.1)
-            # except websockets.ConnectionClosed:
-            #     SignalSend.notice_signal_a('已离线')
-            #     log.info(f'连接已关闭，正在重新连接......')
-            #     break
 
     async def async_send(self,
                          msg: str,
@@ -167,6 +163,3 @@ class ClientWebSocket:
         else:
             log.debug(f"发送的数据：{data_json}")
             return data_json
-
-
-client_socket = ClientWebSocket()
