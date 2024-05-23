@@ -24,7 +24,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.systemStatus"
+                      :options="status.data"
                       @change="doRefresh"
                       :field-names="fieldNames"
                       value-key="key"
@@ -80,7 +80,7 @@
                     {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                   </template>
                   <template v-else-if="item.key === 'test_object'" #cell="{ record }">
-                    {{ record.test_object?.name }}
+                    {{ uEnvironment.data[record.test_object?.environment].title }}
                   </template>
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
                     {{ record.user?.nickname }}
@@ -118,18 +118,20 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { onMounted, nextTick, reactive, ref } from 'vue'
+  import { onMounted, nextTick, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
-  import { useProductModule } from '@/store/modules/project_module'
   import * as echarts from 'echarts'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { tableColumns, conditionItems } from './config'
   import { getApiResultWeek } from '@/api/apitest'
-  import { getSystemEnumStatus, getSystemTestSuiteReport } from '@/api/system'
+  import { getSystemTestSuiteReport } from '@/api/system'
+  import { useEnvironment } from '@/store/modules/get-environment'
+  import { useStatus } from '@/store/modules/status'
 
-  const productModule = useProductModule()
+  const uEnvironment = useEnvironment()
+  const status = useStatus()
 
   const pagination = usePagination(doRefresh)
   pagination.pageSize = 10
@@ -138,12 +140,10 @@
   const rowKey = useRowKey('id')
   const router = useRouter()
 
-  const data = reactive({
-    moduleList: productModule.data,
-    systemStatus: [],
-  })
-
   function doRefresh() {
+    if (uEnvironment.data.length === 0) {
+      uEnvironment.getEnvironment()
+    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -292,20 +292,11 @@
       .catch(console.log)
   }
 
-  function status() {
-    getSystemEnumStatus()
-      .then((res) => {
-        data.systemStatus = res.data
-      })
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       initPieEcharts()
       initBarEcharts()
-      status()
     })
   })
 </script>

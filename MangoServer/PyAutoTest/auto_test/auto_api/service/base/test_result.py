@@ -32,7 +32,7 @@ class TestResult:
             self.test_suite_data = TestSuiteReportCRUD.inside_post({
                 'id': self.test_suite_id,
                 'type': AutoTestTypeEnum.API.value,
-                'project': self.project_product_id,
+                'project_product': self.project_product_id,
                 'test_object': self.test_obj_id,
                 'error_message': None,
                 'run_status': StatusEnum.FAIL.value,
@@ -108,6 +108,7 @@ class TestResult:
         api_info_obj.save()
 
     def update_test_suite(self, status: int, error_message: list):
+        error_message = list(filter(None, error_message))
         test_suite_data = {
             'id': self.test_suite_id,
             'error_message': json.dumps(error_message, ensure_ascii=False) if error_message else None,
