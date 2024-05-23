@@ -145,7 +145,7 @@ class ApiCaseDetailedViews(ViewSet):
             'data': api_info_obj.data,
             'json': api_info_obj.json,
             'file': api_info_obj.file,
-            'header': json.dumps(api_info_obj.header) if api_info_obj.header else '${headers}'
+            'header': json.dumps(api_info_obj.header) if api_info_obj.header else None
         }
         serializer = self.serializer_class(
             instance=api_info_detailed_obj,
