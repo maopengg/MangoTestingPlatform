@@ -11,6 +11,16 @@ export function getUserModuleName(projectProductId: number | string | null): Pro
     },
   })
 }
+export function getUserProductAllModuleName(projectId: number | string | null): Promise<Response> {
+  return get({
+    url: url.userProductAllModuleName,
+    data: () => {
+      return {
+        project_id: projectId,
+      }
+    },
+  })
+}
 
 export function getUserTestObjName() {
   return get({

@@ -29,27 +29,12 @@ export const columns = reactive([
 
 export const formItems: FormItem[] = reactive([
   {
-    label: '项目/产品',
-    key: 'project_product',
-    value: '',
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
     label: '选择模块',
     key: 'module',
     value: '',
     placeholder: '请选择模块',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
