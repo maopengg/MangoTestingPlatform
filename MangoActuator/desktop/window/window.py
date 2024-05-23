@@ -6,6 +6,7 @@
 import json
 
 from PySide6.QtCore import QThread
+from queue import Queue, Empty
 
 import service
 from enums.socket_api_enum import ToolsSocketEnum
@@ -88,16 +89,24 @@ class UIUpdateThread(QThread):
         super().__init__(parent)
         self.label_6 = label_6
         self.textEdit = text_edit
+        self.queue = Queue()
 
     def run(self):
 
         SignalSend.notice.connect(self.setTextEdit)
+        while True:
+            try:
+                data = self.queue.get(timeout=1)
+                self.textEdit.append(data)
+            except Empty:
+                continue
 
     def setTextEdit(self, sender, data: str):
         try:
             if sender == SignalTypeEnum.A:
                 self.label_6.setText(data)
             else:
-                self.textEdit.append(data)
+                self.queue.put(data)
+                # self.textEdit.append(data)
         except Exception as error:
             print(error)
