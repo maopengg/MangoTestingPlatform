@@ -14,10 +14,11 @@ from websockets.legacy.client import WebSocketClientProtocol
 import service
 from enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from models.socket_model import SocketDataModel, QueueModel
+from settings import settings
 from tools.decorator.singleton import singleton
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from settings import settings
+
 T = TypeVar('T')
 
 
@@ -65,6 +66,10 @@ class ClientWebSocket:
                 SignalSend.notice_signal_a('已离线')
                 log.info(f"网络已中断，尝试重新连接中......{error}")
                 SignalSend.notice_signal_c("网络已中断，尝试重新连接中......")
+            except websockets.ConnectionClosed:
+                SignalSend.notice_signal_a('已离线')
+                log.info(f'连接已关闭，正在重新连接......')
+                SignalSend.notice_signal_c("连接已关闭，正在重新连接......")
             except Exception as error:
                 SignalSend.notice_signal_a('已离线')
                 log.info(f"socket发生未知错误：{error}")
@@ -79,16 +84,16 @@ class ClientWebSocket:
         from service.socket_client.api_reflection import InterfaceMethodReflection
         r = InterfaceMethodReflection()
         while True:
-            try:
-                recv_json = await self.websocket.recv()
-                data = self.__output_method(recv_json)
-                if data.data:
-                    await r.queue.put(data.data)
-                await asyncio.sleep(0.1)
-            except websockets.ConnectionClosed:
-                SignalSend.notice_signal_a('已离线')
-                log.info(f'连接已关闭，正在重新连接......')
-                break
+            # try:
+            recv_json = await self.websocket.recv()
+            data = self.__output_method(recv_json)
+            if data.data:
+                await r.queue.put(data.data)
+            await asyncio.sleep(0.1)
+            # except websockets.ConnectionClosed:
+            #     SignalSend.notice_signal_a('已离线')
+            #     log.info(f'连接已关闭，正在重新连接......')
+            #     break
 
     async def async_send(self,
                          msg: str,

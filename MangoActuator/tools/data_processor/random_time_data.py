@@ -4,9 +4,9 @@
 # @Time   : 2023-03-07 8:24
 # @Author : 毛鹏
 
+import time
 from datetime import date, timedelta, datetime
 
-import time
 from faker import Faker
 
 
