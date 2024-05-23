@@ -20,9 +20,6 @@ class UiautomatorElement(BaseData):
     @classmethod
     def a_click(cls, locating: UiObject | XPathSelector):
         """元素单击"""
-        print(1)
-        print(type(locating))
-        print(locating.exists, 2)
         try:
             locating.click()
         except Exception as error:
