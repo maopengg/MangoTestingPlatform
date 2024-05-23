@@ -463,16 +463,24 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+            <!--            <a-select-->
+            <!--              v-model="item.value"-->
+            <!--              :placeholder="item.placeholder"-->
+            <!--              :options="data.moduleList"-->
+            <!--              :field-names="fieldNames"-->
+            <!--              @change="getModuleApi(item.value)"-->
+            <!--              value-key="key"-->
+            <!--              allow-clear-->
+            <!--              allow-search-->
+            <!--            />-->
+            <a-cascader
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.moduleList"
-              :field-names="fieldNames"
               @change="getModuleApi(item.value)"
-              value-key="key"
-              allow-clear
+              :placeholder="item.placeholder"
+              :options="data.productModuleName"
               allow-search
+              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'api_info'">
@@ -517,7 +525,7 @@
   } from '@/api/apitest'
   import { getUiPageStepsDetailedAss } from '@/api/uitest'
   import { getSystemEnumMethod } from '@/api/system'
-  import { getUserModuleName } from '@/api/user'
+  import { getUserModuleName, getUserProductAllModuleName } from '@/api/user'
 
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -538,7 +546,7 @@
     selectDataObj: {},
     data: [],
     methodType: [],
-    moduleList: [],
+    productModuleName: [],
     apiList: [],
     ass: [],
 
@@ -699,14 +707,13 @@
     doRefresh()
   }
 
-  function getProjectModule(projectId: any) {
-    getUserModuleName(projectId)
+  function onProductModuleName() {
+    getUserProductAllModuleName(pageData.record.project_product?.project?.id)
       .then((res) => {
-        data.moduleList = res.data
+        data.productModuleName = res.data
       })
       .catch(console.log)
   }
-
   function getModuleApi(moduleId: number) {
     getApiInfoName(moduleId)
       .then((res) => {
@@ -829,7 +836,7 @@
     nextTick(async () => {
       doRefresh()
       doMethodType()
-      getProjectModule(route.query.project_product)
+      onProductModuleName()
       getUiRunSortAss()
     })
   })

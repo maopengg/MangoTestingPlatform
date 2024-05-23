@@ -47,6 +47,11 @@ class ProjectViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def get_all_items(self, request: Request):
+        """
+        项目的ID和name，title选项专用
+        @param request:
+        @return:
+        """
         items = Project.objects.filter(status=StatusEnum.SUCCESS.value)
         data = [{'title': i.name, 'key': i.pk} for i in items]
         data.insert(0, {'title': '选择项目', 'key': None})
@@ -54,6 +59,11 @@ class ProjectViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def project_product_name(self, request: Request):
+        """
+        项目和产品的选项
+        @param request:
+        @return:
+        """
         book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
         options = []
         for _id, name in book:
@@ -69,6 +79,11 @@ class ProjectViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def project_environment_name(self, request: Request):
+        """
+        项目测试环境选项
+        @param request:
+        @return:
+        """
         book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
         options = [{
             'value': -1,
