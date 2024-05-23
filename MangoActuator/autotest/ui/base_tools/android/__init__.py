@@ -34,7 +34,10 @@ class AndroidDriver(UiautomatorEquipment,
         match self.element_model.exp:
             case ElementExpEnum.LOCATOR.value:
                 try:
-                    return eval(f"self.android.{self.element_model.loc}")
+                    if self.element_model.loc[:5] == 'xpath':
+                        return eval(f"self.android.{self.element_model.loc}")
+                    else:
+                        return eval(f"self.android{self.element_model.loc}")
                 except SyntaxError:
                     raise LocatorError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
