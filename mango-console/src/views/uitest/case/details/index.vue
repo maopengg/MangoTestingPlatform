@@ -226,26 +226,14 @@
           v-for="item of formItems"
           :key="item.key"
         >
-          <template v-if="item.type === 'cascader'">
+          <template v-if="item.type === 'cascader' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
-              @change="onProductModuleName(item.value)"
-              :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
-              allow-search
-              allow-clear
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.moduleName"
-              :field-names="fieldNames"
               @change="doUiPageNameAll(item.value)"
-              value-key="key"
-              allow-clear
+              :placeholder="item.placeholder"
+              :options="data.productModuleName"
               allow-search
+              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'page'">
@@ -305,7 +293,7 @@
     putUiCase,
     deleteUiCaseStepsDetailed,
   } from '@/api/uitest'
-  import { getUserModuleName } from '@/api/user'
+  import { getUserModuleName, getUserProductAllModuleName } from '@/api/user'
   const pageData: any = usePageData()
   const testObj = useTestObj()
   const projectInfo = useProject()
@@ -313,7 +301,7 @@
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const data: any = reactive({
-    moduleName: [],
+    productModuleName: [],
     pageName: [],
     pageStepsName: [],
     data: [],
@@ -468,10 +456,10 @@
     })
   }
 
-  function onProductModuleName(projectId: number) {
-    getUserModuleName(projectId)
+  function onProductModuleName() {
+    getUserProductAllModuleName(pageData.record.project_product?.project?.id)
       .then((res) => {
-        data.moduleName = res.data
+        data.productModuleName = res.data
       })
       .catch(console.log)
   }
@@ -565,6 +553,7 @@
       doRefresh()
       getUiRunSortOpe()
       getUiRunSortAss()
+      onProductModuleName()
     })
   })
 </script>

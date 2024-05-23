@@ -30,7 +30,8 @@ urlpatterns = [
     path("project/environment/name", ProjectViews.as_view({'get': 'project_environment_name'})),
     #
     path("product", ProjectProductCRUD.as_view()),
-    path("product/name", ProjectProductViews.as_view({'get': 'get_project_name'})),
+    path("product/name", ProjectProductViews.as_view({'get': 'get_product_name'})),
+    path("product/all/module/name", ProjectProductViews.as_view({'get': 'product_all_module_name'})),
     #
     path("module", ProductModuleCRUD.as_view()),
     path("module/name", ProductModuleViews.as_view({'get': 'get_module_name'})),
