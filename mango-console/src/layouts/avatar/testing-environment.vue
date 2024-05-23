@@ -66,6 +66,7 @@
         }
         testObj.data.forEach((item: any) => {
           if (item.children.length > 0) {
+            testObj.selectValue = key
             item.children.forEach((children: any) => {
               if (children.value === key) testObj.selectTitle = `${item.label}/${children.label}`
             })
