@@ -36,7 +36,6 @@
       const route = useRoute()
 
       function handleSelect(key: any) {
-        console.log(key)
         if (key === '选择项目') {
           key = null
         }
@@ -58,7 +57,7 @@
           project.selectTitle = '选择项目'
           return
         }
-        project.projectList.forEach((item: any) => {
+        project.data.forEach((item: any) => {
           project.selectValue = key
           if (item.key === project.selectValue) project.selectTitle = item.title
         })

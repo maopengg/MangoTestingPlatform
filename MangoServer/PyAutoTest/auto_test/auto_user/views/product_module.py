@@ -54,6 +54,11 @@ class ProductModuleViews(ViewSet):
 
     @action(methods=['GET'], detail=False)
     def get_module_name(self, request: Request):
+        """
+        模块的ID和name
+        @param request:
+        @return:
+        """
         project_product_id = request.query_params.get('project_product_id')
         if project_product_id:
             res = self.model.objects.values_list('id', 'name').filter(project_product=project_product_id)
