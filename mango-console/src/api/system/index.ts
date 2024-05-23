@@ -1,6 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
-import { systemEnumUiDevice, systemEnumUiEquipment } from './url'
 
 export function getSystemEnumExp() {
   return get({
