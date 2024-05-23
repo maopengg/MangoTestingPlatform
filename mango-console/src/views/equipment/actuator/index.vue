@@ -38,14 +38,24 @@
                   <template v-if="record.username === 'admin'">
                     <a-space>
                       <a-button type="text" size="mini" @click="onReceive(record)">领取</a-button>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      <a-button
+                        status="danger"
+                        type="text"
+                        size="mini"
+                        @click="onDelete(record)"
+                        disabled
                         >下线
                       </a-button>
                     </a-space>
                   </template>
                   <template v-if="record.username !== 'admin'">
                     <a-space>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      <a-button
+                        status="danger"
+                        type="text"
+                        size="mini"
+                        @click="onDelete(record)"
+                        disabled
                         >下线
                       </a-button>
                     </a-space>
