@@ -3,26 +3,24 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
-from autotest.ui.base_tools.driver_object import DriverObject
-from autotest.ui.service.steps import StepsMain
+from typing import Optional
+
+from autotest.ui.service.step_elements import StepElements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
-from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel
 from service.socket_client.client_socket import ClientWebSocket
-from tools.log_collector import log
 
 
-class PageSteps(StepsMain, DriverObject):
+class PageSteps(StepElements):
     """用例分发"""
 
     def __init__(self, project_product_id: int):
         super().__init__(project_product_id, )
-        DriverObject.__init__(self, )
         self.project_product_id = project_product_id
         self.msg = ''
-        self.page_step_model: PageStepsModel = None
+        self.page_step_model: Optional[PageStepsModel | None] = None
 
     async def page_steps_setup(self, data: PageStepsModel):
         self.page_step_model: PageStepsModel = data
@@ -30,25 +28,9 @@ class PageSteps(StepsMain, DriverObject):
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
-        match self.page_step_model.type:
-            case DriveTypeEnum.WEB.value:
-                self.web_config = self.page_step_model.equipment_config
-                if not self.context and not self.page:
-                    self.context, self.page = await self.new_web_page()
-            case DriveTypeEnum.ANDROID.value:
-                self.android_config = self.page_step_model.equipment_config
-                if self.android is None:
-                    self.android = self.new_android()
-            case DriveTypeEnum.IOS.value:
-                pass
-            case DriveTypeEnum.DESKTOP.value:
-                pass
-            case _:
-                log.error('自动化类型不存在，请联系管理员检查！')
-
     async def page_steps_mian(self) -> None:
         try:
-            await self.steps_setup(self.page_step_model)
+            await self.steps_init(self.page_step_model)
             await self.driver_init()
             await self.steps_main()
         except MangoActuatorError as error:

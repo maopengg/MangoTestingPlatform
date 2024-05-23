@@ -16,13 +16,13 @@ setup_logging("INFO")
 class MyUser(HttpUser):
     host = "http://127.0.0.1:8000"
 
-
     @task
     def t(self):
         self.client.post('/login', {
             'username': '17798339533',
             'password': '123456'
         })
+
 
 # setup Environment and Runner
 env = Environment(user_classes=[MyUser], events=events)

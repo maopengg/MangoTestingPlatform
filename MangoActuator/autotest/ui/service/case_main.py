@@ -6,16 +6,13 @@
 
 import asyncio
 
-from autotest.ui.base_tools.driver_object import DriverObject
-from autotest.ui.service.cases import CasesMain
+from autotest.ui.service.case_steps import CaseSteps
 from enums.socket_api_enum import UiSocketEnum
-from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
-from tools.log_collector import log
 from tools.public_methods import async_global_exception
 
 
-class CaseRun(DriverObject):
+class CaseMain:
 
     def __init__(self, max_tasks=10):
         super().__init__()
@@ -34,24 +31,24 @@ class CaseRun(DriverObject):
             await asyncio.sleep(0.1)
 
     async def execute_task(self, case_model: CaseModel):
-        async with CasesMain(case_model) as obj:
+        async with CaseSteps(case_model) as obj:
             try:
-                for step in case_model.steps:
-                    match step.type:
-                        case DriveTypeEnum.WEB.value:
-                            self.web_config = step.equipment_config
-                            obj.context, obj.page = await self.new_web_page()
-                            continue
-                        case DriveTypeEnum.ANDROID.value:
-                            self.android_config = step.equipment_config
-                            obj.android = self.new_android()
-                            continue
-                        case DriveTypeEnum.IOS.value:
-                            pass
-                        case DriveTypeEnum.DESKTOP.value:
-                            pass
-                        case _:
-                            log.error('自动化类型不存在，请联系管理员检查！')
+                # for step in case_model.steps:
+                #     match step.type:
+                #         case DriveTypeEnum.WEB.value:
+                #             self.web_config = step.equipment_config
+                #             obj.context, obj.page = await self.new_web_page()
+                #             continue
+                #         case DriveTypeEnum.ANDROID.value:
+                #             self.android_config = step.equipment_config
+                #             obj.android = self.new_android()
+                #             continue
+                #         case DriveTypeEnum.IOS.value:
+                #             pass
+                #         case DriveTypeEnum.DESKTOP.value:
+                #             pass
+                #         case _:
+                #             log.error('自动化类型不存在，请联系管理员检查！')
                 await obj.case_init()
                 await obj.case_page_step()
             except Exception as error:
