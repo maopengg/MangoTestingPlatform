@@ -41,11 +41,11 @@ class CaseRun(DriverObject):
                         case DriveTypeEnum.WEB.value:
                             self.web_config = step.equipment_config
                             obj.context, obj.page = await self.new_web_page()
-                            break
+                            continue
                         case DriveTypeEnum.ANDROID.value:
                             self.android_config = step.equipment_config
                             obj.android = self.new_android()
-                            break
+                            continue
                         case DriveTypeEnum.IOS.value:
                             pass
                         case DriveTypeEnum.DESKTOP.value:
