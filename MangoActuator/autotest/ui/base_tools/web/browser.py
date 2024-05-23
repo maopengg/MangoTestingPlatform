@@ -4,13 +4,14 @@
 # @Time   : 2023-04-25 22:33
 # @Author : 毛鹏
 import asyncio
+from urllib.parse import urlparse
 
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api import Locator
 
 from autotest.ui.base_tools.base_data import BaseData
-from exceptions.ui_exception import UiTimeoutError
-from tools.message.error_msg import ERROR_MSG_0013
+from exceptions.ui_exception import UiTimeoutError, UrlError
+from tools.message.error_msg import ERROR_MSG_0013, ERROR_MSG_0049
 
 
 class PlaywrightBrowser(BaseData):
@@ -24,6 +25,9 @@ class PlaywrightBrowser(BaseData):
     async def w_goto(self, url: str):
         """打开URL"""
         try:
+            result = urlparse(url)
+            if not all([result.scheme, result.netloc]):
+                raise UrlError(*ERROR_MSG_0049)
             await self.page.goto(url, timeout=60000)
             await asyncio.sleep(2)
         except TimeoutError:

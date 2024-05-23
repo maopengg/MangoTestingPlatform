@@ -11,7 +11,7 @@ from autotest.ui.base_tools import ElementMain
 from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
-from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed, UrlError
+from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
 from service.http_client.http_api import HttpApi
 from settings import settings
@@ -19,14 +19,18 @@ from tools import InitPath
 from tools.data_processor import RandomTimeData
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0049
+from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
+from ..base_tools.android.new_android import NewAndroid
+from ..base_tools.web.new_browser import NewBrowser
 
 
-class StepsMain(ElementMain):
+class StepElements(ElementMain):
     page_step_model: PageStepsModel = None
     page_step_result_model: PageStepsResultModel = None
+    a: NewAndroid = None
+    web: NewBrowser = None
 
-    async def steps_setup(self, page_step_model: PageStepsModel):
+    async def steps_init(self, page_step_model: PageStepsModel):
         self.page_step_model = page_step_model
         self.page_step_result_model = PageStepsResultModel(
             test_suite_id=self.test_suite_id,
@@ -132,16 +136,19 @@ class StepsMain(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
 
     async def web_init(self):
-        self.test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                         self.page_step_model.url)
-        result = urlparse(self.test_object_value)
-        if not all([result.scheme, result.netloc]):
-            raise UrlError(*ERROR_MSG_0049)
+        if self.web is None:
+            self.web = NewBrowser(self.page_step_model.equipment_config)
 
+        if self.context is None or self.page is None:
+            self.context, self.page = await self.web.new_web_page()
+
+        test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                    self.page_step_model.url)
         try:
-            if self.page and not self.is_url:
-                await self.w_goto(self.test_object_value)
-                self.is_url = True
+            if self.page and urlparse(self.url).netloc.lower() != urlparse(test_object_value).netloc.lower():
+                await self.w_goto(test_object_value)
+                self.url = test_object_value
+
         except Error as error:
             if error.message == "Target page, context or browser has been closed":
                 self.page_step_result_model.status = StatusEnum.FAIL.value
@@ -150,8 +157,16 @@ class StepsMain(ElementMain):
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def android_init(self):
-        self.test_object_value = self.page_step_model.environment_config.test_object_value
-        self.a_start_app(self.test_object_value)
+        if self.a is None:
+            self.a = NewAndroid(self.page_step_model.equipment_config)
+        package_name = self.page_step_model.environment_config.test_object_value
+
+        if self.android is None:
+            self.android = self.a.new_android()
+            self.a_app_stop_all()
+        if self.android and self.package_name != package_name:
+            self.a_start_app(package_name)
+            self.package_name = package_name
 
     def ios_init(self, ):
         pass

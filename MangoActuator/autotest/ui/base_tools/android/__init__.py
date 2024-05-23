@@ -6,7 +6,7 @@
 from retrying import retry
 from uiautomator2 import UiObject, NullPointerExceptionError, UiObjectNotFoundError
 from uiautomator2.xpath import XPathSelector
-
+from uiautomator2.exceptions import XPathElementNotFoundError
 from autotest.ui.base_tools.android.application import UiautomatorApplication
 from autotest.ui.base_tools.android.assertion import UiautomatorAssertion
 from autotest.ui.base_tools.android.customization import UiautomatorCustomization
@@ -34,7 +34,7 @@ class AndroidDriver(UiautomatorEquipment,
         match self.element_model.exp:
             case ElementExpEnum.LOCATOR.value:
                 try:
-                    return eval(f"self.android{self.element_model.loc}")
+                    return eval(f"self.android.{self.element_model.loc}")
                 except SyntaxError:
                     raise LocatorError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
@@ -60,6 +60,9 @@ class AndroidDriver(UiautomatorEquipment,
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+        except XPathElementNotFoundError as error:
+            raise XpathElementNoError(*ERROR_MSG_0050, value=(self.element_model.name,), error=error, )
+
         except Exception as error:
             sync_global_exception(
                 'a_action_element',

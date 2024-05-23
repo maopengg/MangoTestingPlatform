@@ -88,3 +88,7 @@ class PackageNameError(UiError):
 
 class UrlError(UiError):
     pass
+
+
+class XpathElementNoError(UiError):
+    pass

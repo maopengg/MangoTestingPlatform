@@ -4,9 +4,9 @@
 # @Time   : 2023-09-28 16:18
 # @Author : 毛鹏
 import json
+from queue import Queue, Empty
 
 from PySide6.QtCore import QThread
-from queue import Queue, Empty
 
 import service
 from enums.socket_api_enum import ToolsSocketEnum

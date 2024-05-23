@@ -4,8 +4,10 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import time
+import traceback
 
 from uiautomator2 import UiObject
+from uiautomator2.xpath import XPathSelector
 
 from autotest.ui.base_tools.base_data import BaseData
 from exceptions.ui_exception import ElementNotFoundError, ElementNotDisappearError
@@ -16,9 +18,16 @@ class UiautomatorElement(BaseData):
     """元素操作"""
 
     @classmethod
-    def a_click(cls, locating: UiObject):
+    def a_click(cls, locating: UiObject | XPathSelector):
         """元素单击"""
-        locating.click()
+        print(1)
+        print(type(locating))
+        print(locating.exists, 2)
+        try:
+            locating.click()
+        except Exception as error:
+            traceback.print_exc()
+            print(error)
 
     @classmethod
     def a_double_click(cls, locating: UiObject):
