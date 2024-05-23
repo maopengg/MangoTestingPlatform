@@ -21,14 +21,12 @@ from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from ..base_tools.android.new_android import NewAndroid
-from ..base_tools.web.new_browser import NewBrowser
 
 
 class StepElements(ElementMain):
     page_step_model: PageStepsModel = None
     page_step_result_model: PageStepsResultModel = None
     a: NewAndroid = None
-    web: NewBrowser = None
 
     async def steps_init(self, page_step_model: PageStepsModel):
         self.page_step_model = page_step_model
@@ -136,11 +134,11 @@ class StepElements(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
 
     async def web_init(self):
-        if self.web is None:
-            self.web = NewBrowser(self.page_step_model.equipment_config)
-
-        if self.context is None or self.page is None:
-            self.context, self.page = await self.web.new_web_page()
+        # if self.obj.web.web_config is None:
+        #     self.obj.web.web_config = self.page_step_model.equipment_config
+        #
+        # if self.context is None or self.page is None:
+        #     self.context, self.page = await self.obj.web.new_web_page()
 
         test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
                                     self.page_step_model.url)

@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
 # mysql配置
-mysql_db_name = 'mango_server_demo'
+mysql_db_name = 'mango_server'
 mysql_user = 'root'
 mysql_password = 'root'
 # mysql_password = 'mP123456&'
