@@ -6,13 +6,15 @@
 
 import asyncio
 
+from autotest.ui.base_tools.web.new_browser import NewBrowser
 from autotest.ui.service.case_steps import CaseSteps
 from enums.socket_api_enum import UiSocketEnum
+from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
 from tools.public_methods import async_global_exception
 
 
-class CaseMain:
+class CaseMain(NewBrowser):
 
     def __init__(self, max_tasks=10):
         super().__init__()
@@ -33,22 +35,11 @@ class CaseMain:
     async def execute_task(self, case_model: CaseModel):
         async with CaseSteps(case_model) as obj:
             try:
-                # for step in case_model.steps:
-                #     match step.type:
-                #         case DriveTypeEnum.WEB.value:
-                #             self.web_config = step.equipment_config
-                #             obj.context, obj.page = await self.new_web_page()
-                #             continue
-                #         case DriveTypeEnum.ANDROID.value:
-                #             self.android_config = step.equipment_config
-                #             obj.android = self.new_android()
-                #             continue
-                #         case DriveTypeEnum.IOS.value:
-                #             pass
-                #         case DriveTypeEnum.DESKTOP.value:
-                #             pass
-                #         case _:
-                #             log.error('自动化类型不存在，请联系管理员检查！')
+                for step in case_model.steps:
+                    if step.type == DriveTypeEnum.WEB.value:
+                        self.web_config = step.equipment_config
+                        obj.context, obj.page = await self.new_web_page()
+                        break
                 await obj.case_init()
                 await obj.case_page_step()
             except Exception as error:

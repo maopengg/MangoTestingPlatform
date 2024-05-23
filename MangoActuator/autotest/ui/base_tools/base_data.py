@@ -42,6 +42,7 @@ class BaseData:
         self.data_processor = DataProcessor(project_product_id)
         # self.driver_object = DriverObject()
 
+        self.is_page: bool = True
         self.is_step: bool = is_step  # 判断是不是步骤，默认不是步骤是用例
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
