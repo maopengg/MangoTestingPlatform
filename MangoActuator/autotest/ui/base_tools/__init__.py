@@ -12,6 +12,7 @@ from exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementResultModel, ElementModel
 from tools.decorator.async_retry import async_retry
+from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import *
@@ -68,6 +69,7 @@ class ElementMain(WebDevice, AndroidDriver):
                 ele_quantity=0,
             )
 
+    @async_memory
     async def element_main(self) -> None:
         name = self.element_model.name if self.element_model.name else self.element_model.ass_type
         ope_type = self.element_model.ope_type if self.element_model.ope_type else self.element_model.ass_type
