@@ -21,13 +21,11 @@ from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
-from ..base_tools.android.new_android import NewAndroid
 
 
 class StepElements(ElementMain):
     page_step_model: PageStepsModel = None
     page_step_result_model: PageStepsResultModel = None
-    a: NewAndroid = None
 
     async def steps_init(self, page_step_model: PageStepsModel):
         self.page_step_model = page_step_model
@@ -78,6 +76,60 @@ class StepElements(ElementMain):
         SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
         return self.page_step_result_model
 
+    @async_memory
+    async def driver_init(self):
+        match self.page_step_model.type:
+            case DriveTypeEnum.WEB.value:
+                await self.__web_init()
+            case DriveTypeEnum.ANDROID.value:
+                self.__android_init()
+            case DriveTypeEnum.IOS.value:
+                self.__ios_init()
+            case DriveTypeEnum.DESKTOP.value:
+                self.__desktop_init()
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
+
+    async def __web_init(self):
+        if self.page is None:
+            self.driver_object.web_config = self.page_step_model.equipment_config
+            self.context, self.page = await self.driver_object.new_web_page()
+        test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                    self.page_step_model.url)
+        try:
+            if self.page and urlparse(self.url).netloc.lower() != urlparse(test_object_value).netloc.lower():
+                await self.w_goto(test_object_value)
+                self.url = test_object_value
+            # elif self.page and self.project_product_id != self.page_step_model.project_product:
+            #     await self.w_goto(test_object_value)
+            #     self.url = test_object_value
+        except Error as error:
+            if error.message == "Target page, context or browser has been closed":
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
+
+    def __android_init(self):
+        package_name = self.page_step_model.environment_config.test_object_value
+        if self.android is None:
+            self.driver_object.android_config = self.page_step_model.equipment_config
+            self.android = self.driver_object.new_android()
+        if self.android and self.package_name != package_name:
+            self.a_clear_app(package_name)
+            self.a_start_app(package_name)
+            self.package_name = package_name
+        # elif self.android and self.project_product_id != self.page_step_model.project_product:
+        #     self.a_clear_app(package_name)
+        #     self.a_start_app(package_name)
+        #     self.package_name = package_name
+
+    def __ios_init(self, ):
+        pass
+
+    def __desktop_init(self, ):
+        pass
+
     async def __error(self, error: MangoActuatorError):
         log.warning(
             f"""
@@ -102,69 +154,25 @@ class StepElements(ElementMain):
                                            元素个数：{self.element_test_result.ele_quantity}
                                            截图路径：{file_path}
                                            元素失败提示：{error.msg}''')
-            # try:
-            match self.page_step_model.type:
-                case DriveTypeEnum.WEB.value:
-                    await self.w_screenshot(file_path)
-                case DriveTypeEnum.ANDROID.value:
-                    pass
-                case DriveTypeEnum.IOS.value:
-                    pass
-                case DriveTypeEnum.DESKTOP.value:
-                    pass
-                case _:
-                    log.error('自动化类型不存在，请联系管理员检查！')
-            if not settings.IS_DEBUG:
-                HttpApi().upload_file(self.project_product_id, file_path, file_name)
+            await self.__error_screenshot(file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg
-        # except Exception as error:
-        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
-        #     raise ScreenshotError(*ERROR_MSG_0040)
 
-    @async_memory
-    async def driver_init(self):
+    async def __error_screenshot(self, file_path, file_name):
+        # try:
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:
-                await self.web_init()
+                await self.w_screenshot(file_path)
             case DriveTypeEnum.ANDROID.value:
-                self.android_init()
+                self.a_screenshot(file_path)
             case DriveTypeEnum.IOS.value:
                 pass
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
-
-    async def web_init(self):
-        test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                    self.page_step_model.url)
-        try:
-            if self.page and urlparse(self.url).netloc.lower() != urlparse(test_object_value).netloc.lower():
-                await self.w_goto(test_object_value)
-                self.url = test_object_value
-
-        except Error as error:
-            if error.message == "Target page, context or browser has been closed":
-                self.page_step_result_model.status = StatusEnum.FAIL.value
-                self.page_step_result_model.error_message = error.message
-                self.page_step_result_model.element_result_list.append(self.element_test_result)
-                raise BrowserObjectClosed(*ERROR_MSG_0010)
-
-    def android_init(self):
-        if self.a is None:
-            self.a = NewAndroid(self.page_step_model.equipment_config)
-        package_name = self.page_step_model.environment_config.test_object_value
-
-        if self.android is None:
-            self.android = self.a.new_android()
-            self.a_app_stop_all()
-        if self.android and self.package_name != package_name:
-            self.a_start_app(package_name)
-            self.package_name = package_name
-
-    def ios_init(self, ):
-        pass
-
-    def desktop_init(self, ):
-        pass
+        if not settings.IS_DEBUG:
+            HttpApi().upload_file(self.project_product_id, file_path, file_name)
+        # except Exception as error:
+        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
+        #     raise ScreenshotError(*ERROR_MSG_0040)
