@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-05-23 15:05
 # @Author : 毛鹏
-import asyncio
 
 import uiautomator2 as us
 from adbutils import AdbTimeout
@@ -22,7 +21,7 @@ python -m weditor
 
 class NewAndroid:
 
-    def __init__(self, android_config: AndroidConfigModel):
+    def __init__(self, android_config: AndroidConfigModel = None):
         self.android_config = android_config
 
     def new_android(self):

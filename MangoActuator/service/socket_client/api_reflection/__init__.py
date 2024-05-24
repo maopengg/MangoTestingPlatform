@@ -55,7 +55,4 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
 
 if __name__ == '__main__':
     r = InterfaceMethodReflection(True)
-
     asyncio.run(r.test())
-
-    # pass

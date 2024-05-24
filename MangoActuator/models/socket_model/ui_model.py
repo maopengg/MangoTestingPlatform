@@ -133,7 +133,7 @@ class CaseResultModel(BaseModel):
     case_name: str
     module_name: str
     case_people: str
-    test_obj: str
+    test_obj: str | None = None
     status: int
     error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]
