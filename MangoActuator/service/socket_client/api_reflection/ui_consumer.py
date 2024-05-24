@@ -71,7 +71,7 @@ class UIConsumer:
         """
         try:
             if cls.case_run is None:
-                max_tasks = 2
+                max_tasks = 5
                 test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
                 if test_case_parallelism:
                     max_tasks = int(test_case_parallelism)
