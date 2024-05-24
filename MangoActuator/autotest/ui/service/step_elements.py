@@ -17,6 +17,7 @@ from service.http_client.http_api import HttpApi
 from settings import settings
 from tools import InitPath
 from tools.data_processor import RandomTimeData
+from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
@@ -45,6 +46,7 @@ class StepElements(ElementMain):
         if self.page_step_model.environment_config:
             self.set_mysql(self.page_step_model.environment_config)
 
+    @async_memory
     async def steps_main(self) -> PageStepsResultModel:
         SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
         for element_model in self.page_step_model.element_list:
@@ -120,6 +122,7 @@ class StepElements(ElementMain):
         #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
         #     raise ScreenshotError(*ERROR_MSG_0040)
 
+    @async_memory
     async def driver_init(self):
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:
@@ -134,12 +137,6 @@ class StepElements(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
 
     async def web_init(self):
-        # if self.obj.web.web_config is None:
-        #     self.obj.web.web_config = self.page_step_model.equipment_config
-        #
-        # if self.context is None or self.page is None:
-        #     self.context, self.page = await self.obj.web.new_web_page()
-
         test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
                                     self.page_step_model.url)
         try:

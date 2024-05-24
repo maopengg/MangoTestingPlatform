@@ -14,6 +14,7 @@ from exceptions import MangoActuatorError
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel
 from service.socket_client.client_socket import ClientWebSocket
+from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
@@ -46,6 +47,7 @@ class CaseSteps(StepElements):
     async def case_init(self):
         await self.public_front(self.case_model.public_data_list)
 
+    @async_memory
     async def case_page_step(self) -> None:
         SignalSend.notice_signal_c(f'正在准备执行用例：{self.case_model.name}')
         try:

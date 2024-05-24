@@ -11,7 +11,10 @@ from autotest.ui.service.case_steps import CaseSteps
 from enums.socket_api_enum import UiSocketEnum
 from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
+from tools.decorator.memory import async_memory
 from tools.public_methods import async_global_exception
+
+MEMORY_THRESHOLD = 70
 
 
 class CaseMain(NewBrowser):
@@ -32,6 +35,7 @@ class CaseMain(NewBrowser):
                 self.loop.create_task(self.execute_task(case_model))
             await asyncio.sleep(0.1)
 
+    @async_memory
     async def execute_task(self, case_model: CaseModel):
         async with CaseSteps(case_model) as obj:
             try:
