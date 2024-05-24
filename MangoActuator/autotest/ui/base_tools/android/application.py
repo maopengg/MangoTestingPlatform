@@ -17,34 +17,34 @@ class UiautomatorApplication(BaseData):
 
     def a_start_app(self, package_name: str):
         """启动应用"""
-        if package_name:
-            try:
-                self.android.app_start(package_name)
-                time.sleep(4)
-            except uiautomator2.exceptions.BaseError:
-                raise PackageNameError(*ERROR_MSG_0046)
-        else:
+        if not package_name:
+            raise PackageNameError(*ERROR_MSG_0046)
+        try:
+            self.android.app_start(package_name)
+            time.sleep(4)
+        except uiautomator2.exceptions.BaseError:
             raise PackageNameError(*ERROR_MSG_0046)
 
     def a_close_app(self, package_name: str):
         """关闭应用"""
-        if package_name:
-            try:
-                self.android.app_stop(package_name)
-            except uiautomator2.exceptions.BaseError:
-                raise PackageNameError(*ERROR_MSG_0046)
-        else:
+        if not package_name:
+            raise PackageNameError(*ERROR_MSG_0046)
+        try:
+            self.android.app_stop(package_name)
+        except uiautomator2.exceptions.BaseError:
             raise PackageNameError(*ERROR_MSG_0046)
 
     def a_clear_app(self, package_name: str):
         """清除app数据"""
-        if package_name:
+        if not package_name:
+            raise PackageNameError(*ERROR_MSG_0046)
+
+        current_app = self.android.app_current()
+        if current_app.get("package") == package_name:
             try:
                 self.android.app_clear(package_name)
             except uiautomator2.exceptions.BaseError:
                 raise PackageNameError(*ERROR_MSG_0046)
-        else:
-            raise PackageNameError(*ERROR_MSG_0046)
 
     def a_app_stop_all(self):
         """停止所有app"""

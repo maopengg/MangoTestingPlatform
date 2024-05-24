@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 import asyncio
+import json
 
 from autotest.ui.service.step_elements import StepElements
 from enums.socket_api_enum import UiSocketEnum
@@ -23,8 +24,8 @@ from tools.public_methods import async_global_exception
 
 class CaseSteps(StepElements):
 
-    def __init__(self, case_model: CaseModel):
-        super().__init__(case_model.project_product)
+    def __init__(self, case_model: CaseModel, driver_object):
+        super().__init__(case_model.project_product, driver_object)
         self.case_model: CaseModel = case_model
         self.case_id = case_model.id
         self.test_suite_id = self.case_model.test_suite_id
@@ -33,8 +34,6 @@ class CaseSteps(StepElements):
                                            case_name=self.case_model.name,
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
-                                           error_message=None,
-                                           test_obj=self.url,
                                            status=StatusEnum.SUCCESS.value,
                                            page_steps_result_list=[])
 
@@ -72,6 +71,8 @@ class CaseSteps(StepElements):
                         self.case_result.status = StatusEnum.FAIL.value
                         log.warning(page_steps_result_model.error_message)
                         break
+
+            self.case_result.test_obj = self.get_test_obj()
             await self.case_posterior(self.case_model.posterior_sql)
         except MangoActuatorError as error:
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
@@ -114,6 +115,14 @@ class CaseSteps(StepElements):
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
             self.mysql_connect.condition_execute(sql.get('sql'))
+
+    def get_test_obj(self):
+        if self.url and self.package_name is None:
+            return self.url
+        if self.url is None and self.package_name:
+            return self.package_name
+        if self.url and self.package_name:
+            return json.dumps([self.url, self.package_name])
 
 
 if __name__ == '__main__':

@@ -6,18 +6,17 @@
 
 import asyncio
 
-from autotest.ui.base_tools.web.new_browser import NewBrowser
 from autotest.ui.service.case_steps import CaseSteps
 from enums.socket_api_enum import UiSocketEnum
 from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
 from tools.decorator.memory import async_memory
 from tools.public_methods import async_global_exception
-
+from ..base_tools.driver_object import DriverObject
 MEMORY_THRESHOLD = 70
 
 
-class CaseMain(NewBrowser):
+class CaseMain:
 
     def __init__(self, max_tasks=10):
         super().__init__()
@@ -26,6 +25,7 @@ class CaseMain(NewBrowser):
         self.running_tasks = 0
         self.loop = asyncio.get_event_loop()
         self.loop.create_task(self.process_tasks())
+        self.driver_object = DriverObject()
 
     async def process_tasks(self):
         while True:
@@ -37,13 +37,13 @@ class CaseMain(NewBrowser):
 
     @async_memory
     async def execute_task(self, case_model: CaseModel):
-        async with CaseSteps(case_model) as obj:
+        async with CaseSteps(case_model, self.driver_object) as obj:
             try:
-                for step in case_model.steps:
-                    if step.type == DriveTypeEnum.WEB.value:
-                        self.web_config = step.equipment_config
-                        obj.context, obj.page = await self.new_web_page()
-                        break
+                # for step in case_model.steps:
+                #     if step.type == DriveTypeEnum.WEB.value:
+                #         self.web_config = step.equipment_config
+                #         obj.context, obj.page = await self.new_web_page()
+                #         break
                 await obj.case_init()
                 await obj.case_page_step()
             except Exception as error:

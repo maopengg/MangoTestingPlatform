@@ -27,8 +27,8 @@ ObtainRandomData类的函数注释必须是： “”“中间写值”“”
 class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData, RandomStringData, RandomFileData):
     """ 获取随机数据 """
 
-    def __init__(self, project_id: int = None):
-        self.project_id = project_id
+    def __init__(self, project_product_id: int = None):
+        self.project_product_id = project_product_id
 
     @classmethod
     def get_methods(cls):
@@ -67,7 +67,8 @@ class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData
                     content = {'data': match.group(1)}
             except json.decoder.JSONDecodeError:
                 content = {'data': match.group(1)}
-            content['project_id'] = self.project_id
+            if self.project_product_id:
+                content['project_product_id'] = self.project_product_id
             func = re.sub(r'\(' + match.group(1) + r'\)', '', func)
             if content['data'] != '':
                 return getattr(self, func)(**content)
@@ -76,15 +77,13 @@ class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData
 
 class DataClean(JsonTool, CacheTool, EncryptionTool, CodingTool):
     """存储或处理随机数据"""
-
-    def __init__(self):
-        super().__init__()
+    pass
 
 
 class DataProcessor(ObtainRandomData, DataClean):
 
-    def __init__(self, project_id: int = None):
-        ObtainRandomData.__init__(self, project_id)
+    def __init__(self, project_product_id: int = None):
+        ObtainRandomData.__init__(self, project_product_id)
         DataClean.__init__(self)
 
     def replace(self, data: list | dict | str | None) -> list | dict | str | None:

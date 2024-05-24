@@ -40,8 +40,12 @@
 # """
 #
 #
-# class DriverObject:
-#
+from autotest.ui.base_tools.android.new_android import NewAndroid
+from autotest.ui.base_tools.web.new_browser import NewBrowser
+
+
+class DriverObject(NewBrowser, NewAndroid):
+    pass
 #     def __init__(self, web_config: WEBConfigModel = None, android_config: AndroidConfigModel = None):
 #         self.lock = asyncio.Lock()
 #
