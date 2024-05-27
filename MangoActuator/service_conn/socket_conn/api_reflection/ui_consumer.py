@@ -8,7 +8,7 @@ from autotest.ui.service.page_steps import PageSteps
 from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel, CaseModel
-from service.socket_client.client_socket import ClientWebSocket
+from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.convert_args import convert_args
 from tools.public_methods import async_global_exception

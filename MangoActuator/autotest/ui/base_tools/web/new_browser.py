@@ -21,7 +21,7 @@ from playwright.async_api import async_playwright, Page, BrowserContext, Browser
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
-import service
+import service_conn
 from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
 from enums.tools_enum import CacheKeyEnum, StatusEnum
@@ -29,7 +29,7 @@ from enums.ui_enum import BrowserTypeEnum
 from exceptions.ui_exception import BrowserPathError, NewObjectError
 from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
-from service.socket_client.client_socket import ClientWebSocket
+from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
@@ -159,7 +159,7 @@ class NewBrowser:
         try:
             api_info = ApiInfoModel(
                 project=self.web_config.project_product_id,
-                username=service.USERNAME,
+                username=service_conn.USERNAME,
                 type=ApiTypeEnum.batch.value,
                 name=parsed_url.path,
                 client=ClientEnum.WEB.value,

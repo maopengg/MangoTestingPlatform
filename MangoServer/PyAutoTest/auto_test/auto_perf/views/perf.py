@@ -8,7 +8,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 
-# from PyAutoTest.auto_test.auto_perf.service.perf_run.perf_run import perf_run
+# from PyAutoTest.auto_test.auto_perf.service_conn.perf_run.perf_run import perf_run
 
 
 class PerfViews(ViewSet):
