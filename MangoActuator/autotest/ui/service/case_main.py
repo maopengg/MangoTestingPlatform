@@ -8,11 +8,11 @@ import asyncio
 
 from autotest.ui.service.case_steps import CaseSteps
 from enums.socket_api_enum import UiSocketEnum
-from enums.ui_enum import DriveTypeEnum
 from models.socket_model.ui_model import CaseModel
 from tools.decorator.memory import async_memory
 from tools.public_methods import async_global_exception
 from ..base_tools.driver_object import DriverObject
+
 MEMORY_THRESHOLD = 70
 
 
