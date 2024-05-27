@@ -7,7 +7,7 @@ import datetime
 import json
 import logging
 from typing import Union, Optional, TypeVar
-
+from PyAutoTest.settings import DEBUG
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
@@ -72,7 +72,7 @@ class ChatConsumer(WebsocketConsumer):
         except json.decoder.JSONDecodeError as e:
             log.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
         else:
-            log.info(msg.model_dump_json())
+            self.__serialize(msg)
             if msg.data:
                 if msg.data.func_name:
                     self.api_reflection.server_data_received.send(sender='websocket', data=msg.data)
@@ -111,19 +111,21 @@ class ChatConsumer(WebsocketConsumer):
                     pass
                 else:
                     obj.send(send_data.model_dump_json())
-                    log.info(
-                        f'发送的用户：{send_data.user}\n'
-                        f'发送的客户端类型：{ClientTypeEnum.get_value(1)}\n'
-                        f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
-                    )
+                    if DEBUG:
+                        log.info(
+                            f'发送的用户：{send_data.user}\n'
+                            f'发送的客户端类型：{ClientTypeEnum.get_value(1)}\n'
+                            f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                        )
             elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
-                log.info(
-                    f'发送的用户：{send_data.user}\n'
-                    f'发送的客户端类型：{ClientTypeEnum.get_value(2)}\n'
-                    f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
-                )
+                if DEBUG:
+                    log.info(
+                        f'发送的用户：{send_data.user}\n'
+                        f'发送的客户端类型：{ClientTypeEnum.get_value(2)}\n'
+                        f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                    )
 
     def inside_send(self,
                     msg: str,
@@ -148,15 +150,11 @@ class ChatConsumer(WebsocketConsumer):
 
     @classmethod
     def __serialize(cls, data: SocketDataModel):
-        """
-        主动发送消息
-        :param data: 发送的数据
-        :return:
-        """
         try:
             data_json = data.model_dump_json()
         except TypeError:
             log.error(f'序列化数据错误，请检查发送数据！')
         else:
-            log.debug(f"发送的数据：{data_json}")
+            if DEBUG:
+                log.debug(f"发送的数据：{data_json}")
             return data_json
