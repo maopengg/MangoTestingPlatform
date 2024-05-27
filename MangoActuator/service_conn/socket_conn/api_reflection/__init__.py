@@ -8,10 +8,10 @@ import json
 import traceback
 
 from models.socket_model import QueueModel
-from service.socket_client.api_reflection.api_consumer import APIConsumer
-from service.socket_client.api_reflection.perf_consumer import PerfConsumer
-from service.socket_client.api_reflection.tools_consumer import ToolsConsumer
-from service.socket_client.api_reflection.ui_consumer import UIConsumer
+from service_conn.socket_conn.api_reflection.api_consumer import APIConsumer
+from service_conn.socket_conn.api_reflection.perf_consumer import PerfConsumer
+from service_conn.socket_conn.api_reflection.tools_consumer import ToolsConsumer
+from service_conn.socket_conn.api_reflection.ui_consumer import UIConsumer
 from settings import settings
 from tools.log_collector import log
 
@@ -32,7 +32,7 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
                 data: QueueModel = await self.queue.get()
                 task = self.loop.create_task(getattr(self, data.func_name)(data.func_args))
                 task.add_done_callback(self.handle_task_result)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
     @classmethod
     def handle_task_result(cls, task):

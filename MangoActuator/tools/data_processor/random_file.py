@@ -6,7 +6,7 @@
 import os
 
 from exceptions.tools_exception import FileDoesNotEexistError
-from service.http_client.http_api import HttpApi
+from service_conn.http_conn.http_api import HttpApi
 from tools import InitPath
 from tools.message.error_msg import ERROR_MSG_0026
 

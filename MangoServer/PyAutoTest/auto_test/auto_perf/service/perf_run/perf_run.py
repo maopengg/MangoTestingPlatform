@@ -10,7 +10,7 @@
 # from locust.env import Environment
 # from locust.stats import stats_history, stats_printer
 #
-# from PyAutoTest.auto_test.auto_perf.service.base_tools.locust_base import PerfScript
+# from PyAutoTest.auto_test.auto_perf.service_conn.base_tools.locust_base import PerfScript
 #
 #
 # def perf_run():

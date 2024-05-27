@@ -13,7 +13,7 @@ from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
 from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
-from service.http_client.http_api import HttpApi
+from service_conn.http_conn.http_api import HttpApi
 from settings import settings
 from tools import InitPath
 from tools.data_processor import RandomTimeData

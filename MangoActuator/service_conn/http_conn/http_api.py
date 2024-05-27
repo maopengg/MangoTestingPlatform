@@ -10,7 +10,7 @@ import requests
 
 from enums.tools_enum import ClientTypeEnum
 from exceptions.tools_exception import FileNotError
-from service.http_client import HttpRequest
+from service_conn.http_conn import HttpRequest
 from tools import InitPath
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0007
@@ -72,5 +72,5 @@ if __name__ == '__main__':
     username1 = '17798339533'
     password1 = '123456'
     HttpApi.login(username1, password1)
-    HttpApi.upload_file(2, r"D:\GitCode\MangoTestingPlatform\MangoActuator\logs\screenshot\C端-账号144822.jpg",
+    HttpApi.upload_file(2, r"/logs/screenshot/C端-账号144822.jpg",
                         'C端-账号144822.jpg')

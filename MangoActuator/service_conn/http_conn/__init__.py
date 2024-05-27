@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-import service
+import service_conn
 
 
 class HttpRequest:
@@ -15,4 +15,4 @@ class HttpRequest:
 
     @classmethod
     def url(cls, url):
-        return urljoin(f'http://{service.IP}:{service.PORT}', url)
+        return urljoin(f'http://{service_conn.IP}:{service_conn.PORT}', url)

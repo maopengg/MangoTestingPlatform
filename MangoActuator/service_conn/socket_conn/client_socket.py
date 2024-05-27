@@ -11,7 +11,7 @@ import websockets
 from websockets.exceptions import ConnectionClosedError
 from websockets.legacy.client import WebSocketClientProtocol
 
-import service
+import service_conn
 from enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from models.socket_model import SocketDataModel, QueueModel
 from settings import settings
@@ -26,7 +26,15 @@ T = TypeVar('T')
 class ClientWebSocket:
 
     def __init__(self):
-        self.websocket: Optional[WebSocketClientProtocol] = None
+        self.websocket: Optional[WebSocketClientProtocol | None] = None
+        self.is_recv = True
+
+    # def __del__(self):
+    #     asyncio.run(self.close())
+
+    async def close(self):
+        await self.websocket.close()
+        self.is_recv = False
 
     async def client_hands(self):
         """
@@ -50,9 +58,9 @@ class ClientWebSocket:
         进行websocket连接
         @return:
         """
-        server_url = f"ws://{service.IP}:{service.PORT}/client/socket?{service.USERNAME}"
+        server_url = f"ws://{service_conn.IP}:{service_conn.PORT}/client/socket?{service_conn.USERNAME}"
         log.info(str(f"websockets server url:{server_url}"))
-        while True:
+        while self.is_recv:
             try:
                 async with websockets.connect(server_url, max_size=50000000) as self.websocket:
                     if await self.client_hands():
@@ -82,9 +90,9 @@ class ClientWebSocket:
         接受消息
         @return:
         """
-        from service.socket_client.api_reflection import InterfaceMethodReflection
+        from service_conn.socket_conn.api_reflection import InterfaceMethodReflection
         r = InterfaceMethodReflection()
-        while True:
+        while self.is_recv:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
             if data.data:
@@ -102,7 +110,7 @@ class ClientWebSocket:
         send_data = SocketDataModel(
             code=code,
             msg=msg,
-            user=service.USERNAME,
+            user=service_conn.USERNAME,
             is_notice=is_notice,
             data=None
         )
@@ -143,8 +151,8 @@ class ClientWebSocket:
             log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
                 log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
-                with open('test.json', 'w', encoding='utf-8') as f:
-                    f.write(json.dumps(out['data'], ensure_ascii=False))
+                # with open('test.json', 'w', encoding='utf-8') as f:
+                #     f.write(json.dumps(out['data'], ensure_ascii=False))
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:
             log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')

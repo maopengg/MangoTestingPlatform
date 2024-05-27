@@ -14,7 +14,7 @@ from enums.tools_enum import StatusEnum
 from exceptions import MangoActuatorError
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel
-from service.socket_client.client_socket import ClientWebSocket
+from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log

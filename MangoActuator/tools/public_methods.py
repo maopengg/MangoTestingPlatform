@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 import traceback
 
+from service_conn.socket_conn.client_socket import ClientWebSocket
 from enums.tools_enum import ClientTypeEnum
-from service.socket_client.client_socket import ClientWebSocket
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 
