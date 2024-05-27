@@ -5,19 +5,22 @@
 # @Author : 毛鹏
 from typing import Optional
 
+from autotest.ui.base_tools.driver_object import DriverObject
 from autotest.ui.service.step_elements import StepElements
 from enums.socket_api_enum import UiSocketEnum
 from enums.tools_enum import ClientTypeEnum
 from exceptions import MangoActuatorError
 from models.socket_model.ui_model import PageStepsModel, WEBConfigModel
-from service.socket_client.client_socket import ClientWebSocket
+from service_conn.socket_conn.client_socket import ClientWebSocket
 
 
 class PageSteps(StepElements):
     """用例分发"""
 
     def __init__(self, project_product_id: int):
-        super().__init__(project_product_id, )
+        self.driver_object = DriverObject()
+
+        super().__init__(project_product_id, self.driver_object)
         self.project_product_id = project_product_id
         self.msg = ''
         self.page_step_model: Optional[PageStepsModel | None] = None

@@ -1,10 +1,10 @@
 from PySide6.QtWidgets import QWidget, QMessageBox
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
-import service
+import service_conn
 from desktop.login.ui_login import Ui_login
 from desktop.mian_window import MainWindow
-from service.http_client.http_api import HttpApi
+from service_conn.http_conn.http_api import HttpApi
 from tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from tools.database.sqlite_connect import SQLiteConnect
 
@@ -29,31 +29,23 @@ class LoginWindow(QWidget, Ui_login):
             password = user_info[0].get('password')
             ip = user_info[0].get("ip")
             port = user_info[0].get("port")
-            # if user_info[0].get('username'):
-            #     username = user_info[0].get('username')
-            # if user_info[0].get('password'):
-            #     password = user_info[0].get('password')
-            # if user_info[0].get("ip"):
-            #     ip = user_info[0].get("ip")
-            # if user_info[0].get("port"):
-            #     port = user_info[0].get("port")
         self.ip_edit.setText(ip)
         self.prot_edit.setText(port)
         self.username_edit.setText(username)
         self.password_edit.setText(password)
 
     def login(self):
-        service.IP = self.ip_edit.text()
-        service.PORT = self.prot_edit.text()
-        service.USERNAME = self.username_edit.text()
-        service.PASSWORD = self.password_edit.text()
+        service_conn.IP = self.ip_edit.text()
+        service_conn.PORT = self.prot_edit.text()
+        service_conn.USERNAME = self.username_edit.text()
+        service_conn.PASSWORD = self.password_edit.text()
         remember = self.remember_box.isChecked()
         if remember:
             self.db_handler.execute_sql(sql_statement_3)
             self.db_handler.execute_sql(sql_statement_2,
-                                        (service.USERNAME, service.PASSWORD, service.IP, service.PORT))
+                                        (service_conn.USERNAME, service_conn.PASSWORD, service_conn.IP, service_conn.PORT))
         try:
-            res = HttpApi.login(service.USERNAME, service.PASSWORD)
+            res = HttpApi.login(service_conn.USERNAME, service_conn.PASSWORD)
             if res.get('code') == 200:
                 self.main_window = MainWindow()
                 self.close()

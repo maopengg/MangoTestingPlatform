@@ -8,11 +8,10 @@ from queue import Queue, Empty
 
 from PySide6.QtCore import QThread
 
-import service
+import service_conn
 from enums.socket_api_enum import ToolsSocketEnum
 from enums.system_enum import CacheDataKey2Enum
 from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum
-from service.socket_client.client_socket import ClientWebSocket
 from tools.assertion import Assertion
 from tools.data_processor import RandomFileData
 from tools.data_processor.sql_cache import SqlCache
@@ -38,7 +37,7 @@ class Window(Ui_MainWindow):
             SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
             self.comboBox.setCurrentText('10')
 
-        self.label_3.setText(service.USERNAME)
+        self.label_3.setText(service_conn.USERNAME)
         self.ui_update_thread = UIUpdateThread(self.label_6, self.textEdit)
         self.ui_update_thread.start()
         self.test.clicked.connect(self.clickTest)
@@ -52,8 +51,8 @@ class Window(Ui_MainWindow):
         send_list: list = r.main()
         send_list.append(
             {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
-        cls = ClientWebSocket()
-        cls.sync_send('设置缓存数据', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value, func_args=send_list)
+        from service_conn.socket_conn.client_socket import ClientWebSocket
+        ClientWebSocket().sync_send('设置缓存数据', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value, func_args=send_list)
 
     # 接受信号的槽函数
     def signalLabel6(self, text):
