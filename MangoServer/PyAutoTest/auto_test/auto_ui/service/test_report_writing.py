@@ -96,7 +96,7 @@ class TestReportWriting:
             test_suite_obj.error_message = json.dumps(error_message_list, ensure_ascii=False)
             test_suite_obj.save()
             if test_suite_obj.is_notice:
-                NoticeMain.notice_main(test_suite_obj.project_id, test_suite_id)
+                NoticeMain.notice_main(test_suite_obj.project_product.project_id, test_suite_id)
             from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
             ChatConsumer.active_send(SocketDataModel(
                 code=code,
