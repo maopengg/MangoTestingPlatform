@@ -113,8 +113,8 @@ class NoticeMain:
             execution_duration=int(execution_duration.total_seconds()),
             test_time=create_time,
             test_environment=test_suite.test_object.name,
-            project_name=test_suite.project.name,
-            project_id=test_suite.project.id)
+            project_name=test_suite.project_product.project.name,
+            project_id=test_suite.project_product.project.id)
 
     @staticmethod
     def mail_config():
