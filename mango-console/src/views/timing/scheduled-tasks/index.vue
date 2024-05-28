@@ -447,10 +447,11 @@
 
   onMounted(() => {
     nextTick(async () => {
-      doRefresh()
-      getNickName()
+      uEnvironment.getEnvironment()
       getTiming()
+      getNickName()
       getAutoTestName()
+      doRefresh()
     })
   })
 </script>
