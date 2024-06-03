@@ -55,6 +55,7 @@
       function setTitle(key: any) {
         if (key === null) {
           project.selectTitle = '选择项目'
+          project.selectValue = null
           return
         }
         project.data.forEach((item: any) => {
