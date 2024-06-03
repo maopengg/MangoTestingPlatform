@@ -44,11 +44,6 @@ export function http<T = any>({
   beforeRequest && beforeRequest()
   method = method || 'GET'
   const params = Object.assign(typeof data === 'function' ? data() : data || {}, {})
-  // if (method === 'GET') {
-  //   return request.get(url, { params, headers }).then(successHandler, failHandler)
-  // } else if (method === 'POST') {
-  //   return request.post(url, params, { headers: headers }).then(successHandler, failHandler)
-  // }
   return method === 'GET'
     ? request.get(url, { params, headers }).then(successHandler, failHandler)
     : method === 'DELETE'
