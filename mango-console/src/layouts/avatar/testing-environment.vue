@@ -62,6 +62,7 @@
       function setTitle(key: any) {
         if (key === null) {
           testObj.selectTitle = '请选择测试环境'
+          testObj.selectValue = null
           return
         }
         testObj.data.forEach((item: any) => {
