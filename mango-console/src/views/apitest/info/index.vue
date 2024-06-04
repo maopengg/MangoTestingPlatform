@@ -95,7 +95,7 @@
             <template #extra>
               <a-space v-if="data.apiType === '0'">
                 <a-button type="primary" size="small" @click="onBatchUpload">录制</a-button>
-                <a-button type="primary" size="small" @click="onImport">导入</a-button>
+                <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
                 <a-button status="warning" size="small" @click="setCase('设为调试')"
                   >设为调试</a-button
@@ -103,11 +103,9 @@
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
               <a-space v-else-if="data.apiType === '1'">
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                <a-button type="primary" size="small" @click="onAdd(0)">新增</a-button>
+                <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
-                <a-button status="warning" size="small" @click="setCase('调试完成')"
-                  >调试完成</a-button
-                >
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
             </template>
@@ -218,18 +216,11 @@
             <a-form-item
               :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
               :label="item.label"
-              v-for="item of formItems"
+              v-for="item of data.formItem"
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
-              </template>
-              <template v-else-if="item.type === 'textarea'">
-                <a-textarea
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :auto-size="{ minRows: 3, maxRows: 5 }"
-                />
               </template>
               <template v-else-if="item.type === 'cascader'">
                 <a-cascader
@@ -241,7 +232,7 @@
                   allow-clear
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module'">
+              <template v-else-if="item.key === 'module'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -252,7 +243,7 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'client'">
+              <template v-else-if="item.key === 'client'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -263,7 +254,8 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'method'">
+
+              <template v-else-if="item.key === 'method'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -272,6 +264,14 @@
                   value-key="key"
                   allow-clear
                   allow-search
+                />
+              </template>
+              <template v-else-if="item.key === 'curl'">
+                <a-textarea
+                  :placeholder="item.placeholder"
+                  v-model="item.value"
+                  allow-clear
+                  auto-size
                 />
               </template>
             </a-form-item>
@@ -294,12 +294,13 @@
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
-  import { tableColumns, formItems, conditionItems } from './config'
+  import { tableColumns, formItems, conditionItems, formItemsImport } from './config'
   import {
     deleteApiInfo,
     getApiCaseInfoRun,
     getApiInfo,
     postApiCopyInfo,
+    postApiImportUrl,
     postApiInfo,
     putApiInfo,
     putApiPutApiInfoType,
@@ -321,14 +322,16 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
 
-  const data = reactive({
+  const data: any = reactive({
     actionTitle: '添加接口',
     isAdd: false,
+    addType: 0,
     updateId: 0,
     apiType: '1',
     caseResult: {},
     apiPublicEnd: [],
     apiMethodType: [],
+    formItem: [],
   })
   const visible = ref(false)
 
@@ -367,17 +370,32 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '新建接口'
-    data.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
-      }
-    })
+  function onAdd(type: number) {
+    data.addType = type
+    if (type === 0) {
+      data.actionTitle = '新建接口'
+      data.isAdd = true
+      modalDialogRef.value?.toggle()
+      data.formItem = formItems
+      formItems.forEach((it) => {
+        if (it.reset) {
+          it.reset()
+        } else {
+          it.value = ''
+        }
+      })
+    } else if (type === 1) {
+      data.actionTitle = '导入接口'
+      modalDialogRef.value?.toggle()
+      data.formItem = formItemsImport
+      formItemsImport.forEach((it) => {
+        if (it.reset) {
+          it.reset()
+        } else {
+          it.value = ''
+        }
+      })
+    }
   }
 
   function onUpdate(item: any) {
@@ -414,20 +432,9 @@
       },
     })
   }
-  function onImport() {
-    Modal.input({
-      title: '请输入数据',
-      content: '请输入您要传递给后端的数据：',
-      onOk: (value: any) => {
-        // 在这里可以将输入的数据传递给后端
-        console.log(value)
-      },
-      onCancel: () => {
-        Message.success('取消输入')
-      },
-    })
+  function onSynchronization() {
+    Message.warning('功能开发中...')
   }
-
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
@@ -473,9 +480,6 @@
       return
     }
     let type: any = 1
-    if (name === '调试完成') {
-      type = 2
-    }
     Modal.confirm({
       title: '提示',
       content: '确定要把这些设为' + name + '的吗？',
@@ -494,20 +498,34 @@
   }
 
   function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
-      value['type'] = data.apiType
-      if (data.isAdd) {
-        postApiInfo(value)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      } else {
-        value['id'] = data.updateId
-        putApiInfo(value)
+    if (data.addType == 0) {
+      if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+        modalDialogRef.value?.toggle()
+        let value = getFormItems(formItems)
+        value['type'] = data.apiType
+        if (data.isAdd) {
+          postApiInfo(value)
+            .then((res) => {
+              Message.success(res.msg)
+              doRefresh()
+            })
+            .catch(console.log)
+        } else {
+          value['id'] = data.updateId
+          putApiInfo(value)
+            .then((res) => {
+              Message.success(res.msg)
+              doRefresh()
+            })
+            .catch(console.log)
+        }
+      }
+    } else if (data.addType === 1) {
+      if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
+        modalDialogRef.value?.toggle()
+        let value = getFormItems(formItemsImport)
+        value['type'] = data.apiType
+        postApiImportUrl(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()

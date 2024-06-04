@@ -3,8 +3,10 @@
 # @Description: 
 # @Time   : 2024-04-18 16:29
 # @Author : 毛鹏
+import io
 import json
 import re
+import urllib
 from urllib.parse import urlparse, parse_qs
 
 from PyAutoTest.enums.api_enum import MethodEnum
@@ -16,20 +18,16 @@ class ImportApi:
     def curl_import(cls, data: dict):
         from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
         host, path, query_params = cls.url(data['curl'].get('url'))
-
-        print({
-            'project_product': data['project_product'],
-            'module': data['module'],
-            'type': data['type'],
-            'name': data['name'],
-            'client': data['client'],
-            'url': path,
-            'method': MethodEnum.get_key(data['curl'].get('method')),
-            'header': data['curl'].get('header'),
-            'params': query_params,
-            'data': data['curl'].get('data'),
-            'json': data['curl'].get('json')
-        })
+        _data = None
+        _json = None
+        if 'from-data' in data['curl'].get('data'):
+            _data = data['curl'].get('data')
+            _data = _data[2:]
+            _data = _data[:-1]
+        else:
+            _data = data['curl'].get('data')
+            _data = _data[2:]
+            _data = _data[:-1]
         return ApiInfoCRUD.inside_post({
             'project_product': data['project_product'],
             'module': data['module'],
@@ -40,8 +38,8 @@ class ImportApi:
             'method': MethodEnum.get_key(data['curl'].get('method')),
             'header': data['curl'].get('header'),
             'params': query_params,
-            'data': data['curl'].get(''),
-            'json': data['curl'].get('')
+            'data': _data,
+            'json': _json
         })
 
     @classmethod
@@ -93,6 +91,39 @@ class ImportApi:
             query_params = None
         return host, path, query_params
 
+    @classmethod
+    def from_data(cls, data:str=None):
+        data = '''
+        ------WebKitFormBoundaryL30SdvU0YozVLK4A
+        Content-Disposition: form-data; name="username"
+
+        maopeng@zalldigital.com
+        ------WebKitFormBoundaryL30SdvU0YozVLK4A
+        Content-Disposition: form-data; name="password"
+
+        dc483e80a7a0bd9ef71d8cf973673924
+        ------WebKitFormBoundaryL30SdvU0YozVLK4A--
+        '''
+
+        # 使用io.StringIO将字符串转换为类文件对象
+        file_obj = io.StringIO(data)
+
+        fields = {}
+        while True:
+            # 读取分隔符
+            line = file_obj.readline().strip()
+            if not line:
+                break
+
+            # 读取字段名称
+            name = urllib.parse.parse_qs(line)['name'][0]
+
+            # 读取字段值
+            file_obj.readline()  # 读取空行
+            value = file_obj.readline().strip()
+            fields[name] = value
+
+        print(fields)
 
 if __name__ == '__main__':
     d = """curl 'https://sara-test.growknows.cn/dev-api/business/template-tenant/activate' \
@@ -115,4 +146,4 @@ if __name__ == '__main__':
   -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' \
   --data-raw '{"name":"文生图01","summary":"文生图01文生图01","money":0,"sort":0,"logo":"https://minio-test.growknows.cn/aigc-dev/2024/03/25/cinematic_1317125d39884237b3ad30f6eb153461.jpg","categoryId":"1","templateId":"1772081536215752705","config":"[]","exampleText":"","docSourceAuth":"{\"id\":\"\",\"name\":\"\",\"permissions\":[]}"}'
     """
-    print(ImportApi.curl_import(d))
+    print(ImportApi.from_data())
