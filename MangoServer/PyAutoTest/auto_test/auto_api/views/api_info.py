@@ -13,6 +13,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.import_api.curl import Curl
+from PyAutoTest.auto_test.auto_api.service.import_api.import_api import ImportApi
 from PyAutoTest.auto_test.auto_api.service.test_execution.info_run import ApiInfoRun
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
@@ -124,6 +125,5 @@ class ApiInfoViews(ViewSet):
 
     @action(methods=['POST'], detail=False)
     def import_api(self, request: Request):
-        url = "http://localhost:8000/api/import/api"
-        Curl.curl(url, request.data)
+        ImportApi.curl_import(request.data)
         return ResponseData.success(RESPONSE_MSG_0069)
