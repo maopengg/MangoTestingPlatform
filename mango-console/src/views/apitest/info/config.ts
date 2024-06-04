@@ -3,6 +3,8 @@ import { reactive } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
+import parseCurl from 'parse-curl'
+
 export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'id',
@@ -79,7 +81,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'cascader',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -155,7 +157,96 @@ export const formItems: FormItem[] = reactive([
     },
   },
 ])
-
+export const formItemsImport: FormItem[] = reactive([
+  {
+    label: '项目/产品',
+    key: 'project_product',
+    value: '',
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'cascader',
+    validator: function () {
+      console.log(this.value)
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '模块名称',
+    key: 'module',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请用例归属模块',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '接口名称',
+    key: 'name',
+    value: '',
+    type: 'input',
+    required: true,
+    placeholder: '请输入用例名称',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '客户端类型',
+    key: 'client',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请设置客户端类型',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: 'curl',
+    key: 'curl',
+    value: '',
+    type: 'textarea',
+    required: true,
+    placeholder: '请输入复制的curl',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      const parsedCurl = parseCurl(this.value)
+      const dataRaw = parseDataRaw(this.value)
+      this.value = { ...parsedCurl, data: dataRaw }
+      return true
+    },
+  },
+])
+function parseDataRaw(curlCommand: string) {
+  const dataRawIndex = curlCommand.indexOf('--data-raw')
+  if (dataRawIndex !== -1) {
+    const dataRawValue: string = curlCommand.substring(dataRawIndex + '--data-raw '.length)
+    // return JSON.parse(dataRawValue)
+    return dataRawValue
+  }
+  return {}
+}
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
