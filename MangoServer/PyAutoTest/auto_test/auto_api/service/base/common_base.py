@@ -26,8 +26,9 @@ log = logging.getLogger('api')
 class CommonBase(HTTPRequest, DataProcessor):
 
     def __init__(self):
-        super().__init__()
+        HTTPRequest.__init__(self)
         self.project_product_id = None
+        DataProcessor.__init__(self, self.project_product_id)
         self.test_object = Optional[TestObject]
         self.mysql_connect: MysqlConnect = Optional[None]
 

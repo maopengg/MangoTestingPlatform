@@ -3,19 +3,14 @@
 # @Description: 
 # @Time   : 2024-05-20 18:02
 # @Author : 毛鹏
-import json
-import urllib
 
 import requests
-
-from PyAutoTest.auto_test.auto_api.service.base.http_base import HTTPRequest
-from PyAutoTest.models.apimodel import RequestDataModel
 
 
 class Curl:
 
     @classmethod
-    def curl(cls, url, data:dict):
+    def curl(cls, url, data: dict):
         # headers = {
         #     'accept': 'application/json, text/javascript, */*; q=0.01',
         #     'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
@@ -66,3 +61,7 @@ class Curl:
         response = requests.request("POST", url, headers=headers, data=payload)
 
         print(response.json().get('code'))
+
+
+if __name__ == '__main__':
+    Curl.curl()

@@ -7,30 +7,41 @@ import json
 import re
 from urllib.parse import urlparse, parse_qs
 
-import uncurl
-from uncurl.api import ParsedContext
-
 from PyAutoTest.enums.api_enum import MethodEnum
 
 
 class ImportApi:
 
     @classmethod
-    def curl_import(cls, curl_command: str):
-        try:
-            print(uncurl.parse(curl_command))
-        except Exception as error:
-            print(error)
-        r: ParsedContext = uncurl.parse_context(curl_command)
-        host, path, query_params = cls.url(r.url)
+    def curl_import(cls, data: dict):
         from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
-        return ApiInfoCRUD.inside_post({
+        host, path, query_params = cls.url(data['curl'].get('url'))
+
+        print({
+            'project_product': data['project_product'],
+            'module': data['module'],
+            'type': data['type'],
+            'name': data['name'],
+            'client': data['client'],
             'url': path,
-            'method': r.method,
-            'header': dict(r.headers),
+            'method': MethodEnum.get_key(data['curl'].get('method')),
+            'header': data['curl'].get('header'),
             'params': query_params,
-            'data': None,
-            'json': r.data
+            'data': data['curl'].get('data'),
+            'json': data['curl'].get('json')
+        })
+        return ApiInfoCRUD.inside_post({
+            'project_product': data['project_product'],
+            'module': data['module'],
+            'type': data['type'],
+            'name': data['name'],
+            'client': data['client'],
+            'url': path,
+            'method': MethodEnum.get_key(data['curl'].get('method')),
+            'header': data['curl'].get('header'),
+            'params': query_params,
+            'data': data['curl'].get(''),
+            'json': data['curl'].get('')
         })
 
     @classmethod
