@@ -32,6 +32,21 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '环境类型',
+    key: 'environment',
+    value: 0,
+    type: 'select',
+    required: true,
+    placeholder: '请选择绑定的测试环境',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '通知类型',
     key: 'type',
     value: 0,
@@ -46,6 +61,29 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+])
+export const mailboxForm: FormItem[] = reactive([
+  {
+    label: '配置详情',
+    key: 'config',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请输入配置详情',
+    validator: function () {
+      if (this.value.length === 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      this.value = this.value.filter(
+        (item: any) => item !== null && item !== undefined && item !== ''
+      )
+      this.value = JSON.stringify(this.value)
+      return true
+    },
+  },
+])
+export const configForm: FormItem[] = reactive([
   {
     label: '配置详情',
     key: 'config',
@@ -54,7 +92,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入配置详情',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -62,7 +100,6 @@ export const formItems: FormItem[] = reactive([
     },
   },
 ])
-
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
@@ -71,11 +108,18 @@ export const tableColumns = useTableColumn([
     dataIndex: 'project',
   },
   {
+    title: '对应环境',
+    key: 'environment',
+    dataIndex: 'test_object',
+    width: 150,
+  },
+  {
     title: '通知类型',
     key: 'type',
     dataIndex: 'type',
     width: 150,
   },
+
   {
     title: '配置详情',
     key: 'config',

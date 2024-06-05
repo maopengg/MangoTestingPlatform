@@ -73,23 +73,14 @@
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                   {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                 </template>
-                <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
-                  {{ record.test_obj.name }}
-                </template>
                 <template v-else-if="item.key === 'password'" #cell="{ record }">
                   {{ record.password }}
                 </template>
 
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.environment === 0"
-                    >测试环境</a-tag
-                  >
-                  <a-tag color="cyan" size="small" v-else-if="record.environment === 1"
-                    >预发环境</a-tag
-                  >
-                  <a-tag color="green" size="small" v-else-if="record.environment === 2"
-                    >生产环境</a-tag
-                  >
+                  <a-tag color="orangered" size="small">
+                    {{ uEnvironment.data[record.environment].title }}
+                  </a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -124,16 +115,15 @@
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="projectInfo.projectProduct"
-                  @change="onTestObjectName(item.value)"
                   allow-search
                   allow-clear
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'test_obj'">
+              <template v-else-if="item.type === 'select' && item.key === 'environment'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.dataSelect"
+                  :options="uEnvironment.data"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -163,7 +153,8 @@
     postSystemDatabase,
     putSystemDatabase,
   } from '@/api/system'
-  import { getUserTestObjectName } from '@/api/user'
+  import { useEnvironment } from '@/store/modules/get-environment'
+  const uEnvironment = useEnvironment()
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -176,7 +167,6 @@
     actionTitle: '添加配置',
     isAdd: false,
     updateId: 0,
-    dataSelect: [],
   })
 
   function doRefresh() {
@@ -187,13 +177,6 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-  function onTestObjectName(projectProductId: number) {
-    getUserTestObjectName(projectProductId)
-      .then((res) => {
-        data.dataSelect = res.data
       })
       .catch(console.log)
   }

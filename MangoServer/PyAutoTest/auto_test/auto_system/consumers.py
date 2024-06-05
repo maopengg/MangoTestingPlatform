@@ -13,7 +13,6 @@ from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
-from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import SocketEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
@@ -53,10 +52,7 @@ class ChatConsumer(WebsocketConsumer):
                 except SocketClientNotPresentError:
                     self.inside_send(f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
             SocketUser.set_user_client_obj(self.user, self)
-            user = User.objects.get(username=self.user)
-            user.ip = f'{self.scope.get("client")[0]}:{self.scope.get("client")[1]}'
-            user.last_login_time = datetime.datetime.now()
-            user.save()
+
         else:
             log.error('请使用正确的链接域名访问！')
 

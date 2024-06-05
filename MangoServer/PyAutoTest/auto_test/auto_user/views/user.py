@@ -139,13 +139,23 @@ class LoginViews(ViewSet):
         user_info = User.objects.filter(username=username, password=password).first()
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
-        token = create_token({'id': user_info.id, 'username': user_info.username})
-        data = {
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+        user_info.ip = ip
+        user_info.save()
+        UserLogsCRUD().inside_post({
+            "nickname": user_info.nickname,
+            "username": user_info.username,
+            "ip": ip,
+            "source_type": source_type,
+            "user_id": user_info.id
+        })
+        return ResponseData.success(RESPONSE_MSG_0043, {
             "nickName": user_info.nickname,
             "userName": user_info.username,
             "userId": user_info.id,
             "roleId": user_info.role.id if user_info.role else None,
-            "token": token,
+            "token": create_token({'id': user_info.id, 'username': user_info.username}),
             "selected_project": user_info.selected_project,
             "selected_environment": user_info.selected_environment,
             "roles": [
@@ -155,19 +165,7 @@ class LoginViews(ViewSet):
                     "roleName": user_info.role.name if user_info.role else None
                 }
             ]
-        }
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]  # 取X-Forwarded-For头中的第一个IP（即客户端的真实IP）
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        data_logs = {"nickname": user_info.nickname,
-                     "username": user_info.username,
-                     "ip": ip,
-                     "source_type": source_type,
-                     "user_id": user_info.id}
-        UserLogsCRUD().inside_post(data_logs)
-        return ResponseData.success(RESPONSE_MSG_0043, data)
+        })
 
     @action(methods=['post'], detail=False)
     def register(self, request: Request):

@@ -219,6 +219,9 @@
                   }}</a-option>
                 </a-select>
               </template>
+              <template v-else-if="item.type === 'switch' && item.key === 'status'">
+                <a-switch v-model="item.value" :checked-value="1" :unchecked-value="0" />
+              </template>
             </a-form-item>
           </a-form>
         </template>

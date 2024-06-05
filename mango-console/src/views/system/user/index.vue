@@ -122,6 +122,9 @@
                   :auto-size="{ minRows: 3, maxRows: 5 }"
                 />
               </template>
+              <template v-else-if="item.type === 'input-tag'">
+                <a-input-tag v-model="item.value" :placeholder="item.placeholder" allow-clear />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'role'">
                 <a-select
                   v-model="item.value"
@@ -233,9 +236,15 @@
     userData.updateId = item.id
     modalDialogRef.value?.toggle()
     nextTick(() => {
-      formItems.forEach((it) => {
+      formItems.forEach((it, index) => {
+        if (it.key === 'password') {
+          formItems.splice(index, 1)
+          return
+        }
         const propName = item[it.key]
-        if (typeof propName === 'object' && propName !== null) {
+        if (it.key === 'mailbox') {
+          it.value = propName
+        } else if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
           it.value = propName
