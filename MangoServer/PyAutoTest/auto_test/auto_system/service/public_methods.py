@@ -18,7 +18,9 @@ class PublicMethods:
         try:
             if not real and project_product:
                 test_obj_id = cls.get_test_object(test_obj_id, project_product)
-            mysql = Database.objects.get(test_obj_id=test_obj_id)
+            test_object = TestObject.objects.get(id=test_obj_id)
+            mysql = Database.objects.get(environment=test_object.environment,
+                                         project_product=test_object.project_product)
         except Database.DoesNotExist:
             raise DoesNotExistError(*ERROR_MSG_0021)
         try:

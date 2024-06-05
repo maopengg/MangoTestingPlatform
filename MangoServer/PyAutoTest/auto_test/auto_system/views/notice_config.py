@@ -11,11 +11,12 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
+from PyAutoTest.enums.tools_enum import StatusEnum
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -38,7 +39,8 @@ class NoticeConfigSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project')
+            'project',
+            )
         return queryset
 
 
@@ -76,6 +78,11 @@ class NoticeConfigViews(ViewSet):
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
+        if self.model.objects\
+                .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value)\
+                and request.data.get('status') == StatusEnum.SUCCESS.value:
+            return ResponseData.success(RESPONSE_MSG_0119, )
+
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0047, )

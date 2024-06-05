@@ -33,7 +33,7 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '绑定环境',
-    key: 'test_obj',
+    key: 'environment',
     value: '',
     type: 'select',
     required: true,
@@ -133,9 +133,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '对应环境',
-    key: 'test_obj',
-    dataIndex: 'test_obj',
-    align: 'left',
+    key: 'environment',
+    dataIndex: 'environment',
   },
   {
     title: '域名',

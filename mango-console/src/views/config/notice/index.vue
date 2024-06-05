@@ -73,6 +73,11 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project?.name }}
                 </template>
+                <template v-else-if="item.key === 'environment'" #cell="{ record }">
+                  <a-tag color="orangered" size="small">
+                    {{ uEnvironment.data[record.environment].title }}
+                  </a-tag>
+                </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.type === 0">邮箱</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.type === 1">企微群</a-tag>
@@ -107,17 +112,28 @@
             <a-form-item
               :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
               :label="item.label"
-              v-for="item of formItems"
+              v-for="item of data.formItems"
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'textarea'">
+              <template v-else-if="item.type === 'textarea' && item.key === 'config'">
                 <a-textarea
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :auto-size="{ minRows: 5, maxRows: 9 }"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'environment'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="uEnvironment.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project'">
@@ -140,7 +156,20 @@
                   value-key="key"
                   allow-clear
                   allow-search
+                  @change="onChange(item.value)"
                 />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'config'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  multiple
+                  :scrollbar="true"
+                >
+                  <a-option v-for="user of data.userList" :key="user.key">{{
+                    user.title
+                  }}</a-option>
+                </a-select>
               </template>
             </a-form-item>
           </a-form>
@@ -158,7 +187,7 @@
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { conditionItems, formItems, tableColumns, mailboxForm, configForm } from './config'
   import {
     deleteSystemNotice,
     getSystemEnumNotice,
@@ -168,6 +197,8 @@
     putSystemNotice,
     putSystemNoticePutStatus,
   } from '@/api/system'
+  import { useEnvironment } from '@/store/modules/get-environment'
+  import { getUserNickname } from '@/api/user'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -176,12 +207,15 @@
   const rowKey = useRowKey('id')
   const project = useProject()
   const formModel = ref({})
+  const uEnvironment = useEnvironment()
 
-  const data = reactive({
+  const data: any = reactive({
     noticeType: [],
     isAdd: false,
     updateId: 0,
     actionTitle: '添加通知',
+    userList: [],
+    formItems: [],
   })
 
   function doRefresh() {
@@ -195,7 +229,17 @@
       })
       .catch(console.log)
   }
-
+  function onChange(value: number) {
+    data.formItems = []
+    data.formItems.push(...formItems)
+    if (value === 0) {
+      mailboxForm[0].value = []
+      data.formItems.push(...mailboxForm)
+    } else if (value === 1) {
+      mailboxForm[0].value = ''
+      data.formItems.push(...configForm)
+    }
+  }
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -203,10 +247,12 @@
   }
 
   function onAddPage() {
+    data.formItems = []
+    data.formItems.push(...formItems)
     data.actionTitle = '添加通知'
     modalDialogRef.value?.toggle()
     data.isAdd = true
-    formItems.forEach((it) => {
+    data.formItems.forEach((it: any) => {
       if (it.reset) {
         it.reset()
       } else {
@@ -233,15 +279,20 @@
   }
 
   function onUpdate(item: any) {
+    data.formItems = []
+    data.formItems.push(...formItems)
     data.actionTitle = '编辑通知'
     modalDialogRef.value?.toggle()
     data.isAdd = false
     data.updateId = item.id
+    onChange(item.type)
     nextTick(() => {
-      formItems.forEach((it) => {
+      data.formItems.forEach((it: any) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
+        } else if (item.type === 0) {
+          it.value = JSON.parse(propName)
         } else {
           it.value = propName
         }
@@ -250,9 +301,9 @@
   }
 
   function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
+      let value = getFormItems(data.formItems)
 
       if (data.isAdd) {
         value['status'] = 0
@@ -300,7 +351,13 @@
       }, 300)
     })
   }
-
+  function getNickName() {
+    getUserNickname()
+      .then((res) => {
+        data.userList = res.data
+      })
+      .catch(console.log)
+  }
   function onTest(record: any) {
     getSystemNoticeTest(record.id)
       .then((res) => {
@@ -313,6 +370,7 @@
     nextTick(async () => {
       doRefresh()
       enumNotice()
+      getNickName()
     })
   })
   onMounted(doRefresh)
