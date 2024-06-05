@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.service.notic_tools.mail_send import SendEmail
 from PyAutoTest.auto_test.auto_system.service.notic_tools.wechat_send import WeChatSend
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
@@ -78,7 +79,10 @@ class NoticeMain:
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         try:
-            send_list = json.loads(i.config)
+            user_info = User.objects.filter(nickname__in=json.loads(i.config))
+            send_list = []
+            for i in user_info:
+                send_list += i.mailbox
         except json.decoder.JSONDecodeError:
             raise JsonSerializeError(*ERROR_MSG_0012)
 

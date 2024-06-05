@@ -102,9 +102,9 @@ export const formItems: FormItem[] = reactive([
     label: '邮箱',
     key: 'mailbox',
     value: '',
-    type: 'input',
+    type: 'input-tag',
     required: true,
-    placeholder: '请输入邮箱',
+    placeholder: '请输入邮箱，然后按回车',
     validator: function () {
       if (!this.value && this.value !== '0') {
         Message.error(this.placeholder || '')
@@ -135,8 +135,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '最近登录时间',
-    key: 'last_login_time',
-    dataIndex: 'last_login_time',
+    key: 'update_time',
+    dataIndex: 'update_time',
   },
   {
     title: '登录IP',
