@@ -104,15 +104,9 @@
                   />
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.environment === 0"
-                    >测试环境</a-tag
-                  >
-                  <a-tag color="cyan" size="small" v-else-if="record.environment === 1"
-                    >预发环境</a-tag
-                  >
-                  <a-tag color="green" size="small" v-else-if="record.environment === 2"
-                    >生产环境</a-tag
-                  >
+                  <a-tag color="orangered" size="small">
+                    {{ uEnvironment.data[record.environment].title }}
+                  </a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>

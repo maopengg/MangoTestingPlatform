@@ -25,7 +25,6 @@ class DatabaseSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    test_obj = TestObjectSerializers(read_only=True)
 
     class Meta:
         model = Database
@@ -35,7 +34,7 @@ class DatabaseSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project_product',
-            'test_obj')
+            )
         return queryset
 
 
