@@ -17,13 +17,14 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ************************ ↓需要修改的内容↓ ************************ #
+IS_SQLITE = False  # 是否选用mysql作为数据源
+
 # mysql配置
 mysql_db_name = 'mango_server'
 mysql_user = 'root'
 mysql_password = 'root'
 # mysql_password = 'mP123456&'
 mysql_ip = 'localhost'
-# mysql_ip = '36.213.11.72'
 mysql_port = 3306
 # ************************ ↑需要修改的内容↑ ************************ #
 
@@ -102,31 +103,32 @@ CHANNEL_LAYERS = {
     }
 }
 # ************************ 数据库配置 ************************ #
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': mysql_db_name,
-        'USER': mysql_user,
-        'PASSWORD': mysql_password,
-        'HOST': mysql_ip,
-        'PORT': mysql_port,
-        'TEST': {
+if not IS_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
             'NAME': mysql_db_name,
-            'CHARSET': 'utf8mb4',
-            'COLLATION': 'utf8mb4_general_ci'
-        },
-        'OPTIONS': {
-            "init_command": "SET foreign_key_checks = 0;",
+            'USER': mysql_user,
+            'PASSWORD': mysql_password,
+            'HOST': mysql_ip,
+            'PORT': mysql_port,
+            'TEST': {
+                'NAME': mysql_db_name,
+                'CHARSET': 'utf8mb4',
+                'COLLATION': 'utf8mb4_general_ci'
+            },
+            'OPTIONS': {
+                "init_command": "SET foreign_key_checks = 0;",
+            }
         }
     }
-}
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
 
