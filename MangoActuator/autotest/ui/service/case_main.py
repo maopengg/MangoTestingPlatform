@@ -39,11 +39,6 @@ class CaseMain:
     async def execute_task(self, case_model: CaseModel):
         async with CaseSteps(case_model, self.driver_object) as obj:
             try:
-                # for step in case_model.steps:
-                #     if step.type == DriveTypeEnum.WEB.value:
-                #         self.web_config = step.equipment_config
-                #         obj.context, obj.page = await self.new_web_page()
-                #         break
                 await obj.case_init()
                 await obj.case_page_step()
             except Exception as error:
