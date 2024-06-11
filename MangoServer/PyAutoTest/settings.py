@@ -22,8 +22,8 @@ IS_SQLITE = False  # 是否选用mysql作为数据源
 # mysql配置
 mysql_db_name = 'mango_server'
 mysql_user = 'root'
-mysql_password = 'root'
-# mysql_password = 'mP123456&'
+# mysql_password = 'root'
+mysql_password = 'mP123456&'
 mysql_ip = 'localhost'
 mysql_port = 3306
 # ************************ ↑需要修改的内容↑ ************************ #
