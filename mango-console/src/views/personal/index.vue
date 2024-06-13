@@ -37,7 +37,7 @@
             </div>
             <div class="text-wrapper">
               <div class="label">最近登录时间：</div>
-              <div class="value">{{ personalCenterData.data.last_login_time }}</div>
+              <div class="value">{{ personalCenterData.data?.last_login_time }}</div>
             </div>
             <div class="text-wrapper">
               <div class="label">socketIP断言：</div>
