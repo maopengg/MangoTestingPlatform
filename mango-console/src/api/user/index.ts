@@ -232,7 +232,7 @@ export function deleteUserInfo(id: number | string[] | number[]) {
 }
 
 export function postUserPassword(data: object) {
-  return post({
+  return put({
     url: url.userPassword,
     data: () => {
       return data
