@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-card title="页面元素详情">
+    <a-card title="接口详情">
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
