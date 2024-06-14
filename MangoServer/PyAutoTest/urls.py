@@ -22,7 +22,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('docs/', include_docs_urls(title='PyAutoTest', authentication_classes=[])),
+    path('docs', include_docs_urls(title='PyAutoTest', authentication_classes=[])),
     #
     path("login", LoginViews.as_view({'post': 'login'})),  # 登录
     path("register", LoginViews.as_view({'post': 'register'})),  # 登录

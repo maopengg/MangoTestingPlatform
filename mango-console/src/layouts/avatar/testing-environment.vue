@@ -35,60 +35,49 @@
   </div>
 </template>
 
-<script lang="ts">
-  import { defineComponent, onMounted, watchEffect } from 'vue'
+<script lang="ts" setup>
+  import { onMounted, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { useTestObj } from '@/store/modules/get-test-obj'
 
   import { putUserEnvironment } from '@/api/user'
 
-  export default defineComponent({
-    name: 'TestEnvironment',
-    setup() {
-      const userStore = useUserStore()
-      const testObj = useTestObj()
-      function handleSelect(key: any) {
-        if (key === -1) {
-          key = null
-        }
-        putUserEnvironment(userStore.userId, key)
-          .then((res) => {
-            userStore.selected_environment = res.data.selected_environment
-            testObj.selectValue = key
-            setTitle(key)
-          })
-          .catch(console.log)
-      }
-      function setTitle(key: any) {
-        if (key === null) {
-          testObj.selectTitle = '请选择测试环境'
-          testObj.selectValue = null
-          return
-        }
-        testObj.data.forEach((item: any) => {
-          if (item.children.length > 0) {
-            testObj.selectValue = key
-            item.children.forEach((children: any) => {
-              if (children.value === key) testObj.selectTitle = `${item.label}/${children.label}`
-            })
-          }
+  const userStore = useUserStore()
+  const testObj = useTestObj()
+  function handleSelect(key: any) {
+    if (key === -1) {
+      key = null
+    }
+    putUserEnvironment(userStore.userId, key)
+      .then((res) => {
+        userStore.selected_environment = res.data.selected_environment
+        testObj.selectValue = key
+        setTitle(key)
+      })
+      .catch(console.log)
+  }
+  function setTitle(key: any) {
+    if (key === null) {
+      testObj.selectTitle = '请选择测试环境'
+      testObj.selectValue = null
+      return
+    }
+    testObj.data.forEach((item: any) => {
+      if (item.children.length > 0) {
+        testObj.selectValue = key
+        item.children.forEach((children: any) => {
+          if (children.value === key) testObj.selectTitle = `${item.label}/${children.label}`
         })
       }
-      watchEffect(() => {
-        if (testObj.data.length > 0) {
-          setTitle(userStore.selected_environment)
-        }
-      })
-      onMounted(() => {
-        testObj.getEnvironment()
-      })
-
-      return {
-        userStore,
-        testObj,
-        handleSelect,
-      }
-    },
+    })
+  }
+  watchEffect(() => {
+    if (testObj.data.length > 0) {
+      setTitle(userStore.selected_environment)
+    }
+  })
+  onMounted(() => {
+    testObj.getEnvironment()
   })
 </script>
 
