@@ -399,7 +399,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑公共参数'
+    data.actionTitle = '编辑接口信息'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
@@ -414,6 +414,7 @@
         }
       })
     })
+    data.formItem = formItems
   }
 
   function onBatchUpload() {
