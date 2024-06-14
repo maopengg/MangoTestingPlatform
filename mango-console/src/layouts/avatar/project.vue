@@ -14,8 +14,8 @@
   </div>
 </template>
 
-<script lang="ts">
-  import { defineComponent, onMounted, watchEffect } from 'vue'
+<script lang="ts" setup>
+  import { onMounted, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
   import { useProject } from '@/store/modules/get-project'
   import { useDebounceFn } from '@vueuse/core'
@@ -24,73 +24,62 @@
   import { getUserProjectEnvironment, putUserPutProject } from '@/api/user'
   import { useStatus } from '@/store/modules/status'
 
-  export default defineComponent({
-    name: 'Project',
-    setup() {
-      const userStore = useUserStore()
-      const project = useProject()
-      const productModule = useProductModule()
-      const status = useStatus()
+  const userStore = useUserStore()
+  const project = useProject()
+  const productModule = useProductModule()
+  const status = useStatus()
 
-      const router = useRouter()
-      const route = useRoute()
+  const router = useRouter()
+  const route = useRoute()
 
-      function handleSelect(key: any) {
-        if (key === '选择项目') {
-          key = null
-        }
-        putUserPutProject(userStore.userId, key)
-          .then((res) => {
-            userStore.selected_project = res.data.selected_project
-            setTitle(key)
-            productModule.getProjectModule()
-          })
-          .catch(console.log)
-        debouncedFn()
-      }
-      const debouncedFn = useDebounceFn(() => {
-        router.replace({ path: '/redirect' + route.path, query: route.query })
-      }, 200)
-
-      function setTitle(key: any) {
-        if (key === null) {
-          project.selectTitle = '选择项目'
-          project.selectValue = null
-          return
-        }
-        project.data.forEach((item: any) => {
-          project.selectValue = key
-          if (item.key === project.selectValue) project.selectTitle = item.title
-        })
-        project.projectProductNameList(project.selectValue)
-      }
-      watchEffect(() => {
-        if (project.data.length > 0) {
-          setTitle(userStore.selected_project)
-        }
+  function handleSelect(key: any) {
+    if (key === '选择项目') {
+      key = null
+    }
+    putUserPutProject(userStore.userId, key)
+      .then((res) => {
+        userStore.selected_project = res.data.selected_project
+        setTitle(key)
+        productModule.getProjectModule()
       })
+      .catch(console.log)
+    debouncedFn()
+  }
+  const debouncedFn = useDebounceFn(() => {
+    router.replace({ path: '/redirect' + route.path, query: route.query })
+  }, 200)
 
-      function doRefresh() {
-        getUserProjectEnvironment(userStore.userId)
-          .then((res) => {
-            userStore.selected_environment = res.data.selected_environment
-            userStore.selected_project = res.data.selected_project
-            project.projectProductNameList(userStore.selected_project)
-          })
-          .catch(console.log)
-      }
-      onMounted(async () => {
-        await project.getProject()
-        await doRefresh()
-        await status.refresh()
+  function setTitle(key: any) {
+    if (key === null) {
+      project.selectTitle = '选择项目'
+      project.selectValue = null
+      return
+    }
+    project.data.forEach((item: any) => {
+      project.selectValue = key
+      if (item.key === project.selectValue) project.selectTitle = item.title
+    })
+    project.projectProductNameList(project.selectValue)
+  }
+  watchEffect(() => {
+    if (project.data.length > 0) {
+      setTitle(userStore.selected_project)
+    }
+  })
+
+  function doRefresh() {
+    getUserProjectEnvironment(userStore.userId)
+      .then((res) => {
+        userStore.selected_environment = res.data.selected_environment
+        userStore.selected_project = res.data.selected_project
+        project.projectProductNameList(userStore.selected_project)
       })
-
-      return {
-        userStore,
-        project,
-        handleSelect,
-      }
-    },
+      .catch(console.log)
+  }
+  onMounted(async () => {
+    await project.getProject()
+    await doRefresh()
+    await status.refresh()
   })
 </script>
 
