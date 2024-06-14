@@ -1,5 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
+import { systemCacheValue } from './url'
 
 export function getSystemEnumExp() {
   return get({
@@ -395,6 +396,14 @@ export function putSystemScheduledPutNotice(id: number, status: number) {
         id: id,
         is_notice: status,
       }
+    },
+  })
+}
+export function getSystemCacheValue(key: string) {
+  return get({
+    url: url.systemCacheValue,
+    data: () => {
+      return { key: key }
     },
   })
 }
