@@ -86,6 +86,7 @@ class CacheDataKeyEnum(BaseEnum):
     EMAIL_HOST = '邮箱域名'
     STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
+    IS_INDEX_WINDOW = '是否开启首页弹窗，0是关闭，1是开启'
 
     @classmethod
     def obj(cls):
@@ -95,6 +96,7 @@ class CacheDataKeyEnum(BaseEnum):
             'EMAIL_HOST': None,
             'STAMP_KET': None,
             'API_TIMEOUT': 15,
+            'IS_INDEX_WINDOW': 1,
         }
 
 
