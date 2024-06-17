@@ -80,7 +80,7 @@
 * 执行端下载：https://www.alipan.com/s/8CmZdabwt4R
 ---
 ## 帮助
-* B站视频教程（windows部署）：地址：https://space.bilibili.com/266410261?spm_id_from=333.1007.0.0
+* B站视频教程（windows部署）：https://space.bilibili.com/266410261?spm_id_from=333.1007.0.0
 * 语雀全功能使用介绍（会员已过期）：语雀文档地址：https://www.yuque.com/maopeng-ipl1k/hi4b1o?# 《芒果测试平台》
 ---
 ## 功能演示gif图
