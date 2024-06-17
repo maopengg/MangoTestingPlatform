@@ -72,7 +72,7 @@ def ad_routes():
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/info/index",
-                    "menuName": "接口信息",
+                    "menuName": "接口管理",
                 },
                 {
                     "parentPath": "/apitest",
@@ -135,12 +135,12 @@ def ad_routes():
                 }, {
                     "parentPath": "/config",
                     "menuUrl": "/config/product/index",
-                    "menuName": "产品配置",
+                    "menuName": "项目产品",
                 },
                 {
                     "parentPath": "/config",
                     "menuUrl": "/config/test-object/index",
-                    "menuName": "环境配置",
+                    "menuName": "测试环境",
                 },
                 {
                     "parentPath": "/config",
@@ -241,7 +241,7 @@ def ad_routes():
                 {
                     "parentPath": "/help",
                     "menuUrl": "/help/test",
-                    "menuName": "vue测试页面",
+                    "menuName": "测试页面",
                 },
             ],
         },
