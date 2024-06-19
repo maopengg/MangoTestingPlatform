@@ -22,7 +22,6 @@ IS_SQLITE = False  # 是否选用mysql作为数据源
 # mysql配置
 mysql_db_name = 'mango_server'
 mysql_user = 'root'
-# mysql_password = 'root'
 mysql_password = 'mP123456&'
 mysql_ip = '127.0.0.1'
 # mysql_ip = '121.37.174.56'
@@ -36,7 +35,7 @@ TIME_ZONE = 'Asia/Shanghai'
 
 # ************************ 是否允许DEBUG ************************ #
 # 线上环境需要关闭
-DEBUG = False
+DEBUG = True
 # 允许所有ip或域名'*'
 ALLOWED_HOSTS = ["*"]
 # ************************ app注册 ************************ #
