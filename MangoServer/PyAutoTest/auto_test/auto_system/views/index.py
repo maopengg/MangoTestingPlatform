@@ -147,12 +147,13 @@ class IndexViews(ViewSet):
         @return:
         """
         active_user_counts = UserLogs.objects.values('user_id', 'nickname').annotate(total_logins=Count('id')).order_by(
-            'total_logins')
-        active_user_counts_ = {
-            'nickname': [],
-            'total_logins': [],
-        }
+            '-total_logins')[:10]
+        nickname_list = []
+        total_logins_list = []
         for user_count in active_user_counts:
-            active_user_counts_['nickname'].append(user_count['nickname'])
-            active_user_counts_['total_logins'].append(user_count['total_logins'])
-        return ResponseData.success(RESPONSE_MSG_0092, active_user_counts_)
+            nickname_list.append(user_count['nickname'])
+            total_logins_list.append(user_count['total_logins'])
+        return ResponseData.success(RESPONSE_MSG_0092, {
+            'nickname': nickname_list[::-1],
+            'total_logins': total_logins_list[::-1],
+        })
