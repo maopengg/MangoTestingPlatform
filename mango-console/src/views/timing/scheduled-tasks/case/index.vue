@@ -62,9 +62,7 @@
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <!--                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>-->
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除
-                </a-button>
+                <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除 </a-button>
               </template>
             </a-table-column>
           </template>
@@ -202,7 +200,7 @@
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

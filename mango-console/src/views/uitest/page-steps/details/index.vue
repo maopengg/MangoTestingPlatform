@@ -78,9 +78,7 @@
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除
-              </a-button>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除 </a-button>
             </template>
           </a-table-column>
         </template>
@@ -161,11 +159,7 @@
               />
             </template>
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
-              <a-radio-group
-                @change="changeStatus"
-                v-model="data.type"
-                :options="data.plainOptions"
-              />
+              <a-radio-group @change="changeStatus" v-model="data.type" :options="data.plainOptions" />
             </template>
             <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
               <a-textarea
@@ -241,11 +235,7 @@
       }
     }
     if (event === 0) {
-      if (
-        !formItems.some(
-          (item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type')
-        )
-      ) {
+      if (!formItems.some((item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type'))) {
         formItems.push(
           {
             label: '元素操作',
@@ -299,10 +289,7 @@
         )
       }
     } else if (event === 2) {
-      if (
-        !formItems.some((item) => item.key === 'sql') ||
-        !formItems.some((item) => item.key === 'key_list')
-      ) {
+      if (!formItems.some((item) => item.key === 'sql') || !formItems.some((item) => item.key === 'key_list')) {
         formItems.push(
           {
             label: 'key_list',
@@ -337,10 +324,7 @@
         )
       }
     } else {
-      if (
-        !formItems.some((item) => item.key === 'key') ||
-        !formItems.some((item) => item.key === 'value')
-      ) {
+      if (!formItems.some((item) => item.key === 'key') || !formItems.some((item) => item.key === 'value')) {
         formItems.push(
           {
             label: 'key',
@@ -401,7 +385,7 @@
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此步骤详情？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

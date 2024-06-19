@@ -52,9 +52,7 @@
               <a-tag color="blue" size="small" v-else-if="record.exp === 11">A_DESCRIPTION</a-tag>
               <a-tag color="arcoblue" size="small" v-else-if="record.exp === 12">A_BOUNDS</a-tag>
               <a-tag color="arcoblue" size="small" v-else-if="record.exp === 14">resourceId</a-tag>
-              <a-tag color="purple" size="small" v-else-if="record.exp === 13"
-                >A_百分比坐标点击</a-tag
-              >
+              <a-tag color="purple" size="small" v-else-if="record.exp === 13">A_百分比坐标点击</a-tag>
             </template>
             <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
               <a-switch
@@ -65,9 +63,7 @@
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onDebug(record)" disabled>调试</a-button>
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除</a-button
-              >
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
             </template>
           </a-table-column>
         </template>
@@ -168,11 +164,7 @@
             />
           </template>
           <template v-else-if="item.type === 'radio' && item.key === 'type'">
-            <a-radio-group
-              @change="changeStatus"
-              v-model="item.value"
-              :options="data.plainOptions"
-            />
+            <a-radio-group @change="changeStatus" v-model="item.value" :options="data.plainOptions" />
           </template>
         </a-form-item>
       </a-form>

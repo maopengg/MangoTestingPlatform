@@ -70,9 +70,7 @@
       const menuMode = computed(() => props.mode)
       const currentRoute = useRoute()
       const router = useRouter()
-      defaultPath.value.push(
-        menuMode.value === 'vertical' ? currentRoute.fullPath : currentRoute.matched[0].path
-      )
+      defaultPath.value.push(menuMode.value === 'vertical' ? currentRoute.fullPath : currentRoute.matched[0].path)
       const tag = ref(menuMode.value === 'vertical' ? 'Scrollbar' : 'div')
       const theme = computed(() => {
         if (appStore.theme === ThemeMode.DARK) {
@@ -128,9 +126,7 @@
         () => currentRoute.fullPath,
         (newVal) => {
           defaultPath.value.length = 0
-          defaultPath.value.push(
-            menuMode.value === 'vertical' ? newVal : currentRoute.matched[0].path
-          )
+          defaultPath.value.push(menuMode.value === 'vertical' ? newVal : currentRoute.matched[0].path)
           handleExpandPath()
         }
       )
@@ -145,9 +141,7 @@
       })
       onMounted(() => {
         nextTick(() => {
-          const items = document.querySelectorAll(
-            '.arco-trigger-popup.arco-trigger-position-bl.arco-menu-pop-trigger'
-          )
+          const items = document.querySelectorAll('.arco-trigger-popup.arco-trigger-position-bl.arco-menu-pop-trigger')
           items.forEach((it) => {
             it.setAttribute('style', 'width: 150px')
           })

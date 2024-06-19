@@ -52,9 +52,9 @@
       align: 'center',
     },
   ]
-  const data = reactive<
-    { key: string; name: string; salary: string; countSalary: string; tb: string; hb: string }[]
-  >([])
+  const data = reactive<{ key: string; name: string; salary: string; countSalary: string; tb: string; hb: string }[]>(
+    []
+  )
   for (let index = 1; index <= 12; index++) {
     data.push({
       key: index + '',
