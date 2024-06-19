@@ -17,13 +17,9 @@
         </a-space>
         <a-space direction="vertical" style="width: 42%">
           <p>测试对象：{{ pageData.record.test_object?.name }}</p>
-          <p
-            >是否开启数据库断言：{{
-              pageData.record.test_object?.db_status === 1 ? '开启' : '关闭'
-            }}</p
-          >
+          <p>是否开启数据库断言：{{ pageData.record.test_object?.db_status === 1 ? '开启' : '关闭' }}</p>
           <p :style="{ color: pageData.record.status === 0 ? 'red' : 'inherit' }">
-            测试套结果：{{ pageData.record.status === 1 ? '通过' : '失败' }}
+            测试套结果：{{ pageData.record.status === 1 ? '通过' : pageData.record.status === 0 ? '失败' : '未测试' }}
           </p>
           <p>失败消息：{{ pageData.record.error_message }}</p>
         </a-space>
@@ -73,11 +69,9 @@
                 <p>响应code码：{{ data.apiResult.response_code }}</p>
                 <p>响应时间：{{ data.apiResult.response_time }}</p>
                 <p :style="{ color: data.apiResult.status === 0 ? 'red' : 'inherit' }">
-                  测试结果：{{ data.apiResult.status === 1 ? '成功' : '失败' }}
+                  测试结果：{{ data.apiResult.status === 1 ? '通过' : data.apiResult.status === 0 ? '失败' : '' }}
                 </p>
-                <p v-if="data.apiResult.status === 0"
-                  >错误提示语：{{ data.apiResult.error_message }}</p
-                >
+                <p v-if="data.apiResult.status === 0">错误提示语：{{ data.apiResult.error_message }}</p>
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="8" title="响应头">

@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
+from datetime import datetime
 
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -13,6 +14,7 @@ from PyAutoTest.auto_test.auto_system.service.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
+from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -142,6 +144,8 @@ class LoginViews(ViewSet):
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
         user_info.ip = ip
+        if source_type == ClientTypeEnum.WEB.value:
+            user_info.last_login_time = datetime.now()
         user_info.save()
         UserLogsCRUD().inside_post({
             "nickname": user_info.nickname,

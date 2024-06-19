@@ -18,11 +18,7 @@
               @contextmenu="onContextMenu(item.fullPath, $event)"
             >
               {{ item.meta ? item.meta.title : item.name }}
-              <span
-                v-if="!item.meta?.affix"
-                class="icon-item"
-                @click.stop="iconClick(item.fullPath)"
-              >
+              <span v-if="!item.meta?.affix" class="icon-item" @click.stop="iconClick(item.fullPath)">
                 <CloseOutlined />
               </span>
             </a-button>
@@ -144,10 +140,7 @@
         this.handleTabClick(e.target as HTMLElement, path)
       },
       itemChildClick(path: RouteLocationNormalized, e: MouseEvent) {
-        this.handleTabClick(
-          (e.target as HTMLElement).parentElement?.parentElement as HTMLElement,
-          path
-        )
+        this.handleTabClick((e.target as HTMLElement).parentElement?.parentElement as HTMLElement, path)
       },
       handleTabClick(el: HTMLElement, path: RouteLocationNormalized) {
         this.$router.push(path).then(() => {
@@ -175,8 +168,7 @@
           this.showLeftMenu = this.isLeftLast(fullPath || '/')
           this.showRightMenu = this.isRightLast(fullPath || '/')
           const screenWidth = document.body.clientWidth
-          this.contextMenuStyle.left =
-            (clientX + 130 > screenWidth ? clientX - 130 - x - 15 : clientX - x + 15) + 'px'
+          this.contextMenuStyle.left = (clientX + 130 > screenWidth ? clientX - 130 - x - 15 : clientX - x + 15) + 'px'
           this.contextMenuStyle.top = '25px'
           this.showContextMenu = true
         }
@@ -197,10 +189,7 @@
         return this.getVisitedRoutes.findIndex((it) => it.fullPath === tempRoute) === 0
       },
       isRightLast(tempRoute: string) {
-        return (
-          this.getVisitedRoutes.findIndex((it) => it.fullPath === tempRoute) ===
-          this.getVisitedRoutes.length - 1
-        )
+        return this.getVisitedRoutes.findIndex((it) => it.fullPath === tempRoute) === this.getVisitedRoutes.length - 1
       },
       onDropDownSelect(key: string) {
         switch (key) {

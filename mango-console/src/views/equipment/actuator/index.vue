@@ -38,24 +38,14 @@
                   <template v-if="record.username === 'admin'">
                     <a-space>
                       <a-button type="text" size="mini" @click="onReceive(record)">领取</a-button>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        size="mini"
-                        @click="onDelete(record)"
-                        disabled
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled
                         >下线
                       </a-button>
                     </a-space>
                   </template>
                   <template v-if="record.username !== 'admin'">
                     <a-space>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        size="mini"
-                        @click="onDelete(record)"
-                        disabled
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)" disabled
                         >下线
                       </a-button>
                     </a-space>
@@ -102,7 +92,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要下线此执行器？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

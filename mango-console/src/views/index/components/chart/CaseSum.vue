@@ -45,16 +45,7 @@
               }
               var arr = [
                 '{a|' + name + '}',
-                '{b|' +
-                  ((target / total) * 100).toFixed(2) +
-                  '%' +
-                  '}' +
-                  '{a|' +
-                  '  |  ' +
-                  '}' +
-                  '{b|' +
-                  target +
-                  '}',
+                '{b|' + ((target / total) * 100).toFixed(2) + '%' + '}' + '{a|' + '  |  ' + '}' + '{b|' + target + '}',
               ]
               return arr.join('  ')
             },

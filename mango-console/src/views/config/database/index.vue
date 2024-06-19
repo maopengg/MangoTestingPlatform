@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="数据库配置"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="数据库配置" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-if="item.type === 'date'">
                     <a-date-picker v-model="item.value" />
@@ -85,9 +76,7 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除</a-button
-                    >
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
                 </template>
               </a-table-column>
@@ -147,12 +136,7 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import {
-    deleteSystemDatabase,
-    getSystemDatabase,
-    postSystemDatabase,
-    putSystemDatabase,
-  } from '@/api/system'
+  import { deleteSystemDatabase, getSystemDatabase, postSystemDatabase, putSystemDatabase } from '@/api/system'
   import { useEnvironment } from '@/store/modules/get-environment'
   const uEnvironment = useEnvironment()
 
@@ -202,7 +186,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此配置？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

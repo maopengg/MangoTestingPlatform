@@ -135,8 +135,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '最近登录时间',
-    key: 'update_time',
-    dataIndex: 'update_time',
+    key: 'last_login_time',
+    dataIndex: 'last_login_time',
   },
   {
     title: '登录IP',

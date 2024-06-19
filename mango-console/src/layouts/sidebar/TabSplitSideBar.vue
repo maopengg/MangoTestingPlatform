@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="vaw-tab-split-side-bar-wrapper"
-    :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
-  >
+  <div class="vaw-tab-split-side-bar-wrapper" :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]">
     <div class="tab-split-tab-wrapper">
       <Logo class="tab-split-logo-wrapper" :show-title="false" />
       <Scrollbar class="tab-split-slidebar__wrapper">

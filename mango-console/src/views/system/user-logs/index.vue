@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="登录日志"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="登录日志" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'user_id'">
                     <a-select
@@ -88,9 +79,7 @@
                 </template>
                 <template v-else-if="item.key === 'source_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.source_type === '1'">控制端</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.source_type === '2'"
-                    >执行端</a-tag
-                  >
+                  <a-tag color="red" size="small" v-else-if="record.source_type === '2'">执行端</a-tag>
                 </template>
               </a-table-column>
             </template>
