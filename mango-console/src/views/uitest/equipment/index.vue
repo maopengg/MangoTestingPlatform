@@ -43,14 +43,10 @@
                   <a-tag color="red" size="small" v-else-if="record.type === 1">安卓</a-tag>
                 </template>
                 <template v-else-if="item.key === 'browser_type'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.browser_type === 0"
-                    >谷歌浏览器</a-tag
-                  >
+                  <a-tag color="green" size="small" v-if="record.browser_type === 0">谷歌浏览器</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.browser_type === 1">EDGE</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.browser_type === 2">火狐</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.browser_type === 3"
-                    >WEBKIT</a-tag
-                  >
+                  <a-tag color="red" size="small" v-else-if="record.browser_type === 3">WEBKIT</a-tag>
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
@@ -67,35 +63,21 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <template v-if="record.type === 0">
-                      <a-button type="text" size="mini" @click="onTakeOver(record.id)"
-                        >接管端口</a-button
-                      >
-                      <a-button type="text" size="mini" @click="onDebugWEB(record.id)"
-                        >调试WEB</a-button
-                      >
+                      <a-button type="text" size="mini" @click="onTakeOver(record.id)">接管端口</a-button>
+                      <a-button type="text" size="mini" @click="onDebugWEB(record.id)">调试WEB</a-button>
                     </template>
                     <template v-if="record.type === 1">
-                      <a-button type="text" size="mini" @click="onDebugAndroid(record.id)"
-                        >调试安卓</a-button
-                      >
+                      <a-button type="text" size="mini" @click="onDebugAndroid(record.id)">调试安卓</a-button>
                       <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     </template>
                     <a-dropdown trigger="hover">
                       <a-button type="text" size="mini">···</a-button>
                       <template #content>
                         <a-doption v-if="record.type !== 1">
-                          <a-button type="text" size="mini" @click="onUpdate(record)"
-                            >编辑</a-button
-                          >
+                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                         </a-doption>
                         <a-doption>
-                          <a-button
-                            status="danger"
-                            type="text"
-                            size="mini"
-                            @click="onDelete(record)"
-                            >删除</a-button
-                          >
+                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                         </a-doption>
                       </template>
                     </a-dropdown>
@@ -140,11 +122,7 @@
                 />
               </template>
               <template v-else-if="item.type === 'radio' && item.key === 'type'">
-                <a-radio-group
-                  @change="changeStatus"
-                  v-model="data.type"
-                  :options="data.driveType"
-                />
+                <a-radio-group @change="changeStatus" v-model="data.type" :options="data.driveType" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
@@ -239,8 +217,7 @@
           (item) =>
             item.key === 'browser_type' ||
             formItems.some(
-              (item) =>
-                item.key === 'browser_port' || formItems.some((item) => item.key === 'browser_path')
+              (item) => item.key === 'browser_port' || formItems.some((item) => item.key === 'browser_path')
             )
         )
       ) {
@@ -284,7 +261,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此设备配置？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

@@ -50,9 +50,7 @@
             } as TablePropsType
           }) || []
       const innerTableProps = reactive<TablePropsType[]>(tempArray)
-      const isIndeterminate = ref(
-        innerTableProps.filter((it) => it.checked).length !== innerTableProps.length
-      )
+      const isIndeterminate = ref(innerTableProps.filter((it) => it.checked).length !== innerTableProps.length)
       const allChecked = ref(innerTableProps.every((it) => it.checked))
       function onAllChange(value: any) {
         innerTableProps.forEach((it) => (it.checked = value))
@@ -61,8 +59,7 @@
       const onChange = () => {
         const checkedItems = innerTableProps.filter((it) => it.checked)
         allChecked.value = checkedItems.length === innerTableProps.length
-        isIndeterminate.value =
-          checkedItems.length > 0 && checkedItems.length !== innerTableProps.length
+        isIndeterminate.value = checkedItems.length > 0 && checkedItems.length !== innerTableProps.length
         onUpdateValue(checkedItems)
       }
       const onReset = () => {

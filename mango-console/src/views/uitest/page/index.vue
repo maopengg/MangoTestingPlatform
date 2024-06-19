@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="Ui元素页面对象"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="Ui元素页面对象" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -101,14 +92,10 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="onPageCopy(record.id)"
-                          >复制</a-button
-                        >
+                        <a-button type="text" size="mini" @click="onPageCopy(record.id)">复制</a-button>
                       </a-doption>
                       <a-doption>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                          >删除</a-button
-                        >
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                       </a-doption>
                     </template>
                   </a-dropdown>

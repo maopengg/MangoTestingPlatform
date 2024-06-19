@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="测试报告"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="测试报告" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select'">
                     <a-select
@@ -87,16 +78,12 @@
                   </template>
                   <template v-else-if="item.key === 'run_status'" #cell="{ record }">
                     <a-tag color="red" size="small" v-if="record.run_status === 0">进行中</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.run_status === 1"
-                      >已完成</a-tag
-                    >
+                    <a-tag color="green" size="small" v-else-if="record.run_status === 1">已完成</a-tag>
                   </template>
                   <template v-else-if="item.key === 'status'" #cell="{ record }">
                     <a-tag color="red" size="small" v-if="record.status === 0">失败</a-tag>
                     <a-tag color="green" size="small" v-else-if="record.status === 1">通过</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.status === null"
-                      >待测试完成</a-tag
-                    >
+                    <a-tag color="green" size="small" v-else-if="record.status === null">待测试完成</a-tag>
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <a-space>
@@ -184,20 +171,7 @@
           },
           xAxis: {
             type: 'category',
-            data: [
-              '1周',
-              '2周',
-              '3周',
-              '4周',
-              '5周',
-              '6周',
-              '7周',
-              '8周',
-              '9周',
-              '10周',
-              '11周',
-              '12周',
-            ],
+            data: ['1周', '2周', '3周', '4周', '5周', '6周', '7周', '8周', '9周', '10周', '11周', '12周'],
           },
           legend: {
             data: ['成功', '失败'],

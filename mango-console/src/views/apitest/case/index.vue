@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="测试用例"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="测试用例" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -95,14 +86,10 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button status="success" size="small" @click="onCaseBatchRun"
-                    >批量执行</a-button
-                  >
+                  <a-button status="success" size="small" @click="onCaseBatchRun">批量执行</a-button>
                 </div>
                 <div>
-                  <a-button status="warning" size="small" @click="handleClick"
-                    >设为定时任务</a-button
-                  >
+                  <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
                   <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
                     <template #title> 设为定时任务 </template>
                     <div>
@@ -164,9 +151,7 @@
                 </template>
                 <template v-else-if="item.key === 'level'" #cell="{ record }">
                   <a-tag color="orange" size="small">
-                    {{
-                      record.level !== null ? data.enumCaseLevel[record.level].title : '-'
-                    }}</a-tag
+                    {{ record.level !== null ? data.enumCaseLevel[record.level].title : '-' }}</a-tag
                   >
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
@@ -182,23 +167,13 @@
                       <a-button type="text" size="mini">···</a-button>
                       <template #content>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onUpdate(record)"
-                            >编辑</a-button
-                          >
+                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                         </a-doption>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="pageStepsCody(record)"
-                            >复制</a-button
-                          >
+                          <a-button type="text" size="mini" @click="pageStepsCody(record)">复制</a-button>
                         </a-doption>
                         <a-doption>
-                          <a-button
-                            status="danger"
-                            type="text"
-                            size="mini"
-                            @click="onDelete(record)"
-                            >删除</a-button
-                          >
+                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                         </a-doption>
                       </template>
                     </a-dropdown>
@@ -298,11 +273,7 @@
     putApiCase,
   } from '@/api/apitest'
   import { getUserNickname } from '@/api/user'
-  import {
-    getSystemEnumCaseLevel,
-    getSystemScheduledName,
-    postSystemTasksBatchSetCases,
-  } from '@/api/system'
+  import { getSystemEnumCaseLevel, getSystemScheduledName, postSystemTasksBatchSetCases } from '@/api/system'
   import { useStatus } from '@/store/modules/status'
 
   const productModule = useProductModule()
@@ -367,7 +338,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此用例？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
