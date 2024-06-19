@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="调试页面步骤"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="调试页面步骤" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -144,7 +135,7 @@
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.type === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.type === 0">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未调试</a-tag>
+                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-button type="text" size="mini" @click="onRunCase(record)">调试</a-button>
@@ -156,14 +147,10 @@
                         <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                       </a-doption>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="onPageStepsCopy(record)"
-                          >复制</a-button
-                        >
+                        <a-button type="text" size="mini" @click="onPageStepsCopy(record)">复制</a-button>
                       </a-doption>
                       <a-doption>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                          >删除</a-button
-                        >
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                       </a-doption>
                     </template>
                   </a-dropdown>
@@ -310,7 +297,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此步骤？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
@@ -390,8 +377,6 @@
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['type'] = 0
-
       if (data.isAdd) {
         postUiSteps(value)
           .then((res) => {

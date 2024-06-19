@@ -4,11 +4,7 @@
       <Logo :always-show="true" />
     </div>
     <div class="menu-wrapper">
-      <ScrollerMenu
-        :routes="permissionStore.getTopLevelTabs"
-        mode="horizontal"
-        @top-item-click="onTopItemClick"
-      />
+      <ScrollerMenu :routes="permissionStore.getTopLevelTabs" mode="horizontal" @top-item-click="onTopItemClick" />
     </div>
     <a-card
       class="right-wrapper"

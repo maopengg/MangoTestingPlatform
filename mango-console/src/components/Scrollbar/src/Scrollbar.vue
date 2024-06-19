@@ -18,16 +18,7 @@
 </template>
 <script lang="ts">
   import { toObject } from './util'
-  import {
-    defineComponent,
-    ref,
-    onMounted,
-    onBeforeUnmount,
-    nextTick,
-    provide,
-    computed,
-    unref,
-  } from 'vue'
+  import { defineComponent, ref, onMounted, onBeforeUnmount, nextTick, provide, computed, unref } from 'vue'
   import Bar from './bar'
 
   export default defineComponent({

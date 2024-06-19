@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="项目管理"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="项目管理" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'select'">
                     <a-select
@@ -79,9 +70,7 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除</a-button
-                    >
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                   </a-space>
                 </template>
               </a-table-column>
@@ -175,7 +164,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此项目？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

@@ -3,21 +3,12 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="定时任务"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
+          <TableHeader :show-filter="true" title="定时任务" @search="doRefresh" @reset-search="onResetSearch">
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
+                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
                   </template>
                   <template v-else-if="item.type === 'cascader'">
                     <a-cascader
@@ -122,18 +113,10 @@
                       <a-button type="text" size="mini">···</a-button>
                       <template #content>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onUpdate(record)"
-                            >编辑</a-button
-                          >
+                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                         </a-doption>
                         <a-doption>
-                          <a-button
-                            status="danger"
-                            type="text"
-                            size="mini"
-                            @click="onDelete(record)"
-                            >删除</a-button
-                          >
+                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
                         </a-doption>
                       </template>
                     </a-dropdown>
@@ -208,15 +191,8 @@
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_executor'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  multiple
-                  :scrollbar="true"
-                >
-                  <a-option v-for="user of data.userList" :key="user.key">{{
-                    user.title
-                  }}</a-option>
+                <a-select v-model="item.value" :placeholder="item.placeholder" multiple :scrollbar="true">
+                  <a-option v-for="user of data.userList" :key="user.key">{{ user.title }}</a-option>
                 </a-select>
               </template>
               <template v-else-if="item.type === 'switch' && item.key === 'status'">
@@ -308,7 +284,7 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此页面？',
+      content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
