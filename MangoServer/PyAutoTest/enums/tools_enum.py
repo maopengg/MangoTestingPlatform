@@ -17,7 +17,7 @@ class ClientTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "服务端", 1: "执行端", 2: "控制端"}
+        return {0: "服务端", 1: "控制端", 2: "执行端"}
 
 
 class ClientNameEnum(BaseEnum):
