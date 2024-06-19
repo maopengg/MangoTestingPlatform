@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="接口信息收集" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="接口信息收集"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -88,7 +97,9 @@
                 <a-button type="primary" size="small" @click="onBatchUpload">录制</a-button>
                 <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>
                 <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
-                <a-button status="warning" size="small" @click="setCase('设为调试')">设为调试</a-button>
+                <a-button status="warning" size="small" @click="setCase('设为调试')"
+                  >设为调试</a-button
+                >
                 <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               </a-space>
               <a-space v-else-if="data.apiType === '1'">
@@ -152,7 +163,12 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <template>
                     <a-button @click="onRunCase">Open Modal</a-button>
-                    <a-modal width="50%" v-model:visible="visible" @ok="handleOk" @cancel="handleCancel">
+                    <a-modal
+                      width="50%"
+                      v-model:visible="visible"
+                      @ok="handleOk"
+                      @cancel="handleCancel"
+                    >
                       <template #title> {{ record.name }}接口-测试结果</template>
                       <a-space direction="vertical">
                         <!-- eslint-disable-next-line vue/valid-v-for -->
@@ -169,13 +185,19 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button></a-doption
+                        <a-button type="text" size="mini" @click="onUpdate(record)"
+                          >编辑</a-button
+                        ></a-doption
                       >
                       <a-doption>
-                        <a-button type="text" size="mini" @click="apiInfoCopy(record)">复制</a-button>
+                        <a-button type="text" size="mini" @click="apiInfoCopy(record)"
+                          >复制</a-button
+                        >
                       </a-doption>
                       <a-doption>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                          >删除</a-button
+                        >
                       </a-doption>
                     </template>
                   </a-dropdown>
@@ -245,7 +267,12 @@
                 />
               </template>
               <template v-else-if="item.key === 'curl'">
-                <a-textarea :placeholder="item.placeholder" v-model="item.value" allow-clear auto-size />
+                <a-textarea
+                  :placeholder="item.placeholder"
+                  v-model="item.value"
+                  allow-clear
+                  auto-size
+                />
               </template>
             </a-form-item>
           </a-form>
@@ -527,7 +554,11 @@
 
   function onConcurrency() {
     if (testObj.selectValue == null) {
-      Message.error('请先选择用例执行的环境')
+      Message.error('请先选择测试环境')
+      return
+    }
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要执行的接口')
       return
     }
     Message.loading('开始批量执行中~')
