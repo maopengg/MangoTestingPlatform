@@ -15,6 +15,7 @@ from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
@@ -58,34 +59,38 @@ class UiTestRun:
     def case_batch(self, case_id_list: list) -> None:
 
         test_suite_id = Snowflake.generate_id()
-        TestSuiteReportCRUD.inside_post({
-            'id': test_suite_id,
-            'type': AutoTestTypeEnum.UI.value,
-            'test_object': self.test_object_id,
-            'error_message': None,
-            'run_status': StatusEnum.FAIL.value,
-            'status': None,
-            'case_list': case_id_list,
-            'is_notice': self.is_notice,
-            'user': self.user_id,
-            'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
-        })
-        if self.case_executor:
-            max_len = max(len(case_id_list), len(self.case_executor))
-            for i in range(max_len):
-                case_id = case_id_list[i % len(case_id_list)]
-                username = self.case_executor[i % len(self.case_executor)]
-                case_model = self.send_case(case_id, test_suite_id)
-                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   case_model=case_model,
-                                   username=username)
+        try:
+            if self.case_executor:
+                max_len = max(len(case_id_list), len(self.case_executor))
+                for i in range(max_len):
+                    case_id = case_id_list[i % len(case_id_list)]
+                    username = self.case_executor[i % len(self.case_executor)]
+                    case_model = self.send_case(case_id, test_suite_id)
+                    self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                       case_model=case_model,
+                                       username=username)
+            else:
+                for case_id in case_id_list:
+                    case_model = self.send_case(case_id, test_suite_id)
+                    self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                       case_model=case_model)
+        except MangoServerError as error:
+            raise error
         else:
-            for case_id in case_id_list:
-                case_model = self.send_case(case_id, test_suite_id)
-                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   case_model=case_model)
-                # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\test.json', 'w') as f:
-                #     json.dump(case_model_list, f, indent=4, ensure_ascii=False)
+            TestSuiteReportCRUD.inside_post({
+                'id': test_suite_id,
+                'type': AutoTestTypeEnum.UI.value,
+                'test_object': self.test_object_id,
+                'error_message': None,
+                'run_status': StatusEnum.FAIL.value,
+                'status': None,
+                'case_list': case_id_list,
+                'is_notice': self.is_notice,
+                'user': self.user_id,
+                'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
+            })
+            # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\test.json', 'w') as f:
+            #     json.dump(case_model_list, f, indent=4, ensure_ascii=False)
 
     def send_case(self, case_id: int, test_suite_id) -> CaseModel:
         if self.tasks_id:
