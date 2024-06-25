@@ -6,8 +6,8 @@
 import json
 import re
 
-from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0027
+from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError, MethodDoesNotExistError
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0027, ERROR_MSG_0047
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool
@@ -70,9 +70,12 @@ class ObtainRandomData(RandomNumberData, RandomCharacterInfoData, RandomTimeData
             if self.project_product_id:
                 content['project_product_id'] = self.project_product_id
             func = re.sub(r'\(' + match.group(1) + r'\)', '', func)
-            if content['data'] != '':
-                return getattr(self, func)(**content)
-            return getattr(self, func)()
+            try:
+                if content['data'] != '':
+                    return getattr(self, func)(**content)
+                return getattr(self, func)()
+            except AttributeError:
+                raise MethodDoesNotExistError(*ERROR_MSG_0047)
 
 
 class DataClean(JsonTool, CacheTool):
