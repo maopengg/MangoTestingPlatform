@@ -16,18 +16,6 @@
           />
         </div>
       </a-tab-pane>
-      <a-tab-pane key="2" title="执行器缓存">
-        <div class="p-4">
-          <a-input-search
-            v-model="outValue"
-            placeholder="请输入关键字"
-            press-enter
-            allowClear
-            size="large"
-            @search="onOutSearch"
-          />
-        </div>
-      </a-tab-pane>
     </a-tabs>
   </a-modal>
 </template>
@@ -36,7 +24,6 @@
   import usePermissionStore from '@/store/modules/permission'
   import { defineComponent, onMounted, ref } from 'vue'
   import { RouteRecordRaw, useRouter } from 'vue-router'
-  import { getSystemCacheKeyValue } from '@/api/system'
   interface InnerSearchItem {
     title: string
     key: string
@@ -57,16 +44,7 @@
       function close() {
         visible.value = false
       }
-      function onOutSearch() {
-        if (outValue.value) {
-          // visible.value = false
-          getSystemCacheKeyValue(outValue.value)
-            .then((res) => {
-              res.msg
-            })
-            .catch(console.log)
-        }
-      }
+
       const permissionStore = usePermissionStore()
       function transformRoutes(routes: RouteRecordRaw[], parentPath = '/'): InnerSearchItem[] {
         const list: InnerSearchItem[] = []
@@ -104,7 +82,6 @@
         innerValue,
         show,
         close,
-        onOutSearch,
         onSelectItem,
       }
     },
