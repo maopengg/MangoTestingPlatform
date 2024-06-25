@@ -1,5 +1,8 @@
 <template>
-  <div class="vaw-layout-container" :class="[appStore.deviceType === 'mobile' && 'is-mobile', appStore.theme]">
+  <div
+    class="vaw-layout-container"
+    :class="[appStore.deviceType === 'mobile' && 'is-mobile', appStore.theme]"
+  >
     <template v-if="appStore.layoutMode === 'ttb'">
       <VAWHeader />
       <InnerSideBar />

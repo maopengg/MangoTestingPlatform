@@ -1,74 +1,61 @@
 <template>
-  <a-tabs style="width: 280px" size="small">
-    <a-tab-pane key="unread">
-      <template #title>
-        <span>
-          <icon-email />
-          未读
-        </span>
-      </template>
-      <a-list :bordered="false">
-        <a-list-item v-for="(item, index) of data" :key="index">
-          <a-list-item-meta :title="item.title" description="各部门主管，下午三点在大会议室开会">
-            <template #avatar>
-              <a-avatar :style="{ backgroundColor: '#3370ff' }">
-                <IconUser />
-              </a-avatar>
-            </template>
-          </a-list-item-meta>
-        </a-list-item>
-      </a-list>
-    </a-tab-pane>
-    <a-tab-pane key="read">
-      <template #title>
-        <span>
-          <icon-email />
-          已读
-        </span>
-      </template>
-      <a-list :bordered="false">
-        <a-list-item v-for="(item, index) of data" :key="index">
-          <a-list-item-meta :title="item.title" description="各部门主管，下午三点在大会议室开会">
-            <template #avatar>
-              <a-avatar :style="{ backgroundColor: '#ff0000' }">
-                <IconUser />
-              </a-avatar>
-            </template>
-          </a-list-item-meta>
-        </a-list-item>
-      </a-list>
-    </a-tab-pane>
-    <template #extra>
-      <a-button type="text" size="small">清空</a-button>
-      <a-button type="text" status="success" size="small">更多</a-button>
-    </template>
-  </a-tabs>
+  <a-list :bordered="false" size="small" :style="{ width: '350px' }">
+    <a-list-item v-for="(item, index) of data" :key="index">
+      <a-list-item-meta :title="item.title" :description="item.description">
+        <template #avatar>
+          <template v-if="item.status === 1">
+            <a-avatar :style="{ backgroundColor: '#2ECC71' }">
+              <icon-check />
+            </a-avatar>
+          </template>
+          <template v-else>
+            <a-avatar :style="{ backgroundColor: '#E74C3C' }">
+              <icon-close />
+            </a-avatar>
+          </template>
+        </template>
+      </a-list-item-meta>
+    </a-list-item>
+  </a-list>
 </template>
 
-<script lang="ts">
-  import { defineComponent } from 'vue'
+<script lang="ts" setup>
+  import { reactive } from 'vue'
 
-  export default defineComponent({
-    setup() {
-      const data = [
-        {
-          title: '下午三点大会议室开会',
-        },
-        {
-          title: '下午三点大会议室开会',
-        },
-        {
-          title: '下午三点大会议室开会',
-        },
-        {
-          title: '下午三点大会议室开会',
-        },
-      ]
-      return {
-        data,
-      }
+  const data = reactive([
+    {
+      title: '功能未完善',
+      description: '示例内容示例内容示例内容示例内容示例内容示例内容示例内容示例内容示例内容',
+      status: 0,
     },
-  })
+    {
+      title: '界面自动化',
+      description:
+        '用例运行总数: 83 个\n' +
+        '            通过用例个数: 58 个\n' +
+        '            失败用例个数: 0 个\n' +
+        '            异常用例个数: 0 个\n' +
+        '            跳过用例个数: 暂不统计 个\n' +
+        '            成  功   率: 69.88 %',
+      status: 1,
+    },
+    {
+      title: '接口自动化',
+      description:
+        '用例运行总数: 83 个\n' +
+        '            通过用例个数: 58 个\n' +
+        '            失败用例个数: 0 个\n' +
+        '            异常用例个数: 0 个\n' +
+        '            跳过用例个数: 暂不统计 个\n' +
+        '            成  功   率: 69.88 %',
+      status: 0,
+    },
+    {
+      title: '性能自动化',
+      description: '响应时间: 83 个\n',
+      status: 1,
+    },
+  ])
 </script>
 <style lang="less" scoped>
   :deep(.arco-list-medium > .arco-list-content > .arco-list-item) {
