@@ -57,18 +57,3 @@ class SystemViews(ViewSet):
                 return ResponseData.success(RESPONSE_MSG_0062, Cache().read_data_from_cache(name))
             else:
                 return ResponseData.fail(RESPONSE_MSG_0060)
-
-    @action(methods=['get'], detail=False)
-    def get_cache_key_value(self, request: Request):
-        socket_data = SocketDataModel(
-            code=200,
-            msg="查询执行器的缓存",
-            user=request.user.get('username'),
-            is_notice=ClientTypeEnum.ACTUATOR.value,
-            data=QueueModel(
-                func_name=ToolsEnum.get_cache_key_value.value,
-                func_args=request.query_params.get('key')
-            )
-        )
-        ChatConsumer.active_send(socket_data)
-        return ResponseData.success(RESPONSE_MSG_0062)
