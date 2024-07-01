@@ -83,12 +83,14 @@ class NoticeMain:
         except json.decoder.JSONDecodeError:
             raise JsonSerializeError(*ERROR_MSG_0012)
         else:
-            if not user_info:
-                raise UserEmailIsNullError(*ERROR_MSG_0048)
             send_list = []
             for i in user_info:
-                send_list += i.mailbox
-
+                try:
+                    send_list += i.mailbox
+                except TypeError:
+                    pass
+            if not send_list:
+                raise UserEmailIsNullError(*ERROR_MSG_0048)
         send_user, email_host, stamp_key = cls.mail_config()
         email = SendEmail(EmailNoticeModel(
             send_user=send_user,
