@@ -85,5 +85,10 @@ class MiniIoFileError(MangoServerError):
 class TestObjectNullError(MangoServerError):
     pass
 
+
 class MethodDoesNotExistError(MangoServerError):
+    pass
+
+
+class UserEmailIsNullError(MangoServerError):
     pass
