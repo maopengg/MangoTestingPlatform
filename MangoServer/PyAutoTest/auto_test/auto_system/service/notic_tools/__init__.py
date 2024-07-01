@@ -17,9 +17,9 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
-from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError
+from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError, UserEmailIsNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0012, ERROR_MSG_0031
+from PyAutoTest.tools.view.error_msg import ERROR_MSG_0012, ERROR_MSG_0031, ERROR_MSG_0048
 
 log = logging.getLogger('system')
 
@@ -80,11 +80,14 @@ class NoticeMain:
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         try:
             user_info = User.objects.filter(nickname__in=json.loads(i.config))
+        except json.decoder.JSONDecodeError:
+            raise JsonSerializeError(*ERROR_MSG_0012)
+        else:
+            if not user_info:
+                raise UserEmailIsNullError(*ERROR_MSG_0048)
             send_list = []
             for i in user_info:
                 send_list += i.mailbox
-        except json.decoder.JSONDecodeError:
-            raise JsonSerializeError(*ERROR_MSG_0012)
 
         send_user, email_host, stamp_key = cls.mail_config()
         email = SendEmail(EmailNoticeModel(
