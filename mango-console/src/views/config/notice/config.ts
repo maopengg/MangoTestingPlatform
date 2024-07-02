@@ -64,7 +64,7 @@ export const formItems: FormItem[] = reactive([
 ])
 export const mailboxForm: FormItem[] = reactive([
   {
-    label: '配置详情',
+    label: '收件人',
     key: 'config',
     value: '',
     type: 'select',
@@ -85,7 +85,7 @@ export const mailboxForm: FormItem[] = reactive([
 ])
 export const configForm: FormItem[] = reactive([
   {
-    label: '配置详情',
+    label: '企微链接',
     key: 'config',
     value: '',
     type: 'textarea',
@@ -121,7 +121,7 @@ export const tableColumns = useTableColumn([
   },
 
   {
-    title: '配置详情',
+    title: '收件人/企微链接',
     key: 'config',
     dataIndex: 'config',
     align: 'left',

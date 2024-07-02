@@ -25,7 +25,7 @@ export const formItems: FormItem[] = reactive([
     value: '',
     type: 'textarea',
     required: true,
-    placeholder: '请输入橘色描述',
+    placeholder: '请输入角色描述',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
