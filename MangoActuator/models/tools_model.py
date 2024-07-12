@@ -12,3 +12,24 @@ class MysqlConingModel(BaseModel):
     user: str
     password: str
     database: str | None
+
+
+class EmailNoticeModel(BaseModel):
+    send_user: str
+    email_host: str
+    stamp_key: str
+    send_list: list
+
+
+class TestReportModel(BaseModel):
+    test_suite_id: int
+    project_id: int
+    project_name: str
+    test_environment: str
+    case_sum: int
+    success: int
+    success_rate: float
+    warning: int
+    fail: int
+    execution_duration: int
+    test_time: str
