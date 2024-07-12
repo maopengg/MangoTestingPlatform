@@ -109,6 +109,9 @@ class WebDevice(PlaywrightBrowser,
                     for nth in range(0, count):
                         ele_list.append(locator.nth(nth))
             self.element_test_result.ele_quantity = len(ele_list)
+            if not ele_list:
+                raise LocatorError(*ERROR_MSG_0023)
+            # 这里需要进行调整
             if not ele_list and self.element_model.type == ElementOperationEnum.OPE.value:
                 raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
             return ele_list[self.element_model.sub - 1] if self.element_model.sub else ele_list[0]
