@@ -5,10 +5,9 @@
 # @Author : 毛鹏
 import os
 
-from PyAutoTest.settings import BASE_DIR
-
 
 def ensure_path_sep(path: str) -> str:
+    from PyAutoTest.settings import BASE_DIR
     """兼容 windows 和 linux 不同环境的操作系统路径 """
     if "/" in path:
         path = os.sep.join(path.split("/"))

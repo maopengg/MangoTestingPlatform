@@ -4,11 +4,17 @@ import os
 
 import sys
 
-from PyAutoTest.tools import nuw_dir
-
 
 def main():
     """Run administrative tasks."""
+    django_env = None
+    # 从参数中获取 --env 参数
+    for i, arg in enumerate(sys.argv):
+        if '--env=' in arg:
+            django_env = arg.split('=')[1]
+            del sys.argv[i]
+            break
+    os.environ.setdefault('DJANGO_ENV', django_env or 'master')
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PyAutoTest.settings')
     try:
         from django.core.management import execute_from_command_line
@@ -22,5 +28,4 @@ def main():
 
 
 if __name__ == '__main__':
-    nuw_dir()
     main()

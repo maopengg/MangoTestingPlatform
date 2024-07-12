@@ -5,3 +5,4 @@
 .logs/*
 logs/*
 files/*
+db.sqlite3

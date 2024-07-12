@@ -117,3 +117,9 @@ class CacheDataKey2Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {'DOMAIN_NAME': "本系统的URL地址"}
+
+
+class SystemEnvEnum(BaseEnum):
+    MASTER = 'master'
+    PROD = 'prod'
+    DEV = 'dev'

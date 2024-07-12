@@ -3,7 +3,6 @@
 # @Description: websocket视图函数
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
-import datetime
 import json
 import logging
 from typing import Union, Optional, TypeVar
