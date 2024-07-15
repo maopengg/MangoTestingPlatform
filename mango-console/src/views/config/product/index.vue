@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="项目产品配置" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="项目产品配置"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select'">
                     <a-select
@@ -64,17 +73,44 @@
                 <template v-else-if="item.key === 'project'" #cell="{ record }">
                   {{ record.project.name }}
                 </template>
-                <template v-else-if="item.key === 'type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.type === 0">WEB</a-tag>
-                  <a-tag color="cyan" size="small" v-else-if="record.type === 1">安卓</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.type === 2">IOS</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.type === 3">PC桌面</a-tag>
+                <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
+                    >界面自动化</a-tag
+                  >
+                  <a-tag color="cyan" size="small" v-else-if="record.auto_type === 1"
+                    >接口自动化</a-tag
+                  >
+                  <a-tag color="green" size="small" v-else-if="record.auto_type === 2"
+                    >性能自动化</a-tag
+                  >
                 </template>
+                <template v-else-if="item.key === 'client_type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.client_type === 0">WEB</a-tag>
+                  <a-tag color="green" size="small" v-else-if="record.client_type === 1"
+                    >PC桌面</a-tag
+                  >
+                  <template v-if="record.auto_type === 0">
+                    <a-tag color="orangered" size="small" v-if="record.client_type === 2"
+                      >安卓</a-tag
+                    >
+                    <a-tag color="cyan" size="small" v-else-if="record.client_type === 3"
+                      >IOS</a-tag
+                    > </template
+                  ><template v-if="record.auto_type === 1">
+                    <a-tag color="cyan" size="small" v-if="record.client_type === 2">APP</a-tag>
+                    <a-tag color="green" size="small" v-else-if="record.client_type === 3"
+                      >小程序</a-tag
+                    >
+                  </template>
+                </template>
+
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button type="text" size="mini" @click="onClick(record)">增加模块</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除</a-button
+                    >
                   </a-space>
                 </template>
               </a-table-column>
@@ -108,11 +144,23 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'type'">
+              <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.platformEnum"
+                  :options="data.AutoTestNameList"
+                  :field-names="fieldNames"
+                  @change="getTypeList(item.value, item)"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'client_type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="data.typeList"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -138,7 +186,7 @@
   import { fieldNames } from '@/setting'
   import { conditionItems, formItems, tableColumns } from './config'
   import { deleteUserProduct, getUserProduct, postUserProduct, putUserProduct } from '@/api/user'
-  import { getSystemEnumPlatform } from '@/api/system'
+  import { getSystemEnumAutotest, getSystemEnumEnd, getSystemEnumPlatform } from '@/api/system'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -153,7 +201,8 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加项目',
-    platformEnum: [],
+    typeList: [],
+    AutoTestNameList: [],
   })
 
   function onResetSearch() {
@@ -209,6 +258,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
+    getTypeList(item.auto_type, item)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -256,18 +306,35 @@
       }
     }
   }
-  function getPlatform() {
-    getSystemEnumPlatform()
+  function getAutoTestName() {
+    getSystemEnumAutotest()
       .then((res) => {
-        data.platformEnum = res.data
+        data.AutoTestNameList = res.data
       })
       .catch(console.log)
   }
-
+  function getTypeList(autoTestType: number, item: any) {
+    if (autoTestType === 0) {
+      getSystemEnumPlatform()
+        .then((res) => {
+          data.typeList = res.data
+        })
+        .catch(console.log)
+    } else if (autoTestType === 1) {
+      getSystemEnumEnd()
+        .then((res) => {
+          data.typeList = res.data
+        })
+        .catch(console.log)
+    } else {
+      Message.warning('不支持选择自动化类型为性能，请重新选择！')
+      item.value = ''
+    }
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getPlatform()
+      getAutoTestName()
     })
   })
 </script>

@@ -62,7 +62,7 @@ export const formItems: FormItem[] = reactive([
     value: '',
     type: 'input',
     required: true,
-    placeholder: '请输入域名/名称/对象',
+    placeholder: '请输入域名/包名/路径',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')
@@ -73,7 +73,7 @@ export const formItems: FormItem[] = reactive([
   },
 
   {
-    label: '绑定环境',
+    label: '部署环境',
     key: 'environment',
     value: '',
     type: 'select',
@@ -120,13 +120,13 @@ export const tableColumns = useTableColumn([
     align: 'left',
   },
   {
-    title: '域名/包名',
+    title: '域名/包名/路径',
     key: 'value',
     dataIndex: 'value',
     align: 'left',
   },
   {
-    title: '环境类型',
+    title: '部署环境',
     key: 'environment',
     dataIndex: 'environment',
     width: 150,
