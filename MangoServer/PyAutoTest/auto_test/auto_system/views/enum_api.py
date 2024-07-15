@@ -89,3 +89,7 @@ class EnumOptionViews(ViewSet):
     @action(methods=['get'], detail=False)
     def enum_ui_device_type(self, request):
         return ResponseData.success(RESPONSE_MSG_0106, DeviceEnum.obj())
+
+    @action(methods=['get'], detail=False)
+    def enum_product_type(self, request):
+        return ResponseData.success(RESPONSE_MSG_0106, ProductTypeEnum.get_option())

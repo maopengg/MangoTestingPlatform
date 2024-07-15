@@ -19,7 +19,6 @@ class ApiInfo(models.Model):
     # 0和空等于录制，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型')
     name = models.CharField(verbose_name="接口名称", max_length=1024)
-    client = models.SmallIntegerField(verbose_name="什么端")
     url = models.CharField(verbose_name="请求url", max_length=1024)
     method = models.SmallIntegerField(verbose_name="请求方法")
     header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)

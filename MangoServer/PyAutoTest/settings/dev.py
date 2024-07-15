@@ -10,8 +10,7 @@ IS_SQLITE = False  # 是否选用mysql作为数据源
 
 # ************************ Mysql配置 ************************ #
 
-mysql_db_name = 'mango_server_test'
-# mysql_db_name = 'mango_server'
+mysql_db_name = 'mango_server'
 mysql_user = 'root'
 mysql_password = 'mP123456&'
 mysql_ip = '127.0.0.1'
