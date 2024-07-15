@@ -59,9 +59,7 @@ class PageSteps(StepElements):
     async def new_web_obj(self, data: WEBConfigModel):
         msg = 'WEB对象已实例化'
         if self.page is None and self.context is None:
-            self.web_config = data
-            self.context, self.page = await self.new_web_page()
-            self.browser = self.browser
+            await self.web_init(data)
             msg = 'WEB对象实例化成功'
             if data.host:
                 await self.w_goto(data.host)
