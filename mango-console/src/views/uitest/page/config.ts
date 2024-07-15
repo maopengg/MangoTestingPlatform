@@ -136,6 +136,12 @@ export const tableColumns = useTableColumn([
     width: 250,
   },
   {
+    title: '端类型',
+    key: 'client',
+    dataIndex: 'client',
+    width: 110,
+  },
+  {
     title: '页面地址',
     key: 'url',
     dataIndex: 'url',

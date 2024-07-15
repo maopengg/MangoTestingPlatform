@@ -24,8 +24,8 @@ class ProjectProduct(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="产品名称", max_length=64)
-    # 0是web， 1是app， 2是小程序
-    type = models.SmallIntegerField(verbose_name="对应什么客户端")
+    auto_type = models.SmallIntegerField(verbose_name="自动化类型")
+    client_type = models.SmallIntegerField(verbose_name="客户端类型")
 
     class Meta:
         db_table = 'project_product'

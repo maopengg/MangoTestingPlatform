@@ -10,11 +10,12 @@ class ClientEnum(BaseEnum):
     """设备类型"""
     WEB = 0
     APP = 1
-    MINI = 2
+    PC = 2
+    MINI = 3
 
     @classmethod
     def obj(cls):
-        return {0: "WEB", 1: "APP", 2: "MINI"}
+        return {0: "WEB", 1: "PC桌面", 2: "APP", 3: "小程序", }
 
 
 class MethodEnum(BaseEnum):

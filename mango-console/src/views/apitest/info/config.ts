@@ -54,15 +54,6 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
-    key: 'client',
-    label: '客户端类型',
-    value: '',
-    type: 'select',
-    placeholder: '请选择客户端类型',
-    optionItems: [],
-    reset: function () {},
-  },
-  {
     key: 'status',
     label: '状态',
     value: '',
@@ -118,21 +109,7 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-  {
-    label: '客户端类型',
-    key: 'client',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请设置客户端类型',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
+
   {
     label: 'url',
     key: 'url',
@@ -205,21 +182,6 @@ export const formItemsImport: FormItem[] = reactive([
     },
   },
   {
-    label: '客户端类型',
-    key: 'client',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请设置客户端类型',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
     label: 'curl',
     key: 'curl',
     value: '',
@@ -269,7 +231,12 @@ export const tableColumns = useTableColumn([
     align: 'left',
     width: 270,
   },
-
+  {
+    title: '端类型',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80,
+  },
   {
     title: 'url',
     key: 'url',
@@ -277,12 +244,6 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
-  },
-  {
-    title: '端类型',
-    key: 'client',
-    dataIndex: 'client',
-    width: 80,
   },
   {
     title: '方法',

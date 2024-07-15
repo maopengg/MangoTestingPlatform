@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="Ui元素页面对象" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="Ui元素页面对象"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -43,17 +52,17 @@
         </template>
 
         <template #default>
-          <a-tabs @tab-click="(key) => switchType(key)">
+          <a-tabs>
             <template #extra>
               <a-space>
-                <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-                <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+                <div> <a-button type="primary" size="small" @click="onAddPage">新增</a-button></div>
+                <div>
+                  <a-button status="danger" size="small" @click="onDeleteItems"
+                    >批量删除</a-button
+                  ></div
+                >
               </a-space>
             </template>
-            <a-tab-pane key="0" title="Web页面对象" />
-            <a-tab-pane key="1" title="Android页面对象" />
-            <a-tab-pane key="2" title="IOS页面对象" />
-            <a-tab-pane key="3" title="桌面页面对象" />
           </a-tabs>
           <a-table
             :bordered="false"
@@ -85,6 +94,32 @@
                   {{ record.module?.superior_module ? record.module?.superior_module + '/' : ''
                   }}{{ record.module?.name }}
                 </template>
+                <template v-else-if="item.key === 'client'" #cell="{ record }">
+                  <a-tag
+                    color="orangered"
+                    size="small"
+                    v-if="record.project_product.client_type === 0"
+                    >WEB</a-tag
+                  >
+                  <a-tag
+                    color="cyan"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 1"
+                    >PC桌面</a-tag
+                  >
+                  <a-tag
+                    color="green"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 2"
+                    >安卓</a-tag
+                  >
+                  <a-tag
+                    color="green"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 3"
+                    >IOS</a-tag
+                  >
+                </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                   <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
@@ -92,10 +127,14 @@
                     <a-button type="text" size="mini">···</a-button>
                     <template #content>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="onPageCopy(record.id)">复制</a-button>
+                        <a-button type="text" size="mini" @click="onPageCopy(record.id)"
+                          >复制</a-button
+                        >
                       </a-doption>
                       <a-doption>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                          >删除</a-button
+                        >
                       </a-doption>
                     </template>
                   </a-dropdown>
@@ -148,6 +187,17 @@
                   allow-search
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="productModule.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -184,13 +234,7 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加页面',
-    pageType: 0,
   })
-
-  function switchType(key: any) {
-    data.pageType = key
-    doRefresh()
-  }
 
   function onResetSearch() {
     conditionItems.forEach((it) => {
@@ -252,7 +296,6 @@
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['type'] = data.pageType
       if (data.isAdd) {
         postUiPage(value)
           .then((res) => {
@@ -291,7 +334,6 @@
   }
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     const value = getFormItems(conditionItems)
-    value['type'] = data.pageType
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     if (projectProductId && bool_) {
@@ -328,7 +370,7 @@
       path: '/uitest/page/elements',
       query: {
         id: record.id,
-        pageType: data.pageType,
+        pageType: record.project_product.ui_type,
       },
     })
   }
