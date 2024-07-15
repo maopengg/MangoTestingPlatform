@@ -12,7 +12,7 @@ from enums.tools_enum import StatusEnum
 from enums.ui_enum import DriveTypeEnum
 from exceptions import MangoActuatorError
 from exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
-from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel
+from models.socket_model.ui_model import PageStepsResultModel, PageStepsModel, WEBConfigModel
 from service_conn.http_conn.http_api import HttpApi
 from settings import settings
 from tools import InitPath
@@ -80,7 +80,7 @@ class StepElements(ElementMain):
     async def driver_init(self):
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:
-                await self.__web_init()
+                await self.web_init()
             case DriveTypeEnum.ANDROID.value:
                 self.__android_init()
             case DriveTypeEnum.IOS.value:
@@ -90,19 +90,22 @@ class StepElements(ElementMain):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
-    async def __web_init(self):
+    async def web_init(self, data: WEBConfigModel | None = None):
+        test_object_value = ''
         if self.page is None:
-            self.driver_object.web_config = self.page_step_model.equipment_config
-            self.context, self.page = await self.driver_object.new_web_page()
-        test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                    self.page_step_model.url)
+            if data:
+                self.driver_object.web_config = data
+                self.context, self.page = await self.driver_object.new_web_page()
+            else:
+                self.driver_object.web_config = self.page_step_model.equipment_config
+                self.context, self.page = await self.driver_object.new_web_page()
+                test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                            self.page_step_model.url)
         try:
-            if self.page and urlparse(self.url).netloc.lower() != urlparse(test_object_value).netloc.lower():
+            if self.page and urlparse(self.url).netloc.lower()\
+                    != urlparse(test_object_value).netloc.lower() and not data:
                 await self.w_goto(test_object_value)
                 self.url = test_object_value
-            # elif self.page and self.project_product_id != self.page_step_model.project_product:
-            #     await self.w_goto(test_object_value)
-            #     self.url = test_object_value
         except Error as error:
             if error.message == "Target page, context or browser has been closed":
                 self.page_step_result_model.status = StatusEnum.FAIL.value
@@ -119,10 +122,6 @@ class StepElements(ElementMain):
             self.a_clear_app(package_name)
             self.a_start_app(package_name)
             self.package_name = package_name
-        # elif self.android and self.project_product_id != self.page_step_model.project_product:
-        #     self.a_clear_app(package_name)
-        #     self.a_start_app(package_name)
-        #     self.package_name = package_name
 
     def __ios_init(self, ):
         pass
