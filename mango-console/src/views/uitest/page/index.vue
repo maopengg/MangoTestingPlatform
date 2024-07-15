@@ -370,7 +370,6 @@
       path: '/uitest/page/elements',
       query: {
         id: record.id,
-        pageType: record.project_product.ui_type,
       },
     })
   }
