@@ -183,9 +183,9 @@ class UiTestRun:
             project_product=step.project_product.id,
             test_object_value=test_object.value,
             url=step.page.url,
-            type=step.page.type,
+            type=step.project_product.client_type,
             equipment_config=self.__get_web_config(
-                test_object.value) if step.page.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+                test_object.value) if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object)
         )
         if case_step_details_id:

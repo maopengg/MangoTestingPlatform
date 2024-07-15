@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="调试页面步骤" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="调试页面步骤"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -147,10 +156,14 @@
                         <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                       </a-doption>
                       <a-doption>
-                        <a-button type="text" size="mini" @click="onPageStepsCopy(record)">复制</a-button>
+                        <a-button type="text" size="mini" @click="onPageStepsCopy(record)"
+                          >复制</a-button
+                        >
                       </a-doption>
                       <a-doption>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                          >删除</a-button
+                        >
                       </a-doption>
                     </template>
                   </a-dropdown>
@@ -418,7 +431,7 @@
       query: {
         id: parseInt(record.id, 10),
         pageId: record.page.id,
-        pageType: record.page.type,
+        pageType: record.project_product.client_type,
       },
     })
   }

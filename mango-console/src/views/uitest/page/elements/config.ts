@@ -5,10 +5,12 @@ export const columns = reactive([
   {
     title: '元素名称',
     dataIndex: 'name',
+    width: 250,
   },
   {
     title: '表达式类型',
     dataIndex: 'exp',
+    width: 110,
   },
   {
     title: '定位表达式',
@@ -19,14 +21,17 @@ export const columns = reactive([
   {
     title: '是否在iframe中',
     dataIndex: 'is_iframe',
+    width: 140,
   },
   {
     title: '等待时间（秒）',
     dataIndex: 'sleep',
+    width: 130,
   },
   {
     title: '元素下标（1开始）',
     dataIndex: 'sub',
+    width: 160,
   },
 
   {
