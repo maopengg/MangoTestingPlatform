@@ -16,8 +16,6 @@ class UiPage(models.Model):
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="页面名称", max_length=64)
     url = models.CharField(verbose_name="url", max_length=128)
-    # 0是web，1是小程序， 3是app
-    type = models.SmallIntegerField(verbose_name="页面是什么端")
 
     class Meta:
         db_table = 'ui_page'

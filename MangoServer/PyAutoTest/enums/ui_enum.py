@@ -6,6 +6,18 @@
 from PyAutoTest.enums import BaseEnum
 
 
+class DriveTypeEnum(BaseEnum):
+    """UI自动化平台枚举"""
+    WEB = 0
+    ANDROID = 1
+    DESKTOP = 2
+    IOS = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "WEB", 1: "PC桌面", 2: "安卓", 3: "IOS"}
+
+
 class BrowserTypeEnum(BaseEnum):
     """浏览器类型"""
     CHROMIUM = 0
@@ -56,16 +68,6 @@ class ElementExpEnum(BaseEnum):
         }
 
 
-class DriveTypeEnum(BaseEnum):
-    """UI自动化平台枚举"""
-    WEB = 0
-    ANDROID = 1
-    DESKTOP = 2
-    IOS = 3
-
-    @classmethod
-    def obj(cls):
-        return {0: "WEB", 1: "安卓", 2: "PC桌面", 3: "IOS"}
 
 
 class ElementOperationEnum(BaseEnum):

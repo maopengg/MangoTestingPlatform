@@ -45,19 +45,6 @@
                       @change="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'client'">
-                    <a-select
-                      style="width: 140px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="data.apiPublicEnd"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
                   <template v-else-if="item.type === 'select' && item.key === 'status'">
                     <a-select
                       style="width: 140px"
@@ -145,9 +132,30 @@
                   }}{{ record.module?.name }}
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
-                  <a-tag color="arcoblue" size="small" v-if="record.client === 0">WEB</a-tag>
-                  <a-tag color="magenta" size="small" v-else-if="record.client === 1">APP</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.client === 2">MINI</a-tag>
+                  <a-tag
+                    color="arcoblue"
+                    size="small"
+                    v-if="record.project_product.client_type === 0"
+                    >WEB</a-tag
+                  >
+                  <a-tag
+                    color="magenta"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 1"
+                    >PC桌面</a-tag
+                  >
+                  <a-tag
+                    color="green"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 2"
+                    >APP</a-tag
+                  >
+                  <a-tag
+                    color="green"
+                    size="small"
+                    v-else-if="record.project_product.client_type === 4"
+                    >小程序</a-tag
+                  >
                 </template>
                 <template v-else-if="item.key === 'method'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.method === 0">GET</a-tag>
@@ -243,18 +251,6 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.key === 'client'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.apiPublicEnd"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-
               <template v-else-if="item.key === 'method'">
                 <a-select
                   v-model="item.value"
@@ -571,14 +567,6 @@
       .catch(console.log)
   }
 
-  function doEnd() {
-    getSystemEnumEnd()
-      .then((res) => {
-        data.apiPublicEnd = res.data
-      })
-      .catch(console.log)
-  }
-
   function doMethod() {
     getSystemEnumMethod()
       .then((res) => {
@@ -619,7 +607,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doEnd()
       doMethod()
       productModule.getProjectModule(null)
     })

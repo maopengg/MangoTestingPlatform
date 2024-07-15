@@ -3,6 +3,21 @@ import { reactive } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
+
+interface Project {
+  id: number
+  // 添加 Project 模型中其他需要的字段
+}
+
+interface ProjectProduct {
+  id: number
+  create_time: Date
+  update_time: Date
+  project: Project | null
+  name: string
+  auto_type: number
+  client_type: number
+}
 export const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
@@ -20,12 +35,27 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '客户端类型',
-    key: 'type',
+    label: '自动化类型',
+    key: 'auto_type',
     value: '',
     type: 'select',
     required: true,
-    placeholder: '请选择客户端类型',
+    placeholder: '请选择产品的端类型',
+    validator: function () {
+      if (this.value === null && this.value === '') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '客户端类型',
+    key: 'client_type',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请选择产品的端类型',
     validator: function () {
       if (this.value === null && this.value === '') {
         Message.error(this.placeholder || '')
@@ -90,14 +120,19 @@ export const tableColumns = useTableColumn([
     dataIndex: 'project',
   },
   {
-    title: '产品名称',
+    title: '自动化类型',
     key: 'name',
     dataIndex: 'name',
   },
   {
+    title: '客户端类型',
+    key: 'auto_type',
+    dataIndex: 'auto_type',
+  },
+  {
     title: '产品类型',
-    key: 'type',
-    dataIndex: 'type',
+    key: 'client_type',
+    dataIndex: 'client_type',
   },
   {
     title: '操作',
