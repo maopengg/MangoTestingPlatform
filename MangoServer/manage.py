@@ -8,7 +8,6 @@ import sys
 def main():
     """Run administrative tasks."""
     django_env = None
-    # 从参数中获取 --env 参数
     for i, arg in enumerate(sys.argv):
         if '--env=' in arg:
             django_env = arg.split('=')[1]
