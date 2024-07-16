@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'PyAutoTest.middleware.log_collector.LogMiddleWare',
+    'PyAutoTest.middleware.is_delete.IsDeleteMiddleWare',
 ]
 ROOT_URLCONF = 'PyAutoTest.urls'
 
