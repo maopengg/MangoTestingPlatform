@@ -56,6 +56,7 @@
       return
     }
     project.data.forEach((item: any) => {
+      console.log(item)
       project.selectValue = key
       if (item.key === project.selectValue) project.selectTitle = item.title
     })
@@ -67,18 +68,8 @@
     }
   })
 
-  function doRefresh() {
-    getUserProjectEnvironment(userStore.userId)
-      .then((res) => {
-        userStore.selected_environment = res.data.selected_environment
-        userStore.selected_project = res.data.selected_project
-        project.projectProductNameList(userStore.selected_project)
-      })
-      .catch(console.log)
-  }
   onMounted(async () => {
     await project.getProject()
-    await doRefresh()
     await status.refresh()
   })
 </script>

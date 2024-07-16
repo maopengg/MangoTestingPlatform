@@ -58,7 +58,7 @@ class ApiPublicModel(BaseModel):
 
 class ApiInfoModel(BaseModel):
     """ApiInfo模型"""
-    project: int
+    project_product: int
     username: str
     type: int = 0
     module_name: int | None = None

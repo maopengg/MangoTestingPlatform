@@ -32,7 +32,6 @@ from models.socket_model.ui_model import WEBConfigModel
 from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.desktop.signal_send import SignalSend
-from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042
 from tools.public_methods import async_global_exception
 
@@ -133,18 +132,17 @@ class NewBrowser:
         @param request:
         @return:
         """
-        if self.web_config.host is None:
+        if self.web_config.host_obj is None:
             await route.continue_()  # 继续请求，不做修改
             return
-        if self.web_config.host in request.url:  # 检查请求的URL是否包含目标路径
-            if request.resource_type == "document" or request.resource_type == "xhr" or request.resource_type == "fetch":
-                await self.__send_recording_api(request)
+        if request.resource_type in ("document", "xhr", "fetch"):
+            for project_product, host in self.web_config.host_obj.items():
+                if host in request.url:
+                    await self.__send_recording_api(request, int(project_product))
         await route.continue_()  # 继续请求，不做修改
 
-    async def __send_recording_api(self, request: Request):
-        if self.web_config.project_product_id is None:
-            log.error('错误逻辑')
-            return
+    @classmethod
+    async def __send_recording_api(cls, request: Request, project_product: int):
         parsed_url = parse.urlsplit(request.url)
 
         try:
@@ -158,7 +156,7 @@ class NewBrowser:
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
         try:
             api_info = ApiInfoModel(
-                project=self.web_config.project_product_id,
+                project_product=project_product,
                 username=service_conn.USERNAME,
                 type=ApiTypeEnum.batch.value,
                 name=parsed_url.path,

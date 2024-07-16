@@ -53,7 +53,7 @@ class UIConsumer:
         """
         try:
             if cls.page_steps is None:
-                cls.page_steps = PageSteps(data.project_product)
+                cls.page_steps = PageSteps()
             await cls.page_steps.new_web_obj(data)
         except Exception as error:
             await async_global_exception(
