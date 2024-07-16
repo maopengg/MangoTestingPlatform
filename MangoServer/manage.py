@@ -23,7 +23,7 @@ def main():
         #     "available on your PYTHONPATH environment variable? Did you "
         #     "forget to activate a virtual environment?"
         # ) from exc
-        print('报错了')
+        print('error')
         raise
     execute_from_command_line(sys.argv)
 
