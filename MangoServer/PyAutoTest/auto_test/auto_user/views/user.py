@@ -138,7 +138,7 @@ class LoginViews(ViewSet):
         password = request.data.get('password')
         source_type = request.data.get('type')
         password = EncryptionTool.md5_32_small(**{'data': password})
-        user_info = User.objects.filter(username=username, password=password).first()
+        user_info = User.objects.get(username=username, password=password)
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -159,7 +159,7 @@ class LoginViews(ViewSet):
             "userName": user_info.username,
             "userId": user_info.id,
             "roleId": user_info.role.id if user_info.role else None,
-            "token": create_token({'id': user_info.id, 'username': user_info.username}),
+            "token": create_token({'id': user_info.id, 'username': user_info.username, 'nickname': user_info.nickname}),
             "selected_project": user_info.selected_project,
             "selected_environment": user_info.selected_environment,
             "roles": [
