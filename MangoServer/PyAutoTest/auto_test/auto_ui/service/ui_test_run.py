@@ -5,12 +5,11 @@
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
-from PyAutoTest.auto_test.auto_system.models import TestObject, User
+from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
-from PyAutoTest.auto_test.auto_ui.models import UiCase, UiPageSteps, UiPageStepsDetailed, UiCaseStepsDetailed, \
-    UiElement, UiConfig, UiPage, UiPublic
+from PyAutoTest.auto_test.auto_ui.models import *
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
