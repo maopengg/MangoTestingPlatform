@@ -16,7 +16,7 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_refle
     SystemConsumer
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection.ui_consumer import UIConsumer
 from PyAutoTest.models.socket_model import QueueModel
-from PyAutoTest.settings import DEBUG
+from PyAutoTest.settings.settings import DEBUG
 from PyAutoTest.tools.decorator.singleton import singleton
 
 log = logging.getLogger('system')
