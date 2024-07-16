@@ -414,6 +414,10 @@
   }
 
   function onBatchUpload() {
+    if (testObj.selectValue == null) {
+      Message.error('请先选择用例执行的环境并进行录制')
+      return
+    }
     Modal.confirm({
       title: '注意事项',
       content:

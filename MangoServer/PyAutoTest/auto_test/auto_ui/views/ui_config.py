@@ -3,13 +3,15 @@
 # @Description: 
 # @Time   : 2023-03-25 18:54
 # @Author : 毛鹏
+import urllib
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-from PyAutoTest.auto_test.auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject, ProjectProduct
 from PyAutoTest.auto_test.auto_ui.models import UiConfig
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
@@ -87,7 +89,6 @@ class UiConfigViews(ViewSet):
     @action(methods=['get'], detail=False)
     def new_browser_obj(self, request: Request):
         """
-
         @param request:
         @return:
         """
@@ -97,18 +98,39 @@ class UiConfigViews(ViewSet):
             config_obj = UiConfig.objects.get(user_id=request.user['id'],
                                               status=StatusEnum.SUCCESS.value,
                                               type=DriveTypeEnum.WEB.value)
-            if not user_obj.selected_project:
-                return ResponseData.fail(RESPONSE_MSG_0058, )
             if not user_obj.selected_environment:
                 return ResponseData.fail(RESPONSE_MSG_0058, )
+
+            test_object = TestObject.objects.get(id=user_obj.selected_environment)
+            host_obj = {
+                obj_id: obj_value
+                for obj_value, obj_id in TestObject.objects.filter(
+                    project_product_id__in=ProjectProduct.objects.filter(
+                        project_id=test_object.project_product.project.id
+                    ).values_list('id'),
+                    environment=test_object.environment
+                ).values_list('value', 'id')
+            }
+
+            host_obj1 = {}
+            for _id,url in host_obj.items():
+                if url.startswith('http'):
+                    # 如果 URL 以 http 或 https 开头,则提取域名部分
+                    parsed_url = urllib.parse.urlparse(url)
+                    domain = parsed_url.netloc
+                    if '.' in domain:
+                        # 检查域名是否包含至少一个点,如果包含则认为是一个有效的域名
+                        host_obj1[_id] = domain
+                elif '.' in url:
+                    # 如果 URL 不以 http 或 https 开头,但包含至少一个点,则认为是一个有效的域名
+                    host_obj1[_id] = url
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
                                         is_headless=config_obj.is_headless,
                                         device=config_obj.device,
-                                        project_product=user_obj.selected_project,
                                         is_header_intercept=True,
-                                        host=TestObject.objects.get(id=user_obj.selected_environment).value)
+                                        host_obj=host_obj1)
         else:
             config_obj = self.model.objects.get(id=request.query_params.get('id'))
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
