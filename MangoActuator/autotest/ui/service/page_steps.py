@@ -17,7 +17,7 @@ from service_conn.socket_conn.client_socket import ClientWebSocket
 class PageSteps(StepElements):
     """用例分发"""
 
-    def __init__(self, project_product_id: int):
+    def __init__(self, project_product_id: int | None = None):
         self.driver_object = DriverObject()
 
         super().__init__(project_product_id, self.driver_object)
@@ -60,9 +60,13 @@ class PageSteps(StepElements):
         msg = 'WEB对象已实例化'
         if self.page is None and self.context is None:
             await self.web_init(data)
-            msg = 'WEB对象实例化成功'
-            if data.host:
-                await self.w_goto(data.host)
+            msg = 'WEB对象实例化成功，请手动输入对应选择的测试项目和部署环境的url进行访问开始录制！'
+        # 检查页面是否已关闭
+        if self.page.is_closed():
+            self.page = None
+            self.context = None
+            await self.web_init(data)
+
         await ClientWebSocket().async_send(
             msg=msg,
             is_notice=ClientTypeEnum.WEB.value

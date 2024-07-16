@@ -21,8 +21,7 @@ class WEBConfigModel(BaseModel):
     browser_path: str | None = None
     is_headless: int | None = None
     is_header_intercept: bool = False
-    host: str | None = None
-    project_product: int | None = None
+    host_obj: dict | None = None
     device: str | None = None
 
 
