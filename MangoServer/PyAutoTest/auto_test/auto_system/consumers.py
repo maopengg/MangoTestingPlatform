@@ -6,7 +6,7 @@
 import json
 import logging
 from typing import Union, Optional, TypeVar
-from PyAutoTest.settings.settings import DEBUG
+from PyAutoTest.settings import DEBUG
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
