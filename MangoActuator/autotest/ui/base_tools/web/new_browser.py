@@ -31,9 +31,9 @@ from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
 from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
+from tools.decorator.error_handle import async_error_handle
 from tools.desktop.signal_send import SignalSend
 from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042
-from tools.public_methods import async_global_exception
 
 """
 python -m uiautomator2 init
@@ -142,6 +142,7 @@ class NewBrowser:
         await route.continue_()  # 继续请求，不做修改
 
     @classmethod
+    @async_error_handle()
     async def __send_recording_api(cls, request: Request, project_product: int):
         parsed_url = parse.urlsplit(request.url)
 
@@ -154,29 +155,24 @@ class NewBrowser:
                 parse.parse_qs(request.post_data).items()} if json_data is None else None
         params = {key: value[0] for key, value in
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
-        try:
-            api_info = ApiInfoModel(
-                project_product=project_product,
-                username=service_conn.USERNAME,
-                type=ApiTypeEnum.batch.value,
-                name=parsed_url.path,
-                client=ClientEnum.WEB.value,
-                url=parsed_url.path,
-                method=MethodEnum.get_key(request.method),
-                params=None if params == {} else params,
-                data=None if data == {} else data,
-                json_data=json_data
-            )
-            await ClientWebSocket().async_send(
-                msg="发送录制接口",
-                func_name=ApiSocketEnum.RECORDING_API.value,
-                func_args=api_info
-            )
-        except Exception as error:
-            await async_global_exception(
-                '__send_recording_api',
-                error
-            )
+        api_info = ApiInfoModel(
+            project_product=project_product,
+            username=service_conn.USERNAME,
+            type=ApiTypeEnum.batch.value,
+            name=parsed_url.path,
+            client=ClientEnum.WEB.value,
+            url=parsed_url.path,
+            method=MethodEnum.get_key(request.method),
+            params=None if params == {} else params,
+            data=None if data == {} else data,
+            json_data=json_data
+        )
+        await ClientWebSocket().async_send(
+            msg="发送录制接口",
+            func_name=ApiSocketEnum.RECORDING_API.value,
+            func_args=api_info
+        )
+
 
 
 async def test_main():

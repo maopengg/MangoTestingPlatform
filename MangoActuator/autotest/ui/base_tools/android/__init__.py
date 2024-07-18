@@ -5,8 +5,9 @@
 # @Author : 毛鹏
 from retrying import retry
 from uiautomator2 import UiObject, NullPointerExceptionError, UiObjectNotFoundError
-from uiautomator2.xpath import XPathSelector
 from uiautomator2.exceptions import XPathElementNotFoundError
+from uiautomator2.xpath import XPathSelector
+
 from autotest.ui.base_tools.android.application import UiautomatorApplication
 from autotest.ui.base_tools.android.assertion import UiautomatorAssertion
 from autotest.ui.base_tools.android.customization import UiautomatorCustomization
@@ -17,8 +18,8 @@ from enums.ui_enum import ElementExpEnum
 from exceptions.ui_exception import *
 from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.sql_assertion import SqlAssertion
+from tools.decorator.error_handle import sync_error_handle
 from tools.message.error_msg import *
-from tools.public_methods import sync_global_exception
 
 
 class AndroidDriver(UiautomatorEquipment,
@@ -54,6 +55,7 @@ class AndroidDriver(UiautomatorEquipment,
                 raise LocatorError(*ERROR_MSG_0020)
 
     @retry(stop_max_attempt_number=10, wait_fixed=500)
+    @sync_error_handle(True)
     def a_action_element(self) -> None:
         try:
             getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
@@ -65,13 +67,6 @@ class AndroidDriver(UiautomatorEquipment,
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except XPathElementNotFoundError as error:
             raise XpathElementNoError(*ERROR_MSG_0050, value=(self.element_model.name,), error=error, )
-
-        except Exception as error:
-            sync_global_exception(
-                'a_action_element',
-                error,
-                False
-            )
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
