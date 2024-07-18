@@ -25,5 +25,5 @@ DEBUG = True
 REDIS = False
 
 # ************************ 是否允许删除 ************************ #
-IS_DELETE = False
+IS_DELETE = True
 
