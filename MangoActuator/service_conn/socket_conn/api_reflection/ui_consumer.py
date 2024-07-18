@@ -11,7 +11,7 @@ from models.socket_model.ui_model import PageStepsModel, WEBConfigModel, CaseMod
 from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.convert_args import convert_args
-from tools.public_methods import async_global_exception
+from tools.decorator.error_handle import async_error_handle
 
 
 class UIConsumer:
@@ -19,6 +19,7 @@ class UIConsumer:
     case_run: CaseMain = None
 
     @classmethod
+    @async_error_handle()
     @convert_args(PageStepsModel)
     async def u_page_step(cls, data: PageStepsModel):
         """
@@ -37,13 +38,10 @@ class UIConsumer:
                 msg=error.msg,
                 is_notice=ClientTypeEnum.WEB.value
             )
-        except Exception as error:
-            await async_global_exception(
-                'u_page_step',
-                error
-            )
+
 
     @classmethod
+    @async_error_handle()
     @convert_args(WEBConfigModel)
     async def u_page_new_obj(cls, data: WEBConfigModel):
         """
@@ -51,17 +49,14 @@ class UIConsumer:
         @param data:
         @return:
         """
-        try:
-            if cls.page_steps is None:
-                cls.page_steps = PageSteps()
-            await cls.page_steps.new_web_obj(data)
-        except Exception as error:
-            await async_global_exception(
-                'u_page_new_obj',
-                error
-            )
+        if cls.page_steps is None:
+            cls.page_steps = PageSteps()
+        await cls.page_steps.new_web_obj(data)
+
 
     @classmethod
+    @async_error_handle()
+
     @convert_args(CaseModel)
     async def u_case(cls, data: CaseModel):
         """
@@ -69,16 +64,10 @@ class UIConsumer:
         @param data:
         @return:
         """
-        try:
-            if cls.case_run is None:
-                max_tasks = 5
-                test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
-                if test_case_parallelism:
-                    max_tasks = int(test_case_parallelism)
-                cls.case_run = CaseMain(max_tasks)
-            await cls.case_run.queue.put(data)
-        except Exception as error:
-            await async_global_exception(
-                'u_case',
-                error
-            )
+        if cls.case_run is None:
+            max_tasks = 5
+            test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
+            if test_case_parallelism:
+                max_tasks = int(test_case_parallelism)
+            cls.case_run = CaseMain(max_tasks)
+        await cls.case_run.queue.put(data)
