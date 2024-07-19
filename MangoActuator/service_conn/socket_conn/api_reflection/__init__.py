@@ -48,11 +48,13 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
         with open(rf'{InitPath.project_root_directory}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             await getattr(self, out['func_name'])(out['func_args'])
-
         while True:
             await asyncio.sleep(1)
 
 
 if __name__ == '__main__':
+    import service_conn
+    service_conn.IP = '127.0.0.1'
+    service_conn.PORT = 8000
     r = InterfaceMethodReflection(True)
     asyncio.run(r.test())
