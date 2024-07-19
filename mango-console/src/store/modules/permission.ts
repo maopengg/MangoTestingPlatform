@@ -39,8 +39,10 @@ const usePermissionStore = defineStore('permission-route', {
   },
   actions: {
     async getRoutes(data: { userId: number; roleId: number }) {
+
       try {
         if (getMenuListByRoleId) {
+          debugger
           const res = await get({
             url: baseAddress + getMenuListByRoleId,
             // 在实际的开发中，这个地方可以换成 token，让后端解析用户信息获取 userId 和 roleId，前端可以不用传 userId 和 roleId。
@@ -48,6 +50,7 @@ const usePermissionStore = defineStore('permission-route', {
             // 用户数据
             // data,
           })
+
           return generatorRoutes(res.data)
         } else {
           return generatorRoutes(defaultRoutes)

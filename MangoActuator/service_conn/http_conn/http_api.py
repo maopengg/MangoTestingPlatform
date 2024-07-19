@@ -34,7 +34,7 @@ class HttpApi(HttpRequest):
 
     @classmethod
     def download_file(cls, file_name):
-        url = cls.url(f'/{file_name}')
+        url = cls.url(f'files/{file_name}')
         response = requests.request("GET", url, headers=cls.headers)
         file_path = InitPath.upload_files
         file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
@@ -67,10 +67,8 @@ class HttpApi(HttpRequest):
 
 
 if __name__ == '__main__':
-    HttpApi.ip = '127.0.0.1'
-    HttpApi.port = 8000
-    username1 = '17798339533'
-    password1 = '123456'
+
+    username1 = 'admin'
+    password1 = 'as123456'
     HttpApi.login(username1, password1)
-    HttpApi.upload_file(2, r"/logs/screenshot/C端-账号144822.jpg",
-                        'C端-账号144822.jpg')
+    HttpApi.download_file('author.jpg')
