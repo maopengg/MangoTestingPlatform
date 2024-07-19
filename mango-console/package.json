@@ -2,8 +2,13 @@
   "name": "arco-work",
   "version": "3.0.0",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
+    "dev": "vite --mode development --host",
+    "prod": "vite --mode production --host",
+    "master": "vite --mode master --host",
+    "build:dev": "vite build --mode development",
+    "build:prod": "vite build --mode production",
+    "build:master": "vite build --mode master",
+
     "staging": "vite build --mode staging",
     "tsc": "vue-tsc --noEmit",
     "serve": "vite preview"
