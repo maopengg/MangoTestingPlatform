@@ -42,7 +42,6 @@
   import { websocket } from '@/utils/socket'
   import { baseURL, webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
-  import { getSystemCacheValue } from '@/api/system'
 
   const userStore = useUserStore()
   const options = [
@@ -170,8 +169,7 @@
       connectWebSocket()
     }
   })
-
-  const visible = ref(false)
+  const visible = ref(import.meta.env.VITE_IS_INDEX_WINDOW == 'true')
 
   const handleOk = () => {
     visible.value = false
@@ -179,20 +177,8 @@
   const handleCancel = () => {
     visible.value = false
   }
-  function f() {
-    getSystemCacheValue('IS_INDEX_WINDOW')
-      .then((res) => {
-        if (res.data.value === '0') {
-          visible.value = false
-        } else if (res.data.value === '1') {
-          visible.value = true
-        }
-      })
-      .catch(console.log)
-  }
-  onMounted(() => {
-    f()
-  })
+
+  onMounted(() => {})
 </script>
 
 <style lang="less" scoped>
