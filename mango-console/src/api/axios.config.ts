@@ -1,10 +1,8 @@
 import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
 
-// export const baseURL = 'http://121.37.174.56:8000'
-export const baseURL = 'http://localhost:8000'
-export const webSocketURL = 'ws://localhost:8000/web/socket?'
-// export const webSocketURL = 'ws://121.37.174.56:8000/web/socket?'
+export const baseURL = import.meta.env.VITE_APP_BASE_URL
+export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL
 
 export const CONTENT_TYPE = 'Content-Type'
 

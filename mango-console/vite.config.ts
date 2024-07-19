@@ -7,10 +7,13 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 // 在正式打包的时候，可以把这两行代码放开
 // import Components from 'unplugin-vue-components/vite'
 // import { ArcoResolver } from 'unplugin-vue-components/resolvers'
-
 export default defineConfig(({ mode }) => {
   const dotenvConfig = dotenv.config({ path: `./.env.${mode}` })
   const dotenvObj = dotenvConfig.parsed
+  debugger
+  console.log(dotenvConfig)
+  console.log(dotenvObj)
+
   return {
     base: dotenvObj?.BUILD_PATH || '/',
     build: {
