@@ -39,7 +39,6 @@ class UIConsumer:
                 is_notice=ClientTypeEnum.WEB.value
             )
 
-
     @classmethod
     @async_error_handle()
     @convert_args(WEBConfigModel)
@@ -53,10 +52,8 @@ class UIConsumer:
             cls.page_steps = PageSteps()
         await cls.page_steps.new_web_obj(data)
 
-
     @classmethod
     @async_error_handle()
-
     @convert_args(CaseModel)
     async def u_case(cls, data: CaseModel):
         """
