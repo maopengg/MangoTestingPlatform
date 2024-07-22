@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 
 import time
-
 from playwright._impl._api_types import Error
 from playwright.async_api import Locator
 
@@ -36,7 +35,7 @@ class PlaywrightElement(BaseData):
 
     @classmethod
     async def w_upload_files(cls, locating: Locator, file_path: str | list):
-        """点击元素上传文件"""
+        """拖拽文件上传"""
         try:
             if isinstance(file_path, str):
                 await locating.set_input_files(file_path)
@@ -45,10 +44,20 @@ class PlaywrightElement(BaseData):
                     await locating.set_input_files(file)
         except Error:
             raise UploadElementInputError(*ERROR_MSG_0024)
-        # with self.page.expect_file_chooser() as fc_info:
-        #     await locating.click()
-        # file_chooser = fc_info.value
-        # file_chooser.set_files(file_path)
+
+    async def w_click_upload_files(self, locating: Locator, file_path: str | list):
+        """点击并选择文件上传"""
+        async with self.page.expect_file_chooser() as fc_info:
+            await locating.click()
+        file_chooser = await fc_info.value
+        await file_chooser.set_files(file_path)
+
+    async def w_download(self, locating: Locator, save_path: str):
+        """下载文件"""
+        async with self.page.expect_download() as download_info:
+            await locating.click()
+        download = await download_info.value
+        await download.save_as(save_path)
 
     @classmethod
     async def w_drag_to(cls, locating1: Locator, locating2: Locator):
