@@ -4,7 +4,9 @@
 # @Time   : 2024-07-18 18:15
 # @Author : 毛鹏
 import traceback
+from datetime import datetime
 
+import service_conn
 from enums.tools_enum import ClientTypeEnum
 from service_conn.socket_conn.client_socket import ClientWebSocket
 from tools.desktop.signal_send import SignalSend
@@ -14,9 +16,12 @@ from tools.notic_tools import NoticeMain
 
 def error_send(func, args, kwargs, error, trace):
     SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！')
-    log.error(f'错误函数：{func.__name__}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}， 错误详情：{trace}')
+    log.error(
+        f'错误函数：{func.__name__}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}， 错误详情：{trace}')
     content = f"""
       芒果测试平台管理员请注意查收:
+          触发用户：{service_conn.USERNAME}
+          触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
           错误函数：{func.__name__}
           异常类型: {type(error)}
           错误提示: {str(error)}
@@ -27,14 +32,9 @@ def error_send(func, args, kwargs, error, trace):
       **********************************
       详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
 
-                                    -----------芒果自动化平台
+                                                    -----------芒果自动化平台
       """
     NoticeMain.mail_send(content)
-    ClientWebSocket().sync_send(
-        code=300,
-        msg="发生未知异常！请联系管理员",
-        is_notice=ClientTypeEnum.WEB.value
-    )
 
 
 def async_error_handle(is_error=False):
@@ -45,8 +45,14 @@ def async_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 error_send(func, args, kwargs, error, trace)
+                await ClientWebSocket().async_send(
+                    code=300,
+                    msg="发生未知异常！请联系管理员",
+                    is_notice=ClientTypeEnum.WEB.value
+                )
                 if is_error:
                     raise error
+
         wrapper.__name__ = func.__name__
         return wrapper
 
@@ -61,8 +67,14 @@ def sync_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 error_send(func, args, kwargs, error, trace)
+                ClientWebSocket().sync_send(
+                    code=300,
+                    msg="发生未知异常！请联系管理员",
+                    is_notice=ClientTypeEnum.WEB.value
+                )
                 if is_error:
                     raise error
+
         wrapper.__name__ = func.__name__
         return wrapper
 
