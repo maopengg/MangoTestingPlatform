@@ -134,7 +134,7 @@ class ElementMain(WebDevice, AndroidDriver):
 
     async def __ass(self, name, ope_type):
         for key, expect in self.element_model.ass_value.items():
-            if key == 'value' and self.element_model.loc:
+            if key == 'actual' and self.element_model.loc:
                 self.element_model.ass_value[key] = await self.__find_element()
             else:
                 self.element_model.ass_value[key] = await self.__input_value(key, expect)
