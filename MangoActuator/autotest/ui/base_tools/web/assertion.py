@@ -14,122 +14,122 @@ class PlaywrightAssertion:
     """元素断言"""
 
     @staticmethod
-    async def w_not_to_be_empty(value: Locator):
+    async def w_not_to_be_empty(actual: Locator):
         """元素不为空"""
-        await expect(value).not_to_be_empty()
+        await expect(actual).not_to_be_empty()
 
     @staticmethod
-    async def w_not_to_be_enabled(value: Locator):
+    async def w_not_to_be_enabled(actual: Locator):
         """元素不启用"""
-        await expect(value).not_to_be_enabled()
+        await expect(actual).not_to_be_enabled()
 
     @staticmethod
-    async def w_not_to_be_focused(value: Locator):
+    async def w_not_to_be_focused(actual: Locator):
         """元素不聚焦"""
-        await expect(value).not_to_be_focused()
+        await expect(actual).not_to_be_focused()
 
     @staticmethod
-    async def w_not_to_be_hidden(value: Locator):
+    async def w_not_to_be_hidden(actual: Locator):
         """元素不可隐藏"""
-        await expect(value).not_to_be_hidden()
+        await expect(actual).not_to_be_hidden()
 
     @staticmethod
-    async def w_not_to_be_in_viewport(value: Locator):
+    async def w_not_to_be_in_viewport(actual: Locator):
         """元素不在视窗中"""
-        await expect(value).not_to_be_in_viewport()
+        await expect(actual).not_to_be_in_viewport()
 
     @staticmethod
-    async def w_not_to_be_visible(value: Locator):
+    async def w_not_to_be_visible(actual: Locator):
         """元素不可见"""
-        await expect(value).not_to_be_visible()
+        await expect(actual).not_to_be_visible()
 
     @staticmethod
-    async def w_not_to_contain_text(value: Locator, expected: str):
+    async def w_not_to_contain_text(actual: Locator, expect: str):
         """元素不包含文本"""
-        await expect(value).not_to_contain_text(expected)
+        await expect(actual).not_to_contain_text(expect)
 
     @staticmethod
-    async def w_not_to_have_class(value: Locator, expected: str):
+    async def w_not_to_have_class(actual: Locator, expect: str):
         """元素没有阶级"""
-        await expect(value).not_to_have_class(expected)
+        await expect(actual).not_to_have_class(expect)
 
     @staticmethod
-    async def w_to_have_count(value: Locator, count: int):
+    async def w_to_have_count(actual: Locator, expect: str):
         """元素计数"""
-        if value is None:
-            assert count == 0
-        if count is None:
-            count = 0
-        await expect(value).to_have_count(int(count))
+        if actual is None:
+            assert int(expect) == 0
+        if expect is None:
+            expect = 0
+        await expect(actual).to_have_count(int(expect))
 
     @staticmethod
-    async def w_to_element_count(value: Locator, count: int):
+    async def w_to_element_count(actual: Locator, count: int):
         """元素是否存在，存在传1，不存在传0"""
         if int(count) == 0:
-            assert value is None
+            assert actual is None
         else:
-            if value:
-                await expect(value).to_have_count(int(count))
+            if actual:
+                await expect(actual).to_have_count(int(count))
             else:
                 raise ElementIsEmptyError(*ERROR_MSG_0021)
 
     @staticmethod
-    async def w_to_element_exists(value: Locator):
+    async def w_to_element_exists(actual: Locator):
         """元素是存在"""
-        if value is None:
+        if actual is None:
             assert False
-        await expect(value).to_have_count(1)
+        await expect(actual).to_have_count(1)
 
     @staticmethod
-    async def w_to_element_not_exists(value: Locator):
+    async def w_to_element_not_exists(actual: Locator):
         """元素不存在"""
-        assert value is None
+        assert actual is None
 
     @staticmethod
-    async def w_to_be_checked(value: Locator):
+    async def w_to_be_checked(actual: Locator):
         """复选框已选中"""
-        await expect(value).to_be_checked()
+        await expect(actual).to_be_checked()
 
     @staticmethod
-    async def w_to_be_disabled(value: Locator):
+    async def w_to_be_disabled(actual: Locator):
         """元素已禁用"""
-        await expect(value).to_be_disabled()
+        await expect(actual).to_be_disabled()
 
     @staticmethod
-    async def w_not_to_be_editable(value: Locator):
+    async def w_not_to_be_editable(actual: Locator):
         """元素已启用"""
-        await expect(value).to_be_editable()
+        await expect(actual).to_be_editable()
 
     @staticmethod
-    async def w_to_be_empty(value: Locator | list | None):
+    async def w_to_be_empty(actual: Locator | list | None):
         """元素为空"""
-        if value is None:
+        if actual is None:
             assert True
-        elif not value:
+        elif not actual:
             assert True
         else:
-            await expect(value).to_be_empty()
+            await expect(actual).to_be_empty()
 
     @staticmethod
-    async def w_to_be_visible(value: Locator):
+    async def w_to_be_visible(actual: Locator):
         """元素可见"""
-        await expect(value).to_be_visible()
-
-    @staticmethod
-    async def w_not_to_have_values(value: Locator, values: list):
-        """选择已选择选项"""
-        await expect(value).to_have_values(values)
+        await expect(actual).to_be_visible()
 
     # @staticmethod
-    # def w_not_to_have_attribute(locating: Locator, name: str, value: str):
+    # async def w_not_to_have_actuals(actual: Locator, actuals: list):
+    #     """选择已选择选项"""
+    #     await expect(actual).to_have_actuals(actuals)
+
+    # @staticmethod
+    # def w_not_to_have_attribute(locating: Locator, name: str, actual: str):
     #     """元素不具有属性"""
-    #     expect(locating).not_to_have_attribute(name, value)
+    #     expect(locating).not_to_have_attribute(name, actual)
     # @staticmethod
 
     # @staticmethod
-    # def w_not_to_have_css(locating: Locator, name: str, value: str):
+    # def w_not_to_have_css(locating: Locator, name: str, actual: str):
     #     """元素不使用CSS"""
-    #     expect(locating).not_to_have_css(name, value)
+    #     expect(locating).not_to_have_css(name, actual)
 
     # @staticmethod
     # def w_not_to_have_id(locating: Locator, _id: str):
@@ -137,9 +137,9 @@ class PlaywrightAssertion:
     #     expect(locating).not_to_have_id(_id)
     #
     # @staticmethod
-    # def w_not_to_have_js_property(locating: Locator, name: str, value):
+    # def w_not_to_have_js_property(locating: Locator, name: str, actual):
     #     """元素不具有js属性"""
-    #     expect(locating).not_to_have_js_property(name, value)
+    #     expect(locating).not_to_have_js_property(name, actual)
     #
     # @staticmethod
     # def w_not_to_have_text(locating: Locator, expected: str):
@@ -147,9 +147,9 @@ class PlaywrightAssertion:
     #     expect(locating).not_to_have_text(expected)
 
     # @staticmethod
-    # def w_not_to_have_value(locating: Locator, value: str):
+    # def w_not_to_have_actual(locating: Locator, actual: str):
     #     """元素无价值"""
-    #     expect(locating).not_to_have_value(value)
+    #     expect(locating).not_to_have_actual(actual)
 
     #
     # def w_to_be_attached(self, hidden_text: str):
@@ -231,7 +231,7 @@ class PlaywrightAssertion:
     #     expect(locator).to_have_text(re.compile(r"Welcome, Test User"))
     #     expect(locator).to_have_text(re.compile(r"Welcome, .*"))
     #
-    # def w_to_have_value(self, hidden_text: str):
+    # def w_to_have_actual(self, hidden_text: str):
     #     """有价值"""
     #     locator = self.page.locator("input[type=number]")
-    #     expect(locator).to_have_value(re.compile(r"[0-9]"))
+    #     expect(locator).to_have_actual(re.compile(r"[0-9]"))
