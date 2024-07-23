@@ -127,7 +127,7 @@ class UiPublic(models.Model):
     type = models.SmallIntegerField(verbose_name="自定义变量类型", null=True)
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128, null=True)
-    value = models.CharField(verbose_name="值", max_length=2048, null=True)
+    value = models.TextField(verbose_name="值", null=True)
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:

@@ -66,5 +66,5 @@ class PlaywrightBrowser(BaseData):
 
     async def w_get_cookie(self):
         """测试-获取storage_state保存到log目录"""
-        with open(f'{InitPath.logs_dir}', 'w') as file:
-            file.write(json.dumps(self.context.storage_state()))
+        with open(f'{InitPath.logs_dir}/storage_state.json', 'w') as file:
+            file.write(json.dumps(await self.context.storage_state()))
