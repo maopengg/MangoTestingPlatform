@@ -47,6 +47,7 @@ def async_error_handle(is_error=False):
                 error_send(func, args, kwargs, error, trace)
                 if is_error:
                     raise error
+        wrapper.__name__ = func.__name__
         return wrapper
 
     return decorator
@@ -62,7 +63,7 @@ def sync_error_handle(is_error=False):
                 error_send(func, args, kwargs, error, trace)
                 if is_error:
                     raise error
-
+        wrapper.__name__ = func.__name__
         return wrapper
 
     return decorator
