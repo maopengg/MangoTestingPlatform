@@ -10,7 +10,7 @@ import time
 
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from settings.settings import IS_DEBUG
+from settings import settings
 MEMORY_THRESHOLD = 80
 
 LOOP_MIX = 10
@@ -21,7 +21,7 @@ def async_memory(func):
         current_mix = 0
         while True:
             memory_percent = psutil.virtual_memory().percent
-            if memory_percent > MEMORY_THRESHOLD and not IS_DEBUG:
+            if memory_percent > MEMORY_THRESHOLD and not settings.IS_DEBUG:
                 # log.info(f'当前的内存使用率不足以支持继续启动浏览器，请稍等内存减少后继续，当前次数：{current_mix}')
                 await asyncio.sleep(3)
                 current_mix += 1
