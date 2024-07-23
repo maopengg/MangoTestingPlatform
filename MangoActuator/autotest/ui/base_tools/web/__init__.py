@@ -22,6 +22,7 @@ from models.socket_model.ui_model import ElementModel, ElementResultModel
 from tools.assertion.public_assertion import PublicAssertion
 from tools.assertion.sql_assertion import SqlAssertion
 from tools.decorator.async_retry import async_retry
+from tools.desktop.signal_send import SignalSend
 from tools.message.error_msg import *
 
 re = re
@@ -63,7 +64,7 @@ class WebDevice(PlaywrightBrowser,
             .ass_value \
             .get('expect') else None
         if is_method or is_method_public:
-            if self.element_model.ass_value['value'] is None:
+            if self.element_model.ass_value['actual'] is None:
                 raise ElementIsEmptyError(*ERROR_MSG_0031,
                                           value=(self.element_model.name, self.element_model.loc))
         try:
@@ -71,14 +72,12 @@ class WebDevice(PlaywrightBrowser,
                 self.element_test_result.actual = '判断元素是什么'
                 await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
             elif is_method_public:
-                if self.element_model.ass_value.get('value'):
-                    value = self.element_model.ass_value.get('value')
-                    self.element_test_result.actual = f'断言元素本身，元素：{str(value)}'
-                else:
-                    value = await self.w_get_text(self.element_model.ass_value['value'])
-                    self.element_test_result.actual = value
+                text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
+                self.element_test_result.actual = text_actual
+                SignalSend.notice_signal_c(
+                    f'开始断言-元素：<{self.element_model.name}>实际：<{text_actual}>预期：<{self.element_model.ass_value.get("expect")}>')
                 getattr(PublicAssertion, self.element_model.ass_type)(
-                    **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
+                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.mysql_connect
@@ -91,8 +90,8 @@ class WebDevice(PlaywrightBrowser,
             raise UiAssertionError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
             raise UiAssertionError(*ERROR_MSG_0018, error=error)
-        if 'value' in self.element_model.ass_value:
-            del self.element_model.ass_value['value']
+        if 'actual' in self.element_model.ass_value:
+            del self.element_model.ass_value['actual']
         self.element_test_result.ass_value = self.element_model.ass_value
 
     @async_retry
