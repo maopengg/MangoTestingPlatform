@@ -63,6 +63,7 @@ class PlaywrightBrowser(BaseData):
             for item in session_storage:
                 await self.context.add_init_script(
                     f"window.sessionStorage.setItem('{item['name']}', '{item['value']}');")
+        await self.page.reload()
 
     async def w_get_cookie(self):
         """测试-获取storage_state保存到log目录"""
