@@ -9,6 +9,7 @@ from datetime import datetime
 import service_conn
 from enums.tools_enum import ClientTypeEnum
 from service_conn.socket_conn.client_socket import ClientWebSocket
+from settings import settings
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.notic_tools import NoticeMain
@@ -34,7 +35,8 @@ def error_send(func, args, kwargs, error, trace):
 
                                                     -----------芒果自动化平台
       """
-    NoticeMain.mail_send(content)
+    if not settings.IS_DEBUG:
+        NoticeMain.mail_send(content)
 
 
 def async_error_handle(is_error=False):
