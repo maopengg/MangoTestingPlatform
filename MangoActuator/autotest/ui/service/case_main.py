@@ -13,8 +13,6 @@ from tools.decorator.memory import async_memory
 from tools.public_methods import async_global_exception
 from ..base_tools.driver_object import DriverObject
 
-MEMORY_THRESHOLD = 70
-
 
 class CaseMain:
 

@@ -47,12 +47,12 @@ class TestReportWriting:
         case.save()
         # 保存用例结果
         for page_steps_result in data.page_steps_result_list:
-            UiPageStepsResultCRUD.inside_post(page_steps_result.dict())
+            UiPageStepsResultCRUD.inside_post(page_steps_result.model_dump())
             cls.update_step(page_steps_result)
             for element_result in page_steps_result.element_result_list:
-                UiEleResultCRUD.inside_post(element_result.dict())
+                UiEleResultCRUD.inside_post(element_result.model_dump())
 
-        UiCaseResultCRUD.inside_post(data.dict())
+        UiCaseResultCRUD.inside_post(data.model_dump())
         cls.update_test_suite(data.test_suite_id)
 
     @classmethod

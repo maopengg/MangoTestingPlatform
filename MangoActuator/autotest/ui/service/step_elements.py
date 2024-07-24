@@ -132,8 +132,8 @@ class StepElements(ElementMain):
         log.warning(
             f"""
             元素操作失败->
-            element_model：{self.element_model.dict() if self.element_model else self.element_model}
-            element_test_result：{self.element_test_result.dict() if self.element_test_result else self.element_test_result}
+            element_model：{self.element_model.model_dump() if self.element_model else self.element_model}
+            element_test_result：{self.element_test_result.model_dump() if self.element_test_result else self.element_test_result}
             error：{error.msg}
             """
         )

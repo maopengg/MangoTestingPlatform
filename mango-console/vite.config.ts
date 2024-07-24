@@ -10,7 +10,6 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 export default defineConfig(({ mode }) => {
   const dotenvConfig = dotenv.config({ path: `./.env.${mode}` })
   const dotenvObj = dotenvConfig.parsed
-  debugger
   console.log(dotenvConfig)
   console.log(dotenvObj)
 

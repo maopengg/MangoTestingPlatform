@@ -29,6 +29,12 @@ class Window(Ui_MainWindow):
         BROWSER_IS_MAXIMIZE = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
         if BROWSER_IS_MAXIMIZE:
             self.radioButton.setChecked(BROWSER_IS_MAXIMIZE)
+
+        self.videosButton.clicked.connect(self.videos)
+        IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
+        if IS_RECORDING:
+            self.videosButton.setChecked(IS_RECORDING)
+            
         self.comboBox.currentTextChanged.connect(self.on_combobox_changed)
         TEST_CASE_PARALLELISM = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
         if TEST_CASE_PARALLELISM:
@@ -81,6 +87,14 @@ class Window(Ui_MainWindow):
 
     def clickTest(self):
         print(RandomFileData.get_file(**{'data': '文本.txt'}))
+
+    def videos(self, text):
+        SqlCache.set_sql_cache(CacheKeyEnum.IS_RECORDING.value, '1' if text else '0',
+                               CacheValueTypeEnum.INT.value)
+        if text:
+            self.textEdit.append(f'开启视频录制成功')
+        else:
+            self.textEdit.append(f'关闭视频录制成功')
 
 
 class UIUpdateThread(QThread):

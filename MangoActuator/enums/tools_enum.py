@@ -47,9 +47,10 @@ class StatusEnum(BaseEnum):
 
 
 class CacheKeyEnum(Enum):
+    """参数"""
     BROWSER_IS_MAXIMIZE = 'BROWSER_IS_MAXIMIZE'
     TEST_CASE_PARALLELISM = 'TEST_CASE_PARALLELISM'
-
+    IS_RECORDING = 'IS_RECORDING'
 
 class CacheValueTypeEnum(BaseEnum):
     """缓存数据类型"""
