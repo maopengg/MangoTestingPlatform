@@ -12,10 +12,10 @@ import asyncio
 import ctypes
 import os
 import string
-import time
 from typing import Optional
 from urllib import parse
 
+import time
 from playwright._impl._api_types import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
@@ -30,6 +30,7 @@ from exceptions.ui_exception import BrowserPathError, NewObjectError
 from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
 from service_conn.socket_conn.client_socket import ClientWebSocket
+from tools import InitPath
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.error_handle import async_error_handle
 from tools.desktop.signal_send import SignalSend
@@ -97,10 +98,18 @@ class NewBrowser:
             raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.browser_path,))
 
     async def new_context(self) -> BrowserContext:
+        args_dict = {
+            'no_viewport': True,
+        }
+
+        IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
+        if IS_RECORDING:
+            args_dict['record_video_dir'] = f'{InitPath.videos}/'
+
         if self.web_config.device:
-            return await self.browser.new_context(**self.playwright.devices[self.web_config.device])
-        else:
-            return await self.browser.new_context(no_viewport=True)
+            del args_dict['no_viewport']
+            args_dict.update(self.playwright.devices[self.web_config.device])
+        return await self.browser.new_context(**args_dict)
 
     async def new_page(self, context: BrowserContext) -> Page:
         page = await context.new_page()
@@ -172,7 +181,6 @@ class NewBrowser:
             func_name=ApiSocketEnum.RECORDING_API.value,
             func_args=api_info
         )
-
 
 
 async def test_main():

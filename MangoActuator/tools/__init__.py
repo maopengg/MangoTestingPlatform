@@ -9,7 +9,7 @@ import sys
 
 
 class InitPath:
-    file = ['log', 'screenshot', 'upload_files']
+    file = ['log', 'screenshot', 'upload_files', 'videos']
     current_directory = os.path.abspath(__file__)
     project_root_directory = os.path.dirname(os.path.dirname(current_directory))
     current_dir2 = os.path.dirname(sys.executable)
@@ -28,6 +28,7 @@ class InitPath:
     log_dir = os.path.join(logs_dir, "log")
     failure_screenshot_file = os.path.join(logs_dir, "screenshot")
     upload_files = os.path.join(logs_dir, 'upload_files')
+    videos = os.path.join(logs_dir, 'videos')
 
 
 if __name__ == '__main__':
@@ -38,3 +39,4 @@ if __name__ == '__main__':
     print(InitPath.log_dir)
     print(InitPath.failure_screenshot_file)
     print(InitPath.upload_files)
+    print(InitPath.videos)

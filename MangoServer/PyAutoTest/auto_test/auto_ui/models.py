@@ -87,7 +87,8 @@ class UiCase(models.Model):
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="用例组名称", max_length=64)
     case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
+                                    null=True)
     # 0失败，1成功，2警告
     status = models.SmallIntegerField(verbose_name="状态", null=True)
     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
@@ -168,6 +169,7 @@ class UiCaseResult(models.Model):
     case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     status = models.SmallIntegerField(verbose_name="用例测试结果", null=True)
     error_message = models.TextField(verbose_name="错误提示", null=True)
+    video_path = models.CharField(verbose_name="视频路径", max_length=1024, null=True)
 
     class Meta:
         db_table = 'ui_case_result'
