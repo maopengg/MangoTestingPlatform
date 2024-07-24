@@ -12,8 +12,8 @@ from PySide6.QtCore import (QCoreApplication, QMetaObject, QRect)
 from PySide6.QtGui import (QAction)
 from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel,
                                QMenu, QMenuBar, QPushButton,
-                               QRadioButton, QSizePolicy, QSpacerItem, QStatusBar,
-                               QTextEdit, QVBoxLayout, QWidget)
+                               QSizePolicy, QSpacerItem, QStatusBar,
+                               QTextEdit, QVBoxLayout, QWidget, QCheckBox)
 
 
 class Ui_MainWindow(object):
@@ -77,10 +77,19 @@ class Ui_MainWindow(object):
 
         self.verticalLayout.addLayout(self.horizontalLayout)
 
-        self.radioButton = QRadioButton(self.centralwidget)
+        #
+        # self.radioButton = QRadioButton(self.centralwidget)
+        # self.radioButton.setObjectName(u"radioButton")
+        # self.videosButton = QRadioButton(self.centralwidget)
+        # self.videosButton.setObjectName(u"videos")
+        self.radioButton = QCheckBox(self.centralwidget)
         self.radioButton.setObjectName(u"radioButton")
-
-        self.verticalLayout.addWidget(self.radioButton)
+        self.videosButton = QCheckBox(self.centralwidget)
+        self.videosButton.setObjectName(u"videos")
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.addWidget(self.radioButton)
+        self.horizontalLayout_4.addWidget(self.videosButton)
+        self.verticalLayout.addLayout(self.horizontalLayout_4)
 
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
@@ -147,9 +156,8 @@ class Ui_MainWindow(object):
             QCoreApplication.translate("MainWindow", u"\u53d1\u9001\u7f13\u5b58\u6570\u636e", None))
         self.label_4.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
-        self.radioButton.setText(
-            QCoreApplication.translate("MainWindow", u"\u662f\u5426\u5f00\u542f\u6d4f\u89c8\u5668\u6700\u5927\u5316",
-                                       None))
+        self.radioButton.setText(QCoreApplication.translate("MainWindow", "浏览器最大化", None))
+        self.videosButton.setText(QCoreApplication.translate("MainWindow", "视频录制", None))
         self.label.setText(
             QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5\u7528\u4f8b\u5e76\u884c\u6570", None))
         self.comboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"1", None))

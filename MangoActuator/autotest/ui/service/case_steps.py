@@ -6,15 +6,20 @@
 
 import asyncio
 import json
+import os
+import shutil
 
 from autotest.ui.service.step_elements import StepElements
 from enums.socket_api_enum import UiSocketEnum
-from enums.tools_enum import ClientTypeEnum
+from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from enums.tools_enum import StatusEnum
 from exceptions import MangoActuatorError
 from exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from models.socket_model.ui_model import CaseModel, CaseResultModel
 from service_conn.socket_conn.client_socket import ClientWebSocket
+from tools import InitPath
+from tools.data_processor import RandomTimeData
+from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
@@ -35,13 +40,20 @@ class CaseSteps(StepElements):
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
                                            status=StatusEnum.SUCCESS.value,
-                                           page_steps_result_list=[])
+                                           page_steps_result_list=[],
+                                           video_path='')
+        self.IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.base_close()
+        if self.IS_RECORDING:
+            video_path = f'{self.case_model.name}-{RandomTimeData.get_deta_hms()}.webm'
+            shutil.move(self.case_result.video_path,
+                        os.path.join(f'{InitPath.videos}/', video_path))  # 移动并重命名文件
+            self.case_result.video_path = video_path
 
     async def case_init(self):
         await self.public_front(self.case_model.public_data_list)
@@ -115,6 +127,11 @@ class CaseSteps(StepElements):
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
             self.mysql_connect.condition_execute(sql.get('sql'))
+        await self.sava_videos()
+
+    async def sava_videos(self):
+        if self.IS_RECORDING:
+            self.case_result.video_path = await self.page.video.path()  # 获取视频的路径
 
     def get_test_obj(self):
         if self.url and self.package_name is None:

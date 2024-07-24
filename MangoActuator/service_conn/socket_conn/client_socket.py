@@ -48,6 +48,7 @@ class ClientWebSocket:
             if res.code == 200:
                 log.info("socket服务启动成功")
                 SignalSend.notice_signal_a('在线')
+                SignalSend.notice_signal_c("服务已连接！")
                 return True
             else:
                 SignalSend.notice_signal_a('已离线')

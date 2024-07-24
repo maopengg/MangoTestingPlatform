@@ -8,12 +8,10 @@ import asyncio
 import psutil
 import time
 
+from settings import settings
+from settings.settings import MEMORY_THRESHOLD, LOOP_MIX
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from settings import settings
-MEMORY_THRESHOLD = 80
-
-LOOP_MIX = 10
 
 
 def async_memory(func):

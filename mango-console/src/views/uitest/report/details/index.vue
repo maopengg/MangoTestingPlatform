@@ -66,6 +66,8 @@
                     <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
                     <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
                     <p v-if="item.expect">预期：{{ item.expect }}</p>
+                    <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+
                   </a-space>
                   <a-space direction="vertical" style="width: 50%">
                     <p>输入值：{{ item.ope_value ? item.ope_value : '-' }}</p>

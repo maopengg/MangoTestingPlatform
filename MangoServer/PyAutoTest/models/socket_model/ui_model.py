@@ -131,7 +131,6 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
-
     case_name: str
     module_name: str
     case_people: str
@@ -139,3 +138,5 @@ class CaseResultModel(BaseModel):
     status: int
     error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]
+    video_path: str | None = None
+
