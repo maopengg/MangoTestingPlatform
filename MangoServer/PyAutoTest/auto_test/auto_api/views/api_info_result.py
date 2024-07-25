@@ -17,7 +17,7 @@ from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0113
 
-log = logging.getLogger('api')
+from PyAutoTest.tools.decorator.error_response import error_response
 
 
 class ApiInfoResultSerializers(serializers.ModelSerializer):
@@ -60,6 +60,7 @@ class ApiInfoResultViews(ViewSet):
     serializer = ApiInfoResultSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def get_case_result(self, request: Request):
         case_detailed_id = request.query_params.get('case_detailed_id')
         latest_result = ApiInfoResult.objects.filter(case_detailed_id=case_detailed_id).order_by('-id').first()

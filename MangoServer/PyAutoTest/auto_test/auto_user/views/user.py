@@ -17,6 +17,7 @@ from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -55,6 +56,7 @@ class UserCRUD(ModelCRUD):
     serializer_class = UserSerializersC
     serializer = UserSerializers
 
+    @error_response('user')
     def post(self, request: Request):
         data = request.data
         serializer = self.serializer(data=data)
@@ -71,6 +73,7 @@ class UserViews(ViewSet):
     serializer = UserSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('user')
     def get_nickname(self, request: Request):
         """
         获取用户名称
@@ -82,6 +85,7 @@ class UserViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0033, data)
 
     @action(methods=['put'], detail=False)
+    @error_response('user')
     def put_project(self, request: Request):
         serializer = self.serializer(instance=self.model.objects.get(
             id=request.data.get('id')),
@@ -94,6 +98,7 @@ class UserViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
 
     @action(methods=['put'], detail=False)
+    @error_response('user')
     def put_environment(self, request: Request):
         serializer = self.serializer(instance=self.model.objects.get(
             id=request.data.get('id')),
@@ -106,6 +111,7 @@ class UserViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
 
     @action(methods=['get'], detail=False)
+    @error_response('user')
     def get_user_project_environment(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
         data = {'id': obj.id, 'selected_environment': obj.selected_environment,
@@ -113,6 +119,7 @@ class UserViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0041, data)
 
     @action(methods=['put'], detail=False)
+    @error_response('user')
     def put_password(self, request: Request):
         password = EncryptionTool.md5_32_small(**{'data': request.data['password']})
         new_password = EncryptionTool.md5_32_small(**{'data': request.data['new_password']})

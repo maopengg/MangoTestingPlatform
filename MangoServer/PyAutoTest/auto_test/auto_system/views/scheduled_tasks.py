@@ -10,10 +10,11 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -60,6 +61,7 @@ class ScheduledTasksViews(ViewSet):
     serializer_class = ScheduledTasksSerializers
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def put_status(self, request: Request):
         """
         修改启停用
@@ -72,6 +74,7 @@ class ScheduledTasksViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0097, )
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def put_is_notice(self, request: Request):
         """
         修改启停用
@@ -84,6 +87,7 @@ class ScheduledTasksViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0098, )
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def get_id_name(self, request: Request):
         """
         获取定时任务列表
@@ -102,9 +106,8 @@ class ScheduledTasksNoPermissionViews(ViewSet):
     authentication_classes = []
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def trigger_timing(self, request: Request):
-        try:
-            Tasks.trigger(request.query_params.get('id'))
-            return ResponseData.success(RESPONSE_MSG_0100)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg), )
+        Tasks.trigger(request.query_params.get('id'))
+        return ResponseData.success(RESPONSE_MSG_0100)
+

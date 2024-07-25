@@ -10,6 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.models import ProductModule
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -53,6 +54,7 @@ class ProductModuleViews(ViewSet):
     serializer_class = ProductModuleSerializers
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def get_module_name(self, request: Request):
         """
         模块的ID和name

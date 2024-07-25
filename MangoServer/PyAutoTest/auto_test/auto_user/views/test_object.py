@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductS
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -58,6 +59,7 @@ class TestObjectViews(ViewSet):
     serializer_class = TestObjectSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('user')
     def get_test_object_name(self, request: Request):
         """
          获取平台枚举
@@ -77,6 +79,7 @@ class TestObjectViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0095, data)
 
     @action(methods=['put'], detail=False)
+    @error_response('user')
     def put_status(self, request: Request):
         """
         修改启停用
