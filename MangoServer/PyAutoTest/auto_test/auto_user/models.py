@@ -101,6 +101,7 @@ class TestObject(models.Model):
     value = models.CharField(verbose_name="被测试的对象", max_length=1024)
     db_c_status = models.SmallIntegerField(verbose_name="查询权限", null=True)
     db_rud_status = models.SmallIntegerField(verbose_name="增删改权限", null=True)
+    auto_type = models.SmallIntegerField(verbose_name="自动化使用类型", null=True)
 
     class Meta:
         db_table = 'test_object'

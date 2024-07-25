@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.api_exception import LoginError
@@ -19,7 +19,7 @@ from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
 from .http_base import HTTPRequest
-
+from PyAutoTest.enums.tools_enum import AutoTypeEnum
 log = logging.getLogger('api')
 
 
@@ -33,10 +33,10 @@ class CommonBase(HTTPRequest, DataProcessor):
         self.mysql_connect: MysqlConnect = Optional[None]
 
     def common_init(self, test_obj_id: int, project_product_id: int):
-        self.test_object = PublicMethods.get_test_object(test_obj_id, project_product_id)
+        self.test_object = func_test_object_value(test_obj_id, AutoTypeEnum.API.value)
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
             self.mysql_connect = MysqlConnect(
-                PublicMethods.get_mysql_config(self.test_object.id),
+                func_mysql_config(self.test_object.id),
                 bool(self.test_object.db_c_status),
                 bool(self.test_object.db_rud_status)
             )

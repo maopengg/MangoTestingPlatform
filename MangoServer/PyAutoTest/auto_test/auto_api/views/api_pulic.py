@@ -11,6 +11,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiPublic
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -65,10 +66,11 @@ class ApiPublicViews(ViewSet):
 
         obj = self.model.objects.get(id=request.data.get('id'))
         if request.data.get('status') == StatusEnum.SUCCESS.value:
-            try:
-                Database.objects.get(project_id=obj.project.id)
-            except Database.DoesNotExist:
-                return ResponseData.fail(RESPONSE_MSG_0110, )
+            if obj.type == ApiPublicTypeEnum.SQL.value:
+                try:
+                    Database.objects.get(project_product=obj.project_product_id)
+                except Database.DoesNotExist:
+                    return ResponseData.fail(RESPONSE_MSG_0110, )
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0104, )

@@ -59,7 +59,7 @@ class HTTPRequest:
             params=request_data.params,
             data=request_data.data,
             json_data=request_data.json_data,
-            file=str(request_data.file),
+            file=str(request_data.file) if request_data.file else None,
             status_code=response.status_code,
             response_time=end,
             response_headers=response.headers,

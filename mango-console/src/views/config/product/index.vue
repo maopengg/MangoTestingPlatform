@@ -75,7 +75,7 @@
                 </template>
                 <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
-                    >界面自动化</a-tag
+                    >前端自动化</a-tag
                   >
                   <a-tag color="cyan" size="small" v-else-if="record.auto_type === 1"
                     >接口自动化</a-tag

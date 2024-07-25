@@ -187,7 +187,6 @@
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { usePageData } from '@/store/page-data'
   import {
     deleteUiElement,
@@ -200,8 +199,9 @@
     putUiUiElementTest,
   } from '@/api/uitest'
   import { getSystemEnumExp } from '@/api/system'
+  import { useEnvironment } from '@/store/modules/get-environment'
 
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
   const pageData: any = usePageData()
 
   const route = useRoute()
@@ -370,7 +370,7 @@
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
       let value = getFormItems(formItems1)
-      value['testing_environment'] = testObj.selectValue
+      value['test_env'] = uEnvironment.selectValue
       value['id'] = data.id
       value['page_id'] = pageData.record.id
       value['project_product_id'] = pageData.record.project_product.id
@@ -439,7 +439,7 @@
   }
 
   function onDebug(record: any) {
-    if (!testObj.selectValue) {
+    if (!uEnvironment.selectValue) {
       Message.error('请先选择测试环境')
       return
     }

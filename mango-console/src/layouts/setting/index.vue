@@ -22,7 +22,12 @@
       </div>
       <a-divider dashed>侧边栏样式</a-divider>
       <div class="flex justify-around pb-8">
-        <div v-for="(item, index) of sideExampleList" :key="index" :span="6" class="example-wrapper">
+        <div
+          v-for="(item, index) of sideExampleList"
+          :key="index"
+          :span="6"
+          class="example-wrapper"
+        >
           <StyleExample
             :checked="item.checked"
             :left-bg="item.leftBg"

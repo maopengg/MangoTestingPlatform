@@ -2,7 +2,14 @@
   <a-card>
     <a-space direction="vertical">
       <a-space>
-    <a-input :style="{width:'320px'}" default-value="cont11111ent" placeholder="Please enter something" id="" allow-clear disabled/>
+        <a-input
+          :style="{ width: '320px' }"
+          default-value="cont11111ent"
+          placeholder="Please enter something"
+          id=""
+          allow-clear
+          disabled
+        />
         <a-textarea v-model="value" />
         <a-button @click="postApiInfo">点击</a-button>
       </a-space>
@@ -52,6 +59,5 @@
     const parsedCurl = parseCurl(value.value)
     const dataRaw = parseDataRaw(value.value)
     options.value = { ...parsedCurl, data: dataRaw }
-    console.log(options.value)
   }
 </script>

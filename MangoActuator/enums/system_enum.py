@@ -36,7 +36,7 @@ class AutoTestTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "界面", 1: "接口", 2: "性能"}
+        return {0: "前端", 1: "接口", 2: "性能"}
 
 
 class CacheDataKey2Enum(BaseEnum):

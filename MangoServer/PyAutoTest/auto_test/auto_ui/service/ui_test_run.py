@@ -6,13 +6,13 @@
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.auto_test.auto_ui.models import *
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum
+from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
@@ -27,7 +27,7 @@ class UiTestRun:
 
     def __init__(self,
                  user_id: int,
-                 test_obj_id: int,
+                 test_env: int,
                  case_executor: list | None = None,
                  tasks_id: int = None,
                  is_notice: int = 0,
@@ -35,7 +35,7 @@ class UiTestRun:
                  ):
         self.user_obj = User.objects.get(id=user_id)
         self.user_id = user_id
-        self.test_object_id = test_obj_id
+        self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.spare_test_object_id = spare_test_object_id
@@ -54,6 +54,7 @@ class UiTestRun:
                 self.case_executor = username_list
             else:
                 raise self.error
+        self.test_object_id = None
 
     def case_batch(self, case_id_list: list) -> None:
 
@@ -130,7 +131,9 @@ class UiTestRun:
         except UiPage.DoesNotExist as error:
             raise DoesNotExistError(*ERROR_MSG_0030, error=error)
         element_obj = UiElement.objects.get(id=data['id'])
-        test_object: TestObject = PublicMethods.get_test_object(self.test_object_id, data['project_product_id'])
+        test_object: TestObject = func_test_object_value(self.test_env,
+                                                         element_obj.page.project_product_id,
+                                                         AutoTypeEnum.UI.value)
         page_steps_model = PageStepsModel(
             id=None,
             name=f'测试元素-{element_obj.name}',
@@ -140,7 +143,7 @@ class UiTestRun:
             type=page_obj.type,
             equipment_config=self.__get_web_config(
                 test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-            environment_config=self.__environment_config(test_object)
+            environment_config=self.__environment_config(test_object, page_obj.project_product_id)
         )
         page_steps_model.element_list.append(ElementModel(
             id=element_obj.id,
@@ -174,7 +177,9 @@ class UiTestRun:
                      case_step_details_id: int | None = None) -> PageStepsModel:
 
         step = UiPageSteps.objects.get(id=page_steps_id)
-        test_object: TestObject = PublicMethods.get_test_object(self.test_object_id, step.project_product.id)
+        test_object: TestObject = func_test_object_value(self.test_env,
+                                                         step.project_product_id,
+                                                         AutoTypeEnum.UI.value)
         page_steps_model = PageStepsModel(
             id=step.id,
             name=step.name,
@@ -185,7 +190,7 @@ class UiTestRun:
             type=step.project_product.client_type,
             equipment_config=self.__get_web_config(
                 test_object.value) if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
-            environment_config=self.__environment_config(test_object)
+            environment_config=self.__environment_config(test_object, step.project_product_id)
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
@@ -216,6 +221,9 @@ class UiTestRun:
             ))
         return page_steps_model
 
+    def __get_equipment_config(self):
+        pass
+
     def __get_web_config(self, host: str) -> WEBConfigModel:
         try:
             user_ui_config = UiConfig.objects.get(user_id=self.user_id,
@@ -237,10 +245,10 @@ class UiTestRun:
                                               type=DriveTypeEnum.ANDROID.value)
         return AndroidConfigModel(equipment=user_ui_config.equipment)
 
-    def __environment_config(self, test_object: TestObject) -> EnvironmentConfigModel:
+    def __environment_config(self, test_object: TestObject, project_product_id) -> EnvironmentConfigModel:
         mysql_config = None
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = PublicMethods.get_mysql_config(test_object.id)
+            mysql_config = func_mysql_config(self.test_env, project_product_id)
         return EnvironmentConfigModel(
             test_object_value=test_object.value,
             db_c_status=bool(test_object.db_c_status),

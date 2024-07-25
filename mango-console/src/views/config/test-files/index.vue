@@ -36,10 +36,16 @@
               {{ record.project?.name }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onDownload(record)" download="{{ record.file_name }}"
+              <a-button
+                type="text"
+                size="mini"
+                @click="onDownload(record)"
+                download="{{ record.file_name }}"
                 >下载
               </a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                >删除</a-button
+              >
             </template>
           </a-table-column>
         </template>

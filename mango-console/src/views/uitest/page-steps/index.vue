@@ -238,7 +238,6 @@
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { getFormItems } from '@/utils/datacleaning'
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
@@ -254,6 +253,7 @@
   } from '@/api/uitest'
   import { conditionItems, tableColumns, formItems } from './config'
   import { useStatus } from '@/store/modules/status'
+  import { useEnvironment } from '@/store/modules/get-environment'
   const productModule = useProductModule()
   const projectInfo = useProject()
   const status = useStatus()
@@ -262,7 +262,8 @@
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
+
   const formModel = ref({})
   const data = reactive({
     isAdd: false,
@@ -410,11 +411,11 @@
   }
 
   function onRunCase(record: any) {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsRun(record.id, testObj.selectValue)
+    getUiStepsRun(record.id, uEnvironment.selectValue)
       .then((res) => {
         Message.loading(res.msg)
       })
