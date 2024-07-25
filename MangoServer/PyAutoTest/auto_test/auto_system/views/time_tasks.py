@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TimeTasks
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0103
@@ -36,6 +37,7 @@ class TimeTasksCRUD(ModelCRUD):
 class TimeTasksViews(ViewSet):
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_time_obj_name(self, request):
         """
          获取平台枚举

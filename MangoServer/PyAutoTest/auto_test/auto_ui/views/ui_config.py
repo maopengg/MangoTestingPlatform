@@ -21,6 +21,7 @@ from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import WEBConfigModel
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -63,6 +64,7 @@ class UiConfigViews(ViewSet):
     serializer_class = UiConfigSerializers
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_status(self, request: Request):
         """
         获取操作类型
@@ -87,6 +89,7 @@ class UiConfigViews(ViewSet):
             return ResponseData.success(RESPONSE_MSG_0057, )
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def new_browser_obj(self, request: Request):
         """
         @param request:
@@ -113,7 +116,7 @@ class UiConfigViews(ViewSet):
             }
 
             host_obj1 = {}
-            for _id,url in host_obj.items():
+            for _id, url in host_obj.items():
                 if url.startswith('http'):
                     # 如果 URL 以 http 或 https 开头,则提取域名部分
                     parsed_url = urllib.parse.urlparse(url)
@@ -149,8 +152,5 @@ class UiConfigViews(ViewSet):
                 func_args=web_config
             )
         )
-        try:
-            ChatConsumer.active_send(send_socket_data)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg), )
+        ChatConsumer.active_send(send_socket_data)
         return ResponseData.success(RESPONSE_MSG_0059, )

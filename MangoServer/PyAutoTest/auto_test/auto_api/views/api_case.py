@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
-import logging
 
 from django.forms import model_to_dict
 from rest_framework import serializers
@@ -18,11 +17,11 @@ from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductS
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('api')
 
 
 class ApiCaseSerializers(serializers.ModelSerializer):
@@ -66,33 +65,30 @@ class ApiCaseViews(ViewSet):
     serializer_class = ApiCaseSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def api_case_run(self, request: Request):
         from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
         case_id = request.query_params.get('case_id')
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
-        try:
-            api_case_run = ApiTestRun(test_obj_id, case_sort, user_obj=request.user)
-            test_result: dict = api_case_run.run_one_case(case_id)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg), )
+        api_case_run = ApiTestRun(test_obj_id, case_sort, user_obj=request.user)
+        test_result: dict = api_case_run.run_one_case(case_id)
         if StatusEnum.FAIL.value == test_result['status']:
             return ResponseData.fail((300, test_result['error_message']), test_result)
         return ResponseData.success(RESPONSE_MSG_0111, test_result)
 
     @action(methods=['post'], detail=False)
+    @error_response('api')
     def api_case_batch_run(self, request: Request):
         from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
         case_id_list = request.data.get('case_id_list')
         test_obj_id = request.data.get('test_obj_id')
-        try:
-            api_case_run = ApiTestRun(test_obj_id, user_obj=request.user)
-            test_result: dict = api_case_run.case_batch(case_id_list)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg), )
+        api_case_run = ApiTestRun(test_obj_id, user_obj=request.user)
+        test_result: dict = api_case_run.case_batch(case_id_list)
         return ResponseData.success(RESPONSE_MSG_0111, test_result)
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def api_synchronous_interface(self, request: Request):
         """
         同步接口
@@ -109,14 +105,15 @@ class ApiCaseViews(ViewSet):
                 serializer.save()
                 res.append(True)
             else:
-                log.error(f"错误信息：{str(serializer.errors)}"
-                          f"错误数据：{i}")
+                log.api.error(f"错误信息：{str(serializer.errors)}"
+                              f"错误数据：{i}")
                 res.append(False)
         if False in res:
             return ResponseData.fail(RESPONSE_MSG_0006)
         return ResponseData.success(RESPONSE_MSG_0007, )
 
     @action(methods=['POST'], detail=False)
+    @error_response('api')
     def copy_case(self, request: Request):
         from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed
         from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedSerializers

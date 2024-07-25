@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -59,6 +60,7 @@ class UiPageViews(ViewSet):
     serializer_class = UiPageSerializers
 
     @action(methods=['GET'], detail=False)
+    @error_response('ui')
     def page_name(self, request: Request):
         """
         根据项目获取页面id和名称
@@ -76,6 +78,7 @@ class UiPageViews(ViewSet):
             return ResponseData.fail(RESPONSE_MSG_0053)
 
     @action(methods=['post'], detail=False)
+    @error_response('ui')
     def page_copy(self, request: Request):
         from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
         page_id = request.data.get('page_id')

@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -51,6 +52,7 @@ class CacheDataCRUD(ModelCRUD):
     serializer_class = CacheDataSerializersC
     serializer = CacheDataSerializers
 
+    @error_response('system')
     def get(self, request: Request):
         key_list = [{'describe': i.value, 'key': i.name} for i in CacheDataKeyEnum]
         for key in key_list:
@@ -75,6 +77,7 @@ class CacheDataCRUD(ModelCRUD):
                                                               many=True).data,
                                         books.count())
 
+    @error_response('system')
     def put(self, request: Request):
         for i in request.data:
             serializer = self.serializer(
@@ -93,6 +96,7 @@ class CacheDataViews(ViewSet):
     serializer_class = CacheDataSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_cache_value(self, request: Request):
         try:
             cache = CacheData.objects.get(key=request.query_params.get('key'))

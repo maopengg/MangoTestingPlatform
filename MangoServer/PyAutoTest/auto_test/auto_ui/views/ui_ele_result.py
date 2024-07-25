@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiEleResult
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -58,6 +59,8 @@ class UiEleResultViews(ViewSet):
     serializer_class = UiEleResultSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
+
     def get_ele_result(self, request: Request):
         ele_result = UiEleResult.objects.filter(test_suite_id=request.query_params.get('test_suite_id'),
                                                 page_step_id=request.query_params.get('page_step_id'),

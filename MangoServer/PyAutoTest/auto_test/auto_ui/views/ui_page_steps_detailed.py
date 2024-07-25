@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
-import logging
 
 from django.core.exceptions import FieldError
 from rest_framework import serializers
@@ -17,11 +16,11 @@ from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
+from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('ui')
 
 
 class UiPageStepsDetailedSerializers(serializers.ModelSerializer):
@@ -60,6 +59,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
     serializer_class = UiPageStepsDetailedSerializersC
     serializer = UiPageStepsDetailedSerializers
 
+    @error_response('ui')
     def get(self, request: Request):
         page_step_id = request.GET.get('page_step_id')
         _id = request.GET.get('id')
@@ -97,7 +97,7 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
         if res.is_valid():
             res.save()
         else:
-            log.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+            log.ui.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
 
 
 class UiPageStepsDetailedView(ViewSet):
@@ -105,6 +105,7 @@ class UiPageStepsDetailedView(ViewSet):
     serializer_class = UiPageStepsDetailedSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_ope_type(self, request: Request):
         page_type = request.query_params.get('page_type')
         # redis = RedisBase('default')
@@ -150,6 +151,7 @@ class UiPageStepsDetailedView(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0017, data)
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_ass_type(self, request: Request):
         page_type = request.query_params.get('page_type')
         # redis = RedisBase('default')
@@ -172,6 +174,7 @@ class UiPageStepsDetailedView(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0018, data)
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_ass_method(self, request: Request):
         """
         获取断言类型
@@ -183,6 +186,7 @@ class UiPageStepsDetailedView(ViewSet):
                                     CacheDataValue.get_cache_value(key=CacheDataKey2Enum.ASSERTION_METHOD.value))
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_step_sort(self, request: Request):
         """
         修改排序

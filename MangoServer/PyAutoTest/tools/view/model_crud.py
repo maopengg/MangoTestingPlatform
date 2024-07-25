@@ -3,7 +3,6 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
-import logging
 from threading import Thread
 
 from django.core.exceptions import FieldError
@@ -13,10 +12,10 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
 from PyAutoTest.exceptions.tools_exception import InsideSaveError
+from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('system')
 
 
 class ModelCRUD(GenericAPIView):
@@ -26,6 +25,7 @@ class ModelCRUD(GenericAPIView):
     not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people', 'test_obj',
                         'status']
 
+    @error_response('system')
     def get(self, request: Request):
         query_dict = {}
         for k, v in dict(request.query_params.lists()).items():
@@ -62,6 +62,7 @@ class ModelCRUD(GenericAPIView):
                                         serializer(instance=books, many=True).data,
                                         books.count())
 
+    @error_response('system')
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
         if serializer.is_valid():
@@ -69,9 +70,10 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
+    @error_response('system')
     def put(self, request: Request):
         if isinstance(request, dict):
             data = request
@@ -90,9 +92,10 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request, request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
-            log.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0004, serializer.errors)
 
+    @error_response('system')
     def delete(self, request: Request):
         _id = request.query_params.get('id')
         id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
@@ -156,7 +159,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
             raise InsideSaveError(*RESPONSE_MSG_0116, value=(serializer.errors,))
 
     @classmethod
@@ -166,7 +169,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
             raise InsideSaveError(*RESPONSE_MSG_0117, value=(serializer.errors,))
 
     @classmethod

@@ -16,6 +16,7 @@ from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSer
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -62,6 +63,7 @@ class UiPageStepsViews(ViewSet):
     serializer_class = UiPageStepsSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def ui_steps_run(self, request: Request):
         """
         执行一条用例
@@ -69,13 +71,14 @@ class UiPageStepsViews(ViewSet):
         @return:
         """
         try:
-            case_json = UiTestRun(request.user['id'], request.GET.get("te"))\
+            case_json = UiTestRun(request.user['id'], request.GET.get("te")) \
                 .steps(steps_id=int(request.GET.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_type(self, request: Request):
         for i in request.data.get('id'):
             case = self.model.objects.get(id=i)
@@ -84,6 +87,7 @@ class UiPageStepsViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0085, )
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_case_name(self, request: Request):
         """
          获取所有用例id和名称
@@ -95,6 +99,7 @@ class UiPageStepsViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0086, data)
 
     @action(methods=['GET'], detail=False)
+    @error_response('ui')
     def get_page_steps_name(self, request: Request):
         """
         根据项目获取页面id和名称
@@ -103,6 +108,7 @@ class UiPageStepsViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0087, [{'key': _id, 'title': name} for _id, name in res])
 
     @action(methods=['POST'], detail=False)
+    @error_response('ui')
     def copy_page_steps(self, request: Request):
         from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedSerializers
         page_id = request.data.get('page_id')

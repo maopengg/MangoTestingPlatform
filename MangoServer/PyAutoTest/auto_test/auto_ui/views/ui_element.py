@@ -14,6 +14,7 @@ from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -50,6 +51,7 @@ class UiElementCRUD(ModelCRUD):
     serializer_class = UiElementSerializersC
     serializer = UiElementSerializers
 
+    @error_response('ui')
     def get(self, request):
         books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
         try:
@@ -67,6 +69,7 @@ class UiElementViews(ViewSet):
     serializer_class = UiElementSerializers
 
     @action(methods=['POST'], detail=False)
+    @error_response('ui')
     def test_element(self, request: Request):
         """
         获取所有的页面名称
@@ -78,6 +81,7 @@ class UiElementViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_ele_name(self, request: Request):
         """
         获取
@@ -89,6 +93,7 @@ class UiElementViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0080, data)
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_is_iframe(self, request: Request):
         """
         修改启停用

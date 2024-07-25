@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiCaseResult
 from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import UserLogs
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
@@ -20,6 +21,7 @@ class IndexViews(ViewSet):
     """首页api"""
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def case_result_week_sum(self, request: Request):
         """
         获取三个类型的总数
@@ -109,6 +111,7 @@ class IndexViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0092, result_dict)
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def case_sum(self, request: Request):
         """
         获取所有用例的总数
@@ -125,6 +128,7 @@ class IndexViews(ViewSet):
                                     ])
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def case_run_sum(self, request: Request):
         """
         获取所有用例的总数
@@ -140,6 +144,7 @@ class IndexViews(ViewSet):
                                     ])
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def activity_level(self, request: Request):
         """
         获取所有用例的总数

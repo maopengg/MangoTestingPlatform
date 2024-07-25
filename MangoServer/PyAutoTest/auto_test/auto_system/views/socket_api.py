@@ -9,6 +9,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
@@ -16,6 +17,7 @@ from PyAutoTest.tools.view.response_msg import *
 class SocketApiViews(ViewSet):
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_user_list(self, request: Request):
         data = SocketUser.get_all_user()
         res = User.objects.filter(username__in=data).values_list('id', 'nickname', 'username', 'ip')
@@ -24,11 +26,13 @@ class SocketApiViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_all_user_sum(self, request: Request):
         data: int = SocketUser.all_keys()
         return ResponseData.success(RESPONSE_MSG_0102, {'sum': data})
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_all_user_list(self, request: Request):
         data = []
         for i in SocketUser.get_all_user_list():

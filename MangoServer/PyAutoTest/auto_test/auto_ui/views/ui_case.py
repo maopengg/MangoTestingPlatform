@@ -15,7 +15,7 @@ from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSer
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
-from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -62,22 +62,21 @@ class UiCaseViews(ViewSet):
     serializer_class = UiCaseSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def ui_case_run(self, request: Request):
         """
         执行单个用例组
         @param request:
         @return:
         """
-        try:
-            UiTestRun(
-                request.user['id'],
-                request.GET.get("testing_environment")
-            ).case_batch([int(request.GET.get("case_id"))])
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg))
+        UiTestRun(
+            request.user['id'],
+            request.GET.get("testing_environment")
+        ).case_batch([int(request.GET.get("case_id"))])
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def ui_batch_run(self, request: Request):
         """
         批量执行多个用例组
@@ -85,16 +84,14 @@ class UiCaseViews(ViewSet):
         @return:
         """
         case_id_list = [int(id_str) for id_str in request.query_params.getlist('case_id_list[]')]
-        try:
-            UiTestRun(
-                request.user['id'],
-                request.GET.get("testing_environment")
-            ).case_batch(case_id_list=case_id_list)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg))
+        UiTestRun(
+            request.user['id'],
+            request.GET.get("testing_environment")
+        ).case_batch(case_id_list=case_id_list)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)
+    @error_response('ui')
     def cody_case(self, request: Request):
         from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedSerializers
         from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailed

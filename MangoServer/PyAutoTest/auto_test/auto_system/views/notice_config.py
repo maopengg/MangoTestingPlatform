@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -40,7 +41,7 @@ class NoticeConfigSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project',
-            )
+        )
         return queryset
 
 
@@ -58,6 +59,7 @@ class NoticeConfigViews(ViewSet):
     serializer = NoticeConfigSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def test(self, request: Request):
         from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
         _id = request.query_params.get('id')
@@ -71,6 +73,7 @@ class NoticeConfigViews(ViewSet):
             return ResponseData.success(RESPONSE_MSG_0046)
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def put_status(self, request: Request):
         """
         修改启停用
@@ -78,8 +81,8 @@ class NoticeConfigViews(ViewSet):
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
-        if self.model.objects\
-                .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value)\
+        if self.model.objects \
+                .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
                 and request.data.get('status') == StatusEnum.SUCCESS.value:
             return ResponseData.success(RESPONSE_MSG_0119, )
 

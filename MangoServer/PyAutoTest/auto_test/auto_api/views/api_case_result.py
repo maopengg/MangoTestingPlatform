@@ -3,8 +3,6 @@
 # @Description: 
 # @Time   : 2023-11-13 10:42
 # @Author : 毛鹏
-import logging
-
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -14,11 +12,10 @@ from PyAutoTest.auto_test.auto_api.models import ApiCaseResult, ApiInfoResult
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('api')
 
 
 class ApiCaseResultSerializers(serializers.ModelSerializer):
@@ -60,6 +57,7 @@ class ApiCaseResultViews(ViewSet):
     serializer_class = ApiCaseResultSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def suite_case_result(self, request: Request):
         test_suite_id = request.query_params.get('test_suite_id')
         api_case_result_list = self.model.objects.filter(test_suite_id=test_suite_id).order_by('create_time')
@@ -91,6 +89,7 @@ class ApiCaseResultViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0083, {'data': data, 'summary': summary})
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def case_result_week_sum(self, request: Request):
         """
         获取三个类型的总数
