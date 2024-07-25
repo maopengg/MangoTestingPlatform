@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
-import logging
 
 from django.forms.models import model_to_dict
 from rest_framework import serializers
@@ -14,14 +13,14 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
 from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTasksSerializers
-from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('system')
 
 
 class TasksRunCaseListSerializers(serializers.ModelSerializer):
@@ -57,6 +56,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
     serializer_class = TasksRunCaseListSerializersC
     serializer = TasksRunCaseListSerializers
 
+    @error_response('system')
     def get(self, request: Request):
         _type = request.GET.get('type')
         books = self.model.objects.filter(task=request.GET.get('id')).order_by('sort')
@@ -73,6 +73,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
             data.append(_dict)
         return ResponseData.success(RESPONSE_MSG_0064, data)
 
+    @error_response('system')
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
         try:
@@ -85,7 +86,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
                 self.asynchronous_callback(request)
                 return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
             else:
-                log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
                 return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 
@@ -94,6 +95,7 @@ class TasksRunCaseListViews(ViewSet):
     serializer_class = TasksRunCaseListSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('system')
     def get_type_case_name(self, request: Request):
         _type = request.query_params.get('type')
         module_id = request.query_params.get('module_id')
@@ -105,6 +107,7 @@ class TasksRunCaseListViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0065, data)
 
     @action(methods=['post'], detail=False)
+    @error_response('system')
     def batch_set_cases(self, request: Request):
         case_id_list = request.data.get('case_id_list')
         scheduled_tasks_id = request.data.get('scheduled_tasks_id')
@@ -120,6 +123,7 @@ class TasksRunCaseListViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0067)
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def put_tasks_case_sort(self, request: Request):
         """
         修改排序
@@ -133,6 +137,7 @@ class TasksRunCaseListViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0107, )
 
     @action(methods=['put'], detail=False)
+    @error_response('system')
     def put_tasks_case_test_object(self, request: Request):
         """
         修改排序

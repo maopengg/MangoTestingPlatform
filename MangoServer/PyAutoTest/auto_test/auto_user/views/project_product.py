@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.models import ProductModule
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -57,6 +58,7 @@ class ProjectProductViews(ViewSet):
     serializer_class = ProjectProductSerializers
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def get_product_name(self, request: Request):
         """
         产品选项
@@ -72,6 +74,7 @@ class ProjectProductViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0118, data)
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def product_all_module_name(self, request: Request):
         """
         产品和模块选项

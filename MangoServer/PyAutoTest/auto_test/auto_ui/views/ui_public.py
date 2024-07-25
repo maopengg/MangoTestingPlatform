@@ -13,10 +13,12 @@ from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.ui_enum import UiPublicTypeEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from PyAutoTest.enums.ui_enum import UiPublicTypeEnum
+
 
 class UiPublicSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -55,6 +57,7 @@ class UiPublicViews(ViewSet):
     serializer_class = UiPublicSerializers
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_status(self, request: Request):
         """
         修改启停用

@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0032
@@ -36,6 +37,7 @@ class RoleViews(ViewSet):
     serializer_class = RoleSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('user')
     def get_all_role(self, request: Request):
         items = Role.objects.all()
         data = []

@@ -13,6 +13,7 @@ from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSer
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -59,6 +60,7 @@ class UiCaseResultViews(ViewSet):
     serializer_class = UiCaseResultSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def suite_get_case(self, request: Request):
         case_result = UiCaseResult.objects.filter(test_suite_id=request.query_params.get('test_suite_id'))
         data = []
@@ -87,11 +89,13 @@ class UiCaseResultViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0083, {'data': data, 'summary': summary})
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def get_case_res(self, request: Request):
         data = self.model.objects.filter(test_suite_id=request.query_params.get('test_suite_id'))
         return ResponseData.success(RESPONSE_MSG_0083, data)
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def case_result_week_sum(self, request: Request):
         """
         获取三个类型的总数

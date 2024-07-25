@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_ui.models import UiPageStepsResult
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
@@ -56,5 +57,7 @@ class UiPageStepsResultViews(ViewSet):
     serializer_class = UiPageStepsResultSerializers
 
     @action(methods=['get'], detail=False)
+
+    @error_response('ui')
     def test(self, request: Request):
         pass

@@ -14,6 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, UiPageStepsDetailed, UiCase
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -54,6 +55,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
     serializer_class = UiCaseStepsDetailedSerializersC
     serializer = UiCaseStepsDetailedSerializers
 
+    @error_response('ui')
     def get(self, request: Request):
         books = self.model.objects.filter(case=request.GET.get('case_id')).order_by('case_sort')
         try:
@@ -89,6 +91,7 @@ class UiCaseStepsDetailedViews(ViewSet):
     serializer_class = UiCaseStepsDetailedSerializers
 
     @action(methods=['get'], detail=False)
+    @error_response('ui')
     def post_case_cache_data(self, request: Request):
         books = self.model.objects.get(id=request.query_params.get('id'))
         ui_page_steps_detailed_obj = UiPageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
@@ -127,6 +130,7 @@ class UiCaseStepsDetailedViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0050)
 
     @action(methods=['put'], detail=False)
+    @error_response('ui')
     def put_case_sort(self, request: Request):
         """
         修改排序

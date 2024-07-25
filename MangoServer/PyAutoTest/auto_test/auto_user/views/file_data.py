@@ -11,6 +11,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.models import FileData, ProjectProduct
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0002, RESPONSE_MSG_0003
@@ -50,6 +51,7 @@ class FileDataCRUD(ModelCRUD):
     serializer_class = FileDataSerializersC
     serializer = FileDataSerializers
 
+    @error_response('user')
     def post(self, request: Request):
         project_id = request.data.get('project')
         if project_id is None:

@@ -12,6 +12,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiPublic
 from PyAutoTest.auto_test.auto_system.models import Database
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -54,6 +55,7 @@ class ApiPublicViews(ViewSet):
     serializer_class = ApiPublicSerializers
 
     @action(methods=['put'], detail=False)
+    @error_response('api')
     def put_status(self, request: Request):
         """
         修改启停用
@@ -72,6 +74,7 @@ class ApiPublicViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0104, )
 
     @action(methods=['get'], detail=False)
+    @error_response('api')
     def get_set_cache(self, request: Request):
         from PyAutoTest.auto_test.auto_api.service.base.common_base import CommonParameters
         CommonParameters(request.query_params.get('id'))

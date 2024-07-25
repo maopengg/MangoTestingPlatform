@@ -12,6 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.enums.system_enum import EnvironmentEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -46,6 +47,7 @@ class ProjectViews(ViewSet):
     serializer_class = ProjectSerializers
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def get_all_items(self, request: Request):
         """
         项目的ID和name，title选项专用
@@ -58,6 +60,7 @@ class ProjectViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0025, data)
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def project_product_name(self, request: Request):
         """
         项目和产品的选项
@@ -78,6 +81,7 @@ class ProjectViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0025, options)
 
     @action(methods=['GET'], detail=False)
+    @error_response('user')
     def project_environment_name(self, request: Request):
         """
         项目测试环境选项
