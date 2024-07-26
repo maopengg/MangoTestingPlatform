@@ -64,7 +64,7 @@ class TestSuiteReport(models.Model):
     # type=0是UI,=1是接口,=2是性能
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_env = models.SmallIntegerField(verbose_name="测试环境", null=True)
 
     error_message = models.TextField(verbose_name="错误提示", null=True)
     # 0是进行中，1是已完成

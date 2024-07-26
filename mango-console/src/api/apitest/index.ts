@@ -208,7 +208,7 @@ export function getApiCaseInfoRun(id: number | string[], testObj: any) {
     data: () => {
       return {
         id: id,
-        test_obj_id: testObj,
+        test_env: testObj,
       }
     },
   })

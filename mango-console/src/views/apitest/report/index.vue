@@ -79,8 +79,8 @@
                   <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                     {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                   </template>
-                  <template v-else-if="item.key === 'test_object'" #cell="{ record }">
-                    {{ uEnvironment.data[record.test_object?.environment].title }}
+                  <template v-else-if="item.key === 'test_env'" #cell="{ record }">
+                    {{ uEnvironment.data[record.test_env].title }}
                   </template>
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
                     {{ record.user?.nickname }}

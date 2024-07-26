@@ -35,8 +35,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '执行环境',
-    key: 'test_object',
-    dataIndex: 'test_object',
+    key: 'test_env',
+    dataIndex: 'test_env',
     width: 200,
   },
   {

@@ -12,6 +12,13 @@ from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.error_msg import ERROR_MSG_0000
 from PyAutoTest.tools.view.response_data import ResponseData
 
+log_dict = {
+    'ui': log.ui,
+    'api': log.api,
+    'system': log.system,
+    'user': log.user
+}
+
 
 def error_response(app: str):
     """
@@ -27,12 +34,6 @@ def error_response(app: str):
                 return ResponseData.fail((error.code, error.msg))
 
             except Exception as error:
-                log_dict = {
-                    'ui': log.ui,
-                    'api': log.api,
-                    'system': log.system,
-                    'user': log.user
-                }
                 trace = traceback.format_exc()
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
                 return ResponseData.fail(ERROR_MSG_0000)

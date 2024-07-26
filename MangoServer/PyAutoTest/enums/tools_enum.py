@@ -64,7 +64,7 @@ class ProductTypeEnum(BaseEnum):
 
 class AutoTypeEnum(BaseEnum):
     """产品类型"""
-    currency = 0
+    CURRENCY = 0
     UI = 1
     API = 2
 
