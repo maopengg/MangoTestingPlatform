@@ -40,8 +40,7 @@ class CaseSteps(StepElements):
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
                                            status=StatusEnum.SUCCESS.value,
-                                           page_steps_result_list=[],
-                                           video_path='')
+                                           page_steps_result_list=[])
         self.IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
 
     async def __aenter__(self):

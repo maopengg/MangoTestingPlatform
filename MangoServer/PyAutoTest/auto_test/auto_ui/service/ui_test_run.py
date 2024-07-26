@@ -54,7 +54,6 @@ class UiTestRun:
                 self.case_executor = username_list
             else:
                 raise self.error
-        self.test_object_id = None
 
     def case_batch(self, case_id_list: list) -> None:
 
@@ -80,7 +79,7 @@ class UiTestRun:
             TestSuiteReportCRUD.inside_post({
                 'id': test_suite_id,
                 'type': AutoTestTypeEnum.UI.value,
-                'test_object': self.test_object_id,
+                'test_env': self.test_env,
                 'error_message': None,
                 'run_status': StatusEnum.FAIL.value,
                 'status': None,
@@ -95,11 +94,11 @@ class UiTestRun:
     def send_case(self, case_id: int, test_suite_id) -> CaseModel:
         if self.tasks_id:
             tasks_run_case = TasksRunCaseList.objects.get(task=self.tasks_id, case=case_id)
-            self.test_object_id = tasks_run_case \
-                .test_object \
-                .id if tasks_run_case \
-                .test_object else \
-                self.spare_test_object_id
+            # self.test_object_id = tasks_run_case \
+            #     .test_object \
+            #     .id if tasks_run_case \
+            #     .test_object else \
+            #     self.spare_test_object_id
 
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')

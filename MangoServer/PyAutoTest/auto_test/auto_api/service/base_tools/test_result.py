@@ -33,7 +33,7 @@ class TestResult:
                 'id': self.test_suite_id,
                 'type': AutoTestTypeEnum.API.value,
                 'project_product': self.project_product_id,
-                'test_object': self.test_env,
+                'test_env': self.test_env,
                 'error_message': None,
                 'run_status': StatusEnum.FAIL.value,
                 'status': None,
