@@ -101,7 +101,7 @@ class UiConfigViews(ViewSet):
             config_obj = UiConfig.objects.get(user_id=request.user['id'],
                                               status=StatusEnum.SUCCESS.value,
                                               type=DriveTypeEnum.WEB.value)
-            if not user_obj.selected_environment:
+            if user_obj.selected_environment is not None and user_obj.selected_environment != 0:
                 return ResponseData.fail(RESPONSE_MSG_0058, )
 
             test_object = TestObject.objects.get(id=user_obj.selected_environment)
