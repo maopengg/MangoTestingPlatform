@@ -312,7 +312,7 @@ export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvir
     data: () => {
       return {
         case_id_list: caseIdList,
-        testing_environment: testingEnvironment,
+        test_env: testingEnvironment,
       }
     },
   })
@@ -323,7 +323,7 @@ export function getUiCaseRun(caseId: any, testingEnvironment: any) {
     data: () => {
       return {
         case_id: caseId,
-        testing_environment: testingEnvironment,
+        test_env: testingEnvironment,
       }
     },
   })

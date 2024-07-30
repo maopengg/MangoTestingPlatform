@@ -10,11 +10,12 @@ from collections import Counter
 import time
 from retrying import retry
 
-from PyAutoTest.auto_test.auto_api.service.base.common_base import CommonBase
+from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonBase
 from PyAutoTest.exceptions.api_exception import *
 from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
+from PyAutoTest.tools.base_request.request_tool import BaseRequest
 from PyAutoTest.tools.view.error_msg import *
 
 log = logging.getLogger('api')
@@ -23,7 +24,12 @@ log = logging.getLogger('api')
 class CaseMethod(CommonBase, PublicAssertion):
     ass_result = []
 
-    def request_data(self, request_data_model: RequestDataModel, is_debug: bool = False):
+    def send_request(self, request_data_model: RequestDataModel, is_debug: bool = False) -> ResponseDataModel:
+        base_request = BaseRequest()
+        base_request.request(self.request_data_clean(request_data_model, is_debug))
+        return base_request.request_result_data()
+
+    def request_data_clean(self, request_data_model: RequestDataModel, is_debug: bool):
         for key, value in request_data_model:
             if key == 'headers' and isinstance(value, str):
                 if is_debug:

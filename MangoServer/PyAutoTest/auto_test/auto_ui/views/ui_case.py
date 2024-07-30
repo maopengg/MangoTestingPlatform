@@ -71,7 +71,7 @@ class UiCaseViews(ViewSet):
         """
         UiTestRun(
             request.user['id'],
-            request.GET.get("testing_environment")
+            request.GET.get("test_env")
         ).case_batch([int(request.GET.get("case_id"))])
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
@@ -86,7 +86,7 @@ class UiCaseViews(ViewSet):
         case_id_list = [int(id_str) for id_str in request.query_params.getlist('case_id_list[]')]
         UiTestRun(
             request.user['id'],
-            request.GET.get("testing_environment")
+            request.GET.get("test_env")
         ).case_batch(case_id_list=case_id_list)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 

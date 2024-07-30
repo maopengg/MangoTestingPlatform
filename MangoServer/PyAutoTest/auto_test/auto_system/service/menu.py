@@ -21,7 +21,7 @@ def ad_routes():
         },
         {
             "menuUrl": "/uitest",
-            "menuName": "界面自动化",
+            "menuName": "前端自动化",
             "icon": "IconFindReplace",
             "parentPath": "",
             "children": [

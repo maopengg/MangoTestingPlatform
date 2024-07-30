@@ -143,7 +143,6 @@ export const formItemsImport: FormItem[] = reactive([
     required: true,
     type: 'cascader',
     validator: function () {
-      console.log(this.value)
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false

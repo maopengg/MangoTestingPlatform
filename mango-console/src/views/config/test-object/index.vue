@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="配置测试对象" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="配置测试对象"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select'">
                     <a-select
@@ -77,6 +86,17 @@
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
                   {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                 </template>
+                <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
+                    >前端&接口通用</a-tag
+                  >
+                  <a-tag color="cyan" size="small" v-else-if="record.auto_type === 1"
+                    >前端自动化</a-tag
+                  >
+                  <a-tag color="green" size="small" v-else-if="record.auto_type === 2"
+                    >接口自动化</a-tag
+                  >
+                </template>
                 <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
                   {{ record.executor_name ? record.executor_name.nickname : '-' }}
                 </template>
@@ -89,7 +109,9 @@
                 <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
                   <a-switch
                     :default-checked="record.db_rud_status === 1"
-                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'db_rud_status')"
+                    :beforeChange="
+                      (newValue) => onModifyStatus(newValue, record.id, 'db_rud_status')
+                    "
                   />
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
@@ -100,7 +122,9 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除</a-button
+                    >
                   </a-space>
                 </template>
               </a-table-column>
@@ -137,6 +161,17 @@
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="uEnvironment.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="data.autoTypeList"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -181,6 +216,7 @@
     putUserTestObjectPutStatus,
   } from '@/api/user'
   import { getUserNickname } from '@/api/user'
+  import { getSystemEnumAutotest, getSystemEnumAutoType } from '@/api/system'
 
   const projectInfo = useProject()
   const uEnvironment = useEnvironment()
@@ -196,6 +232,7 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加测试对象',
+    autoTypeList: [],
   })
 
   function onResetSearch() {
@@ -324,10 +361,18 @@
       }, 300)
     })
   }
+  function getAutoType() {
+    getSystemEnumAutoType()
+      .then((res) => {
+        data.autoTypeList = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getNickName()
+      getAutoType()
       uEnvironment.getEnvironment()
     })
   })

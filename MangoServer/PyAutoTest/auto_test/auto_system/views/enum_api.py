@@ -112,3 +112,8 @@ class EnumOptionViews(ViewSet):
     @error_response('system')
     def enum_product_type(self, request):
         return ResponseData.success(RESPONSE_MSG_0106, ProductTypeEnum.get_option())
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def enum_auto_type(self, request):
+        return ResponseData.success(RESPONSE_MSG_0106, AutoTypeEnum.get_option())

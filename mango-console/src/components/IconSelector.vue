@@ -14,7 +14,10 @@
         <div class="icon-wrapper">
           <a-row :wrap="true">
             <a-col :span="4" v-for="item of iconNames" :key="item">
-              <div class="flex justify-center items-center flex-col icon-item" @click="onSelectItem(item)">
+              <div
+                class="flex justify-center items-center flex-col icon-item"
+                @click="onSelectItem(item)"
+              >
                 <component :is="item" style="font-size: 26px" />
                 <div class="label-name">{{ item }}</div>
               </div>
@@ -87,7 +90,10 @@
     } else {
       searchList.value = []
       total.value = iconList.length
-      iconNames.value = iconList.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize)
+      iconNames.value = iconList.slice(
+        (currentPage.value - 1) * pageSize,
+        currentPage.value * pageSize
+      )
     }
   }
   async function onSelectItem(item: string) {

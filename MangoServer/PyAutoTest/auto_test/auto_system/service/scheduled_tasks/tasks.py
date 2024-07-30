@@ -9,7 +9,7 @@ from threading import Thread
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
+from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
 from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
@@ -108,7 +108,7 @@ class Tasks:
             if case_id_list:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
 
-                ApiTestRun(test_obj_id=test_obj_id, is_notice=is_notice, user_obj=user_obj).case_batch(
+                ApiCaseRun(test_obj_id=test_obj_id, is_notice=is_notice, user_obj=user_obj).case_batch(
                     case_id_list)
         except MangoServerError as error:
             log.error(f'执行API定时任务失败，错误消息：{error.msg}')

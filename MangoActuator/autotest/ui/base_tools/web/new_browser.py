@@ -141,13 +141,13 @@ class NewBrowser:
         @param request:
         @return:
         """
-        if self.web_config.host_obj is None:
+        if self.web_config.host_list is None:
             await route.continue_()  # 继续请求，不做修改
             return
         if request.resource_type in ("document", "xhr", "fetch"):
-            for project_product, host in self.web_config.host_obj.items():
+            for host in self.web_config.host_list:
                 if host in request.url:
-                    await self.__send_recording_api(request, int(project_product))
+                    await self.__send_recording_api(request, self.web_config.project_product)
         await route.continue_()  # 继续请求，不做修改
 
     @classmethod
@@ -159,7 +159,6 @@ class NewBrowser:
             json_data = request.post_data_json
         except Error:
             json_data = None
-
         data = {key: value[0] for key, value in
                 parse.parse_qs(request.post_data).items()} if json_data is None else None
         params = {key: value[0] for key, value in
@@ -174,7 +173,7 @@ class NewBrowser:
             method=MethodEnum.get_key(request.method),
             params=None if params == {} else params,
             data=None if data == {} else data,
-            json_data=json_data
+            json_data=None if json_data == {} else json_data
         )
         await ClientWebSocket().async_send(
             msg="发送录制接口",

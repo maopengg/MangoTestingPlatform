@@ -284,7 +284,6 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useRouter } from 'vue-router'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { tableColumns, formItems, conditionItems } from './config'
@@ -304,6 +303,7 @@
     postSystemTasksBatchSetCases,
   } from '@/api/system'
   import { useStatus } from '@/store/modules/status'
+  import { useEnvironment } from '@/store/modules/get-environment'
 
   const productModule = useProductModule()
   const status = useStatus()
@@ -316,7 +316,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
 
   const data = reactive({
     actionTitle: '添加接口',
@@ -453,12 +453,12 @@
   }
 
   function caseRun(record: any) {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
     Message.loading('正在执行用例请稍后~')
-    getApiCaseRun(record.id, testObj.selectValue, null)
+    getApiCaseRun(record.id, uEnvironment.selectValue, null)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -466,7 +466,7 @@
     doRefresh()
   }
   function onCaseBatchRun() {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
@@ -475,7 +475,7 @@
       return
     }
     Message.loading('正在执行用例请稍后~')
-    postApiCaseBatchRun(selectedRowKeys.value, testObj.selectValue)
+    postApiCaseBatchRun(selectedRowKeys.value, uEnvironment.selectValue)
       .then((res) => {
         Message.success(res.msg)
         doRefresh()

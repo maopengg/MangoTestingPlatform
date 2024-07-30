@@ -78,7 +78,9 @@
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除 </a-button>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                >删除
+              </a-button>
             </template>
           </a-table-column>
         </template>
@@ -159,7 +161,11 @@
               />
             </template>
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
-              <a-radio-group @change="changeStatus" v-model="data.type" :options="data.plainOptions" />
+              <a-radio-group
+                @change="changeStatus"
+                v-model="data.type"
+                :options="data.plainOptions"
+              />
             </template>
             <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
               <a-textarea
@@ -195,7 +201,6 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { columns, formItems, Item } from './config'
   import {
     deleteUiPageStepsDetailed,
@@ -209,8 +214,9 @@
     putUiPageStepsDetailed,
   } from '@/api/uitest'
   import { getSystemEnumUiElementOperation } from '@/api/system'
+  import { useEnvironment } from '@/store/modules/get-environment'
   const pageData = usePageData()
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
 
   const route = useRoute()
   const formModel = ref({})
@@ -235,7 +241,11 @@
       }
     }
     if (event === 0) {
-      if (!formItems.some((item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type'))) {
+      if (
+        !formItems.some(
+          (item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type')
+        )
+      ) {
         formItems.push(
           {
             label: '元素操作',
@@ -289,7 +299,10 @@
         )
       }
     } else if (event === 2) {
-      if (!formItems.some((item) => item.key === 'sql') || !formItems.some((item) => item.key === 'key_list')) {
+      if (
+        !formItems.some((item) => item.key === 'sql') ||
+        !formItems.some((item) => item.key === 'key_list')
+      ) {
         formItems.push(
           {
             label: 'key_list',
@@ -324,7 +337,10 @@
         )
       }
     } else {
-      if (!formItems.some((item) => item.key === 'key') || !formItems.some((item) => item.key === 'value')) {
+      if (
+        !formItems.some((item) => item.key === 'key') ||
+        !formItems.some((item) => item.key === 'value')
+      ) {
         formItems.push(
           {
             label: 'key',
@@ -586,11 +602,11 @@
   }
 
   function onRunCase() {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsRun(route.query.id, testObj.selectValue)
+    getUiStepsRun(route.query.id, uEnvironment.selectValue)
       .then((res) => {
         Message.loading(res.msg)
       })

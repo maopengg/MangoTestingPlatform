@@ -9,7 +9,5 @@
 <script lang="ts" setup>
   import { ref } from 'vue'
   const name = ref('')
-  function f() {
-    console.log(name.value)
-  }
+  function f() {}
 </script>

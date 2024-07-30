@@ -1,10 +1,22 @@
 <template>
   <a-space align="center">
     <a-tooltip content="开启/关闭表格边框" class="item" trigger="hover" placement="top">
-      <a-button shape="circle" size="small" :status="border ? 'success' : 'normal'" @click="updateBorder"> B </a-button>
+      <a-button
+        shape="circle"
+        size="small"
+        :status="border ? 'success' : 'normal'"
+        @click="updateBorder"
+      >
+        B
+      </a-button>
     </a-tooltip>
     <a-tooltip content="开启/关闭斑马纹" class="item" trigger="hover" placement="top">
-      <a-button shape="circle" size="small" :status="striped ? 'success' : 'normal'" @click="updateStriped">
+      <a-button
+        shape="circle"
+        size="small"
+        :status="striped ? 'success' : 'normal'"
+        @click="updateStriped"
+      >
         S
       </a-button>
     </a-tooltip>

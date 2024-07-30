@@ -90,7 +90,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
         else:
-            log.api.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.api.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
 
     def callback(self, _id):
