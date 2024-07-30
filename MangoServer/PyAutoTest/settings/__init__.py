@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
+    'django_crontab',  # 任务
 ]
 
 MIDDLEWARE = [
@@ -268,3 +269,7 @@ CORS_ALLOW_METHODS = (
     'PUT',
     'VIEW',
 )
+
+CRONJOBS = [
+    ('* * * * *', 'PyAutoTest.auto_test.auto_system.service.management.scan_table'),  # 替换为你的应用名
+]
