@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
+import json
 
 from django.forms.models import model_to_dict
 from rest_framework import serializers
@@ -86,7 +87,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
                 self.asynchronous_callback(request)
                 return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
             else:
-                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
                 return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 

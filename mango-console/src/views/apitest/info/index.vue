@@ -177,13 +177,20 @@
                       @ok="handleOk"
                       @cancel="handleCancel"
                     >
-                      <template #title> {{ record.name }}接口-测试结果</template>
-                      <a-space direction="vertical">
-                        <!-- eslint-disable-next-line vue/valid-v-for -->
-                        <a-space v-for="(value, key) in data.caseResult">
-                          <a-tag class="header-tag" color="#0fc6c2">{{ key }}</a-tag>
-                          <span>{{ value }}</span>
-                        </a-space>
+                      <template #title>
+                        {{ record.name == null ? record.name : '' }}接口-测试结果</template
+                      >
+                      <a-space
+                        direction="vertical"
+                        :key="key"
+                        v-for="(value, key) in data.caseResult"
+                      >
+                        <template v-if="value && key != 'response_headers' && key != 'headers'">
+                          <a-space>
+                            <a-tag color="orange">{{ key }}</a-tag>
+                            <span>{{ value }}</span>
+                          </a-space>
+                        </template>
                       </a-space>
                     </a-modal>
                   </template>
@@ -283,7 +290,6 @@
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, reactive, nextTick } from 'vue'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProject } from '@/store/modules/get-project'
@@ -302,15 +308,16 @@
     putApiPutApiInfoType,
   } from '@/api/apitest'
   import { getUiConfigNewBrowserObj } from '@/api/uitest'
-  import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
+  import { getSystemEnumMethod } from '@/api/system'
   import { useStatus } from '@/store/modules/status'
+  import { useEnvironment } from '@/store/modules/get-environment'
 
   const router = useRouter()
 
   const productModule = useProductModule()
   const status = useStatus()
   const projectInfo = useProject()
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -414,7 +421,7 @@
   }
 
   function onBatchUpload() {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境并进行录制')
       return
     }
@@ -538,12 +545,12 @@
 
   // 获取所有项目
   function onRunCase(record: any) {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
     Message.loading('接口开始执行中~')
-    getApiCaseInfoRun(record.id, testObj.selectValue)
+    getApiCaseInfoRun(record.id, uEnvironment.selectValue)
       .then((res) => {
         data.caseResult = res.data
         visible.value = true
@@ -553,7 +560,7 @@
   }
 
   function onConcurrency() {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择测试环境')
       return
     }
@@ -562,7 +569,7 @@
       return
     }
     Message.loading('开始批量执行中~')
-    getApiCaseInfoRun(selectedRowKeys.value, testObj.selectValue)
+    getApiCaseInfoRun(selectedRowKeys.value, uEnvironment.selectValue)
       .then((res) => {
         data.caseResult = res.data
         Message.success('批量执行全部完成啦~')

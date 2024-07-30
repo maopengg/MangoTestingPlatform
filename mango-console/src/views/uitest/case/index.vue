@@ -3,12 +3,21 @@
     <div class="main-container">
       <TableBody ref="tableBody">
         <template #header>
-          <TableHeader :show-filter="true" title="测试用例" @search="doRefresh" @reset-search="onResetSearch">
+          <TableHeader
+            :show-filter="true"
+            title="测试用例"
+            @search="doRefresh"
+            @reset-search="onResetSearch"
+          >
             <template #search-content>
               <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
                 <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
                   <template v-if="item.type === 'input'">
-                    <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                    <a-input
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      @blur="doRefresh"
+                    />
                   </template>
                   <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                     <a-select
@@ -86,10 +95,14 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button status="success" size="small" @click="onConcurrency('批量执行')">批量执行</a-button>
+                  <a-button status="success" size="small" @click="onConcurrency('批量执行')"
+                    >批量执行</a-button
+                  >
                 </div>
                 <div>
-                  <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
+                  <a-button status="warning" size="small" @click="handleClick"
+                    >设为定时任务</a-button
+                  >
                   <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
                     <template #title> 设为定时任务 </template>
                     <div>
@@ -149,7 +162,9 @@
                 </template>
                 <template v-else-if="item.key === 'level'" #cell="{ record }">
                   <a-tag color="orange" size="small">
-                    {{ record.level !== null ? data.enumCaseLevel[record.level].title : '-' }}</a-tag
+                    {{
+                      record.level !== null ? data.enumCaseLevel[record.level].title : '-'
+                    }}</a-tag
                   >
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
@@ -168,16 +183,28 @@
                       <a-button type="text" size="mini">···</a-button>
                       <template #content>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onClick1(record)">结果</a-button>
+                          <a-button type="text" size="mini" @click="onClick1(record)"
+                            >结果</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                          <a-button type="text" size="mini" @click="onUpdate(record)"
+                            >编辑</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button type="text" size="mini" @click="caseCody(record)">复制</a-button>
+                          <a-button type="text" size="mini" @click="caseCody(record)"
+                            >复制</a-button
+                          >
                         </a-doption>
                         <a-doption>
-                          <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                          <a-button
+                            status="danger"
+                            type="text"
+                            size="mini"
+                            @click="onDelete(record)"
+                            >删除</a-button
+                          >
                         </a-doption>
                       </template>
                     </a-dropdown>
@@ -263,7 +290,6 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { useRouter } from 'vue-router'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, formItems, tableColumns } from './config'
@@ -276,13 +302,18 @@
     putUiCase,
     postUiRunCaseBatch,
   } from '@/api/uitest'
-  import { getSystemEnumCaseLevel, getSystemScheduledName, postSystemTasksBatchSetCases } from '@/api/system'
+  import {
+    getSystemEnumCaseLevel,
+    getSystemScheduledName,
+    postSystemTasksBatchSetCases,
+  } from '@/api/system'
   import { getUserNickname } from '@/api/user'
   import { useStatus } from '@/store/modules/status'
+  import { useEnvironment } from '@/store/modules/get-environment'
   const productModule = useProductModule()
   const projectInfo = useProject()
   const status = useStatus()
-  const testObj = useTestObj()
+  const uEnvironment = useEnvironment()
   const router = useRouter()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -395,11 +426,11 @@
   }
 
   function onCaseRun(caseId: number) {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiCaseRun(caseId, testObj.selectValue)
+    getUiCaseRun(caseId, uEnvironment.selectValue)
       .then((res) => {
         Message.loading(res.msg)
       })
@@ -407,7 +438,7 @@
   }
 
   function onConcurrency(name: string) {
-    if (testObj.selectValue == null) {
+    if (uEnvironment.selectValue == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
@@ -421,7 +452,7 @@
       cancelText: '取消',
       okText: '执行',
       onOk: () => {
-        postUiRunCaseBatch(selectedRowKeys.value, testObj.selectValue)
+        postUiRunCaseBatch(selectedRowKeys.value, uEnvironment.selectValue)
           .then((res) => {
             Message.loading(res.msg)
             selectedRowKeys.value = []

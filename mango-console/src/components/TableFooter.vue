@@ -1,5 +1,9 @@
 <template>
-  <a-card :body-style="{ padding: 0, width: '100%' }" class="table-footer-container" :bordered="isBordered">
+  <a-card
+    :body-style="{ padding: 0, width: '100%' }"
+    class="table-footer-container"
+    :bordered="isBordered"
+  >
     <div class="flex items-center" :class="[innerPosition]">
       <a-pagination
         v-model:current="pagination.page"

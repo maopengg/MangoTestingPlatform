@@ -3,6 +3,7 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
+import json
 from threading import Thread
 
 from django.core.exceptions import FieldError
@@ -70,7 +71,7 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
     @error_response('system')
@@ -159,7 +160,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
             raise InsideSaveError(*RESPONSE_MSG_0116, value=(serializer.errors,))
 
     @classmethod

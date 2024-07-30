@@ -60,3 +60,14 @@ class ProductTypeEnum(BaseEnum):
             0: "WEB（API,UI通用）", 1: "PC桌面（API,UI通用）",
             2: "APP（API专用）", 3: '安卓（UI专用）', 4: 'IOS（UI专用）', 5: '小程序（API专用）'
         }
+
+
+class AutoTypeEnum(BaseEnum):
+    """产品类型"""
+    CURRENCY = 0
+    UI = 1
+    API = 2
+
+    @classmethod
+    def obj(cls):
+        return {0: "前端&接口通用", 1: "前端自动化", 2: "接口自动化"}

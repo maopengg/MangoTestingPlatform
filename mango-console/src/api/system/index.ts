@@ -1,6 +1,6 @@
 import { deleted, get, post, put } from '@/api/http'
 import * as url from './url'
-import { systemCacheValue, systemEnumProduct } from './url'
+import { systemCacheValue, systemEnumAutoType, systemEnumProduct } from './url'
 
 export function getSystemEnumExp() {
   return get({
@@ -111,6 +111,14 @@ export function getSystemEnumApiParameterType() {
 export function getSystemEnumUiDevice() {
   return get({
     url: url.systemEnumUiDevice,
+    data: () => {
+      return {}
+    },
+  })
+}
+export function getSystemEnumAutoType() {
+  return get({
+    url: url.systemEnumAutoType,
     data: () => {
       return {}
     },

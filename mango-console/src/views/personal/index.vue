@@ -2,7 +2,11 @@
   <div class="main-container">
     <div class="box-wrapper">
       <div class="flex">
-        <a-card :bordered="false" class="card-border-radius personal-box" :body-style="{ padding: '10px' }">
+        <a-card
+          :bordered="false"
+          class="card-border-radius personal-box"
+          :body-style="{ padding: '10px' }"
+        >
           <div class="info-wrapper">
             <div class="avatar-wrapper">
               <div

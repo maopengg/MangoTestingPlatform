@@ -8,8 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
 from PyAutoTest.auto_test.auto_user.models import TestObject
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
@@ -92,7 +92,7 @@ class TestObjectViews(ViewSet):
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
             if db_c_status == StatusEnum.SUCCESS.value or db_rud_status == StatusEnum.SUCCESS.value:
-                PublicMethods.get_mysql_config(request.data.get('id'))
+                func_mysql_config(request.data.get('id'))
             if db_c_status is not None:
                 obj.db_c_status = db_c_status
             if db_rud_status is not None:

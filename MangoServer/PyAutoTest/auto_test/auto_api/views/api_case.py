@@ -11,12 +11,11 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_api.service.import_api.automatic_parsing_interface import ApiParameter
+from PyAutoTest.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -67,12 +66,12 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def api_case_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
+        from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
         case_id = request.query_params.get('case_id')
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
-        api_case_run = ApiTestRun(test_obj_id, case_sort, user_obj=request.user)
-        test_result: dict = api_case_run.run_one_case(case_id)
+        api_case_run = ApiCaseRun(test_obj_id, case_sort, user_obj=request.user)
+        test_result: dict = api_case_run.case(case_id, True)
         if StatusEnum.FAIL.value == test_result['status']:
             return ResponseData.fail((300, test_result['error_message']), test_result)
         return ResponseData.success(RESPONSE_MSG_0111, test_result)
@@ -80,10 +79,10 @@ class ApiCaseViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('api')
     def api_case_batch_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.test_execution.case_run import ApiTestRun
+        from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
         case_id_list = request.data.get('case_id_list')
         test_obj_id = request.data.get('test_obj_id')
-        api_case_run = ApiTestRun(test_obj_id, user_obj=request.user)
+        api_case_run = ApiCaseRun(test_obj_id, user_obj=request.user)
         test_result: dict = api_case_run.case_batch(case_id_list)
         return ResponseData.success(RESPONSE_MSG_0111, test_result)
 

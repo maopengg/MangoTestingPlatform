@@ -1,7 +1,10 @@
 <template>
   <div class="logo-wrapper" :style="{ 'background-color': bgColor }">
     <img v-if="showLogo" class="logo-img" src="../../assets/logo.png" />
-    <div v-if="showTitle" :class="[!appStore.isCollapse || alwaysShow ? 'show-title' : 'close-title']">
+    <div
+      v-if="showTitle"
+      :class="[!appStore.isCollapse || alwaysShow ? 'show-title' : 'close-title']"
+    >
       <span class="logo-title">{{ projectName }}</span>
     </div>
   </div>
@@ -44,7 +47,9 @@
           }
           return 'var(--color-white)'
         } else {
-          return appStore.theme === ThemeMode.DARK ? 'var(--color-menu-dark-bg)' : 'var(--color-white)'
+          return appStore.theme === ThemeMode.DARK
+            ? 'var(--color-menu-dark-bg)'
+            : 'var(--color-white)'
         }
       })
       return {
