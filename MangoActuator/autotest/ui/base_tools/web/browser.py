@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 
 from playwright._impl._api_types import TimeoutError
 from playwright.async_api import Locator
-
 from autotest.ui.base_tools.base_data import BaseData
 from exceptions.ui_exception import UiTimeoutError, UrlError
 from tools import InitPath

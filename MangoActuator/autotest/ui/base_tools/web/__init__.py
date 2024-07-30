@@ -43,6 +43,8 @@ class WebDevice(PlaywrightBrowser,
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except Error as error:
+            if error.message == "Target page, context or browser has been closed":
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
@@ -90,6 +92,10 @@ class WebDevice(PlaywrightBrowser,
             raise UiAssertionError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
             raise UiAssertionError(*ERROR_MSG_0018, error=error)
+        except Error as error:
+            if error.message == "Target page, context or browser has been closed":
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
+            raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
         if 'actual' in self.element_model.ass_value:
             del self.element_model.ass_value['actual']
         self.element_test_result.ass_value = self.element_model.ass_value
