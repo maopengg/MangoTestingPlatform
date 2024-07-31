@@ -3,15 +3,15 @@
 # @Description:
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
-
-import logging
+import os
 import threading
 
 import time
+from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
-log = logging.getLogger('system')
+from PyAutoTest.tools.log_collector import log
 
 
 class AutoSystemConfig(AppConfig):
@@ -19,20 +19,31 @@ class AutoSystemConfig(AppConfig):
     name = 'PyAutoTest.auto_test.auto_system'
 
     def ready(self):
-        def delayed_task():
-            time.sleep(10)
-            try:
-                from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-                Tasks.create_jobs()
-            except OperationalError:
-                pass
-            except RuntimeError:
-                pass
-            except ProgrammingError:
-                log.error(
-                    '请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
-                raise Exception(
-                    '请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
+        def run():
+            time.sleep(5)
+            self.minute_task()
+            self.delayed_task()
 
-        delayed_thread = threading.Thread(target=delayed_task)
-        delayed_thread.start()
+        if os.environ.get('RUN_MAIN', None) == 'true':
+            task1 = threading.Thread(target=run)
+            task1.start()
+
+    @staticmethod
+    def minute_task():
+        from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.scan_table import mytask
+        sched = BackgroundScheduler()
+        sched.add_job(mytask, 'interval', seconds=60)
+        sched.start()
+
+    @staticmethod
+    def delayed_task():
+        try:
+            from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
+            Tasks.create_jobs()
+        except OperationalError:
+            pass
+        except RuntimeError:
+            pass
+        except ProgrammingError:
+            log.system.error('请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
+            raise Exception('请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
