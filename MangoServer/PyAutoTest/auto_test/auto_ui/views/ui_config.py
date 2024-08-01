@@ -101,16 +101,17 @@ class UiConfigViews(ViewSet):
             config_obj = UiConfig.objects.get(user_id=request.user['id'],
                                               status=StatusEnum.SUCCESS.value,
                                               type=DriveTypeEnum.WEB.value)
-            if user_obj.selected_environment is not None and user_obj.selected_environment != 0:
+            if user_obj.selected_environment is None:
                 return ResponseData.fail(RESPONSE_MSG_0058, )
+            if user_obj.selected_project is None:
+                return ResponseData.fail(RESPONSE_MSG_0120, )
 
-            test_object = TestObject.objects.get(id=user_obj.selected_environment)
-            project_id = test_object.project_product.project.id
             host_list = list(TestObject.objects
                              .filter(project_product_id__in=ProjectProduct
                                      .objects
-                                     .filter(project_id=project_id,
-                                             client_type=ProductTypeEnum.WEB.value).values_list('id'))
+                                     .filter(project_id=user_obj.selected_project,
+                                             client_type=ProductTypeEnum.WEB.value).values_list('id'),
+                                     environment=user_obj.selected_environment)
                              .values_list('value', flat=True))
             host_list = [urllib.parse.urlparse(url).netloc for url in process_urls(host_list)]
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
@@ -119,7 +120,7 @@ class UiConfigViews(ViewSet):
                                         is_headless=config_obj.is_headless,
                                         device=config_obj.device,
                                         is_header_intercept=True,
-                                        project_product=test_object.project_product_id,
+                                        project_product=user_obj.selected_project,
                                         host_list=host_list)
         else:
             config_obj = self.model.objects.get(id=request.query_params.get('id'))
