@@ -432,7 +432,7 @@
       cancelText: '取消',
       okText: '确定',
       onOk: () => {
-        getUiConfigNewBrowserObj(1)
+        getUiConfigNewBrowserObj(null, 1)
           .then((res) => {
             Message.success(res.msg)
           })

@@ -407,7 +407,7 @@
   }
 
   function onDebugWEB(id: number) {
-    getUiConfigNewBrowserObj(id)
+    getUiConfigNewBrowserObj(id, 0)
       .then((res) => {
         data.driveType = res.data
       })
