@@ -9,4 +9,4 @@ sched = BackgroundScheduler()
 
 @sched.scheduled_job('interval', seconds=30)  # 表示间隔一分钟会执行函数
 def mytask():
-    print(f'{time.time()}次要任务')
+    pass
