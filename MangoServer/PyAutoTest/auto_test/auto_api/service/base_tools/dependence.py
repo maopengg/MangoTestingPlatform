@@ -16,7 +16,7 @@ from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-from PyAutoTest.tools.view.error_msg import *
+from PyAutoTest.exceptions.error_msg import *
 
 log = logging.getLogger('api')
 

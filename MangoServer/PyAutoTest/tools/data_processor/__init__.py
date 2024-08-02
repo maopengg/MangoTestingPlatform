@@ -7,7 +7,7 @@ import json
 import re
 
 from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError, MethodDoesNotExistError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0027, ERROR_MSG_0047
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0027, ERROR_MSG_0047
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool

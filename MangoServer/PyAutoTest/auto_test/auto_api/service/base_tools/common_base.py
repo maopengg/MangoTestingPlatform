@@ -8,9 +8,8 @@ from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
-from PyAutoTest.enums.tools_enum import AutoTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.api_exception import LoginError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
@@ -18,7 +17,7 @@ from PyAutoTest.models.apimodel import RequestDataModel
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
 
 
 class CommonBase(DataProcessor):

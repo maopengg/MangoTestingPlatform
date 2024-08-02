@@ -82,13 +82,13 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '测试环境',
-    key: 'test_obj',
+    key: 'test_env',
     value: '',
     placeholder: '请选择执行环境',
     required: true,
-    type: 'cascader',
+    type: 'select',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -151,8 +151,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '测试环境',
-    key: 'test_obj',
-    dataIndex: 'test_obj',
+    key: 'test_env',
+    dataIndex: 'test_env',
     align: 'left',
   },
   {
