@@ -168,7 +168,7 @@ class UiTestRun:
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-            user=username if username else self.user_obj.username,
+            user=username if username else self.username,
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=data,
         ))
