@@ -126,9 +126,26 @@
                 style="width: 380px"
                 allow-search
                 allow-clear
-                :disabled="data.isDisabledOpe"
               />
             </a-space>
+          </template>
+          <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+            <a-textarea
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :placeholder="item.placeholder"
+              :default-value="item.value"
+              v-model="item.value"
+              allow-clear
+            />
+          </template>
+          <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
+            <a-textarea
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :placeholder="item.placeholder"
+              :default-value="item.value"
+              v-model="item.value"
+              allow-clear
+            />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
             <a-space direction="vertical">
@@ -143,34 +160,13 @@
                 style="width: 380px"
                 allow-search
                 allow-clear
-                :disabled="data.isDisabledAss"
               />
             </a-space>
-          </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
-            <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
-              v-model="item.value"
-              allow-clear
-              :disabled="data.isDisabledOpe"
-            />
-          </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
-            <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
-              v-model="item.value"
-              allow-clear
-              :disabled="data.isDisabledAss"
-            />
           </template>
           <template v-else-if="item.type === 'radio' && item.key === 'type'">
             <a-radio-group
               @change="changeStatus"
-              v-model="item.value"
+              v-model="data.type"
               :options="data.plainOptions"
             />
           </template>
@@ -200,6 +196,7 @@
   } from '@/api/uitest'
   import { getSystemEnumExp } from '@/api/system'
   import { useEnvironment } from '@/store/modules/get-environment'
+  import { assForm, eleForm } from '@/views/uitest/page/elements/config'
 
   const uEnvironment = useEnvironment()
   const pageData: any = usePageData()
@@ -216,11 +213,10 @@
     actionTitle: '添加元素',
     eleExp: [],
     totalSize: 0,
+    type: 0,
     data: [],
     ope: [],
     ass: [],
-    isDisabledOpe: false,
-    isDisabledAss: true,
     plainOptions: [
       { label: '操作', value: 0 },
       { label: '断言', value: 1 },
@@ -358,14 +354,88 @@
   }
 
   function changeStatus(event: number) {
-    data.isDisabledOpe = event == 1
-    data.isDisabledAss = event == 0
-    formItems1.forEach((item) => {
-      item.value = null
-    })
-    formItems1[0].value = event
+    data.type = event
+    for (let i = formItems1.length - 1; i >= 0; i--) {
+      if (formItems1[i].key !== 'type') {
+        formItems1.splice(i, 1)
+      }
+    }
+    if (event === 0) {
+      if (
+        !formItems1.some(
+          (item) => item.key === 'ele_name' || formItems1.some((item) => item.key === 'ope_type')
+        )
+      ) {
+        formItems1.push(...eleForm)
+      }
+    } else {
+      if (!formItems1.some((item) => item.key === 'ass_type')) {
+        formItems1.push(...assForm)
+      }
+    }
+  }
+  function upDataAssValue(value: any) {
+    const inputItem = findItemByValue(data.ass, value)
+    if (inputItem) {
+      const parameter: any = inputItem.parameter
+      Object.keys(parameter).forEach((key) => {
+        parameter[key] = ''
+      })
+      if (!formItems1.some((item) => item.key === 'ass_value')) {
+        formItems1.push({
+          label: '断言值',
+          key: 'ass_value',
+          value: JSON.stringify(parameter),
+          type: 'textarea',
+          required: true,
+          placeholder: '请输入断言内容',
+          validator: function () {
+            if (this.value !== '') {
+              try {
+                this.value = JSON.parse(this.value)
+              } catch (e) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+            }
+            return true
+          },
+        })
+      }
+    }
   }
 
+  function upDataOpeValue(value: any) {
+    const inputItem = findItemByValue(data.ope, value)
+    if (inputItem) {
+      const parameter: any = inputItem.parameter
+      Object.keys(parameter).forEach((key) => {
+        parameter[key] = ''
+      })
+
+      if (!formItems1.some((item) => item.key === 'ope_value')) {
+        formItems1.push({
+          label: '元素操作值',
+          key: 'ope_value',
+          value: JSON.stringify(parameter),
+          type: 'textarea',
+          required: true,
+          placeholder: '请输入对元素的操作内容',
+          validator: function () {
+            if (this.value !== '') {
+              try {
+                this.value = JSON.parse(this.value)
+              } catch (e) {
+                Message.error('元素操作值请输入json数据类型')
+                return false
+              }
+            }
+            return true
+          },
+        })
+      }
+    }
+  }
   function onDataForm1() {
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
@@ -374,7 +444,7 @@
       value['id'] = data.id
       value['page_id'] = pageData.record.id
       value['project_product_id'] = pageData.record.project_product.id
-      value['type'] = pageData.record.type
+      value['type'] = data.type
       putUiUiElementTest(value)
         .then((res) => {
           Message.success(res.msg)
@@ -390,21 +460,6 @@
       [key: string]: any
     }
     children?: Item[]
-  }
-
-  function upDataAssValue(value: any) {
-    const inputItem = findItemByValue(data.ass, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
-      })
-      formItems1.forEach((item: any) => {
-        if (item.key === 'ass_value') {
-          item.value = JSON.stringify(parameter)
-        }
-      })
-    }
   }
 
   function findItemByValue(data: Item[], value: string): Item | undefined {
@@ -423,22 +478,9 @@
     return undefined
   }
 
-  function upDataOpeValue(value: string) {
-    const inputItem = findItemByValue(data.ope, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
-      })
-      formItems1.forEach((item: any) => {
-        if (item.key === 'ope_value') {
-          item.value = JSON.stringify(parameter)
-        }
-      })
-    }
-  }
-
   function onDebug(record: any) {
+    changeStatus(0)
+
     if (!uEnvironment.selectValue) {
       Message.error('请先选择测试环境')
       return
