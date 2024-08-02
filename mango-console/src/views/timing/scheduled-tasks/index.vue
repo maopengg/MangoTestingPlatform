@@ -89,7 +89,9 @@
                 </template>
                 <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                   <a-tag color="orangered" size="small">
-                    {{ uEnvironment.data[record.test_env].title }}</a-tag
+                    {{
+                      record.test_env !== null ? uEnvironment.data[record.test_env].title : ''
+                    }}</a-tag
                   >
                 </template>
                 <template v-else-if="item.key === 'case_executor'" #cell="{ record }">
