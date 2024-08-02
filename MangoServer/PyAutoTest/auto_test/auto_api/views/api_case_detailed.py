@@ -133,7 +133,6 @@ class ApiCaseDetailedViews(ViewSet):
             obj.case_sort = i['case_sort']
             case_id = obj.case.id
             obj.save()
-        print(case_id)
         ApiCaseDetailedCRUD().callback(case_id)
         return ResponseData.success(RESPONSE_MSG_0013, )
 
