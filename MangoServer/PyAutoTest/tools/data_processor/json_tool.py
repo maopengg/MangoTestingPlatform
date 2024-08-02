@@ -8,7 +8,7 @@ import json
 import jsonpath
 
 from PyAutoTest.exceptions.tools_exception import JsonPathError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0011
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0011
 
 
 class JsonTool:

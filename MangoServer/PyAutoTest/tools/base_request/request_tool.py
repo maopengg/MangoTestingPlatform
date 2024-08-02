@@ -15,7 +15,7 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.log_collector import log
-from PyAutoTest.tools.view.error_msg import *
+from PyAutoTest.exceptions.error_msg import *
 
 
 class BaseRequest:

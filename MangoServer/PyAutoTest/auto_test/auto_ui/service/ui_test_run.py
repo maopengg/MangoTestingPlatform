@@ -17,9 +17,10 @@ from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
+from PyAutoTest.exceptions.user_exception import UserIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0029, ERROR_MSG_0030
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050
 from PyAutoTest.tools.view.snowflake import Snowflake
 
 
@@ -31,19 +32,20 @@ class UiTestRun:
                  case_executor: list | None = None,
                  tasks_id: int = None,
                  is_notice: int = 0,
-                 spare_test_object_id: int = None,
                  ):
-        self.user_obj = User.objects.get(id=user_id)
         self.user_id = user_id
+        self.username = User.objects.get(id=user_id).username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
-        self.spare_test_object_id = spare_test_object_id
         self.case_executor = case_executor
         if self.case_executor:
             username_list = []
             for nickname in self.case_executor:
-                user_obj = User.objects.get(nickname=nickname)
+                try:
+                    user_obj = User.objects.get(nickname=nickname)
+                except User.DoesNotExist:
+                    raise UserIsNoneError(*ERROR_MSG_0050)
                 try:
                     SocketUser.get_user_client_obj(user_obj.username)
                 except SocketClientNotPresentError as error:

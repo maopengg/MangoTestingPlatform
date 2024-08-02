@@ -54,14 +54,14 @@ class Tasks:
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
             cls.api_task(
                 scheduled_tasks_id=scheduled_tasks.id,
-                test_obj_id=scheduled_tasks.test_obj.id,
+                test_env=scheduled_tasks.test_env,
                 is_notice=scheduled_tasks.is_notice,
                 user_obj={'id': scheduled_tasks.case_people.id, 'username': scheduled_tasks.case_people.username},
                 is_trigger=True)
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             cls.ui_task(scheduled_tasks.id,
                         scheduled_tasks.case_people.id,
-                        scheduled_tasks.test_obj.id,
+                        scheduled_tasks.test_env,
                         scheduled_tasks.is_notice,
                         scheduled_tasks.case_executor,
                         True)
@@ -75,7 +75,7 @@ class Tasks:
             task = Thread(
                 target=cls.api_task,
                 args=(scheduled_tasks.id,
-                      scheduled_tasks.test_obj.id,
+                      scheduled_tasks.test_env,
                       scheduled_tasks.is_notice,
                       {'id': scheduled_tasks.case_people.id, 'username': scheduled_tasks.case_people.username}
                       )
@@ -97,7 +97,7 @@ class Tasks:
     @orm_retry('api_task')
     def api_task(cls,
                  scheduled_tasks_id: int,
-                 test_obj_id: int,
+                 test_env: int,
                  is_notice: int,
                  user_obj: dict,
                  is_trigger: bool = False):
@@ -108,7 +108,7 @@ class Tasks:
             if case_id_list:
                 log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
 
-                ApiCaseRun(test_obj_id=test_obj_id, is_notice=is_notice, user_obj=user_obj).case_batch(
+                ApiCaseRun(test_env, is_notice=is_notice, user_obj=user_obj).case_batch(
                     case_id_list)
         except MangoServerError as error:
             log.error(f'执行API定时任务失败，错误消息：{error.msg}')
@@ -120,7 +120,7 @@ class Tasks:
     def ui_task(cls,
                 scheduled_tasks_id: int,
                 user_id: int,
-                test_obj_id: int,
+                test_env: int,
                 is_notice: int,
                 case_executor: list,
                 is_trigger: bool = False,
@@ -133,11 +133,10 @@ class Tasks:
                 log.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')
                 UiTestRun(
                     user_id=user_id,
-                    test_obj_id=test_obj_id,
+                    test_env=test_env,
+                    case_executor=case_executor,
                     tasks_id=scheduled_tasks_id,
                     is_notice=is_notice,
-                    spare_test_object_id=test_obj_id,
-                    case_executor=case_executor
                 ).case_batch(case_id_list)
         except MangoServerError as error:
             log.error(f'执行UI定时任务失败，错误消息：{error.msg}')

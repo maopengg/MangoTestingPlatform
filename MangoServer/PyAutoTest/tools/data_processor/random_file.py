@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from PyAutoTest.exceptions.tools_exception import FileDoesNotEexistError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0026
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0026
 
 
 class RandomFileData:

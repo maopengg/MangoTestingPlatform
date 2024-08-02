@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0028
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0028
 
 
 class SocketUserModel(BaseModel):

@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.log_collector import log
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0000
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0000
 from PyAutoTest.tools.view.response_data import ResponseData
 
 log_dict = {
@@ -36,11 +36,15 @@ def error_response(app: str):
                 return ResponseData.fail((error.code, error.msg))
 
             except Exception as error:
+                try:
+                    username = request.user.get('username')
+                except AttributeError:
+                    username = None
                 trace = traceback.format_exc()
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
                 content = f"""
                   芒果测试平台管理员请注意查收:
-                      触发用户：{request.user.get('username')}
+                      触发用户：{username}
                       触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                       错误函数：{func.__name__}
                       异常类型: {type(error)}

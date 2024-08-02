@@ -12,7 +12,7 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError, ValueTypeError
 from PyAutoTest.models.tools_model import TestReportModel, WeChatNoticeModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0013, ERROR_MSG_0014, ERROR_MSG_0018, ERROR_MSG_0019, \
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0013, ERROR_MSG_0014, ERROR_MSG_0018, ERROR_MSG_0019, \
     ERROR_MSG_0020
 
 log = logging.getLogger('system')

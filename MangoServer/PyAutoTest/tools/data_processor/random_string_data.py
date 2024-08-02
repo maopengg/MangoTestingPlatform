@@ -10,7 +10,7 @@ import uuid
 from faker import Faker
 
 from PyAutoTest.exceptions.tools_exception import ValueTypeError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0015
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0015
 
 
 class RandomStringData:

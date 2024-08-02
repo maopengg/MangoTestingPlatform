@@ -20,8 +20,7 @@ from PyAutoTest.exceptions.api_exception import CaseIsEmptyError, UnknownError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.tools.log_collector import log
-from PyAutoTest.tools.view.error_msg import *
+from PyAutoTest.exceptions.error_msg import *
 
 
 class ApiCaseRun(CaseMethod, TestResult):

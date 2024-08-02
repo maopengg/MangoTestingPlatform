@@ -8,7 +8,7 @@ import json
 from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.enums.system_enum import CacheValueTypeEnum
 from PyAutoTest.exceptions.tools_exception import CacheKetNullError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0038
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0038
 
 
 class CacheDataValue:

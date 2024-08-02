@@ -14,7 +14,7 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions.tools_exception import SendMessageError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0016, ERROR_MSG_0017
 
 log = logging.getLogger('system')
 
