@@ -201,7 +201,7 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { columns, formItems, Item } from './config'
+  import { assForm, columns, customForm, eleForm, formItems, Item, sqlForm } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
@@ -246,125 +246,25 @@
           (item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type')
         )
       ) {
-        formItems.push(
-          {
-            label: '元素操作',
-            key: 'ope_type',
-            value: '',
-            type: 'cascader',
-            required: true,
-            placeholder: '请选择对元素的操作',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: '选择元素',
-            key: 'ele_name',
-            value: '',
-            placeholder: '请选择locating',
-            required: false,
-            type: 'select',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        formItems.push(...eleForm)
       }
     } else if (event === 1) {
       if (!formItems.some((item) => item.key === 'ass_type')) {
-        formItems.push(
-          {
-            label: '断言类型',
-            key: 'ass_type',
-            value: '',
-            type: 'cascader',
-            required: true,
-            placeholder: '请选择断言类型',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: '选择元素',
-            key: 'ele_name',
-            value: '',
-            placeholder: '请选择locating',
-            required: false,
-            type: 'select',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        formItems.push(...assForm)
       }
     } else if (event === 2) {
       if (
         !formItems.some((item) => item.key === 'sql') ||
         !formItems.some((item) => item.key === 'key_list')
       ) {
-        formItems.push(
-          {
-            label: 'key_list',
-            key: 'key_list',
-            value: '',
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql查询结果的key_list',
-            validator: function () {
-              if (this.value !== '') {
-                try {
-                  this.value = JSON.parse(this.value)
-                } catch (e) {
-                  Message.error('key_list值请输入json数据类型')
-                  return false
-                }
-              }
-              return true
-            },
-          },
-          {
-            label: 'sql语句',
-            key: 'sql',
-            value: '',
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        formItems.push(...sqlForm)
       }
     } else {
       if (
         !formItems.some((item) => item.key === 'key') ||
         !formItems.some((item) => item.key === 'value')
       ) {
-        formItems.push(
-          {
-            label: 'key',
-            key: 'key',
-            value: '',
-            type: 'input',
-            required: true,
-            placeholder: '请输入key',
-            validator: function () {
-              return true
-            },
-          },
-          {
-            label: 'value',
-            key: 'value',
-            value: '',
-            type: 'input',
-            required: true,
-            placeholder: '请输入value',
-            validator: function () {
-              return true
-            },
-          }
-        )
+        formItems.push(...customForm)
       }
     }
   }

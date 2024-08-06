@@ -38,8 +38,10 @@ class PageSteps(StepElements):
             await self.steps_main()
         except MangoActuatorError as error:
             if error.code == 310:
-                await self.context.close()
-                await self.page.close()
+                if self.context:
+                    await self.context.close()
+                if self.page:
+                    await self.page.close()
                 self.context = None
                 self.page = None
             await ClientWebSocket().async_send(

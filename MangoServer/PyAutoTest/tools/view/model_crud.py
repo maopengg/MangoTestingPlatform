@@ -118,12 +118,13 @@ class ModelCRUD(GenericAPIView):
         if hasattr(self, 'callback'):
             from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
-            # from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
+            from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailed
             if isinstance(self, UiPageStepsDetailedCRUD):
                 parent_id = request.data.get('page_step')
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
-
+            elif isinstance(self, ApiCaseDetailedCRUD):
+                parent_id = ApiCaseDetailed.objects.get(id=request.data.get('id')).case.id
             else:
                 parent_id = request.data.get('id')
             if parent_id is None:

@@ -29,45 +29,29 @@ class ElementMain(WebDevice, AndroidDriver):
         self.element_model = element_model
         self.element_data = element_data
         self.drive_type = drive_type
+        if element_model.name:
+            self.ope_name = element_model.name
+        else:
+            self.ope_name = element_model.ope_type if element_model.ope_type else element_model.ass_type
+        self.element_test_result = ElementResultModel(
+            test_suite_id=self.test_suite_id,
+            case_id=self.case_id,
+            page_step_id=self.page_step_id,
+            ele_name=self.ope_name,
+            exp=element_model.exp,
+            sub=element_model.sub,
+            sleep=element_model.sleep,
+            ope_type=element_model.ope_type,
+            ass_type=element_model.ass_type,
+            status=StatusEnum.FAIL.value,
+            ele_quantity=0,
+        )
         try:
-            if element_model.name:
-                self.ope_name = element_model.name
-            elif element_model.ope_type:
-                self.ope_name = element_model.ope_type
-            else:
-                self.ope_name = element_model.ass_type
             for key, value in self.element_model:
                 value = self.data_processor.replace(value)
                 setattr(self.element_model, key, value)
         except MangoActuatorError as error:
-            self.element_test_result = ElementResultModel(
-                test_suite_id=self.test_suite_id,
-                case_id=self.case_id,
-                page_step_id=self.page_step_id,
-                ele_name=self.ope_name,
-                exp=element_model.exp,
-                sub=element_model.sub,
-                sleep=element_model.sleep,
-                ope_type=element_model.ope_type,
-                ass_type=element_model.ass_type,
-                status=StatusEnum.FAIL.value,
-                ele_quantity=0,
-            )
             raise error
-        else:
-            self.element_test_result = ElementResultModel(
-                test_suite_id=self.test_suite_id,
-                case_id=self.case_id,
-                page_step_id=self.page_step_id,
-                ele_name=self.ope_name,
-                exp=element_model.exp,
-                sub=element_model.sub,
-                sleep=element_model.sleep,
-                ope_type=element_model.ope_type,
-                ass_type=element_model.ass_type,
-                status=StatusEnum.FAIL.value,
-                ele_quantity=0,
-            )
 
     @async_memory
     async def element_main(self) -> None:
@@ -119,18 +103,20 @@ class ElementMain(WebDevice, AndroidDriver):
                 else:
                     # 清洗元素需要的数据
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
-        # except AttributeError:
-        #     raise ElementOpeNoneError(*ERROR_MSG_0027)
+        except AttributeError:
+            raise ElementOpeNoneError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
         try:
             func_doc = getattr(self, ope_type).__doc__
+            SignalSend.notice_signal_c(
+                f'准备操作->元素：{name}正在进行{func_doc}，元素个数：{self.element_test_result.ele_quantity}')
         except AttributeError:
             raise ElementOpeNoneError(*ERROR_MSG_0048)
-
-        SignalSend.notice_signal_c(
-            f'准备操作->元素：{name}正在进行{func_doc}，元素个数：{self.element_test_result.ele_quantity}')
-        await self.action_element()
+        try:
+            await self.action_element()
+        except AttributeError:
+            raise ElementOpeNoneError(*ERROR_MSG_0054)
 
     async def __ass(self, name, ope_type):
         for key, expect in self.element_model.ass_value.items():

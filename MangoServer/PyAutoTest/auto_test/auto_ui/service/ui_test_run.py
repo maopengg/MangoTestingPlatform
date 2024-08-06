@@ -141,9 +141,9 @@ class UiTestRun:
             case_step_details_id=None,
             project_product=data['project_product_id'],
             url=page_obj.url,
-            type=page_obj.type,
+            type=page_obj.project_product.client_type,
             equipment_config=self.__get_web_config(
-                test_object.value) if page_obj.type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+                test_object.value) if page_obj.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object, page_obj.project_product_id)
         )
         page_steps_model.element_list.append(ElementModel(
@@ -168,7 +168,7 @@ class UiTestRun:
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-            user=username if username else self.user_obj.username,
+            user=username if username else self.username,
             is_notice=ClientTypeEnum.ACTUATOR.value,
             data=data,
         ))

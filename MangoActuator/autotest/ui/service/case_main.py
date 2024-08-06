@@ -7,10 +7,8 @@
 import asyncio
 
 from autotest.ui.service.case_steps import CaseSteps
-from enums.socket_api_enum import UiSocketEnum
 from models.socket_model.ui_model import CaseModel
 from tools.decorator.memory import async_memory
-from tools.public_methods import async_global_exception
 from ..base_tools.driver_object import DriverObject
 
 
@@ -36,15 +34,7 @@ class CaseMain:
     @async_memory
     async def execute_task(self, case_model: CaseModel):
         async with CaseSteps(case_model, self.driver_object) as obj:
-            try:
-                await obj.case_init()
-                await obj.case_page_step()
-            except Exception as error:
-                await async_global_exception(
-                    'execute_task',
-                    error,
-                    UiSocketEnum.CASE_RESULT.value,
-                    obj.case_result
-                )
-            finally:
-                self.running_tasks -= 1
+            await obj.case_init()
+            await obj.case_page_step()
+
+            self.running_tasks -= 1

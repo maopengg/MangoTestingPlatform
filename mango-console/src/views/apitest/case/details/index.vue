@@ -822,13 +822,13 @@
     if ('10' === data.tabsKey) {
       data.selectDataObj.front_sql.push('请添加sql语句')
     } else if ('31' === data.tabsKey) {
-      data.selectDataObj.ass_response_value.push({ value: '', method: '', expect: '' })
+      data.selectDataObj.ass_response_value.push({ actual: '', method: '', expect: '' })
     } else if ('32' === data.tabsKey) {
-      data.selectDataObj.ass_sql.push({ value: '', method: '', expect: '' })
+      data.selectDataObj.ass_sql.push({ actual: '', method: '', expect: '' })
     } else if ('40' === data.tabsKey) {
-      data.selectDataObj.posterior_response.push({ key: '', value: '' })
+      data.selectDataObj.posterior_response.push({ key: '', actual: '' })
     } else if ('41' === data.tabsKey) {
-      data.selectDataObj.posterior_sql.push({ key: '', value: '' })
+      data.selectDataObj.posterior_sql.push({ key: '', actual: '' })
     }
   }
 
