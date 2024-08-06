@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_system.models import Database, TestObject
 from PyAutoTest.enums.tools_enum import AutoTypeEnum
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError, TestObjectNullError
 from PyAutoTest.models.tools_model import MysqlConingModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049
 
 
 def func_mysql_config(env: int, project_product_id: int) -> MysqlConingModel:

@@ -10,7 +10,7 @@ from pymysql.err import InternalError, OperationalError, ProgrammingError
 from PyAutoTest.exceptions.tools_exception import MySQLConnectionFailureError, MysqlConnectionError, \
     MysqlQueryError
 from PyAutoTest.models.tools_model import MysqlConingModel
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0023, ERROR_MSG_0024, ERROR_MSG_0025, ERROR_MSG_0009
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0023, ERROR_MSG_0024, ERROR_MSG_0025, ERROR_MSG_0009
 
 log = logging.getLogger('system')
 

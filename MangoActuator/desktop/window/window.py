@@ -11,7 +11,7 @@ from PySide6.QtCore import QThread
 import service_conn
 from enums.socket_api_enum import ToolsSocketEnum
 from enums.system_enum import CacheDataKey2Enum
-from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum
+from enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum, ClientTypeEnum
 from tools.assertion import Assertion
 from tools.data_processor import RandomFileData
 from tools.data_processor.sql_cache import SqlCache
@@ -58,7 +58,7 @@ class Window(Ui_MainWindow):
         send_list.append(
             {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
         from service_conn.socket_conn.client_socket import ClientWebSocket
-        ClientWebSocket().sync_send('设置缓存数据', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value, func_args=send_list)
+        ClientWebSocket().sync_send('设置缓存数据成功', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,is_notice=ClientTypeEnum.WEB.value, func_args=send_list)
 
     # 接受信号的槽函数
     def signalLabel6(self, text):

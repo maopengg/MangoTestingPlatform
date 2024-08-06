@@ -405,11 +405,14 @@ export function getUiCaseStepsRefreshCacheData(id: number) {
     },
   })
 }
-export function getUiConfigNewBrowserObj(is_recording: number) {
+export function getUiConfigNewBrowserObj(id: number | null, is_recording: number) {
   return get({
     url: url.uiConfigNewBrowserObj,
     data: () => {
-      return { is_recording: is_recording }
+      return {
+        id: id,
+        is_recording: is_recording,
+      }
     },
   })
 }

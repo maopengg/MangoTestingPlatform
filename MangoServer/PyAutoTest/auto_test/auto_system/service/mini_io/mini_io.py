@@ -12,7 +12,7 @@ from minio.error import S3Error
 from urllib3.exceptions import MaxRetryError
 
 from PyAutoTest.exceptions.tools_exception import MiniIoConnError, MiniIoFileError
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0042, ERROR_MSG_0043, ERROR_MSG_0044, ERROR_MSG_0045
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0042, ERROR_MSG_0043, ERROR_MSG_0044, ERROR_MSG_0045
 
 
 class MiniIo:

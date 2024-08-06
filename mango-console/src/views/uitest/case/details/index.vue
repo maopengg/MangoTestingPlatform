@@ -4,7 +4,7 @@
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
-            <a-button type="primary" size="small" @click="doRefresh">刷新页面</a-button>
+            <a-button type="primary" size="small" @click="doRefresh" disabled>刷新页面</a-button>
             <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>

@@ -16,7 +16,7 @@ from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-from PyAutoTest.tools.view.error_msg import *
+from PyAutoTest.exceptions.error_msg import *
 
 log = logging.getLogger('api')
 
@@ -112,13 +112,13 @@ class CaseMethod(CommonBase, PublicAssertion):
                 if isinstance(res, list):
                     for res_dict in res:
                         for key, value in res_dict.items():
-                            self.set_cache(sql_obj.get('value'), str(value))
-                            log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
+                            self.set_cache(sql_obj.get('actual'), str(value))
+                            log.info(f'{sql_obj.get("actual")}sql写入的数据：{self.get_cache(sql_obj.get("actual"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
             value = self.get_json_path_value(response_text, i['key'])
-            self.set_cache(i['value'], value)
+            self.set_cache(i['actual'], value)
 
     @classmethod
     def __posterior_sleep(cls, sleep: str):
@@ -130,8 +130,9 @@ class CaseMethod(CommonBase, PublicAssertion):
         try:
             if ass_response_value:
                 for i in ass_response_value:
-                    value = self.get_json_path_value(response_data, i['value'])
-                    _dict = {'value': str(value)}
+                    print(i)
+                    value = self.get_json_path_value(response_data, i['actual'])
+                    _dict = {'actual': str(value)}
                     if i.get('expect'):
                         try:
                             _dict['expect'] = str(eval(i.get('expect')))
@@ -141,28 +142,28 @@ class CaseMethod(CommonBase, PublicAssertion):
                     getattr(self, method)(**_dict)
         except AssertionError as error:
             log.warning(error)
-            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
+            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
             raise ResponseValueAssError(*ERROR_MSG_0005)
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
-        _dict = {'value': None}
+        _dict = {'actual': None}
         method = None
         try:
             if self.mysql_connect:
                 for sql in sql_list:
-                    value = self.mysql_connect.condition_execute(self.replace(sql.get('value')))
-                    if not value:
+                    actual = self.mysql_connect.condition_execute(self.replace(sql.get('actual')))
+                    if not actual:
                         raise SqlResultIsNoneError(*ERROR_MSG_0041)
-                    if isinstance(value, list):
-                        _dict = {'value': str(list(value[0].values())[0])}
+                    if isinstance(actual, list):
+                        _dict = {'actual': str(list(actual[0].values())[0])}
                     if sql.get('expect'):
                         _dict['expect'] = sql.get('expect')
                     method = sql.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
             log.warning(error)
-            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('value')})
+            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
             raise SqlAssError(*ERROR_MSG_0006)
 
     def __assertion_response_whole(self, actual, expect):

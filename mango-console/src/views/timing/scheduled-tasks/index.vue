@@ -87,12 +87,12 @@
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ record.case_people?.nickname }}
                 </template>
-                <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
-                  {{
-                    record.test_obj?.project_product?.project?.name +
-                    '/' +
-                    uEnvironment.data[record.test_obj?.environment].title
-                  }}
+                <template v-else-if="item.key === 'test_env'" #cell="{ record }">
+                  <a-tag color="orangered" size="small">
+                    {{
+                      record.test_env !== null ? uEnvironment.data[record.test_env].title : ''
+                    }}</a-tag
+                  >
                 </template>
                 <template v-else-if="item.key === 'case_executor'" #cell="{ record }">
                   {{ record.case_executor }}
@@ -175,14 +175,15 @@
                 />
               </template>
 
-              <template v-else-if="item.type === 'cascader'">
-                <a-cascader
+              <template v-else-if="item.type === 'select' && item.key === 'test_env'">
+                <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="testObj.data"
+                  :options="uEnvironment.data"
+                  :field-names="fieldNames"
                   value-key="key"
-                  allow-search
                   allow-clear
+                  allow-search
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
