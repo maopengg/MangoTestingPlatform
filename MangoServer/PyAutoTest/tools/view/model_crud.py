@@ -3,6 +3,7 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
+import json
 from threading import Thread
 
 from django.core.exceptions import FieldError
@@ -70,7 +71,7 @@ class ModelCRUD(GenericAPIView):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
     @error_response('system')
@@ -117,12 +118,13 @@ class ModelCRUD(GenericAPIView):
         if hasattr(self, 'callback'):
             from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
-            # from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
+            from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailed
             if isinstance(self, UiPageStepsDetailedCRUD):
                 parent_id = request.data.get('page_step')
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
-
+            elif isinstance(self, ApiCaseDetailedCRUD):
+                parent_id = ApiCaseDetailed.objects.get(id=request.data.get('id')).case.id
             else:
                 parent_id = request.data.get('id')
             if parent_id is None:
@@ -159,7 +161,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
             raise InsideSaveError(*RESPONSE_MSG_0116, value=(serializer.errors,))
 
     @classmethod

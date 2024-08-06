@@ -43,7 +43,11 @@
           if (it && it.meta) {
             const tempItem: DropItem = {
               label: it.meta?.title as string,
-              key: isExternal(it.path) ? it.path : it.path.startsWith('/') ? it.path : parentPath + '/' + it.path,
+              key: isExternal(it.path)
+                ? it.path
+                : it.path.startsWith('/')
+                ? it.path
+                : parentPath + '/' + it.path,
               children: [],
             }
             if (it.children && it.children.length > 0) {
@@ -87,7 +91,11 @@
       watch(
         () => route.path,
         () => {
-          if (route.path.startsWith('/redirect') || ['/login', '/404', '/405', '/403'].includes(route.path)) return
+          if (
+            route.path.startsWith('/redirect') ||
+            ['/login', '/404', '/405', '/403'].includes(route.path)
+          )
+            return
           generatorBreadcrumb()
         }
       )

@@ -19,7 +19,7 @@ from PyAutoTest.exceptions.tools_exception import DoesNotExistError
 from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0030
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0030
 
 log = logging.getLogger('ui')
 

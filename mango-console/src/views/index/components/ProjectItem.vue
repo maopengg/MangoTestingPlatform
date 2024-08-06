@@ -15,7 +15,9 @@
         </a-tag>
       </a-space> -->
       <a-space class="mt-8">
-        <a-button class="mr-1" status="success" shape="round" size="small" @click="preView"> 预览地址</a-button>
+        <a-button class="mr-1" status="success" shape="round" size="small" @click="preView">
+          预览地址</a-button
+        >
         <a-popover>
           <template #content>
             <img style="width: 150px" :src="WeiXin" />

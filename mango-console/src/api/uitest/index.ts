@@ -312,7 +312,7 @@ export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvir
     data: () => {
       return {
         case_id_list: caseIdList,
-        testing_environment: testingEnvironment,
+        test_env: testingEnvironment,
       }
     },
   })
@@ -323,7 +323,7 @@ export function getUiCaseRun(caseId: any, testingEnvironment: any) {
     data: () => {
       return {
         case_id: caseId,
-        testing_environment: testingEnvironment,
+        test_env: testingEnvironment,
       }
     },
   })
@@ -405,11 +405,14 @@ export function getUiCaseStepsRefreshCacheData(id: number) {
     },
   })
 }
-export function getUiConfigNewBrowserObj(is_recording: number) {
+export function getUiConfigNewBrowserObj(id: number | null, is_recording: number) {
   return get({
     url: url.uiConfigNewBrowserObj,
     data: () => {
-      return { is_recording: is_recording }
+      return {
+        id: id,
+        is_recording: is_recording,
+      }
     },
   })
 }

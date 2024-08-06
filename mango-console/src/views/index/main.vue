@@ -62,13 +62,21 @@
                         {{ record.test_obj?.name }}
                       </template>
                       <template v-else-if="item.key === 'type'" #cell="{ record }">
-                        <a-tag color="orangered" size="small" v-if="record.type === 0">界面自动化</a-tag>
-                        <a-tag color="cyan" size="small" v-else-if="record.type === 1">接口自动化</a-tag>
-                        <a-tag color="green" size="small" v-else-if="record.type === 2">性能自动化</a-tag>
+                        <a-tag color="orangered" size="small" v-if="record.type === 0"
+                          >前端自动化</a-tag
+                        >
+                        <a-tag color="cyan" size="small" v-else-if="record.type === 1"
+                          >接口自动化</a-tag
+                        >
+                        <a-tag color="green" size="small" v-else-if="record.type === 2"
+                          >性能自动化</a-tag
+                        >
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
-                          <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
+                          <a-button type="text" size="mini" @click="onClick(record)"
+                            >查看结果</a-button
+                          >
                         </a-space>
                       </template>
                     </a-table-column>
@@ -93,7 +101,13 @@
   import ReportSum from './components/chart/RreportSum.vue'
   import CaseSum from './components/chart/CaseSum.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
-  import { usePagination, useRowKey, useRowSelection, useTable, useTableColumn } from '@/hooks/table'
+  import {
+    usePagination,
+    useRowKey,
+    useRowSelection,
+    useTable,
+    useTableColumn,
+  } from '@/hooks/table'
   import { useRouter } from 'vue-router'
   import { useProductModule } from '@/store/modules/project_module'
   import { getSystemScheduledTasks } from '@/api/system'

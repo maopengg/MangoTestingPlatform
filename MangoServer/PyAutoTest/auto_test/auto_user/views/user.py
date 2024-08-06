@@ -145,7 +145,10 @@ class LoginViews(ViewSet):
         password = request.data.get('password')
         source_type = request.data.get('type')
         password = EncryptionTool.md5_32_small(**{'data': password})
-        user_info = User.objects.get(username=username, password=password)
+        try:
+            user_info = User.objects.get(username=username, password=password)
+        except User.DoesNotExist:
+            return ResponseData.fail(RESPONSE_MSG_0042)
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')

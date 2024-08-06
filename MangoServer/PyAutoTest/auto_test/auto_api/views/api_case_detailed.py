@@ -90,7 +90,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
         else:
-            log.api.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.api.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0012, serializer.errors)
 
     def callback(self, _id):
@@ -100,8 +100,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         @return:
         """
         data = {'id': _id, 'case_flow': '', 'name': ''}
-        case_id = self.model.objects.get(id=_id).case.id
-        run = self.model.objects.filter(case=case_id).order_by('case_sort')
+        run = self.model.objects.filter(case=_id).order_by('case_sort')
         for i in run:
             data['case_flow'] += '->'
             if i.api_info:
@@ -109,7 +108,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
         api_case = ApiCaseCRUD()
-        res = api_case.serializer(instance=ApiCase.objects.get(id=case_id), data=data)
+        res = api_case.serializer(instance=ApiCase.objects.get(id=_id), data=data)
         if res.is_valid():
             res.save()
         else:

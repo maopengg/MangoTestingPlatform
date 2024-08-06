@@ -20,7 +20,7 @@ from tools.data_processor import RandomTimeData
 from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
-from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
+from tools.message.error_msg import ERROR_MSG_0025, ERROR_MSG_0010, ERROR_MSG_0053
 
 
 class StepElements(ElementMain):
@@ -64,6 +64,8 @@ class StepElements(ElementMain):
                 return self.page_step_result_model
             except Error as error:
                 if error.message == "Target page, context or browser has been closed":
+                    self.page = None
+                    self.context = None
                     self.element_test_result.error_message = error.message
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
@@ -102,11 +104,14 @@ class StepElements(ElementMain):
             test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
                                         self.page_step_model.url)
             try:
-                if self.page and urlparse(self.url).netloc.lower() != urlparse(test_object_value).netloc.lower() and not data:
+                if self.page and urlparse(self.url).netloc.lower() != urlparse(
+                        test_object_value).netloc.lower() and not data:
                     await self.w_goto(test_object_value)
                     self.url = test_object_value
             except Error as error:
                 if error.message == "Target page, context or browser has been closed":
+                    self.page = None
+                    self.context = None
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
@@ -160,7 +165,15 @@ class StepElements(ElementMain):
         # try:
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:
-                await self.w_screenshot(file_path)
+                try:
+                    await self.w_screenshot(file_path)
+                except Error as error:
+                    if error.message == "Target page, context or browser has been closed":
+                        self.page = None
+                        self.context = None
+                        raise BrowserObjectClosed(*ERROR_MSG_0010)
+                    else:
+                        raise BrowserObjectClosed(*ERROR_MSG_0053)
             case DriveTypeEnum.ANDROID.value:
                 self.a_screenshot(file_path)
             case DriveTypeEnum.IOS.value:

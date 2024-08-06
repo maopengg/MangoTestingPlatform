@@ -14,7 +14,7 @@ from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataV
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.view.error_msg import *
+from PyAutoTest.exceptions.error_msg import *
 
 log = logging.getLogger('api')
 
@@ -59,7 +59,7 @@ class HTTPRequest:
             params=request_data.params,
             data=request_data.data,
             json_data=request_data.json_data,
-            file=str(request_data.file),
+            file=str(request_data.file) if request_data.file else None,
             status_code=response.status_code,
             response_time=end,
             response_headers=response.headers,

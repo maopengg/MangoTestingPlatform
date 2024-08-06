@@ -9,7 +9,20 @@
   import { dispose, graphic } from 'echarts/core'
   import { getSystemCaseResultWeekSum } from '@/api/system'
 
-  const months = ['1周', '2周', '3周', '4周', '5周', '6周', '7周', '8周', '9周', '10周', '11周', '12周']
+  const months = [
+    '1周',
+    '2周',
+    '3周',
+    '4周',
+    '5周',
+    '6周',
+    '7周',
+    '8周',
+    '9周',
+    '10周',
+    '11周',
+    '12周',
+  ]
   export default defineComponent({
     name: 'FullYearSalesChart',
     setup() {
@@ -86,7 +99,7 @@
             },
             {
               type: 'line',
-              name: '界面用例执行数',
+              name: '前端用例执行数',
               stack: '总量2',
               data: data.ui_count,
               symbolSize: 0,

@@ -33,7 +33,7 @@ class TestResult:
                 'id': self.test_suite_id,
                 'type': AutoTestTypeEnum.API.value,
                 'project_product': self.project_product_id,
-                'test_object': self.test_obj_id,
+                'test_env': self.test_env,
                 'error_message': None,
                 'run_status': StatusEnum.FAIL.value,
                 'status': None,
@@ -49,7 +49,7 @@ class TestResult:
         return json.dumps(data, ensure_ascii=False)
 
     def add_api_info_result(self,
-                            case_detailed,
+                            case_detailed: ApiCaseDetailed,
                             request_data_model: RequestDataModel | None = None,
                             response: ResponseDataModel | None = None,
                             ) -> None:
@@ -90,8 +90,8 @@ class TestResult:
         })
 
     @classmethod
-    def update_api_info(cls, _id: int, status: int):
-        api_info_obj = ApiInfo.objects.get(id=_id)
+    def update_api_info(cls, api_info_id: int, status: int):
+        api_info_obj = ApiInfo.objects.get(id=api_info_id)
         api_info_obj.status = status
         api_info_obj.save()
 

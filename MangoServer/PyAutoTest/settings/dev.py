@@ -9,14 +9,15 @@
 IS_SQLITE = False  # 是否选用mysql作为数据源
 
 # ************************ Mysql配置 ************************ #
-
-mysql_db_name = 'mango_server'
-mysql_user = 'root'
-mysql_password = 'mP123456&'
-# mysql_ip = '127.0.0.1'
-mysql_ip = '121.37.174.56'
 mysql_port = 3306
-
+# mysql_db_name = 'test'
+# mysql_user = 'root'
+# mysql_password = 'mP123456&'
+# mysql_ip = '127.0.0.1'
+mysql_db_name = 'auto_test'
+mysql_user = 'root'
+mysql_password = 'Root@123'
+mysql_ip = '172.16.100.26'
 # ************************ DEBUG配置 ************************ #
 DEBUG = True
 

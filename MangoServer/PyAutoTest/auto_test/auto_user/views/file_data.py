@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-05-17 12:32
 # @Author : 毛鹏
+import json
 import logging
 
 from rest_framework import serializers
@@ -67,7 +68,7 @@ class FileDataCRUD(ModelCRUD):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{str(serializer.errors)}')
+            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 

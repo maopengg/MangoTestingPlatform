@@ -3,44 +3,39 @@
 # @Description: 
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
-import logging
 from typing import Optional
 from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_system.service.public_methods import PublicMethods
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.api_exception import LoginError
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.models.apimodel import RequestDataModel
+from PyAutoTest.tools.base_request.request_tool import BaseRequest
 from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
-from PyAutoTest.tools.view.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
-from .http_base import HTTPRequest
-
-log = logging.getLogger('api')
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
 
 
-class CommonBase(HTTPRequest, DataProcessor):
+class CommonBase(DataProcessor):
 
     def __init__(self):
-        HTTPRequest.__init__(self)
         self.project_product_id = None
         DataProcessor.__init__(self, self.project_product_id)
-        self.test_object = Optional[TestObject]
-        self.mysql_connect: MysqlConnect = Optional[None]
+        self.mysql_connect: Optional[None | MysqlConnect] = None
 
-    def common_init(self, test_obj_id: int, project_product_id: int):
-        self.test_object = PublicMethods.get_test_object(test_obj_id, project_product_id)
-        if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
-            self.mysql_connect = MysqlConnect(
-                PublicMethods.get_mysql_config(self.test_object.id),
-                bool(self.test_object.db_c_status),
-                bool(self.test_object.db_rud_status)
-            )
+    def common_init(self, test_object: TestObject, project_product_id: int):
         self.project_product_id = project_product_id
+
+        if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
+            self.mysql_connect = MysqlConnect(
+                func_mysql_config(test_object.id, project_product_id),
+                bool(test_object.db_c_status),
+                bool(test_object.db_rud_status)
+            )
         api_public = ApiPublic.objects \
             .filter(status=StatusEnum.SUCCESS.value,
                     project_product=self.project_product_id) \
@@ -59,14 +54,16 @@ class CommonBase(HTTPRequest, DataProcessor):
         key = api_public_obj.key
         value_dict = self.load(api_public_obj.value)
         api_info = ApiInfo.objects.get(id=value_dict.get('api_info_id'))
-        request_data_model = self.request_data(RequestDataModel(method=MethodEnum(api_info.method).name,
-                                                                url=urljoin(self.test_object.value, api_info.url),
-                                                                headers=api_info.header,
-                                                                params=api_info.params,
-                                                                data=api_info.data,
-                                                                json_data=api_info.json,
-                                                                file=api_info.file))
-        response: ResponseDataModel = self.http(request_data_model)
+        request_data_model = self.request_data_clean(RequestDataModel(method=MethodEnum(api_info.method).name,
+                                                                      url=urljoin(self.test_object.value, api_info.url),
+                                                                      headers=api_info.header,
+                                                                      params=api_info.params,
+                                                                      data=api_info.data,
+                                                                      json_data=api_info.json,
+                                                                      file=api_info.file))
+        base_request = BaseRequest()
+        base_request.request(request_data_model)
+        response = base_request.request_result_data()
         if response.response_json is None:
             raise LoginError(*ERROR_MSG_0003)
         value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))

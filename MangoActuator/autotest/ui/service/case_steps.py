@@ -24,7 +24,6 @@ from tools.decorator.memory import async_memory
 from tools.desktop.signal_send import SignalSend
 from tools.log_collector import log
 from tools.message.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
-from tools.public_methods import async_global_exception
 
 
 class CaseSteps(StepElements):
@@ -40,8 +39,7 @@ class CaseSteps(StepElements):
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
                                            status=StatusEnum.SUCCESS.value,
-                                           page_steps_result_list=[],
-                                           video_path='')
+                                           page_steps_result_list=[])
         self.IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
 
     async def __aenter__(self):
@@ -89,13 +87,13 @@ class CaseSteps(StepElements):
         except MangoActuatorError as error:
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
-        except Exception as error:
-            await async_global_exception(
-                'case_page_step',
-                error,
-                UiSocketEnum.CASE_RESULT.value,
-                self.case_result
-            )
+        # except Exception as error:
+        #     await async_global_exception(
+        #         'case_page_step',
+        #         error,
+        #         UiSocketEnum.CASE_RESULT.value,
+        #         self.case_result
+        #     )
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
             await ClientWebSocket().async_send(

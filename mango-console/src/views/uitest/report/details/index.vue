@@ -17,13 +17,28 @@
         </a-space>
         <a-space direction="vertical" style="width: 42%">
           <p>测试对象：{{ pageData.record.test_object?.name }}</p>
-          <p>是否开启数据库断言：{{ pageData.record.test_object?.db_status === 1 ? '开启' : '关闭' }}</p>
+          <p
+            >是否开启数据库断言：{{
+              pageData.record.test_object?.db_status === 1 ? '开启' : '关闭'
+            }}</p
+          >
           <p :style="{ color: pageData.record.status === 0 ? 'red' : 'inherit' }">
-            测试套结果：{{ pageData.record.status === 1 ? '通过' : pageData.record.status === 0 ? '失败' : '未测试' }}
+            测试套结果：{{
+              pageData.record.status === 1
+                ? '通过'
+                : pageData.record.status === 0
+                ? '失败'
+                : '未测试'
+            }}
           </p>
           <p>失败消息：{{ pageData.record.error_message }}</p>
         </a-space>
-        <a-space size="large" v-for="item of reportDetailsData.summary" :key="item.name" style="width: 7%">
+        <a-space
+          size="large"
+          v-for="item of reportDetailsData.summary"
+          :key="item.name"
+          style="width: 7%"
+        >
           <a-statistic :title="item.name" :value="item.value" show-group-separator />
         </a-space>
       </div>
@@ -34,7 +49,12 @@
           <span class="span">测试套</span>
           <TableBody ref="tableBody">
             <template #header>
-              <a-tree blockNode ref="childRef" :data="reportDetailsData.treeData" @select="(key) => click(key[0])">
+              <a-tree
+                blockNode
+                ref="childRef"
+                :data="reportDetailsData.treeData"
+                @select="(key) => click(key[0])"
+              >
                 <template #icon="{ node }">
                   <template v-if="node.status === 1"> <icon-check /> </template>
                   <template v-else> <icon-close /> </template>
@@ -59,15 +79,30 @@
               <a-collapse-item :header="item.ele_name" :style="customStyle" :key="item.id">
                 <div>
                   <a-space direction="vertical" style="width: 50%">
-                    <p>输入类型：{{ item.ope_type ? getLabelByValue(reportDetailsData.ope, item.ope_type) : '-' }}</p>
-                    <p>断言类型：{{ item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-' }}</p>
-                    <p>表达式类型：{{ item.exp ? reportDetailsData.eleExp[item.exp].title : item.exp }}</p>
-                    <p>测试结果：{{ item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试' }}</p>
+                    <p
+                      >输入类型：{{
+                        item.ope_type ? getLabelByValue(reportDetailsData.ope, item.ope_type) : '-'
+                      }}</p
+                    >
+                    <p
+                      >断言类型：{{
+                        item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-'
+                      }}</p
+                    >
+                    <p
+                      >表达式类型：{{
+                        item.exp ? reportDetailsData.eleExp[item.exp].title : item.exp
+                      }}</p
+                    >
+                    <p
+                      >测试结果：{{
+                        item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                      }}</p
+                    >
                     <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
                     <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
                     <p v-if="item.expect">预期：{{ item.expect }}</p>
                     <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
-
                   </a-space>
                   <a-space direction="vertical" style="width: 50%">
                     <p>输入值：{{ item.ope_value ? item.ope_value : '-' }}</p>
@@ -153,9 +188,7 @@
   })
   const visible1 = ref(false)
 
-  function onDownLoad() {
-    console.log('download')
-  }
+  function onDownLoad() {}
   function click(key: string) {
     childRef.value.expandNode(key, true) // 调用子组件的方法
     let obj = JSON.parse(key)
@@ -182,7 +215,6 @@
               reportDetailsData.eleResultKey.push(item.id)
             }
           })
-          console.log(reportDetailsData.eleResultKey)
         })
         .catch(console.log)
     } else {

@@ -70,7 +70,6 @@ export function getFormItems1(formItems: FormItem[]): KeyValueObject {
       obj[item.key] = null
     } else {
       obj[item.key] = item.value
-      console.log(obj, item.key, item.value)
     }
     return obj
   }, {})

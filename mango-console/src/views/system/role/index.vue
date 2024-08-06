@@ -39,7 +39,9 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除</a-button
+                    >
                   </a-space>
                 </template>
               </a-table-column>
@@ -84,7 +86,12 @@
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { tableColumns, formItems } from './config'
-  import { deleteUserRoleList, getUserRoleList, postUserRoleList, putUserRoleList } from '@/api/user'
+  import {
+    deleteUserRoleList,
+    getUserRoleList,
+    postUserRoleList,
+    putUserRoleList,
+  } from '@/api/user'
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()

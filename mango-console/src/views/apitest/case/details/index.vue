@@ -3,7 +3,9 @@
     <a-card title="组合用例场景">
       <template #extra>
         <a-space>
-          <a-button type="primary" status="warning" size="small" @click="doResetSearch">返回 </a-button>
+          <a-button type="primary" status="warning" size="small" @click="doResetSearch"
+            >返回
+          </a-button>
         </a-space>
       </template>
       <div class="container">
@@ -31,14 +33,26 @@
               </a-space>
             </template>
             <a-tab-pane key="1" title="前置数据">
-              <a-tabs :default-active-key="data.apiSonType" @tab-click="(key) => switchSonType(key)" position="left">
+              <a-tabs
+                :default-active-key="data.apiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
                 <a-tab-pane key="11" title="自定义变量">
                   <a-space direction="vertical">
                     <a-space v-for="(item, index) of pageData.record.front_custom" :key="item.key">
                       <span>key</span>
-                      <a-input v-model="item.key" placeholder="请输入key的名称" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.key"
+                        placeholder="请输入key的名称"
+                        @blur="upDataCase"
+                      />
                       <span>value</span>
-                      <a-input v-model="item.value" placeholder="请输入value的名称" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.value"
+                        placeholder="请输入value的名称"
+                        @blur="upDataCase"
+                      />
                       <a-button
                         type="text"
                         size="small"
@@ -55,7 +69,11 @@
                       <span>sql语句</span>
                       <a-input v-model="item.sql" placeholder="请输入sql语句" @blur="upDataCase" />
                       <span>key列表</span>
-                      <a-input v-model="item.key_list" placeholder="请输入查询结果缓存key" @blur="upDataCase" />
+                      <a-input
+                        v-model="item.key_list"
+                        placeholder="请输入查询结果缓存key"
+                        @blur="upDataCase"
+                      />
                       <a-button
                         type="text"
                         size="small"
@@ -93,10 +111,18 @@
                       {{ record.api_info.name }}
                     </template>
                     <template v-else-if="item.dataIndex === 'method'" #cell="{ record }">
-                      <a-tag color="green" size="small" v-if="record.api_info.method === 0">GET </a-tag>
-                      <a-tag color="gold" size="small" v-else-if="record.api_info.method === 1">POST </a-tag>
-                      <a-tag color="arcoblue" size="small" v-else-if="record.api_info.method === 2">PUT </a-tag>
-                      <a-tag color="magenta" size="small" v-else-if="record.api_info.method === 3">DELETE </a-tag>
+                      <a-tag color="green" size="small" v-if="record.api_info.method === 0"
+                        >GET
+                      </a-tag>
+                      <a-tag color="gold" size="small" v-else-if="record.api_info.method === 1"
+                        >POST
+                      </a-tag>
+                      <a-tag color="arcoblue" size="small" v-else-if="record.api_info.method === 2"
+                        >PUT
+                      </a-tag>
+                      <a-tag color="magenta" size="small" v-else-if="record.api_info.method === 3"
+                        >DELETE
+                      </a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                       <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -104,16 +130,24 @@
                       <a-tag color="gray" size="small" v-else>未测试</a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                      <a-button type="text" size="mini" @click="caseRun(record.case_sort)">执行到此处 </a-button>
+                      <a-button type="text" size="mini" @click="caseRun(record.case_sort)"
+                        >执行到此处
+                      </a-button>
                       <a-button type="text" size="mini" @click="refresh(record.id)">刷新</a-button>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)">删除 </a-button>
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        >删除
+                      </a-button>
                     </template>
                   </a-table-column>
                 </template>
               </a-table>
             </a-tab-pane>
             <a-tab-pane key="3" title="后置清除">
-              <a-tabs :default-active-key="data.apiSonType" @tab-click="(key) => switchSonType(key)" position="left">
+              <a-tabs
+                :default-active-key="data.apiSonType"
+                @tab-click="(key) => switchSonType(key)"
+                position="left"
+              >
                 <a-tab-pane key="31" title="sql清除">
                   <a-space direction="vertical">
                     <a-space v-for="(item, index) of pageData.record.posterior_sql" :key="item.sql">
@@ -134,7 +168,10 @@
           </a-tabs>
         </div>
         <div class="right">
-          <a-tabs @tab-click="(key) => switchApiInfoType(key)" :active-key="data.caseDetailsTypeKey">
+          <a-tabs
+            @tab-click="(key) => switchApiInfoType(key)"
+            :active-key="data.caseDetailsTypeKey"
+          >
             <a-tab-pane key="0" title="请求配置">
               <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                 <a-tab-pane key="00" title="请求头">
@@ -252,11 +289,16 @@
                 </a-tab-pane>
                 <a-tab-pane key="31" title="响应条件断言">
                   <a-space direction="vertical">
-                    <a-space v-for="(value, index) of data.selectDataObj.ass_response_value" :key="index">
+                    <a-space
+                      v-for="(value, index) of data.selectDataObj.ass_response_value"
+                      :key="index"
+                    >
                       <a-input
                         placeholder="请输入jsonpath表达式"
                         v-model="data.selectDataObj.ass_response_value[index].value"
-                        @blur="blurSave('ass_response_value', data.selectDataObj.ass_response_value)"
+                        @blur="
+                          blurSave('ass_response_value', data.selectDataObj.ass_response_value)
+                        "
                       />
                       <a-cascader
                         v-model="data.selectDataObj.ass_response_value[index].method"
@@ -265,17 +307,27 @@
                         expand-trigger="hover"
                         placeholder="请选择断言方法"
                         value-key="key"
-                        @blur="blurSave('ass_response_value', data.selectDataObj.ass_response_value)"
+                        @blur="
+                          blurSave('ass_response_value', data.selectDataObj.ass_response_value)
+                        "
                       />
                       <a-input
                         placeholder="请输入想要判断的值"
                         v-model="data.selectDataObj.ass_response_value[index].expect"
-                        @blur="blurSave('ass_response_value', data.selectDataObj.ass_response_value)"
+                        @blur="
+                          blurSave('ass_response_value', data.selectDataObj.ass_response_value)
+                        "
                       />
                       <a-button
                         type="text"
                         status="danger"
-                        @click="removeFrontSql(data.selectDataObj.ass_response_value, index, 'ass_response_value')"
+                        @click="
+                          removeFrontSql(
+                            data.selectDataObj.ass_response_value,
+                            index,
+                            'ass_response_value'
+                          )
+                        "
                         >移除
                       </a-button>
                     </a-space>
@@ -323,23 +375,36 @@
                 </template>
                 <a-tab-pane key="40" title="响应结果提取">
                   <a-space direction="vertical">
-                    <a-space v-for="(value, index) of data.selectDataObj.posterior_response" :key="index">
+                    <a-space
+                      v-for="(value, index) of data.selectDataObj.posterior_response"
+                      :key="index"
+                    >
                       <a-input
                         placeholder="请输入jsonpath语法"
                         v-model="data.selectDataObj.posterior_response[index].key"
-                        @blur="blurSave('posterior_response', data.selectDataObj.posterior_response)"
+                        @blur="
+                          blurSave('posterior_response', data.selectDataObj.posterior_response)
+                        "
                       />
                       <a-input
                         placeholder="请输入缓存key"
                         v-model="data.selectDataObj.posterior_response[index].value"
-                        @blur="blurSave('posterior_response', data.selectDataObj.posterior_response)"
+                        @blur="
+                          blurSave('posterior_response', data.selectDataObj.posterior_response)
+                        "
                       />
 
                       <a-button
                         type="text"
                         size="small"
                         status="danger"
-                        @click="removeFrontSql(data.selectDataObj.posterior_response, index, 'posterior_response')"
+                        @click="
+                          removeFrontSql(
+                            data.selectDataObj.posterior_response,
+                            index,
+                            'posterior_response'
+                          )
+                        "
                         >移除
                       </a-button>
                     </a-space>
@@ -348,7 +413,10 @@
                 <a-tab-pane key="41" title="后置sql处理">
                   <a-space direction="vertical">
                     <a-space direction="vertical">
-                      <a-space v-for="(value, index) of data.selectDataObj.posterior_sql" :key="index">
+                      <a-space
+                        v-for="(value, index) of data.selectDataObj.posterior_sql"
+                        :key="index"
+                      >
                         <a-input
                           placeholder="请输入sql"
                           v-model="data.selectDataObj.posterior_sql[index].key"
@@ -364,7 +432,9 @@
                           type="text"
                           size="small"
                           status="danger"
-                          @click="removeFrontSql(data.selectDataObj.posterior_sql, index, 'posterior_sql')"
+                          @click="
+                            removeFrontSql(data.selectDataObj.posterior_sql, index, 'posterior_sql')
+                          "
                           >移除
                         </a-button>
                       </a-space>
@@ -433,7 +503,6 @@
 <script lang="ts" setup>
   import { reactive, nextTick, onMounted, ref } from 'vue'
   import { useRoute } from 'vue-router'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
   import { fieldNames } from '@/setting'
@@ -455,9 +524,10 @@
   } from '@/api/apitest'
   import { getUiPageStepsDetailedAss } from '@/api/uitest'
   import { getSystemEnumMethod } from '@/api/system'
-  import { getUserModuleName, getUserProductAllModuleName } from '@/api/user'
+  import { getUserProductAllModuleName } from '@/api/user'
+  import { useEnvironment } from '@/store/modules/get-environment'
+  const uEnvironment = useEnvironment()
 
-  const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const formModel = ref({})
   const pageData: any = usePageData()
@@ -629,7 +699,7 @@
 
   function caseRun(case_sort: number | null) {
     Message.loading('用例开始执行中~')
-    getApiCaseRun(route.query.case_id, testObj.selectValue, case_sort)
+    getApiCaseRun(route.query.case_id, uEnvironment.selectValue, case_sort)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -752,13 +822,13 @@
     if ('10' === data.tabsKey) {
       data.selectDataObj.front_sql.push('请添加sql语句')
     } else if ('31' === data.tabsKey) {
-      data.selectDataObj.ass_response_value.push({ value: '', method: '', expect: '' })
+      data.selectDataObj.ass_response_value.push({ actual: '', method: '', expect: '' })
     } else if ('32' === data.tabsKey) {
-      data.selectDataObj.ass_sql.push({ value: '', method: '', expect: '' })
+      data.selectDataObj.ass_sql.push({ actual: '', method: '', expect: '' })
     } else if ('40' === data.tabsKey) {
-      data.selectDataObj.posterior_response.push({ key: '', value: '' })
+      data.selectDataObj.posterior_response.push({ key: '', actual: '' })
     } else if ('41' === data.tabsKey) {
-      data.selectDataObj.posterior_sql.push({ key: '', value: '' })
+      data.selectDataObj.posterior_sql.push({ key: '', actual: '' })
     }
   }
 

@@ -101,73 +101,43 @@ export const formItems: FormItem[] = reactive([
     placeholder: '请输入元素下标',
   },
 ])
-export const formItems1: FormItem[] = reactive([
+
+export const assForm = reactive([
   {
-    label: '步骤类型',
-    key: 'type',
-    value: 0,
-    type: 'radio',
+    label: '断言类型',
+    key: 'ass_type',
+    value: '',
+    type: 'cascader',
     required: true,
-    placeholder: '请选择对元素的操作类型',
+    placeholder: '请选择断言类型',
     validator: function () {
       return true
     },
   },
-
+])
+export const eleForm = reactive([
   {
     label: '元素操作',
     key: 'ope_type',
-    value: null,
+    value: '',
     type: 'cascader',
-    required: false,
+    required: true,
     placeholder: '请选择对元素的操作',
     validator: function () {
       return true
     },
   },
+])
+
+export const formItems1 = reactive([
   {
-    label: '元素操作值',
-    key: 'ope_value',
+    label: '步骤类型',
+    key: 'type',
     value: '',
-    type: 'textarea',
-    required: false,
-    placeholder: '请输入对元素的操作内容',
+    type: 'radio',
+    required: true,
+    placeholder: '请选择对元素的操作类型',
     validator: function () {
-      if (this.value !== '') {
-        try {
-          this.value = JSON.parse(this.value)
-        } catch (e) {
-          Message.error('元素操作值请输入json数据类型')
-          return false
-        }
-      }
-      return true
-    },
-  },
-  {
-    label: '断言类型',
-    key: 'ass_type',
-    value: null,
-    type: 'cascader',
-    required: false,
-    placeholder: '请选择断言类型',
-  },
-  {
-    label: '断言值',
-    key: 'ass_value',
-    value: '',
-    type: 'textarea',
-    required: false,
-    placeholder: '请输入断言内容',
-    validator: function () {
-      if (this.value !== '') {
-        try {
-          this.value = JSON.parse(this.value)
-        } catch (e) {
-          Message.error('断言值请输入json数据类型')
-          return false
-        }
-      }
       return true
     },
   },

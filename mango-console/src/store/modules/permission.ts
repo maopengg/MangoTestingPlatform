@@ -39,7 +39,6 @@ const usePermissionStore = defineStore('permission-route', {
   },
   actions: {
     async getRoutes(data: { userId: number; roleId: number }) {
-
       try {
         if (getMenuListByRoleId) {
           const res = await get({

@@ -75,7 +75,7 @@ class UiElementViews(ViewSet):
         获取所有的页面名称
         """
         try:
-            UiTestRun(request.user.get('id'), request.data.get("testing_environment")).element(request.data)
+            UiTestRun(request.user.get('id'), request.data.get("test_env")).element(request.data)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))

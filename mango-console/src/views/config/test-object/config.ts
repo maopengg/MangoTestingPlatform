@@ -88,6 +88,21 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '自动化类型',
+    key: 'auto_type',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请选择产品的端类型',
+    validator: function () {
+      if (this.value === null && this.value === '') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '负责人名称',
     key: 'executor_name',
     value: '',
@@ -130,6 +145,11 @@ export const tableColumns = useTableColumn([
     key: 'environment',
     dataIndex: 'environment',
     width: 150,
+  },
+  {
+    title: '自动化类型',
+    key: 'auto_type',
+    dataIndex: 'auto_type',
   },
   {
     title: '负责人',

@@ -9,7 +9,12 @@
         <div v-if="baseData.isLogin === true">
           <div class="title">账号登录</div>
           <div class="item-wrapper mt-6">
-            <a-input v-model="baseData.username" placeholder="请输入用户名/手机号" allow-clear size="large">
+            <a-input
+              v-model="baseData.username"
+              placeholder="请输入用户名/手机号"
+              allow-clear
+              size="large"
+            >
               <template #prefix>
                 <icon-mobile />
               </template>
@@ -30,16 +35,28 @@
           </div>
           <div class="flex-1"></div>
           <div class="mt-10">
-            <a-button type="primary" class="login" :loading="baseData.loading" @click="onLogin"> 登录</a-button>
+            <a-button type="primary" class="login" :loading="baseData.loading" @click="onLogin">
+              登录</a-button
+            >
           </div></div
         >
         <div v-else>
           <div class="title">注册用户</div>
           <div class="item-wrapper mt-6">
-            <a-input v-model="baseData.nickname" placeholder="请输入用户昵称" allow-clear size="large" />
+            <a-input
+              v-model="baseData.nickname"
+              placeholder="请输入用户昵称"
+              allow-clear
+              size="large"
+            />
           </div>
           <div class="item-wrapper mt-6">
-            <a-input v-model="baseData.username" placeholder="请输入登录用户名" allow-clear size="large">
+            <a-input
+              v-model="baseData.username"
+              placeholder="请输入登录用户名"
+              allow-clear
+              size="large"
+            >
               <template #prefix>
                 <icon-mobile />
               </template>
@@ -73,16 +90,26 @@
           </div>
           <div class="flex-1"></div>
           <div class="mt-10">
-            <a-button type="primary" class="login" :loading="baseData.loading" @click="onRegister"> 注册</a-button>
+            <a-button type="primary" class="login" :loading="baseData.loading" @click="onRegister">
+              注册</a-button
+            >
           </div>
         </div>
         <div class="my-width flex-1 mt-4 mb-8">
           <div class="flex justify-between">
             <a-link :underline="false" type="primary">忘记密码？</a-link>
-            <a-link v-if="baseData.isLogin === true" :underline="false" type="primary" @click="register1"
+            <a-link
+              v-if="baseData.isLogin === true"
+              :underline="false"
+              type="primary"
+              @click="register1"
               >注册用户</a-link
             >
-            <a-link v-if="baseData.isLogin === false" :underline="false" type="primary" @click="returnToLogin"
+            <a-link
+              v-if="baseData.isLogin === false"
+              :underline="false"
+              type="primary"
+              @click="returnToLogin"
               >返回登录</a-link
             >
           </div>
@@ -162,7 +189,6 @@
       Message.error('用户昵称，用户名，密码不允许为空')
       return
     } else {
-      console.log(typeof baseData.password, typeof baseData.confirm_password)
       if (baseData.password !== baseData.confirm_password) {
         Message.error('两次密码输入不一致')
         return

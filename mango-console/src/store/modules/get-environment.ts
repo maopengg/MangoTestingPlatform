@@ -6,6 +6,8 @@ export const useEnvironment = defineStore('get-environment', {
   state: () => {
     return {
       data: [],
+      selectTitle: '选择测试环境',
+      selectValue: null as number | null,
     }
   },
   // 类似于computed，用来封装计算属性

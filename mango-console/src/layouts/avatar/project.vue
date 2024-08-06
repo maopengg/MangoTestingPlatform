@@ -56,7 +56,6 @@
       return
     }
     project.data.forEach((item: any) => {
-      console.log(item)
       project.selectValue = key
       if (item.key === project.selectValue) project.selectTitle = item.title
     })

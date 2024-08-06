@@ -78,4 +78,5 @@ urlpatterns = [
     path('enum/api/parameter', EnumOptionViews.as_view({'get': 'enum_api_parameter_type'})),
     path('enum/ui/device', EnumOptionViews.as_view({'get': 'enum_ui_device_type'})),
     path('enum/product', EnumOptionViews.as_view({'get': 'enum_product_type'})),
+    path('enum/auto/type', EnumOptionViews.as_view({'get': 'enum_auto_type'})),
 ]
