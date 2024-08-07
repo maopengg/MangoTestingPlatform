@@ -58,8 +58,12 @@
                         {{ record.timing_strategy?.name }}
                       </template>
 
-                      <template v-else-if="item.key === 'test_obj'" #cell="{ record }">
-                        {{ record.test_obj?.name }}
+                      <template v-else-if="item.key === 'test_env'" #cell="{ record }">
+                        <a-tag color="orangered" size="small">
+                          {{
+                            record.test_env !== null ? uEnvironment.data[record.test_env].title : ''
+                          }}</a-tag
+                        >
                       </template>
                       <template v-else-if="item.key === 'type'" #cell="{ record }">
                         <a-tag color="orangered" size="small" v-if="record.type === 0"
@@ -112,11 +116,13 @@
   import { useProductModule } from '@/store/modules/project_module'
   import { getSystemScheduledTasks } from '@/api/system'
   import { useProject } from '@/store/modules/get-project'
+  import { useEnvironment } from '@/store/modules/get-environment'
 
   const appStore = useAppConfigStore()
   const mainHeight = computed(() => {
     return appStore.mainHeight + 'px'
   })
+  const uEnvironment = useEnvironment()
   const projectInfo = useProject()
   const productModule = useProductModule()
   const reportSum = ref()
@@ -162,9 +168,9 @@
       dataIndex: 'type',
     },
     {
-      title: '执行对象',
-      key: 'test_obj',
-      dataIndex: 'test_obj',
+      title: '测试对象',
+      key: 'test_env',
+      dataIndex: 'test_env',
       align: 'left',
     },
     {

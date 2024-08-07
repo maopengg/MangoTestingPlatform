@@ -95,5 +95,5 @@ class WeChatSend:
 
 
 if __name__ == '__main__':
-    # WeChatSend('ZASHOP').send_wechat_notification()
+    # WeChatSend('Z_shop').send_wechat_notification()
     pass
