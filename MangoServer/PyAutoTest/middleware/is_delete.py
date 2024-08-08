@@ -20,26 +20,27 @@ class IsDeleteMiddleWare(MiddlewareMixin):
     def process_request(self, request: ASGIRequest):
         if not IS_DELETE:
             token = request.META.get('HTTP_AUTHORIZATION')
-            payload = jwt.decode(token,  settings.SECRET_KEY, algorithms='HS256')
-            if payload.get('username') != 'admin':
-                if request.method == 'DELETE':
-                    return JsonResponse({
-                        "code": 300,
-                        "msg": "演示环境非管理员权限禁止删除，只能执行测试任务",
-                        "data": None
-                    }, status=200)
-                elif request.method == 'POST':
-                    return JsonResponse({
-                        "code": 300,
-                        "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
-                        "data": None
-                    }, status=200)
-                elif request.method == 'PUT':
-                    return JsonResponse({
-                        "code": 300,
-                        "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
-                        "data": None
-                    }, status=200)
+            if token:
+                payload = jwt.decode(token,  settings.SECRET_KEY, algorithms='HS256')
+                if payload.get('username') != 'admin':
+                    if request.method == 'DELETE':
+                        return JsonResponse({
+                            "code": 300,
+                            "msg": "演示环境非管理员权限禁止删除，只能执行测试任务",
+                            "data": None
+                        }, status=200)
+                    elif request.method == 'POST':
+                        return JsonResponse({
+                            "code": 300,
+                            "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
+                            "data": None
+                        }, status=200)
+                    elif request.method == 'PUT':
+                        return JsonResponse({
+                            "code": 300,
+                            "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
+                            "data": None
+                        }, status=200)
 
     def process_response(self, request, response):
         return response
