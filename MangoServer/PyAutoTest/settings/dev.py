@@ -10,14 +10,11 @@ IS_SQLITE = False  # 是否选用mysql作为数据源
 
 # ************************ Mysql配置 ************************ #
 mysql_port = 3306
-# mysql_db_name = 'test'
-# mysql_user = 'root'
-# mysql_password = 'mP123456&'
-# mysql_ip = '127.0.0.1'
-mysql_db_name = 'auto_test'
+mysql_db_name = 'test'
 mysql_user = 'root'
-mysql_password = 'Root@123'
-mysql_ip = '172.16.100.26'
+mysql_password = 'mP123456&'
+mysql_ip = '127.0.0.1'
+
 # ************************ DEBUG配置 ************************ #
 DEBUG = True
 
