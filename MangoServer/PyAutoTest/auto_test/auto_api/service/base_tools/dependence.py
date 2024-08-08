@@ -12,11 +12,11 @@ from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonBase
 from PyAutoTest.exceptions.api_exception import *
+from PyAutoTest.exceptions.error_msg import *
 from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-from PyAutoTest.exceptions.error_msg import *
 
 log = logging.getLogger('api')
 
@@ -39,8 +39,8 @@ class CaseMethod(CommonBase, PublicAssertion):
                         pass
                 else:
                     value = self.replace(value)
-                if value == '${headers}':
-                    value = None
+                # if value == '${headers}':
+                #     value = None
                 if value and isinstance(value, str):
                     value = self.loads(value) if value else value
                 setattr(request_data_model, key, value)
@@ -57,6 +57,12 @@ class CaseMethod(CommonBase, PublicAssertion):
             else:
                 value = self.replace(value)
                 setattr(request_data_model, key, value)
+
+            if key == 'headers' and hasattr(self, 'headers') and self.headers:
+                new_dict = self.replace(self.headers, False)
+                if new_dict and isinstance(new_dict, str):
+                    new_dict = self.loads(new_dict) if new_dict else new_dict
+                request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
 
         return request_data_model
 
@@ -112,13 +118,13 @@ class CaseMethod(CommonBase, PublicAssertion):
                 if isinstance(res, list):
                     for res_dict in res:
                         for key, value in res_dict.items():
-                            self.set_cache(sql_obj.get('actual'), str(value))
-                            log.info(f'{sql_obj.get("actual")}sql写入的数据：{self.get_cache(sql_obj.get("actual"))}')
+                            self.set_cache(sql_obj.get('value'), str(value))
+                            log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
             value = self.get_json_path_value(response_text, i['key'])
-            self.set_cache(i['actual'], value)
+            self.set_cache(i['value'], value)
 
     @classmethod
     def __posterior_sleep(cls, sleep: str):
@@ -130,13 +136,12 @@ class CaseMethod(CommonBase, PublicAssertion):
         try:
             if ass_response_value:
                 for i in ass_response_value:
-                    print(i)
                     value = self.get_json_path_value(response_data, i['actual'])
                     _dict = {'actual': str(value)}
                     if i.get('expect'):
                         try:
                             _dict['expect'] = str(eval(i.get('expect')))
-                        except NameError:
+                        except (NameError, SyntaxError):
                             _dict['expect'] = i.get('expect')
                     method = i.get('method')
                     getattr(self, method)(**_dict)
@@ -173,3 +178,14 @@ class CaseMethod(CommonBase, PublicAssertion):
             log.warning(error)
             self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
             raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))
+
+    @classmethod
+    def __merge_dicts(cls, base_dict, new_dict):
+        if base_dict:
+            result = base_dict.copy()
+            for key, value in new_dict.items():
+                if key not in result:
+                    result[key] = value
+            return result
+        else:
+            return new_dict

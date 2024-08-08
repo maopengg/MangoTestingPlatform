@@ -29,7 +29,7 @@ class ApiInfoRun(CaseMethod):
         response: ResponseDataModel = self.send_request(RequestDataModel(
             method=MethodEnum(self.api_info.method).name,
             url=urljoin(self.test_object.value, self.api_info.url),
-            headers=self.api_info.header if self.api_info.header else '${headers}',
+            headers=self.api_info.header,
             params=self.api_info.params,
             data=self.api_info.data,
             json_data=self.api_info.json,

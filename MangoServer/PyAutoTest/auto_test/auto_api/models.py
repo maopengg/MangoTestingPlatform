@@ -49,6 +49,7 @@ class ApiCase(models.Model):
     level = models.SmallIntegerField(verbose_name="用例级别", null=True)
     front_custom = models.JSONField(verbose_name="前置自定义", null=True)
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
+    front_headers = models.TextField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
 
     class Meta:

@@ -6,8 +6,8 @@
 import json
 import re
 
-from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError, MethodDoesNotExistError
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0027, ERROR_MSG_0047
+from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError, MethodDoesNotExistError
 from ..data_processor.cache_tool import CacheTool
 from ..data_processor.coding_tool import CodingTool
 from ..data_processor.encryption_tool import EncryptionTool
@@ -89,7 +89,7 @@ class DataProcessor(ObtainRandomData, DataClean):
         ObtainRandomData.__init__(self, project_product_id)
         DataClean.__init__(self)
 
-    def replace(self, data: list | dict | str | None) -> list | dict | str | None:
+    def replace(self, data: list | dict | str | None, is_error=True) -> list | dict | str | None:
         if not data:
             return data
         if isinstance(data, list):
@@ -97,9 +97,9 @@ class DataProcessor(ObtainRandomData, DataClean):
         elif isinstance(data, dict):
             return {key: self.replace(value) for key, value in data.items()}
         else:
-            return self.replace_str(data)
+            return self.replace_str(self.replace_str(data, is_error), is_error)
 
-    def replace_str(self, data: str) -> str:
+    def replace_str(self, data: str, is_error=True) -> str:
         """
         用来替换包含${}文本信息，通过读取缓存中的内容，完成替换（可以是任意格式的文本）
         @param data: 需要替换的文本
@@ -125,7 +125,7 @@ class DataProcessor(ObtainRandomData, DataClean):
                 value = self.regular(key_text)
             else:
                 value = self.get_cache(key_text)
-            if value is None:
+            if value is None and is_error:
                 raise CacheIsEmptyError(*ERROR_MSG_0027, value=(key_text,))
             if key:
                 self.set_cache(key, value)

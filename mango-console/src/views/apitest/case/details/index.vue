@@ -29,7 +29,7 @@
             <template #extra>
               <a-space>
                 <a-button status="success" size="small" @click="caseRun(null)">全部执行</a-button>
-                <a-button type="primary" size="small" @click="addData">增加用例</a-button>
+                <a-button type="primary" size="small" @click="addData">增加</a-button>
               </a-space>
             </template>
             <a-tab-pane key="1" title="前置数据">
@@ -81,6 +81,21 @@
                         @click="removeFrontSql1(pageData.record.front_sql, index)"
                         >移除
                       </a-button>
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
+                <a-tab-pane key="13" title="默认请求头">
+                  <a-space direction="vertical">
+                    <a-space>
+                      <span>请求头</span>
+                      <a-textarea
+                        placeholder="请输入默认请求头，如果用例步骤中没有，则使用此处请求头，有则把两处请求头合并，合并以用例步骤中为准"
+                        v-model="pageData.record.front_headers"
+                        allow-clear
+                        :auto-size="{ minRows: 10, maxRows: 15 }"
+                        @blur="upDataCase"
+                        style="width: 500px"
+                      />
                     </a-space>
                   </a-space>
                 </a-tab-pane>
@@ -295,7 +310,7 @@
                     >
                       <a-input
                         placeholder="请输入jsonpath表达式"
-                        v-model="data.selectDataObj.ass_response_value[index].value"
+                        v-model="data.selectDataObj.ass_response_value[index].actual"
                         @blur="
                           blurSave('ass_response_value', data.selectDataObj.ass_response_value)
                         "
@@ -338,7 +353,7 @@
                     <a-space v-for="(value, index) of data.selectDataObj.ass_sql" :key="index">
                       <a-input
                         placeholder="请输入sql查询语句，只能查询一个字段"
-                        v-model="data.selectDataObj.ass_sql[index].value"
+                        v-model="data.selectDataObj.ass_sql[index].actual"
                         @blur="blurSave('ass_sql', data.selectDataObj.ass_sql)"
                       />
                       <a-cascader
@@ -441,6 +456,18 @@
                     </a-space>
                   </a-space>
                 </a-tab-pane>
+                <a-tab-pane key="42" title="强制等待">
+                  <a-space direction="vertical">
+                    <a-space direction="vertical">
+                      <a-input
+                        placeholder="请输入强制等待时间，单位是秒"
+                        v-model="data.selectDataObj.posterior_sleep"
+                        @blur="blurSave('posterior_sleep', data.selectDataObj.posterior_sleep)"
+                        style="width: 300px"
+                      />
+                    </a-space>
+                  </a-space>
+                </a-tab-pane>
               </a-tabs>
             </a-tab-pane>
             <a-tab-pane key="5" title="缓存数据">
@@ -464,16 +491,6 @@
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
-            <!--            <a-select-->
-            <!--              v-model="item.value"-->
-            <!--              :placeholder="item.placeholder"-->
-            <!--              :options="data.moduleList"-->
-            <!--              :field-names="fieldNames"-->
-            <!--              @change="getModuleApi(item.value)"-->
-            <!--              value-key="key"-->
-            <!--              allow-clear-->
-            <!--              allow-search-->
-            <!--            />-->
             <a-cascader
               v-model="item.value"
               @change="getModuleApi(item.value)"
@@ -622,6 +639,7 @@
 
   function removeFrontSql1(item: any, index: number) {
     item.splice(index, 1)
+
     upDataCase()
   }
 
@@ -632,6 +650,7 @@
       posterior_sql: pageData.record.posterior_sql,
       front_sql: pageData.record.front_sql,
       front_custom: pageData.record.front_custom,
+      front_headers: pageData.record.front_headers === '' ? null : pageData.record.front_headers,
     })
       .then((res) => {
         Message.success(res.msg)
@@ -641,7 +660,7 @@
   }
 
   function blurSave(key: string, item: string | null) {
-    if (key === 'header' || key === 'ass_response_whole') {
+    if (key === 'header' || key === 'ass_response_whole' || key === 'posterior_sleep') {
       if (item === '') {
         item = null
       }
@@ -814,7 +833,7 @@
     switchApiInfoType(data.caseDetailsTypeKey)
   }
 
-  function tabsChange(key: string) {
+  function tabsChange(key: string | any) {
     data.tabsKey = key
   }
 
@@ -826,9 +845,9 @@
     } else if ('32' === data.tabsKey) {
       data.selectDataObj.ass_sql.push({ actual: '', method: '', expect: '' })
     } else if ('40' === data.tabsKey) {
-      data.selectDataObj.posterior_response.push({ key: '', actual: '' })
+      data.selectDataObj.posterior_response.push({ key: '', value: '' })
     } else if ('41' === data.tabsKey) {
-      data.selectDataObj.posterior_sql.push({ key: '', actual: '' })
+      data.selectDataObj.posterior_sql.push({ key: '', value: '' })
     }
   }
 

@@ -59,6 +59,7 @@ class BaseRequest:
             response_json = self.response.json()
         except JSONDecodeError:
             response_json = None
+        log.api.info(response_json if response_json else self.response.text)
         return ResponseDataModel(
             url=self.response.url,
             method=self.request_data.method,

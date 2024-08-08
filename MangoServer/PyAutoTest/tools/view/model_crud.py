@@ -124,7 +124,10 @@ class ModelCRUD(GenericAPIView):
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
             elif isinstance(self, ApiCaseDetailedCRUD):
-                parent_id = ApiCaseDetailed.objects.get(id=request.data.get('id')).case.id
+                if request.method == 'PUT':
+                    parent_id = ApiCaseDetailed.objects.get(id=request.data.get('id')).case_id
+                else:
+                    parent_id = request.data.get('case')
             else:
                 parent_id = request.data.get('id')
             if parent_id is None:

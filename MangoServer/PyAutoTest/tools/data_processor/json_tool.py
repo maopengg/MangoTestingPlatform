@@ -9,6 +9,7 @@ import jsonpath
 
 from PyAutoTest.exceptions.tools_exception import JsonPathError
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0011
+from PyAutoTest.tools.log_collector import log
 
 
 class JsonTool:
@@ -72,7 +73,9 @@ class JsonTool:
         @param index:
         @return:
         """
+
         try:
             return jsonpath.jsonpath(obj, expr)[index]
         except TypeError:
+            log.api.error(f'jsonpath表达式错误，数据：{obj}, 表达式：{expr}, 下标：{index}')
             raise JsonPathError(*ERROR_MSG_0011, value=(expr,))

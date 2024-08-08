@@ -17,10 +17,10 @@ from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, AutoTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.api_exception import CaseIsEmptyError, UnknownError
+from PyAutoTest.exceptions.error_msg import *
 from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.exceptions.error_msg import *
 
 
 class ApiCaseRun(CaseMethod, TestResult):
@@ -34,6 +34,7 @@ class ApiCaseRun(CaseMethod, TestResult):
         self.is_notice = is_notice
 
         self.test_object: Optional[TestObject | None] = None
+        self.headers = None
 
     def case_batch(self, case_list: list):
         case_status_list = []
@@ -136,6 +137,8 @@ class ApiCaseRun(CaseMethod, TestResult):
                             raise SyntaxErrorError(*ERROR_MSG_0036)
                     if not result_list:
                         raise MysqlQueryIsNullError(*ERROR_MSG_0034, value=(sql,))
+        if api_case.front_headers:
+            self.headers = api_case.front_headers
 
         return api_case
 

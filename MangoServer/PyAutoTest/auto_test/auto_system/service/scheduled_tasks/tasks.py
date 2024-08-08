@@ -85,7 +85,7 @@ class Tasks:
         elif scheduled_tasks.type == AutoTestTypeEnum.UI.value:
             task = Thread(target=cls.ui_task, args=(scheduled_tasks.id,
                                                     scheduled_tasks.case_people.id,
-                                                    scheduled_tasks.test_obj.id,
+                                                    scheduled_tasks.test_env,
                                                     scheduled_tasks.is_notice,
                                                     scheduled_tasks.case_executor
                                                     ))
