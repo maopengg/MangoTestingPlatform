@@ -22,8 +22,8 @@ class WEBConfigModel(BaseModel):
     is_headless: int | None = None
     is_header_intercept: bool = False
     device: str | None = None
-    project_product: int | None = None
-    host_list: list | None = None
+    host_list: list[dict] | None = None
+
 
 
 class AndroidConfigModel(BaseModel):

@@ -13,11 +13,10 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject, ProjectProduct
 from PyAutoTest.auto_test.auto_ui.models import UiConfig
-from PyAutoTest.auto_test.auto_ui.service.is_url import process_urls
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
-from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, ProductTypeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, ProductTypeEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import WEBConfigModel
@@ -102,26 +101,33 @@ class UiConfigViews(ViewSet):
                                               status=StatusEnum.SUCCESS.value,
                                               type=DriveTypeEnum.WEB.value)
             if user_obj.selected_environment is None:
-                return ResponseData.fail(RESPONSE_MSG_0058, )
-            if user_obj.selected_project is None:
                 return ResponseData.fail(RESPONSE_MSG_0120, )
+            if user_obj.selected_project is None:
+                return ResponseData.fail(RESPONSE_MSG_0058, )
 
-            host_list = list(TestObject.objects
-                             .filter(project_product_id__in=ProjectProduct
-                                     .objects
-                                     .filter(project_id=user_obj.selected_project,
-                                             client_type=ProductTypeEnum.WEB.value).values_list('id'),
-                                     environment=user_obj.selected_environment)
-                             .values_list('value', flat=True))
-            host_list = [urllib.parse.urlparse(url).netloc for url in process_urls(host_list)]
+            host_list: list[dict] = list(TestObject.objects
+                                         .filter(project_product_id__in=ProjectProduct
+                                                 .objects
+                                                 .filter(project_id=user_obj.selected_project,
+                                                         client_type=ProductTypeEnum.WEB.value)
+                                                 .values_list('id', flat=True),
+                                                 environment=user_obj.selected_environment,
+                                                 auto_type=AutoTypeEnum.API.value)
+                                         .values('value', 'project_product_id'))
+            host_list_dict = []
+            for i in host_list:
+                host_list_dict.append({
+                    'value': urllib.parse.urlparse(i.get('value')).netloc,
+                    'project_product_id': i.get('project_product_id')
+                })
+            print(host_list_dict)
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
                                         is_headless=config_obj.is_headless,
                                         device=config_obj.device,
                                         is_header_intercept=True,
-                                        project_product=user_obj.selected_project,
-                                        host_list=host_list)
+                                        host_list=host_list_dict)
         else:
             config_obj = self.model.objects.get(id=request.query_params.get('id'))
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,

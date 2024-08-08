@@ -145,9 +145,9 @@ class NewBrowser:
             await route.continue_()  # 继续请求，不做修改
             return
         if request.resource_type in ("document", "xhr", "fetch"):
-            for host in self.web_config.host_list:
-                if host in request.url:
-                    await self.__send_recording_api(request, self.web_config.project_product)
+            for host_dict in self.web_config.host_list:
+                if host_dict.get('value') in request.url:
+                    await self.__send_recording_api(request, host_dict.get('project_product_id'))
         await route.continue_()  # 继续请求，不做修改
 
     @classmethod
