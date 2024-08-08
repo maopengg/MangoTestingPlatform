@@ -6,3 +6,4 @@
 logs/*
 files/*
 db.sqlite3
+PyAutoTest/settings/database.json
