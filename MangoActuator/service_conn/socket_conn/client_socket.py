@@ -67,23 +67,16 @@ class ClientWebSocket:
                     if await self.client_hands():
                         await self.client_recv()
                     await asyncio.sleep(2)
-            except ConnectionRefusedError:
+            except (ConnectionRefusedError, OSError, websockets.ConnectionClosed):
                 SignalSend.notice_signal_a('已离线')
                 log.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
                 SignalSend.notice_signal_c("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
-            except OSError as error:
-                SignalSend.notice_signal_a('已离线')
-                log.info(f"网络已中断，尝试重新连接中......{error}")
-                SignalSend.notice_signal_c("网络已中断，尝试重新连接中......")
-            except websockets.ConnectionClosed:
-                SignalSend.notice_signal_a('已离线')
-                log.info(f'连接已关闭，正在重新连接......')
-                SignalSend.notice_signal_c("连接已关闭，正在重新连接......")
+                await asyncio.sleep(5)
             except Exception as error:
                 SignalSend.notice_signal_a('已离线')
                 log.info(f"socket发生未知错误，请截图并联系管理员：{error}")
                 SignalSend.notice_signal_c(f"socket发生未知错误，请截图并联系管理员：{error}")
-                await asyncio.sleep(10)
+                await asyncio.sleep(5)
                 raise error
 
     async def client_recv(self):

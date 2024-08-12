@@ -41,6 +41,11 @@ class BaseData:
         self.package_name: Optional[str | None] = None
         self.android: Optional[Device | None] = None
 
+    async def setup(self) -> None:
+        self.url = None
+        self.page = None
+        self.context = None
+
     async def base_close(self):
         if self.context and isinstance(self.context, BrowserContext):
             await self.context.close()

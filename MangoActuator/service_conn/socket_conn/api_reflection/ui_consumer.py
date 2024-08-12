@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
+import asyncio
+
 from autotest.ui.service.case_main import CaseMain
 from autotest.ui.service.page_steps import PageSteps
 from enums.tools_enum import ClientTypeEnum, CacheKeyEnum
@@ -17,6 +19,7 @@ from tools.decorator.error_handle import async_error_handle
 class UIConsumer:
     page_steps: PageSteps = None
     case_run: CaseMain = None
+    lock = asyncio.Lock()
 
     @classmethod
     @async_error_handle()
@@ -28,10 +31,11 @@ class UIConsumer:
         @return:
         """
         try:
-            if cls.page_steps is None:
-                cls.page_steps = PageSteps(data.project_product)
-            await cls.page_steps.page_steps_setup(data)
-            await cls.page_steps.page_steps_mian()
+            async with cls.lock:
+                if cls.page_steps is None:
+                    cls.page_steps = PageSteps(data.project_product)
+                await cls.page_steps.page_steps_setup(data)
+                await cls.page_steps.page_steps_mian()
         except MangoActuatorError as error:
             await ClientWebSocket().async_send(
                 code=error.code,
@@ -48,9 +52,10 @@ class UIConsumer:
         @param data:
         @return:
         """
-        if cls.page_steps is None:
-            cls.page_steps = PageSteps()
-        await cls.page_steps.new_web_obj(data)
+        async with cls.lock:
+            if cls.page_steps is None:
+                cls.page_steps = PageSteps()
+            await cls.page_steps.new_web_obj(data)
 
     @classmethod
     @async_error_handle()

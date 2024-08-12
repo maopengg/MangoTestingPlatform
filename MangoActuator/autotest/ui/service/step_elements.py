@@ -64,8 +64,7 @@ class StepElements(ElementMain):
                 return self.page_step_result_model
             except Error as error:
                 if error.message == "Target page, context or browser has been closed":
-                    self.page = None
-                    self.context = None
+                    await self.setup()
                     self.element_test_result.error_message = error.message
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
@@ -110,8 +109,7 @@ class StepElements(ElementMain):
                     self.url = test_object_value
             except Error as error:
                 if error.message == "Target page, context or browser has been closed":
-                    self.page = None
-                    self.context = None
+                    await self.setup()
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.message
                     self.page_step_result_model.element_result_list.append(self.element_test_result)
@@ -169,8 +167,7 @@ class StepElements(ElementMain):
                     await self.w_screenshot(file_path)
                 except Error as error:
                     if error.message == "Target page, context or browser has been closed":
-                        self.page = None
-                        self.context = None
+                        await self.setup()
                         raise BrowserObjectClosed(*ERROR_MSG_0010)
                     else:
                         raise BrowserObjectClosed(*ERROR_MSG_0053)

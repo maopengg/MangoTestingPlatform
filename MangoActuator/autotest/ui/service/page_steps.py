@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
+import asyncio
 from typing import Optional
 
 from autotest.ui.base_tools.driver_object import DriverObject
@@ -24,6 +25,8 @@ class PageSteps(StepElements):
         self.project_product_id = project_product_id
         self.msg = ''
         self.page_step_model: Optional[PageStepsModel | None] = None
+        self.lock = asyncio.Lock()
+
 
     async def page_steps_setup(self, data: PageStepsModel):
         self.page_step_model: PageStepsModel = data
@@ -33,9 +36,10 @@ class PageSteps(StepElements):
 
     async def page_steps_mian(self) -> None:
         try:
-            await self.steps_init(self.page_step_model)
-            await self.driver_init()
-            await self.steps_main()
+            async with self.lock:
+                await self.steps_init(self.page_step_model)
+                await self.driver_init()
+                await self.steps_main()
         except MangoActuatorError as error:
             if error.code == 310:
                 if self.context:
