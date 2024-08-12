@@ -169,8 +169,11 @@ class StepElements(ElementMain):
                     if error.message == "Target page, context or browser has been closed":
                         await self.setup()
                         raise BrowserObjectClosed(*ERROR_MSG_0010)
-                    else:
-                        raise BrowserObjectClosed(*ERROR_MSG_0053)
+                    import traceback
+                    log.error(f"失败消息1：{traceback.print_exc()}")
+                    log.error(f'失败消息2：{type(error)}')
+                    log.error(f'失败消息3：{error}')
+                    raise BrowserObjectClosed(*ERROR_MSG_0053)
             case DriveTypeEnum.ANDROID.value:
                 self.a_screenshot(file_path)
             case DriveTypeEnum.IOS.value:
