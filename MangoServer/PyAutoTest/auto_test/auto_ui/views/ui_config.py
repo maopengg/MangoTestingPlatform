@@ -108,19 +108,19 @@ class UiConfigViews(ViewSet):
             host_list: list[dict] = list(TestObject.objects
                                          .filter(project_product_id__in=ProjectProduct
                                                  .objects
-                                                 .filter(project_id=user_obj.selected_project,
-                                                         client_type=ProductTypeEnum.WEB.value)
+                                                 .filter(project_id=user_obj.selected_project)
                                                  .values_list('id', flat=True),
                                                  environment=user_obj.selected_environment,
-                                                 auto_type=AutoTypeEnum.API.value)
+                                                 auto_type__in=[AutoTypeEnum.API.value, AutoTypeEnum.CURRENCY.value])
                                          .values('value', 'project_product_id'))
+            if not host_list:
+                return ResponseData.fail(RESPONSE_MSG_0121, )
             host_list_dict = []
             for i in host_list:
                 host_list_dict.append({
                     'value': urllib.parse.urlparse(i.get('value')).netloc,
                     'project_product_id': i.get('project_product_id')
                 })
-            print(host_list_dict)
             web_config = WEBConfigModel(browser_type=config_obj.browser_type,
                                         browser_port=config_obj.browser_port,
                                         browser_path=config_obj.browser_path,
