@@ -46,6 +46,8 @@ class ClientWebSocket:
             response_str = await self.websocket.recv()
             res = self.__output_method(response_str)
             if res.code == 200:
+                await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
+                                      is_notice=ClientTypeEnum.WEB.value)
                 log.info("socket服务启动成功")
                 SignalSend.notice_signal_a('在线')
                 SignalSend.notice_signal_c("服务已连接！")

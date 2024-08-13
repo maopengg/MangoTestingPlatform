@@ -160,6 +160,7 @@ class StepElements(ElementMain):
         self.page_step_result_model.error_message = error.msg
 
     async def __error_screenshot(self, file_path, file_name):
+        # try:
         match self.page_step_model.type:
             case DriveTypeEnum.WEB.value:
                 try:
@@ -182,3 +183,6 @@ class StepElements(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
         if not settings.IS_DEBUG:
             HttpApi().upload_file(self.project_product_id, file_path, file_name)
+        # except Exception as error:
+        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
+        #     raise ScreenshotError(*ERROR_MSG_0040)

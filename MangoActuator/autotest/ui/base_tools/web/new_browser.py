@@ -26,7 +26,7 @@ from enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from enums.socket_api_enum import ApiSocketEnum
 from enums.tools_enum import CacheKeyEnum, StatusEnum
 from enums.ui_enum import BrowserTypeEnum
-from exceptions.ui_exception import BrowserPathError, NewObjectError
+from exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
 from models.socket_model.api_model import ApiInfoModel
 from models.socket_model.ui_model import WEBConfigModel
 from service_conn.socket_conn.client_socket import ClientWebSocket
@@ -34,7 +34,7 @@ from tools import InitPath
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.error_handle import async_error_handle
 from tools.desktop.signal_send import SignalSend
-from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042
+from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
 
 """
 python -m uiautomator2 init
@@ -132,6 +132,8 @@ class NewBrowser:
             for root, dirs, files in os.walk(i):
                 if self.browser_path[self.web_config.browser_type] in files:
                     return os.path.join(root, self.browser_path[self.web_config.browser_type])
+
+        raise NoBrowserError(*ERROR_MSG_0055)
 
     async def __intercept_request(self, route: Route, request: Request):
         """
