@@ -171,6 +171,10 @@ class StepElements(ElementMain):
                         raise BrowserObjectClosed(*ERROR_MSG_0010)
                     else:
                         raise BrowserObjectClosed(*ERROR_MSG_0053)
+                except AttributeError:
+                    await self.setup()
+                    raise BrowserObjectClosed(*ERROR_MSG_0010)
+
             case DriveTypeEnum.ANDROID.value:
                 self.a_screenshot(file_path)
             case DriveTypeEnum.IOS.value:

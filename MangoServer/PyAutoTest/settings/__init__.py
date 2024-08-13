@@ -202,7 +202,7 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_system/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5,
+            'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,
             'encoding': 'utf-8',
         },
@@ -211,7 +211,7 @@ LOGGING = {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR / 'logs/auto_perf/log.log',
             'formatter': 'verbose',
-            'maxBytes': 1024 * 1024 * 5,
+            'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,
             'encoding': 'utf-8',
         }
