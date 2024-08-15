@@ -140,7 +140,7 @@ def ad_routes():
                 {
                     "parentPath": "/config",
                     "menuUrl": "/config/test-object/index",
-                    "menuName": "测试环境",
+                    "menuName": "测试对象",
                 },
                 {
                     "parentPath": "/config",
