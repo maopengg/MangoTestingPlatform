@@ -111,10 +111,17 @@ class WebDevice(PlaywrightBrowser,
             ele_list: list[Locator] = []
             for i in self.page.frames:
                 locator: Locator = await self.__find_ele(i, locator_str)
-                count = await locator.count()
+                try:
+                    count = await locator.count()
+                except Error as error:
+                    raise LocatorError(*ERROR_MSG_0041, )
+
                 if count > 0:
                     for nth in range(0, count):
                         ele_list.append(locator.nth(nth))
+                else:
+                    raise LocatorError(*ERROR_MSG_0023)
+
             self.element_test_result.ele_quantity = len(ele_list)
             if not ele_list:
                 raise LocatorError(*ERROR_MSG_0023)

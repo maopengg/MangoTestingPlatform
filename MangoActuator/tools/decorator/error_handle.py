@@ -16,7 +16,7 @@ from tools.notic_tools import NoticeMain
 
 
 def error_send(func, args, kwargs, error, trace):
-    SignalSend.notice_signal_c(f'发送未知异常，请联系管理员！')
+    SignalSend.notice_signal_c(f'发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}')
     log.error(
         f'错误函数：{func.__name__}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}， 错误详情：{trace}')
     content = f"""
@@ -49,7 +49,7 @@ def async_error_handle(is_error=False):
                 error_send(func, args, kwargs, error, trace)
                 await ClientWebSocket().async_send(
                     code=300,
-                    msg="发生未知异常！请联系管理员",
+                    msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
                     is_notice=ClientTypeEnum.WEB.value
                 )
                 if is_error:
@@ -71,7 +71,7 @@ def sync_error_handle(is_error=False):
                 error_send(func, args, kwargs, error, trace)
                 ClientWebSocket().sync_send(
                     code=300,
-                    msg="发生未知异常！请联系管理员",
+                    msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
                     is_notice=ClientTypeEnum.WEB.value
                 )
                 if is_error:
