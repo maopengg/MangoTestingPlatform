@@ -7,6 +7,7 @@ import traceback
 
 from PySide6.QtWidgets import QApplication
 
+from assets.styles.qss import qss
 from desktop.login_window import LoginWindow
 from tools import InitPath
 from tools.log_collector import log
@@ -14,6 +15,7 @@ from tools.log_collector import log
 try:
     InitPath()
     app = QApplication([])
+    app.setStyleSheet(qss)
     window = LoginWindow()
     window.show()
     app.exec()
