@@ -64,15 +64,20 @@ class PageSteps(StepElements):
 
     async def new_web_obj(self, data: WEBConfigModel):
         msg = 'WEB对象已实例化'
-        if self.page is None and self.context is None:
-            await self.web_init(data)
-            msg = 'WEB对象实例化成功，请手动输入对应选择的测试项目和部署环境的url进行访问开始录制！'
-        # 检查页面是否已关闭
-        if self.page.is_closed():
-            self.page = None
-            self.context = None
-            await self.web_init(data)
-
+        try:
+            if self.page is None and self.context is None:
+                await self.web_init(data)
+                msg = 'WEB对象实例化成功，请手动输入对应选择的测试项目和部署环境的url进行访问开始录制！'
+            # 检查页面是否已关闭
+            if self.page.is_closed():
+                self.page = None
+                self.context = None
+                await self.web_init(data)
+        except MangoActuatorError as error:
+            await ClientWebSocket().async_send(
+                msg=error.msg,
+                is_notice=ClientTypeEnum.WEB.value
+            )
         await ClientWebSocket().async_send(
             msg=msg,
             is_notice=ClientTypeEnum.WEB.value
