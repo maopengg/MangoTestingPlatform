@@ -76,6 +76,7 @@ class PageSteps(StepElements):
         except MangoActuatorError as error:
             await ClientWebSocket().async_send(
                 msg=error.msg,
+                code=error.code,
                 is_notice=ClientTypeEnum.WEB.value
             )
         else:
