@@ -235,7 +235,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/help",
-                    "menuUrl": "/help/manual/index",
+                    "menuUrl": "http://121.37.174.56:8002/",
                     "menuName": "使用手册",
                 },
                 {

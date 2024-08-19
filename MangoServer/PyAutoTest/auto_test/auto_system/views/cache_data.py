@@ -54,17 +54,6 @@ class CacheDataCRUD(ModelCRUD):
 
     @error_response('system')
     def get(self, request: Request):
-        key_list = [{'describe': i.value, 'key': i.name} for i in CacheDataKeyEnum]
-        for key in key_list:
-            try:
-                self.model.objects.get(key=key.get('key'))
-            except self.model.DoesNotExist:
-                for i, value in CacheDataKeyEnum.obj().items():
-                    if i == key.get('key') and value:
-                        key['value'] = value
-                serializer = self.serializer(data=key)
-                if serializer.is_valid():
-                    serializer.save()
         books = self.model.objects.filter(key__in=CacheDataKeyEnum.get_key_list())
         try:
             return ResponseData.success(RESPONSE_MSG_0001,

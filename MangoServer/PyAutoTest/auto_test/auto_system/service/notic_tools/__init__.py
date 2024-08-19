@@ -4,7 +4,6 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import json
-import logging
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
@@ -15,13 +14,13 @@ from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
+from PyAutoTest.enums.system_enum import EnvironmentEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0012, ERROR_MSG_0031, ERROR_MSG_0048
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError, UserEmailIsNullError
 from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0012, ERROR_MSG_0031, ERROR_MSG_0048
-
-log = logging.getLogger('system')
+from PyAutoTest.tools.log_collector import log
 
 
 class NoticeMain:
@@ -35,7 +34,7 @@ class NoticeMain:
             elif i.type == NoticeEnum.WECOM.value:
                 cls.__we_chat_send(i, cls.test_report(test_suite_id))
             else:
-                log.error('暂不支持钉钉打卡')
+                log.system.error('暂不支持钉钉打卡')
 
     @classmethod
     def test_notice_send(cls, _id):
@@ -57,7 +56,7 @@ class NoticeMain:
         elif notice_obj.type == NoticeEnum.WECOM.value:
             cls.__we_chat_send(notice_obj, test_report)
         else:
-            log.error('暂不支持钉钉打卡')
+            log.system.error('暂不支持钉钉打卡')
 
     @classmethod
     def mail_send(cls, content: str) -> None:
@@ -121,7 +120,7 @@ class NoticeMain:
             fail=case_result.filter(status=StatusEnum.FAIL.value).count(),
             execution_duration=int(execution_duration.total_seconds()),
             test_time=create_time,
-            test_environment=test_suite.test_object.name,
+            test_environment=EnvironmentEnum.get_value(test_suite.test_env),
             project_name=test_suite.project_product.project.name,
             project_id=test_suite.project_product.project.id)
 

@@ -53,7 +53,7 @@ class ApiCaseRun(CaseMethod, TestResult):
         else:
             self.update_test_suite(StatusEnum.SUCCESS.value, case_error_message_list)
         if self.is_notice:
-            NoticeMain.notice_main(self.project_product_id, self.test_suite_id)
+            NoticeMain.notice_main(self.test_object.project_product.project_id, self.test_suite_id)
 
     def case(self, case_id: int, is_case_one: bool = False) -> dict:
         api_case: ApiCase = self.__case_init(case_id, is_case_one)

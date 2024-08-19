@@ -11,6 +11,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.tools.log_collector import log
 
 
@@ -23,6 +24,7 @@ class AutoSystemConfig(AppConfig):
             time.sleep(5)
             self.minute_task()
             self.delayed_task()
+            self.save_cache()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -47,3 +49,18 @@ class AutoSystemConfig(AppConfig):
         except ProgrammingError:
             log.system.error('请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
             raise Exception('请先迁移数据库再运行服务！！！如果正在迁移请忽略~')
+
+    @staticmethod
+    def save_cache():
+        from PyAutoTest.auto_test.auto_system.views.cache_data import CacheDataSerializers, CacheData
+        key_list = [{'describe': i.value, 'key': i.name} for i in CacheDataKeyEnum]
+        for key in key_list:
+            try:
+                CacheData.objects.get(key=key.get('key'))
+            except CacheData.DoesNotExist:
+                for i, value in CacheDataKeyEnum.obj().items():
+                    if i == key.get('key') and value:
+                        key['value'] = value
+                serializer = CacheDataSerializers(data=key)
+                if serializer.is_valid():
+                    serializer.save()
