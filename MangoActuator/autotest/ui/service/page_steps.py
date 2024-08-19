@@ -78,7 +78,8 @@ class PageSteps(StepElements):
                 msg=error.msg,
                 is_notice=ClientTypeEnum.WEB.value
             )
-        await ClientWebSocket().async_send(
-            msg=msg,
-            is_notice=ClientTypeEnum.WEB.value
-        )
+        else:
+            await ClientWebSocket().async_send(
+                msg=msg,
+                is_notice=ClientTypeEnum.WEB.value
+            )
