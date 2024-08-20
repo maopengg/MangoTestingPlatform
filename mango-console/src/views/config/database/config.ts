@@ -39,7 +39,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请选择对应环境',
     validator: function () {
-      if (!this.value) {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

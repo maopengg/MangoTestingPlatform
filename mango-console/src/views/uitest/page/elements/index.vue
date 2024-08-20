@@ -480,8 +480,7 @@
 
   function onDebug(record: any) {
     changeStatus(0)
-
-    if (!uEnvironment.selectValue) {
+    if (uEnvironment.selectValue === null) {
       Message.error('请先选择测试环境')
       return
     }
