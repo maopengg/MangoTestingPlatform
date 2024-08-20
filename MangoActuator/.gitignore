@@ -26,4 +26,4 @@ PyQt_Fluent_Widgets.egg-info/
 PyQt6_Fluent_Widgets.egg-info/
 执行器.spec
 cache/*
-test.json
+tests/test.json

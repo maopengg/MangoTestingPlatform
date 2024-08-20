@@ -8,9 +8,9 @@ import traceback
 from PySide6.QtWidgets import QApplication
 
 from resources.styles.qss import qss
-from desktop import LoginWindow
+from src.login_window import LoginWindow
 from src.tools import InitPath
-from src.tools import log
+from src.tools.log_collector import log
 
 try:
     InitPath()

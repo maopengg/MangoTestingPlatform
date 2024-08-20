@@ -11,7 +11,7 @@ import sys
 class InitPath:
     file = ['log', 'screenshot', 'upload_files', 'videos']
     current_directory = os.path.abspath(__file__)
-    project_root_directory = os.path.dirname(os.path.dirname(current_directory))
+    project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
     current_dir2 = os.path.dirname(sys.executable)
     if 'python.exe' not in sys.executable:
         project_root_directory = current_dir2

@@ -25,7 +25,6 @@ class WEBConfigModel(BaseModel):
     host_list: list[dict] | None = None
 
 
-
 class AndroidConfigModel(BaseModel):
     equipment: str
 

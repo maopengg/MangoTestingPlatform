@@ -9,8 +9,8 @@ import uuid
 
 from faker import Faker
 
-from src.exceptions.tools_exception import ValueTypeError
 from src.exceptions.error_msg import ERROR_MSG_0006
+from src.exceptions.tools_exception import ValueTypeError
 
 
 class RandomStringData:

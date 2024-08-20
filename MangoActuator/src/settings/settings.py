@@ -1,4 +1,8 @@
 IS_DEBUG = False
 MEMORY_THRESHOLD = 80
-
 LOOP_MIX = 10
+
+IP = ''
+PORT = ''
+USERNAME = ''
+PASSWORD = ''

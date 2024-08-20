@@ -6,7 +6,7 @@
 import logging
 
 from src.enums.tools_enum import ClientNameEnum
-from src.models import EmailNoticeModel
+from src.models.tools_model import EmailNoticeModel
 from src.tools.notic_tools.mail_send import SendEmail
 
 log = logging.getLogger('system')

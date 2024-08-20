@@ -6,8 +6,9 @@
 import json
 import re
 
+from src.exceptions.error_msg import ERROR_MSG_0002, ERROR_MSG_0028
 from src.exceptions.tools_exception import CacheIsEmptyError
-from src.exceptions import ReplaceElementLocatorError
+from src.exceptions.ui_exception import ReplaceElementLocatorError
 from src.tools.data_processor.cache_tool import CacheTool
 from src.tools.data_processor.coding_tool import CodingTool
 from src.tools.data_processor.encryption_tool import EncryptionTool
@@ -17,7 +18,6 @@ from src.tools.data_processor.random_file import RandomFileData
 from src.tools.data_processor.random_number_data import RandomNumberData
 from src.tools.data_processor.random_string_data import RandomStringData
 from src.tools.data_processor.random_time_data import RandomTimeData
-from src.exceptions.error_msg import ERROR_MSG_0002, ERROR_MSG_0028
 
 """
 ObtainRandomData类的函数注释必须是： “”“中间写值”“”

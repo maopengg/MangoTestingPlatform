@@ -6,9 +6,8 @@
 import traceback
 from datetime import datetime
 
-import service_conn
 from src.enums.tools_enum import ClientTypeEnum
-from service_conn import ClientWebSocket
+from src.network.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
@@ -21,7 +20,7 @@ def error_send(func, args, kwargs, error, trace):
         f'错误函数：{func.__name__}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}， 错误详情：{trace}')
     content = f"""
       芒果测试平台管理员请注意查收:
-          触发用户：{service_conn.USERNAME}
+          触发用户：{settings.USERNAME}
           触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
           错误函数：{func.__name__}
           异常类型: {type(error)}
@@ -47,7 +46,7 @@ def async_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 error_send(func, args, kwargs, error, trace)
-                await ClientWebSocket().async_send(
+                await WebSocketClient().async_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
                     is_notice=ClientTypeEnum.WEB.value
@@ -69,7 +68,7 @@ def sync_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 error_send(func, args, kwargs, error, trace)
-                ClientWebSocket().sync_send(
+                WebSocketClient().sync_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
                     is_notice=ClientTypeEnum.WEB.value

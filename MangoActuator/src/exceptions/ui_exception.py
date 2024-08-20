@@ -81,6 +81,7 @@ class ElementNotDisappearError(UiError):
 class NewObjectError(UiError):
     pass
 
+
 class NoBrowserError(UiError):
     pass
 

@@ -9,9 +9,9 @@ from email.mime.text import MIMEText
 from socket import gaierror
 
 from src.enums.tools_enum import ClientNameEnum
-from src.exceptions.tools_exception import SendMessageError
-from src.models import TestReportModel, EmailNoticeModel
 from src.exceptions.error_msg import ERROR_MSG_0051
+from src.exceptions.tools_exception import SendMessageError
+from src.models.tools_model import TestReportModel, EmailNoticeModel
 
 log = logging.getLogger('system')
 

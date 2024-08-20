@@ -52,6 +52,7 @@ class CacheKeyEnum(Enum):
     TEST_CASE_PARALLELISM = 'TEST_CASE_PARALLELISM'
     IS_RECORDING = 'IS_RECORDING'
 
+
 class CacheValueTypeEnum(BaseEnum):
     """缓存数据类型"""
     STR = 0

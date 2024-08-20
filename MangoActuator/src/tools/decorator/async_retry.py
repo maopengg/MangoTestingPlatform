@@ -5,9 +5,10 @@
 # @Author : 毛鹏
 import asyncio
 import functools
+
 import time
 
-from src.exceptions import UiError
+from src.exceptions.ui_exception import UiError
 
 
 # 定义装饰器，用于重试异步函数

@@ -6,9 +6,9 @@
 import pymysql
 from pymysql.err import InternalError, OperationalError, ProgrammingError
 
-from src.exceptions.tools_exception import MysqlQueryError, MysqlConnectionError
-from src.models import MysqlConingModel
 from src.exceptions.error_msg import ERROR_MSG_0001, ERROR_MSG_0033, ERROR_MSG_0035, ERROR_MSG_0034
+from src.exceptions.tools_exception import MysqlQueryError, MysqlConnectionError
+from src.models.tools_model import MysqlConingModel
 
 
 class MysqlConnect:
