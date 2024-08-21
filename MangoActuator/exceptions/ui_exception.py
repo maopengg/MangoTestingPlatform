@@ -95,3 +95,7 @@ class UrlError(UiError):
 
 class XpathElementNoError(UiError):
     pass
+
+
+class MethodParameterError(UiError):
+    pass

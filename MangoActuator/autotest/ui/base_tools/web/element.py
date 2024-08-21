@@ -9,8 +9,8 @@ from playwright._impl._api_types import Error
 from playwright.async_api import Locator
 
 from autotest.ui.base_tools.base_data import BaseData
-from exceptions.ui_exception import UploadElementInputError
-from tools.message.error_msg import ERROR_MSG_0024
+from exceptions.ui_exception import UploadElementInputError, MethodParameterError
+from tools.message.error_msg import ERROR_MSG_0024, ERROR_MSG_0056
 
 
 class PlaywrightElement(BaseData):
@@ -65,10 +65,74 @@ class PlaywrightElement(BaseData):
         await locating1.drag_to(locating2)
 
     @classmethod
-    async def w_time_click(cls, locating: Locator, _time: int):
-        """循环点击指定的时间"""
+    async def w_time_click(cls, locating: Locator, n: int):
+        """循环点击N秒"""
+        try:
+            n = int(n)
+        except ValueError:
+            raise MethodParameterError(*ERROR_MSG_0056)
         s = time.time()
         while True:
             await locating.click()
-            if time.time() - s > int(_time):
+            if time.time() - s > n:
                 return
+
+    async def w_drag_up_pixel(self, locating: Locator, n: int):
+        """往上拖动N个像素"""
+        try:
+            n = int(n)
+        except ValueError:
+            raise MethodParameterError(*ERROR_MSG_0056)
+
+        box = await locating.bounding_box()
+
+        if box:  # 检查元素是否可见
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.page.mouse.down()
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 - n)
+            await self.page.mouse.up()
+
+    async def w_drag_down_pixel(self, locating: Locator, n: int):
+        """往下拖动N个像素"""
+        try:
+            n = int(n)
+        except ValueError:
+            raise MethodParameterError(*ERROR_MSG_0056)
+
+        box = await locating.bounding_box()
+
+        if box:  # 检查元素是否可见
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.page.mouse.down()
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 + n)
+            await self.page.mouse.up()
+
+    async def w_drag_left_pixel(self, locating: Locator, n: int):
+        """往左拖动N个像素"""
+        try:
+            n = int(n)
+        except ValueError:
+            raise MethodParameterError(*ERROR_MSG_0056)
+
+        box = await locating.bounding_box()
+
+        if box:  # 检查元素是否可见
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.page.mouse.down()
+            await self.page.mouse.move(box['x'] + box['width'] / 2 - n, box['y'] + box['height'] / 2)
+            await self.page.mouse.up()
+
+    async def w_drag_right_pixel(self, locating: Locator, n: int):
+        """往右拖动N个像素"""
+        try:
+            n = int(n)
+        except ValueError:
+            raise MethodParameterError(*ERROR_MSG_0056)
+        box = await locating.bounding_box()
+
+        if box:  # 检查元素是否可见
+            # 执行拖动操作
+            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.page.mouse.down()
+            await self.page.mouse.move(box['x'] + box['width'] / 2 + n, box['y'] + box['height'] / 2)
+            await self.page.mouse.up()
