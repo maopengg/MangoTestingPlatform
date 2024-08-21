@@ -34,7 +34,7 @@ from tools import InitPath
 from tools.data_processor.sql_cache import SqlCache
 from tools.decorator.error_handle import async_error_handle
 from tools.desktop.signal_send import SignalSend
-from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
+from tools.message.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055, ERROR_MSG_0057
 
 """
 python -m uiautomator2 init
@@ -112,7 +112,10 @@ class NewBrowser:
         return await self.browser.new_context(**args_dict)
 
     async def new_page(self, context: BrowserContext) -> Page:
-        page = await context.new_page()
+        try:
+            page = await context.new_page()
+        except Error:
+            raise BrowserPathError(*ERROR_MSG_0057)
         if self.web_config.is_header_intercept:
             await page.route("**/*", self.__intercept_request)  # 应用拦截函数到页面的所有请求
         return page
