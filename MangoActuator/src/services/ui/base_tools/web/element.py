@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 import time
-from playwright._impl._api_types import Error
+from playwright._impl._errors import Error
 from playwright.async_api import Locator
 
 from src.exceptions.error_msg import ERROR_MSG_0024

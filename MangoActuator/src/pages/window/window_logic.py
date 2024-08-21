@@ -4,6 +4,7 @@
 # @Time   : 2023-09-28 16:18
 # @Author : 毛鹏
 import json
+import time
 from queue import Queue, Empty
 
 from PySide6.QtCore import QThread
@@ -87,7 +88,17 @@ class Window(Ui_MainWindow):
             self.textEdit.append(data)
 
     def clickTest(self):
-        print(RandomFileData.get_file(**{'data': '文本.txt'}))
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(
+                headless=False)
+            context = browser.new_context()
+
+            page = context.new_page()
+            page.goto("https://www.baidu.com")  # 打开页面，触发拦截函数
+            time.sleep(5)
+            browser.close()
 
     def videos(self, text):
         SqlCache.set_sql_cache(CacheKeyEnum.IS_RECORDING.value, '1' if text else '0',

@@ -12,6 +12,7 @@ from src.tools.database.sqlite_connect import SQLiteConnect
 class LoginWindow(QWidget, Ui_login):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setupUi(self)
         self.login_but.clicked.connect(self.login)

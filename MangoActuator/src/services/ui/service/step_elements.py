@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
-from playwright._impl._api_types import Error
+from playwright._impl._errors import TargetClosedError, TimeoutError, Error
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
@@ -62,14 +62,13 @@ class StepElements(ElementMain):
             except MangoActuatorError as error:
                 await self.__error(error)
                 return self.page_step_result_model
+            except TargetClosedError as error:
+                await self.setup()
+                self.element_test_result.error_message = error.message
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
             except Error as error:
-                if error.message == "Target page, context or browser has been closed":
-                    await self.setup()
-                    self.element_test_result.error_message = error.message
-                    self.page_step_result_model.error_message = error.message
-                    self.page_step_result_model.element_result_list.append(self.element_test_result)
-                    raise BrowserObjectClosed(*ERROR_MSG_0010)
-                else:
                     raise error
             else:
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
@@ -107,13 +106,12 @@ class StepElements(ElementMain):
                         test_object_value).netloc.lower() and not data:
                     await self.w_goto(test_object_value)
                     self.url = test_object_value
-            except Error as error:
-                if error.message == "Target page, context or browser has been closed":
-                    await self.setup()
-                    self.page_step_result_model.status = StatusEnum.FAIL.value
-                    self.page_step_result_model.error_message = error.message
-                    self.page_step_result_model.element_result_list.append(self.element_test_result)
-                    raise BrowserObjectClosed(*ERROR_MSG_0010)
+            except TargetClosedError as error:
+                await self.setup()
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def __android_init(self):
         package_name = self.page_step_model.environment_config.test_object_value
@@ -165,11 +163,9 @@ class StepElements(ElementMain):
             case DriveTypeEnum.WEB.value:
                 try:
                     await self.w_screenshot(file_path)
-                except Error as error:
-                    if error.message == "Target page, context or browser has been closed" \
-                            or "Target page, context or browser has been closed" in str(error):
-                        await self.setup()
-                        raise BrowserObjectClosed(*ERROR_MSG_0010)
+                except TargetClosedError:
+                    await self.setup()
+                    raise BrowserObjectClosed(*ERROR_MSG_0010)
                 except AttributeError:
                     await self.setup()
                     raise BrowserObjectClosed(*ERROR_MSG_0010)

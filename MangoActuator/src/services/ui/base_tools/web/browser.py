@@ -7,7 +7,7 @@ import asyncio
 import json
 from urllib.parse import urlparse
 
-from playwright._impl._api_types import TimeoutError
+from playwright._impl._errors import TimeoutError
 from playwright.async_api import Locator
 
 from src.exceptions.error_msg import ERROR_MSG_0013, ERROR_MSG_0049

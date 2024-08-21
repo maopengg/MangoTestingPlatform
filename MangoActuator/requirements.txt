@@ -1,4 +1,4 @@
-playwright==1.32.1
+playwright==1.46.0
 weditor==0.6.4
 uiautomator2==3.0.8
 psutil==5.9.5

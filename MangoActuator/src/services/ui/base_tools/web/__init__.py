@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 import re
 
-from playwright._impl._api_types import Error
-from playwright._impl._api_types import TimeoutError
+from playwright._impl._errors import TimeoutError, Error, TargetClosedError
 from playwright.async_api._generated import Locator
 
 from src.enums.tools_enum import StatusEnum
@@ -41,10 +40,10 @@ class WebDevice(PlaywrightBrowser,
             await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
+        except TargetClosedError:
+            await self.setup()
+            raise BrowserObjectClosed(*ERROR_MSG_0010)
         except Error as error:
-            if error.message == "Target page, context or browser has been closed":
-                await self.setup()
-                raise BrowserObjectClosed(*ERROR_MSG_0010)
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
@@ -93,10 +92,10 @@ class WebDevice(PlaywrightBrowser,
             raise UiAssertionError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
             raise UiAssertionError(*ERROR_MSG_0018, error=error)
+        except TargetClosedError:
+            await self.setup()
+            raise BrowserObjectClosed(*ERROR_MSG_0010)
         except Error as error:
-            if error.message == "Target page, context or browser has been closed":
-                await self.setup()
-                raise BrowserObjectClosed(*ERROR_MSG_0010)
             raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
         if 'actual' in self.element_model.ass_value:
             del self.element_model.ass_value['actual']

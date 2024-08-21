@@ -16,7 +16,7 @@ from typing import Optional
 from urllib import parse
 
 import time
-from playwright._impl._api_types import Error
+from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
@@ -104,7 +104,7 @@ class NewBrowser:
 
         IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
         if IS_RECORDING:
-            args_dict['record_video_dir'] = f'{InitPath.videos}/'
+            args_dict['record_video_dir'] = f'{InitPath.videos}'
 
         if self.web_config.device:
             del args_dict['no_viewport']

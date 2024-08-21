@@ -21,7 +21,7 @@ class MainWindow(QMainWindow, Window):
     def __init__(self):
         super().__init__()
         self.setup()
-        self.setWindowTitle("PySide6 菜单示例")
+        self.setWindowTitle("芒果自动化测试平台")
         self.setGeometry(100, 100, 800, 600)
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)

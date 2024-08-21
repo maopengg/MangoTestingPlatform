@@ -53,7 +53,6 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
 
 if __name__ == '__main__':
     from src.settings import settings
-
     settings.IP = '127.0.0.1'
     settings.PORT = 8000
     r = InterfaceMethodReflection(True)
