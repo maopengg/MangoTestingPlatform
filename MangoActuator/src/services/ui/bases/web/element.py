@@ -10,7 +10,7 @@ from playwright.async_api import Locator
 
 from src.exceptions.error_msg import ERROR_MSG_0024
 from src.exceptions.ui_exception import UploadElementInputError
-from src.services.ui.base_tools.base_data import BaseData
+from src.services.ui.bases.base_data import BaseData
 
 
 class PlaywrightElement(BaseData):

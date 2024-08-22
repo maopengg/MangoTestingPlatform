@@ -7,10 +7,10 @@ import inspect
 import json
 
 from src.enums.system_enum import CacheDataKey2Enum
-from src.services.ui.base_tools.android import UiautomatorApplication, UiautomatorElement, UiautomatorEquipment, \
+from src.services.ui.bases.android import UiautomatorApplication, UiautomatorElement, UiautomatorEquipment, \
     UiautomatorPage
-from src.services.ui.base_tools.android.assertion import UiautomatorAssertion
-from src.services.ui.base_tools.web import PlaywrightElement, PlaywrightPage, PlaywrightDeviceInput, \
+from src.services.ui.bases.android.assertion import UiautomatorAssertion
+from src.services.ui.bases.web import PlaywrightElement, PlaywrightPage, PlaywrightDeviceInput, \
     PlaywrightBrowser, PlaywrightCustomization
 from src.tools.assertion import PlaywrightAssertion, WhatIsItAssertion, ContainAssertion, MatchingAssertion, \
     WhatIsEqualToAssertion

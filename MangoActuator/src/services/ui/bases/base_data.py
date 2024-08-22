@@ -27,7 +27,7 @@ class BaseData:
         self.case_step_details_id: Optional[int | None] = None
         self.page_step_id: Optional[int | None] = None
 
-        from src.services.ui.base_tools.driver_object import DriverObject
+        from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: Optional[DriverObject | None] = driver_object
         self.data_processor = DataProcessor(project_product_id)
         self.is_step: bool = False  # 判断是不是步骤，默认不是步骤是用例

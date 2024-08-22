@@ -14,7 +14,7 @@ from src.exceptions.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from src.exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
 from src.models.socket_model.ui_model import PageStepsResultModel, PageStepsModel, WEBConfigModel
 from src.network.http_client import HttpClient
-from src.services.ui.base_tools import ElementMain
+from src.services.ui.bases import ElementMain
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.data_processor.random_time_data import RandomTimeData

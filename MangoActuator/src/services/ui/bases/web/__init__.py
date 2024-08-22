@@ -13,12 +13,12 @@ from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from src.exceptions.error_msg import *
 from src.exceptions.ui_exception import *
 from src.models.socket_model.ui_model import ElementModel, ElementResultModel
-from src.services.ui.base_tools.web.assertion import PlaywrightAssertion
-from src.services.ui.base_tools.web.browser import PlaywrightBrowser
-from src.services.ui.base_tools.web.customization import PlaywrightCustomization
-from src.services.ui.base_tools.web.element import PlaywrightElement
-from src.services.ui.base_tools.web.input_device import PlaywrightDeviceInput
-from src.services.ui.base_tools.web.page import PlaywrightPage
+from src.services.ui.bases.web.assertion import PlaywrightAssertion
+from src.services.ui.bases.web.browser import PlaywrightBrowser
+from src.services.ui.bases.web.customization import PlaywrightCustomization
+from src.services.ui.bases.web.element import PlaywrightElement
+from src.services.ui.bases.web.input_device import PlaywrightDeviceInput
+from src.services.ui.bases.web.page import PlaywrightPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.async_retry import async_retry
 from src.tools.desktop.signal_send import SignalSend

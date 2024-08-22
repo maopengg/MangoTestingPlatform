@@ -12,7 +12,7 @@ from playwright.async_api import Locator
 
 from src.exceptions.error_msg import ERROR_MSG_0013, ERROR_MSG_0049
 from src.exceptions.ui_exception import UiTimeoutError, UrlError
-from src.services.ui.base_tools.base_data import BaseData
+from src.services.ui.bases.base_data import BaseData
 from src.tools import InitPath
 
 

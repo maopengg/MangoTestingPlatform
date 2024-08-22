@@ -14,12 +14,12 @@ from src.exceptions.error_msg import ERROR_MSG_0022, ERROR_MSG_0020, ERROR_MSG_0
 from src.exceptions.ui_exception import LocatorError, UiTimeoutError, ElementLocatorError, XpathElementNoError, \
     ElementIsEmptyError, UiSqlAssertionError, UiAssertionError
 from src.models.socket_model.ui_model import ElementModel, ElementResultModel
-from src.services.ui.base_tools.android.application import UiautomatorApplication
-from src.services.ui.base_tools.android.assertion import UiautomatorAssertion
-from src.services.ui.base_tools.android.customization import UiautomatorCustomization
-from src.services.ui.base_tools.android.element import UiautomatorElement
-from src.services.ui.base_tools.android.equipment import UiautomatorEquipment
-from src.services.ui.base_tools.android.page import UiautomatorPage
+from src.services.ui.bases.android.application import UiautomatorApplication
+from src.services.ui.bases.android.assertion import UiautomatorAssertion
+from src.services.ui.bases.android.customization import UiautomatorCustomization
+from src.services.ui.bases.android.element import UiautomatorElement
+from src.services.ui.bases.android.equipment import UiautomatorEquipment
+from src.services.ui.bases.android.page import UiautomatorPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.error_handle import sync_error_handle
 

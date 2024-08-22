@@ -6,7 +6,7 @@
 
 from uiautomator2 import Direction
 
-from src.services.ui.base_tools.base_data import BaseData
+from src.services.ui.bases.base_data import BaseData
 
 
 class UiautomatorPage(BaseData):

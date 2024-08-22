@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2023/4/6 13:36
 # @Author : 毛鹏
-from src.services.ui.base_tools.android.assertion import UiautomatorAssertion
-from src.services.ui.base_tools.web.assertion import PlaywrightAssertion
+from src.services.ui.bases.android.assertion import UiautomatorAssertion
+from src.services.ui.bases.web.assertion import PlaywrightAssertion
 from src.tools.assertion.public_assertion import *
 
 

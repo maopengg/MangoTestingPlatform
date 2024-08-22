@@ -8,7 +8,7 @@ import uiautomator2
 
 from src.exceptions.error_msg import ERROR_MSG_0046
 from src.exceptions.ui_exception import PackageNameError
-from src.services.ui.base_tools.base_data import BaseData
+from src.services.ui.bases.base_data import BaseData
 
 
 class UiautomatorApplication(BaseData):

@@ -40,8 +40,8 @@
 # """
 #
 #
-from src.services.ui.base_tools.android.new_android import NewAndroid
-from src.services.ui.base_tools.web.new_browser import NewBrowser
+from src.services.ui.bases.android.new_android import NewAndroid
+from src.services.ui.bases.web.new_browser import NewBrowser
 
 
 class DriverObject(NewBrowser, NewAndroid):
