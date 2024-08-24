@@ -9,7 +9,7 @@ QMainWindow {
 }
 
 QWidget {
-    font-family: Arial, sans-serif; /* 统一字体 */
+    font-family: 微软雅黑, sans-serif; /* 统一字体 */
     font-size: 12px; /* 统一字体大小 */
 }
 

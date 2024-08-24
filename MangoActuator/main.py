@@ -15,7 +15,7 @@ from src.tools.log_collector import log
 try:
     InitPath()
     app = QApplication([])
-    app.setStyleSheet(qss)
+    # app.setStyleSheet(qss)
     window = LoginWindow()
     window.show()
     app.exec()

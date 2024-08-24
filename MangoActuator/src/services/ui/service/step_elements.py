@@ -93,25 +93,26 @@ class StepElements(ElementMain):
     async def web_init(self, data: WEBConfigModel | None = None):
         if self.page:
             return
-        if data:
-            self.driver_object.web_config = data
-            self.context, self.page = await self.driver_object.new_web_page()
-        else:
-            self.driver_object.web_config = self.page_step_model.equipment_config
-            self.context, self.page = await self.driver_object.new_web_page()
-            test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                        self.page_step_model.url)
-            try:
+        try:
+
+            if data:
+                self.driver_object.web_config = data
+                self.context, self.page = await self.driver_object.new_web_page()
+            else:
+                self.driver_object.web_config = self.page_step_model.equipment_config
+                self.context, self.page = await self.driver_object.new_web_page()
+                test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                            self.page_step_model.url)
                 if self.page and urlparse(self.url).netloc.lower() != urlparse(
                         test_object_value).netloc.lower() and not data:
                     await self.w_goto(test_object_value)
                     self.url = test_object_value
-            except TargetClosedError as error:
-                await self.setup()
-                self.page_step_result_model.status = StatusEnum.FAIL.value
-                self.page_step_result_model.error_message = error.message
-                self.page_step_result_model.element_result_list.append(self.element_test_result)
-                raise BrowserObjectClosed(*ERROR_MSG_0010)
+        except TargetClosedError as error:
+            await self.setup()
+            self.page_step_result_model.status = StatusEnum.FAIL.value
+            self.page_step_result_model.error_message = error.message
+            self.page_step_result_model.element_result_list.append(self.element_test_result)
+            raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def __android_init(self):
         package_name = self.page_step_model.environment_config.test_object_value
