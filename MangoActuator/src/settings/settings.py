@@ -2,7 +2,7 @@ IS_DEBUG = False
 MEMORY_THRESHOLD = 80
 LOOP_MIX = 10
 
-IP = ''
-PORT = ''
+IP = '填写IP'
+PORT = '8000'
 USERNAME = ''
 PASSWORD = ''

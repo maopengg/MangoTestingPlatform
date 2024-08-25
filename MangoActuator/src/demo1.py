@@ -1,73 +1,51 @@
 import sys
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QDockWidget, QListWidget, QPushButton
+from PySide6.QtWidgets import QApplication, QMainWindow, QTextEdit, QLineEdit, QVBoxLayout, QWidget, QPushButton
 
 
-class MainWindow(QMainWindow):
+class CommandLineWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("PySide6 左侧竖向菜单示例")
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle("Command Line Window")
+        self.setGeometry(100, 100, 600, 400)
 
-        # 创建中心部件
-        self.central_widget = QWidget(self)
+        # 创建主窗口部件
+        self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        # 创建一个垂直布局
+        # 创建布局
         self.layout = QVBoxLayout(self.central_widget)
 
-        # 创建一个列表用于显示操作反馈
-        self.menu_list = QListWidget()
-        self.layout.addWidget(self.menu_list)
+        # 创建 QTextEdit 用于显示输出
+        self.output_area = QTextEdit()
+        self.output_area.setReadOnly(True)  # 设置为只读
+        self.layout.addWidget(self.output_area)
 
-        # 创建左侧菜单
-        self.create_left_menu()
+        # 创建 QLineEdit 用于输入命令
+        self.input_area = QLineEdit()
+        self.layout.addWidget(self.input_area)
 
-    def create_left_menu(self):
-        # 创建一个停靠窗口
-        dock_widget = QDockWidget("菜单", self)
-        dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea)
+        # 创建提交按钮
+        self.submit_button = QPushButton("Run Command")
+        self.submit_button.clicked.connect(self.run_command)
+        self.layout.addWidget(self.submit_button)
 
-        # 创建一个垂直布局
-        menu_layout = QVBoxLayout()
+    def run_command(self):
+        # 获取输入的命令
+        command = self.input_area.text()
+        self.output_area.append(f"> {command}")  # 显示命令
 
-        # 创建菜单按钮
-        new_button = QPushButton("新建")
-        open_button = QPushButton("打开")
-        undo_button = QPushButton("撤销")
-        redo_button = QPushButton("重做")
-        about_button = QPushButton("关于")
+        # 这里可以添加执行命令的逻辑
+        # 例如，模拟命令输出
+        output = f"Executed: {command}"  # 模拟输出
+        self.output_area.append(output)
 
-        # 连接按钮点击信号
-        new_button.clicked.connect(lambda: self.menu_list.addItem("新建被点击"))
-        open_button.clicked.connect(lambda: self.menu_list.addItem("打开被点击"))
-        undo_button.clicked.connect(lambda: self.menu_list.addItem("撤销被点击"))
-        redo_button.clicked.connect(lambda: self.menu_list.addItem("重做被点击"))
-        about_button.clicked.connect(lambda: self.menu_list.addItem("关于被点击"))
-
-        # 将按钮添加到布局中
-        menu_layout.addWidget(new_button)
-        menu_layout.addWidget(open_button)
-        menu_layout.addWidget(undo_button)
-        menu_layout.addWidget(redo_button)
-        menu_layout.addWidget(about_button)
-
-        # 创建一个容器部件并设置布局
-        menu_widget = QWidget()
-        menu_widget.setLayout(menu_layout)
-
-        # 将菜单部件设置到停靠窗口
-        dock_widget.setWidget(menu_widget)
-
-        # 将停靠窗口添加到主窗口
-        self.addDockWidget(Qt.LeftDockWidgetArea, dock_widget)
+        # 清空输入框
+        self.input_area.clear()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
-    window = MainWindow()
+    window = CommandLineWindow()
     window.show()
-
     sys.exit(app.exec())

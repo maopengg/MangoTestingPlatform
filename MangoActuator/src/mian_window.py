@@ -8,21 +8,15 @@ from PySide6.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QApplication
 
 from src.dialogs.tooltip_box import show_info_message
 from src.network.sokcet_thread import SocketTask
-from src.pages.window.window_logic import Window
 from resources.icons.app_rc import *
+from src.pages.window.window_ui import HomeWindow
 
 
-# pyside6-rcc D:\GitCode\MangoTestingPlatform\MangoActuator\desktop\app_icon.qrc
-# -o D:\GitCode\MangoTestingPlatform\MangoActuator\desktop\app_rc.py
-
-
-class MainWindow(QMainWindow, Window):
+class MainWindow(QMainWindow, HomeWindow):
 
     def __init__(self):
         super().__init__()
-        self.setup()
-        self.setWindowTitle("芒果自动化测试平台")
-        self.setGeometry(100, 100, 800, 600)
+        self.setup(self)
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))  # 设置托盘图标
@@ -48,10 +42,17 @@ class MainWindow(QMainWindow, Window):
         self.websocket_thread.start()
 
     def closeEvent(self, event):
-        show_info_message('提示', '任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')
+        show_info_message('任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')
         event.ignore()  # 忽略窗口的关闭事件
         self.hide()  # 隐藏窗口
 
     def quit(self):
         # 退出程序
         QApplication.quit()
+
+
+if __name__ == '__main__':
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec()

@@ -4,167 +4,191 @@
 # @Time   : 2023-09-28 16:03
 # @Author : 毛鹏
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, QRect
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QMenu, QMenuBar, QPushButton, QSizePolicy, QSpacerItem, \
-    QStatusBar, QTextEdit, QVBoxLayout, QWidget, QCheckBox
+from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtWidgets import *
+import json
+import time
+from queue import Queue, Empty
+
+from PySide6.QtCore import QThread
+
+from src.enums.socket_api_enum import ToolsSocketEnum
+from src.enums.system_enum import CacheDataKey2Enum
+from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum, ClientTypeEnum
+from src.tools.assertion import Assertion
+from src.tools.data_processor.sql_cache import SqlCache
+from src.tools.desktop.signal_send import SignalSend
+from src.tools.other.get_class_methods import GetClassMethod
+from ...settings import settings
 
 
-class Ui_MainWindow:
+class UIUpdateThread(QThread):
+    def __init__(self, label_6, text_edit, parent=None):
+        super().__init__(parent)
+        self.label_6 = label_6
+        self.textEdit = text_edit
+        self.queue = Queue()
 
-    def setupUi(self, MainWindow):
-        if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(638, 422)
-        self.action = QAction(MainWindow)
-        self.action.setObjectName(u"action")
-        self.action_2 = QAction(MainWindow)
-        self.action_2.setObjectName(u"action_2")
-        self.action_3 = QAction(MainWindow)
-        self.action_3.setObjectName(u"action_3")
-        self.action_4 = QAction(MainWindow)
-        self.action_4.setObjectName(u"action_4")
-        self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName(u"centralwidget")
-        self.verticalLayout = QVBoxLayout(self.centralwidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName(u"horizontalLayout_3")
-        self.label_5 = QLabel(self.centralwidget)
-        self.label_5.setObjectName(u"label_5")
+    def run(self):
 
-        self.horizontalLayout_3.addWidget(self.label_5)
+        SignalSend.notice.connect(self.setTextEdit)
+        while True:
+            try:
+                data = self.queue.get(timeout=1)
+                self.textEdit.append(data)
+            except Empty:
+                continue
 
-        self.label_6 = QLabel(self.centralwidget)
-        self.label_6.setObjectName(u"label_6")
+    def setTextEdit(self, sender, data: str):
+        try:
+            if sender == SignalTypeEnum.A:
+                self.label_6.setText(data)
+            else:
+                self.queue.put(data)
+                # self.textEdit.append(data)
+        except Exception as error:
+            print(error)
 
-        self.horizontalLayout_3.addWidget(self.label_6)
 
-        self.test = QPushButton(self.centralwidget)
-        self.test.setObjectName(u"test")
+class HomeWindow:
 
-        self.horizontalLayout_3.addWidget(self.test)
+    def setup(self, window):
+        window.setWindowTitle("芒果自动化测试平台")
+        window.resize(960, 640)
+        self.centralwidget = QWidget(window)
+        window.setCentralWidget(self.centralwidget)
 
-        self.sendRedisData = QPushButton(self.centralwidget)
-        self.sendRedisData.setObjectName(u"sendRedisData")
-
-        self.horizontalLayout_3.addWidget(self.sendRedisData)
-
-        self.horizontalLayout_3.setStretch(0, 2)
-        self.horizontalLayout_3.setStretch(1, 7)
-
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
-
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.label_4 = QLabel(self.centralwidget)
-        self.label_4.setObjectName(u"label_4")
-
-        self.horizontalLayout.addWidget(self.label_4)
-
-        self.label_3 = QLabel(self.centralwidget)
-        self.label_3.setObjectName(u"label_3")
-
-        self.horizontalLayout.addWidget(self.label_3)
-
-        self.horizontalLayout.setStretch(0, 2)
-        self.horizontalLayout.setStretch(1, 8)
-
-        self.verticalLayout.addLayout(self.horizontalLayout)
-
-        #
-        # self.radioButton = QRadioButton(self.centralwidget)
-        # self.radioButton.setObjectName(u"radioButton")
-        # self.videosButton = QRadioButton(self.centralwidget)
-        # self.videosButton.setObjectName(u"videos")
-        self.radioButton = QCheckBox(self.centralwidget)
-        self.radioButton.setObjectName(u"radioButton")
-        self.videosButton = QCheckBox(self.centralwidget)
-        self.videosButton.setObjectName(u"videos")
-        self.horizontalLayout_4 = QHBoxLayout()
-        self.horizontalLayout_4.addWidget(self.radioButton)
-        self.horizontalLayout_4.addWidget(self.videosButton)
-        self.verticalLayout.addLayout(self.horizontalLayout_4)
-
-        self.horizontalLayout_2 = QHBoxLayout()
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.label = QLabel(self.centralwidget)
-        self.label.setObjectName(u"label")
-
-        self.horizontalLayout_2.addWidget(self.label)
-
-        self.comboBox = QComboBox(self.centralwidget)
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.addItem("")
-        self.comboBox.setObjectName(u"comboBox")
-
-        self.horizontalLayout_2.addWidget(self.comboBox)
-
-        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.horizontalLayout_2.addItem(self.horizontalSpacer)
-
-        self.verticalLayout.addLayout(self.horizontalLayout_2)
-
+        window_layout = QHBoxLayout(self.centralwidget)
         self.textEdit = QTextEdit(self.centralwidget)
-        self.textEdit.setObjectName(u"textEdit")
+        self.textEdit.setReadOnly(True)
+        window_layout.addWidget(self.textEdit, 7)
+        layout = QVBoxLayout()
+        window_layout.addLayout(layout, 3)
 
-        self.verticalLayout.addWidget(self.textEdit)
+        label_layout_1 = QHBoxLayout()
+        self.label_5 = QLabel(self.centralwidget)
+        self.label_5.setText('当前状态')
+        label_layout_1.addWidget(self.label_5)
+        self.label_6 = QLabel(self.centralwidget)
+        label_layout_1.addWidget(self.label_6)
+        layout.addLayout(label_layout_1)
 
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-        self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 638, 21))
-        self.menu_2 = QMenu(self.menubar)
-        self.menu_2.setObjectName(u"menu_2")
-        MainWindow.setMenuBar(self.menubar)
+        label_layout_2 = QHBoxLayout()
+        self.label_4 = QLabel(self.centralwidget)
+        self.label_4.setText('当前用户')
+        label_layout_2.addWidget(self.label_4)
+        self.label_3 = QLabel(self.centralwidget)
+        self.label_3.setText(settings.USERNAME)
+        label_layout_2.addWidget(self.label_3)
+        label_layout_2.setStretch(0, 2)
+        label_layout_2.setStretch(1, 8)
+        layout.addLayout(label_layout_2)
 
-        self.menubar.addAction(self.menu_2.menuAction())
+        but_layout = QHBoxLayout()
+        self.test = QPushButton(self.centralwidget)
+        self.test.setText('测试')
+        self.test.clicked.connect(self.clickTest)
+        but_layout.addWidget(self.test)
+        but_layout.addStretch(1)
+        self.sendRedisData = QPushButton(self.centralwidget)
+        self.sendRedisData.setText('发送缓存数据')
+        self.sendRedisData.clicked.connect(self.clickSendRedisData)
 
-        self.retranslateUi(MainWindow)
+        but_layout.addWidget(self.sendRedisData)
+        but_layout.setStretch(0, 2)
+        but_layout.setStretch(1, 7)
+        layout.addLayout(but_layout)
 
-        QMetaObject.connectSlotsByName(MainWindow)
+        radio_layout_1 = QHBoxLayout()
+        self.radioButton = QCheckBox(self.centralwidget)
+        self.radioButton.setText('浏览器最大化')
+        self.radioButton.clicked.connect(self.signalTextEdit1)
+        browser_is_max = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
+        if browser_is_max:
+            self.radioButton.setChecked(browser_is_max)
+        radio_layout_1.addWidget(self.radioButton)
+        layout.addLayout(radio_layout_1)
 
-    # setupUi
+        radio_layout_2 = QHBoxLayout()
+        self.videosButton = QCheckBox(self.centralwidget)
+        self.videosButton.setText('视频录制')
+        self.videosButton.clicked.connect(self.videos)
+        is_recording = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
+        if is_recording:
+            self.videosButton.setChecked(bool(is_recording))
 
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.action.setText(QCoreApplication.translate("MainWindow", u"\u9875\u9762\u5bf9\u8c61", None))
-        self.action_2.setText(QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5\u7528\u4f8b", None))
-        self.action_3.setText(QCoreApplication.translate("MainWindow", u"\u573a\u666f\u7528\u4f8b\u7ec4", None))
-        self.action_4.setText(QCoreApplication.translate("MainWindow", u"\u516c\u5171\u65b9\u6cd5", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u72b6\u6001", None))
-        self.label_6.setText(QCoreApplication.translate("MainWindow", u"\u5728\u7ebf", None))
-        self.test.setText(QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5", None))
-        self.sendRedisData.setText(
-            QCoreApplication.translate("MainWindow", u"\u53d1\u9001\u7f13\u5b58\u6570\u636e", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"\u5f53\u524d\u7528\u6237", None))
-        self.radioButton.setText(QCoreApplication.translate("MainWindow", "浏览器最大化", None))
-        self.videosButton.setText(QCoreApplication.translate("MainWindow", "视频录制", None))
-        self.label.setText(
-            QCoreApplication.translate("MainWindow", u"\u6d4b\u8bd5\u7528\u4f8b\u5e76\u884c\u6570", None))
-        self.comboBox.setItemText(0, QCoreApplication.translate("MainWindow", u"1", None))
-        self.comboBox.setItemText(1, QCoreApplication.translate("MainWindow", u"3", None))
-        self.comboBox.setItemText(2, QCoreApplication.translate("MainWindow", u"5", None))
-        self.comboBox.setItemText(3, QCoreApplication.translate("MainWindow", u"7", None))
-        self.comboBox.setItemText(4, QCoreApplication.translate("MainWindow", u"10", None))
-        self.comboBox.setItemText(5, QCoreApplication.translate("MainWindow", u"15", None))
-        self.comboBox.setItemText(6, QCoreApplication.translate("MainWindow", u"20", None))
-        self.comboBox.setItemText(7, QCoreApplication.translate("MainWindow", u"30", None))
-        self.comboBox.setItemText(8, QCoreApplication.translate("MainWindow", u"40", None))
-        self.comboBox.setItemText(9, QCoreApplication.translate("MainWindow", u"50", None))
+        radio_layout_2.addWidget(self.videosButton)
+        layout.addLayout(radio_layout_2)
 
-        self.menu_2.setTitle(QCoreApplication.translate("MainWindow", u"\u6267\u884c\u5668\u8bbe\u7f6e", None))
-    # retranslateUi
+        label_layout_3 = QHBoxLayout()
+        self.label = QLabel(self.centralwidget)
+        self.label.setText('浏览器并行数量')
+        label_layout_3.addWidget(self.label)
+        self.comboBox = QComboBox(self.centralwidget)
+        self.comboBox.addItems(["1", "2", "3", "5", "10", "15", "20", "30"])
+        self.comboBox.setObjectName(u"comboBox")
+        self.comboBox.currentTextChanged.connect(self.on_combobox_changed)
+        TEST_CASE_PARALLELISM = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
+        if TEST_CASE_PARALLELISM:
+            self.comboBox.setCurrentText(TEST_CASE_PARALLELISM)
+        else:
+            SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
+            self.comboBox.setCurrentText('10')
+        label_layout_3.addWidget(self.comboBox)
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        label_layout_3.addItem(self.horizontalSpacer)
+        layout.addLayout(label_layout_3)
+
+        spacer = QWidget()
+        layout.addWidget(spacer, stretch=1)
+
+        self.ui_update_thread = UIUpdateThread(self.label_6, self.textEdit)
+        self.ui_update_thread.start()
+
+    def clickSendRedisData(self):
+        """
+        设置web页面的操作元素
+        @return:
+        """
+        r = GetClassMethod()
+        send_list: list = r.main()
+        send_list.append(
+            {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
+        from ...network.websocket_client import WebSocketClient
+        WebSocketClient().sync_send('设置缓存数据成功', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
+                                    is_notice=ClientTypeEnum.WEB.value, func_args=send_list)
+
+    def signalLabel6(self, text):
+        self.label_6.setText(text)
+
+    def signalTextEdit(self, text):
+        self.textEdit.setText(text)
+
+    def signalTextEdit1(self, text):
+        SqlCache.set_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value, '1' if text else '0',
+                               CacheValueTypeEnum.INT.value)
+        if text:
+            self.textEdit.append(f'开启浏览器最大化成功')
+        else:
+            self.textEdit.append(f'关闭浏览器最大化成功')
+
+    def on_combobox_changed(self, text):
+        SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, text)
+        self.textEdit.append(f'设置用例并行数为{text}成功')
+
+    def setTextEdit(self, sender, data: str):
+        if sender == SignalTypeEnum.A:
+            self.label_6.setText(data)
+        else:
+            self.textEdit.append(data)
+
+    def clickTest(self):
+        pass
+
+    def videos(self, text):
+        SqlCache.set_sql_cache(CacheKeyEnum.IS_RECORDING.value, '1' if text else '0',
+                               CacheValueTypeEnum.INT.value)
+        if text:
+            self.textEdit.append(f'开启视频录制成功')
+        else:
+            self.textEdit.append(f'关闭视频录制成功')
