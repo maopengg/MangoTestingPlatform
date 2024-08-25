@@ -3,17 +3,14 @@
 # @Description: 
 # @Time   : 2024-08-21 10:28
 # @Author : 毛鹏
-import sys
-from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
 from PySide6.QtCore import Qt
-import sys
-from PySide6.QtWidgets import QApplication, QPushButton
 from PySide6.QtGui import QColor, QPainter, QPen, QBrush
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QPushButton
+
 
 class FluentButton(QPushButton):
     def __init__(self, text=None, parent=None):
-        super().__init__( text=text,parent=parent,)
+        super().__init__(text=text, parent=parent, )
         self.setFixedSize(150, 40)
 
     def paintEvent(self, event):
@@ -36,7 +33,6 @@ class FluentButton(QPushButton):
         参数：
         - event：鼠标按下事件。
         """
-        print('点击了')
         super().mousePressEvent(event)
         # 可以在这里添加按钮按下时的特定逻辑
 
