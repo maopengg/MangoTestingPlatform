@@ -14,20 +14,6 @@ class FluentTextEdit(QTextEdit):
         构造函数，初始化文本框并设置样式表。
         """
         super().__init__()
-        self.setStyleSheet("""
-            QTextEdit {
-                background-color: white;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 5px;
-            }
-            QTextEdit:hover {
-                border-color: #999;
-            }
-            QTextEdit:focus {
-                border-color: #0078D4;
-            }
-        """)
 
     def setText(self, text):
         """

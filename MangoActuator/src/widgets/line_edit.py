@@ -12,20 +12,7 @@ class FluentLineEdit(QLineEdit):
         输入框构造函数。
         """
         super().__init__(parent=parent)
-        self.setStyleSheet("""
-            QLineEdit {
-                background-color: white;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 5px;
-            }
-            QLineEdit:hover {
-                border-color: #999;
-            }
-            QLineEdit:focus {
-                border-color: #0078D4;
-            }
-        """)
+
 
     def setText(self, text):
         """

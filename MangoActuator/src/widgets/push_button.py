@@ -15,20 +15,6 @@ class FluentButton(QPushButton):
     def __init__(self, text=None, parent=None):
         super().__init__( text=text,parent=parent,)
         self.setFixedSize(150, 40)
-        self.setStyleSheet("""
-            QPushButton {
-                background-color: white;
-                color: #000000;
-                border: none;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #E6E6E6;
-            }
-            QPushButton:pressed {
-                background-color: #D9D9D9;
-            }
-        """)
 
     def paintEvent(self, event):
         painter = QPainter(self)

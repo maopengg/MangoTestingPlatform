@@ -15,29 +15,6 @@ class FluentCheckBox(QCheckBox):
         - text：复选框显示的文本内容。
         """
         super().__init__(text, parent)
-        self.setStyleSheet("""
-            QCheckBox {
-                color: #333;
-            }
-            QCheckBox::indicator {
-                width: 20px;
-                height: 20px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-            # QCheckBox::indicator:checked {
-            #     background-color: #0078D4;
-            #     border: none;
-            #     image: none;
-            #     font: bold 16px;
-            #     color: white;
-            #     text: "✔";
-            # }
-            QCheckBox::indicator:hover {
-                border-color: #999;
-            }
-        """)
-
     def isChecked(self):
         """
         判断复选框是否被选中。

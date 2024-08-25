@@ -15,11 +15,6 @@ class FluentLabel(QLabel):
         - text：标签显示的文本。
         """
         super().__init__(text, parent)
-        self.setStyleSheet("""
-            QLabel {
-                color: #333;
-            }
-        """)
 
     def setText(self, text):
         """
