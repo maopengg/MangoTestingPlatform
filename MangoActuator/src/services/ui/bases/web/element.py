@@ -5,11 +5,11 @@
 # @Author : 毛鹏
 
 import time
-from autotest.ui.base_tools.base_data import BaseData
-from exceptions.ui_exception import UploadElementInputError, MethodParameterError
-from playwright._impl._api_types import Error
-from playwright.async_api import Locator
-from tools.message.error_msg import ERROR_MSG_0024, ERROR_MSG_0056
+from playwright.async_api import Locator, Error
+
+from src.exceptions.error_msg import ERROR_MSG_0024, ERROR_MSG_0056
+from src.exceptions.ui_exception import UploadElementInputError, MethodParameterError
+from src.services.ui.bases.base_data import BaseData
 
 
 class PlaywrightElement(BaseData):
