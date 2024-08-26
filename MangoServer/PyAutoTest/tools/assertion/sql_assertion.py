@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 
-from src.tools.database.mysql_connect import MysqlConnect
+from PyAutoTest.tools.database.mysql_control import MysqlConnect
 
 
 class SqlAssertion:
