@@ -90,6 +90,6 @@ if __name__ == '__main__':
     object_name1 = '微信收款码-测试.jpg'
     file_path1 = r"C:\Users\Administrator\Desktop\微信收款码1.jpg"
     # print(MiniIo())
-    for i in MiniIo().bucket_all_file('test'):
+    for i in MiniIo().bucket_all_file('text.txt'):
         print(i.get('file_name'))
         print(i.get('file_url'))

@@ -15,6 +15,7 @@ class FluentCheckBox(QCheckBox):
         - text：复选框显示的文本内容。
         """
         super().__init__(text, parent)
+
     def isChecked(self):
         """
         判断复选框是否被选中。

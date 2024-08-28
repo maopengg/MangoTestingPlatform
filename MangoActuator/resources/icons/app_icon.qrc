@@ -1,8 +1,9 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/">
-        <file>resource/app_icon.png</file>
-        <file>resource/close_icon.png</file>
-        <file>resource/show_icon.png</file>
+        <file>resource/icons/app_icon.png</file>
+        <file>resource/icons/close_icon.png</file>
+        <file>resource/icons/show_icon.png</file>
+        <file>resource/icons/user.svg</file>
     </qresource>
 </RCC>

@@ -30,6 +30,32 @@ class InitPath:
     upload_files = os.path.join(logs_dir, 'upload_files')
     videos = os.path.join(logs_dir, 'videos')
 
+    @classmethod
+    def set_svg_icon(cls, icon_name: str):
+        app_path = os.path.abspath(os.getcwd())
+        folder = rf'{cls.project_root_directory}/resources/icons/'
+        path = os.path.join(app_path, folder)
+        icon = os.path.normpath(os.path.join(path, icon_name))
+        return icon
+
+    # SET SVG IMAGE
+    @classmethod
+    def set_svg_image(cls, icon_name):
+        app_path = os.path.abspath(os.getcwd())
+        folder = rf'{cls.project_root_directory}/resources/images/svg_images/'
+        path = os.path.join(app_path, folder)
+        icon = os.path.normpath(os.path.join(path, icon_name))
+        return icon
+
+    # SET IMAGE
+    @classmethod
+    def set_image(cls, image_name):
+        app_path = os.path.abspath(os.getcwd())
+        folder = rf'{cls.project_root_directory}/resources/images/images/'
+        path = os.path.join(app_path, folder)
+        image = os.path.normpath(os.path.join(path, image_name))
+        return image
+
 
 if __name__ == '__main__':
     print(InitPath.project_root_directory)

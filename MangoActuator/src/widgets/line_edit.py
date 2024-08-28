@@ -13,7 +13,6 @@ class FluentLineEdit(QLineEdit):
         """
         super().__init__(parent=parent)
 
-
     def setText(self, text):
         """
         设置输入框中的文本内容。

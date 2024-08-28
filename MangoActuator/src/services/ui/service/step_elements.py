@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
-from playwright._impl._errors import TargetClosedError, TimeoutError, Error
+from playwright._impl._errors import TargetClosedError, Error
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
@@ -69,7 +69,7 @@ class StepElements(ElementMain):
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
             except Error as error:
-                    raise error
+                raise error
             else:
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
         self.page_step_result_model.status = StatusEnum.SUCCESS.value

@@ -127,7 +127,7 @@ class ImportApi:
 
 if __name__ == '__main__':
     d = """curl 'https://sara-test.growknows.cn/dev-api/business/template-tenant/activate' \
-  -H 'authority: sara-test.growknows.cn' \
+  -H 'authority: sara-text.txt.growknows.cn' \
   -H 'accept: application/json, text/plain, */*' \
   -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
   -H 'authorization: eyJhbGciOiJIUzUxMiJ9.eyJhY2Nlc3NfdG9rZW4iOiJCZWFyZXIgdG9rZW46bG9naW5fdG9rZW5zOjE6MjphY2Nlc3NfdG9rZW46YTAwNzY5ZjAtMGVlYS00NDE4LTg0MTItYzJlNDAzYTY2MjIwIiwicmVmcmVzaF90b2tlbiI6IkJlYXJlciB0b2tlbjpsb2dpbl90b2tlbnM6MToyOnJlZnJlc2hfdG9rZW46eGJSWHFMdzNIUUk3OTVjVC0tbGlhbzRwMHZwdEFIXzUwd3NEX1h3cDNMaUdlY0lybkdTNThPdzB4YUIxc2FLbENPcWllZUZEOU96SmVHR3ltNHBIZDlndThvWGt6MGgxRWFka2ZHeXFGenFwN3VYT0h6OFVFaTR0VUJ4Q0ktcjAiLCJhY2NvdW50X3R5cGUiOiJ2aXAiLCJ1c2VyX3R5cGUiOiIwMCIsInVzZXJfaWQiOjIsInVzZXJfbmFtZSI6ImFkbWluQGFpZ2MuY29tIiwiaXNfbGVzc29yIjoiWSIsImVudGVycHJpc2VfaWQiOjEsImVudGVycHJpc2VfbmFtZSI6ImFkbWluaXN0cmF0b3IiLCJzb3VyY2VfbmFtZSI6InNsYXZlIn0.xjGha5TbkWqMQKVM2GFG0k8xCbJ30NzoG8pFjaMDbgtZwm6gduVnetXehs1IkZC1AL66hqooAcgsVcnTUIVGQg' \

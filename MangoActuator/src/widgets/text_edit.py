@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 import sys
 from PySide6.QtWidgets import QApplication, QTextEdit
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush
-from PySide6.QtCore import Qt
+
 
 class FluentTextEdit(QTextEdit):
     def __init__(self):
@@ -92,6 +91,7 @@ class FluentTextEdit(QTextEdit):
         重做上一步被撤销的操作。
         """
         super().redo()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

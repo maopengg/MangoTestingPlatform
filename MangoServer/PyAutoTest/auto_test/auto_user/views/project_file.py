@@ -22,7 +22,7 @@ from PyAutoTest.auto_test.auto_system.service.mini_io.mini_io import MiniIo
 # class ProjectFileViews(ViewSet):
 
     # @action(methods=['get'], detail=False)
-    # def test(self, request: Request):
+    # def text.txt(self, request: Request):
     #     FilesCRUD().initialization()
     #     return ResponseData.success(RESPONSE_MSG_0026, FilesCRUD().get_project_all_list())
 

@@ -1,11 +1,11 @@
 from PySide6.QtCore import Slot
-from PySide6.QtWidgets import QWidget, QMessageBox
+from PySide6.QtWidgets import QWidget
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.dialogs.tooltip_box import show_failed_message
 from src.network.http_client import HttpClient
 from src.pages.login.login_ui import LoginWindow
-from src.mian_window import MainWindow
+from src.pages.mian_window import MainWindow
 from src.settings import settings
 from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from src.tools.database.sqlite_connect import SQLiteConnect
@@ -25,6 +25,7 @@ class LoginLogic(QWidget, LoginWindow):
             self.prot_edit.setText(user_info[0].get("port"))
             self.username_edit.setText(user_info[0].get('username'))
             self.password_edit.setText(user_info[0].get('password'))
+        self.show()
 
     @Slot()
     def on_pushButtonLogin_clicked(self):

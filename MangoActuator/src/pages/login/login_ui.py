@@ -7,7 +7,6 @@
 
 from PySide6.QtCore import QMetaObject
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout
-from PySide6.QtCore import Slot
 
 from src.widgets import *
 

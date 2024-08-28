@@ -139,7 +139,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/config",
-                    "menuUrl": "/config/test-object/index",
+                    "menuUrl": "/config/text.txt-object/index",
                     "menuName": "测试对象",
                 },
                 {
@@ -154,7 +154,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/config",
-                    "menuUrl": "/config/test-files/index",
+                    "menuUrl": "/config/text.txt-files/index",
                     "menuName": "测试文件",
                 }
             ],
@@ -240,7 +240,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/help",
-                    "menuUrl": "/help/test",
+                    "menuUrl": "/help/text.txt",
                     "menuName": "测试页面",
                 },
             ],

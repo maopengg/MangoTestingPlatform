@@ -63,7 +63,7 @@ except:
     print("对话框已打开")
 
 # 发送消息
-sendMsg = "this is a test";
+sendMsg = "this is a text.txt";
 inputMsg = main_Dialog.child_window(title="输入", control_type="Edit").wrapper_object()
 inputMsg.click_input()
 inputMsg.type_keys(sendMsg, with_spaces=True)

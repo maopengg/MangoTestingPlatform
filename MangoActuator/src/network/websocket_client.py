@@ -146,7 +146,7 @@ class WebSocketClient:
             log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
                 log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
-                # with open('test.json', 'w', encoding='utf-8') as f:
+                # with open('text.txt.json', 'w', encoding='utf-8') as f:
                 #     f.write(json.dumps(out['data'], ensure_ascii=False))
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:

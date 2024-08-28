@@ -16,7 +16,6 @@ try:
     app = QApplication([])
     app.setStyleSheet("* { font-size: 10pt; }")
     window = LoginLogic()
-    window.show()
     app.exec()
 except Exception as error:
     traceback.print_exc()
