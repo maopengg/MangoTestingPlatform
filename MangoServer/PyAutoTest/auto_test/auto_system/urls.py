@@ -70,7 +70,7 @@ urlpatterns = [
     path('enum/platform', EnumOptionViews.as_view({'get': 'enum_platform'})),
     path('enum/browser', EnumOptionViews.as_view({'get': 'enum_browser'})),
     path('enum/drive', EnumOptionViews.as_view({'get': 'enum_drive'})),
-    path('enum/services', EnumOptionViews.as_view({'get': 'enum_autotest'})),
+    path('enum/autotest', EnumOptionViews.as_view({'get': 'enum_autotest'})),
     path('enum/exp', EnumOptionViews.as_view({'get': 'enum_exp'})),
     path('enum/case/level', EnumOptionViews.as_view({'get': 'enum_case_level'})),
     path('enum/ui/public', EnumOptionViews.as_view({'get': 'enum_ui_public'})),
