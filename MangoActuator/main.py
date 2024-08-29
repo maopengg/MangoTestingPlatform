@@ -14,7 +14,7 @@ from src.tools.log_collector import log
 try:
     InitPath()
     app = QApplication([])
-    app.setStyleSheet("* { font-size: 10pt; }")
+    # app.setStyleSheet("* { font-size: 11pt; }")
     window = LoginLogic()
     app.exec()
 except Exception as error:
