@@ -27,7 +27,7 @@ class PyPushButton(QPushButton):
     def __init__(
             self,
             text,
-            radius,
+            radius=8,
             parent=None,
             color=THEME.text_foreground,
             bg_color=THEME.dark_one,

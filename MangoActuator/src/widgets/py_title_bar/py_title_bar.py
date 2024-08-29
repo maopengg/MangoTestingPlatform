@@ -27,7 +27,7 @@ class PyTitleBar(QWidget):
             bg_color=THEME.bg_two,
             div_color=THEME.bg_three,
             btn_bg_color=THEME.bg_two,
-            btn_bg_color_hover=THEME.bg_three,
+            btn_bg_color_hover=THEME.dark_three,
             btn_bg_color_pressed=THEME.bg_one,
             icon_color=THEME.icon_color,
             icon_color_hover=THEME.icon_hover,
@@ -103,7 +103,7 @@ class PyTitleBar(QWidget):
         self.minimize_button = PyTitleButton(
             self._parent,
             self._app_parent,
-            tooltip_text="Close app",
+            tooltip_text="收起",
             dark_one=self._dark_one,
             bg_color=self._btn_bg_color,
             bg_color_hover=self._btn_bg_color_hover,
@@ -141,7 +141,7 @@ class PyTitleBar(QWidget):
         self.close_button = PyTitleButton(
             self._parent,
             self._app_parent,
-            tooltip_text="Close app",
+            tooltip_text="关闭",
             dark_one=self._dark_one,
             bg_color=self._btn_bg_color,
             bg_color_hover=self._btn_bg_color_hover,
@@ -180,8 +180,8 @@ class PyTitleBar(QWidget):
                 parent.move(curso_x, curso_y)
             # MOVE WINDOW
             if event.buttons() == Qt.LeftButton:
-                parent.move(parent.pos() + event.globalPos() - parent.dragPos)
-                parent.dragPos = event.globalPos()
+                parent.move(parent.pos() + event.globalPos() - parent.drag_pos)
+                parent.drag_pos = event.globalPos()
                 event.accept()
 
         # MOVE APP WIDGETS

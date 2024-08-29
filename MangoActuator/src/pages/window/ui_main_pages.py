@@ -4,16 +4,16 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QLabel,
 
 from src.pages.home.home import HomePage
 from src.pages.ui_test.page import PagePage
-from src.pages.window.example import ExamplePage
+from src.pages.example import ExamplePage
 
 
 class MainPages:
     def setup_ui(self, main_window):
         self.main_pages_layout = QVBoxLayout(main_window)
         self.main_pages_layout.setSpacing(0)
-        self.main_pages_layout.setContentsMargins(5, 5, 5, 5)
-
+        self.main_pages_layout.setContentsMargins(0, 0, 0, 0)
         self.pages = QStackedWidget(main_window)
+        self.main_pages_layout.addWidget(self.pages)
 
         self.home_page = HomePage()
         self.pages.addWidget(self.home_page)
@@ -72,7 +72,6 @@ class MainPages:
         self.scroll_area.setWidget(self.contents)
         self.page_2_layout.addWidget(self.scroll_area)
         self.pages.addWidget(self.component_center)
-        self.main_pages_layout.addWidget(self.pages)
 
         self.pages.setCurrentIndex(0)
         QMetaObject.connectSlotsByName(main_window)

@@ -27,11 +27,12 @@ class PyLineEdit(QLineEdit):
             self,
             text,
             place_holder_text,
+            is_password: bool = False,
             radius=8,
             border_size=2,
             color=THEME.text_foreground,
             selection_color=THEME.white,
-            bg_color=THEME.dark_one,
+            bg_color=THEME.white,
             bg_color_active=THEME.dark_three,
             context_color=THEME.context_color
     ):
@@ -40,6 +41,8 @@ class PyLineEdit(QLineEdit):
         # PARAMETERS
         if text:
             self.setText(text)
+        if is_password:
+            self.setEchoMode(QLineEdit.Password)
         if place_holder_text:
             self.setPlaceholderText(place_holder_text)
 

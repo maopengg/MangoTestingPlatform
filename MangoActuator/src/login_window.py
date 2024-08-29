@@ -1,8 +1,9 @@
 from PySide6.QtCore import Slot
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
-from src.dialogs.tooltip_box import show_failed_message
+from src.widgets.tooltip_box import show_failed_message
 from src.network.http_client import HttpClient
 from src.pages.login.login_ui import LoginWindow
 from src.pages.mian_window import MainWindow
@@ -16,6 +17,7 @@ class LoginLogic(QWidget, LoginWindow):
         super().__init__()
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
+        self.setWindowIcon(QIcon(':/resource/app_icon.png'))
         self.setupUi(self)
         self.main_window = None
         self.db_handler = SQLiteConnect()
@@ -25,6 +27,7 @@ class LoginLogic(QWidget, LoginWindow):
             self.prot_edit.setText(user_info[0].get("port"))
             self.username_edit.setText(user_info[0].get('username'))
             self.password_edit.setText(user_info[0].get('password'))
+
         self.show()
 
     @Slot()
@@ -51,5 +54,5 @@ class LoginLogic(QWidget, LoginWindow):
             show_failed_message('IP或端口不正确')
         except ConnectionError:
             show_failed_message('IP或端口不正确或服务未启动')
-        except TypeError:
-            show_failed_message('账号或密码错误')
+        # except TypeError:
+        #     show_failed_message('账号或密码错误!')

@@ -20,22 +20,22 @@ class LoginWindow:
 
         self.horizontalLayout_5 = QHBoxLayout()
         self.verticalLayout_3 = QVBoxLayout()
-        self.label = FluentLabel('IP', login)
+        self.label = MangoLabel('IP', login)
 
         self.verticalLayout_3.addWidget(self.label)
 
-        self.ip_edit = FluentLineEdit(login)
+        self.ip_edit = PyLineEdit("", "请输入后端服务IP", )
 
         self.verticalLayout_3.addWidget(self.ip_edit)
 
         self.horizontalLayout_5.addLayout(self.verticalLayout_3)
 
         self.verticalLayout_2 = QVBoxLayout()
-        self.label_2 = FluentLabel('端口', login)
+        self.label_2 = MangoLabel('端口', login)
 
         self.verticalLayout_2.addWidget(self.label_2)
 
-        self.prot_edit = FluentLineEdit(login)
+        self.prot_edit = PyLineEdit("", "请输入后端服务端口", )
 
         self.verticalLayout_2.addWidget(self.prot_edit)
 
@@ -47,7 +47,7 @@ class LoginWindow:
         self.verticalLayout_4.addLayout(self.horizontalLayout_5)
 
         self.horizontalLayout = QHBoxLayout()
-        self.label_3 = FluentLabel('账号', login)
+        self.label_3 = MangoLabel('账号', login)
 
         self.horizontalLayout.addWidget(self.label_3)
 
@@ -57,12 +57,12 @@ class LoginWindow:
 
         self.verticalLayout_4.addLayout(self.horizontalLayout)
 
-        self.username_edit = FluentLineEdit(login)
+        self.username_edit = PyLineEdit("", "请输入登录账号", )
 
         self.verticalLayout_4.addWidget(self.username_edit)
 
         self.horizontalLayout_2 = QHBoxLayout()
-        self.label_4 = FluentLabel('密码', login)
+        self.label_4 = MangoLabel('密码', login)
 
         self.horizontalLayout_2.addWidget(self.label_4)
 
@@ -72,12 +72,12 @@ class LoginWindow:
 
         self.verticalLayout_4.addLayout(self.horizontalLayout_2)
 
-        self.password_edit = FluentLineEdit(login)
+        self.password_edit = PyLineEdit("", "请输入登录密码", True)
 
         self.verticalLayout_4.addWidget(self.password_edit)
 
         self.horizontalLayout_3 = QHBoxLayout()
-        self.remember_box = FluentCheckBox('记住密码', login)
+        self.remember_box = MangoCheckBox('记住密码', login)
 
         self.horizontalLayout_3.addWidget(self.remember_box)
 
@@ -93,7 +93,7 @@ class LoginWindow:
         self.horizontalLayout_4.addItem(self.horizontalSpacer_6)
 
         self.verticalLayout = QVBoxLayout()
-        self.login_but = FluentButton('登录', login)
+        self.login_but = PyPushButton('登录', login)
         self.login_but.setObjectName("pushButtonLogin")
 
         self.verticalLayout.addWidget(self.login_but)

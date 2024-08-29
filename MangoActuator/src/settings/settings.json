@@ -1,9 +1,9 @@
 {
   "app_name": "芒果自动化测试平台",
   "version": "v1.0.0",
-  "copyright": "By: Wanderson M. Pimenta",
+  "copyright": "Copyright © By: 毛鹏  2022-2024",
   "year": 2021,
-  "theme_name": "doubao",
+  "theme_name": "mango",
   "custom_title_bar": true,
   "startup_size": [
     1200,

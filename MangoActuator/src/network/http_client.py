@@ -30,6 +30,7 @@ class HttpClient(HttpRequest):
         response = requests.post(url=url, data=data)
         response_dict = response.json()
         cls.headers['Authorization'] = response_dict['data']['token']
+        print(response_dict)
         return response_dict
 
     @classmethod
@@ -64,6 +65,13 @@ class HttpClient(HttpRequest):
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
+
+    @classmethod
+    def page_list(cls):
+        url = cls.url('/ui/page?page=1&pageSize=20')
+        response = requests.get(url=url, headers=cls.headers)
+        response_dict = response.json()
+        return response_dict.get('data')
 
 
 if __name__ == '__main__':

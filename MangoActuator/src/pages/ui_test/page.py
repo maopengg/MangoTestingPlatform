@@ -3,9 +3,12 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem, QAbstractItemView, QHeaderView, QHBoxLayout, \
+    QPushButton, QSizePolicy
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem, QAbstractItemView, QHeaderView
 
+from src.network.http_client import HttpClient
 from src.widgets import *
 
 
@@ -14,42 +17,56 @@ class PagePage(QWidget):
         super().__init__()
         self.layout = QVBoxLayout()
         self.table_widget = PyTableWidget()
-        self.table_widget.setColumnCount(3)
+        self.table_widget.setColumnCount(8)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
-
-        # Columns / Header
-        self.column_1 = QTableWidgetItem()
-        self.column_1.setTextAlignment(Qt.AlignCenter)
-        self.column_1.setText("NAME")
-
-        self.column_2 = QTableWidgetItem()
-        self.column_2.setTextAlignment(Qt.AlignCenter)
-        self.column_2.setText("NICK")
-
-        self.column_3 = QTableWidgetItem()
-        self.column_3.setTextAlignment(Qt.AlignCenter)
-        self.column_3.setText("PASS")
-
-        # Set column
-        self.table_widget.setHorizontalHeaderItem(0, self.column_1)
-        self.table_widget.setHorizontalHeaderItem(1, self.column_2)
-        self.table_widget.setHorizontalHeaderItem(2, self.column_3)
-
-        for x in range(10):
-            row_number = self.table_widget.rowCount()
-            self.table_widget.insertRow(row_number)  # Insert row
-            self.table_widget.setItem(row_number, 0, QTableWidgetItem(str("Wanderson")))  # Add name
-            self.table_widget.setItem(row_number, 1, QTableWidgetItem(str("vfx_on_fire_" + str(x))))  # Add nick
-            self.pass_text = QTableWidgetItem()
-            self.pass_text.setTextAlignment(Qt.AlignCenter)
-            self.pass_text.setText("12345" + str(x))
-            self.table_widget.setItem(row_number, 2, self.pass_text)  # Add pass
-            self.table_widget.setRowHeight(row_number, 22)
-
+        self.table_widget.setHorizontalHeaderLabels(
+            ["ID", "更新时间", "模块名称", "项目产品名称", "创建时间", "页面名称", "URL", '操作'])
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
     def show_data(self):
-        pass
+        data_list = HttpClient.page_list()
+        for row, item in enumerate(data_list):
+            self.table_widget.insertRow(row)
+            self.table_widget.setItem(row, 0, QTableWidgetItem(str(item["id"])))
+            self.table_widget.setItem(row, 1, QTableWidgetItem(item["update_time"]))
+            self.table_widget.setItem(row, 2, QTableWidgetItem(item["module"]["name"]))
+            self.table_widget.setItem(row, 3, QTableWidgetItem(item["project_product"]["name"]))
+            self.table_widget.setItem(row, 4, QTableWidgetItem(item["create_Time"]))
+            self.table_widget.setItem(row, 5, QTableWidgetItem(item["name"]))
+            self.table_widget.setItem(row, 6, QTableWidgetItem(item["url"]))
+            # 创建一个操作栏的小部件，用于放置三个按钮
+            action_widget = QWidget()
+            action_layout = QHBoxLayout()
+            action_widget.setLayout(action_layout)
+
+            button1 = QPushButton("编辑")
+            button2 = QPushButton("添加")
+            button3 = QPushButton("···")
+            button1.clicked.connect(self.click1)
+            button2.clicked.connect(self.click2)
+            button3.clicked.connect(self.click3)
+            button_style = "QPushButton { background-color: transparent; border: none; padding: 0; color: blue; font-size: 11px; }"
+
+            button1.setStyleSheet(button_style)
+            button2.setStyleSheet(button_style)
+            button3.setStyleSheet(button_style)
+            button1.setCursor(QCursor(Qt.PointingHandCursor))
+            button2.setCursor(QCursor(Qt.PointingHandCursor))
+            button3.setCursor(QCursor(Qt.PointingHandCursor))
+            action_layout.addWidget(button1)
+            action_layout.addWidget(button2)
+            action_layout.addWidget(button3)
+
+            # 将操作栏小部件添加到表格的“操作”列
+            self.table_widget.setCellWidget(row, 7, action_widget)
+
+
+    def click1(self):
+        print('点击了1')
+    def click2(self):
+        print('点击了2')
+    def click3(self):
+        print('点击了3')

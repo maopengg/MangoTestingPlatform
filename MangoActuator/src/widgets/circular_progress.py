@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsDropShadowEffect
 from src.settings.settings import THEME
 
 
-class PyCircularProgress(QWidget):
+class MangoCircularProgress(QWidget):
     def __init__(
             self,
             value=0,

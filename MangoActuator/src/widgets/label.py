@@ -6,7 +6,7 @@
 from PySide6.QtWidgets import QLabel
 
 
-class FluentLabel(QLabel):
+class MangoLabel(QLabel):
     def __init__(self, text=None, parent=None):
         """
         标签构造函数。

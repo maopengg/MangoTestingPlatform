@@ -1,14 +1,16 @@
 from PySide6.QtGui import Qt, QIcon
-from PySide6.QtWidgets import QTableWidgetItem, QAbstractItemView, QHeaderView
+from PySide6.QtWidgets import QTableWidgetItem, QAbstractItemView, QHeaderView, QMainWindow
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton
 
-from src.pages.window.functions_main_window import MainFunctions
+from src.pages.window.ui_main_pages import MainPages
 from src.settings.settings import STYLE, THEME
 from src.tools import InitPath
-from src.widgets import PyPushButton, PyCircularProgress, PySlider, PyIconButton, PyLineEdit, PyTableWidget, PyToggle, \
-    PyGrips
+from src.widgets import PyPushButton, MangoCircularProgress, PySlider, PyIconButton, PyLineEdit, PyTableWidget, PyToggle, \
+    PyGrips, PyCredits
+from src.widgets import PyWindow, PyLeftMenu, PyLeftColumn, PyTitleBar
 
 
-class SetupMainWindow:
+class UIMainWindow:
     add_left_menus = [
         {
             "btn_icon": "home.svg",
@@ -69,10 +71,173 @@ class SetupMainWindow:
         }
     ]
 
-    # SETUP CUSTOM BTNs OF CUSTOM WIDGETS
-    # Get sender() function when btn is clicked
+    def setup_ui(self, parent: QMainWindow):
+        parent.setWindowTitle(STYLE.app_name)
+        parent.resize(STYLE.startup_size[0], STYLE.startup_size[1])
+        parent.setMinimumSize(STYLE.minimum_size[0], STYLE.minimum_size[1])
 
-    @staticmethod
+        # SET CENTRAL WIDGET
+        # Add central widget to app
+        self.central_widget = QWidget()
+        self.central_widget.setStyleSheet(f'''
+            font: {STYLE.font.text_size}pt "{STYLE.font.family}";
+            color: {THEME.text_foreground};
+        ''')
+        self.central_widget_layout = QVBoxLayout(self.central_widget)
+        if STYLE.custom_title_bar:
+            self.central_widget_layout.setContentsMargins(10, 10, 10, 10)
+        else:
+            self.central_widget_layout.setContentsMargins(0, 0, 0, 0)
+        parent.setCentralWidget(self.central_widget)
+
+        # LOAD PY WINDOW CUSTOM WIDGET
+        # Add inside PyWindow "layout" all Widgets
+
+        self.window = PyWindow(parent)
+
+        # If disable custom title bar
+        if not STYLE.custom_title_bar:
+            self.window.set_stylesheet(border_radius=0, border_size=0)
+
+        # ADD PY WINDOW TO CENTRAL WIDGET
+        self.central_widget_layout.addWidget(self.window)
+
+        # ADD FRAME LEFT MENU
+        # Add here the custom left menu bar
+
+        left_menu_margin = STYLE.left_menu_content_margins
+        left_menu_minimum = STYLE.lef_menu_size.minimum
+        self.left_menu_frame = QFrame()
+        self.left_menu_frame.setMaximumSize(left_menu_minimum + (left_menu_margin * 2), 17280)
+        self.left_menu_frame.setMinimumSize(left_menu_minimum + (left_menu_margin * 2), 0)
+
+        # LEFT MENU LAYOUT
+        self.left_menu_layout = QHBoxLayout(self.left_menu_frame)
+        self.left_menu_layout.setContentsMargins(
+            left_menu_margin,
+            left_menu_margin,
+            left_menu_margin,
+            left_menu_margin
+        )
+
+        # ADD LEFT MENU
+        # Add custom left menu here
+
+        self.left_menu = PyLeftMenu(
+            parent=self.left_menu_frame,
+            app_parent=self.central_widget
+        )
+        self.left_menu_layout.addWidget(self.left_menu)
+
+        # ADD LEFT COLUMN
+        # Add here the left column with Stacked Widgets
+
+        self.left_column_frame = QFrame()
+        self.left_column_frame.setMaximumWidth(STYLE.left_column_size.minimum)
+        self.left_column_frame.setMinimumWidth(STYLE.left_column_size.minimum)
+        self.left_column_frame.setStyleSheet(f"background: {THEME.bg_two}")
+
+        # ADD LAYOUT TO LEFT COLUMN
+        self.left_column_layout = QVBoxLayout(self.left_column_frame)
+        self.left_column_layout.setContentsMargins(0, 0, 0, 0)
+
+        # ADD CUSTOM LEFT MENU WIDGET
+        self.left_column = PyLeftColumn(
+            parent,
+            self.central_widget,
+            "Settings Left Frame",
+        )
+        self.left_column_layout.addWidget(self.left_column)
+
+        # ADD RIGHT WIDGETS
+        # Add here the right widgets
+
+        self.right_app_frame = QFrame()
+
+        # ADD RIGHT APP LAYOUT
+        self.right_app_layout = QVBoxLayout(self.right_app_frame)
+        self.right_app_layout.setContentsMargins(3, 3, 3, 3)
+        self.right_app_layout.setSpacing(6)
+
+        # ADD TITLE BAR FRAME
+
+        self.title_bar_frame = QFrame()
+        self.title_bar_frame.setMinimumHeight(40)
+        self.title_bar_frame.setMaximumHeight(40)
+        self.title_bar_layout = QVBoxLayout(self.title_bar_frame)
+        self.title_bar_layout.setContentsMargins(0, 0, 0, 0)
+
+        # title
+        self.title_bar = PyTitleBar(
+            parent,
+            self.central_widget
+        )
+        self.title_bar_layout.addWidget(self.title_bar)
+
+        # ADD CONTENT AREA
+
+        self.content_area_frame = QFrame()
+
+        # CREATE LAYOUT
+        self.content_area_layout = QHBoxLayout(self.content_area_frame)
+        self.content_area_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_area_layout.setSpacing(0)
+
+        # LEFT CONTENT
+        self.content_area_left_frame = QFrame()
+
+        # IMPORT MAIN PAGES TO CONTENT AREA
+        self.load_pages = MainPages()
+        self.load_pages.setup_ui(self.content_area_left_frame)
+
+        # ADD TO LAYOUTS
+        self.content_area_layout.addWidget(self.content_area_left_frame)
+
+        # CREDITS / BOTTOM APP FRAME
+
+        self.credits_frame = QFrame()
+        self.credits_frame.setMinimumHeight(26)
+        self.credits_frame.setMaximumHeight(26)
+
+
+        # CREATE LAYOUT
+        self.credits_layout = QVBoxLayout(self.credits_frame)
+        self.credits_layout.setContentsMargins(0, 0, 0, 0)
+        # ADD CUSTOM WIDGET CREDITS
+        self.credits = PyCredits(
+            bg_two=THEME.bg_two,
+            copyright=STYLE.copyright,
+            version=STYLE.version,
+            font_family=STYLE.font.family,
+            text_size=STYLE.font.text_size,
+            text_description_color=THEME.text_description
+        )
+        self.credits_layout.addWidget(self.credits)
+
+        # ADD WIDGETS TO RIGHT LAYOUT
+
+        self.right_app_layout.addWidget(self.title_bar_frame)
+        self.right_app_layout.addWidget(self.content_area_frame)
+        self.right_app_layout.addWidget(self.credits_frame)
+
+        # ADD WIDGETS TO "PyWindow"
+        # Add here your custom widgets or default widgets
+
+        self.window.layout.addWidget(self.left_menu_frame)
+        self.window.layout.addWidget(self.left_column_frame)
+        self.window.layout.addWidget(self.right_app_frame)
+
+        # ADD CENTRAL WIDGET AND SET CONTENT MARGINS
+
+    def set_page(self, page: QWidget):
+
+        self.load_pages.pages.setCurrentWidget(page)
+
+    # GET TITLE BUTTON BY OBJECT NAME
+
+    def get_title_bar_btn(self, object_name):
+        return self.title_bar_frame.findChild(QPushButton, object_name)
+
     def setup_btns(self):
         if self.title_bar.sender() != None:
             return self.title_bar.sender()
@@ -81,13 +246,8 @@ class SetupMainWindow:
         elif self.left_column.sender() != None:
             return self.left_column.sender()
 
-    # SETUP MAIN WINDOW WITH CUSTOM PARAMETERS
-
-    @staticmethod
     def setup_gui(self):
         # APP TITLE
-
-        self.setWindowTitle(STYLE.app_name)
 
         # REMOVE TITLE BAR
 
@@ -110,7 +270,7 @@ class SetupMainWindow:
         # LEFT MENUS / GET SIGNALS WHEN LEFT MENU BTN IS CLICKED / RELEASED
 
         # ADD MENUS
-        self.left_menu.add_menus(SetupMainWindow.add_left_menus)
+        self.left_menu.add_menus(self.add_left_menus)
 
         # SET SIGNALS
         self.left_menu.clicked.connect(self.btn_clicked)
@@ -119,7 +279,7 @@ class SetupMainWindow:
         # TITLE BAR / ADD EXTRA BUTTONS
 
         # ADD MENUS
-        self.title_bar.add_menus(SetupMainWindow.add_title_bar_menus)
+        self.title_bar.add_menus(self.add_title_bar_menus)
 
         # SET SIGNALS
         self.title_bar.clicked.connect(self.btn_clicked)
@@ -138,34 +298,17 @@ class SetupMainWindow:
 
         # SET INITIAL PAGE / SET LEFT AND RIGHT COLUMN MENUS
 
-        MainFunctions.set_page(self, self.load_pages.home_page)
+        self.set_page(self.load_pages.home_page)
 
-        # EXAMPLE CUSTOM WIDGETS
-        # Here are added the custom widgets to pages and columns that
-        # were created using Qt Designer.
-        # This is just an example and should be deleted when creating
-        # your application.
-        #
-        # OBJECTS FOR LOAD PAGES, LEFT AND RIGHT COLUMNS
-        # You can access objects inside Qt Designer projects using
-        # the objects below:
-        #
-        # <OBJECTS>
-        # LEFT COLUMN: self.left_column.menus
-        # RIGHT COLUMN: self.right_column
-        # LOAD PAGES: self.load_pages
-        # </OBJECTS>
-
-        # PAGE 2
         # CIRCULAR PROGRESS 1
-        self.circular_progress_1 = PyCircularProgress(
+        self.circular_progress_1 = MangoCircularProgress(
             value=80,
             font_size=14,
         )
         self.circular_progress_1.setFixedSize(200, 200)
 
         # CIRCULAR PROGRESS 2
-        self.circular_progress_2 = PyCircularProgress(
+        self.circular_progress_2 = MangoCircularProgress(
             value=45,
             progress_width=4,
             font_size=14,
@@ -173,7 +316,7 @@ class SetupMainWindow:
         self.circular_progress_2.setFixedSize(160, 160)
 
         # CIRCULAR PROGRESS 3
-        self.circular_progress_3 = PyCircularProgress(
+        self.circular_progress_3 = MangoCircularProgress(
             value=75,
             progress_width=2,
             font_size=14,
@@ -263,14 +406,13 @@ class SetupMainWindow:
         # PUSH BUTTON 1
         self.push_button_1 = PyPushButton(
             text="Button Without Icon",
-            radius=8,
         )
         self.push_button_1.setMinimumHeight(40)
 
         # PUSH BUTTON 2
         self.push_button_2 = PyPushButton(
             text="Button With Icon",
-            radius=8,
+
         )
         self.icon_2 = QIcon(InitPath.set_svg_icon("settings.svg"))
         self.push_button_2.setMinimumHeight(40)
@@ -346,7 +488,6 @@ class SetupMainWindow:
 
     # RESIZE GRIPS AND CHANGE POSITION
     # Resize or change position when window is resized
-    @staticmethod
     def resize_grips(self):
         if STYLE.custom_title_bar:
             self.left_grip.setGeometry(5, 10, 10, self.height())

@@ -2,7 +2,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QLabel
 
-from src.pages.window.ui_left_column import LeftColumn
+from src.pages.left_column.ui_left_column import LeftColumn
 from src.settings.settings import THEME, STYLE
 from src.tools import InitPath
 from src.widgets.py_left_column.py_icon import PyIcon

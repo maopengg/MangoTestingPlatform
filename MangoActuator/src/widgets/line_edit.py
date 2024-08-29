@@ -6,7 +6,7 @@
 from PySide6.QtWidgets import QLineEdit
 
 
-class FluentLineEdit(QLineEdit):
+class MangoLineEdit(QLineEdit):
     def __init__(self, parent=None):
         """
         输入框构造函数。

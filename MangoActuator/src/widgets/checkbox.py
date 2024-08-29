@@ -6,7 +6,7 @@
 from PySide6.QtWidgets import QCheckBox
 
 
-class FluentCheckBox(QCheckBox):
+class MangoCheckBox(QCheckBox):
     def __init__(self, text=None, parent=None):
         """
         构造函数，初始化复选框并设置文本和样式表。
