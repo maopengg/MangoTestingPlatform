@@ -23,7 +23,7 @@ class PyIconButton(QPushButton):
             bg_color_pressed=THEME.pink,
             icon_color=THEME.icon_color,
             icon_color_hover=THEME.icon_hover,
-            icon_color_pressed=THEME.icon_active, # THEME.icon_active
+            icon_color_pressed=THEME.icon_active,  # THEME.icon_active
             icon_color_active=THEME.icon_active,
             dark_one=THEME.dark_one,
             text_foreground="#8a95aa",

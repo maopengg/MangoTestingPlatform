@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2024-08-29 15:32
 # @Author : 毛鹏
-from PySide6.QtWidgets import QVBoxLayout, QHeaderView, QAbstractItemView, QWidget
+from PySide6.QtWidgets import *
 
-from src.widgets import PyTableWidget
+from src.widgets import *
 
 
 class TableList(QWidget):

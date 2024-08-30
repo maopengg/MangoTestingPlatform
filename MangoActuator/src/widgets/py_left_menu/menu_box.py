@@ -128,7 +128,8 @@ if __name__ == '__main__':
     menu = LeftMenu("static/icon/xia.png", r"D:\GitCode\MangoTestingPlatform\MangoActuator\resources\icons\down.svg")
 
     # 创建主菜单
-    system_menu_item = menu.create_main_menu("系统设置", r"D:\GitCode\MangoTestingPlatform\MangoActuator\resources\icons\down.svg")
+    system_menu_item = menu.create_main_menu("系统设置",
+                                             r"D:\GitCode\MangoTestingPlatform\MangoActuator\resources\icons\down.svg")
     user_manage_menu_item = menu.create_main_menu("用户管理", "resources/icons/down.svg")
 
     # 创建主菜单下的子菜单,子菜单可以绑定点击事件
@@ -147,4 +148,3 @@ if __name__ == '__main__':
     widget.show()
 
     app.exec()
-

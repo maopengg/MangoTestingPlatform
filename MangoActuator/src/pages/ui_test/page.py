@@ -3,16 +3,9 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem, QAbstractItemView, QHeaderView, QHBoxLayout, \
-    QPushButton
+from src import *
 
-from src.components.diglog_widget import DialogWidget
-from src.components.right_button import RightButton
-from src.components.title_widget import TitleWidget
 from src.network.http_client import HttpClient
-from src.settings.settings import THEME
 from src.widgets import *
 
 

@@ -1,5 +1,5 @@
-from PySide6.QtCore import QMetaObject
-from PySide6.QtWidgets import QVBoxLayout, QStackedWidget
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
 
 
 class LeftColumn:

@@ -30,7 +30,6 @@ class HttpClient(HttpRequest):
         response = requests.post(url=url, data=data)
         response_dict = response.json()
         cls.headers['Authorization'] = response_dict['data']['token']
-        print(response_dict)
         return response_dict
 
     @classmethod

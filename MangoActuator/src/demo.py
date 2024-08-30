@@ -1,4 +1,5 @@
 import sys
+
 from PySide6.QtCore import QPropertyAnimation, QRect
 from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
 

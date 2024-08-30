@@ -3,9 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
-from PySide6.QtWidgets import QFormLayout, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QSpacerItem, QSizePolicy
-from src.settings.settings import THEME
+from src import *
 from src.widgets import *
 
 

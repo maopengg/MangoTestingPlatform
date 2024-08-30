@@ -4,9 +4,9 @@
 # @Time   : 2024-05-24 11:51
 # @Author : 毛鹏
 import asyncio
+import time
 
 import psutil
-import time
 
 from src.settings import settings
 from src.settings.settings import MEMORY_THRESHOLD, LOOP_MIX

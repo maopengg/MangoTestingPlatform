@@ -4,9 +4,9 @@
 # @Time   : 2024-08-13 14:07
 # @Author : 毛鹏
 import io
+import sys
 
 import psutil
-import sys
 from pywinauto.application import Application
 from pywinauto.application import WindowSpecification
 

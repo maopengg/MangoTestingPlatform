@@ -199,8 +199,6 @@ class PyTitleBar(QWidget):
             self.title_label.mouseDoubleClickEvent = self.maximize_restore
             self.div_2.mouseDoubleClickEvent = self.maximize_restore
 
-
-
         # ADD BUTTONS BUTTONS
 
         # Functions

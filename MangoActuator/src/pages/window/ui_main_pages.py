@@ -1,14 +1,18 @@
-from PySide6.QtCore import QRect, QSize, QCoreApplication, QMetaObject
-from PySide6.QtGui import Qt, QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QLabel, QScrollArea, QStackedWidget
+from PySide6.QtCore import QMetaObject
+from PySide6.QtWidgets import QVBoxLayout, QStackedWidget
 
+from src.pages.component.component_center import ComponentPage
+from src.pages.example import ExamplePage
 from src.pages.home.home import HomePage
 from src.pages.ui_test.page import PagePage
-from src.pages.example import ExamplePage
 from src.pages.web import WebPage
 
 
 class MainPages:
+
+    def __init__(self, central_widget):
+        self.central_widget = central_widget
+
     def setup_ui(self, main_window):
         self.main_pages_layout = QVBoxLayout(main_window)
         self.main_pages_layout.setSpacing(0)
@@ -16,65 +20,16 @@ class MainPages:
         self.pages = QStackedWidget(main_window)
         self.main_pages_layout.addWidget(self.pages)
 
-        self.home_page = HomePage()
-        self.pages.addWidget(self.home_page)
-
-        self.example_page = ExamplePage('设置')
-        self.pages.addWidget(self.example_page)
-        self.example_page = ExamplePage('用户')
-        self.pages.addWidget(self.example_page)
-        self.page_page = PagePage()
-        self.pages.addWidget(self.page_page)
-        self.web = WebPage('http://121.37.174.56:8001/')
-        self.pages.addWidget(self.web)
-
-        self.component_center = QWidget()
-        self.page_2_layout = QVBoxLayout(self.component_center)
-        self.page_2_layout.setSpacing(5)
-        self.page_2_layout.setContentsMargins(5, 5, 5, 5)
-        self.scroll_area = QScrollArea(self.component_center)
-        self.scroll_area.setStyleSheet(u"background: transparent;")
-        self.scroll_area.setFrameShape(QFrame.NoFrame)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area.setWidgetResizable(True)
-        self.contents = QWidget()
-        self.contents.setGeometry(QRect(0, 0, 840, 580))
-        self.contents.setStyleSheet(u"background: transparent;")
-        self.verticalLayout = QVBoxLayout(self.contents)
-        self.verticalLayout.setSpacing(15)
-        self.verticalLayout.setContentsMargins(5, 5, 5, 5)
-        self.title_label = QLabel(self.contents)
-        self.title_label.setText(QCoreApplication.translate("MainPages", u"Custom Widgets Page", None))
-
-        self.title_label.setMaximumSize(QSize(16777215, 40))
-        font = QFont()
-        font.setPointSize(16)
-        self.title_label.setFont(font)
-        self.title_label.setStyleSheet(u"font-size: 16pt")
-        self.title_label.setAlignment(Qt.AlignCenter)
-        self.verticalLayout.addWidget(self.title_label)
-        self.description_label = QLabel(self.contents)
-        self.description_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.description_label.setText(QCoreApplication.translate("MainPages",
-                                                                  u"Here will be all the custom widgets, they will be added over time on this page.\n"
-                                                                  "I will try to always record a new tutorial when adding a new Widget and updating the project on Patreon before launching on GitHub and GitHub after the public release.",
-                                                                  None))
-        self.description_label.setWordWrap(True)
-        self.verticalLayout.addWidget(self.description_label)
-        self.row_1_layout = QHBoxLayout()
-        self.verticalLayout.addLayout(self.row_1_layout)
-        self.row_2_layout = QHBoxLayout()
-        self.verticalLayout.addLayout(self.row_2_layout)
-        self.row_3_layout = QHBoxLayout()
-        self.verticalLayout.addLayout(self.row_3_layout)
-        self.row_4_layout = QVBoxLayout()
-        self.verticalLayout.addLayout(self.row_4_layout)
-        self.row_5_layout = QVBoxLayout()
-        self.verticalLayout.addLayout(self.row_5_layout)
-        self.scroll_area.setWidget(self.contents)
-        self.page_2_layout.addWidget(self.scroll_area)
-        self.pages.addWidget(self.component_center)
+        self.page_dict = [
+            HomePage(),
+            PagePage(),
+            ExamplePage('设置'),
+            ExamplePage('用户'),
+            WebPage('http://121.37.174.56:8001/'),
+            ComponentPage(self.central_widget)
+        ]
+        for page in self.page_dict:
+            self.pages.addWidget(page)
 
         self.pages.setCurrentIndex(0)
         QMetaObject.connectSlotsByName(main_window)

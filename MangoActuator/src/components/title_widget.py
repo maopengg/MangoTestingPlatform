@@ -10,7 +10,7 @@ from src.widgets import *
 
 
 class TitleWidget(QWidget):
-    def __init__(self,):
+    def __init__(self, ):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()

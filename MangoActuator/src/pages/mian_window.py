@@ -3,15 +3,12 @@
 # @Description: 
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
+import os
 
-from PySide6.QtGui import QCursor
-from PySide6.QtGui import QIcon, QAction
-from PySide6.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QApplication
-
-from resources.icons.app_rc import *
-from src.widgets.tooltip_box import show_info_message
+from src import *
 from src.network.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
+from src.widgets.tooltip_box import show_info_message
 
 os.environ["QT_FONT_DPI"] = "96"
 
@@ -23,10 +20,8 @@ class MainWindow(QMainWindow, UIMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setup_ui(self)
-        self.hide_grips = True  # 显示四周顶点
+        self.setup_ui()
         self.drag_pos = None
-        self.setup_gui()
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))  # 设置托盘图标
@@ -66,30 +61,27 @@ class MainWindow(QMainWindow, UIMainWindow):
         btn = self.setup_btns()
         if btn.objectName() != "btn_settings":
             self.left_menu.deselect_all_tab()
-        # top_settings = MainFunctions.get_title_bar_btn(self, "btn_top_settings")
-        # top_settings.set_active(False)
         if btn.objectName() == "home":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.home_page)
+            self.set_page(self.load_pages.page_dict[0])
         if btn.objectName() == "component_center":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.component_center)
+            self.set_page(self.load_pages.page_dict[5])
         if btn.objectName() == "page_page":
             self.left_menu.select_only_one(btn.objectName())
-            self.load_pages.page_page.show_data()
-            self.set_page(self.load_pages.page_page)
+            self.set_page(self.load_pages.page_dict[1])
         if btn.objectName() == "user":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.example_page)
+            self.set_page(self.load_pages.page_dict[3])
         if btn.objectName() == "settings":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.example_page)
+            self.set_page(self.load_pages.page_dict[2])
         if btn.objectName() == "btn_top_settings":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.example_page)
+            self.set_page(self.load_pages.page_dict[2])
         if btn.objectName() == "web":
             self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.web)
+            self.set_page(self.load_pages.page_dict[4])
         print(f"Button {btn.objectName()}, clicked!")
 
     def btn_released(self):

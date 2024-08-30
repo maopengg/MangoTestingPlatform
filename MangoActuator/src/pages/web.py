@@ -3,9 +3,10 @@
 # @Description:
 # @Time   : 2024-08-30 18:13
 # @Author : 毛鹏
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
-from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QTimer
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QWidget, QVBoxLayout
+
 
 class WebPage(QWidget):
     def __init__(self, url):
@@ -23,4 +24,3 @@ class WebPage(QWidget):
 
     def show_data(self):
         self.web_view.load(self.url)
-

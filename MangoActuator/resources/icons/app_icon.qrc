@@ -5,5 +5,6 @@
         <file>resource/icons/close_icon.png</file>
         <file>resource/icons/show_icon.png</file>
         <file>resource/icons/user.svg</file>
+        <file>resource/icons/fill.svg</file>
     </qresource>
 </RCC>

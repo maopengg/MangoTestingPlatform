@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QWidget, QFrame, QSizeGrip
 
 
 class PyGrips(QWidget):
-    def __init__(self, parent, position, disable_color=False):
+    def __init__(self, parent, position, disable_color=True):
 
         # SETUP UI
 

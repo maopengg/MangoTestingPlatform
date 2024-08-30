@@ -5,10 +5,7 @@
 # @Author : 毛鹏
 
 
-from PySide6.QtCore import QMetaObject
-from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QSpacerItem, QVBoxLayout
-
-from src.widgets import *
+from src import *
 
 
 class LoginWindow:

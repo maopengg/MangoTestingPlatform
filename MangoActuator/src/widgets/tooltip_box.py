@@ -11,14 +11,19 @@ def show_failed_message(text: str, title: str = '失败'):
     msg.setIcon(QMessageBox.Critical)
     msg.setText(text)
     msg.setWindowTitle(title)
+    # icon = QIcon(r'D:\GitCode\MangoTestingPlatform\MangoActuator\resources\icons\fill.svg')
+    # if not icon.isNull():
+    #     msg.setIconPixmap(icon.pixmap(32, 32))
+    # else:
+    #     print(12)
     msg.exec()
 
 
 def show_success_message(text: str, title: str = '成功'):
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Information)
-    msg.setText(text)
     msg.setWindowTitle(title)
+    msg.setText(text)
     msg.exec()
 
 

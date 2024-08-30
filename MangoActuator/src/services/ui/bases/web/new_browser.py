@@ -12,10 +12,10 @@ import asyncio
 import ctypes
 import os
 import string
+import time
 from typing import Optional
 from urllib import parse
 
-import time
 from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
