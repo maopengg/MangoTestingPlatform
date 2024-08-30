@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QLabel,
 from src.pages.home.home import HomePage
 from src.pages.ui_test.page import PagePage
 from src.pages.example import ExamplePage
+from src.pages.web import WebPage
 
 
 class MainPages:
@@ -24,6 +25,8 @@ class MainPages:
         self.pages.addWidget(self.example_page)
         self.page_page = PagePage()
         self.pages.addWidget(self.page_page)
+        self.web = WebPage('http://121.37.174.56:8001/')
+        self.pages.addWidget(self.web)
 
         self.component_center = QWidget()
         self.page_2_layout = QVBoxLayout(self.component_center)

@@ -5,7 +5,8 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushBu
 from src.pages.window.ui_main_pages import MainPages
 from src.settings.settings import STYLE, THEME
 from src.tools import InitPath
-from src.widgets import PyPushButton, MangoCircularProgress, PySlider, PyIconButton, PyLineEdit, PyTableWidget, PyToggle, \
+from src.widgets import PyPushButton, MangoCircularProgress, PySlider, PyIconButton, PyLineEdit, PyTableWidget, \
+    PyToggle, \
     PyGrips, PyCredits
 from src.widgets import PyWindow, PyLeftMenu, PyLeftColumn, PyTitleBar
 
@@ -19,8 +20,14 @@ class UIMainWindow:
             "btn_tooltip": "首页",
             "show_top": True,
             "is_active": True
+        }, {
+            "btn_icon": "widgets.svg",
+            "btn_id": "web",
+            "btn_text": "全部功能",
+            "btn_tooltip": "全部功能",
+            "show_top": True,
+            "is_active": False
         },
-
         {
             "btn_icon": "widgets.svg",
             "btn_id": "page_page",
@@ -198,7 +205,6 @@ class UIMainWindow:
         self.credits_frame = QFrame()
         self.credits_frame.setMinimumHeight(26)
         self.credits_frame.setMaximumHeight(26)
-
 
         # CREATE LAYOUT
         self.credits_layout = QVBoxLayout(self.credits_frame)

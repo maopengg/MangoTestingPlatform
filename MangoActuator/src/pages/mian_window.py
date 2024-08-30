@@ -87,6 +87,9 @@ class MainWindow(QMainWindow, UIMainWindow):
         if btn.objectName() == "btn_top_settings":
             self.left_menu.select_only_one(btn.objectName())
             self.set_page(self.load_pages.example_page)
+        if btn.objectName() == "web":
+            self.left_menu.select_only_one(btn.objectName())
+            self.set_page(self.load_pages.web)
         print(f"Button {btn.objectName()}, clicked!")
 
     def btn_released(self):
