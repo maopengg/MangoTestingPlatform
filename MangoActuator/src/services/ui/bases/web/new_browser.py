@@ -195,6 +195,10 @@ async def test_main():
         "project_id": None,
         'device': 'BlackBerry Z30 landscape'
     }))
+    r = NewBrowser(web_config=WEBConfigModel(**{
+        'browser_type': 0, 'browser_port': None, 'browser_path': None, 'is_headless': None,
+        'is_header_intercept': False, 'device': 'Desktop Chrome', 'host_list': None
+    }))
     for i in range(10):
         context1, page1 = await r.new_web_page()
         await page1.goto('https://www.baidu.com/')
