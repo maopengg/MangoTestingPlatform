@@ -6,7 +6,7 @@ style = '''
 QLineEdit {{
 	background-color: {_bg_color};
 	border-radius: {_radius}px;
-	border: {_border_size}px solid transparent;
+	border: {_border_size}px solid gray;
 	padding-left: 10px;
     padding-right: 10px;
 	selection-color: {_selection_color};
@@ -29,7 +29,7 @@ class PyLineEdit(QLineEdit):
             place_holder_text,
             is_password: bool = False,
             radius=8,
-            border_size=2,
+            border_size=1,
             color=THEME.text_foreground,
             selection_color=THEME.white,
             bg_color=THEME.white,
@@ -79,3 +79,4 @@ class PyLineEdit(QLineEdit):
             _context_color=context_color
         )
         self.setStyleSheet(style_format)
+        self.setMinimumHeight(30)  # 设置最小高度

@@ -1,58 +1,45 @@
-# # -*- coding: utf-8 -*-
-# # @Project: auto_test
-# # @Description:
-# # @Time   : 2023-09-28 15:49
-# # @Author : 毛鹏
-# from PySide6.QtGui import QIcon, QAction
-# from PySide6.QtWidgets import QMainWindow, QSystemTrayIcon, QMenu, QApplication
-#
-# from src.dialogs.tooltip_box import show_info_message
-# from src.network.sokcet_thread import SocketTask
-# from resources.icons.app_rc import *
-# from src.pages.window.window_ui import HomeWindow
-#
-#
-# class MainWindow(QMainWindow, HomeWindow):
-#
-#     def __init__(self):
-#         super().__init__()
-#         self.setup(self)
-#         # 创建系统托盘图标
-#         self.tray_icon = QSystemTrayIcon(self)
-#         self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))  # 设置托盘图标
-#
-#         # 创建托盘图标菜单
-#         tray_menu = QMenu(self)
-#         show_action = QAction(QIcon(':/resource/show_icon.png'), "显示窗口", self)
-#         show_action.triggered.connect(self.show)
-#         tray_menu.addAction(show_action)
-#
-#         exit_action = QAction(QIcon(':/resource/close_icon.png'), "退出", self)
-#         exit_action.triggered.connect(self.quit)
-#         tray_menu.addAction(exit_action)
-#
-#         # 将菜单与托盘图标关联
-#         self.tray_icon.setContextMenu(tray_menu)
-#         # 显示系统托盘图标
-#         self.tray_icon.show()
-#
-#         # 创建并启动WebSocketThread线程
-#         self.websocket_thread = SocketTask(self)
-#         self.websocket_thread.finished.connect(self.quit)
-#         self.websocket_thread.start()
-#
-#     def closeEvent(self, event):
-#         show_info_message('任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')
-#         event.ignore()  # 忽略窗口的关闭事件
-#         self.hide()  # 隐藏窗口
-#
-#     def quit(self):
-#         # 退出程序
-#         QApplication.quit()
-#
-#
-# if __name__ == '__main__':
-#     app = QApplication([])
-#     window = MainWindow()
-#     window.show()
-#     app.exec()
+import sys
+from PySide6.QtCore import QPropertyAnimation, QRect
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
+
+
+class AnimatedButton(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("按钮动画示例")
+        self.setFixedSize(300, 200)
+
+        layout = QVBoxLayout()
+
+        # 创建按钮
+        self.button = QPushButton("悬停我")
+        self.button.setFixedSize(100, 50)
+        layout.addWidget(self.button)
+
+        self.setLayout(layout)
+
+        # 创建动画
+        self.animation = QPropertyAnimation(self.button, b"geometry")
+        self.animation.setDuration(300)  # 动画持续时间
+        self.animation.setStartValue(QRect(100, 75, 100, 50))  # 起始位置和大小
+        self.animation.setEndValue(QRect(80, 60, 140, 70))  # 结束位置和大小
+
+        # 连接信号
+        self.button.enterEvent = self.start_animation
+        self.button.leaveEvent = self.reverse_animation
+
+    def start_animation(self, event):
+        self.animation.start()  # 开始动画
+        self.button.setStyleSheet("background-color: lightblue;")  # 改变颜色
+
+    def reverse_animation(self, event):
+        self.animation.setDirection(QPropertyAnimation.Backward)  # 反向动画
+        self.animation.start()  # 开始反向动画
+        self.button.setStyleSheet("background-color: none;")  # 恢复颜色
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = AnimatedButton()
+    window.show()
+    sys.exit(app.exec())

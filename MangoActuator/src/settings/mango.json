@@ -7,9 +7,9 @@
   "bg_one": "#ffffff",
   "bg_two": "#c2b2c6",
   "bg_three": "#A8A8A8",
-  "icon_color": "#a993af",
-  "icon_hover": "#000000",
-  "icon_pressed": "#000000",
+  "icon_color": "#000000",
+  "icon_hover": "#353037",
+  "icon_pressed": "#626062",
   "icon_active": "#000000",
   "context_color": "#6db65a",
   "context_hover": "#c2b2c6",
@@ -22,5 +22,6 @@
   "pink": "#FF82AB",
   "green": "#00FF7F",
   "red": "#EE3B3B",
-  "yellow": "#EEAD0E"
+  "yellow": "#EEAD0E",
+  "blue": "#33a3dc"
 }

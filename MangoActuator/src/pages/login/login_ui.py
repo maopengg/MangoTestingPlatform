@@ -93,7 +93,8 @@ class LoginWindow:
         self.horizontalLayout_4.addItem(self.horizontalSpacer_6)
 
         self.verticalLayout = QVBoxLayout()
-        self.login_but = PyPushButton('登录', login)
+        self.login_but = PyPushButton('登录')
+
         self.login_but.setObjectName("pushButtonLogin")
 
         self.verticalLayout.addWidget(self.login_but)

@@ -3,28 +3,53 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem, QAbstractItemView, QHeaderView, QHBoxLayout, \
-    QPushButton, QSizePolicy
-from PySide6.QtCore import Qt
+    QPushButton
 
+from src.components.diglog_widget import DialogWidget
+from src.components.right_button import RightButton
+from src.components.title_widget import TitleWidget
 from src.network.http_client import HttpClient
+from src.settings.settings import THEME
 from src.widgets import *
 
 
 class PagePage(QWidget):
     def __init__(self):
         super().__init__()
-        self.layout = QVBoxLayout()
+        self.layout = QVBoxLayout(self)
+        self.titleWidget = TitleWidget()
+        self.layout.addWidget(self.titleWidget)
+
+        self.right_but = RightButton([{'name': '新增', 'theme': THEME.blue, 'func': self.click4},
+                                      {'name': '批量删除', 'theme': THEME.red, 'func': self.click5}])
+        self.layout.addWidget(self.right_but)
+
         self.table_widget = PyTableWidget()
+        self.table_widget.setVerticalHeaderLabels([])
         self.table_widget.setColumnCount(8)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table_widget.setHorizontalHeaderLabels(
             ["ID", "更新时间", "模块名称", "项目产品名称", "创建时间", "页面名称", "URL", '操作'])
+
+        # 设置每列的宽度（以百分比为基准）
+        self.set_column_widths()
+
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
+
+    def set_column_widths(self):
+        total_width = self.table_widget.width()
+        widths = [10, 15, 15, 20, 10, 10, 15, 5]  # 每列的宽度百分比
+        for i, width in enumerate(widths):
+            self.table_widget.setColumnWidth(i, total_width * width / 100)
+
+    def resizeEvent(self, event):
+        self.set_column_widths()  # 窗口大小改变时重新设置列宽
 
     def show_data(self):
         data_list = HttpClient.page_list()
@@ -63,10 +88,20 @@ class PagePage(QWidget):
             # 将操作栏小部件添加到表格的“操作”列
             self.table_widget.setCellWidget(row, 7, action_widget)
 
-
     def click1(self):
         print('点击了1')
+
     def click2(self):
         print('点击了2')
+
     def click3(self):
         print('点击了3')
+
+    def click4(self):
+        dialog = DialogWidget('新建页面')
+        dialog.exec()  # 显示对话框，直到关闭
+        for i in self.right_but.but_list:
+            print(i)
+
+    def click5(self):
+        print('点击了5')

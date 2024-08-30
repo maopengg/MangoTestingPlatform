@@ -93,3 +93,4 @@ class ThemeConfig(BaseModel):
     green: str
     red: str
     yellow: str
+    blue: str

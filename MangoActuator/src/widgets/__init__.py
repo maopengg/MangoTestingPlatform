@@ -18,3 +18,4 @@ from .py_title_bar import PyTitleBar
 from .py_toggle import PyToggle
 from .py_window import PyWindow
 from .checkbox import MangoCheckBox
+from .diglog import MangoDialog

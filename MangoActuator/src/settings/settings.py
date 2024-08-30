@@ -15,5 +15,5 @@ PASSWORD = ''
 with open(rf'{InitPath.project_root_directory}\src\settings\settings.json', "r", encoding='utf-8') as f:
     STYLE = AppConfig(**json.loads(f.read()))
 
-with open(rf'{InitPath.project_root_directory}\src\themes\{STYLE.theme_name}.json', "r", encoding='utf-8') as f:
+with open(rf'{InitPath.project_root_directory}\src\settings\{STYLE.theme_name}.json', "r", encoding='utf-8') as f:
     THEME = ThemeConfig(**json.loads(f.read()))

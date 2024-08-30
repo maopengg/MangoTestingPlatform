@@ -8,8 +8,9 @@ from PySide6.QtWidgets import QVBoxLayout, QHeaderView, QAbstractItemView, QWidg
 from src.widgets import PyTableWidget
 
 
-class Table(QWidget):
+class TableList(QWidget):
     def __init__(self, column_count: int, row_column: list[str]):
+        super().__init__()
         self.layout = QVBoxLayout()
         self.table_widget = PyTableWidget()
         self.table_widget.setColumnCount(column_count)

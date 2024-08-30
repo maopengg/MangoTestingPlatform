@@ -51,3 +51,5 @@ class PyPushButton(QPushButton):
             _bg_color_pressed=bg_color_pressed
         )
         self.setStyleSheet(custom_style)
+        self.setMinimumHeight(35)
+        self.setMinimumWidth(60)
