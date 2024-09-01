@@ -3,7 +3,9 @@
 # @Description: 
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
-from src import *
+from PySide6.QtWidgets import *
+
+from src.settings.settings import THEME
 from src.widgets import *
 
 

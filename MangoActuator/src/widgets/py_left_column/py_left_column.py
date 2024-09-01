@@ -62,10 +62,6 @@ class PyLeftColumn(QWidget):
         self.menus = LeftColumn()
         self.menus.setup_ui(self.content_frame)
 
-        # CONNECT SIGNALS
-        self.btn_close.clicked.connect(self.btn_clicked)
-        self.btn_close.released.connect(self.btn_released)
-
     # TITLE LEFT COLUMN EMIT SIGNALS
 
     def btn_clicked(self):
@@ -171,3 +167,6 @@ class PyLeftColumn(QWidget):
 
         self.base_layout.addWidget(self.title_frame)
         self.base_layout.addWidget(self.content_frame)
+        # CONNECT SIGNALS
+        self.btn_close.clicked.connect(self.btn_clicked)
+        self.btn_close.released.connect(self.btn_released)

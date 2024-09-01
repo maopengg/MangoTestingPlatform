@@ -2,6 +2,7 @@
 # Created by: object code
 # Created by: The Resource Compiler for Qt version 6.7.0
 # WARNING! All changes made in this file will be lost!
+import os
 
 from PySide6 import QtCore
 

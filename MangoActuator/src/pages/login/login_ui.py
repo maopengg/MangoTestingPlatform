@@ -3,9 +3,10 @@
 # @Description:
 # @Time   : 2023-09-28 16:03
 # @Author : 毛鹏
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
 
-
-from src import *
+from src.widgets import *
 
 
 class LoginWindow:

@@ -3,7 +3,13 @@
 # @Description: 
 # @Time   : 2024-08-28 16:33
 # @Author : 毛鹏
-from src import *
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+
+from src.settings.settings import THEME
+from src.tools import InitPath
+from src.widgets import *
 
 
 class ComponentPage(QWidget):

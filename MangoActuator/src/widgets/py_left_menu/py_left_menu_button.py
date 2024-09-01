@@ -5,6 +5,7 @@ from PySide6.QtGui import QColor, Qt, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, \
     QPushButton
 
+from src.settings.settings import THEME
 from src.tools import InitPath
 
 
@@ -16,17 +17,17 @@ class PyLeftMenuButton(QPushButton):
             btn_id=None,
             tooltip_text="",
             margin=4,
-            dark_one="#1b1e23",
-            dark_three="#21252d",
-            dark_four="#272c36",
-            bg_one="#2c313c",
-            icon_color="#c3ccdf",
-            icon_color_hover="#dce1ec",
-            icon_color_pressed="#edf0f5",
-            icon_color_active="#f5f6f9",
-            context_color="#568af2",
-            text_foreground="#8a95aa",
-            text_active="#dce1ec",
+            dark_one=THEME.dark_one,
+            dark_three=THEME.dark_three,
+            dark_four=THEME.dark_four,
+            bg_one=THEME.bg_one,
+            icon_color=THEME.icon_color,
+            icon_color_hover=THEME.icon_hover,
+            icon_color_pressed=THEME.icon_pressed,
+            icon_color_active=THEME.icon_active,
+            context_color=THEME.context_color,
+            text_foreground=THEME.text_foreground,
+            text_active=THEME.text_active,
             icon_path="icon_add_user.svg",
             icon_active_menu="active_menu.svg",
             is_active=False,

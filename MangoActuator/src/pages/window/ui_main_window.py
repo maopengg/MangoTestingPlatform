@@ -1,79 +1,12 @@
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QFrame, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import *
 
 from src.pages.window.ui_main_pages import MainPages
-from src.settings.settings import STYLE, THEME
-from src.widgets import PyGrips, PyCredits
-from src.widgets import PyWindow, PyLeftMenu, PyLeftColumn, PyTitleBar
+from src.settings.settings import *
+from src.widgets import *
 
 
 class UIMainWindow:
-    add_left_menus = [
-        {
-            "btn_icon": "home.svg",
-            "btn_id": "home",
-            "btn_text": "首页",
-            "btn_tooltip": "首页",
-            "show_top": True,
-            "is_active": True
-        }, {
-            "btn_icon": "widgets.svg",
-            "btn_id": "web",
-            "btn_text": "全部功能",
-            "btn_tooltip": "全部功能",
-            "show_top": True,
-            "is_active": False
-        },
-        {
-            "btn_icon": "widgets.svg",
-            "btn_id": "page_page",
-            "btn_text": "页面元素",
-            "btn_tooltip": "页面元素",
-            "show_top": True,
-            "is_active": False
-        },
-        {
-            "btn_icon": "widgets.svg",
-            "btn_id": "component_center",
-            "btn_text": "组件中心",
-            "btn_tooltip": "组件中心",
-            "show_top": True,
-            "is_active": False
-        },
-        {
-            "btn_icon": "settings.svg",
-            "btn_id": "settings",
-            "btn_text": "设置",
-            "btn_tooltip": "设置",
-            "show_top": False,
-            "is_active": False
-        }, {
-            "btn_icon": "user.svg",
-            "btn_id": "user",
-            "btn_text": "用户",
-            "btn_tooltip": "用户",
-            "show_top": False,
-            "is_active": False
-        },
-    ]
-
-    # ADD TITLE BAR MENUS
-
-    add_title_bar_menus = [
-        {
-            "btn_icon": "icon_search.svg",
-            "btn_id": "btn_search",
-            "btn_tooltip": "搜索",
-            "is_active": False
-        },
-        {
-            "btn_icon": "settings.svg",
-            "btn_id": "settings",
-            "btn_tooltip": "设置",
-            "is_active": False
-        }
-    ]
-
     def setup_ui(self):
         self.setWindowTitle(STYLE.app_name)
         self.resize(STYLE.startup_size[0], STYLE.startup_size[1])
@@ -128,10 +61,10 @@ class UIMainWindow:
 
         self.left_menu = PyLeftMenu(
             parent=self.left_menu_frame,
-            app_parent=self.central_widget
+            app_parent=self.central_widget,
         )
         # ADD MENUS
-        self.left_menu.add_menus(self.add_left_menus)
+        self.left_menu.add_menus(MENUS.left_menus)
 
         # SET SIGNALS
         self.left_menu.clicked.connect(self.btn_clicked)
@@ -155,7 +88,7 @@ class UIMainWindow:
         self.left_column = PyLeftColumn(
             self,
             self.central_widget,
-            "Settings Left Frame",
+            "设置左侧菜单",
         )
         self.left_column.clicked.connect(self.btn_clicked)
         self.left_column.released.connect(self.btn_released)
@@ -182,10 +115,10 @@ class UIMainWindow:
         # title
         self.title_bar = PyTitleBar(
             self,
-            self.central_widget
+            self.central_widget,
         )
         # ADD MENUS
-        self.title_bar.add_menus(self.add_title_bar_menus)
+        self.title_bar.add_menus([i.model_dump() for i in MENUS.title_bar_menus])
 
         # SET SIGNALS
         self.title_bar.clicked.connect(self.btn_clicked)
@@ -214,7 +147,7 @@ class UIMainWindow:
         # IMPORT MAIN PAGES TO CONTENT AREA
         self.load_pages = MainPages(self.central_widget)
         self.load_pages.setup_ui(self.content_area_left_frame)
-        self.set_page(self.load_pages.page_dict[0])
+        self.__set_page(self.load_pages.page_dict['home'])
 
         # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
@@ -268,7 +201,30 @@ class UIMainWindow:
             self.bottom_left_grip = PyGrips(self, "bottom_left", )
             self.bottom_right_grip = PyGrips(self, "bottom_right", )
 
-    def set_page(self, page: QWidget):
+    def btn_released(self):
+        btn = self.setup_btns()
+
+    def btn_clicked(self):
+        btn = self.setup_btns()
+        btn_name = btn.objectName()
+        for k, v in self.left_menu.list_button_frame.items():
+            if k == btn_name:
+                if v.isHidden():
+                    v.show()
+                    self.left_menu.toggle_animation()
+                else:
+                    v.hide()
+                return
+        self.set_page(btn_name)
+
+    def set_page(self, btn_name):
+        self.left_menu.deselect_all_tab()
+        for k, v in self.load_pages.page_dict.items():
+            if btn_name == k:
+                self.left_menu.select_only_one(k)
+                self.__set_page(v)
+
+    def __set_page(self, page):
         try:
             page.show_data()
         except AttributeError:

@@ -3,10 +3,12 @@
 # @Description: 
 # @Time   : 2024-08-27 14:45
 # @Author : 毛鹏
-
+import json
 from queue import Queue, Empty
 
-from src import *
+from PySide6.QtCore import *
+from PySide6.QtWidgets import *
+
 from src.enums.socket_api_enum import ToolsSocketEnum
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum, ClientTypeEnum
@@ -14,6 +16,8 @@ from src.tools.assertion import Assertion
 from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.other.get_class_methods import GetClassMethod
+from src.widgets.MangoNotification import show_notification
+from src.widgets.message import show_message
 from ...settings import settings
 
 
@@ -166,7 +170,8 @@ class HomePage(QWidget):
             self.textEdit.append(data)
 
     def clickTest(self):
-        pass
+        show_message(self)
+        show_notification(self)
 
     def videos(self, text):
         SqlCache.set_sql_cache(CacheKeyEnum.IS_RECORDING.value, '1' if text else '0',

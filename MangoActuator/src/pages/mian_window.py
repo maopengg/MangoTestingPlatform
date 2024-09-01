@@ -3,9 +3,10 @@
 # @Description: 
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
-import os
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
 
-from src import *
+from resources.icons.app_rc import *
 from src.network.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
 from src.widgets.tooltip_box import show_info_message
@@ -54,39 +55,7 @@ class MainWindow(QMainWindow, UIMainWindow):
     def quit(self):
         # 退出程序
         QApplication.quit()
-
         self.show()
-
-    def btn_clicked(self):
-        btn = self.setup_btns()
-        if btn.objectName() != "btn_settings":
-            self.left_menu.deselect_all_tab()
-        if btn.objectName() == "home":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[0])
-        if btn.objectName() == "component_center":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[5])
-        if btn.objectName() == "page_page":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[1])
-        if btn.objectName() == "user":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[3])
-        if btn.objectName() == "settings":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[2])
-        if btn.objectName() == "btn_top_settings":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[2])
-        if btn.objectName() == "web":
-            self.left_menu.select_only_one(btn.objectName())
-            self.set_page(self.load_pages.page_dict[4])
-        print(f"Button {btn.objectName()}, clicked!")
-
-    def btn_released(self):
-        btn = self.setup_btns()
-        print(f"Button {btn.objectName()}, released!")
 
     # RESIZE EVENT
     def resizeEvent(self, event):

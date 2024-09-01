@@ -1,46 +1,70 @@
-import sys
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QMainWindow, QPushButton
+from PySide6.QtCore import Qt, QTimer, QPoint
+from PySide6.QtGui import QColor, QFontMetrics
 
-from PySide6.QtCore import QPropertyAnimation, QRect
-from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
 
-
-class AnimatedButton(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("按钮动画示例")
-        self.setFixedSize(300, 200)
+class Message(QWidget):
+    def __init__(self, parent, message):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setFixedHeight(30)
 
         layout = QVBoxLayout()
-
-        # 创建按钮
-        self.button = QPushButton("悬停我")
-        self.button.setFixedSize(100, 50)
-        layout.addWidget(self.button)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.label = QLabel(message)
+        layout.addWidget(self.label)
 
         self.setLayout(layout)
+        # 设置背景颜色和边框
+        self.setStyleSheet("background-color: rgba(255, 255, 224, 100); border: 1px solid lightgray;")
 
-        # 创建动画
-        self.animation = QPropertyAnimation(self.button, b"geometry")
-        self.animation.setDuration(300)  # 动画持续时间
-        self.animation.setStartValue(QRect(100, 75, 100, 50))  # 起始位置和大小
-        self.animation.setEndValue(QRect(80, 60, 140, 70))  # 结束位置和大小
+        # 根据文字长度调整宽度
+        font_metrics = QFontMetrics(self.label.font())
+        text_width = font_metrics.boundingRect(message).width() + 10
+        self.setFixedWidth(text_width)
 
-        # 连接信号
-        self.button.enterEvent = self.start_animation
-        self.button.leaveEvent = self.reverse_animation
+        # 设置渐隐效果
+        self.opacity = 1.0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.fade_out)
+        self.timer.start(50)
 
-    def start_animation(self, event):
-        self.animation.start()  # 开始动画
-        self.button.setStyleSheet("background-color: lightblue;")  # 改变颜色
-
-    def reverse_animation(self, event):
-        self.animation.setDirection(QPropertyAnimation.Backward)  # 反向动画
-        self.animation.start()  # 开始反向动画
-        self.button.setStyleSheet("background-color: none;")  # 恢复颜色
+    def fade_out(self):
+        self.opacity -= 0.05
+        self.setWindowOpacity(self.opacity)
+        if self.opacity <= 0:
+            self.close()
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = AnimatedButton()
-    window.show()
-    sys.exit(app.exec())
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("主窗口")
+        self.resize(800, 600)
+
+        # 创建主窗口布局
+        main_layout = QVBoxLayout()
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+        # 添加按钮
+        self.show_message_button = QPushButton("显示消息")
+        main_layout.addWidget(self.show_message_button)
+
+        # 连接按钮点击信号到显示消息的槽函数
+        self.show_message_button.clicked.connect(self.show_message)
+
+    def show_message(self):
+        message = Message(self, "这是一个全局消息提示！")
+        # 显示在主窗口顶部中央
+        parent_pos = self.mapToGlobal(QPoint(self.width() // 2 - message.width() // 2, 0))
+        message.move(parent_pos)
+        message.show()
+        message.timer.start()  # 确保定时器启动
+
+
+app = QApplication([])
+main_window = MainWindow()
+main_window.show()
+app.exec()
