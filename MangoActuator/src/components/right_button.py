@@ -13,6 +13,7 @@ class RightButton(QWidget):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addStretch()
         self.but_list: list[dict] = []
         for but_obj in but_list_obj:

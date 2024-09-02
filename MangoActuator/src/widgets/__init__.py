@@ -19,3 +19,4 @@ from .py_table_widget import PyTableWidget
 from .py_title_bar import PyTitleBar
 from .py_toggle import PyToggle
 from .py_window import PyWindow
+from .pagination import MangoPagination

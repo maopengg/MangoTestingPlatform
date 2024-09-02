@@ -26,6 +26,7 @@ class MangoPagination(QWidget):
 
         # 布局设置
         layout = QHBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
         layout.addStretch()
         layout.addWidget(self.current_page_label1)
         layout.addWidget(self.prev_icon_button)
@@ -55,8 +56,3 @@ class MangoPagination(QWidget):
         number_part = selected_text.split(" ")[0]
         print(f"每页展示条数变更为：{number_part}")
 
-
-app = QApplication([])
-pagination_widget = PaginationWidget()
-pagination_widget.show()
-app.exec()

@@ -14,6 +14,8 @@ class TitleWidget(QWidget):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
         self.setLayout(self.layout)
 
         self.from_layout_1 = QFormLayout()
