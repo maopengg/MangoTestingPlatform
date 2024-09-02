@@ -21,7 +21,7 @@ class PyLeftButton(QPushButton):
             icon_color_hover="#dce1ec",
             icon_color_pressed="#edf0f5",
             icon_color_active="#f5f6f9",
-            icon_path="no_icon.svg",
+            icon_path="",
             dark_one="#1b1e23",
             context_color="#568af2",
             text_foreground="#8a95aa",
