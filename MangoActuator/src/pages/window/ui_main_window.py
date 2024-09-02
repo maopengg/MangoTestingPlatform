@@ -6,14 +6,13 @@ from src.settings.settings import *
 from src.widgets import *
 
 
-class UIMainWindow:
-    def setup_ui(self):
+class UIMainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
         self.setWindowTitle(STYLE.app_name)
         self.resize(STYLE.startup_size[0], STYLE.startup_size[1])
         self.setMinimumSize(STYLE.minimum_size[0], STYLE.minimum_size[1])
 
-        # SET CENTRAL WIDGET
-        # Add central widget to app
         self.central_widget = QWidget()
         self.central_widget.setStyleSheet(f'''
             font: {STYLE.font.text_size}pt "{STYLE.font.family}";
@@ -26,142 +25,88 @@ class UIMainWindow:
             self.central_widget_layout.setContentsMargins(0, 0, 0, 0)
         self.setCentralWidget(self.central_widget)
 
-        # LOAD PY WINDOW CUSTOM WIDGET
-        # Add inside PyWindow "layout" all Widgets
-
+        # 加载PY窗口自定义小部件
+        # 在PyWindow“布局”中添加所有小部件
         self.window = PyWindow(self)
-
-        # If disable custom title bar
         if not STYLE.custom_title_bar:
             self.window.set_stylesheet(border_radius=0, border_size=0)
 
-        # ADD PY WINDOW TO CENTRAL WIDGET
         self.central_widget_layout.addWidget(self.window)
 
-        # ADD FRAME LEFT MENU
-        # Add here the custom left menu bar
-
-        left_menu_margin = STYLE.left_menu_content_margins
-        left_menu_minimum = STYLE.lef_menu_size.minimum
+        # 添加框架左侧菜单
+        # 左侧菜单布局
         self.left_menu_frame = QFrame()
-        self.left_menu_frame.setMaximumSize(left_menu_minimum + (left_menu_margin * 2), 17280)
-        self.left_menu_frame.setMinimumSize(left_menu_minimum + (left_menu_margin * 2), 0)
-
-        # LEFT MENU LAYOUT
-        self.left_menu_layout = QHBoxLayout(self.left_menu_frame)
-        self.left_menu_layout.setContentsMargins(
-            left_menu_margin,
-            left_menu_margin,
-            left_menu_margin,
-            left_menu_margin
+        self.left_menu_frame.setMaximumSize(
+            STYLE.lef_menu_size.minimum + (STYLE.left_menu_content_margins * 2), 17280
+        )
+        self.left_menu_frame.setMinimumSize(
+            STYLE.lef_menu_size.minimum + (STYLE.left_menu_content_margins * 2), 0
         )
 
-        # ADD LEFT MENU
-        # Add custom left menu here
-
+        # 左侧菜单布局
+        self.left_menu_layout = QHBoxLayout(self.left_menu_frame)
+        self.left_menu_layout.setContentsMargins(
+            STYLE.left_menu_content_margins,
+            STYLE.left_menu_content_margins,
+            STYLE.left_menu_content_margins,
+            STYLE.left_menu_content_margins
+        )
         self.left_menu = PyLeftMenu(
             parent=self.left_menu_frame,
             app_parent=self.central_widget,
         )
-        # ADD MENUS
         self.left_menu.add_menus(MENUS.left_menus)
-
-        # SET SIGNALS
         self.left_menu.clicked.connect(self.btn_clicked)
         self.left_menu.released.connect(self.btn_released)
-
         self.left_menu_layout.addWidget(self.left_menu)
+        self.window.layout.addWidget(self.left_menu_frame)
 
-        # ADD LEFT COLUMN
-        # Add here the left column with Stacked Widgets
-
-        self.left_column_frame = QFrame()
-        self.left_column_frame.setMaximumWidth(STYLE.left_column_size.minimum)
-        self.left_column_frame.setMinimumWidth(STYLE.left_column_size.minimum)
-        self.left_column_frame.setStyleSheet(f"background: {THEME.bg_two}")
-
-        # ADD LAYOUT TO LEFT COLUMN
-        self.left_column_layout = QVBoxLayout(self.left_column_frame)
-        self.left_column_layout.setContentsMargins(0, 0, 0, 0)
-
-        # ADD CUSTOM LEFT MENU WIDGET
-        self.left_column = PyLeftColumn(
-            self,
-            self.central_widget,
-            "设置左侧菜单",
-        )
-        self.left_column.clicked.connect(self.btn_clicked)
-        self.left_column.released.connect(self.btn_released)
-        self.left_column_layout.addWidget(self.left_column)
-
-        # ADD RIGHT WIDGETS
-        # Add here the right widgets
-
+        # 中心
         self.right_app_frame = QFrame()
-
-        # ADD RIGHT APP LAYOUT
         self.right_app_layout = QVBoxLayout(self.right_app_frame)
         self.right_app_layout.setContentsMargins(3, 3, 3, 3)
         self.right_app_layout.setSpacing(6)
 
-        # ADD TITLE BAR FRAME
-
+        # 添加标题栏框架
         self.title_bar_frame = QFrame()
         self.title_bar_frame.setMinimumHeight(40)
         self.title_bar_frame.setMaximumHeight(40)
         self.title_bar_layout = QVBoxLayout(self.title_bar_frame)
         self.title_bar_layout.setContentsMargins(0, 0, 0, 0)
-
-        # title
         self.title_bar = PyTitleBar(
             self,
             self.central_widget,
         )
-        # ADD MENUS
         self.title_bar.add_menus([i.model_dump() for i in MENUS.title_bar_menus])
-
-        # SET SIGNALS
         self.title_bar.clicked.connect(self.btn_clicked)
         self.title_bar.released.connect(self.btn_released)
-
-        # ADD Title
         if STYLE.custom_title_bar:
             self.title_bar.set_title(STYLE.app_name)
         else:
             self.title_bar.set_title("Welcome to PyOneDark")
-
         self.title_bar_layout.addWidget(self.title_bar)
+        self.right_app_layout.addWidget(self.title_bar_frame)
+        self.window.layout.addWidget(self.right_app_frame)
 
-        # ADD CONTENT AREA
-
+        # 内容区域
         self.content_area_frame = QFrame()
-
-        # CREATE LAYOUT
         self.content_area_layout = QHBoxLayout(self.content_area_frame)
         self.content_area_layout.setContentsMargins(0, 0, 0, 0)
         self.content_area_layout.setSpacing(0)
 
-        # LEFT CONTENT
         self.content_area_left_frame = QFrame()
-
-        # IMPORT MAIN PAGES TO CONTENT AREA
         self.load_pages = MainPages(self.central_widget)
         self.load_pages.setup_ui(self.content_area_left_frame)
         self.__set_page(self.load_pages.page_dict['home'])
-
-        # ADD TO LAYOUTS
         self.content_area_layout.addWidget(self.content_area_left_frame)
+        self.right_app_layout.addWidget(self.content_area_frame)
 
-        # CREDITS / BOTTOM APP FRAME
-
+        # 底部标签
         self.credits_frame = QFrame()
         self.credits_frame.setMinimumHeight(26)
         self.credits_frame.setMaximumHeight(26)
-
-        # CREATE LAYOUT
         self.credits_layout = QVBoxLayout(self.credits_frame)
         self.credits_layout.setContentsMargins(0, 0, 0, 0)
-        # ADD CUSTOM WIDGET CREDITS
         self.credits = PyCredits(
             bg_two=THEME.bg_two,
             copyright=STYLE.copyright,
@@ -171,27 +116,11 @@ class UIMainWindow:
             text_description_color=THEME.text_description
         )
         self.credits_layout.addWidget(self.credits)
-
-        # ADD WIDGETS TO RIGHT LAYOUT
-
-        self.right_app_layout.addWidget(self.title_bar_frame)
-        self.right_app_layout.addWidget(self.content_area_frame)
         self.right_app_layout.addWidget(self.credits_frame)
 
-        # ADD WIDGETS TO "PyWindow"
-        # Add here your custom widgets or default widgets
-
-        self.window.layout.addWidget(self.left_menu_frame)
-        self.window.layout.addWidget(self.left_column_frame)
-        self.window.layout.addWidget(self.right_app_frame)
-
         if STYLE.custom_title_bar:
-            self.setWindowFlag(Qt.FramelessWindowHint)
-            self.setAttribute(Qt.WA_TranslucentBackground)
-
-        # ADD GRIPS
-
-        if STYLE.custom_title_bar:
+            self.setWindowFlag(Qt.FramelessWindowHint)  # type: ignore
+            self.setAttribute(Qt.WA_TranslucentBackground)  # type: ignore
             self.left_grip = PyGrips(self, "left", )
             self.right_grip = PyGrips(self, "right", )
             self.top_grip = PyGrips(self, "top", )
@@ -202,10 +131,10 @@ class UIMainWindow:
             self.bottom_right_grip = PyGrips(self, "bottom_right", )
 
     def btn_released(self):
-        btn = self.setup_btns()
+        btn = self.__setup_btn()
 
     def btn_clicked(self):
-        btn = self.setup_btns()
+        btn = self.__setup_btn()
         btn_name = btn.objectName()
         for k, v in self.left_menu.list_button_frame.items():
             if k == btn_name:
@@ -231,18 +160,16 @@ class UIMainWindow:
             pass
         self.load_pages.pages.setCurrentWidget(page)
 
-    # GET TITLE BUTTON BY OBJECT NAME
+    # 按对象名称获取标题按钮
 
     def get_title_bar_btn(self, object_name):
         return self.title_bar_frame.findChild(QPushButton, object_name)
 
-    def setup_btns(self):
-        if self.title_bar.sender() != None:
+    def __setup_btn(self):
+        if self.title_bar.sender() is not None:
             return self.title_bar.sender()
-        elif self.left_menu.sender() != None:
+        elif self.left_menu.sender() is not None:
             return self.left_menu.sender()
-        elif self.left_column.sender() != None:
-            return self.left_column.sender()
 
     def resize_grips(self):
         if STYLE.custom_title_bar:
@@ -250,6 +177,7 @@ class UIMainWindow:
             self.right_grip.setGeometry(self.width() - 15, 10, 10, self.height())
             self.top_grip.setGeometry(5, 5, self.width() - 10, 10)
             self.bottom_grip.setGeometry(5, self.height() - 15, self.width() - 10, 10)
+            self.top_left_grip.setGeometry(self.width() - 20, 5, 15, 15)
             self.top_right_grip.setGeometry(self.width() - 20, 5, 15, 15)
             self.bottom_left_grip.setGeometry(5, self.height() - 20, 15, 15)
             self.bottom_right_grip.setGeometry(self.width() - 20, self.height() - 20, 15, 15)

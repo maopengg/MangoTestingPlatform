@@ -17,15 +17,14 @@ os.environ["QT_FONT_DPI"] = "96"
 # 4K 'os.environ["QT_SCALE_FACTOR"] = "2"'
 
 
-class MainWindow(QMainWindow, UIMainWindow):
+class MainWindow(UIMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setup_ui()
         self.drag_pos = None
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))  # 设置托盘图标
+        self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))
 
         # 创建托盘图标菜单
         tray_menu = QMenu(self)
@@ -39,18 +38,16 @@ class MainWindow(QMainWindow, UIMainWindow):
 
         # 将菜单与托盘图标关联
         self.tray_icon.setContextMenu(tray_menu)
-        # 显示系统托盘图标
         self.tray_icon.show()
 
-        # 创建并启动WebSocketThread线程
         self.websocket_thread = SocketTask(self)
         self.websocket_thread.finished.connect(self.quit)
         self.websocket_thread.start()
 
     def closeEvent(self, event):
         show_info_message('任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')
-        event.ignore()  # 忽略窗口的关闭事件
-        self.hide()  # 隐藏窗口
+        event.ignore()
+        self.hide()
 
     def quit(self):
         # 退出程序
@@ -63,7 +60,6 @@ class MainWindow(QMainWindow, UIMainWindow):
 
     # MOUSE CLICK EVENTS
     def mousePressEvent(self, event):
-        # SET DRAG POS WINDOW
         self.drag_pos = QCursor.pos()
 
 

@@ -1,5 +1,5 @@
 from PySide6.QtCore import Slot
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, Qt
 from PySide6.QtWidgets import QWidget
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
@@ -12,13 +12,12 @@ from src.tools.database.sqlite_connect import SQLiteConnect
 from src.widgets.tooltip_box import show_failed_message
 
 
-class LoginLogic(QWidget, LoginWindow):
+class LoginLogic(LoginWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/resource/app_icon.png'))
-        self.setupUi(self)
         self.main_window = None
         self.db_handler = SQLiteConnect()
         user_info = self.db_handler.execute_sql(sql_statement_1)
@@ -27,7 +26,6 @@ class LoginLogic(QWidget, LoginWindow):
             self.prot_edit.setText(user_info[0].get("port"))
             self.username_edit.setText(user_info[0].get('username'))
             self.password_edit.setText(user_info[0].get('password'))
-
         self.show()
 
     @Slot()
