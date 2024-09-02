@@ -11,6 +11,7 @@ import requests
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0007
 from src.exceptions.tools_exception import FileNotError
+from src.models.service_http_model import ResponseModel
 from src.network import HttpRequest
 from src.tools import InitPath
 from src.tools.log_collector import log
@@ -66,11 +67,16 @@ class HttpClient(HttpRequest):
             return False
 
     @classmethod
-    def page_list(cls):
-        url = cls.url('/ui/page?page=1&pageSize=20')
-        response = requests.get(url=url, headers=cls.headers)
-        response_dict = response.json()
-        return response_dict.get('data')
+    def page_list(cls, page, page_size, params: dict = None):
+        url = cls.url(f'/ui/page')
+        _params = {
+            'page': page,
+            'pageSize': page_size
+        }
+        if params:
+            _params.update(params)
+        response = requests.get(url=url, headers=cls.headers, params=_params)
+        return ResponseModel(**response.json())
 
 
 if __name__ == '__main__':

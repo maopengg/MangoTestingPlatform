@@ -34,6 +34,13 @@ class LoginModel(BaseModel):
     nickname: str | None = None
 
 
+class ResponseModel(BaseModel):
+    code: int
+    msg: str
+    data: list[dict] | None = None
+    totalSize: int | None = None
+
+
 if __name__ == '__main__':
     from threading import Thread
 

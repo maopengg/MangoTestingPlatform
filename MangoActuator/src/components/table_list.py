@@ -24,11 +24,16 @@ class TableList(QWidget):
         self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table_widget.setHorizontalHeaderLabels([i.get('name') for i in self.row_column])
         self.layout.addWidget(self.table_widget)
-        self.pagination = MangoPagination()
+        self.pagination = MangoPagination(self)
         self.layout.addWidget(self.pagination)
         self.setLayout(self.layout)
+        self.page_size = 10
 
-    def set_data(self, data: list[dict]):
+    def set_data(self, data, total_size):
+        self.table_widget.setRowCount(0)
+        self.pagination.set_total_size(total_size)
+        if data is None:
+            return
         for row, item in enumerate(data):
             self.table_widget.insertRow(row)
             for row1, column in enumerate(self.row_column):
@@ -37,7 +42,7 @@ class TableList(QWidget):
                         item1 = item[column.get('key')]['name']
                     else:
                         item1 = item[column.get('key')]
-                    self.table_widget.setItem(row, row1, QTableWidgetItem(item1))
+                    self.table_widget.setItem(row, row1, QTableWidgetItem(str(item1)))
             if self.row_ope:
                 action_widget = QWidget()
                 action_layout = QHBoxLayout()

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 from src.components import *
+from src.models.service_http_model import ResponseModel
 from src.network.http_client import HttpClient
 from src.settings.settings import THEME
 
@@ -12,6 +13,9 @@ from src.settings.settings import THEME
 class PagePage(QWidget):
     def __init__(self):
         super().__init__()
+        self.page = 1
+        self.page_size = 10
+        self.params = {}
         self.layout = QVBoxLayout(self)
         self.titleWidget = TitleWidget()
         self.layout.addWidget(self.titleWidget)
@@ -37,13 +41,14 @@ class PagePage(QWidget):
              {'name': '···', 'action': '', 'son': [{'name': '复制', 'action': 'copy'},
                                                    {'name': '删除', 'action': 'delete'}]}
              ])
+        self.table_widget.pagination.clicked.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.handle_button_click)
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
     def show_data(self):
-        data_list = HttpClient.page_list()
-        self.table_widget.set_data(data_list)
+        response_model: ResponseModel = HttpClient.page_list(self.page, self.page_size, self.params)
+        self.table_widget.set_data(response_model.data, response_model.totalSize)
 
     def handle_button_click(self, data):
         action = data['action']
@@ -63,3 +68,12 @@ class PagePage(QWidget):
 
     def click5(self):
         print('点击了5')
+
+    def pagination_clicked(self, data):
+        if data['action'] == 'prev':
+            self.page = data['page']
+        elif data['action'] == 'next':
+            self.page = data['page']
+        elif data['action'] == 'per_page':
+            self.page_size = data['page']
+        self.show_data()
