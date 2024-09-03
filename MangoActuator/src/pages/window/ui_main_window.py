@@ -97,7 +97,7 @@ class UIMainWindow(QMainWindow):
         self.content_area_left_frame = QFrame()
         self.load_pages = MainPages(self.central_widget)
         self.load_pages.setup_ui(self.content_area_left_frame)
-        self.__set_page(self.load_pages.page_dict['home'])
+        self.load_pages.set_page(self.load_pages.page_dict['home'])
         self.content_area_layout.addWidget(self.content_area_left_frame)
         self.right_app_layout.addWidget(self.content_area_frame)
 
@@ -144,21 +144,16 @@ class UIMainWindow(QMainWindow):
                 else:
                     v.hide()
                 return
-        self.set_page(btn_name)
+        self.__set_page(btn_name)
 
-    def set_page(self, btn_name):
+    def __set_page(self, btn_name):
         self.left_menu.deselect_all_tab()
         for k, v in self.load_pages.page_dict.items():
             if btn_name == k:
                 self.left_menu.select_only_one(k)
-                self.__set_page(v)
+                self.load_pages.set_page(v)
 
-    def __set_page(self, page):
-        try:
-            page.show_data()
-        except AttributeError:
-            pass
-        self.load_pages.pages.setCurrentWidget(page)
+
 
     # 按对象名称获取标题按钮
 

@@ -22,7 +22,6 @@ class PyTitleBar(QWidget):
             parent,
             app_parent,
             logo_image="app_icon.svg",
-            logo_width=100,
             dark_one=THEME.dark_one,
             bg_color=THEME.bg_two,
             div_color=THEME.bg_three,
@@ -42,7 +41,6 @@ class PyTitleBar(QWidget):
     ):
         super().__init__()
 
-        # PARAMETERS
         self._logo_image = logo_image
         self._dark_one = dark_one
         self._bg_color = bg_color
@@ -122,7 +120,7 @@ class PyTitleBar(QWidget):
         self.maximize_restore_button = PyTitleButton(
             self._parent,
             self._app_parent,
-            tooltip_text="Maximize app",
+            tooltip_text="最大化",
             dark_one=self._dark_one,
             bg_color=self._btn_bg_color,
             bg_color_hover=self._btn_bg_color_hover,
@@ -156,19 +154,13 @@ class PyTitleBar(QWidget):
             icon_path=InitPath.set_svg_icon("icon_close.svg")
         )
 
-        # ADD TO LAYOUT
         self.title_bar_layout.addWidget(self.bg)
 
-        # ADD BG COLOR
         self.bg.setStyleSheet(f"background-color: {bg_color}; border-radius: {radius}px;")
 
-        # SET LOGO AND WIDTH
-        self.top_logo.setMinimumWidth(logo_width)
-        self.top_logo.setMaximumWidth(logo_width)
+        self.top_logo.setMinimumWidth(40)
+        self.top_logo.setMaximumWidth(40)
 
-        # self.top_logo.setPixmap(Functions.set_svg_image(logo_image))
-
-        # MOVE WINDOW / MAXIMIZE / RESTORE
 
         def moveWindow(event):
             # IF MAXIMIZED CHANGE TO NORMAL

@@ -24,8 +24,8 @@ class MainPages:
             'home': HomePage(),
             'web': WebPage('http://121.37.174.56:8001/'),
 
-            'page': PagePage(),
-            'page_element': PageElementPage('页面元素'),
+            'page': PagePage(self),
+            'page_element': PageElementPage(self),
             'page_steps': PageStepsPage('页面步骤'),
             'page_steps_detailed': PageStepsDetailedPage('步骤详情'),
             'ui_case': UiCasePage('测试用例'),
@@ -40,3 +40,13 @@ class MainPages:
 
         self.pages.setCurrentIndex(0)
         QMetaObject.connectSlotsByName(main_window)
+
+    def set_page(self, page, data: dict | None = None):
+        if isinstance(page, str) and data:
+            page = self.page_dict.get(page)
+            page.data = data
+        try:
+            page.show_data()
+        except AttributeError:
+            pass
+        self.pages.setCurrentWidget(page)

@@ -81,12 +81,6 @@
       "btn_id": "btn_search",
       "btn_tooltip": "搜索",
       "is_active": false
-    },
-    {
-      "btn_icon": "settings.svg",
-      "btn_id": "settings",
-      "btn_tooltip": "设置",
-      "is_active": false
     }
   ]
 }

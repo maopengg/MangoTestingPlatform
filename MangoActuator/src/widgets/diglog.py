@@ -3,9 +3,11 @@
 # @Description: 
 # @Time   : 2024-08-30 14:51
 # @Author : 毛鹏
-from PySide6.QtWidgets import QDialog
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog
+
 from src.settings.settings import THEME
+
 
 class MangoDialog(QDialog):
     def __init__(self, tips: str, size: super = (400, 300)):

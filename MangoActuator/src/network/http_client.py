@@ -4,9 +4,8 @@
 # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
+import json
 import os
-
-import requests
 
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0007
@@ -28,7 +27,7 @@ class HttpClient(HttpRequest):
             'password': password,
             'type': ClientTypeEnum.ACTUATOR.value
         }
-        response = requests.post(url=url, data=data)
+        response = cls.post(url=url, data=data)
         response_dict = response.json()
         cls.headers['Authorization'] = response_dict['data']['token']
         return response_dict
@@ -36,7 +35,7 @@ class HttpClient(HttpRequest):
     @classmethod
     def download_file(cls, file_name):
         url = cls.url(f'files/{file_name}')
-        response = requests.request("GET", url, headers=cls.headers)
+        response = cls.get(url, headers=cls.headers)
         file_path = InitPath.upload_files
         file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
@@ -59,24 +58,13 @@ class HttpClient(HttpRequest):
             ('file', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
         ]
         headers = copy.copy(cls.headers)
-        response = requests.post(url, headers=headers, data=data, files=files)
+        response = cls.post(url, headers=headers, data=data, files=files)
         if response.status_code == 200:
             return True
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
 
-    @classmethod
-    def page_list(cls, page, page_size, params: dict = None):
-        url = cls.url(f'/ui/page')
-        _params = {
-            'page': page,
-            'pageSize': page_size
-        }
-        if params:
-            _params.update(params)
-        response = requests.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
 
 
 if __name__ == '__main__':

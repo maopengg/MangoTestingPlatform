@@ -29,3 +29,4 @@ Pympler==1.0.1
 adbutils==2.7.0
 locust==2.27.0
 gevent==24.2.1
+urllib3==1.26.19

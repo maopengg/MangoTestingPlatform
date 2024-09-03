@@ -4,10 +4,14 @@
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
 import copy
+
+from PySide6.QtWidgets import QWidget, QVBoxLayout
+
 from src.components import *
 from src.models.service_http_model import ResponseModel
-from src.network.http_client import HttpClient
+from src.network.http_ui import HttpUi
 from src.settings.settings import THEME
+from src.widgets import *
 
 
 class PagePage(QWidget):
@@ -34,18 +38,21 @@ class PagePage(QWidget):
         {'key': 'url', 'name': 'URL', 'item': ''},
         {'key': 'ope', 'name': '操作', 'item': ''},
     ]
-    table_menu = [{'name': '编辑', 'action': 'edit'},
-                  {'name': '添加元素', 'action': 'add_ele'},
-                  {'name': '···', 'action': '', 'son': [{'name': '复制', 'action': 'copy'},
-                                                        {'name': '删除', 'action': 'delete'}]}
-                  ]
+    table_menu = [
+        {'name': '编辑', 'action': 'edit'},
+        {'name': '添加元素', 'action': 'add_ele'},
+        {'name': '···', 'action': '', 'son': [{'name': '复制', 'action': 'copy'},
+                                              {'name': '删除', 'action': 'delete'}]}
+    ]
 
-    def __init__(self):
+    def __init__(self, parent):
         super().__init__()
+        self.parent = parent
         self.page = 1
         self.page_size = 10
         self.params = {}
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.titleWidget = TitleWidget(self.title_data)
         self.titleWidget.clicked.connect(self.search)
         self.layout.addWidget(self.titleWidget)
@@ -61,9 +68,11 @@ class PagePage(QWidget):
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
-    def show_data(self):
-        response_model: ResponseModel = HttpClient.page_list(self.page, self.page_size, self.params)
+    def show_data(self, is_refresh=False):
+        response_model: ResponseModel = HttpUi.get_page(self.page, self.page_size, self.params)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
+        if is_refresh:
+            response_message(self, response_model)
 
     def handle_button_click(self, data):
         action = data['action']
@@ -82,11 +91,13 @@ class PagePage(QWidget):
         dialog = DialogWidget('新建页面', from_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            print(dialog.data)
+            response_model: ResponseModel = HttpUi.post_page(dialog.data)
+            response_message(self, response_model)
+        self.show_data()
 
     def edit(self, row):
         from_data = copy.deepcopy(self.from_data)
-        for i in self.from_data:
+        for i in from_data:
             if isinstance(row[i['key']], dict):
                 i['text'] = row[i['key']]['name']
             else:
@@ -96,16 +107,20 @@ class PagePage(QWidget):
         if dialog.data:
             data = dialog.data
             data['id'] = row['id']
-            print(dialog.data)
+            response_model: ResponseModel = HttpUi.put_page(data)
+            response_message(self, response_model)
+        self.show_data()
 
     def add_ele(self, row):
-        print('点击了添加元素', row)
+        self.parent.set_page('page_element', row)
 
     def copy(self, row):
         print('点击了复制', row)
 
     def delete(self, row):
-        print('点击了删除', row)
+        response_model: ResponseModel = HttpUi.delete_page(row.get('id'))
+        response_message(self, response_model)
+        self.show_data()
 
     def pagination_clicked(self, data):
         if data['action'] == 'prev':
@@ -118,4 +133,4 @@ class PagePage(QWidget):
 
     def search(self, data):
         self.params = data
-        self.show_data()
+        self.show_data(True)
