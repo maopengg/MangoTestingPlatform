@@ -27,7 +27,7 @@ class ClientNameEnum(BaseEnum):
     DRIVER = 'Mango Actuator'
     SERVER = 'Mango Server'
     WEB = 'mango-console'
-    PLATFORM_CHINESE = '芒果自动化测试平台'
+    PLATFORM_CHINESE = '芒果测试平台'
     PLATFORM_ENGLISH = 'MangoTestPlatform'
 
     @classmethod

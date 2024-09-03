@@ -33,7 +33,7 @@
             <div class="date">{dateStr}</div>
             <div class="time">{timeStr.value}</div>
           </div>
-          <div class="center">芒果自动化测试平台</div>
+          <div class="center">芒果测试平台</div>
           <div class="right">
             <div>{userSum.value}</div>
             <div style={{ color: '#333', fontSize: '12px' }}>当前在线人数</div>

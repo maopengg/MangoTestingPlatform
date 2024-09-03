@@ -1,6 +1,6 @@
 import { DeviceType } from '@/store/types'
 
-export const projectName = '芒果自动化测试平台'
+export const projectName = '芒果测试平台'
 
 export default {
   theme: 'light',
