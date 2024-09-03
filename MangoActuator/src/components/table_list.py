@@ -29,9 +29,10 @@ class TableList(QWidget):
         self.setLayout(self.layout)
         self.page_size = 10
 
-    def set_data(self, data, total_size):
+    def set_data(self, data, total_size: int | None = None):
         self.table_widget.setRowCount(0)
-        self.pagination.set_total_size(total_size)
+        if total_size:
+            self.pagination.set_total_size(str(total_size))
         if data is None:
             return
         for row, item in enumerate(data):
@@ -48,29 +49,23 @@ class TableList(QWidget):
                 action_layout = QHBoxLayout()
                 action_widget.setLayout(action_layout)
                 for ope in self.row_ope:
+                    but = QPushButton(ope['name'])
+                    but.setStyleSheet(
+                        'QPushButton { background-color: transparent; border: none; padding: 0; color: blue; font-size: 11px; }')
+                    but.setCursor(QCursor(Qt.PointingHandCursor))
+                    action_layout.addWidget(but)
                     if ope.get('son', None) is None:
-                        but = QPushButton(ope['name'])
                         but.clicked.connect(partial(self.but_clicked, {'action': ope['action'], 'row': item}))
-                        but.setStyleSheet(
-                            'QPushButton { background-color: transparent; border: none; padding: 0; color: blue; font-size: 11px; }')
-                        but.setCursor(QCursor(Qt.PointingHandCursor))
-                        action_layout.addWidget(but)
-                    else:
-                        menu_button = QPushButton(ope['name'])
-                        menu_button.setStyleSheet(
-                            'QPushButton { background-color: transparent; border: none; padding: 0; color: blue; font-size: 11px; }')
-                        menu_button.setCursor(QCursor(Qt.PointingHandCursor))
-                        action_layout.addWidget(menu_button)
 
+                    else:
                         # 创建菜单
                         menu = QMenu()
                         for ope1 in ope.get('son'):
                             action = QAction(ope1['name'], self)
                             action.triggered.connect(partial(self.but_clicked, {'action': ope1['action'], 'row': item}))
                             menu.addAction(action)
-
                         # 显示菜单
-                        menu_button.clicked.connect(lambda: menu.exec_(QCursor.pos()))
+                        but.clicked.connect(lambda _, m=menu: m.exec_(QCursor.pos()))
 
                 self.table_widget.setCellWidget(row, len(self.row_column) - 1, action_widget)
 

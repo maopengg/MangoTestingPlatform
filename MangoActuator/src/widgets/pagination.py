@@ -49,6 +49,7 @@ class MangoPagination(QWidget):
 
         # 连接下拉选择框的信号到槽函数，以处理每页展示条数的变化
         self.items_per_page_combo.currentIndexChanged.connect(self.on_items_per_page_changed)
+        self.button_enabled()
 
     def on_prev_page(self):
         self.page -= 1
@@ -69,7 +70,8 @@ class MangoPagination(QWidget):
 
     def set_total_size(self, total_size: str):
         self.current_page_label1.setText(f"共 {total_size} 条")
-        self.common = int(total_size)
+        if total_size:
+            self.common = int(total_size)
 
     def button_enabled(self):
         if self.page > 1:

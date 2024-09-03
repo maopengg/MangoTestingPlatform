@@ -1,62 +1,41 @@
-from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QPushButton, QLabel, QComboBox
+from PySide6.QtCore import QPoint
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QMenu
 
-
-class MangoPagination(QWidget):
+class MyWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # 创建左右箭头图标按钮（使用 QPushButton 并设置样式）
-        self.current_page_label1 = QLabel("共 5 条")
+        self.button = QPushButton("点击显示菜单", self)
+        self.button.move(50, 50)
 
-        self.prev_icon_button = QPushButton()
-        self.prev_icon_button.setMaximumWidth(30)
-        self.prev_icon_button.setText('<')
+        # 创建菜单
+        self.menu = QMenu(self)
+        action1 = self.menu.addAction("选项一")
+        action2 = self.menu.addAction("选项二")
+        action3 = self.menu.addAction("选项三")
 
-        self.next_icon_button = QPushButton()
-        self.next_icon_button.setMaximumWidth(30)
+        # 将每个选项的触发信号连接到对应的槽函数
+        action1.triggered.connect(self.option_one_function)
+        action2.triggered.connect(self.option_two_function)
+        action3.triggered.connect(self.option_three_function)
 
-        self.next_icon_button.setText('>')
+        # 将按钮的点击信号连接到显示菜单的槽函数
+        self.button.clicked.connect(self.show_menu)
 
-        # 创建当前页显示的标签
-        self.current_page_label = QLabel("1")
+    def show_menu(self):
+        # 在按钮位置展示菜单
+        self.menu.exec(self.button.mapToGlobal(QPoint(0, self.button.height())))
 
-        # 创建每页展示条数的下拉选择框
-        self.items_per_page_combo = QComboBox()
-        self.items_per_page_combo.addItems(["10 条/页", "20 条/页", "30 条/页", "50 条/页", "100 条/页"])
+    def option_one_function(self):
+        print("选项一被选中")
 
-        # 布局设置
-        layout = QHBoxLayout()
-        layout.addStretch()
-        layout.addWidget(self.current_page_label1)
-        layout.addWidget(self.prev_icon_button)
-        layout.addWidget(self.current_page_label)
-        layout.addWidget(self.next_icon_button)
-        layout.addWidget(self.items_per_page_combo)
+    def option_two_function(self):
+        print("选项二被选中")
 
-        self.setLayout(layout)
-
-        # 连接左右箭头按钮的点击信号到相应的槽函数（示例，需自定义具体逻辑）
-        self.prev_icon_button.clicked.connect(self.on_prev_page)
-        self.next_icon_button.clicked.connect(self.on_next_page)
-
-        # 连接下拉选择框的信号到槽函数，以处理每页展示条数的变化
-        self.items_per_page_combo.currentIndexChanged.connect(self.on_items_per_page_changed)
-
-    def on_prev_page(self):
-        print("上一页被点击")
-        # 在这里实现上一页的逻辑，更新当前页显示等
-
-    def on_next_page(self):
-        print("下一页被点击")
-        # 在这里实现下一页的逻辑，更新当前页显示等
-
-    def on_items_per_page_changed(self, index):
-        selected_text = self.items_per_page_combo.itemText(index)
-        number_part = selected_text.split(" ")[0]
-        print(f"每页展示条数变更为：{number_part}")
-
+    def option_three_function(self):
+        print("选项三被选中")
 
 app = QApplication([])
-pagination_widget = PaginationWidget()
-pagination_widget.show()
+window = MyWindow()
+window.show()
 app.exec()

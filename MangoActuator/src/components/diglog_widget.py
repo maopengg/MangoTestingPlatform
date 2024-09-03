@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import *
 
 from src.settings.settings import THEME
@@ -10,18 +11,17 @@ from src.widgets import *
 
 
 class DialogWidget(MangoDialog):
-    def __init__(self, tips: str, size: super = (400, 300)):
+    clicked = Signal(object)
+
+    def __init__(self, tips: str, from_data: list[dict], size: super = (400, 300)):
         super().__init__(tips, size)
+        self.form_data = from_data
         # 创建表单布局
         form_layout = QFormLayout()
-        self.input_1 = PyLineEdit('', '请选择项目产品')
-        self.input_2 = PyLineEdit('', '请选择模块')
-        self.input_3 = PyLineEdit('', '请输入页面名称')
-        self.input_4 = PyLineEdit('', '请输入页面地址')
-        form_layout.addRow("项目/产品:", self.input_1)
-        form_layout.addRow("模块:", self.input_2)
-        form_layout.addRow("页面名称:", self.input_3)
-        form_layout.addRow("页面地址:", self.input_4)
+        for form in self.form_data:
+            intput = PyLineEdit(form['text'], form['place_holder_text'])
+            form_layout.addRow(f"{form['title']}:", intput)
+            form['intput'] = intput
 
         # 创建主布局
         main_layout = QVBoxLayout()
@@ -46,9 +46,11 @@ class DialogWidget(MangoDialog):
 
         # 设置主布局
         self.setLayout(main_layout)
+        self.data = {}
 
     def submit_form(self):
-        # 处理表单提交的逻辑
-        print(f"字段1: {self.input_1.text()}")
-        print(f"字段2: {self.input_2.text()}")
+        for form in self.form_data:
+            value = form['intput'].text()
+            if value:
+                self.data[form['key']] = value
         self.accept()  # 关闭对话框

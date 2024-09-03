@@ -3,12 +3,14 @@
 # @Description:
 # @Time   : 2024-08-30 14:08
 # @Author : 毛鹏
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import *
 
 from src.widgets import *
 
 
 class RightButton(QWidget):
+
     def __init__(self, but_list_obj: list[dict]):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)

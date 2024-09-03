@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2024-08-30 14:08
 # @Author : 毛鹏
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import *
 
 from src.settings.settings import THEME
@@ -10,47 +11,51 @@ from src.widgets import *
 
 
 class TitleWidget(QWidget):
-    def __init__(self, ):
+    clicked = Signal(object)
+
+    def __init__(self, search_list: list[dict]):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
-
         self.setLayout(self.layout)
 
-        self.from_layout_1 = QFormLayout()
-        self.intput_1 = PyLineEdit('', '请输入页面ID')
-        self.from_layout_1.addRow('ID：', self.intput_1)
+        self.search_list = search_list
+        for search in self.search_list:
+            from_layout = QFormLayout()
+            intput = PyLineEdit('', search['place_holder_text'])
+            from_layout.addRow(f'{search["title"]}：', intput)
+            self.layout.addLayout(from_layout)
+            search['intput'] = intput
 
-        self.from_layout_2 = QFormLayout()
-        self.intput_2 = PyLineEdit('', '请输入页面名称')
-
-        self.from_layout_2.addRow('页面名称：', self.intput_2)
-
-        self.from_layout_3 = QFormLayout()
-        self.intput_3 = PyLineEdit('', '请选择项目产品')
-
-        self.from_layout_3.addRow('产品：', self.intput_3)
-        self.from_layout_4 = QFormLayout()
-        self.intput_4 = PyLineEdit('', '请选择产品模块')
-
-        self.from_layout_4.addRow('模块：', self.intput_4)
-
-        self.but_1 = PyPushButton('搜索', bg_color=THEME.blue)
-        self.but_1.setMinimumHeight(30)  # 设置最小高度
-        self.but_1.setMinimumWidth(50)
-        self.but_2 = PyPushButton('重置', bg_color=THEME.red)
-        self.but_2.setMinimumHeight(30)  # 设置最小高度
-        self.but_1.setMinimumWidth(50)
-
-        self.layout.addLayout(self.from_layout_1)
-        self.layout.addLayout(self.from_layout_2)
-        self.layout.addLayout(self.from_layout_3)
-        self.layout.addLayout(self.from_layout_4)
         self.layout.addStretch()
-        self.layout.addWidget(self.but_1)
-        self.layout.addWidget(self.but_2)
+        self.search_but = PyPushButton('搜索', bg_color=THEME.blue)
+        self.search_but.setMinimumHeight(30)  # 设置最小高度
+        self.search_but.setMinimumWidth(50)
+        self.search_but.clicked.connect(self.on_search_but_clicked)
+
+        self.layout.addWidget(self.search_but)
+
+        self.reset_but = PyPushButton('重置', bg_color=THEME.red)
+        self.reset_but.setMinimumHeight(30)  # 设置最小高度
+        self.reset_but.setMinimumWidth(50)
+        self.reset_but.clicked.connect(self.on_reset_but_clicked)
+        self.layout.addWidget(self.reset_but)
+
         self.layout.addLayout(self.layout)
+
+    def on_reset_but_clicked(self):
+        for search in self.search_list:
+            search['intput'].setText('')
+        self.clicked.emit({})
+
+    def on_search_but_clicked(self):
+        data = {}
+        for search in self.search_list:
+            value = search['intput'].text()
+            if value:
+                data[search['key']] = value
+        self.clicked.emit(data)
 
 
 if __name__ == '__main__':
