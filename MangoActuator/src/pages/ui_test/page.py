@@ -7,7 +7,7 @@ import copy
 
 from src import *
 from src.components import *
-from src.models.gui_model import TitleDataModel, FromDataModel, TableColumnModel, TableMenuItemModel
+from src.models.gui_model import TitleDataModel, FormDataModel, TableColumnModel, TableMenuItemModel
 from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
 
@@ -19,12 +19,11 @@ class PagePage(QWidget):
         {'title': '产品', 'placeholder': '请选择项目产品', 'key': 'project_product', 'input': None},
         {'title': '模块', 'placeholder': '请选择产品模块', 'key': 'module', 'input': None}
     ]]
-    from_data = [FromDataModel(**i) for i in [
-        {'title': '项目/产品', 'placeholder': '请选择项目产品', 'key': 'project_product', 'input': None,
-         'text': None},
-        {'title': '模块', 'placeholder': '请选择模块', 'key': 'module', 'input': None, 'text': None},
-        {'title': '页面名称', 'placeholder': '请输入页面名称', 'key': 'name', 'input': None, 'text': None},
-        {'title': '页面地址', 'placeholder': '请输入页面地址', 'key': 'url', 'input': None, 'text': None}
+    from_data = [FormDataModel(**i) for i in [
+        {'title': '项目/产品', 'placeholder': '请选择项目产品', 'key': 'project_product', 'input': None, 'text': None, 'type': 1},
+        {'title': '模块', 'placeholder': '请选择模块', 'key': 'module', 'input': None, 'text': None, 'type': 1},
+        {'title': '页面名称', 'placeholder': '请输入页面名称', 'key': 'name', 'input': None, 'text': None,'type': 0},
+        {'title': '页面地址', 'placeholder': '请输入页面地址', 'key': 'url', 'input': None, 'text': None, 'type': 0},
     ]]
     table_column = [TableColumnModel(**i) for i in [
         {'key': 'id', 'name': 'ID', 'item': ''},

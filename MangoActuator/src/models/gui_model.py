@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
+from src.enums.gui_enum import InputEnum
+
 
 class Font(BaseModel):
     family: str
@@ -99,13 +101,14 @@ class TitleDataModel(BaseModel):
     # input: MangoLineEdit | None = None
 
 
-class FromDataModel(BaseModel):
+class FormDataModel(BaseModel):
     title: str
     placeholder: str
     key: str
     input: None = None
     # input: MangoLineEdit | None = None
     text: str | None = None
+    type: InputEnum
 
 
 class TableColumnModel(BaseModel):

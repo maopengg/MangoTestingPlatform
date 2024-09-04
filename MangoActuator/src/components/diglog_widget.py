@@ -4,23 +4,29 @@
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
 from src import *
-from src.models.gui_model import FromDataModel
+from src.models.gui_model import FormDataModel
 from src.widgets import *
+from src.enums.gui_enum import *
+from src.widgets.mango_combo_box import MangoComboBox
 
 
 class DialogWidget(MangoDialog):
     clicked = Signal(object)
 
-    def __init__(self, tips: str, from_data: list[FromDataModel], size: super = (400, 300)):
+    def __init__(self, tips: str, form_data: list[FormDataModel], size: super = (400, 300)):
         super().__init__(tips, size)
-        self.form_data = from_data
+        self.form_data = form_data
         # 创建表单布局
         form_layout = QFormLayout()
         for form in self.form_data:
-            intput = MangoLineEdit(form.text, form.placeholder)
-            form_layout.addRow(f"{form.title}:", intput)
-            form.input = intput
-
+            if form.type == InputEnum.INPUT:
+                intput = MangoLineEdit(form.text, form.placeholder)
+                form_layout.addRow(f"{form.title}:", intput)
+                form.input = intput
+            elif form.type == InputEnum.SELECT:
+                select = MangoComboBox(form.placeholder)
+                form_layout.addRow(f"{form.title}:", select)
+                form.input = select
         # 创建主布局
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)

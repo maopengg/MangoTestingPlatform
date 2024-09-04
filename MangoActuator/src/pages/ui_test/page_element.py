@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout
 from src.components import *
 from src.components.message import response_message
 from src.components.title_info import TitleInfoWidget
-from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FromDataModel
+from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FormDataModel
 from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
 from src.settings.settings import THEME
@@ -34,14 +34,14 @@ class PageElementPage(QWidget):
     field_list = [FieldListModel(**i) for i in [
         {'key': 'id', 'name': '页面ID'}, {'key': 'url', 'name': '页面地址'}, {'key': 'name', 'name': '页面名称'},
     ]]
-    from_data = [FromDataModel(**i) for i in [
+    from_data = [FormDataModel(**i) for i in [
         {'title': '元素名称', 'placeholder': '请输入元素名称', 'key': 'name', 'input': None,
-         'text': None},
+         'text': None,'type':0},
         {'title': '表达式类型', 'placeholder': '请选择元素表达式类型', 'key': 'exp', 'input': None,
-         'text': None},
-        {'title': '元素表达式', 'placeholder': '元素表达式', 'key': 'loc', 'input': None, 'text': None},
-        {'title': '等待时间', 'placeholder': '请输入元素等待时间', 'key': 'sleep', 'input': None, 'text': None},
-        {'title': '元素下标', 'placeholder': '请输入元素下标', 'key': 'sub', 'input': None, 'text': None}
+         'text': None,'type':0},
+        {'title': '元素表达式', 'placeholder': '元素表达式', 'key': 'loc', 'input': None, 'text': None,'type':0},
+        {'title': '等待时间', 'placeholder': '请输入元素等待时间', 'key': 'sleep', 'input': None, 'text': None,'type':0},
+        {'title': '元素下标', 'placeholder': '请输入元素下标', 'key': 'sub', 'input': None, 'text': None,'type':0}
     ]]
 
     def __init__(self, parent):
