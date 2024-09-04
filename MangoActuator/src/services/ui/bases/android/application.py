@@ -4,7 +4,6 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import time
-
 import uiautomator2
 
 from src.exceptions.error_msg import ERROR_MSG_0046

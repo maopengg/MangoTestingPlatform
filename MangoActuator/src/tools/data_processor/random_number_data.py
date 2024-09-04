@@ -4,8 +4,8 @@
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import random
-import time
 
+import time
 from faker import Faker
 
 

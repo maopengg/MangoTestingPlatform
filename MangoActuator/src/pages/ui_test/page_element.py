@@ -8,11 +8,11 @@ import copy
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from src.components import *
+from src.components.message import response_message
 from src.components.title_info import TitleInfoWidget
-from src.models.service_http_model import ResponseModel
-from src.network.http_client import HttpClient
+from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
-from src.widgets import *
+from src.settings.settings import THEME
 
 
 class PageElementPage(QWidget):
@@ -31,7 +31,16 @@ class PageElementPage(QWidget):
         {'name': '删除', 'action': 'delete'}
     ]
     field_list = [
-        {'key': 'id', 'name': '页面ID'}, {'key': 'url', 'name': '页面地址'},{'key': 'name', 'name': '页面名称'},
+        {'key': 'id', 'name': '页面ID'}, {'key': 'url', 'name': '页面地址'}, {'key': 'name', 'name': '页面名称'},
+    ]
+    from_data = [
+        {'title': '元素名称', 'place_holder_text': '请输入元素名称', 'key': 'name', 'intput': None,
+         'text': None},
+        {'title': '表达式类型', 'place_holder_text': '请选择元素表达式类型', 'key': 'exp', 'intput': None,
+         'text': None},
+        {'title': '元素表达式', 'place_holder_text': '元素表达式', 'key': 'loc', 'intput': None, 'text': None},
+        {'title': '等待时间', 'place_holder_text': '请输入元素等待时间', 'key': 'sleep', 'intput': None, 'text': None},
+        {'title': '元素下标', 'place_holder_text': '请输入元素下标', 'key': 'sub', 'intput': None, 'text': None}
     ]
 
     def __init__(self, parent):
@@ -46,6 +55,13 @@ class PageElementPage(QWidget):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.title_info = TitleInfoWidget()
         self.layout.addWidget(self.title_info)
+
+        self.right_data = [
+            {'name': '新增', 'theme': THEME.blue, 'func': self.add},
+            {'name': '返回', 'theme': THEME.orange, 'func': self.back}
+        ]
+        self.right_but = RightButton(self.right_data)
+        self.layout.addWidget(self.right_but)
 
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.clicked.connect(self.pagination_clicked)
@@ -65,10 +81,6 @@ class PageElementPage(QWidget):
         row = data['row']
         if action == 'edit':
             self.edit(row)
-        elif action == 'add_ele':
-            self.add_ele(row)
-        elif action == 'copy':
-            self.copy(row)
         elif action == 'delete':
             self.delete(row)
 
@@ -77,9 +89,12 @@ class PageElementPage(QWidget):
         dialog = DialogWidget('新建页面', from_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            response_model: ResponseModel = HttpClient.post_page(dialog.data)
+            response_model: ResponseModel = HttpUi.post_page_element(dialog.data)
             response_message(self, response_model)
         self.show_data()
+
+    def back(self, row):
+        self.parent.set_page('page', row)
 
     def edit(self, row):
         from_data = copy.deepcopy(self.from_data)
@@ -93,18 +108,12 @@ class PageElementPage(QWidget):
         if dialog.data:
             data = dialog.data
             data['id'] = row['id']
-            response_model: ResponseModel = HttpClient.put_page(data)
+            response_model: ResponseModel = HttpUi.put_page_element(data)
             response_message(self, response_model)
         self.show_data()
 
-    def add_ele(self, row):
-        self.parent.set_page('page_element')
-
-    def copy(self, row):
-        print('点击了复制', row)
-
     def delete(self, row):
-        response_model: ResponseModel = HttpClient.delete_page(row.get('id'))
+        response_model: ResponseModel = HttpUi.delete_page_element(row.get('id'))
         response_message(self, response_model)
         self.show_data()
 

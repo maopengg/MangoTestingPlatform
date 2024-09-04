@@ -65,6 +65,7 @@ class ThemeConfig(BaseModel):
     red: str
     yellow: str
     blue: str
+    orange: str
 
 
 class LeftMenuModel(BaseModel):

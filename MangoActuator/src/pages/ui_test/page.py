@@ -8,10 +8,9 @@ import copy
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
 from src.components import *
-from src.models.service_http_model import ResponseModel
+from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
 from src.settings.settings import THEME
-from src.widgets import *
 
 
 class PagePage(QWidget):

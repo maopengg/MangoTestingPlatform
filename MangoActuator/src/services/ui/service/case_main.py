@@ -6,7 +6,7 @@
 
 import asyncio
 
-from src.models.socket_model.ui_model import CaseModel
+from src.models.ui_model import CaseModel
 from src.services.ui.service.case_steps import CaseSteps
 from src.tools.decorator.memory import async_memory
 from ..bases.driver_object import DriverObject

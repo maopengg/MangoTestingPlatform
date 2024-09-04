@@ -15,7 +15,7 @@ from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
-from src.models.socket_model.ui_model import CaseModel, CaseResultModel
+from src.models.ui_model import CaseModel, CaseResultModel
 from src.network.websocket_client import WebSocketClient
 from src.services.ui.service.step_elements import StepElements
 from src.tools import InitPath

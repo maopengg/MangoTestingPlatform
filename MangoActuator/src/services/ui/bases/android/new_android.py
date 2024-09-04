@@ -9,7 +9,7 @@ from adbutils import AdbTimeout
 
 from src.exceptions.error_msg import ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
 from src.exceptions.ui_exception import NewObjectError
-from src.models.socket_model.ui_model import AndroidConfigModel
+from src.models.ui_model import AndroidConfigModel
 from src.tools.desktop.signal_send import SignalSend
 
 """

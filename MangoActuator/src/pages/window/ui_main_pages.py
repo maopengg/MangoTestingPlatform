@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# @Project: auto_test
+# @Description:
+# @Time   : 2024-08-16 17:05
+# @Author : 毛鹏
 from PySide6.QtCore import QMetaObject
 from PySide6.QtWidgets import QVBoxLayout, QStackedWidget
 
@@ -42,9 +47,12 @@ class MainPages:
         QMetaObject.connectSlotsByName(main_window)
 
     def set_page(self, page, data: dict | None = None):
-        if isinstance(page, str) and data:
+        if isinstance(page, str) and data is not None:
             page = self.page_dict.get(page)
-            page.data = data
+            if isinstance(data, dict):
+                page.data = data
+            else:
+                page.data = {}
         try:
             page.show_data()
         except AttributeError:

@@ -3,11 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-28 16:33
 # @Author : 毛鹏
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
-
-from src.settings.settings import THEME
+from src import *
 from src.tools import InitPath
 from src.widgets import *
 
@@ -89,7 +85,7 @@ class ComponentPage(QWidget):
         self.circular_progress_3.setFixedSize(140, 140)
 
         # PY SLIDER 1
-        self.vertical_slider_1 = PySlider(
+        self.vertical_slider_1 = MangoSlider(
             margin=8,
             bg_size=10,
             bg_radius=5,
@@ -100,11 +96,11 @@ class ComponentPage(QWidget):
         self.vertical_slider_1.setMinimumHeight(100)
 
         # PY SLIDER 2
-        self.vertical_slider_2 = PySlider()
+        self.vertical_slider_2 = MangoSlider()
         self.vertical_slider_2.setMinimumHeight(100)
 
         # PY SLIDER 3
-        self.vertical_slider_3 = PySlider(
+        self.vertical_slider_3 = MangoSlider(
             margin=8,
             bg_size=10,
             bg_radius=5,
@@ -116,12 +112,12 @@ class ComponentPage(QWidget):
         self.vertical_slider_3.setMaximumWidth(200)
 
         # PY SLIDER 4
-        self.vertical_slider_4 = PySlider()
+        self.vertical_slider_4 = MangoSlider()
         self.vertical_slider_4.setOrientation(Qt.Horizontal)
         self.vertical_slider_4.setMaximumWidth(200)
 
         # ICON BUTTON 1
-        self.icon_button_1 = PyIconButton(
+        self.icon_button_1 = MangoIconButton(
             parent=self,
             app_parent=self.central_widget,
             tooltip_text="Icon button - Heart",
@@ -131,7 +127,7 @@ class ComponentPage(QWidget):
         )
 
         # ICON BUTTON 2
-        self.icon_button_2 = PyIconButton(
+        self.icon_button_2 = MangoIconButton(
             parent=self,
             app_parent=self.central_widget,
             tooltip_text="BTN with tooltip",
@@ -149,7 +145,7 @@ class ComponentPage(QWidget):
         )
 
         # ICON BUTTON 3
-        self.icon_button_3 = PyIconButton(
+        self.icon_button_3 = MangoIconButton(
             icon_path=InitPath.set_svg_icon("icon_add_user.svg"),
             parent=self,
             app_parent=self.central_widget,
@@ -169,13 +165,13 @@ class ComponentPage(QWidget):
         )
 
         # PUSH BUTTON 1
-        self.push_button_1 = PyPushButton(
+        self.push_button_1 = MangoPushButton(
             text="Button Without Icon",
         )
         self.push_button_1.setMinimumHeight(40)
 
         # PUSH BUTTON 2
-        self.push_button_2 = PyPushButton(
+        self.push_button_2 = MangoPushButton(
             text="Button With Icon",
 
         )
@@ -184,14 +180,14 @@ class ComponentPage(QWidget):
         self.push_button_2.setIcon(self.icon_2)
 
         # PY LINE EDIT
-        self.line_edit = PyLineEdit(
+        self.line_edit = MangoLineEdit(
             text="",
             place_holder_text="Place holder text",
         )
         self.line_edit.setMinimumHeight(30)
 
         # TOGGLE BUTTON
-        self.toggle_button = PyToggle(
+        self.toggle_button = MangoToggle(
             width=50,
             bg_color=THEME.dark_two,
             circle_color=THEME.icon_color,
@@ -199,7 +195,7 @@ class ComponentPage(QWidget):
         )
 
         # TABLE WIDGETS
-        self.table_widget = PyTableWidget()
+        self.table_widget = MangoTableWidget()
         self.table_widget.setColumnCount(3)
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)

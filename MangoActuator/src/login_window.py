@@ -1,6 +1,5 @@
 from PySide6.QtCore import Slot
-from PySide6.QtGui import QIcon, Qt
-from PySide6.QtWidgets import QWidget
+from PySide6.QtGui import QIcon
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.network.http_client import HttpClient
@@ -9,7 +8,7 @@ from src.pages.mian_window import MainWindow
 from src.settings import settings
 from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from src.tools.database.sqlite_connect import SQLiteConnect
-from src.widgets.tooltip_box import show_failed_message
+from src.widgets.mango_tooltip_box import show_failed_message
 
 
 class LoginLogic(LoginWindow):

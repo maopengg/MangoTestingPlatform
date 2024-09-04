@@ -10,8 +10,16 @@ class BaseEnum(Enum):
     """基础枚举类，提供通用的三个方法"""
 
     @classmethod
-    def get_option(cls):
-        return [{'key': key, 'title': value} for key, value in cls.obj().items()]
+    def get_option(cls, k='key', v='title') -> list:
+        return [{k: key, v: value} for key, value in cls.obj().items()]
+
+    @classmethod
+    def get_value_list(cls) -> list:
+        return [value for key, value in cls.obj().items()]
+
+    @classmethod
+    def get_key_list(cls) -> list:
+        return [key for key, value in cls.obj().items()]
 
     @classmethod
     def get_value(cls, key: int):

@@ -10,6 +10,7 @@
 # @Author : 毛鹏
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import *
+
 from src.settings.settings import THEME
 
 
@@ -37,12 +38,10 @@ class TitleInfoWidget(QWidget):
 
         self.frame.setLayout(self.layout)
 
-
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.frame)
         self.setLayout(main_layout)
-
 
     def init(self, raw_data: dict, field_list: list[dict]):
         self.field_list = field_list
@@ -55,6 +54,6 @@ class TitleInfoWidget(QWidget):
             value_label = QLabel(str(self.raw_data[i['key']]))
             value_label.setAttribute(Qt.WA_NoSystemBackground)
             value_label.setContentsMargins(0, 0, 0, 0)
-            self.layout.addWidget(key_label, row, 0,)
+            self.layout.addWidget(key_label, row, 0, )
             self.layout.addWidget(value_label, row, 1, )
             row += 1

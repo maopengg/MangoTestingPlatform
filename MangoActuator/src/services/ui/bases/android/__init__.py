@@ -13,7 +13,7 @@ from src.exceptions.error_msg import ERROR_MSG_0022, ERROR_MSG_0020, ERROR_MSG_0
     ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018
 from src.exceptions.ui_exception import LocatorError, UiTimeoutError, ElementLocatorError, XpathElementNoError, \
     ElementIsEmptyError, UiSqlAssertionError, UiAssertionError
-from src.models.socket_model.ui_model import ElementModel, ElementResultModel
+from src.models.ui_model import ElementModel, ElementResultModel
 from src.services.ui.bases.android.application import UiautomatorApplication
 from src.services.ui.bases.android.assertion import UiautomatorAssertion
 from src.services.ui.bases.android.customization import UiautomatorCustomization

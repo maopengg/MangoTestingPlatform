@@ -4,7 +4,7 @@
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
 
-from src.models.socket_model.api_model import RequestModel
+from src.models.api_model import RequestModel
 from src.tools.data_processor import DataProcessor
 from src.tools.database.mysql_connect import MysqlConnect
 from src.tools.log_collector import log

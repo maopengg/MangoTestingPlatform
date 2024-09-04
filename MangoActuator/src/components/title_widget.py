@@ -3,10 +3,8 @@
 # @Description:
 # @Time   : 2024-08-30 14:08
 # @Author : 毛鹏
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import *
+from src import *
 
-from src.settings.settings import THEME
 from src.widgets import *
 
 
@@ -23,20 +21,20 @@ class TitleWidget(QWidget):
         self.search_list = search_list
         for search in self.search_list:
             from_layout = QFormLayout()
-            intput = PyLineEdit('', search['place_holder_text'])
+            intput = MangoLineEdit('', search['place_holder_text'])
             from_layout.addRow(f'{search["title"]}：', intput)
             self.layout.addLayout(from_layout)
             search['intput'] = intput
 
         self.layout.addStretch()
-        self.search_but = PyPushButton('搜索', bg_color=THEME.blue)
+        self.search_but = MangoPushButton('搜索', bg_color=THEME.blue)
         self.search_but.setMinimumHeight(30)  # 设置最小高度
         self.search_but.setMinimumWidth(50)
         self.search_but.clicked.connect(self.on_search_but_clicked)
 
         self.layout.addWidget(self.search_but)
 
-        self.reset_but = PyPushButton('重置', bg_color=THEME.red)
+        self.reset_but = MangoPushButton('重置', bg_color=THEME.red)
         self.reset_but.setMinimumHeight(30)  # 设置最小高度
         self.reset_but.setMinimumWidth(50)
         self.reset_but.clicked.connect(self.on_reset_but_clicked)

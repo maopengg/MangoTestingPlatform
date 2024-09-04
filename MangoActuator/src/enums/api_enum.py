@@ -10,11 +10,12 @@ class ClientEnum(BaseEnum):
     """设备类型"""
     WEB = 0
     APP = 1
-    MINI = 2
+    PC = 2
+    MINI = 3
 
     @classmethod
     def obj(cls):
-        return {0: "WEB", 1: "APP", 2: "MINI"}
+        return {0: "WEB", 1: "PC桌面", 2: "APP", 3: "小程序", }
 
 
 class MethodEnum(BaseEnum):
@@ -53,3 +54,15 @@ class ApiTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "批量生成", 1: "调试接口", 2: "调试完成"}
+
+
+class ApiParameterTypeEnum(BaseEnum):
+    """api请求参数的类型"""
+    params = 0
+    data = 1
+    json = 2
+    file = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "参数", 1: "表单", 2: "json", 3: "文件"}

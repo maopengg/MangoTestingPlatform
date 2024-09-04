@@ -9,7 +9,7 @@ from PySide6.QtWidgets import *
 from resources.icons.app_rc import *
 from src.network.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
-from src.widgets.tooltip_box import show_info_message
+from src.widgets.mango_tooltip_box import show_info_message
 
 os.environ["QT_FONT_DPI"] = "96"
 

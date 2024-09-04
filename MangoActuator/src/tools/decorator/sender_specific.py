@@ -6,7 +6,7 @@
 from blinker import signal
 
 # 创建一个名为 'custom_signal' 的信号
-from src.models.socket_model.ui_model import WEBConfigModel
+from src.models.ui_model import WEBConfigModel
 
 custom_signal = signal('custom_signal')
 

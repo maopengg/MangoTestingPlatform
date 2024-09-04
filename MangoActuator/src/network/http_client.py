@@ -4,13 +4,11 @@
 # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
-import json
 import os
 
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0007
 from src.exceptions.tools_exception import FileNotError
-from src.models.service_http_model import ResponseModel
 from src.network import HttpRequest
 from src.tools import InitPath
 from src.tools.log_collector import log
@@ -64,7 +62,6 @@ class HttpClient(HttpRequest):
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
-
 
 
 if __name__ == '__main__':

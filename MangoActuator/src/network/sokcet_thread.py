@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 
 import asyncio
-import time
 import traceback
 from asyncio.exceptions import CancelledError
 
+import time
 from PySide6.QtCore import QThreadPool, QThread, Signal, Slot, QObject
 from websocket import WebSocketConnectionClosedException
 

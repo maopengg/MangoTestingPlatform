@@ -12,7 +12,7 @@ from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from src.exceptions.error_msg import *
 from src.exceptions.ui_exception import *
-from src.models.socket_model.ui_model import ElementModel, ElementResultModel
+from src.models.ui_model import ElementModel, ElementResultModel
 from src.services.ui.bases.web.assertion import PlaywrightAssertion
 from src.services.ui.bases.web.browser import PlaywrightBrowser
 from src.services.ui.bases.web.customization import PlaywrightCustomization

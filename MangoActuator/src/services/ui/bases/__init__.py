@@ -8,7 +8,7 @@ from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from src.exceptions.error_msg import *
 from src.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from src.exceptions.ui_exception import *
-from src.models.socket_model.ui_model import ElementResultModel, ElementModel
+from src.models.ui_model import ElementResultModel, ElementModel
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
 from src.tools.decorator.memory import async_memory

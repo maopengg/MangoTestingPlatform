@@ -7,7 +7,7 @@
 from aiohttp import ClientSession
 from aiohttp.client_reqrep import ClientResponse
 
-from src.models.socket_model.api_model import RequestModel
+from src.models.api_model import RequestModel
 from src.services.api.base_tools.dependence import Dependence
 from src.services.api.base_tools.http_request import HTTPRequest
 from src.tools.log_collector import log

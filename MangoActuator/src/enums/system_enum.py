@@ -22,10 +22,13 @@ class EnvironmentEnum(BaseEnum):
     TEST = 0
     PRE = 1
     PRO = 2
+    DEV = 3
+    UAT = 4
+    SIM = 5
 
     @classmethod
     def obj(cls):
-        return {0: "测试环境", 1: "预发环境", 2: "生产环境"}
+        return {0: "测试环境", 1: "预发环境", 2: "生产环境", 3: "开发环境", 4: "验收环境", 5: "仿真环境"}
 
 
 class AutoTestTypeEnum(BaseEnum):
@@ -37,6 +40,62 @@ class AutoTestTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "前端", 1: "接口", 2: "性能"}
+
+
+class CaseLevelEnum(BaseEnum):
+    """测试用例级别"""
+    P0 = 0
+    P1 = 1
+    P2 = 2
+    P3 = 3
+
+    @classmethod
+    def obj(cls):
+        return {0: "高", 1: "中", 2: "低", 3: "极低"}
+
+
+class CacheValueTypeEnum(BaseEnum):
+    """缓存数据类型"""
+    STR = 0
+    INT = 1
+    FLOAT = 2
+    BOOL = 3
+    NONE = 4
+    LIST = 5
+    DICT = 6
+    TUPLE = 7
+    JSON = 8
+
+    @classmethod
+    def obj(cls):
+        return {0: "字符串", 1: "整数", 2: "小数", 3: "布尔", 4: "null", 5: "列表", 6: "字典", 7: "元组", 8: "JSON"}
+
+
+class SocketEnum(BaseEnum):
+    WEB_PATH = '/web/socket'
+    CLIENT_PATH = '/client/socket'
+    ADMIN = 'admin'
+    CLIENT_CONN_OBJ = 'client_obj'
+    WEB_CONN_OBJ = 'web_obj'
+
+
+class CacheDataKeyEnum(BaseEnum):
+    """缓存KEY的名称"""
+    DOMAIN_NAME = '本系统的URL地址'
+    SEND_USER = '邮箱发送人'
+    EMAIL_HOST = '邮箱域名'
+    STAMP_KET = '邮箱的stamp_key'
+    API_TIMEOUT = 'API请求超时时间'
+
+    @classmethod
+    def obj(cls):
+        return {
+            'DOMAIN_NAME': None,
+            'SEND_USER': None,
+            'EMAIL_HOST': None,
+            'STAMP_KET': None,
+            'API_TIMEOUT': 15,
+        }
 
 
 class CacheDataKey2Enum(BaseEnum):
@@ -56,3 +115,9 @@ class CacheDataKey2Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {'DOMAIN_NAME': "本系统的URL地址"}
+
+
+class SystemEnvEnum(BaseEnum):
+    MASTER = 'master'
+    PROD = 'prod'
+    DEV = 'dev'

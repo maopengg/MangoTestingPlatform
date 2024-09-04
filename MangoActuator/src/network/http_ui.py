@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-03 16:25
 # @Author : 毛鹏
-from src.models.service_http_model import ResponseModel
+from src.models.network_model import ResponseModel
 from src.network import HttpRequest
 
 

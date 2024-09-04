@@ -3,9 +3,9 @@
 # @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
-import time
 import traceback
 
+import time
 from uiautomator2 import UiObject
 from uiautomator2.xpath import XPathSelector
 

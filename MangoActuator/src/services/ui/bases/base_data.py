@@ -12,8 +12,8 @@ from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0036, ERROR_MSG_0038
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
-from src.models.socket_model.ui_model import EnvironmentConfigModel, UiPublicModel
 from src.models.tools_model import MysqlConingModel
+from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
 from src.tools.data_processor import DataProcessor
 from src.tools.database.mysql_connect import MysqlConnect
 

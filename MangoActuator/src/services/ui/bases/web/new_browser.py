@@ -12,10 +12,10 @@ import asyncio
 import ctypes
 import os
 import string
-import time
 from typing import Optional
 from urllib import parse
 
+import time
 from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
@@ -27,8 +27,8 @@ from src.enums.tools_enum import CacheKeyEnum, StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
 from src.exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
-from src.models.socket_model.api_model import ApiInfoModel
-from src.models.socket_model.ui_model import WEBConfigModel
+from src.models.api_model import ApiInfoModel
+from src.models.ui_model import WEBConfigModel
 from src.network.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools import InitPath

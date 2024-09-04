@@ -9,7 +9,7 @@ from typing import Optional
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
-from src.models.socket_model.ui_model import PageStepsModel, WEBConfigModel
+from src.models.ui_model import PageStepsModel, WEBConfigModel
 from src.network.websocket_client import WebSocketClient
 from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.step_elements import StepElements

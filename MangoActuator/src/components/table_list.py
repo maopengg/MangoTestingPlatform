@@ -1,9 +1,6 @@
 from functools import partial
 
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QCursor, Qt, QAction
-from PySide6.QtWidgets import *
-
+from src import *
 from src.widgets import *
 
 
@@ -17,7 +14,7 @@ class TableList(QWidget):
         self.row_ope = row_ope
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.table_widget = PyTableWidget()
+        self.table_widget = MangoTableWidget()
         self.table_widget.setColumnCount(len(row_column))
         self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)

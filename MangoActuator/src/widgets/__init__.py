@@ -3,22 +3,23 @@
 # @Description: 
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
-from .checkbox import MangoCheckBox
-from .circular_progress import MangoCircularProgress
-from .diglog import MangoDialog
-from .label import MangoLabel
-from .py_credits import PyCredits
-from .py_grips import PyGrips
-from .py_icon_button import PyIconButton
-from .py_left_column import PyLeftColumn
-from .py_left_menu import PyLeftMenu
-from .py_line_edit import PyLineEdit
-from .py_push_button import PyPushButton
-from .py_slider import PySlider
-from .py_table_widget import PyTableWidget
-from .py_title_bar import PyTitleBar
-from .py_toggle import PyToggle
-from .py_window import PyWindow
-from .pagination import MangoPagination
-from .notification import error_notification, info_notification, success_notification, warning_notification
-from .message import response_message, info_message, success_message, warning_message,error_message
+from .mango_checkbox import MangoCheckBox
+from .mango_circular_progress import MangoCircularProgress
+from .mango_credits import MangoCredits
+from .mango_diglog import MangoDialog
+from .mango_grips import MangoGrips
+from .mango_icon_button import MangoIconButton
+from .mango_label import MangoLabel
+from .mango_left_column import MangoLeftColumn
+from .mango_left_menu import MangoLeftMenu
+from .mango_line_edit import MangoLineEdit
+from .mango_message import MangoMessage
+from .mango_notification import MangoNotification
+from .mango_pagination import MangoPagination
+from .mango_push_button import MangoPushButton
+from .mango_slider import MangoSlider
+from .mango_table_widget import MangoTableWidget
+from .mango_title_bar import MangoTitleBar
+from .mango_toggle import MangoToggle
+from .mango_tooltip_box import show_info_message, show_failed_message, show_success_message, show_warning_message
+from .mango_window import MangoWindow

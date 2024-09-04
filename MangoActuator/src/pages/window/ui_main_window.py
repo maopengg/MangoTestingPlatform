@@ -1,8 +1,10 @@
-from PySide6.QtGui import Qt
-from PySide6.QtWidgets import *
-
+# -*- coding: utf-8 -*-
+# @Project: auto_test
+# @Description:
+# @Time   : 2024-08-16 17:05
+# @Author : 毛鹏
+from src import *
 from src.pages.window.ui_main_pages import MainPages
-from src.settings.settings import *
 from src.widgets import *
 
 
@@ -27,7 +29,7 @@ class UIMainWindow(QMainWindow):
 
         # 加载PY窗口自定义小部件
         # 在PyWindow“布局”中添加所有小部件
-        self.window = PyWindow(self)
+        self.window = MangoWindow(self)
         if not STYLE.custom_title_bar:
             self.window.set_stylesheet(border_radius=0, border_size=0)
 
@@ -51,7 +53,7 @@ class UIMainWindow(QMainWindow):
             STYLE.left_menu_content_margins,
             STYLE.left_menu_content_margins
         )
-        self.left_menu = PyLeftMenu(
+        self.left_menu = MangoLeftMenu(
             parent=self.left_menu_frame,
             app_parent=self.central_widget,
         )
@@ -73,7 +75,7 @@ class UIMainWindow(QMainWindow):
         self.title_bar_frame.setMaximumHeight(40)
         self.title_bar_layout = QVBoxLayout(self.title_bar_frame)
         self.title_bar_layout.setContentsMargins(0, 0, 0, 0)
-        self.title_bar = PyTitleBar(
+        self.title_bar = MangoTitleBar(
             self,
             self.central_widget,
         )
@@ -107,7 +109,7 @@ class UIMainWindow(QMainWindow):
         self.credits_frame.setMaximumHeight(26)
         self.credits_layout = QVBoxLayout(self.credits_frame)
         self.credits_layout.setContentsMargins(0, 0, 0, 0)
-        self.credits = PyCredits(
+        self.credits = MangoCredits(
             bg_two=THEME.bg_two,
             copyright=STYLE.copyright,
             version=STYLE.version,
@@ -121,14 +123,14 @@ class UIMainWindow(QMainWindow):
         if STYLE.custom_title_bar:
             self.setWindowFlag(Qt.FramelessWindowHint)  # type: ignore
             self.setAttribute(Qt.WA_TranslucentBackground)  # type: ignore
-            self.left_grip = PyGrips(self, "left", )
-            self.right_grip = PyGrips(self, "right", )
-            self.top_grip = PyGrips(self, "top", )
-            self.bottom_grip = PyGrips(self, "bottom", )
-            self.top_left_grip = PyGrips(self, "top_left", )
-            self.top_right_grip = PyGrips(self, "top_right", )
-            self.bottom_left_grip = PyGrips(self, "bottom_left", )
-            self.bottom_right_grip = PyGrips(self, "bottom_right", )
+            self.left_grip = MangoGrips(self, "left", )
+            self.right_grip = MangoGrips(self, "right", )
+            self.top_grip = MangoGrips(self, "top", )
+            self.bottom_grip = MangoGrips(self, "bottom", )
+            self.top_left_grip = MangoGrips(self, "top_left", )
+            self.top_right_grip = MangoGrips(self, "top_right", )
+            self.bottom_left_grip = MangoGrips(self, "bottom_left", )
+            self.bottom_right_grip = MangoGrips(self, "bottom_right", )
 
     def btn_released(self):
         btn = self.__setup_btn()
@@ -152,8 +154,6 @@ class UIMainWindow(QMainWindow):
             if btn_name == k:
                 self.left_menu.select_only_one(k)
                 self.load_pages.set_page(v)
-
-
 
     # 按对象名称获取标题按钮
 
