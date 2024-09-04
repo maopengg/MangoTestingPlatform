@@ -10,13 +10,14 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout
 from src.components import *
 from src.components.message import response_message
 from src.components.title_info import TitleInfoWidget
+from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FromDataModel
 from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
 from src.settings.settings import THEME
 
 
 class PageElementPage(QWidget):
-    table_column = [
+    table_column = [TableColumnModel(**i) for i in [
         {'key': 'name', 'name': '元素名称', 'item': ''},
         {'key': 'exp', 'name': '表达式类型', 'item': ''},
         {'key': 'loc', 'name': '定位表达式', 'item': ''},
@@ -24,24 +25,24 @@ class PageElementPage(QWidget):
         {'key': 'sleep', 'name': '等待时间（秒）', 'item': ''},
         {'key': 'sub', 'name': '元素下标（1开始）', 'item': ''},
         {'key': 'ope', 'name': '操作', 'item': ''},
-    ]
-    table_menu = [
+    ]]
+    table_menu = [TableMenuItemModel(**i) for i in [
         {'name': '调试', 'action': 'debug'},
         {'name': '编辑', 'action': 'edit'},
         {'name': '删除', 'action': 'delete'}
-    ]
-    field_list = [
+    ]]
+    field_list = [FieldListModel(**i) for i in [
         {'key': 'id', 'name': '页面ID'}, {'key': 'url', 'name': '页面地址'}, {'key': 'name', 'name': '页面名称'},
-    ]
-    from_data = [
-        {'title': '元素名称', 'place_holder_text': '请输入元素名称', 'key': 'name', 'intput': None,
+    ]]
+    from_data = [FromDataModel(**i) for i in [
+        {'title': '元素名称', 'placeholder': '请输入元素名称', 'key': 'name', 'input': None,
          'text': None},
-        {'title': '表达式类型', 'place_holder_text': '请选择元素表达式类型', 'key': 'exp', 'intput': None,
+        {'title': '表达式类型', 'placeholder': '请选择元素表达式类型', 'key': 'exp', 'input': None,
          'text': None},
-        {'title': '元素表达式', 'place_holder_text': '元素表达式', 'key': 'loc', 'intput': None, 'text': None},
-        {'title': '等待时间', 'place_holder_text': '请输入元素等待时间', 'key': 'sleep', 'intput': None, 'text': None},
-        {'title': '元素下标', 'place_holder_text': '请输入元素下标', 'key': 'sub', 'intput': None, 'text': None}
-    ]
+        {'title': '元素表达式', 'placeholder': '元素表达式', 'key': 'loc', 'input': None, 'text': None},
+        {'title': '等待时间', 'placeholder': '请输入元素等待时间', 'key': 'sleep', 'input': None, 'text': None},
+        {'title': '元素下标', 'placeholder': '请输入元素下标', 'key': 'sub', 'input': None, 'text': None}
+    ]]
 
     def __init__(self, parent):
         super().__init__()

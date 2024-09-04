@@ -4,6 +4,7 @@
 # @Time   : 2024-08-30 14:08
 # @Author : 毛鹏
 from src import *
+from src.models.gui_model import TitleDataModel
 
 from src.widgets import *
 
@@ -11,20 +12,20 @@ from src.widgets import *
 class TitleWidget(QWidget):
     clicked = Signal(object)
 
-    def __init__(self, search_list: list[dict]):
+    def __init__(self, title_data: list[TitleDataModel]):
         super().__init__()
         self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
-        self.search_list = search_list
-        for search in self.search_list:
+        self.title_data = title_data
+        for search in self.title_data:
             from_layout = QFormLayout()
-            intput = MangoLineEdit('', search['place_holder_text'])
-            from_layout.addRow(f'{search["title"]}：', intput)
+            intput = MangoLineEdit('', search.placeholder)
+            from_layout.addRow(f'{search.title}：', intput)
             self.layout.addLayout(from_layout)
-            search['intput'] = intput
+            search.input = intput
 
         self.layout.addStretch()
         self.search_but = MangoPushButton('搜索', bg_color=THEME.blue)
@@ -43,14 +44,14 @@ class TitleWidget(QWidget):
         self.layout.addLayout(self.layout)
 
     def on_reset_but_clicked(self):
-        for search in self.search_list:
-            search['intput'].setText('')
+        for search in self.title_data:
+            search.input.setText('')
         self.clicked.emit({})
 
     def on_search_but_clicked(self):
         data = {}
-        for search in self.search_list:
-            value = search['intput'].text()
+        for search in self.title_data:
+            value = search.input.text()
             if value:
                 data[search['key']] = value
         self.clicked.emit(data)

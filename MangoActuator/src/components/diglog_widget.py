@@ -4,21 +4,22 @@
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
 from src import *
+from src.models.gui_model import FromDataModel
 from src.widgets import *
 
 
 class DialogWidget(MangoDialog):
     clicked = Signal(object)
 
-    def __init__(self, tips: str, from_data: list[dict], size: super = (400, 300)):
+    def __init__(self, tips: str, from_data: list[FromDataModel], size: super = (400, 300)):
         super().__init__(tips, size)
         self.form_data = from_data
         # 创建表单布局
         form_layout = QFormLayout()
         for form in self.form_data:
-            intput = MangoLineEdit(form['text'], form['place_holder_text'])
-            form_layout.addRow(f"{form['title']}:", intput)
-            form['intput'] = intput
+            intput = MangoLineEdit(form.text, form.placeholder)
+            form_layout.addRow(f"{form.title}:", intput)
+            form.input = intput
 
         # 创建主布局
         main_layout = QVBoxLayout()
@@ -47,7 +48,7 @@ class DialogWidget(MangoDialog):
 
     def submit_form(self):
         for form in self.form_data:
-            value = form['intput'].text()
+            value = form.input.text()
             if value:
-                self.data[form['key']] = value
+                self.data[form.key] = value
         self.accept()  # 关闭对话框

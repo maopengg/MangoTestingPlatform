@@ -89,3 +89,37 @@ class TitleBarMenusModel(BaseModel):
 class MenusModel(BaseModel):
     left_menus: list[LeftMenuModel]
     title_bar_menus: list[TitleBarMenusModel]
+
+
+class TitleDataModel(BaseModel):
+    title: str
+    placeholder: str
+    key: str
+    input: None = None
+    # input: MangoLineEdit | None = None
+
+
+class FromDataModel(BaseModel):
+    title: str
+    placeholder: str
+    key: str
+    input: None = None
+    # input: MangoLineEdit | None = None
+    text: str | None = None
+
+
+class TableColumnModel(BaseModel):
+    key: str
+    name: str
+    item: str
+
+
+class TableMenuItemModel(BaseModel):
+    name: str
+    action: str
+    son: list['TableMenuItemModel'] = []
+
+
+class FieldListModel(BaseModel):
+    key: str
+    name: str

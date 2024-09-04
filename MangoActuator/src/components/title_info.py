@@ -11,6 +11,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import *
 
+from src.models.gui_model import FieldListModel
 from src.settings.settings import THEME
 
 
@@ -43,15 +44,15 @@ class TitleInfoWidget(QWidget):
         main_layout.addWidget(self.frame)
         self.setLayout(main_layout)
 
-    def init(self, raw_data: dict, field_list: list[dict]):
+    def init(self, raw_data: dict, field_list: list[FieldListModel]):
         self.field_list = field_list
         self.raw_data = raw_data
         row = 1  # 从1开始，因为第0行已经放了按钮
         for i in self.field_list:
-            key_label = QLabel(f"{i['name']}：")
+            key_label = QLabel(f"{i.name}：")
             key_label.setAttribute(Qt.WA_NoSystemBackground)
             key_label.setContentsMargins(0, 0, 0, 0)
-            value_label = QLabel(str(self.raw_data[i['key']]))
+            value_label = QLabel(str(self.raw_data[i.key]))
             value_label.setAttribute(Qt.WA_NoSystemBackground)
             value_label.setContentsMargins(0, 0, 0, 0)
             self.layout.addWidget(key_label, row, 0, )
