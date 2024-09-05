@@ -16,7 +16,7 @@ class LoginLogic(LoginWindow):
         super().__init__()
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
-        self.setWindowIcon(QIcon(':/resource/app_icon.png'))
+        self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         self.main_window = None
         self.db_handler = SQLiteConnect()
         user_info = self.db_handler.execute_sql(sql_statement_1)

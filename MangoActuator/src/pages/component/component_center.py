@@ -146,7 +146,7 @@ class ComponentPage(QWidget):
 
         # ICON BUTTON 3
         self.icon_button_3 = MangoIconButton(
-            icon_path=InitPath.set_svg_icon("icon_add_user.svg"),
+            icon_path=":/icons/icon_add_user.svg",
             parent=self,
             app_parent=self.central_widget,
             tooltip_text="BTN actived! (is_actived = True)",
@@ -175,7 +175,7 @@ class ComponentPage(QWidget):
             text="Button With Icon",
 
         )
-        self.icon_2 = QIcon(InitPath.set_svg_icon("settings.svg"))
+        self.icon_2 = QIcon(":/icons/settings.svg")
         self.push_button_2.setMinimumHeight(40)
         self.push_button_2.setIcon(self.icon_2)
 

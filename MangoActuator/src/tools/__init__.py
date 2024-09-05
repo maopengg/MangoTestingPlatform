@@ -31,6 +31,15 @@ class InitPath:
     videos = os.path.join(logs_dir, 'videos')
 
     @classmethod
+    def get_root_path(cls):
+        if getattr(sys, 'frozen', False):
+            # 如果是打包后的应用
+            return sys._MEIPASS
+        else:
+            # 如果是源码运行
+            return InitPath.project_root_directory
+
+    @classmethod
     def set_svg_icon(cls, icon_name: str):
         app_path = os.path.abspath(os.getcwd())
         folder = rf'{cls.project_root_directory}/resources/icons/'
@@ -38,27 +47,10 @@ class InitPath:
         icon = os.path.normpath(os.path.join(path, icon_name))
         return icon
 
-    # SET SVG IMAGE
-    @classmethod
-    def set_svg_image(cls, icon_name):
-        app_path = os.path.abspath(os.getcwd())
-        folder = rf'{cls.project_root_directory}/resources/images/svg_images/'
-        path = os.path.join(app_path, folder)
-        icon = os.path.normpath(os.path.join(path, icon_name))
-        return icon
-
-    # SET IMAGE
-    @classmethod
-    def set_image(cls, image_name):
-        app_path = os.path.abspath(os.getcwd())
-        folder = rf'{cls.project_root_directory}/resources/images/images/'
-        path = os.path.join(app_path, folder)
-        image = os.path.normpath(os.path.join(path, image_name))
-        return image
-
 
 if __name__ == '__main__':
     print(InitPath.project_root_directory)
+    print(InitPath.get_root_path())
     print(InitPath.current_dir2)
     print(InitPath.logs_dir)
     print(InitPath.cache)

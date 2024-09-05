@@ -45,7 +45,7 @@ class MangoComboBox(QComboBox):
             bg_color=THEME.white,
             bg_color_active=THEME.dark_three,
             context_color=THEME.context_color,
-            icon=':/resources/icons/down.svg'
+            icon=':/icons/down.svg'
     ):
         super().__init__()
 
@@ -89,6 +89,5 @@ class MangoComboBox(QComboBox):
             _context_color=context_color,
             icon=icon
         )
-        print(style_format)
         self.setStyleSheet(style_format)
         self.setMinimumHeight(30)  # 设置最小高度

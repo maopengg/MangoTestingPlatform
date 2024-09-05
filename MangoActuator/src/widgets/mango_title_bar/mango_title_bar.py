@@ -4,7 +4,6 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 from src import *
-from src.tools import InitPath
 from src.widgets.mango_left_menu.mango_div import MangoDiv
 from src.widgets.mango_title_bar.mango_title_button import MangoTitleButton
 
@@ -21,7 +20,7 @@ class MangoTitleBar(QWidget):
             self,
             parent,
             app_parent,
-            logo_image="app_icon.svg",
+            logo_image=":/icons/app_icon.svg",
             dark_one=THEME.dark_one,
             bg_color=THEME.bg_two,
             div_color=THEME.bg_three,
@@ -84,7 +83,7 @@ class MangoTitleBar(QWidget):
         self.top_logo_layout.setContentsMargins(0, 0, 0, 0)
 
         self.logo_svg = QSvgWidget()
-        self.logo_svg.load(InitPath.set_svg_icon(self._logo_image))
+        self.logo_svg.load(self._logo_image)
         self.top_logo_layout.addWidget(self.logo_svg, Qt.AlignCenter, Qt.AlignCenter)
 
         # TITLE LABEL
@@ -113,7 +112,7 @@ class MangoTitleBar(QWidget):
             context_color=self._context_color,
             text_foreground=self._text_foreground,
             radius=6,
-            icon_path=InitPath.set_svg_icon("icon_minimize.svg")
+            icon_path=":/icons/icon_minimize.svg"
         )
 
         # MAXIMIZE / RESTORE BUTTON
@@ -132,7 +131,7 @@ class MangoTitleBar(QWidget):
             context_color=self._context_color,
             text_foreground=self._text_foreground,
             radius=6,
-            icon_path=InitPath.set_svg_icon("icon_maximize.svg")
+            icon_path=":/icons/icon_maximize.svg"
         )
 
         # CLOSE BUTTON
@@ -151,7 +150,7 @@ class MangoTitleBar(QWidget):
             context_color=self._context_color,
             text_foreground=self._text_foreground,
             radius=6,
-            icon_path=InitPath.set_svg_icon("icon_close.svg")
+            icon_path=":/icons/icon_close.svg"
         )
 
         self.title_bar_layout.addWidget(self.bg)
@@ -226,7 +225,7 @@ class MangoTitleBar(QWidget):
     def add_menus(self, parameters):
         if parameters != None and len(parameters) > 0:
             for parameter in parameters:
-                _btn_icon = InitPath.set_svg_icon(parameter['btn_icon'])
+                _btn_icon = parameter['btn_icon']
                 _btn_id = parameter['btn_id']
                 _btn_tooltip = parameter['btn_tooltip']
                 _is_active = parameter['is_active']
@@ -284,15 +283,11 @@ class MangoTitleBar(QWidget):
             if _is_maximized:
                 self._parent.central_widget_layout.setContentsMargins(0, 0, 0, 0)
                 self._parent.window.set_stylesheet(border_radius=0, border_size=0)
-                self.maximize_restore_button.set_icon(
-                    InitPath.set_svg_icon("icon_restore.svg")
-                )
+                self.maximize_restore_button.set_icon(":/icons/icon_restore.svg")
             else:
                 self._parent.central_widget_layout.setContentsMargins(10, 10, 10, 10)
                 self._parent.window.set_stylesheet(border_radius=10, border_size=2)
-                self.maximize_restore_button.set_icon(
-                    InitPath.set_svg_icon("icon_maximize.svg")
-                )
+                self.maximize_restore_button.set_icon(":/icons/icon_maximize.svg")
 
         # CHECK EVENT
         if self._parent.isMaximized():

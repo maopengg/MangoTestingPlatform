@@ -13,7 +13,7 @@ class MangoIconButton(QPushButton):
             self,
             parent,
             app_parent,
-            icon_path=InitPath.set_svg_icon("icon_heart.svg"),
+            icon_path=":/icons/icon_heart.svg",
             tooltip_text="",
             btn_id=None,
             width=30,

@@ -11,7 +11,7 @@ class MangoDialog(QDialog):
         super().__init__()
         self.setWindowTitle(tips)
         self.setFixedSize(*size)  # 设置窗口大小
-        self.setWindowIcon(QIcon(':/resource/app_icon.png'))
+        self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         # 设置样式表
         self.setStyleSheet(f"""
             QDialog {{

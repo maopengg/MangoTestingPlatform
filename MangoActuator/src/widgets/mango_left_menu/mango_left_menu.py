@@ -33,8 +33,8 @@ class MangoLeftMenu(QWidget):
             radius=8,
             minimum_width=50,
             maximum_width=180,
-            icon_path="menu.svg",
-            icon_path_close="icon_menu_close.svg",
+            icon_path=":/icons/menu.svg",
+            icon_path_close=":/icons/icon_menu_close.svg",
             toggle_text="收起",
             toggle_tooltip="展开"
     ):
@@ -57,8 +57,8 @@ class MangoLeftMenu(QWidget):
         self._radius = radius
         self._minimum_width = minimum_width
         self._maximum_width = maximum_width
-        self._icon_path = InitPath.set_svg_icon(icon_path)
-        self._icon_path_close = InitPath.set_svg_icon(icon_path_close)
+        self._icon_path = icon_path
+        self._icon_path_close = icon_path_close
 
         # SET PARENT
         self.parent = parent

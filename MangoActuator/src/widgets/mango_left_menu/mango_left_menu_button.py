@@ -10,7 +10,6 @@ from PySide6.QtGui import QColor, Qt, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QLabel, QPushButton
 
 from src.settings.settings import THEME
-from src.tools import InitPath
 
 
 class MangoLeftMenuButton(QPushButton):
@@ -46,8 +45,8 @@ class MangoLeftMenuButton(QPushButton):
         self.setObjectName(btn_id)
 
         # APP PATH
-        self._icon_path = InitPath.set_svg_icon(icon_path)
-        self._icon_active_menu = InitPath.set_svg_icon(icon_active_menu)
+        self._icon_path = icon_path
+        self._icon_active_menu = icon_active_menu
 
         # PROPERTIES
         self._margin = margin

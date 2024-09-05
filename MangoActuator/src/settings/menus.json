@@ -1,7 +1,7 @@
 {
   "left_menus": [
     {
-      "btn_icon": "home.svg",
+      "btn_icon": ":/icons/home.svg",
       "btn_id": "home",
       "btn_text": "首页",
       "btn_tooltip": "首页",
@@ -9,7 +9,7 @@
       "is_active": true
     },
     {
-      "btn_icon": "widgets.svg",
+      "btn_icon": ":/icons/widgets.svg",
       "btn_id": "web",
       "btn_text": "全部功能",
       "btn_tooltip": "全部功能",
@@ -17,7 +17,7 @@
       "is_active": false
     },
     {
-      "btn_icon": "widgets.svg",
+      "btn_icon": ":/icons/widgets.svg",
       "btn_id": "ui",
       "btn_text": "前端自动化",
       "btn_tooltip": "前端自动化",
@@ -25,7 +25,7 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": "widgets.svg",
+          "btn_icon": ":/icons/widgets.svg",
           "btn_id": "page",
           "btn_text": "页面元素",
           "btn_tooltip": "页面元素",
@@ -33,7 +33,7 @@
           "is_active": false
         },
         {
-          "btn_icon": "home.svg",
+          "btn_icon": ":/icons/home.svg",
           "btn_id": "page_steps",
           "btn_text": "页面步骤",
           "btn_tooltip": "页面步骤",
@@ -41,7 +41,7 @@
           "is_active": false
         },
         {
-          "btn_icon": "home.svg",
+          "btn_icon": ":/icons/home.svg",
           "btn_id": "ui_case",
           "btn_text": "测试用例",
           "btn_tooltip": "测试用例",
@@ -51,7 +51,7 @@
       ]
     },
     {
-      "btn_icon": "widgets.svg",
+      "btn_icon": ":/icons/widgets.svg",
       "btn_id": "component_center",
       "btn_text": "组件中心",
       "btn_tooltip": "组件中心",
@@ -59,7 +59,7 @@
       "is_active": false
     },
     {
-      "btn_icon": "settings.svg",
+      "btn_icon": ":/icons/settings.svg",
       "btn_id": "settings",
       "btn_text": "设置",
       "btn_tooltip": "设置",
@@ -67,7 +67,7 @@
       "is_active": false
     },
     {
-      "btn_icon": "user.svg",
+      "btn_icon": ":/icons/user.svg",
       "btn_id": "user",
       "btn_text": "用户",
       "btn_tooltip": "用户",
@@ -77,7 +77,7 @@
   ],
   "title_bar_menus": [
     {
-      "btn_icon": "icon_search.svg",
+      "btn_icon": ":/icons/icon_search.svg",
       "btn_id": "btn_search",
       "btn_tooltip": "搜索",
       "is_active": false

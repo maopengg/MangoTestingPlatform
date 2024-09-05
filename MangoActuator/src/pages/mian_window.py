@@ -3,10 +3,12 @@
 # @Description: 
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
+import os
+
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
-from resources.icons.app_rc import *
+from resources.app_rc import *
 from src.network.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
 from src.widgets.mango_tooltip_box import show_info_message
@@ -24,15 +26,15 @@ class MainWindow(UIMainWindow):
         self.drag_pos = None
         # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(QIcon(':/resource/app_icon.png'))
+        self.tray_icon.setIcon(QIcon(':/icons/app_icon.png'))
 
         # 创建托盘图标菜单
         tray_menu = QMenu(self)
-        show_action = QAction(QIcon(':/resource/show_icon.png'), "显示窗口", self)
+        show_action = QAction(QIcon(':/icons/show_icon.png'), "显示窗口", self)
         show_action.triggered.connect(self.show)
         tray_menu.addAction(show_action)
 
-        exit_action = QAction(QIcon(':/resource/close_icon.png'), "退出", self)
+        exit_action = QAction(QIcon(':/icons/close_icon.png'), "退出", self)
         exit_action.triggered.connect(self.quit)
         tray_menu.addAction(exit_action)
 

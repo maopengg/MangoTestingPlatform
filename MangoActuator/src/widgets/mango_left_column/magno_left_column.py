@@ -26,12 +26,12 @@ class MangoLeftColumn(QWidget):
             btn_color=THEME.bg_three,
             btn_color_hover=THEME.bg_two,
             btn_color_pressed=THEME.bg_one,
-            icon_path=InitPath.set_svg_icon("settings.svg"),
+            icon_path=":/icons/settings.svg",
             icon_color=THEME.icon_color,
             icon_color_hover=THEME.icon_hover,
             icon_color_pressed=THEME.icon_pressed,
             context_color=THEME.context_color,
-            icon_close_path=InitPath.set_svg_icon("icon_close.svg"),
+            icon_close_path=":/icons/icon_close.svg",
             radius=8
     ):
         super().__init__()

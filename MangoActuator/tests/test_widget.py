@@ -18,7 +18,7 @@ class MyQWidget(QWidget):
         combo_box.addItems(['选项1', '选项2', '选项3', '选项4'])
         # 设置默认选项
         combo_box.setCurrentIndex(0)  # 默认选择第一个选项
-        # combo_box.setWindowIcon(QIcon(':/resources/icons/down.svg'))
+        # combo_box.setWindowIcon(QIcon(':/icons/icons/down.svg'))
         self.layout.addWidget(combo_box)
         self.setLayout(self.layout)
 
