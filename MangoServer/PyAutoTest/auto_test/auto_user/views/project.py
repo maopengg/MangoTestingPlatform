@@ -16,7 +16,7 @@ from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from ..models import Project, ProjectProduct
+from ..models import Project, ProjectProduct, ProductModule
 from ...auto_system.models import TestObject
 
 log = logging.getLogger('user')
@@ -70,14 +70,19 @@ class ProjectViews(ViewSet):
         book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
         options = []
         for _id, name in book:
-            product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
-            options.append({
+            project = {
                 'value': _id,
                 'label': name,
-                'children': [{'value': product_id,
-                              'label': product_name,
-                              } for product_id, product_name in product_list]
-            })
+                'children': []
+            }
+            product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
+            for product_id, product_name in product_list:
+                v = ProductModule.objects.values_list('id', 'name').filter(project_product=product_id)
+                project['children'].append({
+                    'value': product_id,
+                    'label': product_name,
+                    'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]})
+            options.append(project)
         return ResponseData.success(RESPONSE_MSG_0025, options)
 
     @action(methods=['GET'], detail=False)

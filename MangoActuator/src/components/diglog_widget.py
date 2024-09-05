@@ -24,7 +24,11 @@ class DialogWidget(MangoDialog):
                 form_layout.addRow(f"{form.title}:", intput)
                 form.input = intput
             elif form.type == InputEnum.SELECT:
-                select = MangoComboBox(form.placeholder)
+                select = MangoComboBox(form.placeholder, form.select, form.text)
+                form_layout.addRow(f"{form.title}:", select)
+                form.input = select
+            elif form.type == InputEnum.CASCADER:
+                select = MangoCascader(form.placeholder, form.select, form.text)
                 form_layout.addRow(f"{form.title}:", select)
                 form.input = select
         # 创建主布局
@@ -54,7 +58,14 @@ class DialogWidget(MangoDialog):
 
     def submit_form(self):
         for form in self.form_data:
-            value = form.input.text()
-            if value:
+            if isinstance(form.input, MangoLineEdit):
+                value = form.input.text()
+            elif isinstance(form.input, MangoComboBox):
+                value = form.input.currentText()
+            else:
+                value = None
+            if value != '':
                 self.data[form.key] = value
+            else:
+                self.data[form.key] = None
         self.accept()  # 关闭对话框

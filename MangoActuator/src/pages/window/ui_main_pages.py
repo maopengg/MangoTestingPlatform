@@ -30,7 +30,7 @@ class MainPages:
             'web': WebPage('http://121.37.174.56:8001/'),
 
             'page': PagePage(self),
-            'page_element': PageElementPage(self),
+            'page_element': ElementPage(self),
             'page_steps': PageStepsPage('页面步骤'),
             'page_steps_detailed': PageStepsDetailedPage('步骤详情'),
             'ui_case': UiCasePage('测试用例'),

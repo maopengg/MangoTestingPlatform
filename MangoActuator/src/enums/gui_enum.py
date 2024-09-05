@@ -9,3 +9,4 @@ from src.enums import BaseEnum
 class InputEnum(BaseEnum):
     INPUT = 0
     SELECT = 1
+    CASCADER = 2

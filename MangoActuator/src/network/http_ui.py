@@ -5,11 +5,13 @@
 # @Author : 毛鹏
 from src.models.network_model import ResponseModel
 from src.network import HttpRequest
+from src.tools.decorator.request_log import request_log
 
 
 class HttpUi(HttpRequest):
 
     @classmethod
+    @request_log()
     def get_page(cls, page, page_size, params: dict = None):
         url = cls.url(f'/ui/page')
         _params = {
@@ -22,18 +24,21 @@ class HttpUi(HttpRequest):
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def post_page(cls, json_data: dict):
         url = cls.url(f'/ui/page')
         response = cls.post(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def put_page(cls, json_data: dict):
         url = cls.url(f'/ui/page')
         response = cls.put(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def delete_page(cls, _id, ):
         url = cls.url(f'/ui/page')
         _params = {
@@ -43,6 +48,7 @@ class HttpUi(HttpRequest):
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def get_page_element(cls, page, page_size, params: dict = None):
         url = cls.url(f'/ui/element')
         _params = {
@@ -55,18 +61,21 @@ class HttpUi(HttpRequest):
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def post_page_element(cls, json_data: dict):
         url = cls.url(f'/ui/element')
         response = cls.post(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def put_page_element(cls, json_data: dict):
         url = cls.url(f'/ui/element')
         response = cls.put(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
+    @request_log()
     def delete_page_element(cls, _id, ):
         url = cls.url(f'/ui/element')
         _params = {

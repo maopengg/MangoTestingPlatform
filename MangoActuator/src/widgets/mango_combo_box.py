@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-04 17:32
 # @Author : 毛鹏
-from src import  *
+from src import *
 
 style = '''
 QComboBox {{
@@ -31,13 +31,12 @@ QComboBox::drop-down {{
 '''
 
 
-
-
 class MangoComboBox(QComboBox):
     def __init__(
             self,
-            placeholder,
-            default=None,
+            placeholder: str,
+            data: dict,
+            default: int = None,
             radius=8,
             border_size=1,
             color=THEME.text_foreground,
@@ -48,7 +47,9 @@ class MangoComboBox(QComboBox):
             icon=':/icons/down.svg'
     ):
         super().__init__()
-
+        self.placeholder = placeholder
+        self.data = data
+        self.default = default
         # 设置样式表
         self.set_stylesheet(
             radius,
@@ -60,11 +61,16 @@ class MangoComboBox(QComboBox):
             context_color,
             icon
         )
-        if default:
-            pass
-        if placeholder:
-            self.setPlaceholderText(placeholder)
+        self.addItems(list(self.data.values()))
 
+        if self.placeholder:
+            self.setPlaceholderText(self.placeholder)
+
+        if self.default:
+            for enum_value, option in self.data.items():
+                if str(enum_value) == str(self.default):
+                    self.setCurrentText(option)
+                    break
 
     # 设置样式表的方法
     def set_stylesheet(
@@ -91,3 +97,9 @@ class MangoComboBox(QComboBox):
         )
         self.setStyleSheet(style_format)
         self.setMinimumHeight(30)  # 设置最小高度
+
+    def currentText(self):
+        value = super().currentText()
+        for k, v in self.data.items():
+            if v == value:
+                return k

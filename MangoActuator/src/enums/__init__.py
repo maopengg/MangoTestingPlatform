@@ -11,7 +11,11 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_option(cls, k='key', v='title') -> list:
-        return [{k: key, v: value} for key, value in cls.obj().items()]
+        return ([{k: key, v: value} for key, value in cls.obj().items()])
+
+    @classmethod
+    def get_obj(cls) -> list:
+        return cls.obj()
 
     @classmethod
     def get_value_list(cls) -> list:

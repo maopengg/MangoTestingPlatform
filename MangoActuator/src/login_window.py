@@ -36,6 +36,8 @@ class LoginLogic(LoginWindow):
         try:
             res = HttpClient.login(settings.USERNAME, settings.PASSWORD)
             if res.get('code') == 200:
+                settings.base_dict = HttpClient.project_info()['data']
+
                 self.main_window = MainWindow()
                 self.close()
                 self.main_window.show()

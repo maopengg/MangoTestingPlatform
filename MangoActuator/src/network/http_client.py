@@ -11,6 +11,7 @@ from src.exceptions.error_msg import ERROR_MSG_0007
 from src.exceptions.tools_exception import FileNotError
 from src.network import HttpRequest
 from src.tools import InitPath
+from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
 from src.tools.other.path import Path
 
@@ -31,6 +32,14 @@ class HttpClient(HttpRequest):
         return response_dict
 
     @classmethod
+    def project_info(cls):
+        url = cls.url('/user/project/product/name')
+        response = cls.get(url=url, headers=cls.headers)
+        response_dict = response.json()
+        return response_dict
+
+    @classmethod
+    @request_log()
     def download_file(cls, file_name):
         url = cls.url(f'files/{file_name}')
         response = cls.get(url, headers=cls.headers)
@@ -43,6 +52,7 @@ class HttpClient(HttpRequest):
             raise FileNotError(*ERROR_MSG_0007)
 
     @classmethod
+    @request_log()
     def upload_file(cls, project_product_id: int, file_path: str, file_name: str):
         url = cls.url('/user/file')
         file_size = os.path.getsize(file_path)

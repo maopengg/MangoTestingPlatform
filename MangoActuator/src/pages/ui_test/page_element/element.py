@@ -14,35 +14,10 @@ from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldList
 from src.models.network_model import ResponseModel
 from src.network.http_ui import HttpUi
 from src.settings.settings import THEME
+from .element_dict import table_menu, table_column, from_data, field_list
 
 
-class PageElementPage(QWidget):
-    table_column = [TableColumnModel(**i) for i in [
-        {'key': 'name', 'name': '元素名称', 'item': ''},
-        {'key': 'exp', 'name': '表达式类型', 'item': ''},
-        {'key': 'loc', 'name': '定位表达式', 'item': ''},
-        {'key': 'is_iframe', 'name': '是否在iframe中', 'item': ''},
-        {'key': 'sleep', 'name': '等待时间（秒）', 'item': ''},
-        {'key': 'sub', 'name': '元素下标（1开始）', 'item': ''},
-        {'key': 'ope', 'name': '操作', 'item': ''},
-    ]]
-    table_menu = [TableMenuItemModel(**i) for i in [
-        {'name': '调试', 'action': 'debug'},
-        {'name': '编辑', 'action': 'edit'},
-        {'name': '删除', 'action': 'delete'}
-    ]]
-    field_list = [FieldListModel(**i) for i in [
-        {'key': 'id', 'name': '页面ID'}, {'key': 'url', 'name': '页面地址'}, {'key': 'name', 'name': '页面名称'},
-    ]]
-    from_data = [FormDataModel(**i) for i in [
-        {'title': '元素名称', 'placeholder': '请输入元素名称', 'key': 'name', 'input': None,
-         'text': None,'type':0},
-        {'title': '表达式类型', 'placeholder': '请选择元素表达式类型', 'key': 'exp', 'input': None,
-         'text': None,'type':0},
-        {'title': '元素表达式', 'placeholder': '元素表达式', 'key': 'loc', 'input': None, 'text': None,'type':0},
-        {'title': '等待时间', 'placeholder': '请输入元素等待时间', 'key': 'sleep', 'input': None, 'text': None,'type':0},
-        {'title': '元素下标', 'placeholder': '请输入元素下标', 'key': 'sub', 'input': None, 'text': None,'type':0}
-    ]]
+class ElementPage(QWidget):
 
     def __init__(self, parent):
         super().__init__()
@@ -50,6 +25,10 @@ class PageElementPage(QWidget):
         self.data: dict = {}
         self.page = 1
         self.page_size = 10
+        self.table_column = [TableColumnModel(**i) for i in table_column]
+        self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
+        self.field_list = [FieldListModel(**i) for i in field_list]
+        self.from_data = [FormDataModel(**i) for i in from_data]
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
