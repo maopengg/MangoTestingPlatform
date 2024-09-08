@@ -26,8 +26,7 @@ class PagePage(QWidget):
         for i in self.form_data:
             if i.key == 'project_product':
                 i.select = settings.base_dict
-            elif i.key == 'module':
-                i.select = settings.base_dict
+
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
 
@@ -66,9 +65,21 @@ class PagePage(QWidget):
         elif action == 'delete':
             self.delete(row)
 
+    def sub_options(self, data: dict):
+        assembly = data.get('assembly')
+        if data.get('key') == 'module':
+            for e in settings.base_dict:
+                for q in e.get('children'):
+                    if q.get('value') == data.get('value'):
+                        init_data = {}
+                        for i in q.get('children'):
+                            init_data[i.get('value')] = i.get('label')
+                        assembly.init_data(init_data, True)
+
     def add(self, row):
         form_data = copy.deepcopy(self.form_data)
         dialog = DialogWidget('新建页面', form_data)
+        dialog.clicked.connect(self.sub_options)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
             print(dialog.data)

@@ -4,9 +4,9 @@
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
 from src import *
+from src.enums.gui_enum import *
 from src.models.gui_model import FormDataModel
 from src.widgets import *
-from src.enums.gui_enum import *
 from src.widgets.mango_combo_box import MangoComboBox
 
 
@@ -20,15 +20,18 @@ class DialogWidget(MangoDialog):
         form_layout = QFormLayout()
         for form in self.form_data:
             if form.type == InputEnum.INPUT:
-                intput = MangoLineEdit(form.text, form.placeholder)
+                intput = MangoLineEdit(form.text, form.placeholder, form.subordinate)
+                intput.clicked.connect(self.entered)
                 form_layout.addRow(f"{form.title}:", intput)
                 form.input = intput
             elif form.type == InputEnum.SELECT:
-                select = MangoComboBox(form.placeholder, form.select, form.text)
+                select = MangoComboBox(form.placeholder, form.select, form.text, form.subordinate)
+                select.clicked.connect(self.entered)
                 form_layout.addRow(f"{form.title}:", select)
                 form.input = select
             elif form.type == InputEnum.CASCADER:
-                select = MangoCascader(form.placeholder, form.select, form.text)
+                select = MangoCascade(form.placeholder, form.select, form.text, form.subordinate)
+                select.clicked.connect(self.entered)
                 form_layout.addRow(f"{form.title}:", select)
                 form.input = select
         # 创建主布局
@@ -58,14 +61,14 @@ class DialogWidget(MangoDialog):
 
     def submit_form(self):
         for form in self.form_data:
-            if isinstance(form.input, MangoLineEdit):
-                value = form.input.text()
-            elif isinstance(form.input, MangoComboBox):
-                value = form.input.currentText()
-            else:
-                value = None
+            value = form.input.get_value()
             if value != '':
                 self.data[form.key] = value
             else:
                 self.data[form.key] = None
         self.accept()  # 关闭对话框
+
+    def entered(self, data: dict):
+        for i in self.form_data:
+            if i.key == data.get('subordinate') and i.key:
+                self.clicked.emit({'key': data.get('subordinate'), 'assembly': i.input, 'value': data.get('value')})

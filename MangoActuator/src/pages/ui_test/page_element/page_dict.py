@@ -38,15 +38,16 @@ form_data = [
         'input': None,
         'text': None,
         'type': 2,
-        'select': None
+        'select': None,
+        'subordinate': 'module'
     },
     {
         'title': '模块',
-        'placeholder': '请选择模块',
+        'placeholder': '请先选择项目/产品',
         'key': 'module',
         'input': None,
         'text': '',
-        'type': 2,
+        'type': 1,
         'select': None
     },
     {

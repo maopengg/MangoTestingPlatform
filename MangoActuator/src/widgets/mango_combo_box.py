@@ -32,11 +32,14 @@ QComboBox::drop-down {{
 
 
 class MangoComboBox(QComboBox):
+    clicked = Signal(object)
+
     def __init__(
             self,
             placeholder: str,
             data: dict,
             default: int = None,
+            subordinate: str | None = None,
             radius=8,
             border_size=1,
             color=THEME.text_foreground,
@@ -50,6 +53,7 @@ class MangoComboBox(QComboBox):
         self.placeholder = placeholder
         self.data = data
         self.default = default
+        self.subordinate = subordinate
         # 设置样式表
         self.set_stylesheet(
             radius,
@@ -61,7 +65,8 @@ class MangoComboBox(QComboBox):
             context_color,
             icon
         )
-        self.addItems(list(self.data.values()))
+        self.currentIndexChanged.connect(self.combo_box_changed)
+        self.init_data(self.data)
 
         if self.placeholder:
             self.setPlaceholderText(self.placeholder)
@@ -98,8 +103,19 @@ class MangoComboBox(QComboBox):
         self.setStyleSheet(style_format)
         self.setMinimumHeight(30)  # 设置最小高度
 
-    def currentText(self):
+    def get_value(self):
         value = super().currentText()
         for k, v in self.data.items():
             if v == value:
                 return k
+
+    def init_data(self, data: dict, clear: bool = False):
+        if clear:
+            self.clear()
+        if data:
+            self.data = data
+            self.addItems(list(data.values()))
+
+    def combo_box_changed(self, data):
+        if self.subordinate:
+            self.clicked.emit({'subordinate': self.subordinate, 'value': data})

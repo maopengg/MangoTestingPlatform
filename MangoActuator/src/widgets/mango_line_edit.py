@@ -26,10 +26,13 @@ QLineEdit:focus {{
 # PY PUSH BUTTON
 
 class MangoLineEdit(QLineEdit):
+    clicked = Signal(object)
+
     def __init__(
             self,
             text,
             place_holder_text,
+            subordinate: str | None = None,
             is_password: bool = False,
             radius=8,
             border_size=1,
@@ -40,7 +43,8 @@ class MangoLineEdit(QLineEdit):
             context_color=THEME.context_color
     ):
         super().__init__()
-
+        self.editingFinished.connect(self.line_edit_changed)
+        self.subordinate = subordinate
         # PARAMETERS
         if text:
             self.setText(text)
@@ -83,3 +87,10 @@ class MangoLineEdit(QLineEdit):
         )
         self.setStyleSheet(style_format)
         self.setMinimumHeight(30)  # 设置最小高度
+
+    def get_value(self):
+        return self.text()
+
+    def line_edit_changed(self, ):
+        if self.subordinate:
+            self.clicked.emit({'subordinate': self.subordinate, 'value': self.text()})
