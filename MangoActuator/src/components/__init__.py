@@ -10,3 +10,4 @@ from .right_button import RightButton
 from .table_list import TableList
 from .title_info import TitleInfoWidget
 from .title_widget import TitleWidget
+from .methods import *

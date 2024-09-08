@@ -4,6 +4,7 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 from src import *
+from src.models.gui_model import DialogCallbackModel
 
 style = '''
 QLineEdit {{
@@ -93,4 +94,4 @@ class MangoLineEdit(QLineEdit):
 
     def line_edit_changed(self, ):
         if self.subordinate:
-            self.clicked.emit({'subordinate': self.subordinate, 'value': self.text()})
+            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=self.text()))

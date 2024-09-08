@@ -2,6 +2,7 @@ from PySide6.QtCore import Slot
 from PySide6.QtGui import QIcon
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
+from src.models.gui_model import CascaderModel
 from src.network.http_client import HttpClient
 from src.pages.login.login_ui import LoginWindow
 from src.pages.mian_window import MainWindow
@@ -36,7 +37,7 @@ class LoginLogic(LoginWindow):
         try:
             res = HttpClient.login(settings.USERNAME, settings.PASSWORD)
             if res.get('code') == 200:
-                settings.base_dict = HttpClient.project_info()['data']
+                settings.base_dict = [CascaderModel(**i) for i in HttpClient.project_info()['data']]
 
                 self.main_window = MainWindow()
                 self.close()

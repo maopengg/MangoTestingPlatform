@@ -9,7 +9,7 @@ from src import *
 class MangoMessage(QWidget):
     def __init__(self, parent, message, style):
         super().__init__(parent)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint)  # 保持在最上面
         self.setFixedHeight(30)
 
         layout = QVBoxLayout()
@@ -27,7 +27,7 @@ class MangoMessage(QWidget):
         self.setFixedWidth(text_width)
 
         # 设置渐隐效果
-        self.opacity = 1.0
+        self.opacity = 1.7
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.fade_out)
         self.timer.start(50)

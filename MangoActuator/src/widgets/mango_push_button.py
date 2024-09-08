@@ -7,7 +7,7 @@ from src import *
 
 style = '''
 QPushButton {{
-	border: none;
+	border: 1px solid {border};
     padding-left: 10px;
     padding-right: 5px;
     color: {_color};
@@ -46,6 +46,7 @@ class MangoPushButton(QPushButton):
 
         # SET STYLESHEET
         custom_style = style.format(
+            border=THEME.dark_four,
             _color=color,
             _radius=radius,
             _bg_color=bg_color,

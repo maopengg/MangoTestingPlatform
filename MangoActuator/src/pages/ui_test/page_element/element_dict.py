@@ -27,40 +27,35 @@ from_data = [
         'title': '元素名称',
         'placeholder': '请输入元素名称',
         'key': 'name',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': True
     },
     {
         'title': '表达式类型',
         'placeholder': '请选择元素表达式类型',
         'key': 'exp',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': True
     },
     {
         'title': '元素表达式',
         'placeholder': '元素表达式',
         'key': 'loc',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': True
     },
     {
         'title': '等待时间',
         'placeholder': '请输入元素等待时间',
         'key': 'sleep',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': False
     },
     {
         'title': '元素下标',
         'placeholder': '请输入元素下标',
         'key': 'sub',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': False
     }
 ]

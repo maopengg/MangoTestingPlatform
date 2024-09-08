@@ -14,7 +14,7 @@ class BaseEnum(Enum):
         return ([{k: key, v: value} for key, value in cls.obj().items()])
 
     @classmethod
-    def get_obj(cls) -> list:
+    def get_obj(cls) -> dict:
         return cls.obj()
 
     @classmethod
@@ -40,3 +40,8 @@ class BaseEnum(Enum):
 
             for key in keys_with_target_value:
                 return key
+
+    @classmethod
+    def get_select(cls):
+        from src.models.gui_model import ComboBoxDataModel
+        return [ComboBoxDataModel(id=_id, name=name) for _id, name in cls.obj().items()]

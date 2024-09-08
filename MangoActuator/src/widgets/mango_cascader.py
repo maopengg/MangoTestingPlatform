@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 from src import *
-from src.models.gui_model import CascaderModel
+from src.models.gui_model import CascaderModel, DialogCallbackModel
 
 
 class MangoCascade(QToolButton):
@@ -13,7 +13,7 @@ class MangoCascade(QToolButton):
 
     style = f'''
     QToolButton {{
-        background-color: white; /* 按钮背景颜色 */
+        background-color: {THEME.bg_one}; /* 按钮背景颜色 */
         border-radius: 5px; /* 按钮圆角半径 */
         border: 1px solid gray; /* 按钮边框样式 */
         padding: 5px; /* 按钮内边距 */
@@ -21,8 +21,8 @@ class MangoCascade(QToolButton):
     }}
 
     QToolButton:focus {{
-        border: 1px solid lightblue; /* 焦点时边框颜色 */
-        background-color: lightgray; /* 焦点时背景颜色 */
+        border: 1px solid {THEME.dark_four}; /* 焦点时边框颜色 */
+        background-color: {THEME.bg_one}; /* 焦点时背景颜色 */
     }}
 
     QToolButton::menu-indicator {{
@@ -46,26 +46,19 @@ class MangoCascade(QToolButton):
     }}
     '''
 
-    def __init__(self, placeholder: str, data: list[dict], default: int = None, subordinate: str | None = None, ):
+    def __init__(self, placeholder: str, data: list[CascaderModel], default: int = None,
+                 subordinate: str | None = None, ):
         super().__init__()
-        self.data: list[CascaderModel] = [CascaderModel(**i) for i in data]
+        self.data: list[CascaderModel] = data
         self.subordinate: str = subordinate
+        self.value: int = default
+
         # 创建工具按钮
-        self.setText(placeholder)
         self.setPopupMode(QToolButton.InstantPopup)
         self.setStyleSheet(self.style)
-        self.value: int = default
         self.menu = QMenu()
-        for cascade in self.data:
-            fruits_menu = QMenu(cascade.label, self)
-            if cascade.children:
-                for fruit in cascade.children:
-                    action = fruits_menu.addAction(fruit.label)
-
-                    action.triggered.connect(
-                        lambda checked, value=fruit.value, label=fruit.label: self.show_selection(cascade.label, value,
-                                                                                                  label))
-            self.menu.addMenu(fruits_menu)
+        self.set_select(self.data)
+        self.set_value(self.value)
         self.setMenu(self.menu)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
@@ -73,7 +66,30 @@ class MangoCascade(QToolButton):
         self.setText(f'{category}/{label}')
         self.value = value
         if self.subordinate:
-            self.clicked.emit({'subordinate': self.subordinate, 'value': value})
+            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=value))
 
     def get_value(self):
         return self.value
+
+    def set_select(self, data: list[CascaderModel], clear: bool = False):
+        if clear:
+            pass
+        if data:
+            self.data = data
+            for cascade in self.data:
+                fruits_menu = QMenu(cascade.label, self)
+                if cascade.children:
+                    for fruit in cascade.children:
+                        action = fruits_menu.addAction(fruit.label)
+                        action.triggered.connect(
+                            lambda checked, value=fruit.value, label=fruit.label: self.show_selection(cascade.label,
+                                                                                                      value,
+                                                                                                      label))
+                self.menu.addMenu(fruits_menu)
+
+    def set_value(self, value: int):
+        self.value = value
+        for i in self.data:
+            for e in i.children:
+                if e.value == value:
+                    self.setText(f'{i.label}/{e.label}')

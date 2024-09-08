@@ -35,37 +35,33 @@ form_data = [
         'title': '项目/产品',
         'placeholder': '请选择项目产品',
         'key': 'project_product',
-        'input': None,
-        'text': None,
         'type': 2,
         'select': None,
-        'subordinate': 'module'
+        'subordinate': 'module',
+        'required': True
     },
     {
         'title': '模块',
         'placeholder': '请先选择项目/产品',
         'key': 'module',
-        'input': None,
-        'text': '',
         'type': 1,
-        'select': None
+        'select': None,
+        'required': True
     },
     {
         'title': '页面名称',
         'placeholder': '请输入页面名称',
         'key': 'name',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': True
     },
 
     {
         'title': '页面地址',
         'placeholder': '请输入页面地址',
         'key': 'url',
-        'input': None,
-        'text': None,
-        'type': 0
+        'type': 0,
+        'required': True
     },
 
 ]

@@ -4,6 +4,7 @@
 # @Time   : 2024-09-04 17:32
 # @Author : 毛鹏
 from src import *
+from src.models.gui_model import DialogCallbackModel, ComboBoxDataModel
 
 style = '''
 QComboBox {{
@@ -37,7 +38,7 @@ class MangoComboBox(QComboBox):
     def __init__(
             self,
             placeholder: str,
-            data: dict,
+            data: list[ComboBoxDataModel],
             default: int = None,
             subordinate: str | None = None,
             radius=8,
@@ -66,16 +67,10 @@ class MangoComboBox(QComboBox):
             icon
         )
         self.currentIndexChanged.connect(self.combo_box_changed)
-        self.init_data(self.data)
-
+        self.set_select(self.data)
+        self.set_value(self.default)
         if self.placeholder:
             self.setPlaceholderText(self.placeholder)
-
-        if self.default:
-            for enum_value, option in self.data.items():
-                if str(enum_value) == str(self.default):
-                    self.setCurrentText(option)
-                    break
 
     # 设置样式表的方法
     def set_stylesheet(
@@ -105,17 +100,24 @@ class MangoComboBox(QComboBox):
 
     def get_value(self):
         value = super().currentText()
-        for k, v in self.data.items():
-            if v == value:
-                return k
+        for i in self.data:
+            if i.id == value:
+                return i.name
 
-    def init_data(self, data: dict, clear: bool = False):
+    def set_select(self, data: list[ComboBoxDataModel], clear: bool = False):
         if clear:
             self.clear()
         if data:
             self.data = data
-            self.addItems(list(data.values()))
+            self.addItems([i.name for i in data])
+
+    def set_value(self, value: int):
+        if value:
+            for i in self.data:
+                if i.id == value:
+                    self.setCurrentText(i.name)
+                    break
 
     def combo_box_changed(self, data):
         if self.subordinate:
-            self.clicked.emit({'subordinate': self.subordinate, 'value': data})
+            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=data))

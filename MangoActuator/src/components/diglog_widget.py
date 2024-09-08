@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from src import *
 from src.enums.gui_enum import *
-from src.models.gui_model import FormDataModel
+from src.models.gui_model import FormDataModel, DialogCallbackModel
 from src.widgets import *
 from src.widgets.mango_combo_box import MangoComboBox
 
@@ -20,20 +20,19 @@ class DialogWidget(MangoDialog):
         form_layout = QFormLayout()
         for form in self.form_data:
             if form.type == InputEnum.INPUT:
-                intput = MangoLineEdit(form.text, form.placeholder, form.subordinate)
-                intput.clicked.connect(self.entered)
-                form_layout.addRow(f"{form.title}:", intput)
-                form.input = intput
+                input_object = MangoLineEdit(form.value, form.placeholder, form.subordinate)
             elif form.type == InputEnum.SELECT:
-                select = MangoComboBox(form.placeholder, form.select, form.text, form.subordinate)
-                select.clicked.connect(self.entered)
-                form_layout.addRow(f"{form.title}:", select)
-                form.input = select
+                input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate)
             elif form.type == InputEnum.CASCADER:
-                select = MangoCascade(form.placeholder, form.select, form.text, form.subordinate)
-                select.clicked.connect(self.entered)
-                form_layout.addRow(f"{form.title}:", select)
-                form.input = select
+                input_object = MangoCascade(form.placeholder, form.select, form.value, form.subordinate)
+            else:
+                raise ValueError(f'Unsupported input type: {form.type}')
+            input_object.clicked.connect(self.entered)
+            if form.required:
+                form_layout.addRow(f"*{form.title}:", input_object)
+            else:
+                form_layout.addRow(f"{form.title}:", input_object)
+            form.input_object = input_object
         # 创建主布局
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
@@ -61,14 +60,25 @@ class DialogWidget(MangoDialog):
 
     def submit_form(self):
         for form in self.form_data:
-            value = form.input.get_value()
-            if value != '':
-                self.data[form.key] = value
-            else:
+            value = form.input_object.get_value()
+            if form.required:
+                if value is None or value == '':
+                    from src.components import error_message
+                    self.data = {}
+                    error_message(self, f'{form.title} 是必填项')
+                    return
+            if value == '':
                 self.data[form.key] = None
+            else:
+                self.data[form.key] = value
         self.accept()  # 关闭对话框
 
-    def entered(self, data: dict):
+    def entered(self, data: DialogCallbackModel):
         for i in self.form_data:
-            if i.key == data.get('subordinate') and i.key:
-                self.clicked.emit({'key': data.get('subordinate'), 'assembly': i.input, 'value': data.get('value')})
+            if i.key == data.subordinate and i.key:
+                data.key = i.key
+                data.input_object = i.input_object
+                self.clicked.emit(data)
+
+    def check_value(self, value):
+        pass
