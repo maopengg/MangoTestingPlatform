@@ -70,6 +70,8 @@ class ThemeConfig(BaseModel):
     yellow: str
     blue: str
     orange: str
+    radius: str
+    border_size: str
 
 
 class LeftMenuModel(BaseModel):
@@ -110,16 +112,17 @@ class FormDataModel(BaseModel):
     input_object: None = None
     # input: MangoLineEdit | None = None
     value: str | None = None
-    type: InputEnum
-    select: dict | list[dict] | None = None
+    type: InputEnum = InputEnum.INPUT
+    select: dict | list[dict] | Any = None  # 选项数据
     subordinate: str | None = None  # 是否联动下级选择条件
-    required: bool  # 是否必填
+    required: bool = True  # 是否必填
 
 
 class TableColumnModel(BaseModel):
     key: str
     name: str
     item: str
+    width: int | None = None
 
 
 class TableMenuItemModel(BaseModel):

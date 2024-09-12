@@ -4,31 +4,45 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 from src import *
+from src.enums.tools_enum import StatusEnum
 
 
 class MangoToggle(QCheckBox):
+    clicked = Signal(object)
+
     def __init__(
             self,
-            width=50,
-            bg_color=THEME.dark_two,
-            circle_color=THEME.icon_color,
-            active_color=THEME.context_color,
-            animation_curve=QEasingCurve.OutBounce
+            value=False,
+            data=StatusEnum.get_select(),
+            theme=THEME,
     ):
         QCheckBox.__init__(self)
-        self.setFixedSize(width, 28)
+        self.value = value
+        self.data = data
+        self.theme = theme
+        self.setFixedSize(50, 28)
         self.setCursor(Qt.PointingHandCursor)
-
-        # COLORS
-        self._bg_color = bg_color
-        self._circle_color = circle_color
-        self._active_color = active_color
 
         self._position = 3
         self.animation = QPropertyAnimation(self, b"position")
-        self.animation.setEasingCurve(animation_curve)
+        self.animation.setEasingCurve(QEasingCurve.OutBounce)
         self.animation.setDuration(500)
         self.stateChanged.connect(self.setup_animation)
+        self.set_value(self.value)
+
+    def get_value(self) -> int:
+
+        return int(self.isChecked())
+
+    def set_value(self, value: bool | StatusEnum):
+        if value is None:
+            return
+        self.value = value
+        if isinstance(value, StatusEnum):
+            self.value = bool(value)
+        else:
+            self.value = value
+        self.setChecked(self.value)
 
     @Property(float)
     def position(self):
@@ -47,6 +61,8 @@ class MangoToggle(QCheckBox):
         else:
             self.animation.setEndValue(4)
         self.animation.start()
+        self.clicked.emit({'value': int(self.isChecked())})
+
 
     def hitButton(self, pos: QPoint):
         return self.contentsRect().contains(pos)
@@ -56,21 +72,17 @@ class MangoToggle(QCheckBox):
         p.setRenderHint(QPainter.Antialiasing)
         p.setFont(QFont("Segoe UI", 9))
 
-        # SET PEN
         p.setPen(Qt.NoPen)
 
-        # DRAW RECT
         rect = QRect(0, 0, self.width(), self.height())
-
         if not self.isChecked():
-            p.setBrush(QColor(self._bg_color))
+            p.setBrush(QColor(self.theme.dark_two))
             p.drawRoundedRect(0, 0, rect.width(), 28, 14, 14)
-            p.setBrush(QColor(self._circle_color))
+            p.setBrush(QColor(self.theme.dark_one))
             p.drawEllipse(self._position, 3, 22, 22)
         else:
-            p.setBrush(QColor(self._active_color))
+            p.setBrush(QColor(self.theme.green))
             p.drawRoundedRect(0, 0, rect.width(), 28, 14, 14)
-            p.setBrush(QColor(self._circle_color))
+            p.setBrush(QColor(self.theme.dark_one))
             p.drawEllipse(self._position, 3, 22, 22)
-
         p.end()

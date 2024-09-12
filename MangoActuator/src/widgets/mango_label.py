@@ -23,7 +23,7 @@ class MangoLabel(QLabel):
         参数：
         - text：要设置的文本。
         """
-        super().setText(text)
+        super().setText(str(text))
 
     def text(self):
         """

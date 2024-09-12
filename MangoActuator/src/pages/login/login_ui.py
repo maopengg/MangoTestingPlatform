@@ -20,13 +20,13 @@ class LoginWindow(QWidget):
         self.verticalLayout_3 = QVBoxLayout()
         self.label = MangoLabel('IP', self)
         self.verticalLayout_3.addWidget(self.label)
-        self.ip_edit = MangoLineEdit("", "请输入后端服务IP", )
+        self.ip_edit = MangoLineEdit("请输入后端服务IP","",  )
         self.verticalLayout_3.addWidget(self.ip_edit)
         self.horizontalLayout_5.addLayout(self.verticalLayout_3)
         self.verticalLayout_2 = QVBoxLayout()
         self.label_2 = MangoLabel('端口', self)
         self.verticalLayout_2.addWidget(self.label_2)
-        self.prot_edit = MangoLineEdit("", "请输入后端服务端口", )
+        self.prot_edit = MangoLineEdit("请输入后端服务端口", "", )
         self.verticalLayout_2.addWidget(self.prot_edit)
         self.horizontalLayout_5.addLayout(self.verticalLayout_2)
         self.horizontalLayout_5.setStretch(0, 7)
@@ -40,7 +40,7 @@ class LoginWindow(QWidget):
         self.horizontalLayout.addItem(self.horizontalSpacer)
         self.layout.addLayout(self.horizontalLayout)
 
-        self.username_edit = MangoLineEdit("", "请输入登录账号", )
+        self.username_edit = MangoLineEdit("请输入登录账号", "", )
         self.layout.addWidget(self.username_edit)
 
         self.horizontalLayout_2 = QHBoxLayout()
@@ -50,7 +50,7 @@ class LoginWindow(QWidget):
         self.horizontalLayout_2.addItem(self.horizontalSpacer_2)
         self.layout.addLayout(self.horizontalLayout_2)
 
-        self.password_edit = MangoLineEdit("", "请输入登录密码", True)
+        self.password_edit = MangoLineEdit("请输入登录密码", "", is_password=True)
         self.layout.addWidget(self.password_edit)
 
         self.horizontalLayout_3 = QHBoxLayout()

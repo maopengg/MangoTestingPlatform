@@ -12,8 +12,11 @@ class UIMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(STYLE.app_name)
-        self.resize(STYLE.startup_size[0], STYLE.startup_size[1])
-        self.setMinimumSize(STYLE.minimum_size[0], STYLE.minimum_size[1])
+        screen = QGuiApplication.primaryScreen().geometry()
+        width = int(screen.width() * 0.6)
+        height = int(screen.height() * 0.7)
+        self.resize(width, height)
+        self.setMinimumSize(int(width * 0.8), int(height * 0.8))
 
         self.central_widget = QWidget()
         self.central_widget.setStyleSheet(f'''

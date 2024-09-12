@@ -10,3 +10,4 @@ class InputEnum(BaseEnum):
     INPUT = 0
     SELECT = 1
     CASCADER = 2
+    TOGGLE = 3

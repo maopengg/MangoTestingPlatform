@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from src.tools import InitPath
 from src.tools.log_collector.log_control import LogHandler
-
+from src.settings import settings
 
 class Log:
     DEBUG = LogHandler(fr"{InitPath.log_dir}\debug-log.log", 'debug')
@@ -16,7 +16,8 @@ class Log:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.DEBUG.logger.debug(msg)
+        if settings.IS_DEBUG:
+            cls.DEBUG.logger.debug(msg)
 
     @classmethod
     def info(cls, msg: str):

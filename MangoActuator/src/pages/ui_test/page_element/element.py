@@ -23,12 +23,13 @@ class ElementPage(QWidget):
         super().__init__()
         self.parent = parent
         self.data: dict = {}
+        self.page_id = None
         self.page = 1
         self.page_size = 10
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
         self.field_list = [FieldListModel(**i) for i in field_list]
-        self.from_data = [FormDataModel(**i) for i in from_data]
+        self.form_data = [FormDataModel(**i) for i in from_data]
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -50,25 +51,25 @@ class ElementPage(QWidget):
 
     def show_data(self, is_refresh=False):
         self.title_info.init(self.data, self.field_list)
+        self.page_id = self.data.get('id')
         response_model: ResponseModel = HttpUi.get_page_element(self.page, self.page_size,
-                                                                {'page_id': self.data.get('id')})
+                                                                {'page_id': self.page_id})
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if is_refresh:
             response_message(self, response_model)
 
     def handle_button_click(self, data):
-        action = data['action']
-        row = data['row']
-        if action == 'edit':
-            self.edit(row)
-        elif action == 'delete':
-            self.delete(row)
+        getattr(self, data['action'])(data['row'])
+
+    def debug(self, row):
+        warning_notification(self, '点击了调试')
 
     def add(self, row):
-        from_data = copy.deepcopy(self.from_data)
-        dialog = DialogWidget('新建页面', from_data)
+        form_data = copy.deepcopy(self.form_data)
+        dialog = DialogWidget('新建页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
+            dialog.data['page'] = self.page_id
             response_model: ResponseModel = HttpUi.post_page_element(dialog.data)
             response_message(self, response_model)
         self.show_data()
@@ -77,18 +78,18 @@ class ElementPage(QWidget):
         self.parent.set_page('page', row)
 
     def edit(self, row):
-        from_data = copy.deepcopy(self.from_data)
-        for i in from_data:
-            if isinstance(row[i['key']], dict):
-                i['text'] = row[i['key']]['name']
+        form_data = copy.deepcopy(self.form_data)
+        for i in form_data:
+            if isinstance(row[i.key], dict):
+                i.value = row[i.key].get('id', None)
             else:
-                i['text'] = row[i['key']]
-        dialog = DialogWidget('编辑页面', from_data)
+                i.value = row[i.key]
+        dialog = DialogWidget('编辑页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            data = dialog.data
-            data['id'] = row['id']
-            response_model: ResponseModel = HttpUi.put_page_element(data)
+            dialog.data['page'] = self.page_id
+            dialog.data['id'] = row['id']
+            response_model: ResponseModel = HttpUi.put_page_element(dialog.data)
             response_message(self, response_model)
         self.show_data()
 

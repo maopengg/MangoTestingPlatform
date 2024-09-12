@@ -1,5 +1,7 @@
 {
   "theme_name": "Default",
+  "radius":"8",
+  "border_size":"1",
   "dark_one": "#9d83a4",
   "dark_two": "#dad1dd",
   "dark_three": "#EDEDED",

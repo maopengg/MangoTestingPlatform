@@ -4,7 +4,6 @@
 # @Time   : 2024-08-28 16:33
 # @Author : 毛鹏
 from src import *
-from src.tools import InitPath
 from src.widgets import *
 
 
@@ -29,7 +28,7 @@ class ComponentPage(QWidget):
         self.verticalLayout.setSpacing(15)
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.title_label = QLabel(self.contents)
-        self.title_label.setText(QCoreApplication.translate("MainPages", u"Custom Widgets Page", None))
+        self.title_label.setText(QCoreApplication.translate("MainPages", u"页面组件", None))
 
         self.title_label.setMaximumSize(QSize(16777215, 40))
         font = QFont()
@@ -40,9 +39,9 @@ class ComponentPage(QWidget):
         self.verticalLayout.addWidget(self.title_label)
         self.description_label = QLabel(self.contents)
         self.description_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.description_label.setText(QCoreApplication.translate("MainPages",
-                                                                  u"Here will be all the custom widgets, they will be added over time on this page.\n"
-                                                                  "I will try to always record a new tutorial when adding a new Widget and updating the project on Patreon before launching on GitHub and GitHub after the public release.",
+        self.description_label.setText(QCoreApplication.translate("组件中心",
+                                                                  u"以下是所有自定义小部件\n"
+                                                                  "哈哈哈哈哈",
                                                                   None))
         self.description_label.setWordWrap(True)
         self.verticalLayout.addWidget(self.description_label)
@@ -180,55 +179,48 @@ class ComponentPage(QWidget):
         self.push_button_2.setIcon(self.icon_2)
 
         # PY LINE EDIT
-        self.line_edit = MangoLineEdit(
-            text="",
-            place_holder_text="Place holder text",
-        )
+        self.line_edit = MangoLineEdit("Place holder text","",)
         self.line_edit.setMinimumHeight(30)
 
         # TOGGLE BUTTON
         self.toggle_button = MangoToggle(
-            width=50,
-            bg_color=THEME.dark_two,
-            circle_color=THEME.icon_color,
-            active_color=THEME.context_color
         )
 
         # TABLE WIDGETS
-        self.table_widget = MangoTableWidget()
-        self.table_widget.setColumnCount(3)
-        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.table_widget = MangoTableWidget()
+        # self.table_widget.setColumnCount(3)
+        # self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # self.table_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # self.table_widget.setSelectionBehavior(QAbstractItemView.SelectRows)
 
         # Columns / Header
-        self.column_1 = QTableWidgetItem()
-        self.column_1.setTextAlignment(Qt.AlignCenter)
-        self.column_1.setText("NAME")
-
-        self.column_2 = QTableWidgetItem()
-        self.column_2.setTextAlignment(Qt.AlignCenter)
-        self.column_2.setText("NICK")
-
-        self.column_3 = QTableWidgetItem()
-        self.column_3.setTextAlignment(Qt.AlignCenter)
-        self.column_3.setText("PASS")
-
-        # Set column
-        self.table_widget.setHorizontalHeaderItem(0, self.column_1)
-        self.table_widget.setHorizontalHeaderItem(1, self.column_2)
-        self.table_widget.setHorizontalHeaderItem(2, self.column_3)
-
-        for x in range(10):
-            row_number = self.table_widget.rowCount()
-            self.table_widget.insertRow(row_number)  # Insert row
-            self.table_widget.setItem(row_number, 0, QTableWidgetItem(str("Wanderson")))  # Add name
-            self.table_widget.setItem(row_number, 1, QTableWidgetItem(str("vfx_on_fire_" + str(x))))  # Add nick
-            self.pass_text = QTableWidgetItem()
-            self.pass_text.setTextAlignment(Qt.AlignCenter)
-            self.pass_text.setText("12345" + str(x))
-            self.table_widget.setItem(row_number, 2, self.pass_text)  # Add pass
-            self.table_widget.setRowHeight(row_number, 22)
+        # self.column_1 = QTableWidgetItem()
+        # self.column_1.setTextAlignment(Qt.AlignCenter)
+        # self.column_1.setText("NAME")
+        #
+        # self.column_2 = QTableWidgetItem()
+        # self.column_2.setTextAlignment(Qt.AlignCenter)
+        # self.column_2.setText("NICK")
+        #
+        # self.column_3 = QTableWidgetItem()
+        # self.column_3.setTextAlignment(Qt.AlignCenter)
+        # self.column_3.setText("PASS")
+        #
+        # # Set column
+        # self.table_widget.setHorizontalHeaderItem(0, self.column_1)
+        # self.table_widget.setHorizontalHeaderItem(1, self.column_2)
+        # self.table_widget.setHorizontalHeaderItem(2, self.column_3)
+        #
+        # for x in range(10):
+        #     row_number = self.table_widget.rowCount()
+        #     self.table_widget.insertRow(row_number)  # Insert row
+        #     self.table_widget.setItem(row_number, 0, QTableWidgetItem(str("Wanderson")))  # Add name
+        #     self.table_widget.setItem(row_number, 1, QTableWidgetItem(str("vfx_on_fire_" + str(x))))  # Add nick
+        #     self.pass_text = QTableWidgetItem()
+        #     self.pass_text.setTextAlignment(Qt.AlignCenter)
+        #     self.pass_text.setText("12345" + str(x))
+        #     self.table_widget.setItem(row_number, 2, self.pass_text)  # Add pass
+        #     self.table_widget.setRowHeight(row_number, 22)
 
         # ADD WIDGETS
         self.row_1_layout.addWidget(self.circular_progress_1)
@@ -245,7 +237,7 @@ class ComponentPage(QWidget):
         self.row_3_layout.addWidget(self.push_button_2)
         self.row_3_layout.addWidget(self.toggle_button)
         self.row_4_layout.addWidget(self.line_edit)
-        self.row_5_layout.addWidget(self.table_widget)
+        # self.row_5_layout.addWidget(self.table_widget)
 
     def load_data(self):
         # 模拟延迟加载数据

@@ -36,32 +36,24 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project_product',
         'type': 2,
-        'select': None,
         'subordinate': 'module',
-        'required': True
     },
     {
         'title': '模块',
         'placeholder': '请先选择项目/产品',
         'key': 'module',
         'type': 1,
-        'select': None,
-        'required': True
     },
     {
         'title': '页面名称',
         'placeholder': '请输入页面名称',
         'key': 'name',
-        'type': 0,
-        'required': True
     },
 
     {
         'title': '页面地址',
         'placeholder': '请输入页面地址',
         'key': 'url',
-        'type': 0,
-        'required': True
     },
 
 ]
@@ -69,36 +61,27 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': ''
+        'item': '',
+        'width': 7
     },
-
-    {
-        'key': 'update_time',
-        'name': '更新时间',
-        'item': ''
-    },
-
     {
         'key': 'module',
         'name': '模块名称',
-        'item': 'module'
+        'item': 'module',
+        'width': 100
     },
 
     {
         'key': 'project_product',
         'name': '项目产品名称',
-        'item': 'project_product'
-    },
-
-    {
-        'key': 'create_Time',
-        'name': '创建时间',
-        'item': ''
+        'item': 'project_product',
+        'width': 100
     },
     {
         'key': 'name',
         'name': '页面名称',
-        'item': ''
+        'item': '',
+        'width': 100
     },
     {
         'key': 'url',
@@ -108,7 +91,8 @@ table_column = [
     {
         'key': 'ope',
         'name': '操作',
-        'item': ''
+        'item': '',
+        'width': 120
     },
 
 ]

@@ -15,7 +15,7 @@ class MangoCircularProgress(QWidget):
             max_value=100,
             progress_color=THEME.context_color,
             enable_text=True,
-            font_family="Segoe UI",
+            font_family="微软雅黑",
             font_size=12,
             suffix="%",
             text_color=THEME.text_title,

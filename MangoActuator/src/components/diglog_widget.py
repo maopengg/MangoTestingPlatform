@@ -7,7 +7,7 @@ from src import *
 from src.enums.gui_enum import *
 from src.models.gui_model import FormDataModel, DialogCallbackModel
 from src.widgets import *
-from src.widgets.mango_combo_box import MangoComboBox
+from src.widgets.mango_input_widgets.mango_combo_box import MangoComboBox
 
 
 class DialogWidget(MangoDialog):
@@ -20,11 +20,13 @@ class DialogWidget(MangoDialog):
         form_layout = QFormLayout()
         for form in self.form_data:
             if form.type == InputEnum.INPUT:
-                input_object = MangoLineEdit(form.value, form.placeholder, form.subordinate)
+                input_object = MangoLineEdit(form.placeholder, form.value, form.subordinate)
             elif form.type == InputEnum.SELECT:
                 input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate)
             elif form.type == InputEnum.CASCADER:
                 input_object = MangoCascade(form.placeholder, form.select, form.value, form.subordinate)
+            elif form.type == InputEnum.TOGGLE:
+                input_object = MangoToggle(form.value)
             else:
                 raise ValueError(f'Unsupported input type: {form.type}')
             input_object.clicked.connect(self.entered)
@@ -74,11 +76,12 @@ class DialogWidget(MangoDialog):
         self.accept()  # 关闭对话框
 
     def entered(self, data: DialogCallbackModel):
-        for i in self.form_data:
-            if i.key == data.subordinate and i.key:
-                data.key = i.key
-                data.input_object = i.input_object
-                self.clicked.emit(data)
+        if isinstance(data, DialogCallbackModel):
+            for i in self.form_data:
+                if i.key == data.subordinate and i.key:
+                    data.key = i.key
+                    data.input_object = i.input_object
+                    self.clicked.emit(data)
 
     def check_value(self, value):
         pass

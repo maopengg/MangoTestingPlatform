@@ -22,7 +22,7 @@ class TitleWidget(QWidget):
         self.title_data = title_data
         for search in self.title_data:
             from_layout = QFormLayout()
-            intput = MangoLineEdit('', search.placeholder)
+            intput = MangoLineEdit(search.placeholder,'', )
             from_layout.addRow(f'{search.title}：', intput)
             self.layout.addLayout(from_layout)
             search.input = intput
