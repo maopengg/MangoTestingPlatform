@@ -8,7 +8,7 @@ import asyncio
 from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel
-from src.network.websocket_client import WebSocketClient
+from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
 from src.services.ui.service.page_steps import PageSteps
 from src.tools.data_processor.sql_cache import SqlCache

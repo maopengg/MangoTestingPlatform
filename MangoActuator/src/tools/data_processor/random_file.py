@@ -7,7 +7,7 @@ import os
 
 from src.exceptions.error_msg import ERROR_MSG_0026
 from src.exceptions.tools_exception import FileDoesNotEexistError
-from src.network.http_client import HttpClient
+from src.network.http.http_client import HttpClient
 from src.tools import InitPath
 
 

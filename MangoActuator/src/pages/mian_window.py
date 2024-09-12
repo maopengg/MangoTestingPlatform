@@ -8,8 +8,7 @@ import os
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
-from resources.app_rc import *
-from src.network.sokcet_thread import SocketTask
+from src.network.web_socket.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
 from src.widgets.mango_tooltip_box import show_info_message
 

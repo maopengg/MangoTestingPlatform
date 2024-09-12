@@ -9,7 +9,7 @@ from queue import Queue, Empty
 from PySide6.QtCore import *
 from PySide6.QtWidgets import *
 
-from src.enums.socket_api_enum import ToolsSocketEnum
+from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, SignalTypeEnum, ClientTypeEnum
 from src.tools.assertion import Assertion
@@ -139,7 +139,7 @@ class HomePage(QWidget):
         send_list: list = r.main()
         send_list.append(
             {CacheDataKey2Enum.ASSERTION_METHOD.value: json.dumps(Assertion.get_methods(), ensure_ascii=False)})
-        from ...network.websocket_client import WebSocketClient
+        from src.network.web_socket.websocket_client import WebSocketClient
         WebSocketClient().sync_send('设置缓存数据成功', func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
                                     is_notice=ClientTypeEnum.WEB.value, func_args=send_list)
 

@@ -9,14 +9,14 @@ import json
 import os
 import shutil
 
-from src.enums.socket_api_enum import UiSocketEnum
+from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from src.models.ui_model import CaseModel, CaseResultModel
-from src.network.websocket_client import WebSocketClient
+from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.step_elements import StepElements
 from src.tools import InitPath
 from src.tools.data_processor.random_time_data import RandomTimeData

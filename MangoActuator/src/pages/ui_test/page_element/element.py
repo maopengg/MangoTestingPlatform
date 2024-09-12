@@ -12,7 +12,7 @@ from src.components.message import response_message
 from src.components.title_info import TitleInfoWidget
 from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FormDataModel
 from src.models.network_model import ResponseModel
-from src.network.http_ui import HttpUi
+from src.network.http.http_ui import HttpUi
 from src.settings.settings import THEME
 from .element_dict import table_menu, table_column, from_data, field_list
 

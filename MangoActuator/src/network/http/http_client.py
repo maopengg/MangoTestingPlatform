@@ -9,14 +9,14 @@ import os
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0007
 from src.exceptions.tools_exception import FileNotError
-from src.network import HttpRequest
+from src.network.http.http_base import HttpBase
 from src.tools import InitPath
 from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
 from src.tools.other.path import Path
 
 
-class HttpClient(HttpRequest):
+class HttpClient(HttpBase):
 
     @classmethod
     def login(cls, username: str = None, password=None):

@@ -6,7 +6,7 @@
 import traceback
 
 from src.enums.tools_enum import ClientTypeEnum
-from src.network.websocket_client import WebSocketClient
+from src.network.web_socket.websocket_client import WebSocketClient
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 from src.tools.notic_tools import NoticeMain

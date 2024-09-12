@@ -3,7 +3,7 @@ from PySide6.QtGui import QIcon
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.models.gui_model import CascaderModel
-from src.network.http_client import HttpClient
+from src.network.http.http_client import HttpClient
 from src.pages.login.login_ui import LoginWindow
 from src.pages.mian_window import MainWindow
 from src.settings import settings

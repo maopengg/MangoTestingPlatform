@@ -28,9 +28,6 @@ class WebSocketClient:
         self.websocket: Optional[WebSocketClientProtocol | None] = None
         self.is_recv = True
 
-    # def __del__(self):
-    #     asyncio.run(self.close())
-
     async def close(self):
         await self.websocket.close()
         self.is_recv = False

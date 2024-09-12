@@ -10,7 +10,7 @@ from src.components import *
 from src.models.gui_model import TitleDataModel, FormDataModel, TableColumnModel, TableMenuItemModel, \
     DialogCallbackModel, ComboBoxDataModel
 from src.models.network_model import ResponseModel
-from src.network.http_ui import HttpUi
+from src.network.http.http_ui import HttpUi
 from .page_dict import table_menu, table_column, title_data, form_data
 
 

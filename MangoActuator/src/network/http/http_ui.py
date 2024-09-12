@@ -4,11 +4,11 @@
 # @Time   : 2024-09-03 16:25
 # @Author : 毛鹏
 from src.models.network_model import ResponseModel
-from src.network import HttpRequest
+from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class HttpUi(HttpRequest):
+class HttpUi(HttpBase):
 
     @classmethod
     @request_log()

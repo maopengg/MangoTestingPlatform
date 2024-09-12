@@ -22,14 +22,14 @@ from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
 from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
-from src.enums.socket_api_enum import ApiSocketEnum
+from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.enums.tools_enum import CacheKeyEnum, StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
 from src.exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
 from src.models.api_model import ApiInfoModel
 from src.models.ui_model import WEBConfigModel
-from src.network.websocket_client import WebSocketClient
+from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.data_processor.sql_cache import SqlCache

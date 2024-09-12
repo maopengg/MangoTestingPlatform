@@ -13,7 +13,7 @@ from PySide6.QtCore import QThreadPool, QThread, Signal, Slot, QObject
 from websocket import WebSocketConnectionClosedException
 
 from src.enums.tools_enum import ClientNameEnum
-from src.network.websocket_client import WebSocketClient
+from src.network.web_socket.websocket_client import WebSocketClient
 from src.tools.log_collector import log
 
 
