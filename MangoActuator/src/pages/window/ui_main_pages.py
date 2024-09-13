@@ -31,10 +31,10 @@ class MainPages:
 
             'page': PagePage(self),
             'page_element': ElementPage(self),
-            'page_steps': PageStepsPage('页面步骤'),
-            'page_steps_detailed': PageStepsDetailedPage('步骤详情'),
-            'ui_case': UiCasePage('测试用例'),
-            'case_steps': CaseStepsPage('用例详情'),
+            'page_steps': PageStepsPage(self),
+            'page_steps_detailed': PageStepsDetailedPage(self),
+            'case': CasePage(self),
+            'case_steps': CaseStepsPage(self),
 
             'component_center': ComponentPage(self.central_widget),
             'settings': ExamplePage('设置'),

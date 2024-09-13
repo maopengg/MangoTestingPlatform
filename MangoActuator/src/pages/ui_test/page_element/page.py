@@ -10,7 +10,7 @@ from src.components import *
 from src.models.gui_model import TitleDataModel, FormDataModel, TableColumnModel, TableMenuItemModel, \
     DialogCallbackModel, ComboBoxDataModel
 from src.models.network_model import ResponseModel
-from src.network.http.http_ui import HttpUi
+from src.network import Http
 from .page_dict import table_menu, table_column, title_data, form_data
 
 
@@ -49,22 +49,13 @@ class PagePage(QWidget):
         self.setLayout(self.layout)
 
     def show_data(self, is_refresh=False):
-        response_model: ResponseModel = HttpUi.get_page(self.page, self.page_size, self.params)
+        response_model: ResponseModel = Http.get_page(self.page, self.page_size, self.params)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if is_refresh:
             response_message(self, response_model)
 
     def handle_button_click(self, data):
-        action = data['action']
-        row = data['row']
-        if action == 'edit':
-            self.edit(row)
-        elif action == 'add_ele':
-            self.add_ele(row)
-        elif action == 'copy':
-            self.copy(row)
-        elif action == 'delete':
-            self.delete(row)
+        getattr(self, data['action'])(data['row'])
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.key == 'module':
@@ -80,7 +71,7 @@ class PagePage(QWidget):
         dialog.clicked.connect(self.sub_options)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            response_model: ResponseModel = HttpUi.post_page(dialog.data)
+            response_model: ResponseModel = Http.post_page(dialog.data)
             response_message(self, response_model)
             self.show_data()
 
@@ -101,7 +92,7 @@ class PagePage(QWidget):
         if dialog.data:
             data = dialog.data
             data['id'] = row['id']
-            response_model: ResponseModel = HttpUi.put_page(data)
+            response_model: ResponseModel = Http.put_page(data)
             response_message(self, response_model)
             self.show_data()
 
@@ -112,7 +103,7 @@ class PagePage(QWidget):
         print('点击了复制', row)
 
     def delete(self, row):
-        response_model: ResponseModel = HttpUi.delete_page(row.get('id'))
+        response_model: ResponseModel = Http.delete_page(row.get('id'))
         response_message(self, response_model)
         self.show_data()
 

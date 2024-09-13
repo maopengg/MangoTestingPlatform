@@ -18,7 +18,6 @@ class MangoPagination(QWidget):
         self.page = 1
         self.number_part = 10
 
-        # 创建左右箭头图标按钮（使用 QPushButton 并设置样式）
         self.current_page_label1 = QLabel(f"共 {self.common} 条")
 
         self.prev_icon_button = QPushButton()
@@ -47,11 +46,9 @@ class MangoPagination(QWidget):
 
         self.setLayout(layout)
 
-        # 连接左右箭头按钮的点击信号到相应的槽函数（示例，需自定义具体逻辑）
         self.prev_icon_button.clicked.connect(self.on_prev_page)
         self.next_icon_button.clicked.connect(self.on_next_page)
 
-        # 连接下拉选择框的信号到槽函数，以处理每页展示条数的变化
         self.items_per_page_combo.currentIndexChanged.connect(self.on_items_per_page_changed)
         self.button_enabled()
 

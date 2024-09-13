@@ -1,59 +1,54 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: auto_test
 # @Description: 
-# @Time   : 2024-09-01 下午9:01
+# @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
 import copy
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
+from src import *
 from src.components import *
-from src.components.message import response_message
-from src.components.title_info import TitleInfoWidget
-from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FormDataModel
+from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 from src.network import Http
-from src.settings.settings import THEME
-from .element_dict import table_menu, table_column, from_data, field_list
+from .page_steps_dict import *
 
 
-class ElementPage(QWidget):
+class PageStepsPage(QWidget):
 
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.data: dict = {}
-        self.page_id = None
         self.page = 1
         self.page_size = 10
+        self.params = {}
+        self.title_data = [TitleDataModel(**i) for i in title_data]
+        self.form_data = [FormDataModel(**i) for i in form_data]
+        for i in self.form_data:
+            if i.key == 'project_product':
+                i.select = settings.base_dict
+
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
-        self.field_list = [FieldListModel(**i) for i in field_list]
-        self.form_data = [FormDataModel(**i) for i in from_data]
 
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.title_info = TitleInfoWidget()
-        self.layout.addWidget(self.title_info)
+        self.titleWidget = TitleWidget(self.title_data)
+        self.titleWidget.clicked.connect(self.search)
+        self.layout.addWidget(self.titleWidget)
 
         self.right_data = [
-            {'name': '新增', 'theme': THEME.blue, 'func': self.add},
-            {'name': '返回', 'theme': THEME.orange, 'func': self.back}
+            {'name': '新增', 'theme': THEME.blue, 'func': self.add}
         ]
         self.right_but = RightButton(self.right_data)
         self.layout.addWidget(self.right_but)
-
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.clicked.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.handle_button_click)
         self.layout.addWidget(self.table_widget)
+        self.setLayout(self.layout)
 
     def show_data(self, is_refresh=False):
-        self.title_info.init(self.data, self.field_list)
-        self.page_id = self.data.get('id')
-        response_model: ResponseModel = Http.get_page_element(self.page, self.page_size,
-                                                                {'page_id': self.page_id})
+        response_model: ResponseModel = Http.get_page_steps(self.page, self.page_size, self.params)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if is_refresh:
             response_message(self, response_model)
@@ -61,21 +56,23 @@ class ElementPage(QWidget):
     def handle_button_click(self, data):
         getattr(self, data['action'])(data['row'])
 
-    def debug(self, row):
-        warning_notification(self, '点击了调试')
+    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
+        if data.key == 'module':
+            init_data = set_product_module(self, data)
+            if is_refresh:
+                data.input_object.set_select(init_data, True)
+            else:
+                return init_data
 
     def add(self, row):
         form_data = copy.deepcopy(self.form_data)
         dialog = DialogWidget('新建页面', form_data)
+        dialog.clicked.connect(self.sub_options)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            dialog.data['page'] = self.page_id
-            response_model: ResponseModel = Http.post_page_element(dialog.data)
+            response_model: ResponseModel = Http.post_page_steps(dialog.data)
             response_message(self, response_model)
-        self.show_data()
-
-    def back(self, row):
-        self.parent.set_page('page', row)
+            self.show_data()
 
     def edit(self, row):
         form_data = copy.deepcopy(self.form_data)
@@ -84,17 +81,28 @@ class ElementPage(QWidget):
                 i.value = row[i.key].get('id', None)
             else:
                 i.value = row[i.key]
-        dialog = DialogWidget('编辑页面', form_data)
+        for i in form_data:
+            if i.subordinate:
+                result = next((item for item in form_data if item.key == i.subordinate), None)
+                select = get_product_module_label(int(i.value))
+                result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
+        dialog = DialogWidget('编辑页面', form_data, )
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            dialog.data['page'] = self.page_id
-            dialog.data['id'] = row['id']
-            response_model: ResponseModel = Http.put_page_element(dialog.data)
+            data = dialog.data
+            data['id'] = row['id']
+            response_model: ResponseModel = Http.put_page_steps(data)
             response_message(self, response_model)
-        self.show_data()
+            self.show_data()
+
+    def add_step(self, row):
+        self.parent.set_page('page_steps_detailed', row)
+
+    def copy(self, row):
+        print('点击了复制', row)
 
     def delete(self, row):
-        response_model: ResponseModel = Http.delete_page_element(row.get('id'))
+        response_model: ResponseModel = Http.delete_page_steps(row.get('id'))
         response_message(self, response_model)
         self.show_data()
 

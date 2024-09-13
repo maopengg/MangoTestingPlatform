@@ -3,6 +3,6 @@
 # @Description: 
 # @Time   : 2024-08-20 18:43
 # @Author : 毛鹏
-from src.network.http import Http
-from src.network.web_socket import *
-
+from .http import Http
+from .web_socket import *
+from .web_socket import socket_conn

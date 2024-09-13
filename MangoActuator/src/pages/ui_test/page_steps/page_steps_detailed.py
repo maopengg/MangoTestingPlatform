@@ -5,19 +5,15 @@
 # @Author : 毛鹏
 import copy
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
+from src import *
 from src.components import *
-from src.components.message import response_message
-from src.components.title_info import TitleInfoWidget
-from src.models.gui_model import TableColumnModel, TableMenuItemModel, FieldListModel, FormDataModel
+from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 from src.network import Http
-from src.settings.settings import THEME
-from .element_dict import table_menu, table_column, from_data, field_list
+from .page_steps_detailed_dict import *
 
 
-class ElementPage(QWidget):
+class PageStepsDetailedPage(QWidget):
 
     def __init__(self, parent):
         super().__init__()
@@ -53,7 +49,7 @@ class ElementPage(QWidget):
         self.title_info.init(self.data, self.field_list)
         self.page_id = self.data.get('id')
         response_model: ResponseModel = Http.get_page_element(self.page, self.page_size,
-                                                                {'page_id': self.page_id})
+                                                              {'page_id': self.page_id})
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if is_refresh:
             response_message(self, response_model)

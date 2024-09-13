@@ -82,7 +82,7 @@ class UiElementViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
-    def get_ele_name(self, request: Request):
+    def get_element_name(self, request: Request):
         """
         获取
         :param request:

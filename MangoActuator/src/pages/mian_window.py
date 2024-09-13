@@ -23,26 +23,19 @@ class MainWindow(UIMainWindow):
     def __init__(self):
         super().__init__()
         self.drag_pos = None
-        # 创建系统托盘图标
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon(':/icons/app_icon.png'))
-
-        # 创建托盘图标菜单
         tray_menu = QMenu(self)
         show_action = QAction(QIcon(':/icons/show_icon.png'), "显示窗口", self)
         show_action.triggered.connect(self.show)
         tray_menu.addAction(show_action)
-
         exit_action = QAction(QIcon(':/icons/close_icon.png'), "退出", self)
         exit_action.triggered.connect(self.quit)
         tray_menu.addAction(exit_action)
-
-        # 将菜单与托盘图标关联
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
-        self.websocket_thread = SocketTask(self)
-        self.websocket_thread.finished.connect(self.quit)
+        self.websocket_thread = SocketTask()
         self.websocket_thread.start()
 
     def closeEvent(self, event):
@@ -50,16 +43,13 @@ class MainWindow(UIMainWindow):
         event.ignore()
         self.hide()
 
-    def quit(self):
-        # 退出程序
+    @classmethod
+    def quit(cls):
         QApplication.quit()
-        self.show()
 
-    # RESIZE EVENT
     def resizeEvent(self, event):
         self.resize_grips()
 
-    # MOUSE CLICK EVENTS
     def mousePressEvent(self, event):
         self.drag_pos = QCursor.pos()
 

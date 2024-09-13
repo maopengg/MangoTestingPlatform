@@ -42,7 +42,7 @@
         },
         {
           "btn_icon": ":/icons/home.svg",
-          "btn_id": "ui_case",
+          "btn_id": "case",
           "btn_text": "测试用例",
           "btn_tooltip": "测试用例",
           "show_top": true,

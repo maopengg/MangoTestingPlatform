@@ -18,9 +18,4 @@ from src.settings import settings
 # from resources.app_rc import *
 # from src.settings.settings import *
 # from src.settings import settings
-# from enums.tools_enum import *
-# from enums.ui_enum import *
-# from enums.gui_enum import *
-# from enums.system_enum import *
-# from enums.perf_enum import *
 # from src.network.web_socket.socket_api_enum import *

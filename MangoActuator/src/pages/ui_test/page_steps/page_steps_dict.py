@@ -45,15 +45,14 @@ form_data = [
         'type': 1,
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
-        'key': 'name',
+        'title': '所属页面',
+        'placeholder': '请选择步骤所属页面',
+        'key': 'page',
     },
-
     {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
+        'title': '步骤名称',
+        'placeholder': '步骤名称',
+        'key': 'name',
     },
 
 ]
@@ -70,7 +69,6 @@ table_column = [
         'item': 'module',
         'width': 100
     },
-
     {
         'key': 'project_product',
         'name': '产品名称',
@@ -79,13 +77,13 @@ table_column = [
     },
     {
         'key': 'name',
-        'name': '页面名称',
+        'name': '步骤名称',
         'item': '',
         'width': 150
     },
     {
-        'key': 'url',
-        'name': 'URL',
+        'key': 'run_flow',
+        'name': '顺序',
         'item': ''
     },
     {
@@ -102,8 +100,8 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '添加元素',
-        'action': 'add_ele'
+        'name': '添加步骤',
+        'action': 'add_step'
     },
     {
         'name': '···',

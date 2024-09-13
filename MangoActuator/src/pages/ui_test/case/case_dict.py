@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Project: auto_test
 # @Description: 
-# @Time   : 2024-09-05 11:56
+# @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
 title_data = [
     {
@@ -73,7 +73,7 @@ table_column = [
 
     {
         'key': 'project_product',
-        'name': '产品名称',
+        'name': '项目产品名称',
         'item': 'project_product',
         'width': 100
     },
@@ -81,7 +81,7 @@ table_column = [
         'key': 'name',
         'name': '页面名称',
         'item': '',
-        'width': 150
+        'width': 100
     },
     {
         'key': 'url',
