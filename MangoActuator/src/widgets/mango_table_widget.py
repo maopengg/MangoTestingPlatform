@@ -28,6 +28,8 @@ class MangoTableWidget(QTableWidget):
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.verticalHeader().setVisible(False)
 
+        self.setEditTriggers(QTableWidget.NoEditTriggers)
+
     def set_column_widths(self):
         for index, column in enumerate(self.row_column):
             if column.width:

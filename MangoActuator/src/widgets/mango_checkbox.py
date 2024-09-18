@@ -14,7 +14,8 @@ class MangoCheckBox(QCheckBox):
         参数：
         - text：复选框显示的文本内容。
         """
-        super().__init__(text, parent)
+        super().__init__(parent)
+        self.setText(text)
 
     def isChecked(self):
         """
