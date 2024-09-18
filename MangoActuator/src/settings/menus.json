@@ -9,7 +9,7 @@
       "is_active": true
     },
     {
-      "btn_icon": ":/icons/widgets.svg",
+      "btn_icon": ":/icons/menu.svg",
       "btn_id": "web",
       "btn_text": "全部功能",
       "btn_tooltip": "全部功能",
@@ -17,7 +17,7 @@
       "is_active": false
     },
     {
-      "btn_icon": ":/icons/widgets.svg",
+      "btn_icon": ":/icons/robot.svg",
       "btn_id": "ui",
       "btn_text": "前端自动化",
       "btn_tooltip": "前端自动化",
@@ -25,7 +25,7 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/widgets.svg",
+          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "page",
           "btn_text": "页面元素",
           "btn_tooltip": "页面元素",
@@ -33,7 +33,7 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/home.svg",
+          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "page_steps",
           "btn_text": "页面步骤",
           "btn_tooltip": "页面步骤",
@@ -41,7 +41,7 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/home.svg",
+          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "case",
           "btn_text": "测试用例",
           "btn_tooltip": "测试用例",
@@ -51,7 +51,7 @@
       ]
     },
     {
-      "btn_icon": ":/icons/widgets.svg",
+      "btn_icon": ":/icons/tool.svg",
       "btn_id": "component_center",
       "btn_text": "组件中心",
       "btn_tooltip": "组件中心",

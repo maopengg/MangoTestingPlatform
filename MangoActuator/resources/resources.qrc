@@ -26,5 +26,8 @@
         <file>icons/icon_heart.svg</file>
         <file>icons/icon_info.svg</file>
         <file>icons/icon_send.svg</file>
+        <file>icons/mind-mapping.svg</file>
+        <file>icons/robot.svg</file>
+        <file>icons/tool.svg</file>
     </qresource>
 </RCC>
