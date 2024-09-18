@@ -6,10 +6,10 @@
 
 from src.network import Http
 from .page_steps_dict import *
-from ...base.form_page_parent import *
+from ...page_parent.table import *
 
 
-class PageStepsPage(FormPageParent):
+class PageStepsPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
         self.subpage_value = 'page_steps_detailed'

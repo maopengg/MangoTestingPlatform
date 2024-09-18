@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 from src.network import Http
 from .page_dict import *
-from ...base.form_page_parent import FormPageParent
+from ...page_parent.table import TableParent
 
 
-class PagePage(FormPageParent):
+class PagePage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
         self.subpage_value = 'page_element'

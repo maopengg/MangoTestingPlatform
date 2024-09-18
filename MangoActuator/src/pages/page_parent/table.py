@@ -11,7 +11,7 @@ from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 
 
-class FormPageParent(QWidget):
+class TableParent(QWidget):
     def __init__(self, parent, search_data, form_data, table_column, table_menu, right_data, *args, **kwargs):
         super().__init__()
         self.parent = parent
