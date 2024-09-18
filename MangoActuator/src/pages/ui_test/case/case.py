@@ -7,11 +7,10 @@ import copy
 
 from src import *
 from src.components import *
-from src.models.gui_model import TitleDataModel, FormDataModel, TableColumnModel, TableMenuItemModel, \
-    DialogCallbackModel, ComboBoxDataModel
+from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 from src.network import Http
-from .case_dict import table_menu, table_column, title_data, form_data
+from .case_dict import *
 
 
 class CasePage(QWidget):
@@ -22,41 +21,39 @@ class CasePage(QWidget):
         self.page = 1
         self.page_size = 10
         self.params = {}
-        self.title_data = [TitleDataModel(**i) for i in title_data]
+        self.search_data = [SearchDataModel(**i) for i in search_data]
         self.form_data = [FormDataModel(**i) for i in form_data]
-        for i in self.form_data:
-            if i.key == 'project_product':
-                i.select = settings.base_dict
-
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
+        self.right_data = [RightDataModel(**i) for i in right_data]
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.titleWidget = TitleWidget(self.title_data)
+        self.titleWidget = SearchWidget(self.search_data)
         self.titleWidget.clicked.connect(self.search)
         self.layout.addWidget(self.titleWidget)
 
-        self.right_data = [
-            {'name': '新增', 'theme': THEME.blue, 'func': self.add}
-        ]
         self.right_but = RightButton(self.right_data)
+        self.right_but.clicked.connect(self.callback)
         self.layout.addWidget(self.right_but)
+
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.clicked.connect(self.pagination_clicked)
-        self.table_widget.clicked.connect(self.handle_button_click)
+        self.table_widget.clicked.connect(self.callback)
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
     def show_data(self, is_refresh=False):
-        response_model: ResponseModel = Http.get_page(self.page, self.page_size, self.params)
+        response_model: ResponseModel = Http.get_case(self.page, self.page_size, self.params)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if is_refresh:
             response_message(self, response_model)
 
-    def handle_button_click(self, data):
-        getattr(self, data['action'])(data['row'])
-
+    def callback(self, data):
+        if data.get('row'):
+            getattr(self, data['action'])(data.get('row'))
+        else:
+            getattr(self, data['action'])()
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.key == 'module':
@@ -66,7 +63,7 @@ class CasePage(QWidget):
             else:
                 return init_data
 
-    def add(self, row):
+    def add(self):
         form_data = copy.deepcopy(self.form_data)
         dialog = DialogWidget('新建页面', form_data)
         dialog.clicked.connect(self.sub_options)

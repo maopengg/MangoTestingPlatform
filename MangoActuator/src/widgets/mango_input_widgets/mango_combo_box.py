@@ -37,6 +37,8 @@ class MangoComboBox(QComboBox):
 
     def get_value(self):
         value = self.currentText()
+        if self.data is None:
+            return None
         for i in self.data:
             if i.name == value:
                 return i.id
@@ -60,7 +62,7 @@ class MangoComboBox(QComboBox):
 
     def combo_box_changed(self, data):
         if self.subordinate:
-            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=data))
+            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=self.get_value()))
 
     def set_stylesheet(self, style_config: dict, icon=':/icons/down.svg'):
 

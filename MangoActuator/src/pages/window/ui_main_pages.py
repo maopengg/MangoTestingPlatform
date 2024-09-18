@@ -47,12 +47,12 @@ class MainPages:
         QMetaObject.connectSlotsByName(main_window)
 
     def set_page(self, page, data: dict | None = None):
-        if isinstance(page, str) and data is not None:
+        if isinstance(page, str):
             page = self.page_dict.get(page)
-            if isinstance(data, dict):
-                page.data = data
-            else:
-                page.data = {}
+        if data is not None and isinstance(data, dict):
+            page.data = data
+        else:
+            page.data = {}
         try:
             page.show_data()
         except AttributeError:

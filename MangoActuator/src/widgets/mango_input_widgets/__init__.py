@@ -6,3 +6,5 @@
 from .mango_combo_box import MangoComboBox
 from .mango_line_edit import MangoLineEdit
 from .mango_cascader import MangoCascade
+from .mango_text_edit import MangoTextEdit
+from .mango_toggle import MangoToggle

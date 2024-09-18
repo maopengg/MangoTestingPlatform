@@ -3,24 +3,26 @@
 # @Description:
 # @Time   : 2024-08-30 14:08
 # @Author : 毛鹏
+from functools import partial
+
 from src import *
+from src.models.gui_model import RightDataModel
 from src.widgets import *
 
 
 class RightButton(QWidget):
+    clicked = Signal(object)
 
-    def __init__(self, but_list_obj: list[dict]):
+    def __init__(self, but_list_obj: list[RightDataModel]):
         super().__init__()
-        self.setContentsMargins(0, 0, 0, 0)
         self.layout = QHBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addStretch()
-        self.but_list: list[dict] = []
         for but_obj in but_list_obj:
-            but = MangoPushButton(but_obj['name'], bg_color=but_obj['theme'])
-            but.clicked.connect(but_obj['func'])
-            but.setMinimumWidth(50)
-            but.setMinimumHeight(30)
+            but = MangoPushButton(but_obj.name, bg_color=but_obj.theme)
+            but.clicked.connect(partial(self.but_clicked, but_obj.action))
             self.layout.addWidget(but)
-            self.but_list.append({but_obj['name']: but})
         self.setLayout(self.layout)
+
+    def but_clicked(self, action):
+        self.clicked.emit({'action': action, 'row': None})

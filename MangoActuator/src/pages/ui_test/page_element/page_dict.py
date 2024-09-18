@@ -3,7 +3,10 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-title_data = [
+from src import THEME
+from src.settings import settings
+
+search_data = [
     {
         'title': 'ID',
         'placeholder': '请输入页面ID',
@@ -30,6 +33,10 @@ title_data = [
         'input': None
     }
 ]
+right_data = [
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
+
+]
 form_data = [
     {
         'title': '项目/产品',
@@ -37,6 +44,7 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
+        'select': lambda: settings.base_dict,
     },
     {
         'title': '模块',
@@ -103,7 +111,7 @@ table_menu = [
     },
     {
         'name': '添加元素',
-        'action': 'add_ele'
+        'action': 'subpage'
     },
     {
         'name': '···',

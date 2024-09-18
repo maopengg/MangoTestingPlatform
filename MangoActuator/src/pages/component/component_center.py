@@ -179,7 +179,7 @@ class ComponentPage(QWidget):
         self.push_button_2.setIcon(self.icon_2)
 
         # PY LINE EDIT
-        self.line_edit = MangoLineEdit("Place holder text","",)
+        self.line_edit = MangoLineEdit("Place holder text", "", )
         self.line_edit.setMinimumHeight(30)
 
         # TOGGLE BUTTON

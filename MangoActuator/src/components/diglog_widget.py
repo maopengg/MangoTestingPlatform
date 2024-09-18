@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
+
 from src import *
 from src.enums.gui_enum import *
 from src.models.gui_model import FormDataModel, DialogCallbackModel
@@ -19,6 +20,8 @@ class DialogWidget(MangoDialog):
         # 创建表单布局
         form_layout = QFormLayout()
         for form in self.form_data:
+            if callable(form.select):
+                form.select = form.select()
             if form.type == InputEnum.INPUT:
                 input_object = MangoLineEdit(form.placeholder, form.value, form.subordinate)
             elif form.type == InputEnum.SELECT:
@@ -44,10 +47,10 @@ class DialogWidget(MangoDialog):
 
         # 添加按钮布局
         button_layout = QHBoxLayout()
-        submit_button = MangoPushButton("提交", bg_color=THEME.blue)
-        submit_button.clicked.connect(self.submit_form)
         cancel_button = MangoPushButton("取消", bg_color=THEME.bg_one)
         cancel_button.clicked.connect(self.reject)  # 关闭对话框
+        submit_button = MangoPushButton("提交", bg_color=THEME.blue)
+        submit_button.clicked.connect(self.submit_form)
         button_layout.addStretch()
         # 将按钮添加到按钮布局
         button_layout.addWidget(submit_button)

@@ -3,32 +3,34 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-title_data = [
+from src import THEME
+
+search_data = [
     {
         'title': 'ID',
         'placeholder': '请输入页面ID',
         'key': 'id',
-        'input': None
     },
     {
         'title': '页面名称',
         'placeholder': '请输入页面名称',
         'key': 'name',
-        'input': None
     },
     {
         'title': '产品',
         'placeholder': '请选择项目产品',
         'key': 'project_product',
-        'input': None
     },
 
     {
         'title': '模块',
         'placeholder': '请选择产品模块',
         'key': 'module',
-        'input': None
     }
+]
+right_data = [
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
+
 ]
 form_data = [
     {
@@ -65,27 +67,27 @@ table_column = [
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'item': 'module',
+        'key': 'project_product',
+        'name': '项目/产品',
+        'item': 'name',
         'width': 100
     },
 
     {
-        'key': 'project_product',
-        'name': '项目产品名称',
-        'item': 'project_product',
+        'key': 'module',
+        'name': '模块',
+        'item': 'name',
         'width': 100
     },
     {
         'key': 'name',
-        'name': '页面名称',
+        'name': '用例名称',
         'item': '',
         'width': 100
     },
     {
-        'key': 'url',
-        'name': 'URL',
+        'key': 'case_flow',
+        'name': '步骤顺序',
         'item': ''
     },
     {

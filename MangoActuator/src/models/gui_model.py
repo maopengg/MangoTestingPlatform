@@ -97,12 +97,18 @@ class MenusModel(BaseModel):
     title_bar_menus: list[TitleBarMenusModel]
 
 
-class TitleDataModel(BaseModel):
+class SearchDataModel(BaseModel):
     title: str
     placeholder: str
     key: str
     input: None = None
     # input: MangoLineEdit | None = None
+
+
+class RightDataModel(BaseModel):
+    name: str
+    theme: str
+    action: str
 
 
 class FormDataModel(BaseModel):
@@ -145,8 +151,9 @@ class CascaderModel(BaseModel):
 class DialogCallbackModel(BaseModel):
     key: str | None = None
     value: int | str | None
-    subordinate: str
     input_object: Any | None = None
+
+    subordinate: str
     subordinate_input_object: Any | None = None
 
 

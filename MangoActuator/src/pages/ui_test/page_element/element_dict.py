@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
+from src import THEME
 from src.enums.ui_enum import ElementExpEnum
 
 table_column = [
@@ -13,6 +14,10 @@ table_column = [
     {'key': 'sleep', 'name': '等待时间（秒）', 'item': '', 'width': 40},
     {'key': 'sub', 'name': '元素下标（1开始）', 'item': '', 'width': 40},
     {'key': 'ope', 'name': '操作', 'item': '', 'width': 120},
+]
+right_data = [
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
+    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
 ]
 table_menu = [
     {'name': '调试', 'action': 'debug'},

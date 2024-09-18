@@ -20,7 +20,7 @@ class LoginWindow(QWidget):
         self.verticalLayout_3 = QVBoxLayout()
         self.label = MangoLabel('IP', self)
         self.verticalLayout_3.addWidget(self.label)
-        self.ip_edit = MangoLineEdit("请输入后端服务IP","",  )
+        self.ip_edit = MangoLineEdit("请输入后端服务IP", "", )
         self.verticalLayout_3.addWidget(self.ip_edit)
         self.horizontalLayout_5.addLayout(self.verticalLayout_3)
         self.verticalLayout_2 = QVBoxLayout()

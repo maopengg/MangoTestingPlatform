@@ -3,32 +3,43 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-title_data = [
+from src import THEME
+from src.settings import settings
+
+search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入步骤ID',
         'key': 'id',
-        'input': None
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '步骤名称',
+        'placeholder': '请输入步骤名称',
         'key': 'name',
-        'input': None
     },
     {
         'title': '产品',
         'placeholder': '请选择项目产品',
         'key': 'project_product',
-        'input': None
     },
-
     {
         'title': '模块',
         'placeholder': '请选择产品模块',
         'key': 'module',
-        'input': None
+    },
+    {
+        'title': '所属页面',
+        'placeholder': '请选择所属页面',
+        'key': 'page',
+    },
+    {
+        'title': '状态',
+        'placeholder': '请选择步骤状态',
+        'key': 'status',
     }
+]
+right_data = [
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
 ]
 form_data = [
     {
@@ -37,17 +48,20 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
+        'select': lambda: settings.base_dict,
     },
     {
         'title': '模块',
         'placeholder': '请先选择项目/产品',
         'key': 'module',
         'type': 1,
+        'subordinate': 'page',
     },
     {
         'title': '所属页面',
         'placeholder': '请选择步骤所属页面',
         'key': 'page',
+        'type': 1,
     },
     {
         'title': '步骤名称',
@@ -96,17 +110,21 @@ table_column = [
 ]
 table_menu = [
     {
-        'name': '编辑',
-        'action': 'edit'
+        'name': '调试',
+        'action': 'debug'
     },
     {
-        'name': '添加步骤',
-        'action': 'add_step'
+        'name': '详情',
+        'action': 'steps'
     },
     {
         'name': '···',
         'action': '',
         'son': [
+            {
+                'name': '编辑',
+                'action': 'edit'
+            },
             {
                 'name': '复制',
                 'action': 'copy'

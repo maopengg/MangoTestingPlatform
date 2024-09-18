@@ -26,6 +26,7 @@ class PageStepsDetailedPage(QWidget):
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
         self.field_list = [FieldListModel(**i) for i in field_list]
         self.form_data = [FormDataModel(**i) for i in from_data]
+        self.right_data = [RightDataModel(**i) for i in right_data]
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -33,16 +34,13 @@ class PageStepsDetailedPage(QWidget):
         self.title_info = TitleInfoWidget()
         self.layout.addWidget(self.title_info)
 
-        self.right_data = [
-            {'name': '新增', 'theme': THEME.blue, 'func': self.add},
-            {'name': '返回', 'theme': THEME.orange, 'func': self.back}
-        ]
         self.right_but = RightButton(self.right_data)
+        self.right_but.clicked.connect(self.callback)
         self.layout.addWidget(self.right_but)
 
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.clicked.connect(self.pagination_clicked)
-        self.table_widget.clicked.connect(self.handle_button_click)
+        self.table_widget.clicked.connect(self.callback)
         self.layout.addWidget(self.table_widget)
 
     def show_data(self, is_refresh=False):
@@ -54,13 +52,16 @@ class PageStepsDetailedPage(QWidget):
         if is_refresh:
             response_message(self, response_model)
 
-    def handle_button_click(self, data):
-        getattr(self, data['action'])(data['row'])
+    def callback(self, data):
+        if data.get('row'):
+            getattr(self, data['action'])(data.get('row'))
+        else:
+            getattr(self, data['action'])()
 
-    def debug(self, row):
+    def debug(self):
         warning_notification(self, '点击了调试')
 
-    def add(self, row):
+    def add(self):
         form_data = copy.deepcopy(self.form_data)
         dialog = DialogWidget('新建页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
