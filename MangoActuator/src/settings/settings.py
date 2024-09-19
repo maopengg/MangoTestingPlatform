@@ -5,7 +5,7 @@ from typing import Optional
 from src.models.gui_model import MenusModel, AppConfig, ThemeConfig, CascaderModel
 from src.tools import InitPath
 
-IS_DEBUG = True
+IS_DEBUG = False
 MEMORY_THRESHOLD = 80
 LOOP_MIX = 10
 

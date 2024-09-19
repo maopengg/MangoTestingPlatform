@@ -23,6 +23,7 @@ class SettingPage(QWidget):
         card_layout1 = QFormLayout()
         card_widget = MangoCardWidget(card_layout1, '系统设置')
         toggle1 = MangoToggle()
+        toggle1.set_value(settings.IS_DEBUG)
         toggle1.clicked.connect(self.debug)
         card_layout1.addRow('是否开启调试', toggle1)
         self.sendRedisData = MangoPushButton('发送')
