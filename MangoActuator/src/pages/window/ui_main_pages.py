@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QVBoxLayout, QStackedWidget
 from src.pages.component.component_center import ComponentPage
 from src.pages.example import ExamplePage
 from src.pages.home.home import HomePage
+from src.pages.setting.setting import SettingPage
 from src.pages.ui import *
 from src.pages.web import WebPage
 
@@ -37,7 +38,7 @@ class MainPages:
             'case_steps': CaseStepsPage(self),
 
             'component_center': ComponentPage(self.central_widget),
-            'settings': ExamplePage('设置'),
+            'settings': SettingPage(self),
             'user': ExamplePage('用户'),
         }
         for page in self.page_dict.values():

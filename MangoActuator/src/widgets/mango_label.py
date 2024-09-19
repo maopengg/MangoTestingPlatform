@@ -15,6 +15,7 @@ class MangoLabel(QLabel):
         - text：标签显示的文本。
         """
         super().__init__(text, parent)
+        self.setStyleSheet("background-color: transparent; color: black;")
 
     def setText(self, text):
         """

@@ -9,5 +9,5 @@ from .notification import info_notification, error_notification, success_notific
 from .right_button import RightButton
 from .table_list import TableList
 from .title_info import TitleInfoWidget
-from .title_widget import SearchWidget
+from .search_widget import SearchWidget
 from .methods import *

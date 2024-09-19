@@ -8,8 +8,6 @@ from src import *
 style = '''
 QPushButton {{
 	border: 1px solid {border};
-    padding-left: 10px;
-    padding-right: 5px;
     color: {_color};
 	border-radius: {_radius};	
 	background-color: {_bg_color};

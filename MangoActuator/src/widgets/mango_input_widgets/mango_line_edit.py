@@ -13,7 +13,7 @@ class MangoLineEdit(QLineEdit):
     def __init__(
             self,
             placeholder,
-            value,
+            value:str|None=None,
             subordinate: str | None = None,
             is_password: bool = False,
             theme=THEME
@@ -45,18 +45,18 @@ class MangoLineEdit(QLineEdit):
     def set_stylesheet(self, theme):
         style = f"""
         QLineEdit {{
-        	background-color: {theme['white']};
-        	border-radius: {theme['radius']}px;
-        	border: {theme['border_size']}px solid gray;
-        	padding-left: 10px;
+            background-color: {theme['white']};
+            border-radius: {theme['radius']}px;
+            border: {theme['border_size']}px solid gray;
+            padding-left: 10px;
             padding-right: 10px;
-        	selection-color: {theme['white']};
-        	selection-background-color: {theme['context_color']};
+            selection-color: {theme['white']};
+            selection-background-color: {theme['context_color']};
             color: {theme['text_foreground']};
         }}
 
         QLineEdit:focus {{
-        	border: {theme['border_size']}px solid {theme['context_color']};
+            border: {theme['border_size']}px solid {theme['context_color']};
             background-color: {theme['dark_three']};
         }}
         """

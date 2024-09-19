@@ -23,3 +23,4 @@ from src.widgets.mango_input_widgets.mango_toggle import MangoToggle
 from .mango_tooltip_box import show_info_message, show_failed_message, show_success_message, show_warning_message
 from .mango_window import MangoWindow
 from .mango_input_widgets import *
+from .mango_card_widget import MangoCardWidget

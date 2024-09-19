@@ -13,7 +13,7 @@ class MangoComboBox(QComboBox):
     def __init__(
             self,
             placeholder: str,
-            data: list[ComboBoxDataModel],
+            data: list[ComboBoxDataModel]| None = None,
             value: int = None,
             subordinate: str | None = None,
             theme: ThemeConfig = THEME,
