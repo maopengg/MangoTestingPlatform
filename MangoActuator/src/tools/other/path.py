@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 获取当前文件夹的路径
 # @Time   : 2022-11-06 21:28
 # @Author : 毛鹏

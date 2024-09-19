@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
@@ -10,7 +10,7 @@ from PySide6.QtWidgets import *
 
 from src.network.web_socket.sokcet_thread import SocketTask
 from src.pages.window.ui_main_window import UIMainWindow
-from src.widgets.mango_tooltip_box import show_info_message
+from src.widgets.window.mango_tooltip_box import show_info_message
 
 os.environ["QT_FONT_DPI"] = "96"
 

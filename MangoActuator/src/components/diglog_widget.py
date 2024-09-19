@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-08-30 14:52
 # @Author : 毛鹏
@@ -8,7 +8,7 @@ from src import *
 from src.enums.gui_enum import *
 from src.models.gui_model import FormDataModel, DialogCallbackModel
 from src.widgets import *
-from src.widgets.mango_input_widgets.mango_combo_box import MangoComboBox
+from src.widgets.input.mango_combo_box import MangoComboBox
 
 
 class DialogWidget(MangoDialog):

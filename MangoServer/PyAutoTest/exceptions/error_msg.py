@@ -1,4 +1,4 @@
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 错误消息统一管理
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏

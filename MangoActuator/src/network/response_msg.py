@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 响应消息统一处理
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏

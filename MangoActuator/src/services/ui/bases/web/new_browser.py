@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-05-23 15:04
 # @Author : 毛鹏
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2024-04-24 10:43
 # @Author : 毛鹏

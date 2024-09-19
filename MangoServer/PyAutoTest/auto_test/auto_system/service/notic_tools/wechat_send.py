@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 企微通知封装
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏

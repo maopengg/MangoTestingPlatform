@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 日志中间件
 # @Time   : 2023-01-19 20:22
 # @Author : 毛鹏

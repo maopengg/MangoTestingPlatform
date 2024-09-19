@@ -9,7 +9,7 @@ from src.pages.mian_window import MainWindow
 from src.settings import settings
 from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from src.tools.database.sqlite_connect import SQLiteConnect
-from src.widgets.mango_tooltip_box import show_failed_message
+from src.widgets.window.mango_tooltip_box import show_failed_message
 
 
 class LoginLogic(LoginWindow):
