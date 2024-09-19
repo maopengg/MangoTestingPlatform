@@ -21,8 +21,6 @@ QPushButton:pressed {{
 '''
 
 
-# PY PUSH BUTTON
-
 class MangoPushButton(QPushButton):
     def __init__(
             self,
@@ -35,9 +33,8 @@ class MangoPushButton(QPushButton):
             bg_color_pressed=THEME.dark_four
     ):
         super().__init__()
-
         self.setText(text)
-        if parent != None:
+        if parent:
             self.setParent(parent)
         self.setCursor(Qt.PointingHandCursor)
 

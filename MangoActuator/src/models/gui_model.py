@@ -127,7 +127,7 @@ class FormDataModel(BaseModel):
 class TableColumnModel(BaseModel):
     key: str
     name: str
-    item: str
+    item: str = ''
     width: int | None = None
 
 

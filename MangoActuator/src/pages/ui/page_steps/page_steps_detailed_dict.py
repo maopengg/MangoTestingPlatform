@@ -7,28 +7,29 @@ from src import THEME
 from src.enums.ui_enum import ElementExpEnum
 
 table_column = [
-    {'key': 'name', 'name': '元素名称', 'item': '', 'width': 100},
-    {'key': 'exp', 'name': '表达式类型', 'item': '', 'width': 70},
-    {'key': 'loc', 'name': '定位表达式', 'item': '', },
-    {'key': 'is_iframe', 'name': '是否在iframe中', 'item': '', 'width': 40},
-    {'key': 'sleep', 'name': '等待时间（秒）', 'item': '', 'width': 40},
-    {'key': 'sub', 'name': '元素下标（1开始）', 'item': '', 'width': 40},
-    {'key': 'ope', 'name': '操作', 'item': '', 'width': 120},
+    {'key': 'type', 'name': '操作类型', 'width': 100},
+    {'key': 'ele_name', 'name': '元素名称', 'width': 70},
+    {'key': 'ope_type', 'name': '元素操作类型',  'width': 70},
+    {'key': 'ope_value', 'name': '元素操作值', },
+    {'key': 'ass_type', 'name': '断言类型', 'width': 70},
+    {'key': 'ass_value', 'name': '断言操作值', 'width': 70},
+    {'key': 'key_list', 'name': 'key_list', 'width': 70},
+    {'key': 'sql', 'name': 'sql', 'width': 40},
+    {'key': 'key', 'name': 'key', 'width': 40},
+    {'key': 'value', 'name': 'value', 'width': 40},
+    {'key': 'ope', 'name': '操作', 'width': 120},
+
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
+    {'name': '调试', 'theme': THEME.blue, 'action': 'debug'},
     {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
 ]
 table_menu = [
-    {'name': '调试', 'action': 'debug'},
     {'name': '编辑', 'action': 'edit'},
     {'name': '删除', 'action': 'delete'}
 ]
-field_list = [
-    {'key': 'id', 'name': '页面ID'},
-    {'key': 'url', 'name': '页面地址'},
-    {'key': 'name', 'name': '页面名称'},
-]
+
 from_data = [
     {
         'title': '元素名称',

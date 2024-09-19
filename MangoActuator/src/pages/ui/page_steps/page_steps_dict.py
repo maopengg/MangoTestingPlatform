@@ -115,7 +115,7 @@ table_menu = [
     },
     {
         'name': '详情',
-        'action': 'steps'
+        'action': 'subpage'
     },
     {
         'name': '···',
