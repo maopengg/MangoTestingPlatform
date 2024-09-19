@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QVBoxLayout, QStackedWidget
 from src.pages.component.component_center import ComponentPage
 from src.pages.example import ExamplePage
 from src.pages.home.home import HomePage
-from src.pages.ui_test import *
+from src.pages.ui import *
 from src.pages.web import WebPage
 
 

@@ -6,7 +6,7 @@
 
 from src.network import Http
 from .page_steps_dict import *
-from ...page_parent.table import *
+from ...parent.table import *
 
 
 class PageStepsPage(TableParent):

@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from src.network import Http
 from .page_dict import *
-from ...page_parent.table import TableParent
+from ...parent.table import TableParent
 
 
 class PagePage(TableParent):

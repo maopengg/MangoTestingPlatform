@@ -1693,7 +1693,7 @@ false\x22/>\x0d\x0a    </\
 defs>\x0d\x0a    <sodi\
 podi:namedview\x0d\x0a\
             id=\x22\
-page_parent\x22\x0d\x0a         \
+parent\x22\x0d\x0a         \
    pagecolor=\x22#f\
 fffff\x22\x0d\x0a        \
     bordercolor=\
@@ -2672,7 +2672,7 @@ n_heart.svg\x22>\x0d\x0a \
 17\x22/>\x0d\x0a    <sodi\
 podi:namedview\x0d\x0a\
             id=\x22\
-page_parent\x22\x0d\x0a         \
+parent\x22\x0d\x0a         \
    pagecolor=\x22#f\
 fffff\x22\x0d\x0a        \
     bordercolor=\
