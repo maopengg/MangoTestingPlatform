@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
+import json
 from functools import partial
 
 from src import *
@@ -37,6 +38,7 @@ class MangoTableWidget(QTableWidget):
                 self.horizontalHeader().setSectionResizeMode(index, QHeaderView.Fixed)
             else:
                 self.horizontalHeader().setSectionResizeMode(index, QHeaderView.Stretch)
+
     def set_value(self, data):
         self.setRowCount(0)
         if data is None:
@@ -50,7 +52,8 @@ class MangoTableWidget(QTableWidget):
                         item1 = item[column.key].get('name', None)
                     else:
                         item1 = item[column.key]
-
+                    if column.option is not None:
+                        item1 = self.get_option_value(column.option, item1)
                     # 设置单元格内容
                     cell_item = QTableWidgetItem(str(item1))
                     self.setItem(row, row1, cell_item)
@@ -77,6 +80,19 @@ class MangoTableWidget(QTableWidget):
 
                 self.setCellWidget(row, len(self.row_column) - 1, action_widget)
 
+    def get_option_value(self, option: list[dict], item1) -> str:
+        for i in option:
+            if i.get('children'):
+                for e in i.get('children'):
+                    if e.get('children'):
+                        for q in e.get('children'):
+                            if q.get('value') == item1:
+                                return q.get('label')
+                    else:
+                        if e.get('value') == item1:
+                            return e.get('label')
+            if i.get('value') == item1:
+                return i.get('label')
     def but_clicked(self, data):
         self.clicked.emit(data)
 

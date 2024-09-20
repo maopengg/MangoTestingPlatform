@@ -32,6 +32,12 @@ class MangoCascade(QToolButton):
         self.set_value(self.value)
         self.setMenu(self.menu)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.is_text = False
+
+    def set_text(self, text: str):
+        self.menu.clear()
+        self.setText(text)
+        self.is_text = True
 
     def show_selection(self, category, value, label):
         self.setText(f'{category}/{label}')
@@ -40,25 +46,32 @@ class MangoCascade(QToolButton):
             self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=value))
 
     def get_value(self):
+        if self.is_text:
+            return None
         return self.value
 
     def set_select(self, data: list[CascaderModel], clear: bool = False):
+        self.setText('')
+        self.is_text = False
         if clear:
-            pass
-        if data:
-            self.data = data
-            for cascade in self.data:
-                fruits_menu = QMenu(cascade.label, self)
-                if cascade.children:
-                    for fruit in cascade.children:
-                        action = fruits_menu.addAction(fruit.label)
-                        action.triggered.connect(
-                            lambda checked, value=fruit.value, label=fruit.label: self.show_selection(cascade.label,
-                                                                                                      value,
-                                                                                                      label))
-                self.menu.addMenu(fruits_menu)
+            self.menu.clear()
+        if data is None:
+            return
+        self.data = data
+        for cascade in self.data:
+            fruits_menu = QMenu(cascade.label, self)
+            if cascade.children:
+                for fruit in cascade.children:
+                    action = fruits_menu.addAction(fruit.label)
+                    action.triggered.connect(
+                        lambda checked, value=fruit.value, label=fruit.label: self.show_selection(cascade.label,
+                                                                                                  value,
+                                                                                                  label))
+            self.menu.addMenu(fruits_menu)
 
     def set_value(self, value: int):
+        if self.data is None:
+            return
         self.value = value
         for i in self.data:
             for e in i.children:

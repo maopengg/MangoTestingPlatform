@@ -38,8 +38,9 @@ class UIUpdateThread(QThread):
 
 
 class HomePage(QWidget):
-    def __init__(self):
+    def __init__(self, parent=None):
         super().__init__()
+        self.parent = parent
         self.layout = QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
 

@@ -53,6 +53,34 @@ class GetClassMethod:
             {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: self.json_(self.get_sql_ass())}
         ]
 
+    def option(self):
+        return [
+            {'value': '1',
+             'label': CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value,
+             'children': self.get_android()
+             },
+            {'value': '1',
+             'label': CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value,
+             'children': self.get_web()
+             },
+            {'value': '1',
+             'label': CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value,
+             'children': self.get_web_ass()
+             },
+            {'value': '1',
+             'label': CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value,
+             'children': self.get_public_ass()
+             },
+            {'value': '1',
+             'label': CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value,
+             'children': self.get_android_ass()
+             },
+            {'value': '1',
+             'label': CacheDataKey2Enum.SQL_ASSERTION_METHOD.value,
+             'children': self.get_sql_ass()
+             }
+        ]
+
     def json_(self, data):
         return json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
 

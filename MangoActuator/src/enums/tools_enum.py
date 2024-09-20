@@ -46,6 +46,16 @@ class StatusEnum(BaseEnum):
         return {0: "关闭&进行中&失败", 1: "启用&已完成&通过"}
 
 
+class Status1Enum(BaseEnum):
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "否", 1: "是"}
+
+
 class ProductTypeEnum(BaseEnum):
     """产品类型"""
     WEB = 0

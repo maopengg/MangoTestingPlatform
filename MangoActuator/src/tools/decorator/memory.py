@@ -3,13 +3,11 @@
 # @Description: 
 # @Time   : 2024-05-24 11:51
 # @Author : 毛鹏
-import asyncio
 
 import psutil
 import time
 
-from src.settings import settings
-from src.settings.settings import MEMORY_THRESHOLD, LOOP_MIX
+from src import *
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 

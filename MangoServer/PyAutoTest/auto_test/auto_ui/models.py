@@ -61,12 +61,15 @@ class UiPageStepsDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     page_step = models.ForeignKey(to=UiPageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
-    ele_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
-    step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
-    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.JSONField(verbose_name="操作内容", null=True)
     # type==0是进行操作，==1是进行断言
     type = models.SmallIntegerField(verbose_name="操作类型", null=True)
+    ele_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
+    step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
+
+    ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
+    ope_value = models.TextField(verbose_name="对该元素的操作类型",  null=True)
+
+    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
     ass_value = models.JSONField(verbose_name="操作内容", null=True)
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)

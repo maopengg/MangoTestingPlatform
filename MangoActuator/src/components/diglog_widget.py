@@ -25,7 +25,7 @@ class DialogWidget(MangoDialog):
             if form.type == InputEnum.INPUT:
                 input_object = MangoLineEdit(form.placeholder, form.value, form.subordinate)
             elif form.type == InputEnum.SELECT:
-                input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate)
+                input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate, key=form.key)
             elif form.type == InputEnum.CASCADER:
                 input_object = MangoCascade(form.placeholder, form.select, form.value, form.subordinate)
             elif form.type == InputEnum.TOGGLE:
@@ -38,28 +38,20 @@ class DialogWidget(MangoDialog):
             else:
                 form_layout.addRow(f"{form.title}:", input_object)
             form.input_object = input_object
-        # 创建主布局
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
-
-        # 添加占位符以推送按钮到右下角
         main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-
-        # 添加按钮布局
         button_layout = QHBoxLayout()
         cancel_button = MangoPushButton("取消", bg_color=THEME.bg_one)
-        cancel_button.clicked.connect(self.reject)  # 关闭对话框
+        cancel_button.clicked.connect(self.reject)
         submit_button = MangoPushButton("提交", bg_color=THEME.blue)
         submit_button.clicked.connect(self.submit_form)
         button_layout.addStretch()
-        # 将按钮添加到按钮布局
         button_layout.addWidget(submit_button)
         button_layout.addWidget(cancel_button)
 
-        # 将按钮布局添加到主布局
         main_layout.addLayout(button_layout)
 
-        # 设置主布局
         self.setLayout(main_layout)
         self.data = {}
 
@@ -82,7 +74,6 @@ class DialogWidget(MangoDialog):
         if isinstance(data, DialogCallbackModel):
             for i in self.form_data:
                 if i.key == data.subordinate and i.key:
-                    data.key = i.key
                     data.input_object = i.input_object
                     self.clicked.emit(data)
 

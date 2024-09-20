@@ -12,8 +12,8 @@ class PageStepsDetailed(HttpBase):
 
     @classmethod
     @request_log()
-    def get_page_detailed(cls, page, page_size, params: dict = None):
-        url = cls.url(f'/ui/steps/detailed')
+    def get_page_steps_detailed(cls, page, page_size, params: dict = None):
+        url = cls.url(f'/ui/page/steps/detailed')
         _params = {
             'page': page,
             'pageSize': page_size
@@ -25,22 +25,22 @@ class PageStepsDetailed(HttpBase):
 
     @classmethod
     @request_log()
-    def post_page_detailed(cls, json_data: dict):
-        url = cls.url(f'/ui/steps/detailed')
+    def post_page_steps_detailed(cls, json_data: dict):
+        url = cls.url(f'/ui/page/steps/detailed')
         response = cls.post(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
     @request_log()
-    def put_page_detailed(cls, json_data: dict):
-        url = cls.url(f'/ui/steps/detailed')
+    def put_page_steps_detailed(cls, json_data: dict):
+        url = cls.url(f'/ui/page/steps/detailed')
         response = cls.put(url=url, headers=cls.headers, json=json_data)
         return ResponseModel(**response.json())
 
     @classmethod
     @request_log()
-    def delete_page_detailed(cls, _id, ):
-        url = cls.url(f'/ui/steps/detailed')
+    def delete_page_steps_detailed(cls, _id, ):
+        url = cls.url(f'/ui/page/steps/detailed')
         _params = {
             'id': _id,
         }

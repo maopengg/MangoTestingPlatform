@@ -17,8 +17,10 @@ class MangoComboBox(QComboBox):
             value: int = None,
             subordinate: str | None = None,
             theme: ThemeConfig = THEME,
+            **kwargs,
     ):
         super().__init__()
+        self.kwargs = kwargs
         self.placeholder = placeholder
         self.data = data
         self.value = value
@@ -62,7 +64,11 @@ class MangoComboBox(QComboBox):
 
     def combo_box_changed(self, data):
         if self.subordinate:
-            self.clicked.emit(DialogCallbackModel(subordinate=self.subordinate, value=self.get_value()))
+            self.clicked.emit(DialogCallbackModel(
+                key=self.kwargs.get('key'),
+                subordinate=self.subordinate,
+                value=self.get_value())
+            )
 
     def set_stylesheet(self, style_config: dict, icon=':/icons/down.svg'):
 

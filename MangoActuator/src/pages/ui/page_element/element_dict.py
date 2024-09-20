@@ -4,16 +4,17 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from src import THEME
+from src.enums.tools_enum import Status1Enum
 from src.enums.ui_enum import ElementExpEnum
 
 table_column = [
-    {'key': 'name', 'name': '元素名称', 'item': '', 'width': 100},
-    {'key': 'exp', 'name': '表达式类型', 'item': '', 'width': 70},
-    {'key': 'loc', 'name': '定位表达式', 'item': '', },
-    {'key': 'is_iframe', 'name': '是否在iframe中', 'item': '', 'width': 40},
-    {'key': 'sleep', 'name': '等待时间（秒）', 'item': '', 'width': 40},
-    {'key': 'sub', 'name': '元素下标（1开始）', 'item': '', 'width': 40},
-    {'key': 'ope', 'name': '操作', 'item': '', 'width': 120},
+    {'key': 'name', 'name': '元素名称', 'width': 100},
+    {'key': 'exp', 'name': '表达式类型', 'width': 70, 'option': ElementExpEnum.get_option('value', 'label')},
+    {'key': 'loc', 'name': '定位表达式',  },
+    {'key': 'is_iframe', 'name': '是否在iframe中', 'width': 40, 'option': Status1Enum.get_option('value', 'label')},
+    {'key': 'sleep', 'name': '等待时间（秒）', 'width': 40},
+    {'key': 'sub', 'name': '元素下标（1开始）', 'width': 40},
+    {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
@@ -29,7 +30,7 @@ field_list = [
     {'key': 'url', 'name': '页面地址'},
     {'key': 'name', 'name': '页面名称'},
 ]
-from_data = [
+form_data = [
     {
         'title': '元素名称',
         'placeholder': '请输入元素名称',

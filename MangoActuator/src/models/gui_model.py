@@ -129,6 +129,7 @@ class TableColumnModel(BaseModel):
     name: str
     item: str = ''
     width: int | None = None
+    option: dict | list[dict] | None = None
 
 
 class TableMenuItemModel(BaseModel):
@@ -143,7 +144,7 @@ class FieldListModel(BaseModel):
 
 
 class CascaderModel(BaseModel):
-    value: int
+    value: int | str
     label: str
     children: list['CascaderModel'] = []
 
