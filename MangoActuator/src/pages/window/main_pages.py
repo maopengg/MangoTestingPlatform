@@ -10,6 +10,7 @@ from src.pages.example import ExamplePage
 from src.pages.home.home import HomePage
 from src.pages.setting.setting import SettingPage
 from src.pages.ui import *
+from src.pages.user.user import UserPage
 from src.pages.web import WebPage
 
 
@@ -43,7 +44,7 @@ class MainPages:
             'case_steps': CaseStepsPage,
             'component_center': ComponentPage,
             'settings': SettingPage,
-            'user': ExamplePage,
+            'user': UserPage,
         }
         # for page in self.page_dict.values():
         #     self.pages.addWidget(page)

@@ -13,9 +13,10 @@ class MangoComboBox(QComboBox):
     def __init__(
             self,
             placeholder: str,
-            data: list[ComboBoxDataModel]| None = None,
+            data: list[ComboBoxDataModel] | None = None,
             value: int = None,
             subordinate: str | None = None,
+            is_form: bool = True,
             theme: ThemeConfig = THEME,
             **kwargs,
     ):
@@ -25,6 +26,7 @@ class MangoComboBox(QComboBox):
         self.data = data
         self.value = value
         self.subordinate = subordinate
+        self.is_form = is_form
         self.theme = theme.model_dump()
         # 设置样式表
         self.set_stylesheet(self.theme)
@@ -63,12 +65,15 @@ class MangoComboBox(QComboBox):
                     self.setCurrentText('')
 
     def combo_box_changed(self, data):
-        if self.subordinate:
-            self.clicked.emit(DialogCallbackModel(
-                key=self.kwargs.get('key'),
-                subordinate=self.subordinate,
-                value=self.get_value())
-            )
+        if self.is_form:
+            if self.subordinate:
+                self.clicked.emit(DialogCallbackModel(
+                    key=self.kwargs.get('key'),
+                    subordinate=self.subordinate,
+                    value=self.get_value())
+                )
+        else:
+            self.clicked.emit(self.get_value())
 
     def set_stylesheet(self, style_config: dict, icon=':/icons/down.svg'):
 

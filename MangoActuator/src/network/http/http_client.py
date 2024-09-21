@@ -19,19 +19,6 @@ from src.tools.other.path import Path
 class HttpClient(HttpBase):
 
     @classmethod
-    def login(cls, username: str = None, password=None):
-        url = cls.url('/login')
-        data = {
-            'username': username,
-            'password': password,
-            'type': ClientTypeEnum.ACTUATOR.value
-        }
-        response = cls.post(url=url, data=data)
-        response_dict = response.json()
-        cls.headers['Authorization'] = response_dict['data']['token']
-        return response_dict
-
-    @classmethod
     def project_info(cls):
         url = cls.url('/user/project/product/name')
         response = cls.get(url=url, headers=cls.headers)

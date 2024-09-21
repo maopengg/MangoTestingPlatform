@@ -4,7 +4,7 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 from src import *
-from src.pages.window.ui_main_pages import MainPages
+from src.pages.window.main_pages import MainPages
 from src.widgets import *
 
 

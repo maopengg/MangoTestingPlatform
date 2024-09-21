@@ -159,5 +159,5 @@ class DialogCallbackModel(BaseModel):
 
 
 class ComboBoxDataModel(BaseModel):
-    id: int
-    name: str
+    id: int | None
+    name: str | None

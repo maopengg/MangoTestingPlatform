@@ -20,9 +20,9 @@ urlpatterns = [
     #
     path('file', FileDataCRUD.as_view()),
     #
-    path('text.txt/object', TestObjectCRUD.as_view()),
-    path('text.txt/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
-    path('text.txt/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
+    path('test/object', TestObjectCRUD.as_view()),
+    path('test/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
+    path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
     #
     path("project", ProjectCRUD.as_view()),
     path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),

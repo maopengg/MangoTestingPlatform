@@ -5,7 +5,7 @@ from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 from src.models.gui_model import CascaderModel
 from src.network.http import Http
 from src.pages.login.login_ui import LoginWindow
-from src.pages.mian_window import MainWindow
+from src.pages.window.mian_window import MainWindow
 from src.settings import settings
 from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from src.tools.database.sqlite_connect import SQLiteConnect
