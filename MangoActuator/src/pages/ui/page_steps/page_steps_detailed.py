@@ -77,7 +77,6 @@ class PageStepsDetailedPage(SubPage):
         self.show_data()
 
     def inside_callback(self, data: DialogCallbackModel):
-        print(data)
         auto_type = self.data.get('project_product').get('auto_type')
         if data.value == ElementOperationEnum.OPE.value:
             if auto_type == DriveTypeEnum.WEB.value:
@@ -97,4 +96,3 @@ class PageStepsDetailedPage(SubPage):
             data.input_object.set_select(select, True)
         else:
             data.input_object.set_text('请忽略此选项')
-

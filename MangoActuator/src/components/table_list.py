@@ -30,5 +30,4 @@ class TableList(QWidget):
         self.table_widget.set_value(data)
 
     def but_clicked(self, data):
-        print(data, 2)
         self.clicked.emit(data)

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from src import THEME, UI_OPE_METHOD
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
+
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 100, 'option': ElementOperationEnum.get_option('value', 'label')},
     {'key': 'ele_name', 'name': '元素名称', 'width': 70},
@@ -32,7 +33,7 @@ form_data = [
     {
         'title': '步骤类型',
         'placeholder': '请选择元素表达式类型',
-        'key': 'exp',
+        'key': 'type',
         'type': 1,
         'select': ElementOperationEnum.get_select(),
         'subordinate': 'ope_key'

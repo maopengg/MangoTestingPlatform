@@ -37,19 +37,19 @@ class DialogWidget(MangoDialog):
                 form_layout.addRow(f"*{form.title}:", input_object)
             else:
                 form_layout.addRow(f"{form.title}:", input_object)
+                
             form.input_object = input_object
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
         main_layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
         button_layout = QHBoxLayout()
+        button_layout.addStretch()
         cancel_button = MangoPushButton("取消", bg_color=THEME.bg_one)
         cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
         submit_button = MangoPushButton("提交", bg_color=THEME.blue)
         submit_button.clicked.connect(self.submit_form)
-        button_layout.addStretch()
         button_layout.addWidget(submit_button)
-        button_layout.addWidget(cancel_button)
-
         main_layout.addLayout(button_layout)
 
         self.setLayout(main_layout)
