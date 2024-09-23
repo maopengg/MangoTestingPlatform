@@ -4,13 +4,13 @@
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from retrying import retry
-from uiautomator2 import UiObject, NullPointerExceptionError, UiObjectNotFoundError
+from uiautomator2 import UiObject,UiObjectNotFoundError
 from uiautomator2.exceptions import XPathElementNotFoundError
 from uiautomator2.xpath import XPathSelector
 
 from src.enums.ui_enum import ElementExpEnum
 from src.exceptions.error_msg import ERROR_MSG_0022, ERROR_MSG_0020, ERROR_MSG_0032, ERROR_MSG_0012, ERROR_MSG_0050, \
-    ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018
+    ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018, ERROR_MSG_0019
 from src.exceptions.ui_exception import LocatorError, UiTimeoutError, ElementLocatorError, XpathElementNoError, \
     ElementIsEmptyError, UiSqlAssertionError, UiAssertionError
 from src.models.ui_model import ElementModel, ElementResultModel
@@ -63,8 +63,8 @@ class AndroidDriver(UiautomatorEquipment,
             getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
-        except NullPointerExceptionError as error:
-            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+        # except NullPointerExceptionError as error:
+        #     raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except XPathElementNotFoundError as error:
