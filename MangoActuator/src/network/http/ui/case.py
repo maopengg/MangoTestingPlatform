@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-13 11:11
 # @Author : 毛鹏
-from src.models.network_model import ResponseModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -20,22 +19,19 @@ class Case(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_case(cls, json_data: dict):
         url = cls.url(f'/ui/case')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_case(cls, json_data: dict):
         url = cls.url(f'/ui/case')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,8 +40,7 @@ class Case(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -54,18 +49,18 @@ class Case(HttpBase):
         json_data = {
             'case_id': _id,
         }
-        response = cls.post(url=url, headers=cls.headers, json_data=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json_data=json_data)
+
     @classmethod
     @request_log()
-    def ui_case_run(cls, _id,test_env ):
+    def ui_case_run(cls, _id, test_env):
         url = cls.url(f'/ui/case/run')
         _params = {
             'id': _id,
             'test_env': test_env,
         }
-        response = cls.post(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, params=_params)
+
     @classmethod
     @request_log()
     def ui_batch_run(cls, case_id_list, ):
@@ -73,5 +68,4 @@ class Case(HttpBase):
         _params = {
             'case_id_list[]': case_id_list,
         }
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)

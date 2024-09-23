@@ -20,7 +20,7 @@ class HttpClient(HttpBase):
 
     @classmethod
     def project_info(cls):
-        url = cls.url('/user/project/product/name')
+        url = cls.url('/user/project/product/name?client_type=1')
         response = cls.get(url=url, headers=cls.headers)
         response_dict = response.json()
         return response_dict

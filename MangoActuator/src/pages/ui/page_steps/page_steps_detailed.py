@@ -4,6 +4,7 @@
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
 import copy
+import inspect
 
 from src.components import *
 from src.enums.ui_enum import DriveTypeEnum
@@ -66,6 +67,9 @@ class PageStepsDetailedPage(SubPage):
                 i.value = row[i.key].get('id', None)
             else:
                 i.value = row[i.key]
+            if i.select and callable(i.select):
+                select = i.select(self.data['page']['id']).data
+                i.select = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
         dialog = DialogWidget('编辑页面', form_data)
         dialog.clicked.connect(self.inside_callback)
         dialog.exec()  # 显示对话框，直到关闭

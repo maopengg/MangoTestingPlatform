@@ -28,10 +28,9 @@ class User(HttpBase):
         response_dict = response.json()
         cls.headers['Authorization'] = response_dict['data']['token']
         cls.get_userinfo(response_dict['data']['userId'])
-        return response_dict
+        return response
 
     @classmethod
-    @request_log()
     def get_userinfo(cls, _id: int):
         url = cls.url(f'/user/info?id={_id}')
         response = cls.get(url=url, headers=cls.headers)
@@ -54,22 +53,17 @@ class User(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
-    @request_log()
     def post_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
-    @request_log()
     def put_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -78,8 +72,7 @@ class User(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -89,8 +82,7 @@ class User(HttpBase):
             'id': _id,
             'selected_project': selected_project
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -100,8 +92,7 @@ class User(HttpBase):
             'id': _id,
             'selected_environment': selected_environment
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -113,5 +104,4 @@ class User(HttpBase):
             'new_password': new_password,
             'confirm_password': confirm_password,
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)

@@ -25,6 +25,7 @@ class DialogWidget(MangoDialog):
             if form.type == InputEnum.INPUT:
                 input_object = MangoLineEdit(form.placeholder, form.value, form.subordinate)
             elif form.type == InputEnum.SELECT:
+                print( form.select, form.value)
                 input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate, key=form.key)
             elif form.type == InputEnum.CASCADER:
                 input_object = MangoCascade(form.placeholder, form.select, form.value, form.subordinate)

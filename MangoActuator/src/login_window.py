@@ -36,7 +36,7 @@ class LoginLogic(LoginWindow):
         settings.PASSWORD = self.password_edit.text()
         try:
             res = Http.login(settings.USERNAME, settings.PASSWORD)
-            if res.get('code') == 200:
+            if res.code == 200:
                 settings.base_dict = [CascaderModel(**i) for i in Http.project_info()['data']]
 
                 self.main_window = MainWindow()

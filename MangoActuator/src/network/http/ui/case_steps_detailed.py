@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-13 11:11
 # @Author : 毛鹏
-from src.models.network_model import ResponseModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -20,22 +19,19 @@ class CaseStepsDetailed(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_case_steps_detailed(cls, json_data: dict):
         url = cls.url(f'/ui/case/steps/detailed')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_case_steps_detailed(cls, json_data: dict):
         url = cls.url(f'/ui/case/steps/detailed')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,9 +40,7 @@ class CaseStepsDetailed(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
-
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -57,8 +51,7 @@ class CaseStepsDetailed(HttpBase):
         }
         if _params:
             _params.update(_params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -72,5 +65,4 @@ class CaseStepsDetailed(HttpBase):
         :return:
         """
         url = cls.url(f'/ui/case/put/case/sort')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)

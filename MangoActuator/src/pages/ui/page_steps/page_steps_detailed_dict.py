@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from src import THEME, UI_OPE_METHOD
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
+from src.network import Http
 
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 100, 'option': ElementOperationEnum.get_option('value', 'label')},
@@ -47,9 +48,10 @@ form_data = [
     {
         'title': '元素名称',
         'placeholder': '请输入元素名称',
-        'key': 'name',
-        'type': 0,
-        'required': False
+        'key': 'ele_name',
+        'type': 1,
+        'required': False,
+        'select': Http.get_element_name
     },
     {
         'title': '操作值',

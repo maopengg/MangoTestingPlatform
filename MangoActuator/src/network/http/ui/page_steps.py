@@ -20,22 +20,19 @@ class PageSteps(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_page_steps(cls, json_data: dict):
         url = cls.url(f'/ui/steps')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_page_steps(cls, json_data: dict):
         url = cls.url(f'/ui/steps')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,8 +41,7 @@ class PageSteps(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -54,15 +50,13 @@ class PageSteps(HttpBase):
         json_data = {
             'id': _id,
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def get_case_name(cls,):
         url = cls.url(f'/ui/case/name')
-        response = cls.get(url=url, headers=cls.headers)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers)
 
     @classmethod
     @request_log()
@@ -72,8 +66,7 @@ class PageSteps(HttpBase):
             'te': test_env,
             'page_step_id': page_step_id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
     @classmethod
     @request_log()
     def get_page_steps_name(cls,page_id):
@@ -81,8 +74,7 @@ class PageSteps(HttpBase):
         _params = {
             'page_id': page_id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -91,5 +83,4 @@ class PageSteps(HttpBase):
         _params = {
             'page_id': page_step_id,
         }
-        response = cls.post(url=url, headers=cls.headers)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers)

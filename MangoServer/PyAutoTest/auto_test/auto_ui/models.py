@@ -67,7 +67,7 @@ class UiPageStepsDetailed(models.Model):
     step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
 
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.TextField(verbose_name="对该元素的操作类型",  null=True)
+    ope_value = models.JSONField(verbose_name="对该元素的操作类型",  null=True)
 
     ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
