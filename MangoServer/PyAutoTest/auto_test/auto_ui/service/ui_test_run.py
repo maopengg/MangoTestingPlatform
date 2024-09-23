@@ -90,7 +90,7 @@ class UiTestRun:
                 'user': self.user_id,
                 'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
             })
-            # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\text.txt.json', 'w') as f:
+            # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\test.json', 'w') as f:
             #     json.dump(case_model_list, f, indent=4, ensure_ascii=False)
 
     def send_case(self, case_id: int, test_suite_id) -> CaseModel:

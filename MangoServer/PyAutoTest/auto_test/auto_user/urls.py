@@ -48,7 +48,7 @@ urlpatterns = [
     path("password", UserViews.as_view({'put': 'put_password'})),
     path("project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
     #
-    # path("files/text.txt", ProjectFileViews.as_view({'get': 'text.txt'})),
+    # path("files/test", ProjectFileViews.as_view({'get': 'test'})),
     # path("files/all/list", ProjectFileViews.as_view({'get': 'get_project_all_list'})),
     # path("files/upload", ProjectFileViews.as_view({'post': 'upload_files'})),
     # path("files/download", ProjectFileViews.as_view({'get': 'download_file'})),

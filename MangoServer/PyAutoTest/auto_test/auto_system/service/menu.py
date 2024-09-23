@@ -139,7 +139,7 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/config",
-                    "menuUrl": "/config/text.txt-object/index",
+                    "menuUrl": "/config/test-object/index",
                     "menuName": "测试对象",
                 },
                 {
