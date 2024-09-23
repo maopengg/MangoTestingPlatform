@@ -6,12 +6,13 @@
 
 from src import *
 from src.pages.component.component_center import ComponentPage
-from src.pages.example import ExamplePage
 from src.pages.home.home import HomePage
-from src.pages.setting.setting import SettingPage
 from src.pages.ui import *
 from src.pages.user.user import UserPage
 from src.pages.web import WebPage
+from ..config import *
+from ..setting import *
+from ..help import *
 
 
 class MainPages:
@@ -42,13 +43,21 @@ class MainPages:
             'page_steps_detailed': PageStepsDetailedPage,
             'case': CasePage,
             'case_steps': CaseStepsPage,
+            'public': PublicPage,
             'component_center': ComponentPage,
-            'settings': SettingPage,
+            'ass': AssPage,
+            'method': MethodPage,
+            'project': ProjectPage,
+            'product': ProductPage,
+            'module': ModulePage,
+            'test_env': TestEnvPage,
+            'test_file': TestFilePage,
+            'user_administration': UserAdministrationPage,
             'user': UserPage,
+            'role': RolePage,
+            'user_log': UserLogPage,
+            'settings': SettingPage,
         }
-        # for page in self.page_dict.values():
-        #     self.pages.addWidget(page)
-
         self.pages.setCurrentIndex(0)
         QMetaObject.connectSlotsByName(main_window)
 
@@ -69,16 +78,12 @@ class MainPages:
                 page = page_class(self)
         else:
             return
-        # if isinstance(page, str):
-        #     page = self.page_dict.get(page)
+
         if data is not None and isinstance(data, dict):
             page.data = data
         else:
             page.data = {}
-        try:
-            page.show_data()
-        except AttributeError:
-            pass
+        page.show_data()
         self.pages.addWidget(page)
         self.pages.setCurrentWidget(page)
         self.pages.removeWidget(self.loading_indicator)

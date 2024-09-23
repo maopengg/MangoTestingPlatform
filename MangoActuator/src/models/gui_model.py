@@ -152,7 +152,6 @@ class DialogCallbackModel(BaseModel):
     key: str | None = None
     value: int | str | None
     input_object: Any | None = None
-
     subordinate: str
     subordinate_input_object: Any | None = None
 
