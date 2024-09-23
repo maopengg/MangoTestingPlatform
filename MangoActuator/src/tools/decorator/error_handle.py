@@ -33,9 +33,8 @@ def error_send(func, args, kwargs, error, trace):
 
                                                     -----------芒果自动化平台
       """
-    if not settings.IS_DEBUG:
-        from mangokit import Mango
-        Mango.s(content)
+    from mangokit import Mango
+    Mango.s(content)
 
 
 def async_error_handle(is_error=False):
