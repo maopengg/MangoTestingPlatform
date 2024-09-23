@@ -60,6 +60,7 @@ class SubPage(QWidget):
             response_message(self, response_model)
 
     def callback(self, data):
+        print(data)
         if data.get('row'):
             getattr(self, data['action'])(data.get('row'))
         else:
@@ -67,6 +68,9 @@ class SubPage(QWidget):
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)
+        for i in form_data:
+            if callable(i.select):
+                i.select = i.select()
         dialog = DialogWidget('新建页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
@@ -85,6 +89,8 @@ class SubPage(QWidget):
                 i.value = row[i.key].get('id', None)
             else:
                 i.value = row[i.key]
+            if callable(i.select):
+                i.select = i.select()
         dialog = DialogWidget('编辑页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:

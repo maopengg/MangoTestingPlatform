@@ -127,7 +127,6 @@ class FormDataModel(BaseModel):
 class TableColumnModel(BaseModel):
     key: str
     name: str
-    item: str = ''
     width: int | None = None
     option: dict | list[dict] | None = None
 

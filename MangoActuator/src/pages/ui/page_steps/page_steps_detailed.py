@@ -4,13 +4,11 @@
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
 import copy
-import inspect
 
 from src.components import *
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.gui_model import *
-from src.network import *
 from src.tools.other.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -51,6 +49,10 @@ class PageStepsDetailedPage(SubPage):
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)
+        for i in form_data:
+            if callable(i.select):
+                select = i.select(self.data['page']['id']).data
+                i.select = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
         dialog = DialogWidget('新建页面', form_data)
         dialog.clicked.connect(self.inside_callback)
         dialog.exec()  # 显示对话框，直到关闭
@@ -70,6 +72,11 @@ class PageStepsDetailedPage(SubPage):
             if i.select and callable(i.select):
                 select = i.select(self.data['page']['id']).data
                 i.select = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
+        for i in form_data:
+            if i.subordinate:
+                result = next((item for item in form_data if item.key == i.subordinate), None)
+                select = self.inside_callback(DialogCallbackModel(value=i.value, subordinate=i.subordinate))
+                result.select = select
         dialog = DialogWidget('编辑页面', form_data)
         dialog.clicked.connect(self.inside_callback)
         dialog.exec()  # 显示对话框，直到关闭
@@ -89,7 +96,9 @@ class PageStepsDetailedPage(SubPage):
                 select = [CascaderModel(**i) for i in GetClassMethod().get_android()]
             else:
                 select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            data.input_object.set_select(select, True)
+            if data.input_object:
+                data.input_object.set_select(select, True)
+            return select
         elif data.value == ElementOperationEnum.ASS.value:
             if auto_type == DriveTypeEnum.WEB.value:
                 select = [CascaderModel(**i) for i in GetClassMethod().get_web_ass()]
@@ -97,6 +106,11 @@ class PageStepsDetailedPage(SubPage):
                 select = [CascaderModel(**i) for i in GetClassMethod().get_android_ass()]
             else:
                 select = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
-            data.input_object.set_select(select, True)
+            for i in GetClassMethod().get_public_ass():
+                select.append(CascaderModel(**i))
+            if data.input_object:
+                data.input_object.set_select(select, True)
+            return select
         else:
-            data.input_object.set_text('请忽略此选项')
+            if data.input_object:
+                data.input_object.set_text('请忽略此选项')

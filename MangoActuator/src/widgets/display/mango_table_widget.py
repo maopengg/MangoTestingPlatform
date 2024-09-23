@@ -49,7 +49,7 @@ class MangoTableWidget(QTableWidget):
             for row1, column in enumerate(self.row_column):
                 if column.key != 'ope':
                     if isinstance(item[column.key], dict):
-                        item1 = item[column.key].get('name', None)
+                        item1 = item[column.key].get('name', json.dumps(item[column.key]))
                     else:
                         item1 = item[column.key]
                     if column.option is not None:
@@ -93,6 +93,7 @@ class MangoTableWidget(QTableWidget):
                             return e.get('label')
             if i.get('value') == item1:
                 return i.get('label')
+
     def but_clicked(self, data):
         self.clicked.emit(data)
 

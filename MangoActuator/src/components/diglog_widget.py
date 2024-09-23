@@ -20,12 +20,9 @@ class DialogWidget(MangoDialog):
         # 创建表单布局
         form_layout = QFormLayout()
         for form in self.form_data:
-            if callable(form.select):
-                form.select = form.select()
             if form.type == InputEnum.INPUT:
                 input_object = MangoLineEdit(form.placeholder, form.value, form.subordinate)
             elif form.type == InputEnum.SELECT:
-                print( form.select, form.value)
                 input_object = MangoComboBox(form.placeholder, form.select, form.value, form.subordinate, key=form.key)
             elif form.type == InputEnum.CASCADER:
                 input_object = MangoCascade(form.placeholder, form.select, form.value, form.subordinate)
@@ -38,7 +35,7 @@ class DialogWidget(MangoDialog):
                 form_layout.addRow(f"*{form.title}:", input_object)
             else:
                 form_layout.addRow(f"{form.title}:", input_object)
-                
+
             form.input_object = input_object
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
