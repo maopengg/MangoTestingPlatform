@@ -35,8 +35,8 @@ def error_send(func, args, kwargs, error, trace):
                                                     -----------芒果自动化平台
       """
     if not settings.IS_DEBUG:
-        NoticeMain.mail_send(content)
-
+        from mangokit import Mango
+        Mango.s(content)
 
 def async_error_handle(is_error=False):
     def decorator(func):
