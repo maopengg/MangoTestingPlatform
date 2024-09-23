@@ -29,5 +29,8 @@
         <file>icons/mind-mapping.svg</file>
         <file>icons/robot.svg</file>
         <file>icons/tool.svg</file>
+        <file>icons/command.svg</file>
+        <file>icons/unordered-list.svg</file>
+        <file>icons/compass.svg</file>
     </qresource>
 </RCC>

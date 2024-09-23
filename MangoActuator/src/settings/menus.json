@@ -59,12 +59,111 @@
       ]
     },
     {
-      "btn_icon": ":/icons/tool.svg",
-      "btn_id": "component_center",
-      "btn_text": "组件中心",
-      "btn_tooltip": "组件中心",
+      "btn_icon": ":/icons/command.svg",
+      "btn_id": "config",
+      "btn_text": "测试配置",
+      "btn_tooltip": "测试配置",
       "show_top": true,
-      "is_active": false
+      "is_active": false,
+      "submenus": [
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "project",
+          "btn_text": "项目配置",
+          "btn_tooltip": "产品模块",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "product_module",
+          "btn_text": "产品模块",
+          "btn_tooltip": "产品模块",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "test_env",
+          "btn_text": "测试环境",
+          "btn_tooltip": "测试环境",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "file",
+          "btn_text": "测试文件",
+          "btn_tooltip": "测试文件",
+          "show_top": true,
+          "is_active": false
+        }
+      ]
+    },
+    {
+      "btn_icon": ":/icons/unordered-list.svg",
+      "btn_id": "system",
+      "btn_text": "系统管理",
+      "btn_tooltip": "测试配置",
+      "show_top": true,
+      "is_active": false,
+      "submenus": [
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "user",
+          "btn_text": "用户管理",
+          "btn_tooltip": "用户管理",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "role",
+          "btn_text": "角色管理",
+          "btn_tooltip": "角色管理",
+          "show_top": true,
+          "is_active": false
+        },{
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "login_log",
+          "btn_text": "登录日志",
+          "btn_tooltip": "登录日志",
+          "show_top": true,
+          "is_active": false
+        }
+      ]
+    },
+    {
+      "btn_icon": ":/icons/compass.svg",
+      "btn_id": "help",
+      "btn_text": "帮助",
+      "btn_tooltip": "帮助",
+      "show_top": true,
+      "is_active": false,
+      "submenus": [
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "project",
+          "btn_text": "公共方法",
+          "btn_tooltip": "公共方法",
+          "show_top": true,
+          "is_active": false
+        },        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "project",
+          "btn_text": "公共断言",
+          "btn_tooltip": "公共方法",
+          "show_top": true,
+          "is_active": false
+        },        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "project",
+          "btn_text": "使用手册",
+          "btn_tooltip": "使用手册",
+          "show_top": true,
+          "is_active": false
+        }
+      ]
     },
     {
       "btn_icon": ":/icons/settings.svg",
