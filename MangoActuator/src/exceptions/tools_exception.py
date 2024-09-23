@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-07-16 15:17
 # @Author : 毛鹏
-from src.exceptions import MangoActuatorError
+from src.exceptions.mango_error import MangoActuatorError
 
 
 class ToolsError(MangoActuatorError):
