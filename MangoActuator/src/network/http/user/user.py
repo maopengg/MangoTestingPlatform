@@ -4,13 +4,12 @@
 # @Time   : 2024-09-21 11:19
 # @Author : 毛鹏
 
+from pydantic_core._pydantic_core import ValidationError
+
 from src.enums.tools_enum import ClientTypeEnum
-from src.models.network_model import ResponseModel
 from src.models.user_model import UserModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
-
-from pydantic_core._pydantic_core import ValidationError
 
 
 class User(HttpBase):
@@ -76,7 +75,7 @@ class User(HttpBase):
 
     @classmethod
     @request_log()
-    def put_project(cls, _id, selected_project):
+    def put_user_project(cls, _id, selected_project):
         url = cls.url(f'/user/project/put')
         json_data = {
             'id': _id,
@@ -105,3 +104,8 @@ class User(HttpBase):
             'confirm_password': confirm_password,
         }
         return cls.put(url=url, headers=cls.headers, json=json_data)
+
+    @classmethod
+    @request_log()
+    def get_nickname(cls, ):
+        return cls.get(url=cls.url(f'/user/nickname'), headers=cls.headers, )

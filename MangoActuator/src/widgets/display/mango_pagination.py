@@ -14,11 +14,11 @@ class MangoPagination(QWidget):
     def __init__(self, parent=None):
         super().__init__()
         self.parent = parent
-        self.common = 0
+        self.total_size = 0
         self.page = 1
-        self.number_part = 10
+        self.number_part = 20
 
-        self.current_page_label1 = QLabel(f"共 {self.common} 条")
+        self.current_page_label1 = QLabel(f"共 {self.total_size} 条")
 
         self.prev_icon_button = QPushButton()
         self.prev_icon_button.setMaximumWidth(30)
@@ -33,6 +33,7 @@ class MangoPagination(QWidget):
         self.current_page_label = QLabel(f"{self.page}")
         self.items_per_page_combo = QComboBox()
         self.items_per_page_combo.addItems(["10 条/页", "20 条/页", "30 条/页", "50 条/页", "100 条/页"])
+        self.items_per_page_combo.setCurrentText("20 条/页")
 
         # 布局设置
         layout = QHBoxLayout()
@@ -68,18 +69,20 @@ class MangoPagination(QWidget):
         selected_text = self.items_per_page_combo.itemText(index)
         self.number_part = int(selected_text.split(" ")[0])
         self.clicked.emit({'action': 'per_page', 'page': self.number_part})
+        self.button_enabled()
 
     def set_total_size(self, total_size: str):
         self.current_page_label1.setText(f"共 {total_size} 条")
         if total_size:
-            self.common = int(total_size)
+            self.total_size = int(total_size)
+        self.button_enabled()
 
     def button_enabled(self):
         if self.page > 1:
             self.prev_icon_button.setEnabled(True)
         else:
             self.prev_icon_button.setEnabled(False)
-        if self.page >= math.ceil(self.common / self.number_part):
+        if self.page >= math.ceil(self.total_size / self.number_part):
             self.next_icon_button.setEnabled(False)
         else:
             self.next_icon_button.setEnabled(True)

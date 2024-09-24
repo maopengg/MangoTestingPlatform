@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description: 
-# @Time   : 2024-09-03 16:25
+# @Time   : 2024-09-24 10:01
 # @Author : 毛鹏
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class Page(HttpBase):
+class FileData(HttpBase):
 
     @classmethod
     @request_log()
@@ -41,21 +41,3 @@ class Page(HttpBase):
             'id': _id,
         }
         return cls.delete(url=url, headers=cls.headers, params=_params)
-
-    @classmethod
-    @request_log()
-    def module_page_name(cls, module_id, ):
-        url = cls.url(f'/ui/page/name')
-        _params = {
-            'module_id': module_id,
-        }
-        return cls.get(url=url, headers=cls.headers, params=_params)
-
-    @classmethod
-    @request_log()
-    def page_copy(cls, page_id, ):
-        url = cls.url(f'/ui/page/copy')
-        _json = {
-            'page_id': page_id,
-        }
-        return cls.post(url, cls.headers, json=_json)

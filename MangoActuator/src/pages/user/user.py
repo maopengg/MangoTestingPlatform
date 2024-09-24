@@ -76,7 +76,7 @@ class UserPage(QWidget):
 
     def func_select_3_1(self, value):
         Http.headers['Project'] = str(value)
-        Http.put_project(self.user_info.id, value)
+        Http.put_user_project(self.user_info.id, value)
 
     def ui_browser_max(self, value):
         SqlCache.set_sql_cache(

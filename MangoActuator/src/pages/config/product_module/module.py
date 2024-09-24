@@ -18,9 +18,9 @@ class ModulePage(SubPage):
                          table_menu=table_menu,
                          field_list=field_list,
                          form_data=form_data)
-        self.superior_page = 'page'
-        self.id_key = 'page_id'
-        self.get = Http.get_page_element
-        self.post = Http.post_page_element
-        self.put = Http.put_page_element
-        self._delete = Http.delete_page_element
+        self.superior_page = 'product'
+        self.id_key = 'project_product'
+        self.get = Http.get_module
+        self.post = Http.post_module
+        self.put = Http.put_module
+        self._delete = Http.delete_module

@@ -78,7 +78,9 @@ class MainPages:
                 page = page_class(self)
         else:
             return
-
+        current_widget = self.pages.currentWidget()
+        if current_widget and current_widget != self.loading_indicator:
+            self.pages.removeWidget(current_widget)
         if data is not None and isinstance(data, dict):
             page.data = data
         else:

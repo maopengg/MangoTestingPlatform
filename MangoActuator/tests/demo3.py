@@ -1,56 +1,56 @@
 import sys
-from PySide6.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsLineItem
-from PySide6.QtCore import Qt, QPointF
-from PySide6.QtGui import QPen
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
 
-
-class LineChart(QGraphicsView):
-    def __init__(self, data):
+class MainWindow(QMainWindow):
+    def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("大折线图示例")
-        self.setGeometry(100, 100, 1200, 800)  # 增大窗口尺寸
+        self.setWindowTitle("菜单示例")
+        self.setGeometry(100, 100, 600, 400)
 
-        # 创建场景
-        self.scene = QGraphicsScene(self)
-        self.setScene(self.scene)
+        # 创建菜单栏
+        self.menu_bar = self.menuBar()
+        self.menu_bar.setStyleSheet("""
+            QMenu::item {
+                padding: 5px 10px;  /* 调整菜单项的内边距 */
+            }
+        """)
 
-        # 绘制折线图
-        self.draw_line_chart(data)
+        # 创建文件菜单
+        file_menu = self.menu_bar.addMenu("文件")
 
-    def draw_line_chart(self, data):
-        pen = QPen(Qt.blue, 3)  # 设置线条颜色和宽度
+        # 创建菜单项
+        new_action = QAction("新建", self)
+        new_action.triggered.connect(self.new_file)
+        file_menu.addAction(new_action)
 
-        # 计算图形的边界
-        max_x = len(data)
-        max_y = max(data)
+        open_action = QAction("打开", self)
+        open_action.triggered.connect(self.open_file)
+        file_menu.addAction(open_action)
 
-        # 设置缩放比例
-        scale_factor = 10  # Y轴缩放
-        x_scale_factor = 50  # X轴缩放
+        exit_action = QAction("退出", self)
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
 
-        # 绘制坐标轴
-        self.scene.addLine(0, max_y * scale_factor, max_x * x_scale_factor, max_y * scale_factor, pen)  # X轴
-        self.scene.addLine(0, 0, 0, max_y * scale_factor, pen)  # Y轴
+        # 创建帮助菜单
+        help_menu = self.menu_bar.addMenu("帮助")
 
-        for i in range(1, max_x):
-            start_point = QPointF((i - 1) * x_scale_factor, max_y * scale_factor - (data[i - 1] * scale_factor))
-            end_point = QPointF(i * x_scale_factor, max_y * scale_factor - (data[i] * scale_factor))
-            line = QGraphicsLineItem(start_point.x(), start_point.y(), end_point.x(), end_point.y())
-            line.setPen(pen)
-            self.scene.addItem(line)
+        about_action = QAction("关于", self)
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
 
-        # 设置视图范围
-        self.setSceneRect(0, 0, max_x * x_scale_factor, max_y * scale_factor + 50)  # 增加Y轴范围以显示坐标轴
+    def new_file(self):
+        QMessageBox.information(self, "新建", "新建文件功能尚未实现。")
 
+    def open_file(self):
+        QMessageBox.information(self, "打开", "打开文件功能尚未实现。")
+
+    def show_about(self):
+        QMessageBox.about(self, "关于", "这是一个菜单示例应用程序。")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
-    # 示例数据
-    data = [10, 20, 15, 30, 25, 35, 30, 40, 50, 45, 60, 55]
-
-    line_chart = LineChart(data)
-    line_chart.show()
-
+    window = MainWindow()
+    window.show()
     sys.exit(app.exec())

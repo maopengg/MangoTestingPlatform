@@ -64,7 +64,10 @@ class TableParent(QWidget):
         form_data = copy.deepcopy(self.form_data)
         for i in form_data:
             if callable(i.select):
-                i.select = i.select()
+                if hasattr(self, 'form_data_callback'):
+                    i.select = self.form_data_callback(i)
+                else:
+                    i.select = i.select()
         dialog = DialogWidget('新建页面', form_data)
         dialog.clicked.connect(self.sub_options)
         dialog.exec()  # 显示对话框，直到关闭
@@ -81,7 +84,10 @@ class TableParent(QWidget):
             else:
                 i.value = row[i.key]
             if callable(i.select):
-                i.select = i.select()
+                if hasattr(self, 'form_data_callback'):
+                    i.select = self.form_data_callback(i)
+                else:
+                    i.select = i.select()
         for i in form_data:
             if i.subordinate:
                 result = next((item for item in form_data if item.key == i.subordinate), None)

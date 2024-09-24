@@ -11,8 +11,7 @@ from ...parent.table import TableParent
 class ProjectPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
-        self.subpage_value = 'page_element'
-        self.get = Http.get_page
-        self.post = Http.post_page
-        self.put = Http.put_page
-        self._delete = Http.delete_page
+        self.get = Http.get_project
+        self.post = Http.post_project
+        self.put = Http.put_project
+        self._delete = Http.delete_project

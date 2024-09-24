@@ -11,7 +11,7 @@ from ...parent.table import TableParent
 class RolePage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
-        self.get = Http.get_page
-        self.post = Http.post_page
-        self.put = Http.put_page
-        self._delete = Http.delete_page
+        self.get = Http.get_role
+        self.post = Http.post_role
+        self.put = Http.put_role
+        self._delete = Http.delete_role

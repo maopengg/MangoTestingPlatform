@@ -4,33 +4,20 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from src import THEME
+from src.enums.system_enum import EnvironmentEnum
+from src.enums.tools_enum import ProductTypeEnum
 from src.settings import settings
-
+from src.network import Http
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
-        'input': None
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '环境名称',
+        'placeholder': '请输入环境名称',
         'key': 'name',
-        'input': None
-    },
-    {
-        'title': '产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'input': None
-    },
-
-    {
-        'title': '模块',
-        'placeholder': '请选择产品模块',
-        'key': 'module',
-        'input': None
     }
 ]
 right_data = [
@@ -43,25 +30,38 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project_product',
         'type': 2,
-        'subordinate': 'module',
         'select': lambda: settings.base_dict,
     },
     {
-        'title': '模块',
-        'placeholder': '请先选择项目/产品',
-        'key': 'module',
-        'type': 1,
-    },
-    {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '环境名称',
+        'placeholder': '请输入环境名称',
         'key': 'name',
     },
-
     {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
+        'title': '测试对象',
+        'placeholder': '请输入域名/包名/路径',
+        'key': 'value',
+    },
+    {
+        'title': '部署环境',
+        'placeholder': '请选择绑定环境',
+        'key': 'environment',
+        'type': 1,
+        'select': EnvironmentEnum.get_select()
+    },
+    {
+        'title': '自动化类型',
+        'placeholder': '请选择产品的端类型',
+        'key': 'auto_type',
+        'type': 1,
+        'select': ProductTypeEnum.get_select()
+    },
+    {
+        'title': '负责人名称',
+        'placeholder': '请输入负责人名称',
+        'key': 'executor_name',
+        'type': 1,
+        'select': Http.get_nickname
     },
 
 ]
@@ -69,37 +69,41 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'item': 'module',
-        'width': 100
-    },
-
-    {
         'key': 'project_product',
         'name': '产品名称',
-        'item': 'project_product',
         'width': 100
     },
     {
         'key': 'name',
-        'name': '页面名称',
-        'item': '',
+        'name': '环境名称',
         'width': 150
     },
     {
-        'key': 'url',
-        'name': 'URL',
-        'item': ''
+        'key': 'value',
+        'name': '域名/包名/路径',
+    },
+    {
+        'key': 'environment',
+        'name': '部署环境',
+    }, {
+        'key': 'auto_type',
+        'name': '自动化类型',
+    }, {
+        'key': 'executor_name',
+        'name': '负责人',
+    }, {
+        'key': 'db_c_status',
+        'name': '查询权限',
+    }, {
+        'key': 'db_rud_status',
+        'name': '增删改权限',
     },
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 
@@ -110,21 +114,11 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '添加元素',
+        'name': '数据库',
         'action': 'subpage'
     },
     {
-        'name': '···',
-        'action': '',
-        'son': [
-            {
-                'name': '复制',
-                'action': 'copy'
-            },
-            {
-                'name': '删除',
-                'action': 'delete'
-            }
-        ]
+        'name': '删除',
+        'action': 'delete'
     }
 ]

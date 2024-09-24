@@ -12,7 +12,7 @@ class UserLogPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
         self.subpage_value = 'page_element'
-        self.get = Http.get_page
-        self.post = Http.post_page
-        self.put = Http.put_page
-        self._delete = Http.delete_page
+        self.get = Http.get_user_log
+        self.post = Http.post_user_log
+        self.put = Http.put_user_log
+        self._delete = Http.delete_user_log

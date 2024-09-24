@@ -4,6 +4,8 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from src import THEME
+from src.enums.system_enum import AutoTestTypeEnum
+from src.enums.tools_enum import ProductTypeEnum
 from src.settings import settings
 
 search_data = [
@@ -39,29 +41,30 @@ right_data = [
 ]
 form_data = [
     {
-        'title': '项目/产品',
+        'title': '项目',
         'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'type': 2,
-        'subordinate': 'module',
+        'key': 'project',
+        'type': 1,
         'select': lambda: settings.base_dict,
     },
     {
-        'title': '模块',
-        'placeholder': '请先选择项目/产品',
-        'key': 'module',
+        'title': '自动化类型',
+        'placeholder': '请选择自动化类型',
+        'key': 'auto_type',
         'type': 1,
+        'select': AutoTestTypeEnum.get_select()
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '产品类型',
+        'placeholder': '请选择产品类型',
+        'key': 'client_type',
+        'type': 1,
+        'select': ProductTypeEnum.get_select()
+    },
+    {
+        'title': '产品名称',
+        'placeholder': '请输入产品名称',
         'key': 'name',
-    },
-
-    {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
     },
 
 ]
@@ -69,32 +72,39 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'item': 'module',
-        'width': 100
+        'key': 'create_time',
+        'name': '创建时间',
+        'width': 120
     },
 
     {
-        'key': 'project_product',
-        'name': '产品名称',
-        'item': 'project_product',
-        'width': 100
+        'key': 'update_time',
+        'name': '更新时间',
+        'width': 120
+    },
+    {
+        'key': 'project',
+        'name': '项目名称',
+        'width': 80
     },
     {
         'key': 'name',
-        'name': '页面名称',
-        'item': '',
-        'width': 150
+        'name': '产品名称',
     },
     {
-        'key': 'url',
-        'name': 'URL',
-        'item': ''
+        'key': 'auto_type',
+        'name': '自动化类型',
+        'width': 80,
+        'option': AutoTestTypeEnum.get_option('value', 'label')
+    },
+    {
+        'key': 'client_type',
+        'name': '产品类型',
+        'width': 200,
+        'option': ProductTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',
@@ -110,21 +120,12 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '添加元素',
+        'name': '添加模块',
         'action': 'subpage'
     },
     {
-        'name': '···',
-        'action': '',
-        'son': [
-            {
-                'name': '复制',
-                'action': 'copy'
-            },
-            {
-                'name': '删除',
-                'action': 'delete'
-            }
-        ]
+        'name': '删除',
+        'action': 'delete'
     }
+
 ]

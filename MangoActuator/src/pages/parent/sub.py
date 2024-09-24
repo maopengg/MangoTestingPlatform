@@ -19,12 +19,12 @@ class SubPage(QWidget):
     def __init__(self, parent, custom_page=False, **kwargs):
         super().__init__()
         self.parent = parent
-
         self.data: dict = {}
-        self.id_key = ''
-        self.page_id = None
+        self.id_key:str = None
+        self.superior_page:str = None
         self.page = 1
-        self.page_size = 10
+        self.page_size = 20
+
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -60,7 +60,6 @@ class SubPage(QWidget):
             response_message(self, response_model)
 
     def callback(self, data):
-        print(data)
         if data.get('row'):
             getattr(self, data['action'])(data.get('row'))
         else:
@@ -74,8 +73,9 @@ class SubPage(QWidget):
         dialog = DialogWidget('新建页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            dialog.data['page'] = self.page_id
-            response_model: ResponseModel = Http.post_page_element(dialog.data)
+            if self.id_key:
+                dialog.data[self.id_key] = self.data.get('id')
+            response_model: ResponseModel = self.post(dialog.data)
             response_message(self, response_model)
         self.show_data()
 
@@ -94,14 +94,15 @@ class SubPage(QWidget):
         dialog = DialogWidget('编辑页面', form_data)
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
-            dialog.data['page'] = self.page_id
+            if self.id_key:
+                dialog.data[self.id_key] = self.data.get('id')
             dialog.data['id'] = row['id']
-            response_model: ResponseModel = Http.put_page_element(dialog.data)
+            response_model: ResponseModel = self.put(dialog.data)
             response_message(self, response_model)
         self.show_data()
 
     def delete(self, row):
-        response_model: ResponseModel = Http.delete_page_element(row.get('id'))
+        response_model: ResponseModel = self._delete(row.get('id'))
         response_message(self, response_model)
         self.show_data()
 

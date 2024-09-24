@@ -6,7 +6,7 @@ from src.models.gui_model import MenusModel, AppConfig, ThemeConfig, CascaderMod
 from src.tools import InitPath
 from src.tools.other.get_class_methods import GetClassMethod
 
-IS_DEBUG = False
+IS_DEBUG = True
 MEMORY_THRESHOLD = 80
 LOOP_MIX = 10
 
