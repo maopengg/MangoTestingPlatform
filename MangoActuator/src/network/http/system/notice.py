@@ -12,7 +12,7 @@ class Notice(HttpBase):
 
     @classmethod
     @request_log()
-    def get_notice(cls, page, page_size, params: dict = None):
+    def get_notice(cls, page=1, page_size=100, params: dict = None):
         _params = {
             'page': page,
             'pageSize': page_size

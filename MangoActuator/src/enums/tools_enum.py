@@ -131,3 +131,7 @@ class SignalTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "字符串", 1: "整数", 2: "小数", 3: "用例展示"}
+
+
+if __name__ == '__main__':
+    print(StatusEnum.get_select())

@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 import copy
 
-from src.components import *
+from mango_ui import *
+
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.gui_model import *

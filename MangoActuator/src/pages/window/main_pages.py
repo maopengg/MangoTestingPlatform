@@ -51,6 +51,7 @@ class MainPages:
             'product': ProductPage,
             'module': ModulePage,
             'test_env': TestEnvPage,
+            'env_config': EnvConfigPage,
             'test_file': TestFilePage,
             'user_administration': UserAdministrationPage,
             'user': UserPage,

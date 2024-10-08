@@ -104,7 +104,7 @@
       "btn_icon": ":/icons/unordered-list.svg",
       "btn_id": "system",
       "btn_text": "系统管理",
-      "btn_tooltip": "测试配置",
+      "btn_tooltip": "系统管理",
       "show_top": true,
       "is_active": false,
       "submenus": [

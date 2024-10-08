@@ -5,14 +5,11 @@
 # @Author : 毛鹏
 import copy
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout
+from mango_ui import *
+from mango_ui.init import *
 
-from src.components import *
-from src.components.message import response_message
-from src.components.title_info import TitleInfoWidget
 from src.models.gui_model import *
 from src.models.network_model import ResponseModel
-from src.network import Http
 
 
 class SubPage(QWidget):
@@ -20,8 +17,8 @@ class SubPage(QWidget):
         super().__init__()
         self.parent = parent
         self.data: dict = {}
-        self.id_key:str = None
-        self.superior_page:str = None
+        self.id_key: str = None
+        self.superior_page: str = None
         self.page = 1
         self.page_size = 20
 
@@ -47,6 +44,12 @@ class SubPage(QWidget):
             self.table_widget.pagination.clicked.connect(self.pagination_clicked)
             self.table_widget.clicked.connect(self.callback)
             self.layout.addWidget(self.table_widget)
+        else:
+            if kwargs.get('right_data'):
+                self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data')]
+                self.right_but = RightButton(self.right_data)
+                self.right_but.clicked.connect(self.callback)
+                self.layout.addWidget(self.right_but)
 
     def show_data(self):
         self.title_info.init(self.data, self.field_list)

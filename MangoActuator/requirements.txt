@@ -9,7 +9,6 @@ websocket-client==1.5.1
 aiohttp==3.8.5
 aiomysql==0.0.22
 
-pyside6==6.7.0
 colorlog==6.7.0
 assertpy==1.1
 pyinstaller==5.8.0
@@ -21,3 +20,4 @@ psutil==5.9.5
 adbutils==2.7.0
 gevent==24.2.1
 mangokit==1.1.10
+MangoUi==1.0.8

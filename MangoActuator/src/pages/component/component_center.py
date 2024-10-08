@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-08-28 16:33
 # @Author : 毛鹏
-from src import *
-from src.widgets import *
+from mango_ui import *
+from mango_ui.init import *
 
 
 class ComponentPage(QWidget):

@@ -1,3 +1,6 @@
+from mango_ui import *
+from mango_ui.init import *
+
 from src import *
 from src.enums.system_enum import CacheDataKey2Enum, EnvironmentEnum
 from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, ClientTypeEnum
@@ -8,7 +11,6 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
 from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.other.get_class_methods import GetClassMethod
-from src.widgets import *
 
 
 class UserPage(QWidget):

@@ -1,16 +1,15 @@
-from PySide6.QtCore import Slot
-from PySide6.QtGui import QIcon
+from mango_ui import show_failed_message
+from mango_ui.init import *
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.models.gui_model import CascaderModel
 from src.network.http import Http
 from src.pages.login.login_ui import LoginWindow
 from src.pages.window.mian_window import MainWindow
-from src.settings import settings
 from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from src.tools.database.sqlite_connect import SQLiteConnect
-from src.widgets.window.mango_tooltip_box import show_failed_message
 
+from src.settings import settings
 
 class LoginLogic(LoginWindow):
     def __init__(self):

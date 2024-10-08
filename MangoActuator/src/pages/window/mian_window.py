@@ -4,12 +4,11 @@
 # @Author : 毛鹏
 import os
 
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from mango_ui import *
+from mango_ui.init import *
 
 from src.network.web_socket.sokcet_thread import SocketTask
 from src.pages.window.window_logic import UIMainWindow
-from src.widgets.window.mango_tooltip_box import show_info_message
 
 os.environ["QT_FONT_DPI"] = "96"
 

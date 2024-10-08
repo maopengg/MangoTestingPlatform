@@ -16,9 +16,10 @@ def request_log():
             if settings.IS_DEBUG:
                 log.debug(f'发送的请求：{args}, {kwargs}')
             response = func(*args, **kwargs)
-            response_model = ResponseModel(**response.json())
             if settings.IS_DEBUG:
-                log.debug(f'接收的数据：{response_model.model_dump_json()}')
+                log.debug(f'接收的数据：{response.text}')
+            response_model = ResponseModel(**response.json())
+
             return response_model
 
         return wrapper

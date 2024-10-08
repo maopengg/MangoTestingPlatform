@@ -3,10 +3,10 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
-from src import *
+from src import STYLE, MENUS
 from src.pages.window.main_pages import MainPages
-from src.widgets import *
-
+from mango_ui import *
+from mango_ui.init import *
 
 class UIMainWindow(QMainWindow):
     def __init__(self):

@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
+from mango_ui import *
+
 from src import *
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, ClientTypeEnum
@@ -10,7 +12,6 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
 from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.other.get_class_methods import GetClassMethod
-from src.widgets import *
 
 
 class SettingPage(QWidget):
@@ -28,7 +29,7 @@ class SettingPage(QWidget):
         card_layout1.addRow('是否开启调试', toggle1)
         self.sendRedisData = MangoPushButton('发送')
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
-        card_layout1.addRow('发送缓存数据', self.sendRedisData,)
+        card_layout1.addRow('发送缓存数据', self.sendRedisData, )
         input_1 = MangoLineEdit('请输入邮箱发送人-不可用', )
         card_layout1.addRow('邮箱发送人', input_1)
         input_2 = MangoLineEdit('请输入邮箱域名-不可用', )

@@ -114,7 +114,7 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '数据库',
+        'name': '环境配置',
         'action': 'subpage'
     },
     {

@@ -5,10 +5,11 @@
 # @Author : 毛鹏
 from queue import Queue, Empty
 
-from src import *
+from mango_ui import *
+from mango_ui.init import *
+
 from src.enums.tools_enum import SignalTypeEnum
 from src.tools.desktop.signal_send import SignalSend
-from src.widgets import *
 
 
 class UIUpdateThread(QThread):
