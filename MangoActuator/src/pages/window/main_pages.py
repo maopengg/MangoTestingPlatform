@@ -48,8 +48,6 @@ class MainPages:
             'case_steps': CaseStepsPage,
             'public': PublicPage,
             'component_center': ComponentPage,
-            'ass': AssPage,
-            'method': MethodPage,
             'project': ProjectPage,
             'product': ProductPage,
             'module': ModulePage,

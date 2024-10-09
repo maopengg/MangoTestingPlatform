@@ -23,7 +23,6 @@ class SubPage(QWidget):
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
-        self.layout.setContentsMargins(0, 0, 0, 0)
 
         if not custom_page:
             self.table_column = [TableColumnModel(**i) for i in kwargs.get('table_column')]

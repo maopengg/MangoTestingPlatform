@@ -3,10 +3,13 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
+import webbrowser
+
 from src import STYLE, MENUS
 from src.pages.window.main_pages import MainPages
 from mango_ui import *
 from mango_ui.init import *
+
 
 class UIMainWindow(QMainWindow):
     def __init__(self):
@@ -140,6 +143,9 @@ class UIMainWindow(QMainWindow):
 
     def btn_clicked(self):
         btn = self.__setup_btn()
+        if btn.url:
+            webbrowser.open(btn.url)
+            return
         btn_name = btn.objectName()
         for k, v in self.left_menu.list_button_frame.items():
             if k == btn_name:

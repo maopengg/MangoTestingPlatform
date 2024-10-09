@@ -37,31 +37,6 @@ class SettingPage(QWidget):
         input_3 = MangoLineEdit('请输入邮箱的stamp_key-不可用', )
         card_layout1.addRow('邮箱stamp_key', input_3)
 
-        card_layout2 = QFormLayout()
-        card_widget2 = MangoCard(card_layout2, '前端自动化设置')
-        toggle2 = MangoToggle()
-        browser_is_max = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
-        if browser_is_max:
-            toggle2.set_value(bool(browser_is_max))
-        toggle2.clicked.connect(self.ui_browser_max)
-        card_layout2.addRow('浏览器最大化', toggle2)
-        toggle3 = MangoToggle()
-        is_recording = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
-        if is_recording:
-            toggle3.set_value(bool(is_recording))
-        toggle3.clicked.connect(self.ui_recording)
-        card_layout2.addRow('是否视频录制', toggle3)
-        self.comboBox = MangoComboBox('请选择需要并发的数量')
-        self.comboBox.addItems(["1", "2", "3", "5", "10", "15", "20", "30"])
-        self.comboBox.currentTextChanged.connect(self.on_combobox_changed)
-        TEST_CASE_PARALLELISM = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
-        if TEST_CASE_PARALLELISM:
-            self.comboBox.setCurrentText(TEST_CASE_PARALLELISM)
-        else:
-            SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
-            self.comboBox.setCurrentText('10')
-        card_layout2.addRow('浏览器并行数量', self.comboBox)
-
         card_layout3 = QHBoxLayout()
         card_widget3 = MangoCard(card_layout3, '接口自动化设置')
         input_4 = MangoLineEdit('请输入请求超时时间-不可用', )
@@ -70,7 +45,6 @@ class SettingPage(QWidget):
         card_layout3.addStretch()
 
         self.layout.addWidget(card_widget)
-        self.layout.addWidget(card_widget2)
         self.layout.addWidget(card_widget3)
         self.layout.addStretch()
         self.setLayout(self.layout)

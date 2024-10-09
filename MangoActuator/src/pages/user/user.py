@@ -2,12 +2,12 @@ from mango_ui import *
 
 from src import *
 from src.enums.system_enum import CacheDataKey2Enum, EnvironmentEnum
-from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, ClientTypeEnum
+from src.enums.tools_enum import ClientTypeEnum
+from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
 from src.models.user_model import UserModel
 from src.network import Http
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.other.get_class_methods import GetClassMethod
 
 
@@ -16,9 +16,8 @@ class UserPage(QWidget):
         super().__init__()
         self.parent = parent
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(5, 5, 5, 5)
 
-        self.user_info = None
+        self.user_info: Optional[UserModel | None] = None
         self.setLayout(self.layout)
 
     def show_data(self):
@@ -66,34 +65,85 @@ class UserPage(QWidget):
         select_3_2.click.connect(self.func_select_3_2)
         h_layout3_2.addWidget(select_3_2)
         h_layout3_2.addStretch()
+
+        h_layout_4 = QHBoxLayout()
+        card_layout4 = QFormLayout()
+        h_layout_4.addLayout(card_layout4)
+
+        card_widget4 = MangoCard(h_layout_4, '前端自动化设置')
+        self.web_max = MangoToggle(self.user_info.config.web_max)
+        card_layout4.addRow('浏览器最大化', self.web_max)
+        self.web_recording = MangoToggle(self.user_info.config.web_recording)
+        card_layout4.addRow('是否视频录制', self.web_recording)
+        self.web_parallel = MangoComboBox(
+            '请选择需要并发的数量',
+            data=[ComboBoxDataModel(id=int(i), name=i) for i in ["1", "2", "3", "5", "10", "15", "20", "30"]],
+            value=self.user_info.config.web_parallel
+        )
+        card_layout4.addRow('浏览器并行数量', self.web_parallel)
+
+        card_layout5 = QFormLayout()
+        h_layout_4.addLayout(card_layout5)
+        self.web_type = MangoComboBox(
+            '请选择浏览器类型',
+            data=[ComboBoxDataModel(**i) for i in BrowserTypeEnum.get_option('id', 'name')],
+            value=self.user_info.config.web_type,
+            is_form=False
+        )
+        card_layout5.addRow('*浏览器类型：', self.web_type)
+        web_h5_data = [ComboBoxDataModel(id=i, name=i) for i in DeviceEnum.get_obj()]
+        web_h5_data.insert(0, ComboBoxDataModel(id=None, name='默认非H5'))
+        self.web_h5 = MangoComboBox(
+            '请选择设备模式',
+            data=web_h5_data,
+            value=self.user_info.config.web_h5,
+            is_form=False
+        )
+        card_layout5.addRow('H5设备模式：', self.web_h5)
+        self.web_path = MangoLineEdit(
+            '请输入浏览器路径',
+            value=self.user_info.config.web_path,
+        )
+        card_layout5.addRow('浏览器路径：', self.web_path)
+        self.web_headers = MangoToggle(self.user_info.config.web_headers)
+        card_layout5.addRow('无头模式：', self.web_headers)
+        card_layout6 = QFormLayout()
+        self.and_equipment = MangoLineEdit('请输入安卓设备号', value=self.user_info.config.and_equipment)
+        self.and_equipment.setMaximumWidth(300)
+        card_layout6.addRow('安卓设备号：', self.and_equipment)
+        h_layout_4.addLayout(card_layout6)
+
+        card_layout7 = QVBoxLayout()
+        but_4 = MangoPushButton('保存')
+        but_4.clicked.connect(self.web_save)
+        card_layout7.addWidget(but_4)
+        h_layout_4.addLayout(card_layout7)
+
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)
         self.layout.addWidget(card_widget3)
+        self.layout.addWidget(card_widget4)
         self.layout.addStretch()
 
+    def web_save(self):
+        self.user_info.config.web_h5 = self.web_h5.get_value()
+        self.user_info.config.web_recording = bool(self.web_recording.get_value())
+        self.user_info.config.web_parallel = self.web_parallel.get_value()
+        self.user_info.config.web_type = self.web_type.get_value()
+        self.user_info.config.web_max = bool(self.web_max.get_value())
+        self.user_info.config.web_headers = bool(self.web_headers.get_value())
+        self.user_info.config.web_path = self.web_path.get_value() if self.web_path.get_value() else None
+        self.user_info.config.and_equipment = self.and_equipment.get_value() if self.and_equipment.get_value() else None
+        response_message(self, Http.put_user_info(json.loads(self.user_info.model_dump_json())))
+
     def func_select_3_2(self, value):
+        self.user_info.selected_environment = value
         Http.put_environment(self.user_info.id, value)
 
     def func_select_3_1(self, value):
-        Http.headers['Project'] = str(value)
+        self.user_info.selected_project = value
+        Http.headers['Project'] = str(value) if value else value
         Http.put_user_project(self.user_info.id, value)
-
-    def ui_browser_max(self, value):
-        SqlCache.set_sql_cache(
-            CacheKeyEnum.BROWSER_IS_MAXIMIZE.value,
-            '1' if value.get('value') else '0',
-            CacheValueTypeEnum.INT.value
-        )
-
-    def ui_recording(self, value):
-        SqlCache.set_sql_cache(
-            CacheKeyEnum.IS_RECORDING.value,
-            '1' if value.get('value') else '0',
-            CacheValueTypeEnum.INT.value
-        )
-
-    def on_combobox_changed(self, text):
-        SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, text)
 
     def click_send_redis_data(self):
         r = GetClassMethod()

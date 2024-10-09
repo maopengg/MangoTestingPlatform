@@ -10,6 +10,7 @@ from mango_ui import *
 from mango_ui.init import *
 
 from src.models.network_model import ResponseModel
+from src.tools.methods import get_product_module_label, set_product_module
 
 
 class TableParent(QWidget):
@@ -17,7 +18,7 @@ class TableParent(QWidget):
         super().__init__()
         self.parent = parent
         self.page = 1
-        self.page_size = 10
+        self.page_size = 20
         self.params = {}
         self.search_data = [SearchDataModel(**i) for i in kwargs.get('search_data', [])]
         self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
@@ -26,7 +27,6 @@ class TableParent(QWidget):
         self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data', [])]
 
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
         if self.search_data:
             self.titleWidget = SearchWidget(self.search_data)
             self.titleWidget.clicked.connect(self.search)

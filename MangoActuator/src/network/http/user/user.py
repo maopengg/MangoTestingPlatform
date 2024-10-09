@@ -3,12 +3,11 @@
 # @Description: 
 # @Time   : 2024-09-21 11:19
 # @Author : 毛鹏
+import copy
 import json
 
-from pydantic_core._pydantic_core import ValidationError
-
 from src.enums.tools_enum import ClientTypeEnum
-from src.models.user_model import UserModel
+from src.models.user_model import UserModel, UserConfigModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -35,13 +34,13 @@ class User(HttpBase):
         url = cls.url(f'/user/info?id={_id}')
         response = cls.get(url=url, headers=cls.headers)
         if response.json().get('data'):
-            cls.headers['Project'] = str(response.json()['data'][0].get('selected_project'))
-            try:
-                user = UserModel()
-                user.update(**response.json()['data'][0])
-                return user
-            except ValidationError:
-                return UserModel(**response.json()['data'][0])
+            user_info: dict = response.json()['data'][0]
+            cls.headers['Project'] = str(user_info.get('selected_project')) if user_info.get(
+                'selected_project') else None
+            if user_info.get('config') is None:
+                user_info['config'] = UserConfigModel().model_dump()
+                cls.put_user_info(copy.deepcopy(user_info))
+            return UserModel(**user_info)
 
     @classmethod
     @request_log()
@@ -65,7 +64,11 @@ class User(HttpBase):
     @request_log()
     def put_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
-        json_data['mailbox'] = json.loads(json_data.get('mailbox'))
+        if json_data.get('mailbox') and isinstance(json_data.get('mailbox'), str):
+            json_data['mailbox'] = json.loads(json_data.get('mailbox'))
+        for k, v in json_data.items():
+            if isinstance(v, dict) and v.get('id'):
+                json_data[k] = v.get('id')
         return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod

@@ -10,13 +10,8 @@ from ...parent.table import TableParent
 
 class UserLogPage(TableParent):
     def __init__(self, parent):
-        super().__init__(parent,                          search_data=search_data,
-                         form_data=form_data,
-                         table_column=table_column,
-                         table_menu=table_menu,
-                         right_data=right_data
-                         )
-        self.subpage_value = 'page_element'
+        super().__init__(parent, search_data=search_data, table_column=table_column, )
+        self.page_size = 30
         self.get = Http.get_user_log
         self.post = Http.post_user_log
         self.put = Http.put_user_log

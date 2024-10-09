@@ -1,0 +1,26 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 
+# @Time   : 2024-09-08 9:56
+# @Author : 毛鹏
+from mango_ui import *
+from src.settings import settings
+
+
+def set_product_module(parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
+    for e in settings.base_dict:
+        for q in e.children:
+            if q.value == data.value:
+                init_data = []
+                for i in q.children:
+                    init_data.append(ComboBoxDataModel(id=i.value, name=i.label))
+                if init_data == {}:
+                    error_message(parent, '您选择的项目还没创建模块，请先创建模块！')
+                return init_data
+
+
+def get_product_module_label(product_id: int):
+    for e in settings.base_dict:
+        for q in e.children:
+            if q.value == product_id:
+                return q.children

@@ -9,14 +9,6 @@
       "is_active": true
     },
     {
-      "btn_icon": ":/icons/menu.svg",
-      "btn_id": "web",
-      "btn_text": "全部功能",
-      "btn_tooltip": "全部功能",
-      "show_top": true,
-      "is_active": false
-    },
-    {
       "btn_icon": ":/icons/robot.svg",
       "btn_id": "ui",
       "btn_text": "前端自动化",
@@ -141,32 +133,7 @@
       "btn_tooltip": "帮助",
       "show_top": true,
       "is_active": false,
-      "submenus": [
-        {
-          "btn_icon": ":/icons/mind-mapping.svg",
-          "btn_id": "method",
-          "btn_text": "公共方法",
-          "btn_tooltip": "公共方法",
-          "show_top": true,
-          "is_active": false
-        },
-        {
-          "btn_icon": ":/icons/mind-mapping.svg",
-          "btn_id": "ass",
-          "btn_text": "公共断言",
-          "btn_tooltip": "公共方法",
-          "show_top": true,
-          "is_active": false
-        },
-        {
-          "btn_icon": ":/icons/mind-mapping.svg",
-          "btn_id": "help",
-          "btn_text": "使用手册",
-          "btn_tooltip": "使用手册",
-          "show_top": true,
-          "is_active": false
-        }
-      ]
+      "url": "http://121.37.174.56:8002/"
     },
     {
       "btn_icon": ":/icons/settings.svg",

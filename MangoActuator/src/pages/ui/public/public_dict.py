@@ -4,38 +4,29 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from mango_ui import THEME
+
+from src.enums.ui_enum import UiPublicTypeEnum
 from src.settings import settings
 
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
-        'input': None
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '名称',
+        'placeholder': '请输入名称',
         'key': 'name',
-        'input': None
     },
     {
-        'title': '产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'input': None
+        'title': 'KEY',
+        'placeholder': '请输入KEY名称',
+        'key': 'key',
     },
-
-    {
-        'title': '模块',
-        'placeholder': '请选择产品模块',
-        'key': 'module',
-        'input': None
-    }
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
-
 ]
 form_data = [
     {
@@ -47,21 +38,27 @@ form_data = [
         'select': lambda: settings.base_dict,
     },
     {
-        'title': '模块',
-        'placeholder': '请先选择项目/产品',
-        'key': 'module',
+        'title': '类型',
+        'placeholder': '请选择对应类型，注意不同类型的加载顺序',
+        'key': 'type',
         'type': 1,
+        'select': UiPublicTypeEnum.get_select()
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '参数名称',
+        'placeholder': '请输入名称',
         'key': 'name',
     },
 
     {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
+        'title': 'key',
+        'placeholder': '请输入缓存的key',
+        'key': 'key',
+    },
+    {
+        'title': 'value',
+        'placeholder': '请根据规则输入value值',
+        'key': 'value',
     },
 
 ]
@@ -69,32 +66,32 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'item': 'module',
-        'width': 100
-    },
-
-    {
         'key': 'project_product',
         'name': '产品名称',
-        'item': 'project_product',
         'width': 100
+    },
+    {
+        'key': 'type',
+        'name': '类型',
+        'width': 150,
+        'option': UiPublicTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'name',
-        'name': '页面名称',
-        'item': '',
-        'width': 150
+        'name': '参数名称',
     },
     {
-        'key': 'url',
-        'name': 'URL',
-        'item': ''
+        'key': 'key',
+        'name': 'key',
+        'width': 200
+    },
+    {
+        'key': 'value',
+        'name': 'value',
+        'width': 200
     },
     {
         'key': 'ope',
