@@ -22,7 +22,7 @@ class SettingPage(QWidget):
         self.layout.setContentsMargins(5, 5, 5, 5)
 
         card_layout1 = QFormLayout()
-        card_widget = MangoCardWidget(card_layout1, '系统设置')
+        card_widget = MangoCard(card_layout1, '系统设置')
         toggle1 = MangoToggle()
         toggle1.set_value(settings.IS_DEBUG)
         toggle1.clicked.connect(self.debug)
@@ -38,7 +38,7 @@ class SettingPage(QWidget):
         card_layout1.addRow('邮箱stamp_key', input_3)
 
         card_layout2 = QFormLayout()
-        card_widget2 = MangoCardWidget(card_layout2, '前端自动化设置')
+        card_widget2 = MangoCard(card_layout2, '前端自动化设置')
         toggle2 = MangoToggle()
         browser_is_max = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
         if browser_is_max:
@@ -63,7 +63,7 @@ class SettingPage(QWidget):
         card_layout2.addRow('浏览器并行数量', self.comboBox)
 
         card_layout3 = QHBoxLayout()
-        card_widget3 = MangoCardWidget(card_layout3, '接口自动化设置')
+        card_widget3 = MangoCard(card_layout3, '接口自动化设置')
         input_4 = MangoLineEdit('请输入请求超时时间-不可用', )
         card_layout3.addWidget(QLabel('请求超时时间'))
         card_layout3.addWidget(input_4)

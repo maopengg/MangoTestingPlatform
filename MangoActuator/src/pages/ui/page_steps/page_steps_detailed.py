@@ -9,7 +9,6 @@ from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
-from src.models.gui_model import *
 from src.tools.other.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -41,7 +40,7 @@ class PageStepsDetailedPage(SubPage):
         self.layout.addWidget(self.title_info)
 
         self.table_widget = TableList(self.table_column, self.table_menu, )
-        self.table_widget.pagination.clicked.connect(self.pagination_clicked)
+        self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
         self.layout.addWidget(self.table_widget)
 

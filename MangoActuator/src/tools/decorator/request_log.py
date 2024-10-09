@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 14:56
 # @Author : 毛鹏
+import requests
 
 from src.models.network_model import ResponseModel
 from src.settings import settings
@@ -18,8 +19,10 @@ def request_log():
             response = func(*args, **kwargs)
             if settings.IS_DEBUG:
                 log.debug(f'接收的数据：{response.text}')
-            response_model = ResponseModel(**response.json())
-
+            try:
+                response_model = ResponseModel(**response.json())
+            except requests.exceptions.JSONDecodeError:
+                return response
             return response_model
 
         return wrapper

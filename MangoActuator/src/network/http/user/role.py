@@ -35,3 +35,8 @@ class Role(HttpBase):
     @request_log()
     def delete_role(cls, _id, ):
         return cls.delete(url=cls.url(Role._url), headers=cls.headers, params={'id': _id,})
+
+    @classmethod
+    @request_log()
+    def get_role_name(cls):
+        return cls.get(url=cls.url(f'{Role._url}/all'), headers=cls.headers)

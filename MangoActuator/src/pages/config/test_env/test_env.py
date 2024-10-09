@@ -3,14 +3,20 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from src.models.gui_model import FormDataModel, ComboBoxDataModel
+from mango_ui import FormDataModel, ComboBoxDataModel
+
 from .test_env_dict import *
 from ...parent.table import TableParent
 
 
 class TestEnvPage(TableParent):
     def __init__(self, parent):
-        super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
+        super().__init__(parent,
+                         search_data=search_data,
+                         form_data=form_data,
+                         table_column=table_column,
+                         table_menu=table_menu,
+                         right_data=right_data)
         self.subpage_value = 'env_config'
         self.get = Http.get_test_object
         self.post = Http.post_test_object

@@ -8,7 +8,6 @@ import copy
 from mango_ui import *
 from mango_ui.init import *
 
-from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 from src.network import Http
 from .case_dict import *
@@ -39,7 +38,7 @@ class CasePage(QWidget):
         self.layout.addWidget(self.right_but)
 
         self.table_widget = TableList(self.table_column, self.table_menu, )
-        self.table_widget.pagination.clicked.connect(self.pagination_clicked)
+        self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
         self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)

@@ -1,8 +1,7 @@
-from mango_ui import show_failed_message
+from mango_ui import show_failed_message, CascaderModel
 from mango_ui.init import *
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
-from src.models.gui_model import CascaderModel
 from src.network.http import Http
 from src.pages.login.login_ui import LoginWindow
 from src.pages.window.mian_window import MainWindow

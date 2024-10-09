@@ -25,6 +25,3 @@ class RandomFileData:
         else:
             raise FileDoesNotEexistError(*ERROR_MSG_0026)
 
-
-if __name__ == '__main__':
-    print(RandomFileData.get_file_path(**{'data': '文档库搜索112.pdf'}))

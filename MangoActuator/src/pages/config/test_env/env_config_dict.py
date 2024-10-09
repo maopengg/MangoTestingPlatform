@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-24 16:55
 # @Author : 毛鹏
-from src import THEME
+from mango_ui import THEME
 from src.enums.system_enum import NoticeEnum
 
 right_data = [
@@ -41,15 +41,15 @@ database_form_data = [
 ]
 notice_form_data = [
     {
-        'title': '项目/产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
+        'title': '通知类型',
+        'placeholder': '请选择通知类型',
+        'key': 'type',
         'type': 1,
         'select': NoticeEnum.get_select(),
     },
     {
-        'title': '部署环境',
-        'placeholder': '请选择绑定环境',
-        'key': 'environment',
+        'title': '通知配置',
+        'placeholder': '请输入通知配置',
+        'key': 'config',
     },
 ]

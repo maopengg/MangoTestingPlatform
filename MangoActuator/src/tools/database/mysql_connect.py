@@ -69,18 +69,3 @@ class MysqlConnect:
                 result = cursor.rowcount
                 self.connection.commit()
                 return result
-
-
-if __name__ == '__main__':
-    mysql_connect = MysqlConnect(MysqlConingModel(
-        host='61.183.9.60',
-        user='root',
-        port='23306',
-        password='zALL_mysql1',
-        database='aigc_AutoUITestPlatform',
-    ))
-    # 查询是否仍然存在 id 为 6 的记录
-    query_result = mysql_connect.execute('SELECT nickname, username FROM user_logs WHERE id = 8;')
-    for i in query_result:
-        for result1 in i:
-            print(i.get(result1))

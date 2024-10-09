@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME
-from src.enums.ui_enum import ElementExpEnum
+from mango_ui import THEME
+
 
 table_column = [
     {'key': 'id', 'name': '序号', 'width': 40},

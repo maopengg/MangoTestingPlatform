@@ -44,10 +44,3 @@ class Perf:
         self.process_pool.close()
         self.process_pool.join()
         return sum(results)
-
-
-if __name__ == '__main__':
-    r = Perf(1)
-    s = time.time()
-    print(r.batch_request())
-    print(time.time() - s)

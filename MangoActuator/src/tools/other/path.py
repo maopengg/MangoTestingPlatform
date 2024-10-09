@@ -24,6 +24,3 @@ class Path:
             path = os.sep.join(path.split("\\"))
         return path
 
-
-if __name__ == '__main__':
-    print(Path.root_path())

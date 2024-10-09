@@ -159,9 +159,3 @@ class GetClassMethod:
                          'label': str(cls.__doc__),
                          'children': self.get_class_methods(cls)})
         return data
-
-
-if __name__ == '__main__':
-    # 第0个必须是web
-    r = GetClassMethod()
-    print(r.main())

@@ -153,8 +153,3 @@ class RandomTimeData:
             return today.day + int(types)
         else:
             return today.day
-
-
-if __name__ == '__main__':
-    test = RandomTimeData.get_time_by_type(**{'data': 1, 'project_id': 11})
-    print(test)

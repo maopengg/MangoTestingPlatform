@@ -92,7 +92,3 @@ class RandomStringData:
         # 使用random模块的choice函数从字符集合中随机选择字符，生成指定长度的随机字符串
         random_string = ''.join(random.choice(characters) for _ in range(length))
         return random_string
-
-
-if __name__ == '__main__':
-    print(RandomStringData.get_random_string(**{'data': '1g2'}))

@@ -1,10 +1,8 @@
 from mango_ui import *
-from mango_ui.init import *
 
 from src import *
 from src.enums.system_enum import CacheDataKey2Enum, EnvironmentEnum
 from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, ClientTypeEnum
-from src.models.gui_model import ComboBoxDataModel
 from src.models.user_model import UserModel
 from src.network import Http
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
@@ -26,18 +24,18 @@ class UserPage(QWidget):
     def show_data(self):
         self.user_info = Http.get_userinfo(UserModel().id)
         card_layout1 = QFormLayout()
-        card_widget = MangoCardWidget(card_layout1, '基本信息')
+        card_widget = MangoCard(card_layout1, '基本信息')
         card_layout1.addRow('头像', MangoLabel('-'))
         card_layout1.addRow('昵称', MangoLabel(self.user_info.nickname))
 
         card_layout2 = QFormLayout()
-        card_widget2 = MangoCardWidget(card_layout2, '账户信息')
+        card_widget2 = MangoCard(card_layout2, '账户信息')
         card_layout2.addRow('账号', MangoLabel(self.user_info.username))
         card_layout2.addRow('角色', MangoLabel(self.user_info.role.get('name') if self.user_info.role else None))
         card_layout2.addRow('邮箱', MangoLabel(', '.join(self.user_info.mailbox)))
 
         v_layout3 = QVBoxLayout()
-        card_widget3 = MangoCardWidget(v_layout3, '过滤条件')
+        card_widget3 = MangoCard(v_layout3, '过滤条件')
         h_layout3_1 = QHBoxLayout()
         v_layout3.addLayout(h_layout3_1)
         h_layout3_1.addWidget(MangoLabel('选中的项目'))
@@ -50,7 +48,7 @@ class UserPage(QWidget):
             is_form=False
         )
         select_3_1.setMinimumWidth(300)
-        select_3_1.clicked.connect(self.func_select_3_1)
+        select_3_1.click.connect(self.func_select_3_1)
         h_layout3_1.addWidget(select_3_1)
         h_layout3_1.addStretch()
         h_layout3_2 = QHBoxLayout()
@@ -65,7 +63,7 @@ class UserPage(QWidget):
             is_form=False
         )
         select_3_2.setMinimumWidth(300)
-        select_3_2.clicked.connect(self.func_select_3_2)
+        select_3_2.click.connect(self.func_select_3_2)
         h_layout3_2.addWidget(select_3_2)
         h_layout3_2.addStretch()
         self.layout.addWidget(card_widget)

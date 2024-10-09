@@ -18,7 +18,7 @@ class MyQWidget(QWidget):
         self.layout_1 = QFormLayout()
         self.layout_1.addWidget(MangoPushButton('按钮'))
         self.layout_1.addWidget(MangoLabel('哈哈哈'))
-        self.widget = MangoCardWidget(self.layout_1)
+        self.widget = MangoCard(self.layout_1)
         self.layout.addWidget(self.widget)
         self.layout.addWidget(QPushButton('2'))
         self.setLayout(self.layout)

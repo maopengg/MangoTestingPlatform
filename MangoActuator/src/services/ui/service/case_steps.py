@@ -138,8 +138,3 @@ class CaseSteps(StepElements):
             return self.package_name
         if self.url and self.package_name:
             return json.dumps([self.url, self.package_name])
-
-
-if __name__ == '__main__':
-    list__ = '["213","43132]'
-    print(eval(list__))

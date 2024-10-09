@@ -35,3 +35,9 @@ class Database(HttpBase):
     @request_log()
     def delete_database(cls, _id, ):
         return cls.delete(url=cls.url(Database._url), headers=cls.headers, params={'id': _id})
+
+    @classmethod
+    @request_log()
+    def put_database_status(cls, _id: int, environment: int, status: int):
+        return cls.put(url=cls.url(f'{Database._url}/put/status'), headers=cls.headers,
+                       json={'id': _id, 'status': status, 'environment': environment})

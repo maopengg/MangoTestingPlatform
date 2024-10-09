@@ -61,8 +61,3 @@ class HttpClient(HttpBase):
             return False
 
 
-if __name__ == '__main__':
-    username1 = 'admin'
-    password1 = 'as123456'
-    HttpClient.login(username1, password1)
-    HttpClient.download_file('author.jpg')

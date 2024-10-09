@@ -37,9 +37,3 @@ class Assertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEq
                     class_list.append({'title': subclass.__doc__, 'func_list': func_list})
                 func_list = []
         return class_list
-
-
-if __name__ == '__main__':
-    import json
-
-    print(json.dumps(Assertion.get_methods(), ensure_ascii=False))

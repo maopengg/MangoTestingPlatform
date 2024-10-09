@@ -4,41 +4,42 @@
 # @Time   : 2024-09-18 15:07
 # @Author : 毛鹏
 import copy
+import json
 
 from mango_ui import *
 from mango_ui.init import *
 
-from src.models.gui_model import *
 from src.models.network_model import ResponseModel
 
 
 class TableParent(QWidget):
-    def __init__(self, parent, search_data, form_data, table_column, table_menu, right_data, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         super().__init__()
         self.parent = parent
         self.page = 1
         self.page_size = 10
         self.params = {}
-        self.search_data = [SearchDataModel(**i) for i in search_data]
-        self.form_data = [FormDataModel(**i) for i in form_data]
-        self.table_column = [TableColumnModel(**i) for i in table_column]
-        self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
-        self.right_data = [RightDataModel(**i) for i in right_data]
+        self.search_data = [SearchDataModel(**i) for i in kwargs.get('search_data', [])]
+        self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
+        self.table_column = [TableColumnModel(**i) for i in kwargs.get('table_column', [])]
+        self.table_menu = [TableMenuItemModel(**i) for i in kwargs.get('table_menu', [])]
+        self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data', [])]
 
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.titleWidget = SearchWidget(self.search_data)
-        self.titleWidget.clicked.connect(self.search)
-        self.layout.addWidget(self.titleWidget)
-
-        self.right_but = RightButton(self.right_data)
-        self.right_but.clicked.connect(self.callback)
-        self.layout.addWidget(self.right_but)
-
-        self.table_widget = TableList(self.table_column, self.table_menu, )
-        self.table_widget.pagination.clicked.connect(self.pagination_clicked)
-        self.table_widget.clicked.connect(self.callback)
-        self.layout.addWidget(self.table_widget)
+        if self.search_data:
+            self.titleWidget = SearchWidget(self.search_data)
+            self.titleWidget.clicked.connect(self.search)
+            self.layout.addWidget(self.titleWidget)
+        if self.right_data:
+            self.right_but = RightButton(self.right_data)
+            self.right_but.clicked.connect(self.callback)
+            self.layout.addWidget(self.right_but)
+        if self.table_column:
+            self.table_widget = TableList(self.table_column, self.table_menu, )
+            self.table_widget.pagination.click.connect(self.pagination_clicked)
+            self.table_widget.clicked.connect(self.callback)
+            self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
     def show_data(self, is_refresh=False):
@@ -82,6 +83,8 @@ class TableParent(QWidget):
         for i in form_data:
             if isinstance(row[i.key], dict):
                 i.value = row[i.key].get('id', None)
+            elif isinstance(row[i.key], list):
+                i.value = json.dumps(row[i.key])
             else:
                 i.value = row[i.key]
             if callable(i.select):

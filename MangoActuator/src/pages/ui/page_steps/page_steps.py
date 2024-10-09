@@ -11,7 +11,12 @@ from ...parent.table import *
 
 class PageStepsPage(TableParent):
     def __init__(self, parent):
-        super().__init__(parent, search_data, form_data, table_column, table_menu, right_data)
+        super().__init__(parent,                          search_data=search_data,
+                         form_data=form_data,
+                         table_column=table_column,
+                         table_menu=table_menu,
+                         right_data=right_data
+                         )
         self.subpage_value = 'page_steps_detailed'
         self.get = Http.get_page_steps
         self.post = Http.post_page_steps

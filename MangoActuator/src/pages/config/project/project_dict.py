@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME
-from src.settings import settings
+from mango_ui import THEME
+
 
 search_data = [
     {

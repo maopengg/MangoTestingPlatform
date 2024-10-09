@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME
+from mango_ui import THEME
 from src.enums.system_enum import EnvironmentEnum
 from src.enums.tools_enum import ProductTypeEnum
 from src.settings import settings

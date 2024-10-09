@@ -3,106 +3,89 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME
-from src.settings import settings
+from mango_ui import THEME
+
+from src.network import Http
 
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入用户ID',
         'key': 'id',
-        'input': None
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
-        'key': 'name',
-        'input': None
+        'title': '昵称',
+        'placeholder': '请输入用户昵称',
+        'key': 'nickname',
     },
     {
-        'title': '产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'input': None
-    },
-
-    {
-        'title': '模块',
-        'placeholder': '请选择产品模块',
-        'key': 'module',
-        'input': None
+        'title': '账号',
+        'placeholder': '请输入用户账号',
+        'key': 'username',
     }
 ]
-right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
-
-]
+# right_data = [
+#     {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
+#
+# ]
 form_data = [
     {
-        'title': '项目/产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'type': 2,
-        'subordinate': 'module',
-        'select': lambda: settings.base_dict,
+        'title': '昵称',
+        'placeholder': '请输入用户昵称',
+        'key': 'nickname',
     },
     {
-        'title': '模块',
-        'placeholder': '请先选择项目/产品',
-        'key': 'module',
+        'title': '绑定角色',
+        'placeholder': '请选择用户角色',
+        'key': 'role',
         'type': 1,
+        'select': Http.get_role_name
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
-        'key': 'name',
+        'title': 'mailbox',
+        'placeholder': '请输入邮箱',
+        'key': 'mailbox',
     },
-
-    {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
-    },
-
 ]
 table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'item': 'module',
-        'width': 100
+        'key': 'nickname',
+        'name': '昵称',
     },
 
     {
-        'key': 'project_product',
-        'name': '产品名称',
-        'item': 'project_product',
-        'width': 100
-    },
-    {
-        'key': 'name',
-        'name': '页面名称',
-        'item': '',
+        'key': 'username',
+        'name': '账号',
         'width': 150
     },
     {
-        'key': 'url',
-        'name': 'URL',
-        'item': ''
+        'key': 'role',
+        'name': '角色',
+        'width': 150
+    },
+    {
+        'key': 'last_login_time',
+        'name': '最近登录时间',
+        'width': 150
+    }, {
+        'key': 'ip',
+        'name': '登录IP',
+        'width': 150
+    }, {
+        'key': 'mailbox',
+        'name': '邮箱',
+        'width': 200
     },
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
-    },
-
+    }
 ]
 table_menu = [
     {
@@ -110,21 +93,8 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '添加元素',
-        'action': 'subpage'
-    },
-    {
-        'name': '···',
-        'action': '',
-        'son': [
-            {
-                'name': '复制',
-                'action': 'copy'
-            },
-            {
-                'name': '删除',
-                'action': 'delete'
-            }
-        ]
+        'name': '删除',
+        'action': 'delete'
     }
+
 ]

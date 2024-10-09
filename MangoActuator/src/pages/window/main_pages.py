@@ -3,16 +3,18 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
+from PySide6.QtCore import QMetaObject
+from PySide6.QtWidgets import QStackedWidget, QApplication
+from mango_ui import *
 
-from src import *
 from src.pages.component.component_center import ComponentPage
 from src.pages.home.home import HomePage
 from src.pages.ui import *
 from src.pages.user.user import UserPage
 from src.pages.web import WebPage
 from ..config import *
-from ..setting import *
 from ..help import *
+from ..setting import *
 
 
 class MainPages:
@@ -22,7 +24,8 @@ class MainPages:
         self.loading_indicator = self.create_loading_indicator()
 
     def create_loading_indicator(self):
-        loading_indicator = QLabel("数据加载中...")
+        loading_indicator = MangoLabel("数据加载中...")
+        from PySide6.QtCore import Qt
         loading_indicator.setAlignment(Qt.AlignCenter)
         loading_indicator.setStyleSheet(f"font-size: 16px; color: {THEME.icon_color};")
         return loading_indicator

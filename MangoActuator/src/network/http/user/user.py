@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-21 11:19
 # @Author : 毛鹏
+import json
 
 from pydantic_core._pydantic_core import ValidationError
 
@@ -55,13 +56,16 @@ class User(HttpBase):
         return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
+    @request_log()
     def post_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
         return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
+    @request_log()
     def put_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
+        json_data['mailbox'] = json.loads(json_data.get('mailbox'))
         return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod

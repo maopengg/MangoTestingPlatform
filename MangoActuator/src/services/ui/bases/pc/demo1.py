@@ -12,11 +12,9 @@ import uiautomation as auto
 
 
 def test():
-    print(auto.GetRootControl())
     subprocess.Popen('notepad.exe', shell=True)
     # 首先从桌面的第一层子控件中找到记事本程序的窗口WindowControl，再从这个窗口查找子控件
     notepadWindow = auto.WindowControl(searchDepth=1, ClassName='Notepad')
-    print(notepadWindow.Name)
     notepadWindow.SetTopmost(True)
     # 查找notepadWindow所有子孙控件中的第一个EditControl，因为EditControl是第一个子控件，可以不指定深度
     edit = notepadWindow.EditControl()
@@ -28,7 +26,6 @@ def test():
         # 大多数情况不需要捕捉COMError，如果遇到了就加到try block
         pass
     edit.SendKeys('{Ctrl}{End}{Enter}World')  # 在文本末尾打字
-    print('current text:', edit.GetValuePattern().Value)  # 获取当前文本
     # 先从notepadWindow的第一层子控件中查找TitleBarControl,
     # 然后从TitleBarControl的子孙控件中找第二个ButtonControl, 即最大化按钮，并点击按钮
     notepadWindow.TitleBarControl(Depth=1).ButtonControl(foundIndex=2).Click()
