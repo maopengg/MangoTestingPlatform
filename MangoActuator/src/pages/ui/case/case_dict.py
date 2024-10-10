@@ -63,7 +63,6 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
@@ -76,24 +75,20 @@ table_column = [
     {
         'key': 'module',
         'name': '模块',
-        'item': 'name',
         'width': 100
     },
     {
         'key': 'name',
         'name': '用例名称',
-        'item': '',
         'width': 100
     },
     {
         'key': 'case_flow',
         'name': '步骤顺序',
-        'item': ''
     },
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 

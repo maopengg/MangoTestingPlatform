@@ -74,36 +74,30 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
         'key': 'module',
         'name': '模块名称',
-        'item': 'module',
         'width': 100
     },
     {
         'key': 'project_product',
         'name': '产品名称',
-        'item': 'project_product',
         'width': 100
     },
     {
         'key': 'name',
         'name': '步骤名称',
-        'item': '',
         'width': 150
     },
     {
         'key': 'run_flow',
         'name': '顺序',
-        'item': ''
     },
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.tools_enum import StatusEnum, Status1Enum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.settings import settings
 
@@ -34,7 +35,6 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project_product',
         'type': 2,
-        'subordinate': 'module',
         'select': lambda: settings.base_dict,
     },
     {
@@ -60,6 +60,12 @@ form_data = [
         'placeholder': '请根据规则输入value值',
         'key': 'value',
     },
+    {
+        'title': '状态',
+        'placeholder': '开启状态',
+        'key': 'status',
+        'type': 3,
+    },
 
 ]
 table_column = [
@@ -76,7 +82,7 @@ table_column = [
     {
         'key': 'type',
         'name': '类型',
-        'width': 150,
+        'width': 130,
         'option': UiPublicTypeEnum.get_option('value', 'label')
     },
     {
@@ -86,7 +92,7 @@ table_column = [
     {
         'key': 'key',
         'name': 'key',
-        'width': 200
+        'width': 50
     },
     {
         'key': 'value',
@@ -94,9 +100,15 @@ table_column = [
         'width': 200
     },
     {
+        'key': 'status',
+        'name': '是否启用',
+        'width': 70,
+        'option': Status1Enum.get_option('value', 'label')
+
+    },
+    {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 
@@ -107,21 +119,8 @@ table_menu = [
         'action': 'edit'
     },
     {
-        'name': '添加元素',
-        'action': 'subpage'
-    },
-    {
-        'name': '···',
-        'action': '',
-        'son': [
-            {
-                'name': '复制',
-                'action': 'copy'
-            },
-            {
-                'name': '删除',
-                'action': 'delete'
-            }
-        ]
+        'name': '删除',
+        'action': 'delete'
     }
+
 ]

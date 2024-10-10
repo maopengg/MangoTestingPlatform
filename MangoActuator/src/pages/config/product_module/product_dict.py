@@ -109,7 +109,6 @@ table_column = [
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 
