@@ -35,19 +35,23 @@ class LoginLogic(LoginWindow):
         settings.USERNAME = self.username_edit.text()
         settings.PASSWORD = self.password_edit.text()
         try:
-            res = Http.login(settings.USERNAME, settings.PASSWORD)
-            if res.code == 200:
-                Methods.set_project()
-                self.main_window = MainWindow()
-                self.close()
-                self.main_window.show()
-                remember = self.remember_box.isChecked()
-                if remember:
-                    self.db_handler.execute_sql(sql_statement_3)
-                    self.db_handler.execute_sql(sql_statement_2,
-                                                (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
+            try:
+                res = Http.login(settings.USERNAME, settings.PASSWORD)
+            except (KeyError, TypeError):
+                show_failed_message('请先注册账号后再进行登录！')
             else:
-                show_failed_message('账号或密码错误')
+                if res.code == 200:
+                    Methods.set_project()
+                    self.main_window = MainWindow()
+                    self.close()
+                    self.main_window.show()
+                    remember = self.remember_box.isChecked()
+                    if remember:
+                        self.db_handler.execute_sql(sql_statement_3)
+                        self.db_handler.execute_sql(sql_statement_2,
+                                                    (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
+                else:
+                    show_failed_message('账号或密码错误')
 
         except (JSONDecodeError, InvalidURL):
             show_failed_message('IP或端口不正确')
