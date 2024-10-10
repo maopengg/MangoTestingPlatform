@@ -55,8 +55,8 @@ class TableParent(QWidget):
             getattr(self, data['action'])()
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
-        if data.key == 'module':
-            init_data = Methods.set_product_module(self, data)
+        if data.subordinate == 'module':
+            init_data = Methods.get_product_module(self, data)
             if is_refresh:
                 data.input_object.set_select(init_data, True)
             else:

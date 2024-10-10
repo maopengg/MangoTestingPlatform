@@ -16,7 +16,7 @@ class Methods:
     base_dict: BaseDictModel = BaseDictModel(ui_option=GetClassMethod().option())
 
     @classmethod
-    def set_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
+    def get_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
         for e in cls.base_dict.project:
             for q in e.children:
                 if q.value == data.value:

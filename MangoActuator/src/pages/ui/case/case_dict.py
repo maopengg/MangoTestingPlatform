@@ -5,6 +5,11 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.system_enum import CaseLevelEnum
+from src.enums.tools_enum import Status3Enum
+from src.network import Http
+from src.tools.methods import Methods
+
 search_data = [
     {
         'title': 'ID',
@@ -12,21 +17,11 @@ search_data = [
         'key': 'id',
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '用例名称',
+        'placeholder': '请输入用例名称',
         'key': 'name',
     },
-    {
-        'title': '产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-    },
 
-    {
-        'title': '模块',
-        'placeholder': '请选择产品模块',
-        'key': 'module',
-    }
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
@@ -39,6 +34,8 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
+        'select': lambda: Methods.base_dict.project,
+
     },
     {
         'title': '模块',
@@ -47,15 +44,23 @@ form_data = [
         'type': 1,
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '用例名称',
+        'placeholder': '请输入用例名称',
         'key': 'name',
     },
-
     {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
-        'key': 'url',
+        'title': '用例级别',
+        'placeholder': '请设置用例级别',
+        'key': 'level',
+        'type': 1,
+        'select': CaseLevelEnum.get_select()
+    },
+    {
+        'title': '用例负责人',
+        'placeholder': '请设置用例负责人',
+        'key': 'case_people',
+        'type': 1,
+        'select': Http.get_nickname
     },
 
 ]
@@ -87,6 +92,23 @@ table_column = [
         'name': '步骤顺序',
     },
     {
+        'key': 'level',
+        'name': '级别',
+        'width': 100,
+        'option': CaseLevelEnum.get_option('value', 'label')
+    },
+    {
+        'key': 'case_people',
+        'name': '负责人',
+        'width': 100
+    },
+    {
+        'key': 'status',
+        'name': '结果',
+        'width': 100,
+        'option': Status3Enum.get_option('value', 'label')
+    },
+    {
         'key': 'ope',
         'name': '操作',
         'width': 120
@@ -95,17 +117,21 @@ table_column = [
 ]
 table_menu = [
     {
-        'name': '编辑',
-        'action': 'edit'
+        'name': '执行',
+        'action': 'run'
     },
     {
-        'name': '添加元素',
-        'action': 'add_ele'
+        'name': '步骤',
+        'action': 'subpage'
     },
     {
         'name': '···',
         'action': '',
         'son': [
+            {
+                'name': '编辑',
+                'action': 'edit'
+            },
             {
                 'name': '复制',
                 'action': 'copy'

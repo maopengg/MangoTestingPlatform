@@ -10,6 +10,7 @@ from src.enums.tools_enum import ClientTypeEnum
 from src.models.user_model import UserModel, UserConfigModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
+from src.tools.log_collector import log
 
 
 class User(HttpBase):
@@ -24,6 +25,7 @@ class User(HttpBase):
             'type': ClientTypeEnum.ACTUATOR.value
         }
         response = cls.post(url=url, data=data)
+        log.info(response.text)
         response_dict = response.json()
         cls.headers['Authorization'] = response_dict['data']['token']
         cls.get_userinfo(response_dict['data']['userId'])

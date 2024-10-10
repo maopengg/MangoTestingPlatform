@@ -10,12 +10,12 @@ from ...parent.table import TableParent
 
 class PagePage(TableParent):
     def __init__(self, parent):
-        super().__init__(parent,                          search_data=search_data,
+        super().__init__(parent,
+                         search_data=search_data,
                          form_data=form_data,
                          table_column=table_column,
                          table_menu=table_menu,
-                         right_data=right_data
-                         )
+                         right_data=right_data)
         self.subpage_value = 'page_element'
         self.get = Http.get_page
         self.post = Http.post_page

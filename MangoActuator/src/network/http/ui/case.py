@@ -53,13 +53,13 @@ class Case(HttpBase):
 
     @classmethod
     @request_log()
-    def ui_case_run(cls, _id, test_env):
+    def ui_case_run(cls, case_id, test_env):
         url = cls.url(f'/ui/case/run')
         _params = {
-            'id': _id,
+            'case_id': case_id,
             'test_env': test_env,
         }
-        return cls.post(url=url, headers=cls.headers, params=_params)
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
