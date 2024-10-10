@@ -18,12 +18,16 @@ def request_log():
                 log.debug(f'发送的请求：{args}, {kwargs}')
             response = func(*args, **kwargs)
             if settings.IS_DEBUG:
-                log.debug(f'接收的数据：{response.text}')
-            try:
-                response_model = ResponseModel(**response.json())
-            except requests.exceptions.JSONDecodeError:
-                return response
-            return response_model
+                try:
+                    log.debug(f'接收的数据：{response.text}')
+                except AttributeError:
+                    pass
+                else:
+                    try:
+                        response_model = ResponseModel(**response.json())
+                    except requests.exceptions.JSONDecodeError:
+                        return response
+                    return response_model
 
         return wrapper
 

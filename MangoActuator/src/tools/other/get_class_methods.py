@@ -159,3 +159,4 @@ class GetClassMethod:
                          'label': str(cls.__doc__),
                          'children': self.get_class_methods(cls)})
         return data
+

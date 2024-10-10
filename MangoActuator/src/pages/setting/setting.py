@@ -23,10 +23,10 @@ class SettingPage(QWidget):
 
         card_layout1 = QFormLayout()
         card_widget = MangoCard(card_layout1, '系统设置')
-        toggle1 = MangoToggle()
-        toggle1.set_value(settings.IS_DEBUG)
-        toggle1.clicked.connect(self.debug)
-        card_layout1.addRow('是否开启调试', toggle1)
+        self.toggle1 = MangoToggle()
+        self.toggle1.set_value(settings.IS_DEBUG)
+        self.toggle1.clicked.connect(self.debug)
+        card_layout1.addRow('是否开启调试', self.toggle1)
         self.sendRedisData = MangoPushButton('发送')
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
         card_layout1.addRow('发送缓存数据', self.sendRedisData, )
@@ -53,7 +53,7 @@ class SettingPage(QWidget):
         pass
 
     def debug(self, value):
-        settings.IS_DEBUG = bool(value.get('value'))
+        settings.IS_DEBUG = bool(self.toggle1.get_value())
 
     def ui_browser_max(self, value):
         SqlCache.set_sql_cache(

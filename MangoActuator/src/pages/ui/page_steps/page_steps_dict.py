@@ -4,7 +4,8 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from mango_ui import THEME
-from src.settings import settings
+
+from src.tools.methods import Methods
 
 search_data = [
     {
@@ -48,7 +49,7 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
-        'select': lambda: settings.base_dict,
+        'select': lambda: Methods.base_dict.project,
     },
     {
         'title': '模块',

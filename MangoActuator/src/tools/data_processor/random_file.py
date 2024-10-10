@@ -7,7 +7,7 @@ import os
 
 from src.exceptions.error_msg import ERROR_MSG_0026
 from src.exceptions.tools_exception import FileDoesNotEexistError
-from src.network.http.http_client import HttpClient
+from src.network import Http
 from src.tools import InitPath
 
 
@@ -18,10 +18,9 @@ class RandomFileData:
     def get_file(cls, **kwargs) -> str:
         """传入文件名称，返回文件"""
         file_name = kwargs.get('data')
-        HttpClient().download_file(file_name)
+        Http.download_file(file_name)
         file_path = os.path.join(InitPath.upload_files, file_name)
         if os.path.exists(file_path):
             return file_path
         else:
             raise FileDoesNotEexistError(*ERROR_MSG_0026)
-

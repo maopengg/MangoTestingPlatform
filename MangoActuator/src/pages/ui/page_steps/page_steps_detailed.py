@@ -9,6 +9,7 @@ from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
+from src.models.user_model import UserModel
 from src.tools.other.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -45,7 +46,9 @@ class PageStepsDetailedPage(SubPage):
         self.layout.addWidget(self.table_widget)
 
     def debug(self):
-        warning_notification(self, f'点击了调试:{self.data.get("id")}')
+        user_info = UserModel()
+        response_message(self, Http.ui_steps_run(user_info.selected_environment, self.data.get("id")))
+        # warning_notification(self, f'点击了调试:{self.data.get("id")}')
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)

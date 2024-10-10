@@ -8,6 +8,7 @@ from src.models.user_model import UserModel
 from src.network import Http
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
+from src.tools.methods import Methods
 from src.tools.other.get_class_methods import GetClassMethod
 
 
@@ -38,7 +39,7 @@ class UserPage(QWidget):
         h_layout3_1 = QHBoxLayout()
         v_layout3.addLayout(h_layout3_1)
         h_layout3_1.addWidget(MangoLabel('选中的项目'))
-        select_3_1_data = [ComboBoxDataModel(id=i.value, name=i.label) for i in settings.base_dict]
+        select_3_1_data = [ComboBoxDataModel(id=i.value, name=i.label) for i in Methods.base_dict.project]
         select_3_1_data.insert(0, ComboBoxDataModel(id=None, name='全部项目'))
         select_3_1 = MangoComboBox(
             '请选择项目进行过滤',

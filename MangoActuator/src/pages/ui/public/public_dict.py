@@ -8,6 +8,7 @@ from mango_ui import THEME
 from src.enums.tools_enum import StatusEnum, Status1Enum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.settings import settings
+from src.tools.methods import Methods
 
 search_data = [
     {
@@ -35,7 +36,7 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project_product',
         'type': 2,
-        'select': lambda: settings.base_dict,
+        'select': lambda: Methods.base_dict.project,
     },
     {
         'title': '类型',

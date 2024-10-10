@@ -9,6 +9,8 @@ from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, s
 from src.tools.database.sqlite_connect import SQLiteConnect
 
 from src.settings import settings
+from src.tools.methods import Methods
+
 
 class LoginLogic(LoginWindow):
     def __init__(self):
@@ -35,8 +37,7 @@ class LoginLogic(LoginWindow):
         try:
             res = Http.login(settings.USERNAME, settings.PASSWORD)
             if res.code == 200:
-                settings.base_dict = [CascaderModel(**i) for i in Http.project_info()['data']]
-
+                Methods.set_project()
                 self.main_window = MainWindow()
                 self.close()
                 self.main_window.show()

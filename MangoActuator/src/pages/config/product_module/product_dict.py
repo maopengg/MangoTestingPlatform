@@ -4,9 +4,10 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from mango_ui import THEME
+
 from src.enums.system_enum import AutoTestTypeEnum
 from src.enums.tools_enum import ProductTypeEnum
-from src.settings import settings
+from src.tools.methods import Methods
 
 search_data = [
     {
@@ -45,7 +46,7 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project',
         'type': 1,
-        'select': lambda: settings.base_dict,
+        'select': lambda: Methods.base_dict.project,
     },
     {
         'title': '自动化类型',

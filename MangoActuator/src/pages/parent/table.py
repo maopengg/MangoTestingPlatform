@@ -10,7 +10,7 @@ from mango_ui import *
 from mango_ui.init import *
 
 from src.models.network_model import ResponseModel
-from src.tools.methods import get_product_module_label, set_product_module
+from src.tools.methods import Methods
 
 
 class TableParent(QWidget):
@@ -56,7 +56,7 @@ class TableParent(QWidget):
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.key == 'module':
-            init_data = set_product_module(self, data)
+            init_data = Methods.set_product_module(self, data)
             if is_refresh:
                 data.input_object.set_select(init_data, True)
             else:
@@ -95,7 +95,7 @@ class TableParent(QWidget):
         for i in form_data:
             if i.subordinate:
                 result = next((item for item in form_data if item.key == i.subordinate), None)
-                select = get_product_module_label(int(i.value))
+                select = Methods.get_product_module_label(int(i.value))
                 result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
         dialog = DialogWidget('编辑页面', form_data, )
         dialog.exec()  # 显示对话框，直到关闭

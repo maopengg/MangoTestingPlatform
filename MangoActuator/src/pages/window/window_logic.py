@@ -5,10 +5,11 @@
 # @Author : 毛鹏
 import webbrowser
 
-from src import STYLE, MENUS
 from src.pages.window.main_pages import MainPages
 from mango_ui import *
 from mango_ui.init import *
+
+from src.settings.settings import STYLE, MENUS
 
 
 class UIMainWindow(QMainWindow):

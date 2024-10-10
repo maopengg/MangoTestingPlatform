@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-13 11:12
 # @Author : 毛鹏
-from src.models.network_model import ResponseModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -54,22 +53,23 @@ class PageSteps(HttpBase):
 
     @classmethod
     @request_log()
-    def get_case_name(cls,):
+    def get_case_name(cls, ):
         url = cls.url(f'/ui/case/name')
         return cls.get(url=url, headers=cls.headers)
 
     @classmethod
     @request_log()
-    def ui_steps_run(cls,test_env, page_step_id):
+    def ui_steps_run(cls, test_env, page_step_id):
         url = cls.url(f'/ui/steps/run')
         _params = {
             'te': test_env,
             'page_step_id': page_step_id,
         }
-        return cls.delete(url=url, headers=cls.headers, params=_params)
+        return cls.get(url=url, headers=cls.headers, params=_params)
+
     @classmethod
     @request_log()
-    def get_page_steps_name(cls,page_id):
+    def get_page_steps_name(cls, page_id):
         url = cls.url(f'/ui/steps/page/steps/name')
         _params = {
             'page_id': page_id,
@@ -78,7 +78,7 @@ class PageSteps(HttpBase):
 
     @classmethod
     @request_log()
-    def copy_page_steps(cls,page_step_id):
+    def copy_page_steps(cls, page_step_id):
         url = cls.url(f'/ui/copy/page/steps')
         _params = {
             'page_id': page_step_id,
