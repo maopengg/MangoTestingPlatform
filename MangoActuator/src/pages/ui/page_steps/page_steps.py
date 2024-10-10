@@ -26,7 +26,7 @@ class PageStepsPage(TableParent):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         init_data = None
         if data.key == 'module':
-            init_data = set_product_module(self, data)
+            init_data = Methods.set_product_module(self, data)
         elif data.key == 'page':
             response_model: ResponseModel = Http.module_page_name(data.value)
             init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
