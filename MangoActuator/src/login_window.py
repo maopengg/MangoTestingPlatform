@@ -34,9 +34,12 @@ class LoginLogic(LoginWindow):
         settings.PORT = self.prot_edit.text()
         settings.USERNAME = self.username_edit.text()
         settings.PASSWORD = self.password_edit.text()
+        if not settings.IP or not settings.PORT:
+            show_failed_message('请先输入IP或端口后再进行登录')
+        if not settings.USERNAME or not settings.PASSWORD:
+            show_failed_message('请先输入账号或密码后再进行登录')
         try:
             res = Http.login(settings.USERNAME, settings.PASSWORD)
-
             if res.code == 200:
                 Methods.set_project()
                 self.main_window = MainWindow()

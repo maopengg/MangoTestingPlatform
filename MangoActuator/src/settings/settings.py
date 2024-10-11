@@ -5,14 +5,14 @@ from mango_ui import AppConfig, MenusModel
 
 from src.tools import InitPath
 
-IS_DEBUG = True
+IS_DEBUG = False
 MEMORY_THRESHOLD = 80
 LOOP_MIX = 10
 
-IP = '填写IP'
-PORT = '8000'
-USERNAME = ''
-PASSWORD = ''
+IP = None
+PORT = None
+USERNAME = None
+PASSWORD = None
 
 with open(os.path.join(InitPath.get_root_path(), 'src', 'settings', 'settings.json'), "r", encoding='utf-8') as f:
     STYLE = AppConfig(**json.loads(f.read()))
