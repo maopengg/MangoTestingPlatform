@@ -49,10 +49,12 @@ class TableParent(QWidget):
             response_message(self, response_model)
 
     def callback(self, data):
-        if data.get('row'):
-            getattr(self, data['action'])(data.get('row'))
-        else:
-            getattr(self, data['action'])()
+        action = data.get('action')
+        if action and hasattr(self, action):
+            if data.get('row'):
+                getattr(self, action)(data.get('row'))
+            else:
+                getattr(self, action)()
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.subordinate == 'module':

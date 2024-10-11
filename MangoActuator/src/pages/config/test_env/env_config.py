@@ -17,7 +17,7 @@ from .env_config_dict import *
 class EnvConfigPage(SubPage):
 
     def __init__(self, parent):
-        super().__init__(parent, True, right_data=right_data)
+        super().__init__(parent, right_data=right_data)
         self.superior_page = 'test_env'
         self.id_key = 'environment_id'
         self.h_layout = QGridLayout()

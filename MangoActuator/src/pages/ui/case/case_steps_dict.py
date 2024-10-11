@@ -5,14 +5,15 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.tools_enum import Status3Enum
 from src.enums.ui_enum import ElementOperationEnum
 from src.network import Http
 
 table_column = [
-    {'key': 'page_step_name', 'name': '步骤名称', 'width': 200, },
-    {'key': 'status', 'name': '测试结果', 'width': 70},
+    {'key': 'page_step', 'name': '步骤名称', 'width': 150, },
+    {'key': 'status', 'name': '测试结果', 'width': 70, 'option': Status3Enum.get_option('value', 'label')},
     {'key': 'error_message', 'name': '错误提示', },
-    {'key': 'ope', 'name': '操作', 'width': 120},
+    {'key': 'ope', 'name': '操作', 'width': 70},
 
 ]
 table_menu = [

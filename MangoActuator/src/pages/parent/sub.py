@@ -4,6 +4,7 @@
 # @Time   : 2024-09-19 17:54
 # @Author : 毛鹏
 import copy
+from typing import Optional
 
 from mango_ui import *
 from mango_ui.init import *
@@ -12,45 +13,41 @@ from src.models.network_model import ResponseModel
 
 
 class SubPage(QWidget):
-    def __init__(self, parent, custom_page=False, **kwargs):
+    def __init__(self, parent, **kwargs):
         super().__init__()
         self.parent = parent
         self.data: dict = {}
-        self.id_key: str = None
-        self.superior_page: str = None
+        self.id_key: Optional[str | None] = None
+        self.superior_page: Optional[str | None] = None
         self.page = 1
         self.page_size = 20
+        self.kwargs = kwargs
+        self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
 
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
-
-        if not custom_page:
-            self.table_column = [TableColumnModel(**i) for i in kwargs.get('table_column')]
-            self.table_menu = [TableMenuItemModel(**i) for i in kwargs.get('table_menu')]
-            self.field_list = [FieldListModel(**i) for i in kwargs.get('field_list')]
-            self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data')]
+        if kwargs.get('right_data'):
             self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data')]
-
             self.right_but = RightButton(self.right_data)
             self.right_but.clicked.connect(self.callback)
             self.layout.addWidget(self.right_but)
-
+        self.field_list = [FieldListModel(**i) for i in kwargs.get('field_list', [])]
+        if self.field_list:
             self.title_info = TitleInfoWidget()
             self.layout.addWidget(self.title_info)
-
+        if kwargs.get('table_column'):
+            self.table_column = [TableColumnModel(**i) for i in kwargs.get('table_column')]
+            self.table_menu = [TableMenuItemModel(**i) for i in kwargs.get('table_menu')]
             self.table_widget = TableList(self.table_column, self.table_menu, )
             self.table_widget.pagination.click.connect(self.pagination_clicked)
             self.table_widget.clicked.connect(self.callback)
             self.layout.addWidget(self.table_widget)
-        else:
-            if kwargs.get('right_data'):
-                self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data')]
-                self.right_but = RightButton(self.right_data)
-                self.right_but.clicked.connect(self.callback)
-                self.layout.addWidget(self.right_but)
+
 
     def show_data(self):
-        self.title_info.init(self.data, self.field_list)
+        if self.field_list:
+            self.title_info.init(self.data, self.field_list)
         response_model: ResponseModel = self.get(
             self.page,
             self.page_size,
@@ -61,10 +58,12 @@ class SubPage(QWidget):
             response_message(self, response_model)
 
     def callback(self, data):
-        if data.get('row'):
-            getattr(self, data['action'])(data.get('row'))
-        else:
-            getattr(self, data['action'])()
+        action = data.get('action')
+        if action and hasattr(self, action):
+            if data.get('row'):
+                getattr(self, action)(data.get('row'))
+            else:
+                getattr(self, action)()
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)

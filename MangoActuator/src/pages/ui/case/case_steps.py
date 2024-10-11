@@ -6,6 +6,7 @@
 
 import copy
 
+from PySide6.QtWidgets import QWidget, QSizePolicy
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
@@ -19,32 +20,68 @@ from ...parent.sub import SubPage
 class CaseStepsPage(SubPage):
 
     def __init__(self, parent):
-        super().__init__(parent, True)
+        super().__init__(parent, right_data=right_data, field_list=field_list)
         self.id_key = 'case_id'
-        self.superior_page = 'case_steps'
+        self.superior_page = 'case'
         self.get = Http.get_case_steps_detailed
         self.post = Http.post_case_steps_detailed
         self.put = Http.put_case_steps_detailed
         self._delete = Http.delete_case_steps_detailed
-
+        self.h_layout = QHBoxLayout()
+        self.h_layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addLayout(self.h_layout)
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
-        self.field_list = [FieldListModel(**i) for i in field_list]
         self.form_data = [FormDataModel(**i) for i in form_data]
-
-        self.right_data = [RightDataModel(**i) for i in right_data]
-
-        self.right_but = RightButton(self.right_data)
-        self.right_but.clicked.connect(self.callback)
-        self.layout.addWidget(self.right_but)
-
-        self.title_info = TitleInfoWidget()
-        self.layout.addWidget(self.title_info)
 
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
-        self.layout.addWidget(self.table_widget)
+        self.h_layout.addWidget(self.table_widget, 1)
+        self.v_layout = QVBoxLayout()
+        self.h_layout.addLayout(self.v_layout, 1)
+
+    def clear_layout(self):
+        # 清空布局中的所有项
+        while self.v_layout.count():
+            item = self.v_layout.takeAt(0)  # 获取第一个项
+            if item.widget():  # 如果是 QWidget，则删除它
+                item.widget().deleteLater()
+            else:  # 否则直接删除该项
+                del item
+
+    def click_row(self, row):
+        self.clear_layout()
+        for case_data in row.get('case_data'):
+            card_layout = QGridLayout()
+            card = MangoCard(card_layout)
+            card_layout.addWidget(
+                MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_type')), 0, 0)
+            card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
+            if case_data.get('page_step_details_data') != {}:
+                h_layout = QHBoxLayout()
+                _s = 1
+                for key, value in case_data.get('page_step_details_data').items():
+                    h_layout.addWidget(MangoLabel(f"{key}："))
+                    input_ = MangoLineEdit('请根据帮助文档输入适当内容', value=value)
+                    input_.click.connect(
+                        lambda value, r=row, data=case_data, k=key: self.button_clicked(value, r, data, k))
+                    h_layout.addWidget(input_)
+                    card_layout.addLayout(h_layout, _s, 0)
+                    _s += 1
+            self.v_layout.addWidget(card)
+        self.v_layout.addStretch(1)
+
+    def button_clicked(self, value, row, data, key):
+        for case_data in row.get('case_data'):
+            if case_data == data:
+                page_step_details_data = case_data.get('page_step_details_data')
+                if page_step_details_data != {}:
+                    for k, v in page_step_details_data.items():
+                        if k == key:
+                            page_step_details_data[key] = value
+        response_message(self, self.put(
+            {'id': row.get('id'), 'parent_id': row.get('case').get('id'), 'case_data': row.get('case_data')}))
 
     def run(self):
         user_info = UserModel()

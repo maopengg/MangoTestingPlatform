@@ -18,7 +18,7 @@ from ...parent.sub import SubPage
 class PageStepsDetailedPage(SubPage):
 
     def __init__(self, parent):
-        super().__init__(parent, True)
+        super().__init__(parent)
         self.id_key = 'page_step_id'
         self.superior_page = 'page_steps'
         self.get = Http.get_page_steps_detailed
