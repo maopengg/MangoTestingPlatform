@@ -17,7 +17,7 @@ from ..help import *
 from ..setting import *
 
 
-class MainPages:
+class PagesWindow:
 
     def __init__(self, central_widget):
         self.central_widget = central_widget

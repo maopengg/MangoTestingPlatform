@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from typing import Optional
 
+from mangokit import MysqlConnect, DataProcessor
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
 
@@ -14,8 +15,6 @@ from src.exceptions.error_msg import ERROR_MSG_0036, ERROR_MSG_0038
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from src.models.tools_model import MysqlConingModel
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
-from src.tools.data_processor import DataProcessor
-from src.tools.database.mysql_connect import MysqlConnect
 
 
 class BaseData:

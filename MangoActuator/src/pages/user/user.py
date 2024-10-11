@@ -9,7 +9,7 @@ from src.network import Http
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
 from src.tools.methods import Methods
-from src.tools.other.get_class_methods import GetClassMethod
+from src.tools.get_class_methods import GetClassMethod
 
 
 class UserPage(QWidget):

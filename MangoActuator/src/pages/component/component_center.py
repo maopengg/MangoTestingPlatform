@@ -28,7 +28,7 @@ class ComponentPage(QWidget):
         self.verticalLayout.setSpacing(15)
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.title_label = QLabel(self.contents)
-        self.title_label.setText(QCoreApplication.translate("MainPages", u"页面组件", None))
+        self.title_label.setText(QCoreApplication.translate("PagesWindow", u"页面组件", None))
 
         self.title_label.setMaximumSize(QSize(16777215, 40))
         font = QFont()

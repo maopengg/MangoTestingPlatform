@@ -8,10 +8,10 @@ import asyncio
 from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel
+from src.models.user_model import UserModel
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
 from src.services.ui.service.page_steps import PageSteps
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.decorator.convert_args import convert_args
 from src.tools.decorator.error_handle import async_error_handle
 
@@ -68,7 +68,7 @@ class UIConsumer:
         """
         if cls.case_run is None:
             max_tasks = 5
-            test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
+            test_case_parallelism = UserModel().config.web_parallel
             if test_case_parallelism:
                 max_tasks = int(test_case_parallelism)
             cls.case_run = CaseMain(max_tasks)

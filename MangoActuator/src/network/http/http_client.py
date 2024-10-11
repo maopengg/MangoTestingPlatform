@@ -13,7 +13,6 @@ from src.network.http.http_base import HttpBase
 from src.tools import InitPath
 from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
-from src.tools.other.path import Path
 
 
 class HttpClient(HttpBase):
@@ -31,7 +30,7 @@ class HttpClient(HttpBase):
         url = cls.url(f'files/{file_name}')
         response = cls.get(url, headers=cls.headers)
         file_path = InitPath.upload_files
-        file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
+        # file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
             with open(file_path, 'wb') as f:
                 f.write(response.content)

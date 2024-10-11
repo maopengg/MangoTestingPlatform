@@ -10,7 +10,7 @@ from mango_ui import *
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.user_model import UserModel
-from src.tools.other.get_class_methods import GetClassMethod
+from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
 

@@ -9,7 +9,7 @@ from mango_ui import *
 
 from src.models.tools_model import BaseDictModel
 from src.network import Http
-from src.tools.other.get_class_methods import GetClassMethod
+from src.tools.get_class_methods import GetClassMethod
 
 
 class Methods:

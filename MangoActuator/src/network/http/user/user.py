@@ -27,8 +27,9 @@ class User(HttpBase):
         response = cls.post(url=url, data=data)
         log.info(response.text)
         response_dict = response.json()
-        cls.headers['Authorization'] = response_dict['data']['token']
-        cls.get_userinfo(response_dict['data']['userId'])
+        if response_dict.get('data'):
+            cls.headers['Authorization'] = response_dict.get('data').get('token')
+            cls.get_userinfo(response_dict['data']['userId'])
         return response
 
     @classmethod

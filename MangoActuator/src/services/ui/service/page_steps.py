@@ -6,10 +6,11 @@
 import asyncio
 from typing import Optional
 
-from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
+from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, WEBConfigModel
+from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.step_elements import StepElements
@@ -50,16 +51,19 @@ class PageSteps(StepElements):
             await WebSocketClient().async_send(
                 code=error.code,
                 msg=error.msg,
-                is_notice=ClientTypeEnum.WEB.value
+                is_notice=ClientTypeEnum.WEB
             )
+            queue_notification.put({'type': 0, 'value': error.msg})
         else:
+            msg = f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}'
             await WebSocketClient().async_send(
                 code=200 if self.page_step_result_model.status else 300,
-                msg=f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}',
-                is_notice=ClientTypeEnum.WEB.value,
+                msg=msg,
+                is_notice=ClientTypeEnum.WEB,
                 func_name=UiSocketEnum.PAGE_STEPS.value,
                 func_args=self.page_step_result_model
             )
+            queue_notification.put({'type': self.page_step_result_model.status, 'value': msg})
 
     async def new_web_obj(self, data: WEBConfigModel):
         msg = 'WEB对象已实例化'
@@ -76,10 +80,13 @@ class PageSteps(StepElements):
             await WebSocketClient().async_send(
                 msg=error.msg,
                 code=error.code,
-                is_notice=ClientTypeEnum.WEB.value
+                is_notice=ClientTypeEnum.WEB
             )
+            queue_notification.put({'type': 0, 'value': msg})
+
         else:
             await WebSocketClient().async_send(
                 msg=msg,
-                is_notice=ClientTypeEnum.WEB.value
+                is_notice=ClientTypeEnum.WEB
             )
+            queue_notification.put({'type': 1, 'value': msg})

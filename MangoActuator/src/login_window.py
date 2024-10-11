@@ -1,12 +1,12 @@
-from mango_ui import show_failed_message, CascaderModel
+from mango_ui import show_failed_message
 from mango_ui.init import *
+from mangokit import SQLiteConnect
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
-
+from src.tools import InitPath
 from src.network.http import Http
 from src.pages.login.login_ui import LoginWindow
 from src.pages.window.mian_window import MainWindow
-from src.tools.database.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
-from src.tools.database.sqlite_connect import SQLiteConnect
+from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 
 from src.settings import settings
 from src.tools.methods import Methods
@@ -19,8 +19,8 @@ class LoginLogic(LoginWindow):
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         self.main_window = None
-        self.db_handler = SQLiteConnect()
-        user_info = self.db_handler.execute_sql(sql_statement_1)
+        self.conn = SQLiteConnect(InitPath.cache_path())
+        user_info = self.conn.execute(sql_statement_1)
         if user_info:
             self.ip_edit.setText(user_info[0].get("ip"))
             self.prot_edit.setText(user_info[0].get("port"))
@@ -35,23 +35,20 @@ class LoginLogic(LoginWindow):
         settings.USERNAME = self.username_edit.text()
         settings.PASSWORD = self.password_edit.text()
         try:
-            try:
-                res = Http.login(settings.USERNAME, settings.PASSWORD)
-            except (KeyError, TypeError):
-                show_failed_message('请先注册账号后再进行登录！')
+            res = Http.login(settings.USERNAME, settings.PASSWORD)
+
+            if res.code == 200:
+                Methods.set_project()
+                self.main_window = MainWindow()
+                self.close()
+                self.main_window.show()
+                remember = self.remember_box.isChecked()
+                if remember:
+                    self.conn.execute(sql_statement_3)
+                    self.conn.execute(sql_statement_2,
+                                                (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
             else:
-                if res.code == 200:
-                    Methods.set_project()
-                    self.main_window = MainWindow()
-                    self.close()
-                    self.main_window.show()
-                    remember = self.remember_box.isChecked()
-                    if remember:
-                        self.db_handler.execute_sql(sql_statement_3)
-                        self.db_handler.execute_sql(sql_statement_2,
-                                                    (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
-                else:
-                    show_failed_message('账号或密码错误')
+                show_failed_message('账号或密码错误')
 
         except (JSONDecodeError, InvalidURL):
             show_failed_message('IP或端口不正确')

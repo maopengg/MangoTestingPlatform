@@ -19,5 +19,5 @@ psutil==5.9.5
 
 adbutils==2.7.0
 gevent==24.2.1
-mangokit==1.1.10
+mangokit==1.1.11
 MangoUi==1.10.8
