@@ -6,7 +6,6 @@
 
 import copy
 
-from PySide6.QtWidgets import QWidget, QSizePolicy
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
