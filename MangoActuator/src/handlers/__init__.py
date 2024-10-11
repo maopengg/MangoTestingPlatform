@@ -44,7 +44,7 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
 
     async def test(self):
         from src.tools import InitPath
-        with open(rf'{InitPath.project_root_directory}\tests\test.json', 'r', encoding='utf-8') as f:
+        with open(fr'{InitPath.logs_dir}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             await getattr(self, out['func_name'])(out['func_args'])
         while True:
