@@ -8,16 +8,16 @@ import json
 from typing import Union, Optional, TypeVar
 
 import websockets
+from mangokit import singleton
 from websockets.exceptions import ConnectionClosedError
 from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from src.models.network_model import SocketDataModel, QueueModel
 from src.settings import settings
-from src.tools.decorator.singleton import singleton
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
-
+from src.tools import InitPath
 T = TypeVar('T')
 
 
@@ -143,8 +143,9 @@ class WebSocketClient:
             log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
                 log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
-                # with open('text.txt.json', 'w', encoding='utf-8') as f:
-                #     f.write(json.dumps(out['data'], ensure_ascii=False))
+                if settings.IS_DEBUG:
+                    with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
+                        f.write(json.dumps(out['data'], ensure_ascii=False))
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:
             log.error(f'服务器发送的数据不可被序列化，请检查服务器发送的数据：{recv_json}')

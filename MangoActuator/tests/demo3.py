@@ -1,56 +1,73 @@
-import sys
-from PySide6.QtWidgets import QApplication, QGraphicsView, QGraphicsScene, QGraphicsLineItem
-from PySide6.QtCore import Qt, QPointF
-from PySide6.QtGui import QPen
+from PySide6.QtWidgets import QApplication, QListView, QVBoxLayout, QWidget, QLabel, QLineEdit, QHBoxLayout, \
+    QStyledItemDelegate, QFrame
+from PySide6.QtGui import QStandardItemModel, QStandardItem
 
 
-class LineChart(QGraphicsView):
-    def __init__(self, data):
+class InputDelegate(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        return editor
+
+    def setEditorData(self, editor, index):
+        editor.setText(index.data())
+
+    def setModelData(self, editor, model, index):
+        model.setData(index, editor.text())
+
+
+class InputWidget(QWidget):
+    def __init__(self, label_text):
+        super().__init__()
+        layout = QHBoxLayout()
+
+        label = QLabel(label_text)
+        input_field = QLineEdit()
+
+        layout.addWidget(label)
+        layout.addWidget(input_field)
+        self.setLayout(layout)
+
+
+class ListWithLabelsAndInputs(QWidget):
+    def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("大折线图示例")
-        self.setGeometry(100, 100, 1200, 800)  # 增大窗口尺寸
+        self.model = QStandardItemModel()
+        self.list_view = QListView()
+        self.list_view.setModel(self.model)
 
-        # 创建场景
-        self.scene = QGraphicsScene(self)
-        self.setScene(self.scene)
+        # 使用自定义委托
+        self.list_view.setItemDelegate(InputDelegate())
 
-        # 绘制折线图
-        self.draw_line_chart(data)
+        self.populate_list()
 
-    def draw_line_chart(self, data):
-        pen = QPen(Qt.blue, 3)  # 设置线条颜色和宽度
+        layout = QVBoxLayout()
+        layout.addWidget(self.list_view)
+        self.setLayout(layout)
 
-        # 计算图形的边界
-        max_x = len(data)
-        max_y = max(data)
+        self.setWindowTitle("带标签和输入框的列表示例")
+        self.resize(400, 300)
 
-        # 设置缩放比例
-        scale_factor = 10  # Y轴缩放
-        x_scale_factor = 50  # X轴缩放
+    def populate_list(self):
+        for i in range(5):
+            # 创建自定义输入小部件
+            input_widget = InputWidget(f"标签 {i + 1}:")
+            item = QStandardItem()
+            item.setSizeHint(input_widget.sizeHint())  # 设置列表项的大小
+            self.model.appendRow(item)
 
-        # 绘制坐标轴
-        self.scene.addLine(0, max_y * scale_factor, max_x * x_scale_factor, max_y * scale_factor, pen)  # X轴
-        self.scene.addLine(0, 0, 0, max_y * scale_factor, pen)  # Y轴
+            # 将自定义小部件添加到列表项中
+            self.list_view.setIndexWidget(item.index(), input_widget)
 
-        for i in range(1, max_x):
-            start_point = QPointF((i - 1) * x_scale_factor, max_y * scale_factor - (data[i - 1] * scale_factor))
-            end_point = QPointF(i * x_scale_factor, max_y * scale_factor - (data[i] * scale_factor))
-            line = QGraphicsLineItem(start_point.x(), start_point.y(), end_point.x(), end_point.y())
-            line.setPen(pen)
-            self.scene.addItem(line)
-
-        # 设置视图范围
-        self.setSceneRect(0, 0, max_x * x_scale_factor, max_y * scale_factor + 50)  # 增加Y轴范围以显示坐标轴
+            # 添加分隔线项
+            separator_item = QStandardItem()
+            separator_item.setSizeHint(QFrame().sizeHint())
+            separator_item.setEditable(False)  # 不可编辑
+            self.model.appendRow(separator_item)
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    # 示例数据
-    data = [10, 20, 15, 30, 25, 35, 30, 40, 50, 45, 60, 55]
-
-    line_chart = LineChart(data)
-    line_chart.show()
-
-    sys.exit(app.exec())
+    app = QApplication([])
+    window = ListWithLabelsAndInputs()
+    window.show()
+    app.exec()

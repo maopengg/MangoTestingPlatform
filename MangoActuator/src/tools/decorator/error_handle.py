@@ -11,7 +11,6 @@ from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
-from src.tools.notic_tools import NoticeMain
 
 
 def error_send(func, args, kwargs, error, trace):
@@ -34,8 +33,8 @@ def error_send(func, args, kwargs, error, trace):
 
                                                     -----------芒果自动化平台
       """
-    if not settings.IS_DEBUG:
-        NoticeMain.mail_send(content)
+    from mangokit import Mango
+    Mango.s(content)
 
 
 def async_error_handle(is_error=False):

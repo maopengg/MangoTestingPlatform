@@ -22,17 +22,17 @@ from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
 from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
-from src.network.web_socket.socket_api_enum import ApiSocketEnum
-from src.enums.tools_enum import CacheKeyEnum, StatusEnum
+from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
 from src.exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
 from src.models.api_model import ApiInfoModel
 from src.models.ui_model import WEBConfigModel
+from src.models.user_model import UserModel
+from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools import InitPath
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.desktop.signal_send import SignalSend
 
@@ -83,7 +83,7 @@ class NewBrowser:
                 .browser_path if self.web_config \
                 .browser_path else self.__search_path()
 
-            if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
+            if UserModel().config.web_max:
                 return await browser.launch(
                     headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
                     executable_path=self.web_config.browser_path,
@@ -102,8 +102,7 @@ class NewBrowser:
             'no_viewport': True,
         }
 
-        IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
-        if IS_RECORDING:
+        if UserModel().config.web_recording:
             args_dict['record_video_dir'] = f'{InitPath.videos}'
 
         if self.web_config.device:

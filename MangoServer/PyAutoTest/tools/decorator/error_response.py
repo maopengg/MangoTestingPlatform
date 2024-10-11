@@ -8,7 +8,6 @@ from datetime import datetime
 
 from rest_framework.request import Request
 
-from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0000
@@ -58,7 +57,8 @@ def error_response(app: str):
 
                                                                 -----------芒果自动化平台
                   """
-                NoticeMain.mail_send(content)
+                from mangokit import Mango
+                Mango.s(content)
                 return ResponseData.fail(ERROR_MSG_0000)
 
         return wrapper

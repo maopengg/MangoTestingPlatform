@@ -5,18 +5,15 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
+from mangokit import requests
+
 from src.settings import settings
-from src.tools.base_request.request_tool import Requests
 
 
-class HttpBase(Requests):
+class HttpBase(requests):
     headers = {
         'Authorization': ''
     }
-    ip = ''
-    port = ''
-    username = ''
-    password = ''
 
     @classmethod
     def url(cls, url):

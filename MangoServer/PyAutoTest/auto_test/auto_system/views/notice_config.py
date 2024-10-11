@@ -80,12 +80,14 @@ class NoticeConfigViews(ViewSet):
         :param request:
         :return:
         """
+        if request.data.get('status') == StatusEnum.SUCCESS.value:
+            obj = self.model.objects.filter(environment=request.data.get('environment')).values('status')
+            if any(item['status'] == 1 for item in obj):
+                # if self.model.objects \
+                #         .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
+                #         and request.data.get('status') == StatusEnum.SUCCESS.value:
+                return ResponseData.fail(RESPONSE_MSG_0119, )
         obj = self.model.objects.get(id=request.data.get('id'))
-        if self.model.objects \
-                .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
-                and request.data.get('status') == StatusEnum.SUCCESS.value:
-            return ResponseData.success(RESPONSE_MSG_0119, )
-
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0047, )

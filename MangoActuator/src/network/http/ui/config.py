@@ -20,22 +20,19 @@ class Config(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_config(cls, json_data: dict):
         url = cls.url(f'/ui/config')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_config(cls, json_data: dict):
         url = cls.url(f'/ui/config')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,21 +41,19 @@ class Config(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
-    def put_status(cls, id: int, status: int, is_headless: int | None = None):
+    def put_status(cls, _id: int, status: int, is_headless: int | None = None):
         url = cls.url(f'/ui/config/put/status')
         json_data = {
             'status': status,
             'is_headless': is_headless,
-            'id': id,
+            'id': _id,
 
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -67,5 +62,4 @@ class Config(HttpBase):
         _params = {
             'is_recording': is_recording,
         }
-        response = cls.get(url=url, headers=cls.headers,  params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers,  params=_params)

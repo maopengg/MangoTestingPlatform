@@ -5,10 +5,12 @@
 # @Author : 毛鹏
 from queue import Queue, Empty
 
-from src import *
+from mango_ui import *
+from mango_ui.init import *
+
 from src.enums.tools_enum import SignalTypeEnum
 from src.tools.desktop.signal_send import SignalSend
-from src.widgets import *
+from src.tools.log_collector import log
 
 
 class UIUpdateThread(QThread):
@@ -34,7 +36,7 @@ class UIUpdateThread(QThread):
             else:
                 self.queue.put(data)
         except Exception as error:
-            print(error)
+            log.error(str(error))
 
 
 class HomePage(QWidget):

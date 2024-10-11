@@ -3,14 +3,14 @@
 # @Description: 
 # @Time   : 2024-09-21 11:19
 # @Author : 毛鹏
+import copy
+import json
 
 from src.enums.tools_enum import ClientTypeEnum
-from src.models.network_model import ResponseModel
-from src.models.user_model import UserModel
+from src.models.user_model import UserModel, UserConfigModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
-
-from pydantic_core._pydantic_core import ValidationError
+from src.tools.log_collector import log
 
 
 class User(HttpBase):
@@ -25,24 +25,25 @@ class User(HttpBase):
             'type': ClientTypeEnum.ACTUATOR.value
         }
         response = cls.post(url=url, data=data)
+        log.info(response.text)
         response_dict = response.json()
-        cls.headers['Authorization'] = response_dict['data']['token']
-        cls.get_userinfo(response_dict['data']['userId'])
-        return response_dict
+        if response_dict.get('data'):
+            cls.headers['Authorization'] = response_dict.get('data').get('token')
+            cls.get_userinfo(response_dict['data']['userId'])
+        return response
 
     @classmethod
-    @request_log()
     def get_userinfo(cls, _id: int):
         url = cls.url(f'/user/info?id={_id}')
         response = cls.get(url=url, headers=cls.headers)
         if response.json().get('data'):
-            cls.headers['Project'] = str(response.json()['data'][0].get('selected_project'))
-            try:
-                user = UserModel()
-                user.update(**response.json()['data'][0])
-                return user
-            except ValidationError:
-                return UserModel(**response.json()['data'][0])
+            user_info: dict = response.json()['data'][0]
+            cls.headers['Project'] = str(user_info.get('selected_project')) if user_info.get(
+                'selected_project') else None
+            if user_info.get('config') is None:
+                user_info['config'] = UserConfigModel().model_dump()
+                cls.put_user_info(copy.deepcopy(user_info))
+            return UserModel(**user_info)
 
     @classmethod
     @request_log()
@@ -54,22 +55,24 @@ class User(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_user_info(cls, json_data: dict):
         url = cls.url(f'/user/info')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        if json_data.get('mailbox') and isinstance(json_data.get('mailbox'), str):
+            json_data['mailbox'] = json.loads(json_data.get('mailbox'))
+        for k, v in json_data.items():
+            if isinstance(v, dict) and v.get('id'):
+                json_data[k] = v.get('id')
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -78,19 +81,17 @@ class User(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
-    def put_project(cls, _id, selected_project):
+    def put_user_project(cls, _id, selected_project):
         url = cls.url(f'/user/project/put')
         json_data = {
             'id': _id,
             'selected_project': selected_project
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -100,8 +101,7 @@ class User(HttpBase):
             'id': _id,
             'selected_environment': selected_environment
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -113,5 +113,9 @@ class User(HttpBase):
             'new_password': new_password,
             'confirm_password': confirm_password,
         }
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
+
+    @classmethod
+    @request_log()
+    def get_nickname(cls, ):
+        return cls.get(url=cls.url(f'/user/nickname'), headers=cls.headers, )

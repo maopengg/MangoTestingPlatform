@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QApplication, QPushButton, QFrame, QFormLayout, QLabel
 
-from src import THEME
+from mango_ui import THEME
 
 
 class Card(QFrame):

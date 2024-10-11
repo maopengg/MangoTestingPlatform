@@ -4,9 +4,10 @@
 # @Time   : 2024-09-12 18:08
 # @Author : 毛鹏
 from .http_client import HttpClient
-from .user.user import User
+from .system import System
 from .ui import Ui
+from .user import UserApi
 
 
-class Http(Ui, HttpClient, User):
+class Http(Ui, HttpClient, UserApi, System):
     pass

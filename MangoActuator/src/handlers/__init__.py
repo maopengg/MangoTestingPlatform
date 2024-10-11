@@ -12,6 +12,7 @@ from src.handlers.perf_consumer import PerfConsumer
 from src.handlers.tools_consumer import ToolsConsumer
 from src.handlers.ui_consumer import UIConsumer
 from src.models.network_model import QueueModel
+from src.models.user_model import UserModel
 from src.tools.log_collector import log
 
 
@@ -36,15 +37,17 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
     @classmethod
     def handle_task_result(cls, task):
         try:
-            result = task.result()  # 获取任务执行结果
-            # 处理任务执行结果
+            result = task.result()
         except Exception as e:
-            traceback.print_exc()  # 打印异常追踪信息
+            traceback.print_exc()
             log.error(f"反射任务执行出现异常：{e}")
 
     async def test(self):
         from src.tools import InitPath
-        with open(rf'{InitPath.project_root_directory}\tests\test.json', 'r', encoding='utf-8') as f:
+        with open(fr'{InitPath.logs_dir}\user_config.json', 'r', encoding='utf-8') as f:
+            out = json.load(f)
+            UserModel(**out)
+        with open(fr'{InitPath.logs_dir}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             await getattr(self, out['func_name'])(out['func_args'])
         while True:

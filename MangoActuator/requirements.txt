@@ -1,23 +1,15 @@
 playwright
 uiautomator2
 pywinauto==0.6.8
-requests
 uiautodev
 locust
-
+mangokit==1.1.11
+MangoUi==1.10.9
 websockets==10.4
 websocket-client==1.5.1
 aiohttp==3.8.5
 aiomysql==0.0.22
-PyMySQL==0.9.3
 
-pydantic==2.6.0
-
-cachetools==5.3.1
-diskcache==5.6.3
-pyside6==6.7.0
-jsonpath==0.82
-Faker==17.6.0
 colorlog==6.7.0
 assertpy==1.1
 pyinstaller==5.8.0
@@ -28,4 +20,4 @@ psutil==5.9.5
 
 adbutils==2.7.0
 gevent==24.2.1
-urllib3==1.26.19
+

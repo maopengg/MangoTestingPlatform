@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from enum import Enum
 
+from mango_ui import ComboBoxDataModel
+
 
 class BaseEnum(Enum):
     """基础枚举类，提供通用的三个方法"""
@@ -43,5 +45,4 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_select(cls):
-        from src.models.gui_model import ComboBoxDataModel
         return [ComboBoxDataModel(id=_id, name=name) for _id, name in cls.obj().items()]

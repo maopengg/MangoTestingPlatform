@@ -4,10 +4,20 @@
 # @Time   : 2024-09-21 11:23
 # @Author : 毛鹏
 from datetime import datetime
-
+from mangokit import singleton
 from pydantic import BaseModel
 
-from src.tools.decorator.singleton import singleton
+
+
+class UserConfigModel(BaseModel):
+    web_max: bool = False
+    web_recording: bool = False
+    web_parallel: int = 10
+    web_type: int = 0
+    web_h5: str | None = None
+    web_path: str | None = None
+    web_headers: bool = False
+    and_equipment: str | None = None
 
 
 @singleton
@@ -24,7 +34,7 @@ class UserModel(BaseModel):
     selected_project: int | None = None
     selected_environment: int | None = None
     last_login_time: datetime | None = None
-    config: dict | None = None  # 用户配置可以是字典
+    config: UserConfigModel
 
     def update(self, **kwargs):
         """更新用户信息"""

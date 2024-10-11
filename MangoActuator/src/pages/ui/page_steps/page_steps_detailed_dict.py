@@ -3,13 +3,16 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME, UI_OPE_METHOD
-from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
+from mango_ui import THEME
+
+from src.enums.ui_enum import ElementOperationEnum
+from src.network import Http
+from src.tools.methods import Methods
 
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 100, 'option': ElementOperationEnum.get_option('value', 'label')},
     {'key': 'ele_name', 'name': '元素名称', 'width': 70},
-    {'key': 'ope_key', 'name': '操作名称', 'width': 100, 'option': UI_OPE_METHOD},
+    {'key': 'ope_key', 'name': '操作名称', 'width': 100, 'option': Methods.base_dict.ui_option},
     {'key': 'ope_value', 'name': '操作输入', },
     {'key': 'ope', 'name': '操作', 'width': 120},
 
@@ -47,9 +50,10 @@ form_data = [
     {
         'title': '元素名称',
         'placeholder': '请输入元素名称',
-        'key': 'name',
-        'type': 0,
-        'required': False
+        'key': 'ele_name',
+        'type': 1,
+        'required': False,
+        'select': Http.get_element_name
     },
     {
         'title': '操作值',

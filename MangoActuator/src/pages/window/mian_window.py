@@ -4,20 +4,18 @@
 # @Author : 毛鹏
 import os
 
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from mango_ui import show_info_message
+from mango_ui.init import *
 
-from src.network.web_socket.sokcet_thread import SocketTask
-from src.pages.window.window_logic import UIMainWindow
-from src.widgets.window.mango_tooltip_box import show_info_message
+from src.pages.window.window_logic import WindowLogic
 
 os.environ["QT_FONT_DPI"] = "96"
 
+# 4K
+# os.environ["QT_SCALE_FACTOR"] = "2"
 
-# 4K 'os.environ["QT_SCALE_FACTOR"] = "2"'
 
-
-class MainWindow(UIMainWindow):
+class MainWindow(WindowLogic):
 
     def __init__(self):
         super().__init__()
@@ -33,9 +31,6 @@ class MainWindow(UIMainWindow):
         tray_menu.addAction(exit_action)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
-
-        self.websocket_thread = SocketTask()
-        self.websocket_thread.start()
 
     def closeEvent(self, event):
         show_info_message('任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')

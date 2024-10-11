@@ -13,14 +13,13 @@ from src.network.http.http_base import HttpBase
 from src.tools import InitPath
 from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
-from src.tools.other.path import Path
 
 
 class HttpClient(HttpBase):
 
     @classmethod
     def project_info(cls):
-        url = cls.url('/user/project/product/name')
+        url = cls.url('/user/project/product/name?client_type=1')
         response = cls.get(url=url, headers=cls.headers)
         response_dict = response.json()
         return response_dict
@@ -31,7 +30,7 @@ class HttpClient(HttpBase):
         url = cls.url(f'files/{file_name}')
         response = cls.get(url, headers=cls.headers)
         file_path = InitPath.upload_files
-        file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
+        # file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
             with open(file_path, 'wb') as f:
                 f.write(response.content)
@@ -61,8 +60,3 @@ class HttpClient(HttpBase):
             return False
 
 
-if __name__ == '__main__':
-    username1 = 'admin'
-    password1 = 'as123456'
-    HttpClient.login(username1, password1)
-    HttpClient.download_file('author.jpg')

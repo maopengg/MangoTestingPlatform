@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-08-28 16:33
 # @Author : 毛鹏
-from src import *
-from src.widgets import *
+from mango_ui import *
+from mango_ui.init import *
 
 
 class ComponentPage(QWidget):
@@ -28,7 +28,7 @@ class ComponentPage(QWidget):
         self.verticalLayout.setSpacing(15)
         self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.title_label = QLabel(self.contents)
-        self.title_label.setText(QCoreApplication.translate("MainPages", u"页面组件", None))
+        self.title_label.setText(QCoreApplication.translate("PagesWindow", u"页面组件", None))
 
         self.title_label.setMaximumSize(QSize(16777215, 40))
         font = QFont()

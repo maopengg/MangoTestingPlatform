@@ -3,7 +3,9 @@
 # @Description: 
 # @Time   : 2024-09-05 14:56
 # @Author : 毛鹏
+import requests
 
+from src.models.network_model import ResponseModel
 from src.settings import settings
 from src.tools.log_collector import log
 
@@ -11,13 +13,20 @@ from src.tools.log_collector import log
 def request_log():
     def decorator(func):
 
-        def wrapper(*args, **kwargs):
+        def wrapper(*args, **kwargs) -> ResponseModel:
             if settings.IS_DEBUG:
                 log.debug(f'发送的请求：{args}, {kwargs}')
-            result = func(*args, **kwargs)
+            response = func(*args, **kwargs)
             if settings.IS_DEBUG:
-                log.debug(f'接收的数据：{result.model_dump_json()}')
-            return result
+                try:
+                    log.debug(f'接收的数据：{response.text}')
+                except AttributeError:
+                    pass
+            try:
+                response_model = ResponseModel(**response.json())
+            except requests.exceptions.JSONDecodeError:
+                return response
+            return response_model
 
         return wrapper
 

@@ -3,14 +3,17 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
+import json
+
+from mango_ui import *
+
 from src import *
 from src.enums.system_enum import CacheDataKey2Enum
-from src.enums.tools_enum import CacheKeyEnum, CacheValueTypeEnum, ClientTypeEnum
+from src.enums.tools_enum import ClientTypeEnum
+from src.models import queue_notification
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
-from src.tools.data_processor.sql_cache import SqlCache
-from src.tools.other.get_class_methods import GetClassMethod
-from src.widgets import *
+from src.tools.get_class_methods import GetClassMethod
 
 
 class SettingPage(QWidget):
@@ -21,14 +24,14 @@ class SettingPage(QWidget):
         self.layout.setContentsMargins(5, 5, 5, 5)
 
         card_layout1 = QFormLayout()
-        card_widget = MangoCardWidget(card_layout1, '系统设置')
-        toggle1 = MangoToggle()
-        toggle1.set_value(settings.IS_DEBUG)
-        toggle1.clicked.connect(self.debug)
-        card_layout1.addRow('是否开启调试', toggle1)
+        card_widget = MangoCard(card_layout1, '系统设置')
+        self.toggle1 = MangoToggle()
+        self.toggle1.set_value(settings.IS_DEBUG)
+        self.toggle1.clicked.connect(self.debug)
+        card_layout1.addRow('是否开启调试', self.toggle1)
         self.sendRedisData = MangoPushButton('发送')
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
-        card_layout1.addRow('发送缓存数据', self.sendRedisData,)
+        card_layout1.addRow('发送缓存数据', self.sendRedisData, )
         input_1 = MangoLineEdit('请输入邮箱发送人-不可用', )
         card_layout1.addRow('邮箱发送人', input_1)
         input_2 = MangoLineEdit('请输入邮箱域名-不可用', )
@@ -36,37 +39,20 @@ class SettingPage(QWidget):
         input_3 = MangoLineEdit('请输入邮箱的stamp_key-不可用', )
         card_layout1.addRow('邮箱stamp_key', input_3)
 
-        card_layout2 = QFormLayout()
-        card_widget2 = MangoCardWidget(card_layout2, '前端自动化设置')
-        toggle2 = MangoToggle()
-        browser_is_max = SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value)
-        if browser_is_max:
-            toggle2.set_value(bool(browser_is_max))
-        toggle2.clicked.connect(self.ui_browser_max)
-        card_layout2.addRow('浏览器最大化', toggle2)
-        toggle3 = MangoToggle()
-        is_recording = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
-        if is_recording:
-            toggle3.set_value(bool(is_recording))
-        toggle3.clicked.connect(self.ui_recording)
-        card_layout2.addRow('是否视频录制', toggle3)
-        self.comboBox = MangoComboBox('请选择需要并发的数量')
-        self.comboBox.addItems(["1", "2", "3", "5", "10", "15", "20", "30"])
-        self.comboBox.currentTextChanged.connect(self.on_combobox_changed)
-        TEST_CASE_PARALLELISM = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
-        if TEST_CASE_PARALLELISM:
-            self.comboBox.setCurrentText(TEST_CASE_PARALLELISM)
-        else:
-            SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, '10')
-            self.comboBox.setCurrentText('10')
-        card_layout2.addRow('浏览器并行数量', self.comboBox)
+        card_layout2 = QHBoxLayout()
+        card_widget2 = MangoCard(card_layout2, '接口自动化设置')
+        input_2_1 = MangoLineEdit('请输入请求超时时间-不可用', )
+        card_layout2.addWidget(QLabel('请求超时时间'))
+        card_layout2.addWidget(input_2_1)
+        card_layout2.addStretch()
 
-        card_layout3 = QHBoxLayout()
-        card_widget3 = MangoCardWidget(card_layout3, '接口自动化设置')
-        input_4 = MangoLineEdit('请输入请求超时时间-不可用', )
-        card_layout3.addWidget(QLabel('请求超时时间'))
-        card_layout3.addWidget(input_4)
-        card_layout3.addStretch()
+        card_layout3 = QFormLayout()
+        card_widget3 = MangoCard(card_layout3, '测试卡片')
+        self.input_3_1 = MangoLineEdit('请输入请求超时时间-不可用', )
+        card_layout3.addRow('发送缓存数据', self.input_3_1)
+        self.test = MangoPushButton('测试按钮')
+        self.test.clicked.connect(self.but_test)
+        card_layout3.addRow('发送缓存数据', self.test, )
 
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)
@@ -78,24 +64,7 @@ class SettingPage(QWidget):
         pass
 
     def debug(self, value):
-        settings.IS_DEBUG = bool(value.get('value'))
-
-    def ui_browser_max(self, value):
-        SqlCache.set_sql_cache(
-            CacheKeyEnum.BROWSER_IS_MAXIMIZE.value,
-            '1' if value.get('value') else '0',
-            CacheValueTypeEnum.INT.value
-        )
-
-    def ui_recording(self, value):
-        SqlCache.set_sql_cache(
-            CacheKeyEnum.IS_RECORDING.value,
-            '1' if value.get('value') else '0',
-            CacheValueTypeEnum.INT.value
-        )
-
-    def on_combobox_changed(self, text):
-        SqlCache.set_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value, text)
+        settings.IS_DEBUG = bool(self.toggle1.get_value())
 
     def click_send_redis_data(self):
         r = GetClassMethod()
@@ -109,3 +78,8 @@ class SettingPage(QWidget):
             is_notice=ClientTypeEnum.WEB,
             func_args=send_list
         )
+        queue_notification.put({'type': 0, 'value': '设置缓存数据成功'})
+
+    def but_test(self):
+        value = self.input_3_1.get_value()
+        queue_notification.put({'type': 0, 'value': value})

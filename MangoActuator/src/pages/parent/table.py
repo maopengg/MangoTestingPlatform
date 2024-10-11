@@ -4,40 +4,42 @@
 # @Time   : 2024-09-18 15:07
 # @Author : 毛鹏
 import copy
+import json
 
-from src import *
-from src.components import *
-from src.models.gui_model import *
+from mango_ui import *
+from mango_ui.init import *
+
 from src.models.network_model import ResponseModel
+from src.tools.methods import Methods
 
 
 class TableParent(QWidget):
-    def __init__(self, parent, search_data, form_data, table_column, table_menu, right_data, *args, **kwargs):
+    def __init__(self, parent, *args, **kwargs):
         super().__init__()
         self.parent = parent
         self.page = 1
-        self.page_size = 10
+        self.page_size = 20
         self.params = {}
-        self.search_data = [SearchDataModel(**i) for i in search_data]
-        self.form_data = [FormDataModel(**i) for i in form_data]
-        self.table_column = [TableColumnModel(**i) for i in table_column]
-        self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
-        self.right_data = [RightDataModel(**i) for i in right_data]
+        self.search_data = [SearchDataModel(**i) for i in kwargs.get('search_data', [])]
+        self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
+        self.table_column = [TableColumnModel(**i) for i in kwargs.get('table_column', [])]
+        self.table_menu = [TableMenuItemModel(**i) for i in kwargs.get('table_menu', [])]
+        self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data', [])]
 
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.titleWidget = SearchWidget(self.search_data)
-        self.titleWidget.clicked.connect(self.search)
-        self.layout.addWidget(self.titleWidget)
-
-        self.right_but = RightButton(self.right_data)
-        self.right_but.clicked.connect(self.callback)
-        self.layout.addWidget(self.right_but)
-
-        self.table_widget = TableList(self.table_column, self.table_menu, )
-        self.table_widget.pagination.clicked.connect(self.pagination_clicked)
-        self.table_widget.clicked.connect(self.callback)
-        self.layout.addWidget(self.table_widget)
+        if self.search_data:
+            self.titleWidget = SearchWidget(self.search_data)
+            self.titleWidget.clicked.connect(self.search)
+            self.layout.addWidget(self.titleWidget)
+        if self.right_data:
+            self.right_but = RightButton(self.right_data)
+            self.right_but.clicked.connect(self.callback)
+            self.layout.addWidget(self.right_but)
+        if self.table_column:
+            self.table_widget = TableList(self.table_column, self.table_menu, )
+            self.table_widget.pagination.click.connect(self.pagination_clicked)
+            self.table_widget.clicked.connect(self.callback)
+            self.layout.addWidget(self.table_widget)
         self.setLayout(self.layout)
 
     def show_data(self, is_refresh=False):
@@ -47,14 +49,16 @@ class TableParent(QWidget):
             response_message(self, response_model)
 
     def callback(self, data):
-        if data.get('row'):
-            getattr(self, data['action'])(data.get('row'))
-        else:
-            getattr(self, data['action'])()
+        action = data.get('action')
+        if action and hasattr(self, action):
+            if data.get('row'):
+                getattr(self, action)(data.get('row'))
+            else:
+                getattr(self, action)()
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
-        if data.key == 'module':
-            init_data = set_product_module(self, data)
+        if data.subordinate == 'module':
+            init_data = Methods.get_product_module(self, data)
             if is_refresh:
                 data.input_object.set_select(init_data, True)
             else:
@@ -62,6 +66,12 @@ class TableParent(QWidget):
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)
+        for i in form_data:
+            if callable(i.select):
+                if hasattr(self, 'form_data_callback'):
+                    i.select = self.form_data_callback(i)
+                else:
+                    i.select = i.select()
         dialog = DialogWidget('新建页面', form_data)
         dialog.clicked.connect(self.sub_options)
         dialog.exec()  # 显示对话框，直到关闭
@@ -75,12 +85,19 @@ class TableParent(QWidget):
         for i in form_data:
             if isinstance(row[i.key], dict):
                 i.value = row[i.key].get('id', None)
+            elif isinstance(row[i.key], list):
+                i.value = json.dumps(row[i.key])
             else:
                 i.value = row[i.key]
+            if callable(i.select):
+                if hasattr(self, 'form_data_callback'):
+                    i.select = self.form_data_callback(i)
+                else:
+                    i.select = i.select()
         for i in form_data:
             if i.subordinate:
                 result = next((item for item in form_data if item.key == i.subordinate), None)
-                select = get_product_module_label(int(i.value))
+                select = Methods.get_product_module_label(int(i.value))
                 result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
         dialog = DialogWidget('编辑页面', form_data, )
         dialog.exec()  # 显示对话框，直到关闭

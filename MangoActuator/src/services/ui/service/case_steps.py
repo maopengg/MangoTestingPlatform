@@ -9,18 +9,20 @@ import json
 import os
 import shutil
 
-from src.network.web_socket.socket_api_enum import UiSocketEnum
-from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
+from mangokit import RandomTimeData
+
+from src.enums.tools_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
+from src.models import queue_notification
 from src.models.ui_model import CaseModel, CaseResultModel
+from src.models.user_model import UserModel
+from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.step_elements import StepElements
 from src.tools import InitPath
-from src.tools.data_processor.random_time_data import RandomTimeData
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.decorator.memory import async_memory
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
@@ -40,14 +42,13 @@ class CaseSteps(StepElements):
                                            case_people=self.case_model.case_people,
                                            status=StatusEnum.SUCCESS.value,
                                            page_steps_result_list=[])
-        self.IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
 
     async def __aenter__(self):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.base_close()
-        if self.IS_RECORDING:
+        if UserModel().config.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_deta_hms()}.webm'
             shutil.move(self.case_result.video_path,
                         os.path.join(f'{InitPath.videos}/', video_path))  # 移动并重命名文件
@@ -99,10 +100,12 @@ class CaseSteps(StepElements):
             await WebSocketClient().async_send(
                 code=200 if self.case_result.status else 300,
                 msg=msg,
-                is_notice=ClientTypeEnum.WEB.value,
+                is_notice=ClientTypeEnum.WEB,
                 func_name=UiSocketEnum.CASE_RESULT.value,
                 func_args=self.case_result
             )
+            queue_notification.put({'type': self.case_result.status, 'value': msg})
+
         SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
@@ -128,7 +131,7 @@ class CaseSteps(StepElements):
         await self.sava_videos()
 
     async def sava_videos(self):
-        if self.IS_RECORDING:
+        if UserModel().config.web_recording:
             self.case_result.video_path = await self.page.video.path()  # 获取视频的路径
 
     def get_test_obj(self):
@@ -138,8 +141,3 @@ class CaseSteps(StepElements):
             return self.package_name
         if self.url and self.package_name:
             return json.dumps([self.url, self.package_name])
-
-
-if __name__ == '__main__':
-    list__ = '["213","43132]'
-    print(eval(list__))

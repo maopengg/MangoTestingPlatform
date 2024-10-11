@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
+from mangokit import RandomTimeData
 from playwright._impl._errors import TargetClosedError, Error
 
 from src.enums.tools_enum import StatusEnum
@@ -17,7 +18,6 @@ from src.network.http.http_client import HttpClient
 from src.services.ui.bases import ElementMain
 from src.settings import settings
 from src.tools import InitPath
-from src.tools.data_processor.random_time_data import RandomTimeData
 from src.tools.decorator.memory import async_memory
 from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log

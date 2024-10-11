@@ -3,8 +3,9 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src import THEME
-from src.settings import settings
+from mango_ui import THEME
+
+from src.tools.methods import Methods
 
 search_data = [
     {
@@ -48,7 +49,7 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
-        'select': lambda: settings.base_dict,
+        'select': lambda: Methods.base_dict.project,
     },
     {
         'title': '模块',
@@ -74,36 +75,30 @@ table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'item': '',
         'width': 7
     },
     {
         'key': 'module',
         'name': '模块名称',
-        'item': 'module',
         'width': 100
     },
     {
         'key': 'project_product',
         'name': '产品名称',
-        'item': 'project_product',
         'width': 100
     },
     {
         'key': 'name',
         'name': '步骤名称',
-        'item': '',
         'width': 150
     },
     {
         'key': 'run_flow',
         'name': '顺序',
-        'item': ''
     },
     {
         'key': 'ope',
         'name': '操作',
-        'item': '',
         'width': 120
     },
 

@@ -13,6 +13,7 @@ from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
+
 def async_memory(func):
     async def wrapper(*args, **kwargs):
         current_mix = 0

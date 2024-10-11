@@ -3,62 +3,61 @@
 # @Description: 
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
-from src.enums.ui_enum import ElementExpEnum
+from mango_ui import THEME
+
+from src.enums.tools_enum import Status3Enum
+from src.enums.ui_enum import ElementOperationEnum
+from src.network import Http
 
 table_column = [
-    {'key': 'name', 'name': '元素名称', 'item': '', 'width': 100},
-    {'key': 'exp', 'name': '表达式类型', 'item': '', 'width': 70},
-    {'key': 'loc', 'name': '定位表达式', 'item': '', },
-    {'key': 'is_iframe', 'name': '是否在iframe中', 'item': '', 'width': 40},
-    {'key': 'sleep', 'name': '等待时间（秒）', 'item': '', 'width': 40},
-    {'key': 'sub', 'name': '元素下标（1开始）', 'item': '', 'width': 40},
-    {'key': 'ope', 'name': '操作', 'item': '', 'width': 120},
+    {'key': 'page_step', 'name': '步骤名称', 'width': 150, },
+    {'key': 'status', 'name': '测试结果', 'width': 70, 'option': Status3Enum.get_option('value', 'label')},
+    {'key': 'error_message', 'name': '错误提示', },
+    {'key': 'ope', 'name': '操作', 'width': 70},
+
 ]
 table_menu = [
-    {'name': '调试', 'action': 'debug'},
     {'name': '编辑', 'action': 'edit'},
     {'name': '删除', 'action': 'delete'}
 ]
-field_list = [
-    {'key': 'id', 'name': '页面ID'},
-    {'key': 'url', 'name': '页面地址'},
-    {'key': 'name', 'name': '页面名称'},
+right_data = [
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
+    {'name': '执行', 'theme': THEME.green, 'action': 'run'},
+    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
 ]
-from_data = [
+field_list = [
+    {'key': 'id', 'name': '用例ID'},
+    {'key': 'name', 'name': '用例名称'},
+    {'key': 'status', 'name': '用例状态'},
+    {'key': 'case_flow', 'name': '步骤顺序'},
+]
+form_data = [
     {
-        'title': '元素名称',
-        'placeholder': '请输入元素名称',
-        'key': 'name',
+        'title': '步骤类型',
+        'placeholder': '请选择产品/模块',
+        'key': 'module',
+        'type': 2,
+        'select': ElementOperationEnum.get_select(),
+        'subordinate': 'page'
     },
     {
-        'title': '表达式类型',
-        'placeholder': '请选择元素表达式类型',
-        'key': 'exp',
+        'title': '选择页面',
+        'placeholder': '请选择测试页面',
+        'key': 'page',
         'type': 1,
-        'select': ElementExpEnum.get_select()
     },
     {
-        'title': '元素表达式',
-        'placeholder': '元素表达式',
-        'key': 'loc',
+        'title': '页面步骤',
+        'placeholder': '请选择页面步骤',
+        'key': 'page_step',
+        'type': 1,
+        'required': False,
+        'select': Http.get_page_steps_name
     },
     {
-        'title': '是否iframe',
-        'placeholder': '元素是否在iframe中',
-        'key': 'is_iframe',
-        'type': 3,
+        'title': '操作值',
+        'placeholder': '请输入元素操作值',
+        'key': 'ope_value',
+    },
 
-    },
-    {
-        'title': '等待时间',
-        'placeholder': '请输入元素等待时间',
-        'key': 'sleep',
-        'required': False
-    },
-    {
-        'title': '元素下标',
-        'placeholder': '请输入元素下标',
-        'key': 'sub',
-        'required': False
-    }
 ]

@@ -15,7 +15,7 @@ from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0002, RESPONSE_MSG_0003
+from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0002, RESPONSE_MSG_0003, RESPONSE_MSG_0028
 
 log = logging.getLogger('user')
 
@@ -57,7 +57,10 @@ class FileDataCRUD(ModelCRUD):
         project_id = request.data.get('project')
         if project_id is None:
             project_product_id = request.data.get('project_product_id')
-            project_id = ProjectProduct.objects.get(id=project_product_id).project_id
+            try:
+                project_id = ProjectProduct.objects.get(id=project_product_id).project_id
+            except ProjectProduct.DoesNotExist:
+                return ResponseData.fail(RESPONSE_MSG_0028, )
             data = request.data
             data['project'] = project_id
         else:

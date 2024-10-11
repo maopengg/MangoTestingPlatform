@@ -20,22 +20,19 @@ class Public(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_public(cls, json_data: dict):
         url = cls.url(f'/ui/public')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_public(cls, json_data: dict):
         url = cls.url(f'/ui/public')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,8 +41,7 @@ class Public(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
     @classmethod
     @request_log()
     def put_status(cls, _id, status):
@@ -54,5 +50,4 @@ class Public(HttpBase):
             'id': _id,
             'status': status,
         }
-        response = cls.put(url=url, headers=cls.headers, json_data=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json_data=json_data)

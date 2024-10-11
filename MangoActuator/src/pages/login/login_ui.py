@@ -3,10 +3,8 @@
 # @Description:
 # @Time   : 2023-09-28 16:03
 # @Author : 毛鹏
-from src import *
-
-from src.widgets import *
-
+from mango_ui import *
+from mango_ui.init import *
 
 class LoginWindow(QWidget):
     def __init__(self):
