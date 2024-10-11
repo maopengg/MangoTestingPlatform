@@ -1,3 +1,6 @@
+import json
+from typing import Optional
+
 from mango_ui import *
 
 from src import *
@@ -8,10 +11,9 @@ from src.models.user_model import UserModel
 from src.network import Http
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
-from src.tools.methods import Methods
 from src.tools.get_class_methods import GetClassMethod
-import json
-from typing import Optional
+from src.tools.methods import Methods
+
 
 class UserPage(QWidget):
     def __init__(self, parent):
