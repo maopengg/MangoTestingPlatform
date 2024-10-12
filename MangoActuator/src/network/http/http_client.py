@@ -38,7 +38,6 @@ class HttpClient(HttpBase):
             raise FileNotError(*ERROR_MSG_0007)
 
     @classmethod
-    @request_log()
     def upload_file(cls, project_product_id: int, file_path: str, file_name: str):
         url = cls.url('/user/file')
         file_size = os.path.getsize(file_path)
