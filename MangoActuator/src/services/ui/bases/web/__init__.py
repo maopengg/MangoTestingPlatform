@@ -7,7 +7,7 @@ import re
 
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
 from playwright.async_api._generated import Locator
-
+from mangokit import Mango
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from src.exceptions.error_msg import *
@@ -37,7 +37,8 @@ class WebDevice(PlaywrightBrowser,
     @async_retry
     async def web_action_element(self) -> None:
         try:
-            await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
+            await Mango.a_e(self, self.element_model.ope_type, self.element_model.ope_value)
+            # await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
