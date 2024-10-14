@@ -6,7 +6,7 @@
 
 import copy
 
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QScrollArea
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
@@ -33,62 +33,75 @@ class CaseStepsPage(SubPage):
         self.mango_tabs = MangoTabs()
         self.h_layout.addWidget(self.mango_tabs, 6)
 
+        q_widget_1 = QWidget()
+        v_layout_1 = QVBoxLayout()
+        q_widget_1.setLayout(v_layout_1)
+
+        v_layout_1_1 = QVBoxLayout()
+        v_layout_1.addWidget(MangoCard(v_layout_1_1))
+        h_layout_1_1 = QHBoxLayout()
+        h_layout_1_1.setContentsMargins(0, 0, 0, 0)
+        h_layout_1_1.addWidget(MangoLabel('自定义变量'))
+        h_layout_1_1.addStretch()
+        but_1_1 = MangoPushButton('添加')
+        but_1_1.clicked.connect(self.add_custom)
+        but_1_1.set_stylesheet(28, 40)
+        h_layout_1_1.addWidget(but_1_1)
+        v_layout_1_1.addLayout(h_layout_1_1)
+        self.v_layout_1_1 = QVBoxLayout()
+        self.v_layout_1_1.setContentsMargins(10, 0, 10, 0)
+        v_layout_1_1.addLayout(self.v_layout_1_1)
+        v_layout_1_1.addStretch()
+
+        v_layout_1_2 = QVBoxLayout()
+        v_layout_1.addWidget(MangoCard(v_layout_1_2))
+        h_layout_1_2 = QHBoxLayout()
+        h_layout_1_2.setContentsMargins(0, 0, 0, 0)
+        h_layout_1_2.addWidget(MangoLabel('SQL变量'))
+        h_layout_1_2.addStretch()
+        but_1_2 = MangoPushButton('添加')
+        but_1_2.clicked.connect(self.front_sql)
+        but_1_2.set_stylesheet(28, 40)
+        h_layout_1_2.addWidget(but_1_2)
+        v_layout_1_2.addLayout(h_layout_1_2)
+        self.v_layout_2_1 = QVBoxLayout()
+        self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
+        v_layout_1_2.addLayout(self.v_layout_2_1)
+        v_layout_1_2.addStretch()
+        self.mango_tabs.addTab(q_widget_1, '前置数据')
+
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
         self.form_data = [FormDataModel(**i) for i in form_data]
-
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
-
-        q_widget = QWidget()
-        v_layout = QVBoxLayout()
-        q_widget.setLayout(v_layout)
-
-        v_layout_1 = QVBoxLayout()
-        v_layout.addLayout(v_layout_1)
-        h_layout_1 = QHBoxLayout()
-        h_layout_1.setContentsMargins(0, 0, 0, 0)
-        h_layout_1.addWidget(MangoLabel('自定义变量'))
-        h_layout_1.addStretch()
-        but_0 = MangoPushButton('添加')
-        but_0.clicked.connect(self.add_custom)
-        but_0.set_stylesheet(28, 40)
-        h_layout_1.addWidget(but_0)
-        v_layout_1.addLayout(h_layout_1)
-
-        self.v_layout_1_1 = QVBoxLayout()
-        self.v_layout_1_1.setContentsMargins(10, 0, 10, 0)
-        v_layout_1.addLayout(self.v_layout_1_1)
-        v_layout_1.addStretch()
-        MangoCard(v_layout_1)
-
-        v_layout_2 = QVBoxLayout()
-        v_layout.addLayout(v_layout_2)
-        h_layout_2 = QHBoxLayout()
-        h_layout_2.setContentsMargins(0, 0, 0, 0)
-        h_layout_2.addWidget(MangoLabel('SQL变量'))
-        h_layout_2.addStretch()
-        but_0 = MangoPushButton('添加')
-        but_0.clicked.connect(self.add_sql)
-        but_0.set_stylesheet(28, 40)
-        h_layout_2.addWidget(but_0)
-        v_layout_2.addLayout(h_layout_2)
-
-        self.v_layout_2_1 = QVBoxLayout()
-        self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
-        v_layout_2.addLayout(self.v_layout_2_1)
-        v_layout_2.addStretch()
-        MangoCard(v_layout_2)
-
-        self.mango_tabs.addTab(q_widget, '前置数据')
-
         self.mango_tabs.addTab(self.table_widget, '用例步骤')
-        self.mango_tabs.addTab(MangoLabel('后置清除'), '后置清除')
+
+        q_widget_3 = QWidget()
+        v_layout_3 = QVBoxLayout()
+        q_widget_3.setLayout(v_layout_3)
+        v_layout_3_1 = QVBoxLayout()
+        v_layout_3.addWidget(MangoCard(v_layout_3_1))
+        h_layout_3_1 = QHBoxLayout()
+        h_layout_3_1.setContentsMargins(0, 0, 0, 0)
+        h_layout_3_1.addWidget(MangoLabel('后置sql'))
+        h_layout_3_1.addStretch()
+        but_3_1 = MangoPushButton('添加')
+        but_3_1.clicked.connect(self.after_sql)
+        but_3_1.set_stylesheet(28, 40)
+        h_layout_3_1.addWidget(but_3_1)
+        v_layout_3_1.addLayout(h_layout_3_1)
+        self.v_layout_3_1 = QVBoxLayout()
+        self.v_layout_3_1.setContentsMargins(10, 0, 10, 0)
+        v_layout_3_1.addLayout(self.v_layout_3_1)
+        v_layout_3_1.addStretch()
+        self.mango_tabs.addTab(q_widget_3, '后置清除')
+
         self.mango_tabs.setCurrentIndex(1)
 
-        self.v_layout = QVBoxLayout()
-        self.h_layout.addLayout(self.v_layout, 4)
+        self.scroll_area = MangoScrollArea()
+        self.h_layout.addWidget(self.scroll_area, 4)
 
     def add_custom(self):
         h_layout = QHBoxLayout()
@@ -103,7 +116,7 @@ class CaseStepsPage(SubPage):
         h_layout.addWidget(push_button)
         self.v_layout_1_1.addLayout(h_layout)
 
-    def add_sql(self):
+    def front_sql(self):
         h_layout = QHBoxLayout()
         key = MangoLineEdit('请输入sql语句')
         h_layout.addWidget(MangoLabel('sql语句'))
@@ -116,10 +129,23 @@ class CaseStepsPage(SubPage):
         h_layout.addWidget(push_button)
         self.v_layout_2_1.addLayout(h_layout)
 
+    def after_sql(self):
+        h_layout = QHBoxLayout()
+        key = MangoLineEdit('请输入sql语句')
+        h_layout.addWidget(MangoLabel('sql语句'))
+        h_layout.addWidget(key)
+        value = MangoLineEdit('sql结果的key列表，一一对应')
+        h_layout.addWidget(MangoLabel('结果key列表'))
+        h_layout.addWidget(value)
+        push_button = MangoPushButton('移除', color=THEME.red)
+        push_button.set_stylesheet(28, 40)
+        h_layout.addWidget(push_button)
+        self.v_layout_3_1.addLayout(h_layout)
+
     def clear_layout(self):
         # 清空布局中的所有项
-        while self.v_layout.count():
-            item = self.v_layout.takeAt(0)  # 获取第一个项
+        while self.scroll_area.v_layout.count():
+            item = self.scroll_area.v_layout.takeAt(0)  # 获取第一个项
             if item.widget():  # 如果是 QWidget，则删除它
                 item.widget().deleteLater()
             else:  # 否则直接删除该项
@@ -127,6 +153,7 @@ class CaseStepsPage(SubPage):
 
     def click_row(self, row):
         self.clear_layout()
+
         for case_data in row.get('case_data'):
             card_layout = QGridLayout()
             card = MangoCard(card_layout)
@@ -144,8 +171,8 @@ class CaseStepsPage(SubPage):
                     h_layout.addWidget(input_)
                     card_layout.addLayout(h_layout, _s, 0)
                     _s += 1
-            self.v_layout.addWidget(card)
-        self.v_layout.addStretch(1)
+            self.scroll_area.v_layout.addWidget(card)
+        self.scroll_area.v_layout.addStretch(1)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):
