@@ -24,6 +24,7 @@ urlpatterns = [
     path('notice/put/status', NoticeConfigViews.as_view({'put': 'put_status'})),
     #
     path('database', DatabaseCRUD.as_view()),
+    path('database/test', DatabaseViews.as_view({'get': 'test'})),
     path('database/put/status', DatabaseViews.as_view({'put': 'put_status'})),
     #
     path('time', TimeTasksCRUD.as_view()),

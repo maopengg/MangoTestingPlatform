@@ -148,15 +148,21 @@ class UIWindow(QMainWindow):
             webbrowser.open(btn.url)
             return
         btn_name = btn.objectName()
+        is_set_page = True
         for k, v in self.left_menu.list_button_frame.items():
             if k == btn_name:
                 if v.isHidden():
                     v.show()
+                    is_set_page = False
+                    self.left_menu.is_open = False
                     self.left_menu.toggle_animation()
                 else:
                     v.hide()
-                return
-        self.__set_page(btn_name)
+            else:
+                if not v.isHidden():
+                    v.hide()
+        if is_set_page:
+            self.__set_page(btn_name)
 
     def __set_page(self, btn_name):
         self.left_menu.deselect_all_tab()

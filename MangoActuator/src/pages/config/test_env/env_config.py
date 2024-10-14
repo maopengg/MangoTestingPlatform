@@ -44,24 +44,32 @@ class EnvConfigPage(SubPage):
         if response.data:
             for i in response.data:
                 v_layout = QVBoxLayout()
+
                 h_layout_1 = QHBoxLayout()
                 h_layout_1.addWidget(MangoLabel('数据库配置'))
                 h_layout_1.addStretch()
+
                 toggle = MangoToggle(bool(i.get('status')), False)
                 toggle.click.connect(lambda state, row=i, toggle_obj=toggle: self.put_database_status(state, row,
                                                                                                       toggle_obj))  # 连接开关状态变化
                 toggle.change_requested.emit(bool(i.get('status')))
+                h_layout_1.addWidget(toggle)
+
+                but_0 = MangoPushButton('测试')
+                but_0.clicked.connect(lambda checked, row=i: self.test_database(row))  # 连接编辑按钮
+                but_0.set_stylesheet(28, 40)
+                h_layout_1.addWidget(but_0)
+
                 but_1 = MangoPushButton('编辑')
                 but_1.clicked.connect(lambda checked, row=i: self.edit_database(row))  # 连接编辑按钮
                 but_1.set_stylesheet(28, 40)
+                h_layout_1.addWidget(but_1)
 
                 but_2 = MangoPushButton('删除')
                 but_2.clicked.connect(lambda checked, row=i: self.delete_database(row))  # 连接删除按钮
                 but_2.set_stylesheet(28, 40)
-
-                h_layout_1.addWidget(toggle)
-                h_layout_1.addWidget(but_1)
                 h_layout_1.addWidget(but_2)
+
                 v_layout.addLayout(h_layout_1)
 
                 from_layout = QFormLayout()
@@ -91,17 +99,23 @@ class EnvConfigPage(SubPage):
                 toggle = MangoToggle(bool(i.get('status')), False)
                 toggle.click.connect(lambda state, row=i, toggle_obj=toggle: self.put_notice_status(state, row, toggle_obj))
                 toggle.change_requested.emit(bool(i.get('status')))
+                h_layout_1.addWidget(toggle)
+
+                but_0 = MangoPushButton('测试')
+                but_0.clicked.connect(lambda checked, row=i: self.test_notice(row))  # 连接编辑按钮
+                but_0.set_stylesheet(28, 40)
+                h_layout_1.addWidget(but_0)
 
                 but_1 = MangoPushButton('编辑')
                 but_1.clicked.connect(lambda checked, row=i: self.edit_notice(row))
                 but_1.set_stylesheet(28, 40)
+                h_layout_1.addWidget(but_1)
+
                 but_2 = MangoPushButton('删除')
                 but_2.clicked.connect(lambda checked, row=i: self.delete_notice(row))
                 but_2.set_stylesheet(28, 40)
-
-                h_layout_1.addWidget(toggle)
-                h_layout_1.addWidget(but_1)
                 h_layout_1.addWidget(but_2)
+
                 v_layout.addLayout(h_layout_1)
 
                 from_layout = QFormLayout()
@@ -146,6 +160,11 @@ class EnvConfigPage(SubPage):
             response_model: ResponseModel = Http.post_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()
+    def test_database(self, row):
+        print(row)
+        response_message(self, Http.get_database_test(row.get('id')))
+    def test_notice(self, row):
+        response_message(self, Http.get_notice_test(row.get('id')))
 
     def edit_database(self, row):
         form_data = copy.deepcopy(self.database_form_data)
