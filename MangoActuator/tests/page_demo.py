@@ -1,56 +1,53 @@
 import sys
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget, QListWidget, QLineEdit, QFrame
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QVBoxLayout, QLabel, QComboBox,
+    QTimeEdit, QPushButton
+)
 
-
-class MultiSelectComboBox(QFrame):
-    def __init__(self, items):
-        super().__init__()
-        self.items = items
-
-        self.layout = QVBoxLayout(self)
-        self.line_edit = QLineEdit(self)
-        self.list_widget = QListWidget(self)
-
-        self.line_edit.setReadOnly(True)
-        self.line_edit.setPlaceholderText("请选择")
-
-        self.list_widget.addItems(self.items)
-        self.list_widget.setSelectionMode(QListWidget.MultiSelection)
-        self.list_widget.setVisible(False)  # 初始时隐藏列表
-
-        self.layout.addWidget(self.line_edit)
-        self.layout.addWidget(self.list_widget)
-
-        self.line_edit.mousePressEvent = self.show_list
-
-        self.list_widget.itemSelectionChanged.connect(self.update_selected_items)
-
-    def show_list(self, event):
-        self.list_widget.setVisible(not self.list_widget.isVisible())
-        self.list_widget.setFixedHeight(100)  # 设置下拉框高度
-        self.list_widget.raise_()  # 确保下拉框在上方
-
-    def update_selected_items(self):
-        selected_items = self.list_widget.selectedItems()
-        selected_texts = [item.text() for item in selected_items]
-        self.line_edit.setText(", ".join(selected_texts))
-
-
-class MultiSelectApp(QWidget):
+class CronGenerator(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("多选下拉框示例")
+        self.setWindowTitle("Cron 表达式生成器")
         self.setGeometry(100, 100, 300, 200)
 
-        layout = QVBoxLayout(self)
+        # 创建布局
+        layout = QVBoxLayout()
 
-        self.combo_box = MultiSelectComboBox(["选项 1", "选项 2", "选项 3", "选项 4"])
-        layout.addWidget(self.combo_box)
+        # 创建周几下拉框
+        self.weekday_combo = QComboBox()
+        self.weekday_combo.addItems(["周日", "周一", "周二", "周三", "周四", "周五", "周六"])
+        layout.addWidget(QLabel("选择周几 (可多选):"))
+        layout.addWidget(self.weekday_combo)
 
+        # 创建时间选择器
+        self.time_edit = QTimeEdit()
+        self.time_edit.setDisplayFormat("HH:mm")  # 设置显示格式为 HH:mm
+        layout.addWidget(QLabel("选择时间 (HH:MM):"))
+        layout.addWidget(self.time_edit)
+
+        # 创建提交按钮
+        self.submit_button = QPushButton("提交")
+        self.submit_button.clicked.connect(self.generate_cron)
+        layout.addWidget(self.submit_button)
+
+        self.setLayout(layout)
+
+    def generate_cron(self):
+        # 获取选择的周几和时间
+        selected_weekday = self.weekday_combo.currentText()  # 选中的星期几
+        weekday_index = self.weekday_combo.currentIndex()  # 0-6
+
+        time = self.time_edit.time()  # 获取 QTime
+        hour = time.hour()
+        minute = time.minute()
+
+        # 生成 Cron 表达式
+        cron_expression = f"{minute} {hour} * * {weekday_index}"
+        print("生成的 Cron 表达式:", cron_expression)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MultiSelectApp()
+    window = CronGenerator()
     window.show()
     sys.exit(app.exec())
