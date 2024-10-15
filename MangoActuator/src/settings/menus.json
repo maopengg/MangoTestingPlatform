@@ -127,6 +127,14 @@
       ]
     },
     {
+      "btn_icon": ":/icons/schedule.svg",
+      "btn_id": "time_task",
+      "btn_text": "定时任务",
+      "btn_tooltip": "定时任务",
+      "show_top": true,
+      "is_active": false
+    },
+    {
       "btn_icon": ":/icons/compass.svg",
       "btn_id": "help",
       "btn_text": "帮助",

@@ -1,8 +1,9 @@
 import sys
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QLabel, QComboBox,
+    QApplication, QWidget, QVBoxLayout, QLabel, QCheckBox,
     QTimeEdit, QPushButton
 )
+
 
 class CronGenerator(QWidget):
     def __init__(self):
@@ -14,11 +15,15 @@ class CronGenerator(QWidget):
         # 创建布局
         layout = QVBoxLayout()
 
-        # 创建周几下拉框
-        self.weekday_combo = QComboBox()
-        self.weekday_combo.addItems(["周日", "周一", "周二", "周三", "周四", "周五", "周六"])
+        # 创建周几复选框
+        self.weekday_checkboxes = []
+        weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
         layout.addWidget(QLabel("选择周几 (可多选):"))
-        layout.addWidget(self.weekday_combo)
+
+        for day in weekdays:
+            checkbox = QCheckBox(day)
+            self.weekday_checkboxes.append(checkbox)
+            layout.addWidget(checkbox)
 
         # 创建时间选择器
         self.time_edit = QTimeEdit()
@@ -34,17 +39,19 @@ class CronGenerator(QWidget):
         self.setLayout(layout)
 
     def generate_cron(self):
-        # 获取选择的周几和时间
-        selected_weekday = self.weekday_combo.currentText()  # 选中的星期几
-        weekday_index = self.weekday_combo.currentIndex()  # 0-6
+        print('点击了')
+        selected_days = []
+        for checkbox in self.weekday_checkboxes:
+            if checkbox.isChecked():
+                selected_days.append(str(self.weekday_checkboxes.index(checkbox)))
 
-        time = self.time_edit.time()  # 获取 QTime
+        time = self.time_edit.time()
         hour = time.hour()
         minute = time.minute()
+        cron_expression = f"{minute} {hour} * * {','.join(selected_days)}"
+        print(cron_expression)
+        return cron_expression
 
-        # 生成 Cron 表达式
-        cron_expression = f"{minute} {hour} * * {weekday_index}"
-        print("生成的 Cron 表达式:", cron_expression)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -15,6 +15,7 @@ from src.pages.web import WebPage
 from ..config import *
 from ..help import *
 from ..setting import *
+from ..time_task import TimeTaskPage
 
 
 class PagesWindow:
@@ -57,6 +58,7 @@ class PagesWindow:
             'user_administration': UserAdministrationPage,
             'user': UserPage,
             'role': RolePage,
+            'time_task': TimeTaskPage,
             'user_log': UserLogPage,
             'settings': SettingPage,
         }
