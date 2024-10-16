@@ -8,6 +8,7 @@ from mango_ui import THEME
 from src.enums.tools_enum import Status3Enum
 from src.enums.ui_enum import ElementOperationEnum
 from src.network import Http
+from src.tools.methods import Methods
 
 table_column = [
     {'key': 'page_step', 'name': '步骤名称', 'width': 150, },
@@ -17,11 +18,12 @@ table_column = [
 
 ]
 table_menu = [
-    {'name': '编辑', 'action': 'edit'},
+    {'name': '同步', 'action': 'refresh_case'},
     {'name': '删除', 'action': 'delete'}
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
+    # {'name': '刷新步骤', 'theme': THEME.blue, 'action': 'refresh_case'},
     {'name': '执行', 'theme': THEME.green, 'action': 'run'},
     {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
 ]
@@ -33,11 +35,11 @@ field_list = [
 ]
 form_data = [
     {
-        'title': '步骤类型',
+        'title': '产品/模块',
         'placeholder': '请选择产品/模块',
         'key': 'module',
         'type': 2,
-        'select': ElementOperationEnum.get_select(),
+        'select': Methods.get_product_module_label_model,
         'subordinate': 'page'
     },
     {
@@ -45,6 +47,7 @@ form_data = [
         'placeholder': '请选择测试页面',
         'key': 'page',
         'type': 1,
+        'subordinate': 'page_step'
     },
     {
         'title': '页面步骤',
@@ -52,12 +55,7 @@ form_data = [
         'key': 'page_step',
         'type': 1,
         'required': False,
-        'select': Http.get_page_steps_name
     },
-    {
-        'title': '操作值',
-        'placeholder': '请输入元素操作值',
-        'key': 'ope_value',
-    },
+
 
 ]

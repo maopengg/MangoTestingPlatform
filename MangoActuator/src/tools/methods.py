@@ -33,10 +33,16 @@ class Methods:
             for q in e.children:
                 if q.value == product_id:
                     return q.children
-
     @classmethod
     def set_project(cls):
         def run():
             cls.base_dict.project = [CascaderModel(**i) for i in Http.project_info()['data']]
+
         thread = threading.Thread(target=run)
         thread.start()
+
+    @classmethod
+    def get_product_module_label_model(cls, product_id):
+        for i in cls.base_dict.project:
+            if i.value == product_id:
+                return i.children

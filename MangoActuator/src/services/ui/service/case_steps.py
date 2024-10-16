@@ -118,7 +118,7 @@ class CaseSteps(StepElements):
                 if isinstance(result_list, list):
                     for result in result_list:
                         try:
-                            for value, key in zip(result, eval(i.get('key_list'))):
+                            for value, key in zip(result, eval(i.get('value'))):
                                 self.data_processor.set_cache(key, result.get(value))
                         except SyntaxError:
                             raise SyntaxErrorError(*ERROR_MSG_0039)

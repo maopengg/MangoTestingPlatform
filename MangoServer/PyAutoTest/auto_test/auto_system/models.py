@@ -89,6 +89,7 @@ class ScheduledTasks(models.Model):
     type = models.SmallIntegerField(verbose_name="任务类型", null=True)
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
+    cron = models.CharField(verbose_name="cron表达式", max_length=64, null=True)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
 
     class Meta:

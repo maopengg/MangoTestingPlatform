@@ -74,7 +74,7 @@ class PageSteps(HttpBase):
         _params = {
             'page_id': page_id,
         }
-        return cls.delete(url=url, headers=cls.headers, params=_params)
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()

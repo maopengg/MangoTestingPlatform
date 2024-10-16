@@ -100,6 +100,8 @@ class TableParent(QWidget):
                 select = Methods.get_product_module_label(int(i.value))
                 result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
         dialog = DialogWidget('编辑页面', form_data, )
+        dialog.clicked.connect(self.sub_options)
+
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
             data = dialog.data

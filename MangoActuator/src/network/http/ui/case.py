@@ -69,3 +69,11 @@ class Case(HttpBase):
             'case_id_list[]': case_id_list,
         }
         return cls.get(url=url, headers=cls.headers, params=_params)
+    @classmethod
+    @request_log()
+    def ui_case_steps_refresh(cls, _id, ):
+        url = cls.url(f'/ui/case/steps/refresh/cache/data')
+        _params = {
+            'id': _id,
+        }
+        return cls.get(url=url, headers=cls.headers, params=_params)
