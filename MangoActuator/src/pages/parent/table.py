@@ -86,7 +86,7 @@ class TableParent(QWidget):
             if isinstance(row[i.key], dict):
                 i.value = row[i.key].get('id', None)
             elif isinstance(row[i.key], list):
-                i.value = json.dumps(row[i.key])
+                i.value = json.dumps(row[i.key], ensure_ascii=False)
             else:
                 i.value = row[i.key]
             if callable(i.select):

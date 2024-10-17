@@ -35,3 +35,12 @@ class TasksList(HttpBase):
     @request_log()
     def delete_tasks_list(cls, _id, ):
         return cls.delete(url=cls.url(TasksList._url), headers=cls.headers, params={'id': _id, })
+
+    @classmethod
+    @request_log()
+    def get_tasks_type_case_name(cls, type, module_id):
+        _params = {
+            'type': type,
+            'module_id': module_id
+        }
+        return cls.get(url=cls.url('system/tasks/type/case/name'), headers=cls.headers, params=_params)

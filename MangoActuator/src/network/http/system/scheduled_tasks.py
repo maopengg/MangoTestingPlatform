@@ -35,3 +35,7 @@ class ScheduledTasks(HttpBase):
     @request_log()
     def delete_scheduled_tasks(cls, _id, ):
         return cls.delete(url=cls.url(ScheduledTasks._url), headers=cls.headers, params={'id': _id, })
+    @classmethod
+    @request_log()
+    def get_run_scheduled_tasks(cls, _id, ):
+        return cls.get(cls.url('/system/trigger/timing'), headers=cls.headers, params={'id': _id, })

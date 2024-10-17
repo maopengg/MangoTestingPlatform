@@ -81,7 +81,7 @@ class SubPage(QWidget):
         if dialog.data:
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
-            if hasattr(self, 'form_data_callback'):
+            if hasattr(self, 'save_callback'):
                 self.save_callback(dialog.data)
             else:
                 response_model: ResponseModel = self.post(dialog.data)

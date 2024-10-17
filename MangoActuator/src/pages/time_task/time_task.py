@@ -4,6 +4,7 @@
 # @Time   : 2024-10-15 14:54
 # @Author : 毛鹏
 from mango_ui import ComboBoxDataModel, FormDataModel
+from mango_ui import response_message
 
 from .time_task_dict import *
 from ..parent.table import TableParent
@@ -21,8 +22,13 @@ class TimeTaskPage(TableParent):
         self.post = Http.post_scheduled_tasks
         self.put = Http.put_scheduled_tasks
         self._delete = Http.delete_scheduled_tasks
+        self.subpage_value = 'task_case'
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'project_product':
             return data.select()
+
         return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in data.select().data]
+
+    def run(self, row):
+        response_message(self, Http.get_run_scheduled_tasks(row.get('id')))

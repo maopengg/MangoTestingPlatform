@@ -36,7 +36,7 @@ form_data = [
     {
         'title': 'Cron表达式',
         'placeholder': '请选择周期',
-        'key': 'cycle',
+        'key': 'cron',
     },
     {
         'title': '自动化类型',
@@ -64,7 +64,7 @@ form_data = [
         'title': '执行器',
         'placeholder': '请选择执行器来执行用例',
         'key': 'case_executor',
-        'type': 1,
+        'type': 4,
         'select': Http.get_nickname
     },
 ]
@@ -77,6 +77,9 @@ table_column = [
     {
         'key': 'name',
         'name': '任务名称',
+    },    {
+        'key': 'cron',
+        'name': 'cron',
     },
     {
         'key': 'type',

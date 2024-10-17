@@ -13,9 +13,8 @@ from src.pages.ui import *
 from src.pages.user.user import UserPage
 from src.pages.web import WebPage
 from ..config import *
-from ..help import *
 from ..setting import *
-from ..time_task import TimeTaskPage
+from ..time_task import TimeTaskPage, TaskCasePage
 
 
 class PagesWindow:
@@ -59,6 +58,7 @@ class PagesWindow:
             'user': UserPage,
             'role': RolePage,
             'time_task': TimeTaskPage,
+            'task_case': TaskCasePage,
             'user_log': UserLogPage,
             'settings': SettingPage,
         }

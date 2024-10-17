@@ -347,4 +347,3 @@ class CaseStepsPage(SubPage):
         data['case_cache_data'] = []
         data['case'] = self.data.get("id")
         self.post(data)
-        self.show_data()
