@@ -54,12 +54,7 @@ class UIWindow(QMainWindow):
 
         # 左侧菜单布局
         self.left_menu_layout = QHBoxLayout(self.left_menu_frame)
-        self.left_menu_layout.setContentsMargins(
-            STYLE.left_menu_content_margins,
-            STYLE.left_menu_content_margins,
-            STYLE.left_menu_content_margins,
-            STYLE.left_menu_content_margins
-        )
+        self.left_menu_layout.setContentsMargins(3, 3, 3, 3)
         self.left_menu = MangoLeftMenu(
             parent=self.left_menu_frame,
             app_parent=self.central_widget,
@@ -148,21 +143,13 @@ class UIWindow(QMainWindow):
             webbrowser.open(btn.url)
             return
         btn_name = btn.objectName()
-        is_set_page = True
         for k, v in self.left_menu.list_button_frame.items():
             if k == btn_name:
                 if v.isHidden():
                     v.show()
-                    is_set_page = False
-                    self.left_menu.is_open = False
-                    self.left_menu.toggle_animation()
                 else:
                     v.hide()
-            else:
-                if not v.isHidden():
-                    v.hide()
-        if is_set_page:
-            self.__set_page(btn_name)
+        self.__set_page(btn_name)
 
     def __set_page(self, btn_name):
         self.left_menu.deselect_all_tab()

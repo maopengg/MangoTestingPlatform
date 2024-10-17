@@ -15,7 +15,6 @@ from websockets.legacy.client import WebSocketClientProtocol
 from src.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from src.models.network_model import SocketDataModel, QueueModel
 from src.settings import settings
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 from src.tools import InitPath
 T = TypeVar('T')
@@ -45,11 +44,11 @@ class WebSocketClient:
                 await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
                                       is_notice=ClientTypeEnum.WEB.value)
                 log.info("socket服务启动成功")
-                SignalSend.notice_signal_a('在线')
-                SignalSend.notice_signal_c("服务已连接！")
+                # SignalSend.notice_signal_a('在线')
+                # SignalSend.notice_signal_c("服务已连接！")
                 return True
             else:
-                SignalSend.notice_signal_a('已离线')
+                # SignalSend.notice_signal_a('已离线')
                 return False
 
     async def client_run(self):
@@ -66,14 +65,14 @@ class WebSocketClient:
                         await self.client_recv()
                     await asyncio.sleep(2)
             except (ConnectionRefusedError, OSError, websockets.ConnectionClosed):
-                SignalSend.notice_signal_a('已离线')
+                # SignalSend.notice_signal_a('已离线')
                 log.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
-                SignalSend.notice_signal_c("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
+                # SignalSend.notice_signal_c("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
                 await asyncio.sleep(5)
             except Exception as error:
-                SignalSend.notice_signal_a('已离线')
+                # SignalSend.notice_signal_a('已离线')
                 log.info(f"socket发生未知错误，请截图并联系管理员：{error}")
-                SignalSend.notice_signal_c(f"socket发生未知错误，请截图并联系管理员：{error}")
+                # SignalSend.notice_signal_c(f"socket发生未知错误，请截图并联系管理员：{error}")
                 await asyncio.sleep(5)
                 raise error
 

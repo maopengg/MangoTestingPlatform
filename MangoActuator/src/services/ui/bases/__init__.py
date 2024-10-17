@@ -12,7 +12,6 @@ from src.models.ui_model import ElementResultModel, ElementModel
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
 from src.tools.decorator.memory import async_memory
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
@@ -107,8 +106,6 @@ class ElementMain(WebDevice, AndroidDriver):
             raise error
         try:
             func_doc = getattr(self, ope_type).__doc__
-            SignalSend.notice_signal_c(
-                f'准备操作->元素：{name}正在进行{func_doc}，元素个数：{self.element_test_result.ele_quantity}')
         except AttributeError:
             raise ElementOpeNoneError(*ERROR_MSG_0048)
         try:
@@ -122,8 +119,6 @@ class ElementMain(WebDevice, AndroidDriver):
                 self.element_model.ass_value[key] = await self.__find_element()
             else:
                 self.element_model.ass_value[key] = await self.__input_value(key, expect)
-        SignalSend.notice_signal_c(
-            f'准备断言->元素：{name}正在进行{ope_type}，元素个数：{self.element_test_result.ele_quantity}')
         await self.assertion_element()
 
     async def __sql(self):
@@ -135,8 +130,6 @@ class ElementMain(WebDevice, AndroidDriver):
             key_list = self.element_data.get('key_list')
         if self.mysql_connect:
             result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-            SignalSend.notice_signal_c(
-                f'SQL->：sql:{sql}，缓存key列表：{key_list}，查询结果：{result_list}')
             if isinstance(result_list, list):
                 for result in result_list:
                     try:
@@ -155,8 +148,6 @@ class ElementMain(WebDevice, AndroidDriver):
         else:
             key = self.element_data.get('key')
             value = self.element_data.get('value')
-        SignalSend.notice_signal_c(
-            f'自定义操作->key：{key}， value：{value}')
         self.data_processor.set_cache(key, value)
 
     async def __find_element(self):

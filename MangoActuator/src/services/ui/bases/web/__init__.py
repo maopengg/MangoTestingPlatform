@@ -21,7 +21,6 @@ from src.services.ui.bases.web.input_device import PlaywrightDeviceInput
 from src.services.ui.bases.web.page import PlaywrightPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.async_retry import async_retry
-from src.tools.desktop.signal_send import SignalSend
 
 re = re
 
@@ -38,7 +37,6 @@ class WebDevice(PlaywrightBrowser,
     async def web_action_element(self) -> None:
         try:
             await Mango.a_e(self, self.element_model.ope_type, self.element_model.ope_value)
-            # await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
@@ -77,8 +75,6 @@ class WebDevice(PlaywrightBrowser,
             elif is_method_public:
                 text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
                 self.element_test_result.actual = text_actual
-                SignalSend.notice_signal_c(
-                    f'开始断言-元素：<{self.element_model.name}>实际：<{text_actual}>预期：<{self.element_model.ass_value.get("expect")}>')
                 getattr(PublicAssertion, self.element_model.ass_type)(
                     **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:

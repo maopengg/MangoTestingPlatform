@@ -9,7 +9,6 @@ import psutil
 import time
 
 from src.settings import settings
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
@@ -22,8 +21,6 @@ def async_memory(func):
             if memory_percent > settings.MEMORY_THRESHOLD and not settings.IS_DEBUG:
                 await asyncio.sleep(3)
                 current_mix += 1
-                SignalSend.notice_signal_c(
-                    f'程序占用内存过多，请减少并发浏览器的数量，或者检查电脑是否有满足执行自动化任务的内存空间！')
                 log.info(f'程序占用内存过多，请减少并发浏览器的数量，或者检查电脑是否有满足执行自动化任务的内存空间！')
             else:
                 break
@@ -44,8 +41,7 @@ def sync_memory(func):
                 time.sleep(3)
                 current_mix += 1
                 if current_mix == 10:
-                    SignalSend.notice_signal_c(
-                        f'程序占用内存过多，请减少并发浏览器的数量，或者检查电脑是否有满足执行自动化任务的内存空间！')
+                    pass
             else:
                 break
             if current_mix > settings.LOOP_MIX:

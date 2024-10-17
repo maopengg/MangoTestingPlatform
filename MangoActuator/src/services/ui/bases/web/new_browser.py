@@ -34,7 +34,6 @@ from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.decorator.error_handle import async_error_handle
-from src.tools.desktop.signal_send import SignalSend
 
 """
 python -m uiautomator2 init
@@ -60,13 +59,11 @@ class NewBrowser:
                 if self.browser is None:
                     self.browser = await self.new_browser()
                     time.sleep(1)
-        SignalSend.notice_signal_c('正在创建浏览器窗口')
         context = await self.new_context()
         page = await self.new_page(context)
         return context, page
 
     async def new_browser(self) -> Browser:
-        SignalSend.notice_signal_c('正在启动浏览器')
         self.playwright = await async_playwright().start()
         if self.web_config.browser_type \
                 == BrowserTypeEnum.CHROMIUM.value or self.web_config.browser_type == BrowserTypeEnum.EDGE.value:

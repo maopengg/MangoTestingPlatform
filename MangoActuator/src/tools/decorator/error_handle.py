@@ -9,12 +9,10 @@ from datetime import datetime
 from src.enums.tools_enum import ClientTypeEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
 def error_send(func, args, kwargs, error, trace):
-    SignalSend.notice_signal_c(f'发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}')
     log.error(
         f'错误函数：{func.__name__}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}， 错误详情：{trace}')
     content = f"""

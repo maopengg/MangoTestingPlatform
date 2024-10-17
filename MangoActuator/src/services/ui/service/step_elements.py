@@ -19,7 +19,6 @@ from src.services.ui.bases import ElementMain
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.decorator.memory import async_memory
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
@@ -46,7 +45,6 @@ class StepElements(ElementMain):
 
     @async_memory
     async def steps_main(self) -> PageStepsResultModel:
-        SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
         for element_model in self.page_step_model.element_list:
             element_data = None
             if not self.is_step:
@@ -73,7 +71,6 @@ class StepElements(ElementMain):
             else:
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
         self.page_step_result_model.status = StatusEnum.SUCCESS.value
-        SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
         return self.page_step_result_model
 
     @async_memory
@@ -145,15 +142,15 @@ class StepElements(ElementMain):
             self.element_test_result.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
             self.element_test_result.error_message = error.msg
-            SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
-                                           元素表达式：{self.element_test_result.loc}
-                                           操作类型：{self.element_test_result.ope_type}
-                                           操作值：{self.element_test_result.ope_value}
-                                           断言类型：{self.element_test_result.ass_type}
-                                           断言值：{self.element_test_result.ass_value}
-                                           元素个数：{self.element_test_result.ele_quantity}
-                                           截图路径：{file_path}
-                                           元素失败提示：{error.msg}''')
+            # SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
+            #                                元素表达式：{self.element_test_result.loc}
+            #                                操作类型：{self.element_test_result.ope_type}
+            #                                操作值：{self.element_test_result.ope_value}
+            #                                断言类型：{self.element_test_result.ass_type}
+            #                                断言值：{self.element_test_result.ass_value}
+            #                                元素个数：{self.element_test_result.ele_quantity}
+            #                                截图路径：{file_path}
+            #                                元素失败提示：{error.msg}''')
             await self.__error_screenshot(file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg

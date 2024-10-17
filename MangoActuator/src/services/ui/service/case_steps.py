@@ -24,7 +24,6 @@ from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.step_elements import StepElements
 from src.tools import InitPath
 from src.tools.decorator.memory import async_memory
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
@@ -59,7 +58,6 @@ class CaseSteps(StepElements):
 
     @async_memory
     async def case_page_step(self) -> None:
-        SignalSend.notice_signal_c(f'正在准备执行用例：{self.case_model.name}')
         try:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
             for page_step_model in self.case_model.steps:
@@ -106,7 +104,6 @@ class CaseSteps(StepElements):
             )
             queue_notification.put({'type': self.case_result.status, 'value': msg})
 
-        SignalSend.notice_signal_c(f'用例：{self.case_model.name} 执行完成！')
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         for i in front_custom:

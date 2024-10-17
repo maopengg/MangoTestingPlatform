@@ -10,7 +10,6 @@ from adbutils import AdbTimeout
 from src.exceptions.error_msg import ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
 from src.exceptions.ui_exception import NewObjectError
 from src.models.ui_model import AndroidConfigModel
-from src.tools.desktop.signal_send import SignalSend
 
 """
 python -m uiautomator2 init
@@ -25,18 +24,15 @@ class NewAndroid:
         self.android_config = android_config
 
     def new_android(self):
-        SignalSend.notice_signal_c('正在创建安卓设备')
         if self.android_config is None:
             raise NewObjectError(*ERROR_MSG_0042)
         android = us.connect(self.android_config.equipment)
 
         try:
-            SignalSend.notice_signal_c(f"设备启动成功！产品名称：{android.info.get('productName')}")
+            msg = f"设备启动成功！产品名称：{android.info.get('productName')}"
         except RuntimeError:
-            SignalSend.notice_signal_c(ERROR_MSG_0045[1].format(self.android_config.equipment))
             raise NewObjectError(*ERROR_MSG_0045, value=(self.android_config.equipment,))
         except (AdbTimeout, TimeoutError):
-            SignalSend.notice_signal_c(ERROR_MSG_0047[1].format(self.android_config.equipment))
             raise NewObjectError(*ERROR_MSG_0047, value=(self.android_config.equipment,))
         else:
             android.implicitly_wait(10)
