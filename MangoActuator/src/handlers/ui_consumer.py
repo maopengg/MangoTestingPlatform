@@ -40,7 +40,7 @@ class UIConsumer:
             await WebSocketClient().async_send(
                 code=error.code,
                 msg=error.msg,
-                is_notice=ClientTypeEnum.WEB.value
+                is_notice=ClientTypeEnum.WEB
             )
 
     @classmethod

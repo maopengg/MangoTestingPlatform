@@ -71,11 +71,11 @@ class UiPageStepsViews(ViewSet):
         @return:
         """
         try:
-            case_json = UiTestRun(request.user['id'], request.GET.get("te")) \
+            case_json = UiTestRun(request.user['id'], request.GET.get("te"), is_send=False) \
                 .steps(steps_id=int(request.GET.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
-        return ResponseData.success(RESPONSE_MSG_0074, case_json.dict(), value=(ClientNameEnum.DRIVER.value,))
+        return ResponseData.success(RESPONSE_MSG_0074, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['put'], detail=False)
     @error_response('ui')

@@ -237,8 +237,8 @@ class CaseStepsPage(SubPage):
         self.remove(self.v_layout_3_1_list, self.v_layout_3_1, unique_id, self.save_after_sql)
 
     def clear_layout(self):
-        while self.scroll_area.v_layout.count():
-            item = self.scroll_area.v_layout.takeAt(0)
+        while self.scroll_area.layout.count():
+            item = self.scroll_area.layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
             else:
@@ -264,8 +264,8 @@ class CaseStepsPage(SubPage):
                     h_layout.addWidget(input_)
                     card_layout.addLayout(h_layout, _s, 0)
                     _s += 1
-            self.scroll_area.v_layout.addWidget(card)
-        self.scroll_area.v_layout.addStretch(1)
+            self.scroll_area.layout.addWidget(card)
+        self.scroll_area.layout.addStretch(1)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):

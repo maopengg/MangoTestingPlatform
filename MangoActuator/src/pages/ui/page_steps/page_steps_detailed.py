@@ -8,47 +8,57 @@ import copy
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
+from src.handlers import UIConsumer
 from src.models.api_model import ResponseModel
 from src.models.user_model import UserModel
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
 
-
+import asyncio
 class PageStepsDetailedPage(SubPage):
 
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent,
+                         field_list=field_list,
+                         form_data=form_data,
+                         right_data=right_data)
         self.id_key = 'page_step_id'
         self.superior_page = 'page_steps'
         self.get = Http.get_page_steps_detailed
         self.post = Http.post_page_steps_detailed
         self.put = Http.put_page_steps_detailed
         self._delete = Http.delete_page_steps_detailed
-
+        self.h_layout = QHBoxLayout()
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
-        self.field_list = [FieldListModel(**i) for i in field_list]
-        self.form_data = [FormDataModel(**i) for i in form_data]
-
-        self.right_data = [RightDataModel(**i) for i in right_data]
-
-        self.right_but = RightButton(self.right_data)
-        self.right_but.clicked.connect(self.callback)
-        self.layout.addWidget(self.right_but)
-
-        self.title_info = TitleInfoWidget()
-        self.layout.addWidget(self.title_info)
-
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
-        self.layout.addWidget(self.table_widget)
+        self.h_layout.addWidget(self.table_widget, 6)
+        self.v_layout = QVBoxLayout()
+        self.v_layout.addWidget(MangoLabel('调试元素信息展示'))
+        self.scroll_area = MangoScrollArea()
+
+        self.v_layout.addWidget(self.scroll_area)
+        self.h_layout.addLayout(self.v_layout, 4)
+        self.layout.addLayout(self.h_layout)
 
     def debug(self):
         user_info = UserModel()
-        response_message(self, Http.ui_steps_run(user_info.selected_environment, self.data.get("id")))
-        # warning_notification(self, f'点击了调试:{self.data.get("id")}')
+        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"))
+        response_message(self, response_model)
+        asyncio.run(UIConsumer.u_page_step(response_model.data))
+
+        # for _ in range(10):
+        #     layout = QGridLayout()
+        #     card = MangoCard(layout)
+        #     # 添加3行3列的数据
+        #     for row in range(3):
+        #         for col in range(3):
+        #             label = MangoLabel(f"行 {row + 1}, 列 {col + 1}")  # 创建标签
+        #             layout.addWidget(label, row, col)  # 将标签添加到布局中
+        #     self.scroll_area.layout.addWidget(card)
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)

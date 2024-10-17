@@ -32,12 +32,14 @@ class UiTestRun:
                  case_executor: list | None = None,
                  tasks_id: int = None,
                  is_notice: int = 0,
+                 is_send=True,
                  ):
         self.user_id = user_id
         self.username = User.objects.get(id=user_id).username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
+        self.is_send = is_send
         self.case_executor = case_executor
         if self.case_executor:
             username_list = []
@@ -163,15 +165,15 @@ class UiTestRun:
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=page_steps_model)
 
     def __socket_send(self, case_model, func_name: str, username: str = None) -> None:
-
-        data = QueueModel(func_name=func_name, func_args=case_model)
-        ChatConsumer.active_send(SocketDataModel(
-            code=200,
-            msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-            user=username if username else self.username,
-            is_notice=ClientTypeEnum.ACTUATOR.value,
-            data=data,
-        ))
+        if self.is_send:
+            data = QueueModel(func_name=func_name, func_args=case_model)
+            ChatConsumer.active_send(SocketDataModel(
+                code=200,
+                msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
+                user=username if username else self.username,
+                is_notice=ClientTypeEnum.ACTUATOR.value,
+                data=data,
+            ))
 
     def __page_steps(self,
                      page_steps_id: int,
