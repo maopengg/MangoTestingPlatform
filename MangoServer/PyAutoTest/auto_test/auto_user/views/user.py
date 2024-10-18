@@ -188,6 +188,8 @@ class LoginViews(ViewSet):
         password = EncryptionTool.md5_32_small(**{'data': password})
         if User.objects.filter(username=username).exists():
             return ResponseData.fail(RESPONSE_MSG_0115)
+        if User.objects.filter(nickname=request.data.get('nickname')).exists():
+            return ResponseData.fail(RESPONSE_MSG_0122)
         else:
             data = UserCRUD.inside_post({
                 "nickname": request.data.get('nickname'),
