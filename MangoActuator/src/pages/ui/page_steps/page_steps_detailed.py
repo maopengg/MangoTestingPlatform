@@ -3,20 +3,23 @@
 # @Description: 
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
+import asyncio
 import copy
 
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
-from src.handlers import UIConsumer
 from src.models.api_model import ResponseModel
+from src.models.ui_model import PageStepsModel, ElementResultModel
 from src.models.user_model import UserModel
+from src.services.ui.service.page_steps import PageSteps
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
 
-import asyncio
+
 class PageStepsDetailedPage(SubPage):
+    page_steps = None
 
     def __init__(self, parent):
         super().__init__(parent,
@@ -44,21 +47,36 @@ class PageStepsDetailedPage(SubPage):
         self.h_layout.addLayout(self.v_layout, 4)
         self.layout.addLayout(self.h_layout)
 
+    def update_card(self, ele_model: ElementResultModel):
+        layout = QGridLayout()
+        card = MangoCard(layout)
+        print(2, ele_model)
+        labels = [
+            f"元素名称: {ele_model.ele_name}",
+            f"元素数量: {ele_model.ele_quantity}",
+            f"测试结果: {ele_model.status}",
+            f"失败提示：{ele_model.error_message}",
+            f"失败截图路径: {ele_model.picture_path}",
+            f"元素表达式: {ele_model.loc}",
+            f"预期值: {ele_model.expect}",
+            f"实际值: {ele_model.actual}",
+        ]
+        # 添加3行3列的数据
+        for row in range(3):
+            for col in range(3):
+                index = row * 3 + col
+                layout.addWidget(MangoLabel(labels[index]), row, col)  # 将标签添加到布局中
+        self.scroll_area.layout.addWidget(card)
+
     def debug(self):
         user_info = UserModel()
         response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"))
         response_message(self, response_model)
-        asyncio.run(UIConsumer.u_page_step(response_model.data))
-
-        # for _ in range(10):
-        #     layout = QGridLayout()
-        #     card = MangoCard(layout)
-        #     # 添加3行3列的数据
-        #     for row in range(3):
-        #         for col in range(3):
-        #             label = MangoLabel(f"行 {row + 1}, 列 {col + 1}")  # 创建标签
-        #             layout.addWidget(label, row, col)  # 将标签添加到布局中
-        #     self.scroll_area.layout.addWidget(card)
+        if self.page_steps is None:
+            self.page_steps = PageSteps(response_model.data.get('project_product'))
+            self.page_steps.progress.connect(self.update_card)
+        asyncio.run_coroutine_threadsafe(
+            self.page_steps.page_steps_mian(PageStepsModel(**response_model.data)), self.parent.loop)
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)

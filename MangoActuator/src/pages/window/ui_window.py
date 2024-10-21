@@ -4,6 +4,7 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 import webbrowser
+from asyncio import AbstractEventLoop
 
 from src.pages.window.pages_window import PagesWindow
 from mango_ui import *
@@ -13,8 +14,9 @@ from src.settings.settings import STYLE, MENUS
 
 
 class UIWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, loop: AbstractEventLoop):
         super().__init__()
+        self.loop = loop
         self.setWindowTitle(STYLE.app_name)
         screen = QGuiApplication.primaryScreen().geometry()
         width = int(screen.width() * 0.6)
@@ -99,7 +101,7 @@ class UIWindow(QMainWindow):
         self.content_area_layout.setSpacing(0)
 
         self.content_area_left_frame = QFrame()
-        self.load_pages = PagesWindow(self.central_widget)
+        self.load_pages = PagesWindow(self.central_widget, self.loop)
         self.load_pages.setup_ui(self.content_area_left_frame)
         self.load_pages.set_page('home')
         self.content_area_layout.addWidget(self.content_area_left_frame)

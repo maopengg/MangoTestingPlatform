@@ -6,6 +6,8 @@
 import asyncio
 from typing import Optional
 
+from PySide6.QtCore import Signal
+
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
@@ -18,6 +20,8 @@ from src.services.ui.service.step_elements import StepElements
 
 class PageSteps(StepElements):
     """用例分发"""
+    finished = Signal(str)  # 修改为带有返回值的完成信号
+    progress = Signal(str)  # 定义进度信号
 
     def __init__(self, project_product_id: int | None = None):
         self.driver_object = DriverObject()
@@ -34,7 +38,8 @@ class PageSteps(StepElements):
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
-    async def page_steps_mian(self) -> None:
+    async def page_steps_mian(self, data: PageStepsModel) -> None:
+        await self.page_steps_setup(data)
         try:
             async with self.lock:
                 await self.steps_init(self.page_step_model)

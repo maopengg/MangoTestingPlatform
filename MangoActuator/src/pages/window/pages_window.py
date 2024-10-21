@@ -3,6 +3,8 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
+from asyncio import AbstractEventLoop
+
 from PySide6.QtCore import QMetaObject
 from PySide6.QtWidgets import QStackedWidget, QApplication
 from mango_ui import *
@@ -19,8 +21,9 @@ from ..time_task import TimeTaskPage, TaskCasePage
 
 class PagesWindow:
 
-    def __init__(self, central_widget):
+    def __init__(self, central_widget,  loop: AbstractEventLoop):
         self.central_widget = central_widget
+        self.loop = loop
         self.loading_indicator = self.create_loading_indicator()
 
     def create_loading_indicator(self):

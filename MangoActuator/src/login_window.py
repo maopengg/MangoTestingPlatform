@@ -1,3 +1,5 @@
+from asyncio import AbstractEventLoop
+
 from mango_ui import show_failed_message
 from mango_ui.init import *
 from mangokit import SQLiteConnect
@@ -13,8 +15,9 @@ from src.tools.methods import Methods
 
 
 class LoginLogic(LoginWindow):
-    def __init__(self):
+    def __init__(self,  loop: AbstractEventLoop):
         super().__init__()
+        self.loop = loop
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
@@ -26,7 +29,6 @@ class LoginLogic(LoginWindow):
             self.prot_edit.setText(user_info[0].get("port"))
             self.username_edit.setText(user_info[0].get('username'))
             self.password_edit.setText(user_info[0].get('password'))
-        self.show()
 
     @Slot()
     def on_pushButtonLogin_clicked(self):
@@ -42,7 +44,7 @@ class LoginLogic(LoginWindow):
             res = Http.login(settings.USERNAME, settings.PASSWORD)
             if res.code == 200:
                 Methods.set_project()
-                self.main_window = MainWindow()
+                self.main_window = MainWindow(self.loop)
                 self.close()
                 self.main_window.show()
                 remember = self.remember_box.isChecked()

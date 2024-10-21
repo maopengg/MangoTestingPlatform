@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from typing import Optional
 
+from PySide6.QtCore import QObject, Signal
 from mangokit import MysqlConnect, DataProcessor
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
@@ -17,9 +18,12 @@ from src.models.tools_model import MysqlConingModel
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
 
 
-class BaseData:
+class BaseData(QObject):
+    progress = Signal(object)
+    finished = Signal(object)
 
     def __init__(self, project_product_id, driver_object) -> None:
+        super().__init__()
         self.project_product_id: Optional[int | None] = project_product_id
         self.test_suite_id: Optional[int | None] = None
         self.case_id: Optional[int | None] = None
@@ -28,7 +32,7 @@ class BaseData:
 
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: Optional[DriverObject | None] = driver_object
-        self.data_processor = DataProcessor(project_product_id)
+        self.data_processor = DataProcessor()
         self.is_step: bool = False  # 判断是不是步骤，默认不是步骤是用例
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象

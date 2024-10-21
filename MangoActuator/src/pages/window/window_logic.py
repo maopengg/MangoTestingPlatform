@@ -6,6 +6,7 @@
 
 import asyncio
 import traceback
+from asyncio import AbstractEventLoop
 from asyncio.exceptions import CancelledError
 
 import time
@@ -27,24 +28,10 @@ class SocketTask(QThread):
 
     def run(self):
         try:
-            asyncio.run(self.__main())
-        except CancelledError:
-            pass
+            asyncio.run(self.socket.client_run())
         except Exception as e:
-            traceback.print_exc()  # 打印异常追踪信息
-            # 处理异常，例如打印日志或者进行其他操作
+            traceback.print_exc()
             log.error(f"主任务出现异常：{e}")
-
-    async def __main(self):
-        try:
-            await self.socket.client_run()
-        except KeyboardInterrupt:
-            time.sleep(3)
-        except WebSocketConnectionClosedException:
-            time.sleep(3)
-
-    def close(self):
-        del self.socket
 
 
 class NotificationTask(QThread):
@@ -63,8 +50,8 @@ class NotificationTask(QThread):
 
 
 class WindowLogic(UIWindow):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, loop):
+        super().__init__(loop)
 
         self.websocket_thread = SocketTask()
         self.websocket_thread.start()
