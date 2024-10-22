@@ -20,21 +20,17 @@ from src.services.ui.service.step_elements import StepElements
 
 class PageSteps(StepElements):
     """用例分发"""
-    finished = Signal(str)  # 修改为带有返回值的完成信号
-    progress = Signal(str)  # 定义进度信号
 
-    def __init__(self, project_product_id: int | None = None):
+    def __init__(self, ):
         self.driver_object = DriverObject()
 
-        super().__init__(project_product_id, self.driver_object)
-        self.project_product_id = project_product_id
+        super().__init__(self.driver_object)
         self.msg = ''
         self.page_step_model: Optional[PageStepsModel | None] = None
         self.lock = asyncio.Lock()
 
     async def page_steps_setup(self, data: PageStepsModel):
         self.page_step_model: PageStepsModel = data
-        self.project_product_id = self.page_step_model.project_product
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 

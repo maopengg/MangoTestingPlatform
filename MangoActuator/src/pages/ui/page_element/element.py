@@ -19,7 +19,7 @@ class ElementPage(SubPage):
                          field_list=field_list,
                          form_data=form_data)
         self.superior_page = 'page'
-        self.id_key = 'page_id'
+        self.id_key = 'page'
         self.get = Http.get_page_element
         self.post = Http.post_page_element
         self.put = Http.put_page_element

@@ -52,7 +52,7 @@ class SubPage(QWidget):
         response_model: ResponseModel = self.get(
             self.page,
             self.page_size,
-            {self.id_key: self.data.get('id')}
+            {f'{self.id_key}_id': self.data.get('id')}
         )
         self.table_widget.set_data(response_model.data, response_model.totalSize)
         if response_model.code != 200:
@@ -66,7 +66,6 @@ class SubPage(QWidget):
                 getattr(self, action)(data.get('row'))
             else:
                 getattr(self, action)()
-
     def add(self):
         form_data = copy.deepcopy(self.form_data)
         for i in form_data:
@@ -92,7 +91,7 @@ class SubPage(QWidget):
         if data.subordinate == 'module':
             init_data = Methods.get_product_module(self, data)
             if is_refresh:
-                data.input_object.set_select(init_data, True)
+                data.subordinate_input_object.set_select(init_data, True)
             else:
                 return init_data
 
@@ -125,7 +124,7 @@ class SubPage(QWidget):
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
             dialog.data['id'] = row['id']
-            if hasattr(self, 'form_data_callback'):
+            if hasattr(self, 'save_callback'):
                 self.save_callback(dialog.data)
             else:
                 response_model: ResponseModel = self.put(dialog.data)

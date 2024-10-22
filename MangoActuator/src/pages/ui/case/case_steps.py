@@ -21,7 +21,7 @@ class CaseStepsPage(SubPage):
 
     def __init__(self, parent):
         super().__init__(parent, right_data=right_data, field_list=field_list)
-        self.id_key = 'case_id'
+        self.id_key = 'case'
         self.superior_page = 'case'
         self.get = Http.get_case_steps_detailed
         self.post = Http.post_case_steps_detailed
@@ -309,7 +309,7 @@ class CaseStepsPage(SubPage):
             else:
                 error_message(self, '这个页面还没有步骤')
         if is_refresh and init_data:
-            data.input_object.set_select(init_data, True)
+            data.subordinate_input_object.set_select(init_data, True)
         else:
             return init_data
 
@@ -322,8 +322,8 @@ class CaseStepsPage(SubPage):
                 select = [CascaderModel(**i) for i in GetClassMethod().get_android()]
             else:
                 select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            if data.input_object:
-                data.input_object.set_select(select, True)
+            if data.subordinate_input_object:
+                data.subordinate_input_object.set_select(select, True)
             return select
         elif data.value == ElementOperationEnum.ASS.value:
             if auto_type == DriveTypeEnum.WEB.value:
@@ -334,12 +334,12 @@ class CaseStepsPage(SubPage):
                 select = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
             for i in GetClassMethod().get_public_ass():
                 select.append(CascaderModel(**i))
-            if data.input_object:
-                data.input_object.set_select(select, True)
+            if data.subordinate_input_object:
+                data.subordinate_input_object.set_select(select, True)
             return select
         else:
-            if data.input_object:
-                data.input_object.set_text('请忽略此选项')
+            if data.subordinate_input_object:
+                data.subordinate_input_object.set_text('请忽略此选项')
 
     def save_callback(self, data):
         data['case_sort'] = len(self.table_widget.table_widget.data)

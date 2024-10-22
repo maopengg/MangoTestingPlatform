@@ -60,7 +60,7 @@ class TableParent(QWidget):
         if data.subordinate == 'module':
             init_data = Methods.get_product_module(self, data)
             if is_refresh:
-                data.input_object.set_select(init_data, True)
+                data.subordinate_input_object.set_select(init_data, True)
             else:
                 return init_data
 

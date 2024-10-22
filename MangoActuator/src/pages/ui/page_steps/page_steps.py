@@ -31,7 +31,7 @@ class PageStepsPage(TableParent):
             response_model: ResponseModel = Http.module_page_name(data.value)
             init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
         if is_refresh and init_data:
-            data.input_object.set_select(init_data, True)
+            data.subordinate_input_object.set_select(init_data, True)
         else:
             return init_data
 

@@ -36,7 +36,7 @@ class WebDevice(PlaywrightBrowser,
     @async_retry
     async def web_action_element(self) -> None:
         try:
-            await Mango.a_e(self, self.element_model.ope_type, self.element_model.ope_value)
+            await Mango.a_e(self, self.element_model.ope_key, self.element_model.ope_value)
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
@@ -56,9 +56,9 @@ class WebDevice(PlaywrightBrowser,
     @async_retry
     async def web_assertion_element(self) -> None:
         from src.tools.assertion import PublicAssertion
-        is_method = callable(getattr(PlaywrightAssertion, self.element_model.ass_type, None))
-        is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
-        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
+        is_method = callable(getattr(PlaywrightAssertion, self.element_model.ope_key, None))
+        is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
+        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
         self.element_test_result.expect = self.element_model \
             .ass_value \
             .get('expect') if self.element_model \
@@ -71,11 +71,11 @@ class WebDevice(PlaywrightBrowser,
         try:
             if is_method:
                 self.element_test_result.actual = '判断元素是什么'
-                await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
+                await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
             elif is_method_public:
                 text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
                 self.element_test_result.actual = text_actual
-                getattr(PublicAssertion, self.element_model.ass_type)(
+                getattr(PublicAssertion, self.element_model.ope_key)(
                     **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:

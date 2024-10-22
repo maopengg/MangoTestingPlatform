@@ -42,6 +42,10 @@ class ElementMain(WebDevice, AndroidDriver):
             ass_type=element_model.ass_type,
             status=StatusEnum.FAIL.value,
             ele_quantity=0,
+            key_list=element_model.key_list,
+            sql=element_model.sql,
+            key=element_model.key,
+            value=element_model.value,
         )
         try:
             for key, value in self.element_model:

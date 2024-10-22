@@ -44,10 +44,9 @@ class ElementModel(BaseModel):
     exp: int | None
     sleep: int | None
     sub: int | None
-    ope_type: str | None
+    ope_key: str | None
     ope_value: dict | None
     is_iframe: int | None
-    ass_type: str | None
     ass_value: dict | None
     key_list: list | None = None
     sql: str | None = None
@@ -107,12 +106,16 @@ class ElementResultModel(BaseModel):
     sleep: int | None = None
     sub: int | None = None
 
-    ope_type: str | None = None
+    type: int
+    ope_key: str | None = None
     ope_value: dict | str | None = None
-    ass_type: str | None = None
     ass_value: dict | None = None
     expect: str | None = None
     actual: str | None = None
+    sql: str | None = None
+    key_list: str | None = None
+    key: str | None = None
+    value: str | None = None
 
 
 class PageStepsResultModel(BaseModel):

@@ -4,7 +4,7 @@
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
 import asyncio
-import copy
+import json
 
 from mango_ui import *
 
@@ -26,7 +26,7 @@ class PageStepsDetailedPage(SubPage):
                          field_list=field_list,
                          form_data=form_data,
                          right_data=right_data)
-        self.id_key = 'page_step_id'
+        self.id_key = 'page_step'
         self.superior_page = 'page_steps'
         self.get = Http.get_page_steps_detailed
         self.post = Http.post_page_steps_detailed
@@ -47,25 +47,44 @@ class PageStepsDetailedPage(SubPage):
         self.h_layout.addLayout(self.v_layout, 4)
         self.layout.addLayout(self.h_layout)
 
+        self.eoe_type = None
+        self.select_data = None
+
     def update_card(self, ele_model: ElementResultModel):
         layout = QGridLayout()
         card = MangoCard(layout)
-        print(2, ele_model)
         labels = [
             f"元素名称: {ele_model.ele_name}",
             f"元素数量: {ele_model.ele_quantity}",
-            f"测试结果: {ele_model.status}",
-            f"失败提示：{ele_model.error_message}",
-            f"失败截图路径: {ele_model.picture_path}",
-            f"元素表达式: {ele_model.loc}",
-            f"预期值: {ele_model.expect}",
-            f"实际值: {ele_model.actual}",
+            f"测试结果: {'成功' if ele_model.status else '失败'}",
         ]
+
+        if ele_model.type == ElementOperationEnum.OPE.value:
+            labels.append(f"操作类型: {ele_model.ope_key}")
+        elif ele_model.type == ElementOperationEnum.ASS.value:
+            labels.append(f"断言类型: {ele_model.ope_key}")
+            labels.append(f"预期值: {ele_model.expect}")
+            labels.append(f"实际值: {ele_model.actual}")
+        elif ele_model.type == ElementOperationEnum.SQL.value:
+            labels.append(f"sql_key: {ele_model.key_list}")
+            labels.append(f"sql语句: {ele_model.sql}")
+        elif ele_model.type == ElementOperationEnum.CUSTOM.value:
+            labels.append(f"参数key: {ele_model.key}")
+            labels.append(f"参数value: {ele_model.value}")
+
+        labels.append(f"元素表达式: {ele_model.loc}")
+        if ele_model.status == StatusEnum.FAIL.value:
+            labels.append(f"失败提示：{ele_model.error_message}")
+            labels.append(f"失败截图: {ele_model.picture_path}")
+
         # 添加3行3列的数据
         for row in range(3):
             for col in range(3):
                 index = row * 3 + col
-                layout.addWidget(MangoLabel(labels[index]), row, col)  # 将标签添加到布局中
+                try:
+                    layout.addWidget(MangoLabel(labels[index]), row, col)  # 将标签添加到布局中
+                except IndexError:
+                    pass
         self.scroll_area.layout.addWidget(card)
 
     def debug(self):
@@ -73,75 +92,61 @@ class PageStepsDetailedPage(SubPage):
         response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"))
         response_message(self, response_model)
         if self.page_steps is None:
-            self.page_steps = PageSteps(response_model.data.get('project_product'))
+            self.page_steps = PageSteps()
             self.page_steps.progress.connect(self.update_card)
         asyncio.run_coroutine_threadsafe(
             self.page_steps.page_steps_mian(PageStepsModel(**response_model.data)), self.parent.loop)
 
-    def add(self):
-        form_data = copy.deepcopy(self.form_data)
-        for i in form_data:
-            if callable(i.select):
-                select = i.select(self.data['page']['id']).data
-                i.select = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
-        dialog = DialogWidget('新建页面', form_data)
-        dialog.clicked.connect(self.inside_callback)
-        dialog.exec()  # 显示对话框，直到关闭
-        if dialog.data:
-            dialog.data['page'] = self.page_id
-            response_model: ResponseModel = Http.post_page_element(dialog.data)
-            response_message(self, response_model)
-        self.show_data()
+    def save_callback(self, data):
+        data['step_sort'] = len(self.table_widget.table_widget.data)
+        data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
+        response_model: ResponseModel = self.post(data)
+        response_message(self, response_model)
 
-    def edit(self, row):
-        form_data = copy.deepcopy(self.form_data)
-        for i in form_data:
-            if isinstance(row[i.key], dict):
-                i.value = row[i.key].get('id', None)
-            else:
-                i.value = row[i.key]
-            if i.select and callable(i.select):
-                select = i.select(self.data['page']['id']).data
-                i.select = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
-        for i in form_data:
-            if i.subordinate:
-                result = next((item for item in form_data if item.key == i.subordinate), None)
-                select = self.inside_callback(DialogCallbackModel(value=i.value, subordinate=i.subordinate))
-                result.select = select
-        dialog = DialogWidget('编辑页面', form_data)
-        dialog.clicked.connect(self.inside_callback)
-        dialog.exec()  # 显示对话框，直到关闭
-        if dialog.data:
-            dialog.data['page'] = self.page_id
-            dialog.data['id'] = row['id']
-            response_model: ResponseModel = Http.put_page_element(dialog.data)
-            response_message(self, response_model)
-        self.show_data()
+    def form_data_callback(self, obj: FormDataModel):
+        select = obj.select(self.data['page']['id']).data
+        return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
 
-    def inside_callback(self, data: DialogCallbackModel):
-        auto_type = self.data.get('project_product').get('auto_type')
-        if data.value == ElementOperationEnum.OPE.value:
-            if auto_type == DriveTypeEnum.WEB.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            elif auto_type == DriveTypeEnum.ANDROID.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_android()]
+    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
+        if data.subordinate == 'ope_key':
+            auto_type = self.data.get('project_product').get('auto_type')
+            self.eoe_type = data.value
+            if data.value == ElementOperationEnum.OPE.value:
+                if auto_type == DriveTypeEnum.WEB.value:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web()]
+                elif auto_type == DriveTypeEnum.ANDROID.value:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_android()]
+                else:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web()]
+                if data.subordinate_input_object:
+                    data.subordinate_input_object.set_select(self.select_data, True)
+                return self.select_data
+            elif data.value == ElementOperationEnum.ASS.value:
+                if auto_type == DriveTypeEnum.WEB.value:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web_ass()]
+                elif auto_type == DriveTypeEnum.ANDROID.value:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_android_ass()]
+                else:
+                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
+                for i in GetClassMethod().get_public_ass():
+                    self.select_data.append(CascaderModel(**i))
+                if data.subordinate_input_object:
+                    data.subordinate_input_object.set_select(self.select_data, True)
+                return self.select_data
             else:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            if data.input_object:
-                data.input_object.set_select(select, True)
-            return select
-        elif data.value == ElementOperationEnum.ASS.value:
-            if auto_type == DriveTypeEnum.WEB.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web_ass()]
-            elif auto_type == DriveTypeEnum.ANDROID.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_android_ass()]
-            else:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
-            for i in GetClassMethod().get_public_ass():
-                select.append(CascaderModel(**i))
-            if data.input_object:
-                data.input_object.set_select(select, True)
-            return select
-        else:
-            if data.input_object:
-                data.input_object.set_text('请忽略此选项')
+                if data.subordinate_input_object:
+                    data.subordinate_input_object.set_text('请忽略此选项')
+        elif data.subordinate == 'ope_value':
+            data.subordinate_input_object \
+                .set_value(json.dumps(self.find_parameter_by_value(self.select_data, data.value)))
+
+    @classmethod
+    def find_parameter_by_value(cls, data: list[CascaderModel], target_value):
+        for item in data:
+            if item.value == target_value:
+                return item.parameter
+            if item.children:
+                result = cls.find_parameter_by_value(item.children, target_value)
+                if result is not None:
+                    return result
+        return None  # 如果没有找到

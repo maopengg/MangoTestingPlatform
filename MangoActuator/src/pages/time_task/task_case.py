@@ -43,13 +43,13 @@ class TaskCasePage(SubPage):
         if data.subordinate == 'module':
             init_data = Methods.get_product_module(self, data)
             if is_refresh:
-                data.input_object.set_select(init_data, True)
+                data.subordinate_input_object.set_select(init_data, True)
             else:
                 return init_data
         else:
             init_data = Http.get_tasks_type_case_name(self.data.get('type'), data.value)
             if is_refresh:
-                data.input_object.set_select([
+                data.subordinate_input_object.set_select([
                     ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in init_data.data], True)
             else:
                 return init_data

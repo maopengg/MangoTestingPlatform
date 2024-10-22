@@ -57,8 +57,7 @@ class StepElements(ElementMain):
             try:
                 await self.element_setup(element_model, element_data, self.page_step_model.type)
                 await self.element_main()
-                print(1, self.element_test_result)
-                self.progress.emit({'1':'dadad'})
+                self.progress.emit(self.element_test_result)
             except MangoActuatorError as error:
                 await self.__error(error)
                 return self.page_step_result_model

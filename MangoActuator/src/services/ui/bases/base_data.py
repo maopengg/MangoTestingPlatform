@@ -22,9 +22,8 @@ class BaseData(QObject):
     progress = Signal(object)
     finished = Signal(object)
 
-    def __init__(self, project_product_id, driver_object) -> None:
+    def __init__(self, driver_object) -> None:
         super().__init__()
-        self.project_product_id: Optional[int | None] = project_product_id
         self.test_suite_id: Optional[int | None] = None
         self.case_id: Optional[int | None] = None
         self.case_step_details_id: Optional[int | None] = None

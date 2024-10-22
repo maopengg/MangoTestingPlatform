@@ -65,7 +65,9 @@ class CaseSteps(StepElements):
                     await self.steps_init(page_step_model)
                     await self.driver_init()
                     page_steps_result_model = await self.steps_main()
-                    self.case_result.page_steps_result_list.append(page_steps_result_model)
+                    self.case_result\
+                        .page_steps_result_list\
+                        .append(page_steps_result_model)
                     self.case_result.test_obj = self.url
                 except MangoActuatorError as error:
                     self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'

@@ -19,7 +19,7 @@ class EnvConfigPage(SubPage):
     def __init__(self, parent):
         super().__init__(parent, right_data=right_data)
         self.superior_page = 'test_env'
-        self.id_key = 'environment_id'
+        self.id_key = 'environment'
         self.h_layout = QGridLayout()
         self.layout.addLayout(self.h_layout)
         self.layout.addStretch()
@@ -40,7 +40,7 @@ class EnvConfigPage(SubPage):
         self.init_notice()
 
     def init_database(self):
-        response: ResponseModel = Http.get_database(params={self.id_key: self.data.get('id')})
+        response: ResponseModel = Http.get_database(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
                 v_layout = QVBoxLayout()
@@ -89,7 +89,7 @@ class EnvConfigPage(SubPage):
                     self.current_row += 1
 
     def init_notice(self):
-        response: ResponseModel = Http.get_notice(params={self.id_key: self.data.get('id')})
+        response: ResponseModel = Http.get_notice(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
                 v_layout = QVBoxLayout()
@@ -140,7 +140,7 @@ class EnvConfigPage(SubPage):
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
             if self.id_key:
-                dialog.data['environment'] = self.data.get('id')
+                dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
             response_model: ResponseModel = Http.post_database(dialog.data)
             response_message(self, response_model)
@@ -155,13 +155,12 @@ class EnvConfigPage(SubPage):
         dialog.exec()  # 显示对话框，直到关闭
         if dialog.data:
             if self.id_key:
-                dialog.data['environment'] = self.data.get('id')
+                dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
             response_model: ResponseModel = Http.post_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()
     def test_database(self, row):
-        print(row)
         response_message(self, Http.get_database_test(row.get('id')))
     def test_notice(self, row):
         response_message(self, Http.get_notice_test(row.get('id')))
@@ -180,7 +179,7 @@ class EnvConfigPage(SubPage):
         if dialog.data:
             if self.id_key:
                 dialog.data['id'] = row['id']
-                dialog.data['environment'] = self.data.get('id')
+                dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
             response_model: ResponseModel = Http.put_database(dialog.data)
             response_message(self, response_model)
@@ -200,7 +199,7 @@ class EnvConfigPage(SubPage):
         if dialog.data:
             if self.id_key:
                 dialog.data['id'] = row['id']
-                dialog.data['environment'] = self.data.get('id')
+                dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
             response_model: ResponseModel = Http.put_notice(dialog.data)
             response_message(self, response_model)
