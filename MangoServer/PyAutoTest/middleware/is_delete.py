@@ -29,14 +29,16 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                             "msg": "演示环境非管理员权限禁止删除，只能执行测试任务",
                             "data": None
                         }, status=200)
-                    elif request.method == 'POST':
-                        return JsonResponse({
-                            "code": 300,
-                            "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
-                            "data": None
-                        }, status=200)
+                    # elif request.method == 'POST':
+                    #     return JsonResponse({
+                    #         "code": 300,
+                    #         "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
+                    #         "data": None
+                    #     }, status=200)
                     elif request.method == 'PUT':
-                        if request.path not in ['/user/environment', '/user/project/put']:
+                        if request.path not in ['/user/environment',
+                                                '/user/project/put',
+                                                '/ui/config/put/status']:
                             return JsonResponse({
                                 "code": 300,
                                 "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
