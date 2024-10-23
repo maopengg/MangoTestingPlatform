@@ -6,8 +6,6 @@
 import asyncio
 from typing import Optional
 
-from PySide6.QtCore import Signal
-
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
@@ -31,6 +29,7 @@ class PageSteps(StepElements):
 
     async def page_steps_setup(self, data: PageStepsModel):
         self.page_step_model: PageStepsModel = data
+        self.project_product_id = data.project_product
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
@@ -65,6 +64,7 @@ class PageSteps(StepElements):
                 func_args=self.page_step_result_model
             )
             queue_notification.put({'type': self.page_step_result_model.status, 'value': msg})
+        self.finished.emit(True)
 
     async def new_web_obj(self, data: WEBConfigModel):
         msg = 'WEB对象已实例化'

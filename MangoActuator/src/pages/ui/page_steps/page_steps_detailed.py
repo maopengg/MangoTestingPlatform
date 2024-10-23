@@ -88,14 +88,23 @@ class PageStepsDetailedPage(SubPage):
         self.scroll_area.layout.addWidget(card)
 
     def debug(self):
+        for i in self.right_but.but_list_obj:
+            if i.action == 'debug':
+                i.obj.setEnabled(False)
         user_info = UserModel()
         response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"), False)
         response_message(self, response_model)
         if self.page_steps is None:
             self.page_steps = PageSteps()
             self.page_steps.progress.connect(self.update_card)
+            self.page_steps.finished.connect(self.page_steps_finished)
         asyncio.run_coroutine_threadsafe(
             self.page_steps.page_steps_mian(PageStepsModel(**response_model.data)), self.parent.loop)
+
+    def page_steps_finished(self, value):
+        for i in self.right_but.but_list_obj:
+            if i.name == 'debug':
+                i.obj.setEnabled(True)
 
     def save_callback(self, data):
         data['step_sort'] = len(self.table_widget.table_widget.data)
