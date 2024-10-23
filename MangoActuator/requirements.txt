@@ -3,7 +3,7 @@ uiautomator2
 pywinauto==0.6.8
 uiautodev
 locust
-mangokit==1.1.18
+mangokit==1.1.19
 MangoUi==1.10.17
 websockets==10.4
 websocket-client==1.5.1
