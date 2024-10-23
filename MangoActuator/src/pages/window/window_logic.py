@@ -5,29 +5,13 @@
 # @Author : 毛鹏
 
 import asyncio
-import traceback
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification
 
 from src.network.web_socket.websocket_client import WebSocketClient
-from src.tools.log_collector import log
 from .ui_window import UIWindow
 from ...models import queue_notification
-
-
-class SocketTask(QThread):
-
-    def __init__(self):
-        super().__init__()
-        self.socket: WebSocketClient = WebSocketClient()
-
-    def run(self):
-        try:
-            asyncio.run(self.socket.client_run())
-        except Exception as e:
-            traceback.print_exc()
-            log.error(f"主任务出现异常：{e}")
 
 
 class NotificationTask(QThread):
@@ -49,8 +33,9 @@ class WindowLogic(UIWindow):
     def __init__(self, loop):
         super().__init__(loop)
         self.loop = loop
-        self.websocket_thread = SocketTask()
-        self.websocket_thread.start()
+
+        self.socket: WebSocketClient = WebSocketClient()
+        asyncio.run_coroutine_threadsafe(self.socket.client_run(), self.loop)
 
         self.notification_thread = NotificationTask()
         self.notification_thread.notify_signal.connect(self.handle_notification)

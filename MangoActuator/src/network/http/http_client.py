@@ -30,9 +30,8 @@ class HttpClient(HttpBase):
         url = cls.url(f'files/{file_name}')
         response = cls.get(url, headers=cls.headers)
         file_path = InitPath.upload_files
-        # file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
-            with open(file_path, 'wb') as f:
+            with open(fr'{file_path}\{file_name}', 'wb') as f:
                 f.write(response.content)
         except FileNotFoundError:
             raise FileNotError(*ERROR_MSG_0007)

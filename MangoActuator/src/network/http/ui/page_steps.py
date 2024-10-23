@@ -59,7 +59,7 @@ class PageSteps(HttpBase):
 
     @classmethod
     @request_log()
-    def ui_steps_run(cls, test_env, page_step_id, is_send=True):
+    def ui_steps_run(cls, test_env, page_step_id, is_send=1):
         url = cls.url(f'/ui/steps/run')
         _params = {
             'te': test_env,

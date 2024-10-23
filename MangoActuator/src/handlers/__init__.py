@@ -49,7 +49,10 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             UserModel(**out)
         with open(fr'{InitPath.logs_dir}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
-            await getattr(self, out['func_name'])(out['func_args'])
+            if out.get('func_name'):
+                await getattr(self, out['func_name'])(out['func_args'])
+            else:
+                await self.u_page_step(out)
         while True:
             await asyncio.sleep(1)
 

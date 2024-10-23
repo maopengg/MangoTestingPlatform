@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-02-04 10:43
 # @Author : 毛鹏
+import os
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal
@@ -12,10 +13,27 @@ from uiautomator2 import Device
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import UiPublicTypeEnum
+from src.exceptions.error_msg import ERROR_MSG_0026
 from src.exceptions.error_msg import ERROR_MSG_0036, ERROR_MSG_0038
+from src.exceptions.tools_exception import FileDoesNotEexistError
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from src.models.tools_model import MysqlConingModel
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
+from src.network import Http
+from src.tools import InitPath
+
+
+class DataP(DataProcessor):
+    @classmethod
+    def get_file(cls, **kwargs) -> str:
+        """传入文件名称，返回文件"""
+        file_name = kwargs.get('data')
+        Http.download_file(file_name)
+        file_path = os.path.join(InitPath.upload_files, file_name)
+        if os.path.exists(file_path):
+            return file_path
+        else:
+            raise FileDoesNotEexistError(*ERROR_MSG_0026)
 
 
 class BaseData(QObject):
@@ -28,11 +46,11 @@ class BaseData(QObject):
         self.case_id: Optional[int | None] = None
         self.case_step_details_id: Optional[int | None] = None
         self.page_step_id: Optional[int | None] = None
-        self.project_product_id:  Optional[int | None] = None
+        self.project_product_id: Optional[int | None] = None
 
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: Optional[DriverObject | None] = driver_object
-        self.data_processor = DataProcessor()
+        self.data_processor = DataP()
         self.is_step: bool = False  # 判断是不是步骤，默认不是步骤是用例
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象

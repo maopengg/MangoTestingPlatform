@@ -140,3 +140,8 @@ class CaseResultModel(BaseModel):
     error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]
     video_path: str | None = None
+
+
+class PageObject:
+    page_steps = None
+    case_run = None

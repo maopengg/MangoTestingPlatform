@@ -143,15 +143,6 @@ class StepElements(ElementMain):
             self.element_test_result.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
             self.element_test_result.error_message = error.msg
-            # SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
-            #                                元素表达式：{self.element_test_result.loc}
-            #                                操作类型：{self.element_test_result.ope_type}
-            #                                操作值：{self.element_test_result.ope_value}
-            #                                断言类型：{self.element_test_result.ass_type}
-            #                                断言值：{self.element_test_result.ass_value}
-            #                                元素个数：{self.element_test_result.ele_quantity}
-            #                                截图路径：{file_path}
-            #                                元素失败提示：{error.msg}''')
             await self.__error_screenshot(file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg
@@ -178,6 +169,3 @@ class StepElements(ElementMain):
                 log.error('自动化类型不存在，请联系管理员检查！')
         if not settings.IS_DEBUG:
             HttpClient().upload_file(self.project_product_id, file_path, file_name)
-        # except Exception as error:
-        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
-        #     raise ScreenshotError(*ERROR_MSG_0040)

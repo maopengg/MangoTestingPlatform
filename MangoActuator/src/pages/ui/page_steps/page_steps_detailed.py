@@ -10,16 +10,17 @@ from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
-from src.models.ui_model import PageStepsModel, ElementResultModel
+from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
 from src.services.ui.service.page_steps import PageSteps
+from src.settings import settings
+from src.tools import InitPath
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
 
 
 class PageStepsDetailedPage(SubPage):
-    page_steps = None
 
     def __init__(self, parent):
         super().__init__(parent,
@@ -88,23 +89,18 @@ class PageStepsDetailedPage(SubPage):
         self.scroll_area.layout.addWidget(card)
 
     def debug(self):
-        for i in self.right_but.but_list_obj:
-            if i.action == 'debug':
-                i.obj.setEnabled(False)
         user_info = UserModel()
-        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"), False)
+        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
-        if self.page_steps is None:
-            self.page_steps = PageSteps()
-            self.page_steps.progress.connect(self.update_card)
-            self.page_steps.finished.connect(self.page_steps_finished)
+        if PageObject.page_steps is None:
+            PageObject.page_steps = PageSteps()
+            PageObject.page_steps.progress.connect(self.update_card)
+        data = PageStepsModel(**response_model.data)
+        # if settings.IS_DEBUG:
+        #     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
+        #         f.write(data.model_dump_json(indent=2))
         asyncio.run_coroutine_threadsafe(
-            self.page_steps.page_steps_mian(PageStepsModel(**response_model.data)), self.parent.loop)
-
-    def page_steps_finished(self, value):
-        for i in self.right_but.but_list_obj:
-            if i.name == 'debug':
-                i.obj.setEnabled(True)
+            PageObject.page_steps.page_steps_mian(data), self.parent.loop)
 
     def save_callback(self, data):
         data['step_sort'] = len(self.table_widget.table_widget.data)

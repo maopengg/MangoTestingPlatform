@@ -46,7 +46,7 @@ def async_error_handle(is_error=False):
                 await WebSocketClient().async_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
-                    is_notice=ClientTypeEnum.WEB.value
+                    is_notice=ClientTypeEnum.WEB
                 )
                 if is_error:
                     raise error
@@ -68,7 +68,7 @@ def sync_error_handle(is_error=False):
                 WebSocketClient().sync_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
-                    is_notice=ClientTypeEnum.WEB.value
+                    is_notice=ClientTypeEnum.WEB
                 )
                 if is_error:
                     raise error

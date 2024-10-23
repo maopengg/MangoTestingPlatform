@@ -6,6 +6,8 @@
 import asyncio
 from typing import Optional
 
+from mangokit import singleton
+
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
@@ -16,12 +18,12 @@ from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.step_elements import StepElements
 
 
+@singleton
 class PageSteps(StepElements):
     """用例分发"""
 
     def __init__(self, ):
         self.driver_object = DriverObject()
-
         super().__init__(self.driver_object)
         self.msg = ''
         self.page_step_model: Optional[PageStepsModel | None] = None

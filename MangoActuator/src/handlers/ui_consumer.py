@@ -7,7 +7,7 @@ import asyncio
 
 from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
 from src.exceptions import MangoActuatorError
-from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel
+from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel, PageObject
 from src.models.user_model import UserModel
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
@@ -17,8 +17,8 @@ from src.tools.decorator.error_handle import async_error_handle
 
 
 class UIConsumer:
-    page_steps: PageSteps = None
-    case_run: CaseMain = None
+    # page_steps: PageSteps = None
+    # case_run: CaseMain = None
     lock = asyncio.Lock()
 
     @classmethod
@@ -32,9 +32,9 @@ class UIConsumer:
         """
         try:
             async with cls.lock:
-                if cls.page_steps is None:
-                    cls.page_steps = PageSteps()
-                await cls.page_steps.page_steps_mian(data)
+                if PageObject.page_steps is None:
+                    PageObject.page_steps = PageSteps()
+                await PageObject.page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
                 code=error.code,
@@ -52,9 +52,9 @@ class UIConsumer:
         @return:
         """
         async with cls.lock:
-            if cls.page_steps is None:
-                cls.page_steps = PageSteps()
-            await cls.page_steps.new_web_obj(data)
+            if PageObject.page_steps is None:
+                PageObject.page_steps = PageSteps()
+            await PageObject.page_steps.new_web_obj(data)
 
     @classmethod
     @async_error_handle()
@@ -65,10 +65,10 @@ class UIConsumer:
         @param data:
         @return:
         """
-        if cls.case_run is None:
+        if PageObject.case_run is None:
             max_tasks = 5
             test_case_parallelism = UserModel().config.web_parallel
             if test_case_parallelism:
                 max_tasks = int(test_case_parallelism)
-            cls.case_run = CaseMain(max_tasks)
-        await cls.case_run.queue.put(data)
+            PageObject.case_run = CaseMain(max_tasks)
+        await PageObject.case_run.queue.put(data)

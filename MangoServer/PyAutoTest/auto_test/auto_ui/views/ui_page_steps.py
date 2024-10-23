@@ -70,11 +70,16 @@ class UiPageStepsViews(ViewSet):
         @param request:
         @return:
         """
+        is_send = request.GET.get("is_send", None)
+        if is_send:
+            is_send = bool(int(is_send))
+        else:
+            is_send = True
         try:
             case_json = UiTestRun(
                 request.user['id'],
                 request.GET.get("te"),
-                is_send=request.GET.get("is_send", True)) \
+                is_send=is_send) \
                 .steps(steps_id=int(request.GET.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))

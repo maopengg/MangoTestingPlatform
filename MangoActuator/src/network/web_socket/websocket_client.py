@@ -15,8 +15,9 @@ from websockets.legacy.client import WebSocketClientProtocol
 from src.enums.tools_enum import ClientTypeEnum, ClientNameEnum
 from src.models.network_model import SocketDataModel, QueueModel
 from src.settings import settings
-from src.tools.log_collector import log
 from src.tools import InitPath
+from src.tools.log_collector import log
+
 T = TypeVar('T')
 
 
@@ -42,7 +43,7 @@ class WebSocketClient:
             res = self.__output_method(response_str)
             if res.code == 200:
                 await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
-                                      is_notice=ClientTypeEnum.WEB.value)
+                                      is_notice=ClientTypeEnum.WEB)
                 log.info("socket服务启动成功")
                 # SignalSend.notice_signal_a('在线')
                 # SignalSend.notice_signal_c("服务已连接！")
@@ -102,7 +103,7 @@ class WebSocketClient:
             code=code,
             msg=msg,
             user=settings.USERNAME,
-            is_notice=is_notice,
+            is_notice=is_notice.value if is_notice else None,
             data=None
         )
         if func_name:
