@@ -3,7 +3,6 @@
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
 import os
-from asyncio import AbstractEventLoop
 
 from mango_ui import show_info_message
 from mango_ui.init import *
@@ -19,7 +18,7 @@ os.environ["QT_FONT_DPI"] = "96"
 
 class MainWindow(WindowLogic):
 
-    def __init__(self, loop: AbstractEventLoop):
+    def __init__(self, loop):
         super().__init__(loop)
         self.loop = loop
         self.drag_pos = None

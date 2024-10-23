@@ -6,13 +6,9 @@
 
 import asyncio
 import traceback
-from asyncio import AbstractEventLoop
-from asyncio.exceptions import CancelledError
 
-import time
 from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification
-from websocket import WebSocketConnectionClosedException
 
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.tools.log_collector import log
@@ -52,7 +48,7 @@ class NotificationTask(QThread):
 class WindowLogic(UIWindow):
     def __init__(self, loop):
         super().__init__(loop)
-
+        self.loop = loop
         self.websocket_thread = SocketTask()
         self.websocket_thread.start()
 

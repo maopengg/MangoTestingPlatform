@@ -1,21 +1,19 @@
-from asyncio import AbstractEventLoop
-
 from mango_ui import show_failed_message
 from mango_ui.init import *
 from mangokit import SQLiteConnect
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
-from src.tools import InitPath
+
 from src.network.http import Http
 from src.pages.login.login_ui import LoginWindow
 from src.pages.window.mian_window import MainWindow
-from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
-
 from src.settings import settings
+from src.tools import InitPath
 from src.tools.methods import Methods
+from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 
 
 class LoginLogic(LoginWindow):
-    def __init__(self,  loop: AbstractEventLoop):
+    def __init__(self, loop):
         super().__init__()
         self.loop = loop
         self.setWindowTitle('登录')
@@ -51,7 +49,7 @@ class LoginLogic(LoginWindow):
                 if remember:
                     self.conn.execute(sql_statement_3)
                     self.conn.execute(sql_statement_2,
-                                                (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
+                                      (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
             else:
                 show_failed_message('账号或密码错误')
 

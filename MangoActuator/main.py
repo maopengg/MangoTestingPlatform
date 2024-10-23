@@ -8,8 +8,8 @@ import traceback
 from asyncio import AbstractEventLoop
 from threading import Thread
 
-from PySide6.QtCore import QEventLoop
 from PySide6.QtWidgets import QApplication
+from mangokit import Mango
 
 from src.login_window import LoginLogic
 from src.tools import InitPath
@@ -31,10 +31,7 @@ async def main():
         InitPath()
         await asyncio.sleep(0)
         app = QApplication([])
-        loop = asyncio.new_event_loop()
-        thd = AsyncioThread(loop)
-        thd.start()
-        login_window = LoginLogic(loop)
+        login_window = LoginLogic(Mango.t())
         login_window.show()
         app.exec()
     except Exception as error:
@@ -43,15 +40,5 @@ async def main():
 
 
 asyncio.run(main())
-
-
-# try:
-#     InitPath()
-#     app = QApplication([])
-#     window = LoginLogic()
-#     app.exec()
-# except Exception as error:
-#     traceback.print_exc()
-#     log.error(f"顶级任务出现异常：{error}")
 
 # pyinstaller -F -w --onefile --add-data "src/settings/settings.json;src/settings" --add-data "src/settings/menus.json;src/settings"  --name=执行器 --icon=resources/icons/app_icon.png main.py

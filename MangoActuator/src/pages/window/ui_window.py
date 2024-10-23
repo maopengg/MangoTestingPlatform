@@ -4,17 +4,16 @@
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
 import webbrowser
-from asyncio import AbstractEventLoop
 
-from src.pages.window.pages_window import PagesWindow
 from mango_ui import *
 from mango_ui.init import *
 
+from src.pages.window.pages_window import PagesWindow
 from src.settings.settings import STYLE, MENUS
 
 
 class UIWindow(QMainWindow):
-    def __init__(self, loop: AbstractEventLoop):
+    def __init__(self, loop):
         super().__init__()
         self.loop = loop
         self.setWindowTitle(STYLE.app_name)
