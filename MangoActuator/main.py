@@ -5,8 +5,6 @@
 # @Author : 毛鹏
 import asyncio
 import traceback
-from asyncio import AbstractEventLoop
-from threading import Thread
 
 from PySide6.QtWidgets import QApplication
 from mangokit import Mango
@@ -14,16 +12,6 @@ from mangokit import Mango
 from src.login_window import LoginLogic
 from src.tools import InitPath
 from src.tools.log_collector import log
-
-
-class AsyncioThread(Thread):
-    def __init__(self, loop: AbstractEventLoop):
-        super().__init__()
-        self._loop = loop
-        self.daemon = True
-
-    def run(self) -> None:
-        self._loop.run_forever()
 
 
 async def main():
