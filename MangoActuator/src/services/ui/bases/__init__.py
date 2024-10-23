@@ -26,20 +26,17 @@ class ElementMain(WebDevice, AndroidDriver):
         self.element_model = element_model
         self.element_data = element_data
         self.drive_type = drive_type
-        if element_model.name:
-            self.ope_name = element_model.name
-        else:
-            self.ope_name = element_model.ope_type if element_model.ope_type else element_model.ass_type
+        self.ope_name = element_model.name if element_model.name else element_model.ope_key
         self.element_test_result = ElementResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
             page_step_id=self.page_step_id,
             ele_name=self.ope_name,
+            type=self.element_model.type,
             exp=element_model.exp,
             sub=element_model.sub,
             sleep=element_model.sleep,
-            ope_type=element_model.ope_type,
-            ass_type=element_model.ass_type,
+            ope_key=element_model.ope_key,
             status=StatusEnum.FAIL.value,
             ele_quantity=0,
             key_list=element_model.key_list,
@@ -56,12 +53,11 @@ class ElementMain(WebDevice, AndroidDriver):
 
     @async_memory
     async def element_main(self) -> None:
-        name = self.element_model.name if self.element_model.name else self.element_model.ass_type
-        ope_type = self.element_model.ope_type if self.element_model.ope_type else self.element_model.ass_type
+        name = self.element_model.name if self.element_model.name else self.element_model.ope_key
         if self.element_model.type == ElementOperationEnum.OPE.value:
-            await self.__ope(name, ope_type)
+            await self.__ope(name, self.element_model.ope_key)
         elif self.element_model.type == ElementOperationEnum.ASS.value:
-            await self.__ass(name, ope_type)
+            await self.__ass(name, self.element_model.ope_key)
         elif self.element_model.type == ElementOperationEnum.SQL.value:
             await self.__sql()
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:

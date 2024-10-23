@@ -15,7 +15,6 @@ import string
 from typing import Optional
 from urllib import parse
 
-import time
 from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
@@ -58,7 +57,7 @@ class NewBrowser:
             async with self.lock:
                 if self.browser is None:
                     self.browser = await self.new_browser()
-                    time.sleep(1)
+                    await asyncio.sleep(1)
         context = await self.new_context()
         page = await self.new_page(context)
         return context, page

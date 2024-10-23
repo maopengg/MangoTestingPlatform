@@ -60,7 +60,7 @@ class AndroidDriver(UiautomatorEquipment,
     @sync_error_handle(True)
     def a_action_element(self) -> None:
         try:
-            getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
+            getattr(self, self.element_model.ope_key)(**self.element_model.ope_value)
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
         # except NullPointerExceptionError as error:
@@ -78,10 +78,10 @@ class AndroidDriver(UiautomatorEquipment,
 
     @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_assertion_element(self) -> None:
-        is_method = callable(getattr(UiautomatorAssertion, self.element_model.ass_type, None))
+        is_method = callable(getattr(UiautomatorAssertion, self.element_model.ope_key, None))
         from src.tools.assertion import PublicAssertion
-        is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
-        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
+        is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
+        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
         self.element_test_result.expect = self.element_model \
             .ass_value \
             .get('expect') if self.element_model \
@@ -96,7 +96,7 @@ class AndroidDriver(UiautomatorEquipment,
         try:
             if is_method:
                 self.element_test_result.actual = '判断元素是什么'
-                getattr(UiautomatorAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
+                getattr(UiautomatorAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
             elif is_method_public:
                 if self.element_model.ass_value.get('value'):
                     value = self.element_model.ass_value.get('value')
@@ -104,7 +104,7 @@ class AndroidDriver(UiautomatorEquipment,
                 else:
                     value = self.a_get_text(self.element_model.ass_value['value'])
                     self.element_test_result.actual = value
-                getattr(PublicAssertion, self.element_model.ass_type)(
+                getattr(PublicAssertion, self.element_model.ope_key)(
                     **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:

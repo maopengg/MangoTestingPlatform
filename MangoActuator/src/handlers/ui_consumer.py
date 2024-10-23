@@ -33,9 +33,8 @@ class UIConsumer:
         try:
             async with cls.lock:
                 if cls.page_steps is None:
-                    cls.page_steps = PageSteps(data.project_product)
-                await cls.page_steps.page_steps_setup(data)
-                await cls.page_steps.page_steps_mian()
+                    cls.page_steps = PageSteps()
+                await cls.page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
                 code=error.code,

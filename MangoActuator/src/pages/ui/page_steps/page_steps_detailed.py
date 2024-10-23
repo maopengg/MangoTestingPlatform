@@ -89,7 +89,7 @@ class PageStepsDetailedPage(SubPage):
 
     def debug(self):
         user_info = UserModel()
-        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"))
+        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"), False)
         response_message(self, response_model)
         if self.page_steps is None:
             self.page_steps = PageSteps()
