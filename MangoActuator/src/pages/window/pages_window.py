@@ -10,10 +10,11 @@ from PySide6.QtWidgets import QStackedWidget, QApplication
 from mango_ui import *
 
 from src.pages.component.component_center import ComponentPage
-from src.pages.home.home import HomePage
+from src.pages.home import HomePage
 from src.pages.ui import *
 from src.pages.user.user import UserPage
 from src.pages.web import WebPage
+from src.pages.report import TestReportPage
 from ..config import *
 from ..setting import *
 from ..time_task import TimeTaskPage, TaskCasePage
@@ -63,6 +64,7 @@ class PagesWindow:
             'time_task': TimeTaskPage,
             'task_case': TaskCasePage,
             'user_log': UserLogPage,
+            'test_report': TestReportPage,
             'settings': SettingPage,
         }
         self.pages.setCurrentIndex(0)
