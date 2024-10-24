@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.tools_enum import Status5Enum
 
 search_data = [
     {
@@ -53,7 +54,7 @@ table_column = [
     {
         'key': 'status',
         'name': '状态',
-        'item': ''
+        'option': Status5Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',

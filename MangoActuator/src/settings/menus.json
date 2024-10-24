@@ -9,14 +9,6 @@
       "is_active": true
     },
     {
-      "btn_icon": ":/icons/schedule.svg",
-      "btn_id": "test_report",
-      "btn_text": "测试报告",
-      "btn_tooltip": "测试报告",
-      "show_top": true,
-      "is_active": false
-    },
-    {
       "btn_icon": ":/icons/robot.svg",
       "btn_id": "ui",
       "btn_text": "前端自动化",
@@ -57,6 +49,14 @@
           "is_active": false
         }
       ]
+    },
+    {
+      "btn_icon": ":/icons/calendar_clock.svg",
+      "btn_id": "test_report",
+      "btn_text": "测试报告",
+      "btn_tooltip": "测试报告",
+      "show_top": true,
+      "is_active": false
     },
     {
       "btn_icon": ":/icons/command.svg",

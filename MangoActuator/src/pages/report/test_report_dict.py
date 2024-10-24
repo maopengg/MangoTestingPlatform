@@ -3,67 +3,81 @@
 # @Description: 
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
-
+from src.enums.system_enum import EnvironmentEnum
+from src.enums.tools_enum import Status3Enum
 
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
-        'input': None
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
-        'key': 'name',
-        'input': None
+        'title': '测试结果',
+        'placeholder': '请选择测试结果',
+        'key': 'status',
     },
     {
-        'title': '产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'input': None
-    },
-
-    {
-        'title': '模块',
-        'placeholder': '请选择产品模块',
-        'key': 'module',
-        'input': None
+        'title': '自动化类型',
+        'placeholder': '请选择自动化类型',
+        'key': 'type',
     }
 ]
 table_column = [
     {
         'key': 'id',
         'name': 'ID',
-        'width': 7
+        'width': 100
     },
     {
-        'key': 'name',
-        'name': '角色名称',
-        'width': 300
+        'key': 'project_product',
+        'name': '项目/产品',
+        'item': 'name',
+        'width': 100
     },
-
     {
-        'key': 'description',
-        'name': '角色描述',
+        'key': 'test_env',
+        'name': '测试环境',
+        'width': 70,
+        'option': EnvironmentEnum.get_option('value', 'label')
     },
+    {
+        'key': 'create_time',
+        'name': '执行时间',
+        'width': 100
+    },
+    {
+        'key': 'user',
+        'name': '执行人',
+        'width': 70
+    },
+    {
+        'key': 'run_status',
+        'name': '执行状态',
+        'width': 70,
+        'option': Status3Enum.get_option('value', 'label')
 
+    },
+    {
+        'key': 'status',
+        'name': '结果',
+        'width': 70,
+        'option': Status3Enum.get_option('value', 'label')
+    },
+    {
+        'key': 'error_message',
+        'name': '失败提示',
+    },
     {
         'key': 'ope',
         'name': '操作',
-        'width': 120
+        'width': 50
     },
 
 ]
 table_menu = [
     {
-        'name': '编辑',
-        'action': 'edit'
-    },
-    {
-        'name': '删除',
-        'action': 'delete'
+        'name': '详情',
+        'action': 'subpage'
     }
-
 ]

@@ -12,7 +12,9 @@ class TestSuiteReport(HttpBase):
 
     @classmethod
     @request_log()
-    def get_test_suite_report(cls, page, page_size, params: dict = None):
+    def get_test_suite_report(cls, page, page_size, params=None):
+        if params is None:
+            params = {'type': 0}
         _params = {
             'page': page,
             'pageSize': page_size

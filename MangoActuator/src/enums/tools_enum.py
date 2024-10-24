@@ -61,6 +61,24 @@ class Status1Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "否", 1: "是"}
+class Status4Enum(BaseEnum):
+
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "进行中", 1: "已完成"}
+class Status5Enum(BaseEnum):
+
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "关闭", 1: "启用"}
 
 
 class ProductTypeEnum(BaseEnum):
