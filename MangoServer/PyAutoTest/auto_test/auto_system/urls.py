@@ -20,7 +20,7 @@ from ..auto_system.views.system_api import SystemViews
 urlpatterns = [
     #
     path('notice', NoticeConfigCRUD.as_view()),
-    path('notice/text.txt', NoticeConfigViews.as_view({'get': 'test'})),
+    path('notice/test', NoticeConfigViews.as_view({'get': 'test'})),
     path('notice/put/status', NoticeConfigViews.as_view({'put': 'put_status'})),
     #
     path('database', DatabaseCRUD.as_view()),
@@ -32,7 +32,7 @@ urlpatterns = [
     path('tasks/type/case/name', TasksRunCaseListViews.as_view({'get': 'get_type_case_name'})),
     path('tasks/batch/set/cases', TasksRunCaseListViews.as_view({'post': 'batch_set_cases'})),
     path('tasks/case/sort', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_sort'})),
-    path('tasks/case/text.txt/object', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_test_object'})),
+    path('tasks/case/test/object', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_test_object'})),
     #
     path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
     path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
@@ -43,13 +43,13 @@ urlpatterns = [
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
-    path("text.txt", SystemViews.as_view({'get': 'test_func'})),
+    path("test", SystemViews.as_view({'get': 'test_func'})),
     #
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),
     path("socket/all/user/list", SocketApiViews.as_view({'get': 'get_all_user_list'})),
     #
-    path('text.txt/suite/report', TestSuiteReportCRUD.as_view()),
+    path('test/suite/report', TestSuiteReportCRUD.as_view()),
 
     #
     path('case/sum', IndexViews.as_view({'get': 'case_sum'})),
