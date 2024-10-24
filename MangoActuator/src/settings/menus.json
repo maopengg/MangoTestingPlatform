@@ -143,6 +143,14 @@
       "is_active": false
     },
     {
+      "btn_icon": ":/icons/tool.svg",
+      "btn_id": "small_tools",
+      "btn_text": "小工具",
+      "btn_tooltip": "测试小工具",
+      "show_top": true,
+      "is_active": false
+    },
+    {
       "btn_icon": ":/icons/compass.svg",
       "btn_id": "help",
       "btn_text": "帮助",
