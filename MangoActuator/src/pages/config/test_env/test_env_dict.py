@@ -6,8 +6,8 @@
 from mango_ui import THEME
 
 from src.enums.system_enum import EnvironmentEnum
-from src.enums.tools_enum import ProductTypeEnum
-from src.network import Http
+from src.enums.tools_enum import ProductTypeEnum, Status5Enum
+from src.network import HTTP
 from src.tools.methods import Methods
 
 search_data = [
@@ -63,7 +63,7 @@ form_data = [
         'placeholder': '请输入负责人名称',
         'key': 'executor_name',
         'type': 1,
-        'select': Http.get_nickname
+        'select': HTTP.get_nickname
     },
 
 ]
@@ -90,18 +90,31 @@ table_column = [
     {
         'key': 'environment',
         'name': '部署环境',
-    }, {
+        'width': 70,
+        'option': EnvironmentEnum.get_option('value', 'label')
+    },
+    {
         'key': 'auto_type',
         'name': '自动化类型',
-    }, {
+        'width': 150,
+        'option': ProductTypeEnum.get_option('value', 'label')
+    },
+    {
         'key': 'executor_name',
         'name': '负责人',
-    }, {
+        'width': 70
+    },
+    {
         'key': 'db_c_status',
         'name': '查询权限',
-    }, {
+        'width': 70,
+        'option': Status5Enum.get_option('value', 'label')
+    },
+    {
         'key': 'db_rud_status',
         'name': '增删改权限',
+        'width': 70,
+        'option': Status5Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',

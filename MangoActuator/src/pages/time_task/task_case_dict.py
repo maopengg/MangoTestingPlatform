@@ -4,9 +4,7 @@
 # @Time   : 2024-10-16 17:35
 # @Author : 毛鹏
 from mango_ui import THEME
-from src.enums.tools_enum import Status1Enum
-from src.enums.ui_enum import ElementExpEnum
-from src.network import Http
+
 from src.tools.methods import Methods
 
 table_column = [

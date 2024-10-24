@@ -6,8 +6,6 @@
 from mango_ui import THEME
 
 from src.enums.tools_enum import Status3Enum
-from src.enums.ui_enum import ElementOperationEnum
-from src.network import Http
 from src.tools.methods import Methods
 
 table_column = [
@@ -56,6 +54,5 @@ form_data = [
         'type': 1,
         'required': False,
     },
-
 
 ]

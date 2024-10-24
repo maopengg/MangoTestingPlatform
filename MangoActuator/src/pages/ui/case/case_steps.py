@@ -12,6 +12,7 @@ from mango_ui import *
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.user_model import UserModel
+from src.network import HTTP
 from src.tools.get_class_methods import GetClassMethod
 from .case_steps_dict import *
 from ...parent.sub import SubPage
@@ -23,10 +24,10 @@ class CaseStepsPage(SubPage):
         super().__init__(parent, right_data=right_data, field_list=field_list)
         self.id_key = 'case'
         self.superior_page = 'case'
-        self.get = Http.get_case_steps_detailed
-        self.post = Http.post_case_steps_detailed
-        self.put = Http.put_case_steps_detailed
-        self._delete = Http.delete_case_steps_detailed
+        self.get = HTTP.get_case_steps_detailed
+        self.post = HTTP.post_case_steps_detailed
+        self.put = HTTP.put_case_steps_detailed
+        self._delete = HTTP.delete_case_steps_detailed
         self.h_layout = QHBoxLayout()
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
@@ -191,7 +192,7 @@ class CaseStepsPage(SubPage):
         self.v_layout_3_1_list.append({'key': key, 'value': value, 'delete': push_button, 'layout': h_layout})
 
     def save_after_sql(self):
-        response_message(self, Http.put_case({
+        response_message(self, HTTP.put_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             'posterior_sql': [{
@@ -200,7 +201,7 @@ class CaseStepsPage(SubPage):
         }))
 
     def save_front_sql(self):
-        response_message(self, Http.put_case({
+        response_message(self, HTTP.put_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             'front_sql': [{
@@ -209,7 +210,7 @@ class CaseStepsPage(SubPage):
         }))
 
     def save_front_custom(self):
-        response_message(self, Http.put_case({
+        response_message(self, HTTP.put_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             'front_custom': [{
@@ -280,14 +281,14 @@ class CaseStepsPage(SubPage):
 
     def run(self):
         user_info = UserModel()
-        response_message(self, Http.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
 
     def step_run(self):
         user_info = UserModel()
-        response_message(self, Http.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
-        response_message(self, Http.ui_case_steps_refresh(row.get("id")))
+        response_message(self, HTTP.ui_case_steps_refresh(row.get("id")))
         self.show_data()
 
     def form_data_callback(self, data: FormDataModel):
@@ -297,13 +298,13 @@ class CaseStepsPage(SubPage):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         init_data = None
         if data.subordinate == 'page':
-            response_model: ResponseModel = Http.module_page_name(data.value)
+            response_model: ResponseModel = HTTP.module_page_name(data.value)
             if response_model.data:
                 init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
             else:
                 error_message(self, '这个模块还未创建页面')
         elif data.subordinate == 'page_step':
-            response_model: ResponseModel = Http.get_page_steps_name(data.value)
+            response_model: ResponseModel = HTTP.get_page_steps_name(data.value)
             if response_model.data:
                 init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
             else:

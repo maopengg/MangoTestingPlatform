@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-07-15 11:57
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum

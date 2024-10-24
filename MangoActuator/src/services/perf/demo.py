@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-08-03 16:45
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-08-03 16:45
 # @Author : 毛鹏
 import asyncio
 import multiprocessing
 
 import aiohttp
 import psutil
-import time
 
 URL = ""
 

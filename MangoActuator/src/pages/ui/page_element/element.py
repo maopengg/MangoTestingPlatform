@@ -4,7 +4,7 @@
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
 
-from src.network import Http
+from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .element_dict import *
 
@@ -20,7 +20,7 @@ class ElementPage(SubPage):
                          form_data=form_data)
         self.superior_page = 'page'
         self.id_key = 'page'
-        self.get = Http.get_page_element
-        self.post = Http.post_page_element
-        self.put = Http.put_page_element
-        self._delete = Http.delete_page_element
+        self.get = HTTP.get_page_element
+        self.post = HTTP.post_page_element
+        self.put = HTTP.put_page_element
+        self._delete = HTTP.delete_page_element

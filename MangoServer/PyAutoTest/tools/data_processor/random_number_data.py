@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 随机数据封装
+# @Project: 芒果测试平台# @Description: 随机数据封装
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import random

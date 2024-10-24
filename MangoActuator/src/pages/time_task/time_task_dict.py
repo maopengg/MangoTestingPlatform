@@ -7,7 +7,7 @@ from mango_ui import THEME
 
 from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
 from src.enums.tools_enum import Status1Enum
-from src.network import Http
+from src.network import HTTP
 
 search_data = [
     {
@@ -58,14 +58,14 @@ form_data = [
         'placeholder': '请选择定时任务负责人',
         'key': 'case_people',
         'type': 1,
-        'select': Http.get_nickname
+        'select': HTTP.get_nickname
     },
     {
         'title': '执行器',
         'placeholder': '请选择执行器来执行用例',
         'key': 'case_executor',
         'type': 4,
-        'select': Http.get_nickname
+        'select': HTTP.get_nickname
     },
 ]
 table_column = [
@@ -77,7 +77,7 @@ table_column = [
     {
         'key': 'name',
         'name': '任务名称',
-    },    {
+    }, {
         'key': 'cron',
         'name': 'cron',
     },

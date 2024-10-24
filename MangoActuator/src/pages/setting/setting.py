@@ -5,13 +5,14 @@
 # @Author : 毛鹏
 import json
 
+from PySide6.QtWidgets import QWidget
 from mango_ui import *
 
-from src import *
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import ClientTypeEnum
 from src.models import queue_notification
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
+from src.settings import settings
 from src.tools.assertion import Assertion
 from src.tools.get_class_methods import GetClassMethod
 
@@ -42,7 +43,7 @@ class SettingPage(QWidget):
         card_layout2 = QHBoxLayout()
         card_widget2 = MangoCard(card_layout2, '接口自动化设置')
         input_2_1 = MangoLineEdit('请输入请求超时时间-不可用', )
-        card_layout2.addWidget(QLabel('请求超时时间'))
+        card_layout2.addWidget(MangoLabel('请求超时时间'))
         card_layout2.addWidget(input_2_1)
         card_layout2.addStretch()
 

@@ -3,7 +3,7 @@ from mango_ui.init import *
 from mangokit import SQLiteConnect
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
-from src.network.http import Http
+from src.network import HTTP
 from src.pages.login.login_ui import LoginWindow
 from src.pages.window.mian_window import MainWindow
 from src.settings import settings
@@ -39,7 +39,7 @@ class LoginLogic(LoginWindow):
         if not settings.USERNAME or not settings.PASSWORD:
             show_failed_message('请先输入账号或密码后再进行登录')
         try:
-            res = Http.login(settings.USERNAME, settings.PASSWORD)
+            res = HTTP.login(settings.USERNAME, settings.PASSWORD)
             if res.code == 200:
                 Methods.set_project()
                 self.main_window = MainWindow(self.loop)

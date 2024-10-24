@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/5/4 14:34
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
@@ -14,7 +13,7 @@ from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from src.exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, WEBConfigModel
-from src.network.http.http_client import HttpClient
+from src.network import HTTP
 from src.services.ui.bases import ElementMain
 from src.settings import settings
 from src.tools import InitPath
@@ -168,4 +167,4 @@ class StepElements(ElementMain):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
         if not settings.IS_DEBUG:
-            HttpClient().upload_file(self.project_product_id, file_path, file_name)
+            HTTP.upload_file(self.project_product_id, file_path, file_name)

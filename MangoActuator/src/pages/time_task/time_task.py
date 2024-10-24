@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2024-10-15 14:54
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel
-from mango_ui import response_message
+from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
+from src.network import HTTP
 from .time_task_dict import *
 from ..parent.table import TableParent
 
@@ -18,10 +18,10 @@ class TimeTaskPage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = Http.get_scheduled_tasks
-        self.post = Http.post_scheduled_tasks
-        self.put = Http.put_scheduled_tasks
-        self._delete = Http.delete_scheduled_tasks
+        self.get = HTTP.get_scheduled_tasks
+        self.post = HTTP.post_scheduled_tasks
+        self.put = HTTP.put_scheduled_tasks
+        self._delete = HTTP.delete_scheduled_tasks
         self.subpage_value = 'task_case'
 
     def form_data_callback(self, data: FormDataModel):

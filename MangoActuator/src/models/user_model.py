@@ -4,9 +4,9 @@
 # @Time   : 2024-09-21 11:23
 # @Author : 毛鹏
 from datetime import datetime
+
 from mangokit import singleton
 from pydantic import BaseModel
-
 
 
 class UserConfigModel(BaseModel):

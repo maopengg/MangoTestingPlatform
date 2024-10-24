@@ -3,9 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from mango_ui import THEME
-
-from src.network import Http
+from src.network import HTTP
 
 search_data = [
     {
@@ -39,7 +37,7 @@ form_data = [
         'placeholder': '请选择用户角色',
         'key': 'role',
         'type': 1,
-        'select': Http.get_role_name
+        'select': HTTP.get_role_name
     },
     {
         'title': 'mailbox',

@@ -9,7 +9,7 @@ from mango_ui import *
 from mango_ui.init import *
 
 from src.models.network_model import ResponseModel
-from src.network import Http
+from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .env_config_dict import *
 
@@ -40,7 +40,7 @@ class EnvConfigPage(SubPage):
         self.init_notice()
 
     def init_database(self):
-        response: ResponseModel = Http.get_database(params={f"{self.id_key}_id": self.data.get('id')})
+        response: ResponseModel = HTTP.get_database(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
                 v_layout = QVBoxLayout()
@@ -89,7 +89,7 @@ class EnvConfigPage(SubPage):
                     self.current_row += 1
 
     def init_notice(self):
-        response: ResponseModel = Http.get_notice(params={f"{self.id_key}_id": self.data.get('id')})
+        response: ResponseModel = HTTP.get_notice(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
                 v_layout = QVBoxLayout()
@@ -97,7 +97,8 @@ class EnvConfigPage(SubPage):
                 h_layout_1.addWidget(MangoLabel('通知配置'))
                 h_layout_1.addStretch()
                 toggle = MangoToggle(bool(i.get('status')), False)
-                toggle.click.connect(lambda state, row=i, toggle_obj=toggle: self.put_notice_status(state, row, toggle_obj))
+                toggle.click.connect(
+                    lambda state, row=i, toggle_obj=toggle: self.put_notice_status(state, row, toggle_obj))
                 toggle.change_requested.emit(bool(i.get('status')))
                 h_layout_1.addWidget(toggle)
 
@@ -142,7 +143,7 @@ class EnvConfigPage(SubPage):
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
-            response_model: ResponseModel = Http.post_database(dialog.data)
+            response_model: ResponseModel = HTTP.post_database(dialog.data)
             response_message(self, response_model)
         self.show_data()
 
@@ -157,13 +158,15 @@ class EnvConfigPage(SubPage):
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
-            response_model: ResponseModel = Http.post_notice(dialog.data)
+            response_model: ResponseModel = HTTP.post_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()
+
     def test_database(self, row):
-        response_message(self, Http.get_database_test(row.get('id')))
+        response_message(self, HTTP.get_database_test(row.get('id')))
+
     def test_notice(self, row):
-        response_message(self, Http.get_notice_test(row.get('id')))
+        response_message(self, HTTP.get_notice_test(row.get('id')))
 
     def edit_database(self, row):
         form_data = copy.deepcopy(self.database_form_data)
@@ -181,7 +184,7 @@ class EnvConfigPage(SubPage):
                 dialog.data['id'] = row['id']
                 dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
-            response_model: ResponseModel = Http.put_database(dialog.data)
+            response_model: ResponseModel = HTTP.put_database(dialog.data)
             response_message(self, response_model)
         self.show_data()
 
@@ -201,20 +204,20 @@ class EnvConfigPage(SubPage):
                 dialog.data['id'] = row['id']
                 dialog.data[self.id_key] = self.data.get('id')
                 dialog.data['status'] = 0
-            response_model: ResponseModel = Http.put_notice(dialog.data)
+            response_model: ResponseModel = HTTP.put_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()
 
     def delete_database(self, row):
-        response_message(self, Http.delete_database(row.get('id')))
+        response_message(self, HTTP.delete_database(row.get('id')))
         self.show_data()
 
     def delete_notice(self, row):
-        response_message(self, Http.delete_notice(row.get('id')))
+        response_message(self, HTTP.delete_notice(row.get('id')))
         self.show_data()
 
     def put_database_status(self, state, row, toggle):
-        response: ResponseModel = Http.put_database_status(row.get('id'), row.get('environment'), state.get("value"))
+        response: ResponseModel = HTTP.put_database_status(row.get('id'), row.get('environment'), state.get("value"))
         response_message(self, response)
         if response.code == 200:
             toggle.change_requested.emit(bool(state.get("value")))
@@ -222,7 +225,7 @@ class EnvConfigPage(SubPage):
             toggle.change_requested.emit(not bool(state.get("value")))
 
     def put_notice_status(self, state, row, toggle):
-        response = Http.put_notice_status(row.get('id'), row.get('environment'), state.get("value"))
+        response = HTTP.put_notice_status(row.get('id'), row.get('environment'), state.get("value"))
         response_message(self, response)
 
         if response.code == 200:

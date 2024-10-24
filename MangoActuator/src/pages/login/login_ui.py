@@ -6,6 +6,7 @@
 from mango_ui import *
 from mango_ui.init import *
 
+
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()

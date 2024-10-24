@@ -7,7 +7,7 @@
 from mango_ui import *
 from mango_ui.init import *
 
-from src.network import Http
+from src.network import HTTP
 from src.pages.home.home_dict import table_column
 
 
@@ -62,14 +62,14 @@ class HomePage(QWidget):
         self.mango_dialog.layout.addWidget(label)
 
     def show_data(self, ):
-        self.pie_plot_1.draw(Http.case_sum().data)
-        self.pie_plot_2.draw(Http.case_run_sum().data)
+        self.pie_plot_1.draw(HTTP.case_sum().data)
+        self.pie_plot_2.draw(HTTP.case_run_sum().data)
         data = []
-        response = Http.case_run_trends().data
+        response = HTTP.case_run_trends().data
         data.append({'name': 'API', 'value': response.get('ui_count')})
         data.append({'name': 'UI', 'value': response.get('api_count')})
         self.line_plot.draw(data)
-        response_model: ResponseModel = Http.get_scheduled_tasks(self.page, self.page_size)
+        response_model: ResponseModel = HTTP.get_scheduled_tasks(self.page, self.page_size)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
 
         QTimer.singleShot(1000, self.open_dialog)  # 1000毫秒后调用open_dialog方法

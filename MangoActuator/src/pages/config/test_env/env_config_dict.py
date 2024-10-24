@@ -4,6 +4,7 @@
 # @Time   : 2024-09-24 16:55
 # @Author : 毛鹏
 from mango_ui import THEME
+
 from src.enums.system_enum import NoticeEnum
 
 right_data = [

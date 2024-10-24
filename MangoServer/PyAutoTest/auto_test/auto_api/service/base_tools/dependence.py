@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 解决接口的依赖关系
+# @Project: 芒果测试平台# @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
 import json

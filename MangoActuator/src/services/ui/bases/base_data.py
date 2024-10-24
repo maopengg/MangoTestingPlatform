@@ -19,7 +19,7 @@ from src.exceptions.tools_exception import FileDoesNotEexistError
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from src.models.tools_model import MysqlConingModel
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
-from src.network import Http
+from src.network import HTTP
 from src.tools import InitPath
 
 
@@ -28,7 +28,7 @@ class DataP(DataProcessor):
     def get_file(cls, **kwargs) -> str:
         """传入文件名称，返回文件"""
         file_name = kwargs.get('data')
-        Http.download_file(file_name)
+        HTTP.download_file(file_name)
         file_path = os.path.join(InitPath.upload_files, file_name)
         if os.path.exists(file_path):
             return file_path

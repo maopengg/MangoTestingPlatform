@@ -34,14 +34,13 @@ class Notice(HttpBase):
     @classmethod
     @request_log()
     def delete_notice(cls, _id, ):
-        return cls.delete(url=cls.url(Notice._url), headers=cls.headers, params={ 'id': _id,})
+        return cls.delete(url=cls.url(Notice._url), headers=cls.headers, params={'id': _id, })
 
     @classmethod
     @request_log()
     def put_notice_status(cls, _id: int, environment: int, status: int):
         return cls.put(url=cls.url(f'{Notice._url}/put/status'), headers=cls.headers,
                        json={'id': _id, 'status': status, 'environment': environment})
-
 
     @classmethod
     @request_log()

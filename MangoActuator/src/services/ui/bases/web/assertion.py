@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-04-26 22:25
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-04-26 22:25
 # @Author : 毛鹏
 
 from playwright.async_api import Locator, expect as exp

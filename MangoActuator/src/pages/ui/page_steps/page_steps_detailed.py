@@ -13,8 +13,6 @@ from src.models.api_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
 from src.services.ui.service.page_steps import PageSteps
-from src.settings import settings
-from src.tools import InitPath
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -29,10 +27,10 @@ class PageStepsDetailedPage(SubPage):
                          right_data=right_data)
         self.id_key = 'page_step'
         self.superior_page = 'page_steps'
-        self.get = Http.get_page_steps_detailed
-        self.post = Http.post_page_steps_detailed
-        self.put = Http.put_page_steps_detailed
-        self._delete = Http.delete_page_steps_detailed
+        self.get = HTTP.get_page_steps_detailed
+        self.post = HTTP.post_page_steps_detailed
+        self.put = HTTP.put_page_steps_detailed
+        self._delete = HTTP.delete_page_steps_detailed
         self.h_layout = QHBoxLayout()
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
@@ -90,7 +88,7 @@ class PageStepsDetailedPage(SubPage):
 
     def debug(self):
         user_info = UserModel()
-        response_model: ResponseModel = Http.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
+        response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if PageObject.page_steps is None:
             PageObject.page_steps = PageSteps()

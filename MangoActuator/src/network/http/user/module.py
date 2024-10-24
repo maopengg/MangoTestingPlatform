@@ -34,4 +34,4 @@ class Module(HttpBase):
     @classmethod
     @request_log()
     def delete_module(cls, _id, ):
-        return cls.delete(url=cls.url(Module._url), headers=cls.headers, params={'id': _id,})
+        return cls.delete(url=cls.url(Module._url), headers=cls.headers, params={'id': _id, })

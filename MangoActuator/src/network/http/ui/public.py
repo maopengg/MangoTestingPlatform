@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-13 11:13
 # @Author : 毛鹏
-from src.models.network_model import ResponseModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -42,6 +41,7 @@ class Public(HttpBase):
             'id': _id,
         }
         return cls.delete(url=url, headers=cls.headers, params=_params)
+
     @classmethod
     @request_log()
     def put_status(cls, _id, status):

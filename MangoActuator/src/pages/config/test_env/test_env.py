@@ -18,10 +18,10 @@ class TestEnvPage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'env_config'
-        self.get = Http.get_test_object
-        self.post = Http.post_test_object
-        self.put = Http.put_test_object
-        self._delete = Http.delete_test_object
+        self.get = HTTP.get_test_object
+        self.post = HTTP.post_test_object
+        self.put = HTTP.put_test_object
+        self._delete = HTTP.delete_test_object
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'project_product':

@@ -26,6 +26,7 @@ class FileData(HttpBase):
     @request_log()
     def post_file(cls, data: dict, files):
         return cls.post(url=cls.url(FileData._url), headers=cls.headers, data=data, files=files)
+
     @classmethod
     @request_log()
     def download(cls, name: str):

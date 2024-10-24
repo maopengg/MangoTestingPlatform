@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
+# @Project: 芒果测试平台# @Description:
 # @Time   : 2023/4/6 13:36
 # @Author : 毛鹏
 from src.services.ui.bases.android.assertion import UiautomatorAssertion

@@ -6,8 +6,8 @@
 import copy
 import json
 
+from PySide6.QtWidgets import QWidget
 from mango_ui import *
-from mango_ui.init import *
 
 from src.models.network_model import ResponseModel
 from src.tools.methods import Methods

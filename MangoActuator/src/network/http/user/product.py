@@ -8,7 +8,7 @@ from src.tools.decorator.request_log import request_log
 
 
 class Product(HttpBase):
-    _url='/user/product'
+    _url = '/user/product'
 
     @classmethod
     @request_log()
@@ -34,4 +34,4 @@ class Product(HttpBase):
     @classmethod
     @request_log()
     def delete_product(cls, _id, ):
-        return cls.delete(url=cls.url(Product._url), headers=cls.headers, params={'id': _id,})
+        return cls.delete(url=cls.url(Product._url), headers=cls.headers, params={'id': _id, })

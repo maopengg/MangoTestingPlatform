@@ -15,13 +15,13 @@ from ...models import queue_notification
 
 
 class NotificationTask(QThread):
-    notify_signal = Signal(int, str)  # 定义信号，类型和消息文本
+    notify_signal = Signal(int, str)
 
     def run(self):
         timer = QTimer()
         timer.timeout.connect(self.check_queue)
-        timer.start(100)  # 每100毫秒检查一次队列
-        self.exec()  # 进入事件循环
+        timer.start(100)
+        self.exec()
 
     def check_queue(self):
         while not queue_notification.empty():

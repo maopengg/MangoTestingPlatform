@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-05-11 22:17
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-05-11 22:17
 # @Author : 毛鹏
 import inspect
 import json
@@ -101,7 +100,7 @@ class GetClassMethod:
                     param_dict = {}
                     for param in parameters.values():
                         if param.name != 'self':
-                            param_dict[param.name] =''
+                            param_dict[param.name] = ''
                     # 将方法名称、注释和参数信息组成一个字典
                     method_dict = {
                         'value': attr,
@@ -159,6 +158,7 @@ class GetClassMethod:
                          'label': str(cls.__doc__),
                          'children': self.get_class_methods(cls)})
         return data
+
 
 if __name__ == '__main__':
     print(GetClassMethod().get_web())

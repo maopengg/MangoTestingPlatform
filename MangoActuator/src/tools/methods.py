@@ -8,7 +8,7 @@ import threading
 from mango_ui import *
 
 from src.models.tools_model import BaseDictModel
-from src.network import Http
+from src.network import HTTP
 from src.tools.get_class_methods import GetClassMethod
 
 
@@ -33,10 +33,11 @@ class Methods:
             for q in e.children:
                 if q.value == product_id:
                     return q.children
+
     @classmethod
     def set_project(cls):
         def run():
-            cls.base_dict.project = [CascaderModel(**i) for i in Http.project_info()['data']]
+            cls.base_dict.project = [CascaderModel(**i) for i in HTTP.project_info()['data']]
 
         thread = threading.Thread(target=run)
         thread.start()

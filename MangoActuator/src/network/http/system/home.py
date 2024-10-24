@@ -26,3 +26,8 @@ class Home(HttpBase):
     @request_log()
     def case_sum(cls):
         return requests.get(cls.url(f'{Home._url}/case/sum'), cls.headers)
+
+    @classmethod
+    @request_log()
+    def result_week(cls):
+        return requests.get(cls.url(f'ui/result/week'), cls.headers)

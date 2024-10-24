@@ -12,7 +12,6 @@ from src.settings import settings
 from src.tools.log_collector import log
 
 
-
 def async_memory(func):
     async def wrapper(*args, **kwargs):
         current_mix = 0

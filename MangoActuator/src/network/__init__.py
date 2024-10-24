@@ -3,6 +3,5 @@
 # @Description: 
 # @Time   : 2024-08-20 18:43
 # @Author : 毛鹏
-from .http import Http
+from .http import HTTP
 from .web_socket import *
-from .web_socket import socket_conn

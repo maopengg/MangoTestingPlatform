@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/5/4 14:33
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
 
 import asyncio
@@ -30,8 +29,9 @@ from src.tools.log_collector import log
 class CaseSteps(StepElements):
 
     def __init__(self, case_model: CaseModel, driver_object):
-        super().__init__(case_model.project_product, driver_object)
+        super().__init__(driver_object)
         self.case_model: CaseModel = case_model
+        self.project_product_id = case_model.project_product,
         self.case_id = case_model.id
         self.test_suite_id = self.case_model.test_suite_id
         self.case_result = CaseResultModel(test_suite_id=self.case_model.test_suite_id,
@@ -65,8 +65,8 @@ class CaseSteps(StepElements):
                     await self.steps_init(page_step_model)
                     await self.driver_init()
                     page_steps_result_model = await self.steps_main()
-                    self.case_result\
-                        .page_steps_result_list\
+                    self.case_result \
+                        .page_steps_result_list \
                         .append(page_steps_result_model)
                     self.case_result.test_obj = self.url
                 except MangoActuatorError as error:
@@ -105,7 +105,6 @@ class CaseSteps(StepElements):
                 func_args=self.case_result
             )
             queue_notification.put({'type': self.case_result.status, 'value': msg})
-
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         for i in front_custom:

@@ -4,6 +4,6 @@
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
 from .role.role import RolePage
+from .setting import SettingPage
 from .user.user import UserAdministrationPage
 from .user_log.user_log import UserLogPage
-from .setting import SettingPage

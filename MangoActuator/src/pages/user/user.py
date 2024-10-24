@@ -1,14 +1,14 @@
 import json
 from typing import Optional
 
+from PySide6.QtWidgets import QWidget
 from mango_ui import *
 
-from src import *
 from src.enums.system_enum import CacheDataKey2Enum, EnvironmentEnum
 from src.enums.tools_enum import ClientTypeEnum
 from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
 from src.models.user_model import UserModel
-from src.network import Http
+from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.tools.assertion import Assertion
 from src.tools.get_class_methods import GetClassMethod
@@ -25,7 +25,7 @@ class UserPage(QWidget):
         self.setLayout(self.layout)
 
     def show_data(self):
-        self.user_info = Http.get_userinfo(UserModel().id)
+        self.user_info = HTTP.get_userinfo(UserModel().id)
         card_layout1 = QFormLayout()
         card_widget = MangoCard(card_layout1, '基本信息')
         card_layout1.addRow('头像', MangoLabel('-'))
@@ -138,16 +138,16 @@ class UserPage(QWidget):
         self.user_info.config.web_headers = bool(self.web_headers.get_value())
         self.user_info.config.web_path = self.web_path.get_value() if self.web_path.get_value() else None
         self.user_info.config.and_equipment = self.and_equipment.get_value() if self.and_equipment.get_value() else None
-        response_message(self, Http.put_user_info(json.loads(self.user_info.model_dump_json())))
+        response_message(self, HTTP.put_user_info(json.loads(self.user_info.model_dump_json())))
 
     def func_select_3_2(self, value):
         self.user_info.selected_environment = value
-        Http.put_environment(self.user_info.id, value)
+        HTTP.put_environment(self.user_info.id, value)
 
     def func_select_3_1(self, value):
         self.user_info.selected_project = value
-        Http.headers['Project'] = str(value) if value else value
-        Http.put_user_project(self.user_info.id, value)
+        HTTP.headers['Project'] = str(value) if value else value
+        HTTP.put_user_project(self.user_info.id, value)
 
     def click_send_redis_data(self):
         r = GetClassMethod()

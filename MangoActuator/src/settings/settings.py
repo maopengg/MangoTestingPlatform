@@ -19,4 +19,3 @@ with open(os.path.join(InitPath.get_root_path(), 'src', 'settings', 'settings.js
 
 with open(os.path.join(InitPath.get_root_path(), 'src', 'settings', 'menus.json'), "r", encoding='utf-8') as f:
     MENUS = MenusModel(**json.loads(f.read()))
-

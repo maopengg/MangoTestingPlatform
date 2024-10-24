@@ -6,10 +6,10 @@
 
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
-from .module_dict import *
+from .test_report_detailed_dict import *
 
 
-class ModulePage(SubPage):
+class TestReportDetailedPage(SubPage):
 
     def __init__(self, parent):
         super().__init__(parent,
@@ -18,9 +18,9 @@ class ModulePage(SubPage):
                          table_menu=table_menu,
                          field_list=field_list,
                          form_data=form_data)
-        self.superior_page = 'product'
-        self.id_key = 'project_product'
-        self.get = HTTP.get_module
-        self.post = HTTP.post_module
-        self.put = HTTP.put_module
-        self._delete = HTTP.delete_module
+        self.superior_page = 'test_report'
+        self.id_key = 'page'
+        self.get = HTTP.get_page_element
+        self.post = HTTP.post_page_element
+        self.put = HTTP.put_page_element
+        self._delete = HTTP.delete_page_element

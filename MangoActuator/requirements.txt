@@ -4,7 +4,7 @@ pywinauto==0.6.8
 uiautodev
 locust
 mangokit==1.1.19
-MangoUi==1.10.19
+MangoUi==1.10.21
 websockets==10.4
 websocket-client==1.5.1
 

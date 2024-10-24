@@ -9,5 +9,5 @@ from .ui import Ui
 from .user import UserApi
 
 
-class Http(Ui, HttpClient, UserApi, System):
+class HTTP(Ui, HttpClient, UserApi, System):
     pass

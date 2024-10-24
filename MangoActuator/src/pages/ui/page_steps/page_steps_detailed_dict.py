@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.ui_enum import ElementOperationEnum
-from src.network import Http
+from src.network import HTTP
 from src.tools.methods import Methods
 
 table_column = [
@@ -55,7 +55,7 @@ form_data = [
         'key': 'ele_name',
         'type': 1,
         'required': False,
-        'select': Http.get_element_name
+        'select': HTTP.get_element_name
     },
     {
         'title': '操作值',

@@ -88,7 +88,7 @@ class UIWindow(QMainWindow):
         if STYLE.custom_title_bar:
             self.title_bar.set_title(STYLE.app_name)
         else:
-            self.title_bar.set_title("Welcome to PyOneDark")
+            self.title_bar.set_title("芒果测试平台")
         self.title_bar_layout.addWidget(self.title_bar)
         self.right_app_layout.addWidget(self.title_bar_frame)
         self.window.layout.addWidget(self.right_app_frame)

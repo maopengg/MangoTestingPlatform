@@ -34,4 +34,4 @@ class TestFile(HttpBase):
     @classmethod
     @request_log()
     def delete_test_file(cls, _id, ):
-        return cls.delete(url=cls.url(TestFile._url), headers=cls.headers, params={'id': _id,})
+        return cls.delete(url=cls.url(TestFile._url), headers=cls.headers, params={'id': _id, })

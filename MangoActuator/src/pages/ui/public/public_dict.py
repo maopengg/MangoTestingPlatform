@@ -5,9 +5,8 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.tools_enum import StatusEnum, Status1Enum
+from src.enums.tools_enum import Status1Enum
 from src.enums.ui_enum import UiPublicTypeEnum
-from src.settings import settings
 from src.tools.methods import Methods
 
 search_data = [

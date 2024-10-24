@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
+# @Project: 芒果测试平台# @Description:
 # @Time   : 2023-07-16 15:17
 # @Author : 毛鹏
 from src.exceptions.mango_error import MangoActuatorError

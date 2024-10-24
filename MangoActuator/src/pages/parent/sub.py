@@ -66,6 +66,7 @@ class SubPage(QWidget):
                 getattr(self, action)(data.get('row'))
             else:
                 getattr(self, action)()
+
     def add(self):
         form_data = copy.deepcopy(self.form_data)
         for i in form_data:

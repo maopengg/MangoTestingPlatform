@@ -8,7 +8,7 @@ import os
 from PySide6.QtWidgets import QFileDialog
 from mango_ui import *
 
-from src.network import Http
+from src.network import HTTP
 from .test_file_dict import *
 from ...parent.table import TableParent
 
@@ -20,11 +20,11 @@ class TestFilePage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = Http.get_file
-        self.post = Http.post_file
+        self.get = HTTP.get_file
+        self.post = HTTP.post_file
 
     def download(self, row):
-        response = Http.download(row.get('file'))
+        response = HTTP.download(row.get('file'))
         if response and response.content:
             # 获取文件名（可以从响应中获取，或使用默认名）
             default_file_name = row.get('name', 'downloaded_file')  # 从 row 中获取文件名
@@ -51,7 +51,7 @@ class TestFilePage(TableParent):
                 'type': 0,
                 'price': file_size,
                 'name': file_name_only,
-                'project': Http.headers.get('Project')
+                'project': HTTP.headers.get('Project')
             }, files=files)
             success_message(self, response.msg)
         self.show_data()

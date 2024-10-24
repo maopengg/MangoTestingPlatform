@@ -34,4 +34,4 @@ class UserLog(HttpBase):
     @classmethod
     @request_log()
     def delete_user_log(cls, _id, ):
-        return cls.delete(url=cls.url(UserLog._url), headers=cls.headers, params={   'id': _id, })
+        return cls.delete(url=cls.url(UserLog._url), headers=cls.headers, params={'id': _id, })

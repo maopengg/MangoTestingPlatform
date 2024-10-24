@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-04-05 12:40
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-04-05 12:40
 # @Author : 毛鹏
+from src.settings import settings
 from src.tools import InitPath
 from src.tools.log_collector.log_control import LogHandler
-from src.settings import settings
+
 
 class Log:
     DEBUG = LogHandler(fr"{InitPath.log_dir}\debug-log.log", 'debug')

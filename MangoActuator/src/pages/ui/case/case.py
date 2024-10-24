@@ -18,14 +18,14 @@ class CasePage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'case_steps'
-        self.get = Http.get_case
-        self.post = Http.post_case
-        self.put = Http.put_case
-        self._delete = Http.delete_case
+        self.get = HTTP.get_case
+        self.post = HTTP.post_case
+        self.put = HTTP.put_case
+        self._delete = HTTP.delete_case
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, Http.ui_case_run(row.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.ui_case_run(row.get("id"), user_info.selected_environment, ))
 
     def form_data_callback(self, obj: FormDataModel):
         if obj.key == 'case_people':

@@ -3,27 +3,22 @@
 # @Description:
 # @Time   : 2024-08-16 17:05
 # @Author : 毛鹏
-from asyncio import AbstractEventLoop
-
-from PySide6.QtCore import QMetaObject
-from PySide6.QtWidgets import QStackedWidget, QApplication
 from mango_ui import *
+from mango_ui.init import QStackedWidget, QApplication, QMetaObject
 
-from src.pages.component.component_center import ComponentPage
-from src.pages.home import HomePage
-from src.pages.ui import *
-from src.pages.user.user import UserPage
-from src.pages.web import WebPage
-from src.pages.report import TestReportPage
-from ..small_tools import SmallToolsPage
 from ..config import *
+from ..home import *
+from ..report import *
 from ..setting import *
-from ..time_task import TimeTaskPage, TaskCasePage
+from ..small_tools import *
+from ..time_task import *
+from ..ui import *
+from ..user import *
 
 
 class PagesWindow:
 
-    def __init__(self, central_widget,  loop: AbstractEventLoop):
+    def __init__(self, central_widget, loop):
         self.central_widget = central_widget
         self.loop = loop
         self.loading_indicator = self.create_loading_indicator()
@@ -44,7 +39,6 @@ class PagesWindow:
 
         self.page_dict = {
             'home': HomePage,
-            'web': WebPage,
             'page': PagePage,
             'page_element': ElementPage,
             'page_steps': PageStepsPage,
@@ -52,7 +46,6 @@ class PagesWindow:
             'case': CasePage,
             'case_steps': CaseStepsPage,
             'public': PublicPage,
-            'component_center': ComponentPage,
             'project': ProjectPage,
             'product': ProductPage,
             'module': ModulePage,
@@ -66,6 +59,7 @@ class PagesWindow:
             'task_case': TaskCasePage,
             'user_log': UserLogPage,
             'test_report': TestReportPage,
+            'test_report_detailed': TestReportDetailedPage,
             'small_tools': SmallToolsPage,
             'settings': SettingPage,
         }
@@ -73,20 +67,13 @@ class PagesWindow:
         QMetaObject.connectSlotsByName(main_window)
 
     def set_page(self, page: str, data: dict | None = None):
-        # 显示加载指示器
         self.pages.addWidget(self.loading_indicator)
         self.pages.setCurrentWidget(self.loading_indicator)
-
-        QApplication.processEvents()  # 更新界面以显示加载指示器
+        QApplication.processEvents()
 
         page_class = self.page_dict.get(page)
         if page_class is not None:
-            if page == 'component_center':
-                page = page_class(self.central_widget)
-            elif page == 'web':
-                page = page_class('http://121.37.174.56:8001/')
-            else:
-                page = page_class(self)
+            page = page_class(self)
         else:
             return
         current_widget = self.pages.currentWidget()

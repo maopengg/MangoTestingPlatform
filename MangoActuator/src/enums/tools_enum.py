@@ -45,6 +45,7 @@ class StatusEnum(BaseEnum):
     def obj(cls):
         return {0: "关闭&进行中&失败", 1: "启用&已完成&通过"}
 
+
 class Status3Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
@@ -53,6 +54,8 @@ class Status3Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "失败", 1: "通过"}
+
+
 class Status1Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
@@ -61,8 +64,9 @@ class Status1Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "否", 1: "是"}
-class Status4Enum(BaseEnum):
 
+
+class Status4Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
     FAIL = 0
@@ -70,8 +74,9 @@ class Status4Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "进行中", 1: "已完成"}
-class Status5Enum(BaseEnum):
 
+
+class Status5Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
     FAIL = 0

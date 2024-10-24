@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-08-28 21:23
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
 import os
@@ -55,5 +54,3 @@ class HttpClient(HttpBase):
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
-
-

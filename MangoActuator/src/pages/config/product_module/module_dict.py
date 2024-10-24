@@ -5,13 +5,12 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-
 table_column = [
     {'key': 'id', 'name': '序号', 'width': 40},
     {'key': 'create_time', 'name': '创建时间', 'width': 150},
     {'key': 'update_time', 'name': '更新时间', 'width': 150},
-    {'key': 'name', 'name': '模块名称',},
-    {'key': 'superior_module', 'name': '上级模块(一级模块)', 'width': 150 },
+    {'key': 'name', 'name': '模块名称', },
+    {'key': 'superior_module', 'name': '上级模块(一级模块)', 'width': 150},
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
