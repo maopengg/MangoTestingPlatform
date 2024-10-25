@@ -3,12 +3,11 @@ uiautomator2
 pywinauto==0.6.8
 uiautodev
 locust
-mangokit==1.1.19
+mangokit==1.1.23
 MangoUi==1.10.21
 websockets==10.4
 websocket-client==1.5.1
 
-colorlog==6.7.0
 assertpy==1.1
 pyinstaller==5.8.0
 blinker==1.7.0
