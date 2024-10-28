@@ -156,9 +156,8 @@ class UiTestRun:
             exp=element_obj.exp,
             sleep=element_obj.sleep,
             sub=element_obj.sub,
-            ope_type=data['ope_type'] if data.get('ope_type') else None,
+            ope_key=data['ope_type'] if data.get('ope_type') else data.get('ass_type'),
             ope_value=data['ope_value'] if data.get('ope_value') else None,
-            ass_type=data['ass_type'] if data.get('ass_type') else None,
             ass_value=data['ass_value'] if data.get('ass_value') else None,
             is_iframe=element_obj.is_iframe,
         ))
