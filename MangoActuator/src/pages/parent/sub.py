@@ -8,9 +8,7 @@ import json
 from typing import Optional
 
 from mango_ui import *
-from mango_ui.init import *
 
-from src.models.network_model import ResponseModel
 from src.tools.methods import Methods
 
 
@@ -18,17 +16,20 @@ class SubPage(QWidget):
     def __init__(self, parent, **kwargs):
         super().__init__()
         self.parent = parent
+        self.page = 1
+        self.page_size = 20
+
         self.data: dict = {}
         self.id_key: Optional[str | None] = None
         self.superior_page: Optional[str | None] = None
-        self.page = 1
-        self.page_size = 20
         self.kwargs = kwargs
+
         self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
 
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
+
         if kwargs.get('right_data'):
             self.right_data = [RightDataModel(**i) for i in kwargs.get('right_data')]
             self.right_but = RightButton(self.right_data)
@@ -49,7 +50,7 @@ class SubPage(QWidget):
     def show_data(self):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
-        response_model: ResponseModel = self.get(
+        response_model = self.get(
             self.page,
             self.page_size,
             {f'{self.id_key}_id': self.data.get('id')}
@@ -58,14 +59,6 @@ class SubPage(QWidget):
         if response_model.code != 200:
             response_message(self, response_model)
         return response_model
-
-    def callback(self, data):
-        action = data.get('action')
-        if action and hasattr(self, action):
-            if data.get('row'):
-                getattr(self, action)(data.get('row'))
-            else:
-                getattr(self, action)()
 
     def add(self):
         form_data = copy.deepcopy(self.form_data)
@@ -77,27 +70,16 @@ class SubPage(QWidget):
                     i.select = i.select()
         dialog = DialogWidget('新建页面', form_data)
         dialog.clicked.connect(self.sub_options)
-        dialog.exec()  # 显示对话框，直到关闭
+        dialog.exec()
         if dialog.data:
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
             if hasattr(self, 'save_callback'):
-                self.save_callback(dialog.data)
+                self.save_callback(dialog.data, True)
             else:
-                response_model: ResponseModel = self.post(dialog.data)
+                response_model = self.post(dialog.data)
                 response_message(self, response_model)
         self.show_data()
-
-    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
-        if data.subordinate == 'module':
-            init_data = Methods.get_product_module(self, data)
-            if is_refresh:
-                data.subordinate_input_object.set_select(init_data, True)
-            else:
-                return init_data
-
-    def back(self):
-        self.parent.set_page(self.superior_page)
 
     def edit(self, row):
         form_data = copy.deepcopy(self.form_data)
@@ -120,7 +102,7 @@ class SubPage(QWidget):
                 result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
         dialog = DialogWidget('编辑页面', form_data)
         dialog.clicked.connect(self.sub_options)
-        dialog.exec()  # 显示对话框，直到关闭
+        dialog.exec()
         if dialog.data:
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
@@ -128,14 +110,30 @@ class SubPage(QWidget):
             if hasattr(self, 'save_callback'):
                 self.save_callback(dialog.data)
             else:
-                response_model: ResponseModel = self.put(dialog.data)
+                response_model = self.put(dialog.data)
                 response_message(self, response_model)
         self.show_data()
 
     def delete(self, row):
-        response_model: ResponseModel = self._delete(row.get('id'))
+        response_model = self._delete(row.get('id'))
         response_message(self, response_model)
         self.show_data()
+
+    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
+        if data.subordinate == 'module':
+            init_data = Methods.get_product_module(self, data)
+            if is_refresh:
+                data.subordinate_input_object.set_select(init_data, True)
+            else:
+                return init_data
+
+    def callback(self, data):
+        action = data.get('action')
+        if action and hasattr(self, action):
+            if data.get('row'):
+                getattr(self, action)(data.get('row'))
+            else:
+                getattr(self, action)()
 
     def pagination_clicked(self, data):
         if data['action'] == 'prev':
@@ -145,3 +143,34 @@ class SubPage(QWidget):
         elif data['action'] == 'per_page':
             self.page_size = data['page']
         self.show_data()
+
+    def move_up(self, row):
+        row1 = self.table_widget.table_widget.currentRow()
+        if row1 > 0:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 - 1] = \
+                self.table_widget.table_widget.data[row1 - 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            self.update_data(self.table_widget.table_widget.data)
+            self.table_widget.table_widget.setCurrentCell(row1 - 1, 0)
+
+    def move_down(self, row):
+        row1 = self.table_widget.table_widget.currentRow()
+
+        if row1 < len(self.table_widget.table_widget.data) - 1:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 + 1] = \
+                self.table_widget.table_widget.data[row1 + 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            self.update_data(self.table_widget.table_widget.data)
+            self.table_widget.table_widget.setCurrentCell(row1 + 1, 0)
+
+    def update_data(self, data: dict):
+        pass
+
+    def back(self):
+        self.parent.set_page(self.superior_page)
+
+    def form_data_callback(self, data: FormDataModel):
+        pass
+
+    def save_callback(self, data: dict, is_post: bool = False):
+        pass

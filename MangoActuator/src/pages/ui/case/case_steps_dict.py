@@ -16,8 +16,8 @@ table_column = [
 
 ]
 table_menu = [
-    {'name': ' ↑ ', 'action': 'up_shift'},
-    {'name': ' ↓ ', 'action': 'lower_shift'},
+    {'name': ' ↑ ', 'action': 'move_up'},
+    {'name': ' ↓ ', 'action': 'move_down'},
     {'name': '同步', 'action': 'refresh_case'},
     {'name': '删除', 'action': 'delete'}
 ]

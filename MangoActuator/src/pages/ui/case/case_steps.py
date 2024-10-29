@@ -341,32 +341,13 @@ class CaseStepsPage(SubPage):
             if data.subordinate_input_object:
                 data.subordinate_input_object.set_text('请忽略此选项')
 
-    def save_callback(self, data):
+    def save_callback(self, data: dict, is_post: bool = False):
         data['case_sort'] = len(self.table_widget.table_widget.data)
         data['case_cache_ass'] = []
         data['case_cache_data'] = []
         data['case'] = self.data.get("id")
         self.post(data)
 
-    def up_shift(self, row):
-        row1 = self.table_widget.table_widget.currentRow()
-        if row1 > 0:
-            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 - 1] = \
-                self.table_widget.table_widget.data[row1 - 1], self.table_widget.table_widget.data[row1]
-            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
-            response_message(self, HTTP.put_case_sort(
-                [{'id': i.get('id'), 'case_sort': index} for index, i in
-                 enumerate(self.table_widget.table_widget.data)]))
-            self.table_widget.table_widget.setCurrentCell(row1 - 1, 0)
-
-    def lower_shift(self, row):
-        row1 = self.table_widget.table_widget.currentRow()
-
-        if row1 < len(self.table_widget.table_widget.data) - 1:
-            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 + 1] = \
-                self.table_widget.table_widget.data[row1 + 1], self.table_widget.table_widget.data[row1]
-            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
-            response_message(self, HTTP.put_case_sort(
-                [{'id': i.get('id'), 'case_sort': index} for index, i in
-                 enumerate(self.table_widget.table_widget.data)]))
-            self.table_widget.table_widget.setCurrentCell(row1 + 1, 0)
+    def update_data(self, data):
+        response_message(self,
+                         HTTP.put_case_sort([{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))

@@ -100,7 +100,7 @@ class PageStepsDetailedPage(SubPage):
         asyncio.run_coroutine_threadsafe(
             PageObject.page_steps.page_steps_mian(data), self.parent.loop)
 
-    def save_callback(self, data):
+    def save_callback(self, data: dict, is_post: bool = False):
         data['step_sort'] = len(self.table_widget.table_widget.data)
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
         response_model: ResponseModel = self.post(data)
@@ -154,25 +154,7 @@ class PageStepsDetailedPage(SubPage):
                     return result
         return None
 
-    def up_shift(self, row):
-        row1 = self.table_widget.table_widget.currentRow()
-        if row1 > 0:
-            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 - 1] = \
-                self.table_widget.table_widget.data[row1 - 1], self.table_widget.table_widget.data[row1]
-            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
-            response_message(self, HTTP.put_step_sort(
-                [{'id': i.get('id'), 'step_sort': index} for index, i in
-                 enumerate(self.table_widget.table_widget.data)]))
-            self.table_widget.table_widget.setCurrentCell(row1 - 1, 0)
-
-    def lower_shift(self, row):
-        row1 = self.table_widget.table_widget.currentRow()
-
-        if row1 < len(self.table_widget.table_widget.data) - 1:
-            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 + 1] = \
-                self.table_widget.table_widget.data[row1 + 1], self.table_widget.table_widget.data[row1]
-            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
-            response_message(self, HTTP.put_step_sort(
-                [{'id': i.get('id'), 'step_sort': index} for index, i in
-                 enumerate(self.table_widget.table_widget.data)]))
-            self.table_widget.table_widget.setCurrentCell(row1 + 1, 0)
+    def update_data(self, data):
+        response_message(self, HTTP.put_step_sort(
+            [{'id': i.get('id'), 'step_sort': index} for index, i in
+             enumerate(data)]))

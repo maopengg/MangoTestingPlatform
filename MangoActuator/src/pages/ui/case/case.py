@@ -32,3 +32,16 @@ class CasePage(TableParent):
             return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in obj.select().data]
         else:
             return obj.select()
+
+    def save_callback(self, data, is_post=False):
+        if data.get('front_custom') is None:
+            data['front_custom'] = []
+        if data.get('front_sql') is None:
+            data['front_sql'] = []
+        if data.get('posterior_sql') is None:
+            data['posterior_sql'] = []
+        if is_post:
+            response_model: ResponseModel = self.post(data)
+        else:
+            response_model: ResponseModel = self.put(data)
+        response_message(self, response_model)

@@ -8,6 +8,7 @@ from mango_ui import response_message, DialogCallbackModel, ComboBoxDataModel
 from src.pages.parent.sub import SubPage
 from .task_case_dict import *
 from ...models.api_model import ResponseModel
+from ...network import HTTP
 
 
 class TaskCasePage(SubPage):
@@ -21,10 +22,10 @@ class TaskCasePage(SubPage):
                          form_data=form_data)
         self.superior_page = 'time_task'
         self.id_key = 'task'
-        self.get = Http.get_tasks_list
-        self.post = Http.post_tasks_list
-        self.put = Http.put_tasks_list
-        self._delete = Http.delete_tasks_list
+        self.get = HTTP.get_tasks_list
+        self.post = HTTP.post_tasks_list
+        self.put = HTTP.put_tasks_list
+        self._delete = HTTP.delete_tasks_list
 
     def show_data(self):
         if self.field_list:
@@ -47,13 +48,13 @@ class TaskCasePage(SubPage):
             else:
                 return init_data
         else:
-            init_data = Http.get_tasks_type_case_name(self.data.get('type'), data.value)
+            init_data = HTTP.get_tasks_type_case_name(self.data.get('type'), data.value)
             if is_refresh:
                 data.subordinate_input_object.set_select([
                     ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in init_data.data], True)
             else:
                 return init_data
 
-    def save_callback(self, data):
+    def save_callback(self, data: dict, is_post: bool = False):
         data['sort'] = len(self.table_widget.table_widget.data)
         response_message(self, self.post(data))
