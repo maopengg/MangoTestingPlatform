@@ -33,15 +33,16 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                     #         "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
                     #         "data": None
                     #     }, status=200)
-                    elif request.method == 'PUT' and payload.get('username') != 'wfq123456':
-                        if request.path not in ['/user/environment',
-                                                '/user/project/put',
-                                                '/ui/config/put/status']:
-                            return JsonResponse({
-                                "code": 300,
-                                "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
-                                "data": None
-                            }, status=200)
+                    elif request.method == 'PUT':
+                        if payload.get('username') != 'wfq123456':
+                            if request.path not in ['/user/environment',
+                                                    '/user/project/put',
+                                                    '/ui/config/put/status']:
+                                return JsonResponse({
+                                    "code": 300,
+                                    "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
+                                    "data": None
+                                }, status=200)
 
     def process_response(self, request, response):
         return response
