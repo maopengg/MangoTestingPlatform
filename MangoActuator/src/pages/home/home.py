@@ -62,8 +62,16 @@ class HomePage(QWidget):
         self.mango_dialog.layout.addWidget(label)
 
     def show_data(self, ):
-        self.pie_plot_1.draw(HTTP.case_sum().data)
-        self.pie_plot_2.draw(HTTP.case_run_sum().data)
+        pie_plot_1_data = HTTP.case_sum().data
+        if pie_plot_1_data:
+            self.pie_plot_1.draw(pie_plot_1_data)
+        else:
+            self.pie_plot_1.draw([{'value': 0, 'name': '前端'}, {'value': 0, 'name': '接口'}])
+        pie_plot_2_data = HTTP.case_run_sum().data
+        if pie_plot_2_data:
+            self.pie_plot_2.draw(pie_plot_2_data)
+        else:
+            self.pie_plot_2.draw([{'value': 0, 'name': '前端'}, {'value': 0, 'name': '接口'}])
         data = []
         response = HTTP.case_run_trends().data
         data.append({'name': 'API', 'value': response.get('ui_count')})

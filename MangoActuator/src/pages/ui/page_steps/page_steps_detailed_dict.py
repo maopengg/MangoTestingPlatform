@@ -9,18 +9,6 @@ from src.enums.ui_enum import ElementOperationEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 
-table_column = [
-    {'key': 'type', 'name': '操作类型', 'width': 70, 'option': ElementOperationEnum.get_option('value', 'label')},
-    {'key': 'ele_name', 'name': '元素名称', 'width': 120},
-    {'key': 'ope_key', 'name': '操作名称', 'width': 120, 'option': Methods.base_dict.ui_option},
-    {'key': 'ope_value', 'name': '操作输入', },
-    {'key': 'ope', 'name': '操作', 'width': 120},
-
-]
-table_menu = [
-    {'name': '编辑', 'action': 'edit'},
-    {'name': '删除', 'action': 'delete'}
-]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
     {'name': '调试', 'theme': THEME.green, 'action': 'debug'},
@@ -63,4 +51,18 @@ form_data = [
         'key': 'ope_value',
     },
 
+]
+table_column = [
+    {'key': 'type', 'name': '操作类型', 'width': 70, 'option': ElementOperationEnum.get_option('value', 'label')},
+    {'key': 'ele_name', 'name': '元素名称', 'width': 120},
+    {'key': 'ope_key', 'name': '操作名称', 'width': 120, 'option': Methods.base_dict.ui_option},
+    {'key': 'ope_value', 'name': '操作输入', },
+    {'key': 'ope', 'name': '操作', 'width': 120},
+
+]
+table_menu = [
+    {'name': ' ↑ ', 'action': 'up_shift'},
+    {'name': ' ↓ ', 'action': 'lower_shift'},
+    {'name': '编辑', 'action': 'edit'},
+    {'name': '删除', 'action': 'delete'}
 ]
