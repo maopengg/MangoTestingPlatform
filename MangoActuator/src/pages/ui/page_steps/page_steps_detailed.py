@@ -152,24 +152,27 @@ class PageStepsDetailedPage(SubPage):
                 result = cls.find_parameter_by_value(item.children, target_value)
                 if result is not None:
                     return result
-        return None  # 如果没有找到
+        return None
 
     def up_shift(self, row):
-        print(row)
+        row1 = self.table_widget.table_widget.currentRow()
+        if row1 > 0:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 - 1] = \
+                self.table_widget.table_widget.data[row1 - 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            response_message(self, HTTP.put_step_sort(
+                [{'id': i.get('id'), 'step_sort': index} for index, i in
+                 enumerate(self.table_widget.table_widget.data)]))
+            self.table_widget.table_widget.setCurrentCell(row1 - 1, 0)
 
     def lower_shift(self, row):
-        if row < len(self.table_widget.table_widget.data) - 1:
-            # 交换数据
-            self.table_widget.table_widget.data[row], self.table_widget.table_widget.data[row + 1] = \
-            self.table_widget.table_widget.data[row + 1], self.table_widget.table_widget.data[row]
-            # 更新表格
-            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
-            # 打印更新后的数据
-            self.update_data(self.table_widget.table_widget.data)
-            # 选择新的行
-            self.table_widget.table_widget.setCurrentCell(row + 1, 0)
+        row1 = self.table_widget.table_widget.currentRow()
 
-    def update_data(self, data):
-        for i in data:
-            print(i.get('id'), i.get('page').get('name'),i.get('step_sort'))
-        # HTTP.put_step_sort([{id: 54, step_sort: 0}, {id: 53, step_sort: 1}])
+        if row1 < len(self.table_widget.table_widget.data) - 1:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 + 1] = \
+                self.table_widget.table_widget.data[row1 + 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            response_message(self, HTTP.put_step_sort(
+                [{'id': i.get('id'), 'step_sort': index} for index, i in
+                 enumerate(self.table_widget.table_widget.data)]))
+            self.table_widget.table_widget.setCurrentCell(row1 + 1, 0)

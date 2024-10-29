@@ -6,10 +6,9 @@
 
 import uuid
 
-from PySide6.QtWidgets import QWidget
 from mango_ui import *
 
-from src.enums.ui_enum import DriveTypeEnum
+from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
 from src.models.api_model import ResponseModel
 from src.models.user_model import UserModel
 from src.network import HTTP
@@ -247,26 +246,26 @@ class CaseStepsPage(SubPage):
 
     def click_row(self, row):
         self.clear_layout()
-
-        for case_data in row.get('case_data'):
-            card_layout = QGridLayout()
-            card = MangoCard(card_layout)
-            card_layout.addWidget(
-                MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_type')), 0, 0)
-            card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
-            if case_data.get('page_step_details_data') != {}:
-                h_layout = QHBoxLayout()
-                _s = 1
-                for key, value in case_data.get('page_step_details_data').items():
-                    h_layout.addWidget(MangoLabel(f"{key}："))
-                    input_ = MangoLineEdit('请根据帮助文档输入适当内容', value=value)
-                    input_.click.connect(
-                        lambda value, r=row, data=case_data, k=key: self.button_clicked(value, r, data, k))
-                    h_layout.addWidget(input_)
-                    card_layout.addLayout(h_layout, _s, 0)
-                    _s += 1
-            self.scroll_area.layout.addWidget(card)
-        self.scroll_area.layout.addStretch(1)
+        if row.get('case_data'):
+            for case_data in row.get('case_data'):
+                card_layout = QGridLayout()
+                card = MangoCard(card_layout)
+                card_layout.addWidget(
+                    MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_type')), 0, 0)
+                card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
+                if case_data.get('page_step_details_data') != {}:
+                    h_layout = QHBoxLayout()
+                    _s = 1
+                    for key, value in case_data.get('page_step_details_data').items():
+                        h_layout.addWidget(MangoLabel(f"{key}："))
+                        input_ = MangoLineEdit('请根据帮助文档输入适当内容', value=value)
+                        input_.click.connect(
+                            lambda value, r=row, data=case_data, k=key: self.button_clicked(value, r, data, k))
+                        h_layout.addWidget(input_)
+                        card_layout.addLayout(h_layout, _s, 0)
+                        _s += 1
+                self.scroll_area.layout.addWidget(card)
+            self.scroll_area.layout.addStretch(1)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):
@@ -348,3 +347,26 @@ class CaseStepsPage(SubPage):
         data['case_cache_data'] = []
         data['case'] = self.data.get("id")
         self.post(data)
+
+    def up_shift(self, row):
+        row1 = self.table_widget.table_widget.currentRow()
+        if row1 > 0:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 - 1] = \
+                self.table_widget.table_widget.data[row1 - 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            response_message(self, HTTP.put_case_sort(
+                [{'id': i.get('id'), 'case_sort': index} for index, i in
+                 enumerate(self.table_widget.table_widget.data)]))
+            self.table_widget.table_widget.setCurrentCell(row1 - 1, 0)
+
+    def lower_shift(self, row):
+        row1 = self.table_widget.table_widget.currentRow()
+
+        if row1 < len(self.table_widget.table_widget.data) - 1:
+            self.table_widget.table_widget.data[row1], self.table_widget.table_widget.data[row1 + 1] = \
+                self.table_widget.table_widget.data[row1 + 1], self.table_widget.table_widget.data[row1]
+            self.table_widget.table_widget.set_value(self.table_widget.table_widget.data)
+            response_message(self, HTTP.put_case_sort(
+                [{'id': i.get('id'), 'case_sort': index} for index, i in
+                 enumerate(self.table_widget.table_widget.data)]))
+            self.table_widget.table_widget.setCurrentCell(row1 + 1, 0)

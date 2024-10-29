@@ -12,10 +12,12 @@ table_column = [
     {'key': 'page_step', 'name': '步骤名称', 'width': 150, },
     {'key': 'status', 'name': '测试结果', 'width': 70, 'option': Status3Enum.get_option('value', 'label')},
     {'key': 'error_message', 'name': '错误提示', },
-    {'key': 'ope', 'name': '操作', 'width': 70},
+    {'key': 'ope', 'name': '操作', 'width': 120},
 
 ]
 table_menu = [
+    {'name': ' ↑ ', 'action': 'up_shift'},
+    {'name': ' ↓ ', 'action': 'lower_shift'},
     {'name': '同步', 'action': 'refresh_case'},
     {'name': '删除', 'action': 'delete'}
 ]

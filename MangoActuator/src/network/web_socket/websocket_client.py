@@ -23,7 +23,8 @@ T = TypeVar('T')
 @singleton
 class WebSocketClient:
 
-    def __init__(self):
+    def __init__(self, loop=None):
+        self.loop: asyncio.windows_events.ProactorEventLoop = loop
         self.websocket: Optional[WebSocketClientProtocol | None] = None
         self.is_recv = True
 
@@ -127,10 +128,9 @@ class WebSocketClient:
         async def send_message():
             await self.async_send(msg, code, func_name, func_args, is_notice)
 
-        event_loop = asyncio.get_event_loop()
-        event_loop.run_until_complete(send_message())
+        self.loop.create_task(send_message())
 
-    @staticmethod
+    @ staticmethod
     def __output_method(recv_json) -> SocketDataModel:
         """
         输出函数

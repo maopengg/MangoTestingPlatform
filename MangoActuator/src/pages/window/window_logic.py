@@ -35,6 +35,7 @@ class WindowLogic(UIWindow):
         self.loop = loop
 
         self.socket: WebSocketClient = WebSocketClient()
+        self.socket.loop = self.loop
         asyncio.run_coroutine_threadsafe(self.socket.client_run(), self.loop)
 
         self.notification_thread = NotificationTask()

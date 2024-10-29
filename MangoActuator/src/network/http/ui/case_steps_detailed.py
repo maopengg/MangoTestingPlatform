@@ -55,14 +55,9 @@ class CaseStepsDetailed(HttpBase):
 
     @classmethod
     @request_log()
-    def put_case_sort(cls, json_data: dict):
-        """
-        {
-            'id': id,
-            'case_sort': case_sort
+    def put_case_sort(cls, case_sort_list: list[dict]):
+        json_data = {
+            'case_sort_list': case_sort_list,
         }
-        :param json_data:
-        :return:
-        """
         url = cls.url(f'/ui/case/put/case/sort')
-        return cls.post(url=url, headers=cls.headers, json=json_data)
+        return cls.put(url=url, headers=cls.headers, json=json_data)

@@ -79,8 +79,8 @@ class SettingPage(QWidget):
             is_notice=ClientTypeEnum.WEB,
             func_args=send_list
         )
-        queue_notification.put({'type': 0, 'value': '设置缓存数据成功'})
+        queue_notification.put({'type': 1, 'value': '设置缓存数据成功'})
 
     def but_test(self):
         value = self.input_3_1.get_value()
-        queue_notification.put({'type': 0, 'value': value})
+        queue_notification.put({'type': 1, 'value': value})
