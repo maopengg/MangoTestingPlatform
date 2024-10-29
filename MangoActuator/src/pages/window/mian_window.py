@@ -48,11 +48,3 @@ class MainWindow(WindowLogic):
 
     def mousePressEvent(self, event):
         self.drag_pos = QCursor.pos()
-
-
-if __name__ == '__main__':
-    app = QApplication([])
-    app.setStyleSheet("* { font-size: 10pt; }")
-    window = MainWindow()
-    window.show()
-    app.exec()

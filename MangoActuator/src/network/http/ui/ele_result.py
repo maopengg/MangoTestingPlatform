@@ -11,14 +11,14 @@ class EleResult(HttpBase):
 
     @classmethod
     @request_log()
-    def get_ele_result(cls, page, page_size, params: dict = None):
+    def get_ele_result(cls, test_suite_id, page_step_id, case_id):
         url = cls.url(f'/ui/ele/result')
         _params = {
-            'page': page,
-            'pageSize': page_size
+            'test_suite_id': test_suite_id,
+            'page_step_id': page_step_id,
+            'case_id': case_id
         }
-        if params:
-            _params.update(params)
+
         return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod

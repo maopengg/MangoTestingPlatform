@@ -48,7 +48,7 @@ class WebDevice(PlaywrightBrowser,
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
-            self.element_test_result.ope_value = self.element_model.ope_value
+            self.element_test_result.element_data.ope_value = self.element_model.ope_value
             if self.element_model.sleep:
                 await self.w_wait_for_timeout(self.element_model.sleep)
 
@@ -58,7 +58,7 @@ class WebDevice(PlaywrightBrowser,
         is_method = callable(getattr(PlaywrightAssertion, self.element_model.ope_key, None))
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
-        self.element_test_result.expect = self.element_model \
+        self.element_test_result.element_data.expect = self.element_model \
             .ass_value \
             .get('expect') if self.element_model \
             .ass_value \
@@ -69,11 +69,11 @@ class WebDevice(PlaywrightBrowser,
                                           value=(self.element_model.name, self.element_model.loc))
         try:
             if is_method:
-                self.element_test_result.actual = '判断元素是什么'
+                self.element_test_result.element_data.actual = '判断元素是什么'
                 await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
             elif is_method_public:
                 text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
-                self.element_test_result.actual = text_actual
+                self.element_test_result.element_data.actual = text_actual
                 getattr(PublicAssertion, self.element_model.ope_key)(
                     **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
@@ -95,12 +95,12 @@ class WebDevice(PlaywrightBrowser,
             raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
         if 'actual' in self.element_model.ass_value:
             del self.element_model.ass_value['actual']
-        self.element_test_result.ass_value = self.element_model.ass_value
+        self.element_test_result.element_data.ope_value = self.element_model.ass_value
 
     @async_retry
     async def web_find_ele(self) -> Locator | list[Locator]:
         locator_str = self.element_model.loc
-        self.element_test_result.loc = locator_str
+        self.element_test_result.element_data.loc = locator_str
         # 是否在iframe中
         if self.element_model.is_iframe == StatusEnum.SUCCESS.value:
             ele_list: list[Locator] = []
@@ -117,7 +117,7 @@ class WebDevice(PlaywrightBrowser,
                 else:
                     raise LocatorError(*ERROR_MSG_0023)
 
-            self.element_test_result.ele_quantity = len(ele_list)
+            self.element_test_result.element_data.ele_quantity = len(ele_list)
             if not ele_list:
                 raise LocatorError(*ERROR_MSG_0023)
             # 这里需要进行调整
@@ -130,7 +130,7 @@ class WebDevice(PlaywrightBrowser,
                 count = await locator.count()
             except Error:
                 raise LocatorError(*ERROR_MSG_0041, )
-            self.element_test_result.ele_quantity = count
+            self.element_test_result.element_data.ele_quantity = count
             if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
                 if self.element_model.type == ElementOperationEnum.OPE.value:
                     raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))

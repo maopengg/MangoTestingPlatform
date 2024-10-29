@@ -47,7 +47,6 @@ class ElementModel(BaseModel):
     ope_key: str | None
     ope_value: dict | None
     is_iframe: int | None
-    ass_value: dict | None
     key_list: list | None = None
     sql: str | None = None
     key: str | None = None
@@ -89,18 +88,7 @@ class CaseModel(BaseModel):
     public_data_list: list[UiPublicModel] = []
 
 
-class ElementResultModel(BaseModel):
-    page_step_id: int | None = None
-    test_suite_id: int | None = None
-    case_id: int | None = None
-    case_step_details_id: int | None = None
-
-    ele_name: str | None = None
-    ele_quantity: int
-    error_message: str | None = None
-    picture_path: str | None = None
-    status: int
-
+class ElementDataModel(BaseModel):
     loc: str | None = None
     exp: int | None = None
     sleep: int | None = None
@@ -109,13 +97,25 @@ class ElementResultModel(BaseModel):
     type: int
     ope_key: str | None = None
     ope_value: dict | str | None = None
-    ass_value: dict | None = None
     expect: str | None = None
     actual: str | None = None
     sql: str | None = None
     key_list: str | None = None
     key: str | None = None
     value: str | None = None
+
+    status: int
+    ele_quantity: int
+    error_message: str | None = None
+    picture_path: str | None = None
+
+
+class ElementResultModel(BaseModel):
+    page_step_id: int | None = None
+    test_suite_id: int | None = None
+    case_id: int | None = None
+    ele_name: str | None = None
+    element_data: ElementDataModel
 
 
 class PageStepsResultModel(BaseModel):

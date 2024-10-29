@@ -62,7 +62,7 @@ class StepElements(ElementMain):
                 return self.page_step_result_model
             except TargetClosedError as error:
                 await self.setup()
-                self.element_test_result.error_message = error.message
+                self.element_test_result.element_data.error_message = error.message
                 self.page_step_result_model.error_message = error.message
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
@@ -139,9 +139,9 @@ class StepElements(ElementMain):
         if self.element_test_result:
             file_name = f'失败截图-{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
             file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
-            self.element_test_result.picture_path = f'files/{file_name}'
+            self.element_test_result.element_data.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
-            self.element_test_result.error_message = error.msg
+            self.element_test_result.element_data.error_message = error.msg
             await self.__error_screenshot(file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg

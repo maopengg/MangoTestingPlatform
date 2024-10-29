@@ -7,7 +7,7 @@ from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from src.exceptions.error_msg import *
 from src.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
 from src.exceptions.ui_exception import *
-from src.models.ui_model import ElementResultModel, ElementModel
+from src.models.ui_model import ElementResultModel, ElementModel, ElementDataModel
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
 from src.tools.decorator.memory import async_memory
@@ -31,17 +31,20 @@ class ElementMain(WebDevice, AndroidDriver):
             case_id=self.case_id,
             page_step_id=self.page_step_id,
             ele_name=self.ope_name,
-            type=self.element_model.type,
-            exp=element_model.exp,
-            sub=element_model.sub,
-            sleep=element_model.sleep,
-            ope_key=element_model.ope_key,
-            status=StatusEnum.FAIL.value,
-            ele_quantity=0,
-            key_list=element_model.key_list,
-            sql=element_model.sql,
-            key=element_model.key,
-            value=element_model.value,
+            element_data=ElementDataModel(
+                type=self.element_model.type,
+                exp=element_model.exp,
+                sub=element_model.sub,
+                sleep=element_model.sleep,
+                ope_key=element_model.ope_key,
+                ope_value=element_model.ope_key,
+                status=StatusEnum.FAIL.value,
+                ele_quantity=0,
+                key_list=element_model.key_list,
+                sql=element_model.sql,
+                key=element_model.key,
+                value=element_model.value,
+            )
         )
         try:
             for key, value in self.element_model:
@@ -52,18 +55,17 @@ class ElementMain(WebDevice, AndroidDriver):
 
     @async_memory
     async def element_main(self) -> None:
-        name = self.element_model.name if self.element_model.name else self.element_model.ope_key
         if self.element_model.type == ElementOperationEnum.OPE.value:
-            await self.__ope(name, self.element_model.ope_key)
+            await self.__ope()
         elif self.element_model.type == ElementOperationEnum.ASS.value:
-            await self.__ass(name, self.element_model.ope_key)
+            await self.__ass()
         elif self.element_model.type == ElementOperationEnum.SQL.value:
             await self.__sql()
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
             await self.__custom()
         else:
             raise ElementTypeError(*ERROR_MSG_0015)
-        self.element_test_result.status = StatusEnum.SUCCESS.value
+        self.element_test_result.element_data.status = StatusEnum.SUCCESS.value
 
     async def action_element(self):
         if self.drive_type == DriveTypeEnum.WEB.value:
@@ -91,7 +93,7 @@ class ElementMain(WebDevice, AndroidDriver):
             log.error('不存在的设备类型')
             raise Exception('不存在的设备类型')
 
-    async def __ope(self, name, ope_type):
+    async def __ope(self):
         try:
             for key, value in self.element_model.ope_value.items():
                 if key == 'locating':
@@ -104,7 +106,7 @@ class ElementMain(WebDevice, AndroidDriver):
         except UiError as error:
             raise error
         try:
-            func_doc = getattr(self, ope_type).__doc__
+            func_doc = getattr(self, self.element_model.ope_key).__doc__
         except AttributeError:
             raise ElementOpeNoneError(*ERROR_MSG_0048)
         try:
@@ -112,12 +114,12 @@ class ElementMain(WebDevice, AndroidDriver):
         except AttributeError:
             raise ElementOpeNoneError(*ERROR_MSG_0054)
 
-    async def __ass(self, name, ope_type):
-        for key, expect in self.element_model.ass_value.items():
+    async def __ass(self):
+        for key, expect in self.element_model.ope_value.items():
             if key == 'actual' and self.element_model.loc:
-                self.element_model.ass_value[key] = await self.__find_element()
+                self.element_model.ope_value[key] = await self.__find_element()
             else:
-                self.element_model.ass_value[key] = await self.__input_value(key, expect)
+                self.element_model.ope_value[key] = await self.__input_value(key, expect)
         await self.assertion_element()
 
     async def __sql(self):

@@ -69,9 +69,6 @@ class UiPageStepsDetailed(models.Model):
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ope_value = models.JSONField(verbose_name="对该元素的操作类型",  null=True)
 
-    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.JSONField(verbose_name="操作内容", null=True)
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
@@ -199,20 +196,7 @@ class UiEleResult(models.Model):
     case_id = models.IntegerField(verbose_name="用例ID", null=True)
     page_step_id = models.IntegerField(verbose_name="步骤id", null=True)
     ele_name = models.CharField(verbose_name="元素名称", max_length=64, null=True)
-    ele_quantity = models.SmallIntegerField(verbose_name="元素个数", null=True)
-    status = models.SmallIntegerField(verbose_name="元素测试结果", null=True)
-    picture_path = models.CharField(verbose_name="用例名称", max_length=1000, null=True)
-    exp = models.SmallIntegerField(verbose_name="元素表达式", null=True)
-    loc = models.CharField(verbose_name="元素定位", max_length=1048, null=True)
-    sleep = models.IntegerField(verbose_name="等待时间", null=True)
-    sub = models.IntegerField(verbose_name="下标", null=True)
-    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
-    ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
-    error_message = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
-    expect = models.TextField(verbose_name="预期", null=True)
-    actual = models.TextField(verbose_name="实际", null=True)
+    element_data = models.JSONField(verbose_name="元素测试结果", null=True)
 
     class Meta:
         db_table = 'ui_ele_result'

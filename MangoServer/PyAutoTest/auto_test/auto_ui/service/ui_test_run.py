@@ -213,7 +213,6 @@ class UiTestRun:
                 sub=i.ele_name.sub if i.ele_name else None,
                 ope_key=i.ope_key,
                 ope_value=i.ope_value,
-                ass_value=i.ass_value,
                 is_iframe=i.ele_name.is_iframe if i.ele_name else None,
                 key_list=i.key_list,
                 sql=i.sql,

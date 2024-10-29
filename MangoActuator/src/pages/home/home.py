@@ -72,7 +72,7 @@ class HomePage(QWidget):
         response_model: ResponseModel = HTTP.get_scheduled_tasks(self.page, self.page_size)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
 
-        QTimer.singleShot(1000, self.open_dialog)  # 1000毫秒后调用open_dialog方法
+        QTimer.singleShot(500, self.open_dialog)
 
     def open_dialog(self):
         self.mango_dialog.exec()
