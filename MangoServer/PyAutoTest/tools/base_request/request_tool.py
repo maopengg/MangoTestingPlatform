@@ -57,6 +57,8 @@ class BaseRequest:
     def request_result_data(self) -> ResponseDataModel:
         try:
             response_json = self.response.json()
+            if isinstance(response_json, str):
+                response_json = None
         except JSONDecodeError:
             response_json = None
         log.api.info(response_json if response_json else self.response.text)
