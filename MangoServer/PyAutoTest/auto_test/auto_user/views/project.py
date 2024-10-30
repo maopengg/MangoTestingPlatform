@@ -79,8 +79,7 @@ class ProjectViews(ViewSet):
             for product_id, product_name in product_list:
                 project['children'].append({
                     'value': product_id,
-                    'label': product_name,
-                    'children': []})
+                    'label': product_name})
             options.append(project)
         return ResponseData.success(RESPONSE_MSG_0025, options)
 
