@@ -142,14 +142,8 @@ class UiConfig(models.Model):
     user_id = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0是web，1是安卓
     type = models.SmallIntegerField(verbose_name="什么客户端", null=True)
-    browser_port = models.CharField(verbose_name="web端口", max_length=64, null=True)
-    browser_path = models.CharField(verbose_name="chrome路径", max_length=1024, null=True)
-    browser_type = models.SmallIntegerField(verbose_name="浏览器类型", null=True)
-    device = models.CharField(verbose_name="浏览器模式", max_length=64, null=True)
-    equipment = models.CharField(verbose_name="安卓设备名称", max_length=64, null=True)
-    # 0关闭，1开启
-    is_headless = models.SmallIntegerField(verbose_name="状态", null=True)
-    # 0未选中，1选中
+    config = models.JSONField(verbose_name="配置json", null=True)
+    # 是否开启
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:

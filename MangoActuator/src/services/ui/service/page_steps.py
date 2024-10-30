@@ -10,7 +10,7 @@ from mangokit import singleton
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
-from src.models.ui_model import PageStepsModel, WEBConfigModel
+from src.models.ui_model import PageStepsModel, EquipmentModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.bases.driver_object import DriverObject
@@ -67,7 +67,7 @@ class PageSteps(StepElements):
             queue_notification.put({'type': self.page_step_result_model.status, 'value': msg})
         self.finished.emit(True)
 
-    async def new_web_obj(self, data: WEBConfigModel):
+    async def new_web_obj(self, data: EquipmentModel):
         msg = 'WEB对象已实例化'
         try:
             if self.page is None and self.context is None:

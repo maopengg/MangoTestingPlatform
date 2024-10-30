@@ -130,7 +130,7 @@ class WebSocketClient:
 
         self.loop.create_task(send_message())
 
-    @ staticmethod
+    @staticmethod
     def __output_method(recv_json) -> SocketDataModel:
         """
         输出函数

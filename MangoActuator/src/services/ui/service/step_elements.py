@@ -12,7 +12,7 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from src.exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
-from src.models.ui_model import PageStepsResultModel, PageStepsModel, WEBConfigModel
+from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
 from src.network import HTTP
 from src.services.ui.bases import ElementMain
 from src.settings import settings
@@ -87,29 +87,33 @@ class StepElements(ElementMain):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
-    async def web_init(self, data: WEBConfigModel | None = None):
-        if self.page:
+    async def web_init(self, data: EquipmentModel | None = None):
+        async def open_url():
+            test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                        self.page_step_model.url)
+            if self.page and urlparse(self.url).netloc.lower() != urlparse(
+                    test_object_value).netloc.lower() and not data:
+                await self.w_goto(test_object_value)
+                self.url = test_object_value
+        if self.page and self.url:
             return
-        try:
-
-            if data:
-                self.driver_object.web_config = data
-                self.context, self.page = await self.driver_object.new_web_page()
-            else:
-                self.driver_object.web_config = self.page_step_model.equipment_config
-                self.context, self.page = await self.driver_object.new_web_page()
-                test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                            self.page_step_model.url)
-                if self.page and urlparse(self.url).netloc.lower() != urlparse(
-                        test_object_value).netloc.lower() and not data:
-                    await self.w_goto(test_object_value)
-                    self.url = test_object_value
-        except TargetClosedError as error:
-            await self.setup()
-            self.page_step_result_model.status = StatusEnum.FAIL.value
-            self.page_step_result_model.error_message = error.message
-            self.page_step_result_model.element_result_list.append(self.element_test_result)
-            raise BrowserObjectClosed(*ERROR_MSG_0010)
+        elif self.page:
+            await open_url()
+        else:
+            try:
+                if data:
+                    self.driver_object.web_config = data
+                    self.context, self.page = await self.driver_object.new_web_page()
+                else:
+                    self.driver_object.web_config = self.page_step_model.equipment_config
+                    self.context, self.page = await self.driver_object.new_web_page()
+                    await open_url()
+            except TargetClosedError as error:
+                await self.setup()
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def __android_init(self):
         package_name = self.page_step_model.environment_config.test_object_value

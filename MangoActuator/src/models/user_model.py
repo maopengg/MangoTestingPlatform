@@ -10,15 +10,7 @@ from pydantic import BaseModel
 
 
 class UserConfigModel(BaseModel):
-    web_max: bool = False
-    web_recording: bool = False
-    web_parallel: int = 10
-    web_type: int = 0
-    web_h5: str | None = None
-    web_path: str | None = None
-    web_headers: bool = False
-    and_equipment: str | None = None
-
+    pass
 
 @singleton
 class UserModel(BaseModel):
@@ -34,7 +26,7 @@ class UserModel(BaseModel):
     selected_project: int | None = None
     selected_environment: int | None = None
     last_login_time: datetime | None = None
-    config: UserConfigModel
+    config: UserConfigModel | None = None
 
     def update(self, **kwargs):
         """更新用户信息"""

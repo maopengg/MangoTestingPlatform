@@ -19,7 +19,7 @@ from PyAutoTest.enums.socket_api_enum import UiSocketEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, ProductTypeEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
-from PyAutoTest.models.socket_model.ui_model import WEBConfigModel
+from PyAutoTest.models.socket_model.ui_model import WEBConfigModel, EquipmentModel
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -121,20 +121,14 @@ class UiConfigViews(ViewSet):
                     'value': urllib.parse.urlparse(i.get('value')).netloc,
                     'project_product_id': i.get('project_product_id')
                 })
-            web_config = WEBConfigModel(browser_type=config_obj.browser_type,
-                                        browser_port=config_obj.browser_port,
-                                        browser_path=config_obj.browser_path,
-                                        is_headless=config_obj.is_headless,
-                                        device=config_obj.device,
-                                        is_header_intercept=True,
-                                        host_list=host_list_dict)
+            web_config = EquipmentModel(
+                type=config_obj.type,
+                **config_obj.config,
+                is_header_intercept=True,
+                host_list=host_list_dict)
         else:
             config_obj = self.model.objects.get(id=request.query_params.get('id'))
-            web_config = WEBConfigModel(browser_type=config_obj.browser_type,
-                                        browser_port=config_obj.browser_port,
-                                        browser_path=config_obj.browser_path,
-                                        device=config_obj.device,
-                                        is_headless=config_obj.is_headless)
+            web_config = EquipmentModel(type=config_obj.type, **config_obj.config)
 
         send_socket_data = SocketDataModel(
             code=200,

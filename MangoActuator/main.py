@@ -9,6 +9,7 @@ import traceback
 from PySide6.QtWidgets import QApplication
 from mangokit import Mango
 
+from src.handlers import InterfaceMethodReflection
 from src.login_window import LoginLogic
 from src.tools import InitPath
 from src.tools.log_collector import log
@@ -19,7 +20,9 @@ async def main():
         InitPath()
         await asyncio.sleep(0)
         app = QApplication([])
-        login_window = LoginLogic(Mango.t())
+        l = Mango.t()
+        InterfaceMethodReflection(l)
+        login_window = LoginLogic(l)
         login_window.show()
         app.exec()
     except Exception as error:

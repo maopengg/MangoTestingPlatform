@@ -15,14 +15,13 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050, ERROR_MSG_0051
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.exceptions.user_exception import UserIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050
 from PyAutoTest.tools.view.snowflake import Snowflake
-
 
 class UiTestRun:
 
@@ -144,8 +143,7 @@ class UiTestRun:
             project_product=data['project_product_id'],
             url=page_obj.url,
             type=page_obj.project_product.client_type,
-            equipment_config=self.__get_web_config(
-                test_object.value) if page_obj.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            equipment_config=self.__get_web_config() if page_obj.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object, page_obj.project_product_id)
         )
         page_steps_model.element_list.append(ElementModel(
@@ -190,8 +188,7 @@ class UiTestRun:
             test_object_value=test_object.value,
             url=step.page.url,
             type=step.project_product.client_type,
-            equipment_config=self.__get_web_config(
-                test_object.value) if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            equipment_config=self.__get_web_config() if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object, step.project_product_id)
         )
         if case_step_details_id:
@@ -224,26 +221,23 @@ class UiTestRun:
     def __get_equipment_config(self):
         pass
 
-    def __get_web_config(self, host: str) -> WEBConfigModel:
+    def __get_web_config(self) -> EquipmentModel:
         try:
             user_ui_config = UiConfig.objects.get(user_id=self.user_id,
                                                   status=StatusEnum.SUCCESS.value,
                                                   type=DriveTypeEnum.WEB.value)
         except UiConfig.DoesNotExist:
             raise UiConfigQueryIsNoneError(*ERROR_MSG_0029)
-        return WEBConfigModel(
-            browser_port=user_ui_config.browser_port,
-            browser_path=user_ui_config.browser_path,
-            browser_type=user_ui_config.browser_type,
-            is_headless=user_ui_config.is_headless,
-            device=user_ui_config.device,
-            host=host)
+        return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
 
-    def __get_app_config(self) -> AndroidConfigModel:
-        user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                              status=StatusEnum.SUCCESS.value,
-                                              type=DriveTypeEnum.ANDROID.value)
-        return AndroidConfigModel(equipment=user_ui_config.equipment)
+    def __get_app_config(self) -> EquipmentModel:
+        try:
+            user_ui_config = UiConfig.objects.get(user_id=self.user_id,
+                                                  status=StatusEnum.SUCCESS.value,
+                                                  type=DriveTypeEnum.ANDROID.value)
+        except UiConfig.DoesNotExist:
+            raise UiConfigQueryIsNoneError(*ERROR_MSG_0051)
+        return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
 
     def __environment_config(self, test_object: TestObject, project_product_id) -> EnvironmentConfigModel:
         mysql_config = None

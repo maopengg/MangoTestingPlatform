@@ -47,6 +47,14 @@
           "btn_tooltip": "测试用例",
           "show_top": true,
           "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "equipment",
+          "btn_text": "设备配置",
+          "btn_tooltip": "UI用例设备配置",
+          "show_top": true,
+          "is_active": false
         }
       ]
     },

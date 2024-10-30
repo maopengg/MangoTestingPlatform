@@ -3,16 +3,15 @@
 # @Description: 
 # @Time   : 2024-09-19 17:54
 # @Author : 毛鹏
-import copy
-import json
 from typing import Optional
 
 from mango_ui import *
 
+from src.pages.parent.parent import Parent
 from src.tools.methods import Methods
 
 
-class SubPage(QWidget):
+class SubPage(Parent):
     def __init__(self, parent, **kwargs):
         super().__init__()
         self.parent = parent
@@ -47,7 +46,7 @@ class SubPage(QWidget):
             self.table_widget.clicked.connect(self.callback)
             self.layout.addWidget(self.table_widget)
 
-    def show_data(self):
+    def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         response_model = self.get(
@@ -59,65 +58,6 @@ class SubPage(QWidget):
         if response_model.code != 200:
             response_message(self, response_model)
         return response_model
-
-    def add(self):
-        form_data = copy.deepcopy(self.form_data)
-        for i in form_data:
-            if callable(i.select):
-                if hasattr(self, 'form_data_callback'):
-                    i.select = self.form_data_callback(i)
-                else:
-                    i.select = i.select()
-        dialog = DialogWidget('新建页面', form_data)
-        dialog.clicked.connect(self.sub_options)
-        dialog.exec()
-        if dialog.data:
-            if self.id_key:
-                dialog.data[self.id_key] = self.data.get('id')
-            if hasattr(self, 'save_callback'):
-                self.save_callback(dialog.data, True)
-            else:
-                response_model = self.post(dialog.data)
-                response_message(self, response_model)
-        self.show_data()
-
-    def edit(self, row):
-        form_data = copy.deepcopy(self.form_data)
-        for i in form_data:
-            if isinstance(row[i.key], dict):
-                i.value = row[i.key].get('id', None)
-            elif isinstance(row[i.key], list):
-                i.value = json.dumps(row[i.key])
-            else:
-                i.value = row[i.key]
-            if callable(i.select):
-                if hasattr(self, 'form_data_callback'):
-                    i.select = self.form_data_callback(i)
-                else:
-                    i.select = i.select()
-        for i in form_data:
-            if i.subordinate:
-                result = next((item for item in form_data if item.key == i.subordinate), None)
-                select = Methods.get_product_module_label(int(i.value))
-                result.select = [ComboBoxDataModel(id=children.value, name=children.label) for children in select]
-        dialog = DialogWidget('编辑页面', form_data)
-        dialog.clicked.connect(self.sub_options)
-        dialog.exec()
-        if dialog.data:
-            if self.id_key:
-                dialog.data[self.id_key] = self.data.get('id')
-            dialog.data['id'] = row['id']
-            if hasattr(self, 'save_callback'):
-                self.save_callback(dialog.data)
-            else:
-                response_model = self.put(dialog.data)
-                response_message(self, response_model)
-        self.show_data()
-
-    def delete(self, row):
-        response_model = self._delete(row.get('id'))
-        response_message(self, response_model)
-        self.show_data()
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.subordinate == 'module':

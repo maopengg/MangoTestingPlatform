@@ -6,6 +6,8 @@ import asyncio
 import json
 import traceback
 
+from mangokit import singleton
+
 from src.handlers.api_consumer import APIConsumer
 from src.handlers.perf_consumer import PerfConsumer
 from src.handlers.tools_consumer import ToolsConsumer
@@ -15,12 +17,13 @@ from src.models.user_model import UserModel
 from src.tools.log_collector import log
 
 
+@singleton
 class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
 
-    def __init__(self, debug: bool = False):
+    def __init__(self, l=None, debug: bool = False):
         self.queue = asyncio.Queue()
         if not debug:
-            self.loop = asyncio.get_event_loop()
+            self.loop = l
             self.loop.create_task(self.consumer())
         else:
             settings.IS_DEBUG = debug
@@ -61,5 +64,5 @@ if __name__ == '__main__':
 
     settings.IP = '127.0.0.1'
     settings.PORT = 8000
-    r = InterfaceMethodReflection(True)
+    r = InterfaceMethodReflection(debug=True)
     asyncio.run(r.test())

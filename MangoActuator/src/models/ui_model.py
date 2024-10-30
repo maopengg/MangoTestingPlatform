@@ -8,21 +8,24 @@ from pydantic import BaseModel
 from src.models.tools_model import MysqlConingModel
 
 
+class EquipmentModel(BaseModel):
+    type: int
+    web_max: bool | None = None
+    web_recording: bool | None = None
+    web_parallel: int | None = None
+    web_type: int | None = None
+    web_h5: str | None = None
+    web_path: str | None = None
+    web_headers: bool | None = None
+    and_equipment: str | None = None
+    host_list: list[dict] | None = None
+    is_header_intercept: bool | None = None
+
+
 class UiPublicModel(BaseModel):
     type: int
     key: str
     value: str
-
-
-class WEBConfigModel(BaseModel):
-    """ web启动配置 """
-    browser_type: int
-    browser_port: str | None = None
-    browser_path: str | None = None
-    is_headless: int | None = None
-    is_header_intercept: bool = False
-    device: str | None = None
-    host_list: list[dict] | None = None
 
 
 class AndroidConfigModel(BaseModel):
@@ -69,7 +72,7 @@ class PageStepsModel(BaseModel):
     url: str
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
-    equipment_config: AndroidConfigModel | WEBConfigModel
+    equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
 

@@ -44,13 +44,11 @@ class Config(HttpBase):
 
     @classmethod
     @request_log()
-    def put_status(cls, _id: int, status: int, is_headless: int | None = None):
+    def put_ui_config_status(cls, _id: int, status: int):
         url = cls.url(f'/ui/config/put/status')
         json_data = {
             'status': status,
-            'is_headless': is_headless,
             'id': _id,
-
         }
         return cls.put(url=url, headers=cls.headers, json=json_data)
 

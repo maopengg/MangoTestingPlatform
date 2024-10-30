@@ -6,7 +6,7 @@ import asyncio
 
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
-from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel, PageObject
+from src.models.ui_model import PageStepsModel, CaseModel, PageObject, EquipmentModel
 from src.models.user_model import UserModel
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
@@ -43,8 +43,8 @@ class UIConsumer:
 
     @classmethod
     @async_error_handle()
-    @convert_args(WEBConfigModel)
-    async def u_page_new_obj(cls, data: WEBConfigModel):
+    @convert_args(EquipmentModel)
+    async def u_page_new_obj(cls, data: EquipmentModel):
         """
         实例化浏览器对象
         @param data:

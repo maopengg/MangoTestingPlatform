@@ -7,7 +7,7 @@ import copy
 import json
 
 from src.enums.tools_enum import ClientTypeEnum
-from src.models.user_model import UserModel, UserConfigModel
+from src.models.user_model import UserModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
@@ -41,7 +41,7 @@ class User(HttpBase):
             cls.headers['Project'] = str(user_info.get('selected_project')) if user_info.get(
                 'selected_project') else None
             if user_info.get('config') is None:
-                user_info['config'] = UserConfigModel().model_dump()
+                user_info['config'] = {}
                 cls.put_user_info(copy.deepcopy(user_info))
             return UserModel(**user_info)
 

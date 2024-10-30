@@ -13,6 +13,7 @@ from ..setting import *
 from ..small_tools import *
 from ..time_task import *
 from ..ui import *
+from ..ui.quipment import EquipmentPage
 from ..user import *
 
 
@@ -46,6 +47,7 @@ class PagesWindow:
             'case': CasePage,
             'case_steps': CaseStepsPage,
             'public': PublicPage,
+            'equipment': EquipmentPage,
             'project': ProjectPage,
             'product': ProductPage,
             'module': ModulePage,

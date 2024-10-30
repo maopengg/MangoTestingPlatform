@@ -28,11 +28,11 @@ class Methods:
                     return init_data
 
     @classmethod
-    def get_product_module_label(cls, product_id: int):
+    def get_product_module_label(cls, product_id: int) -> list[ComboBoxDataModel]:
         for e in cls.base_dict.project:
             for q in e.children:
                 if q.value == product_id:
-                    return q.children
+                    return [ComboBoxDataModel(id=children.value, name=children.label) for children in q.children]
 
     @classmethod
     def set_project(cls):
