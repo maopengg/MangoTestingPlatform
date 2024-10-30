@@ -77,11 +77,10 @@ class ProjectViews(ViewSet):
             }
             product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
             for product_id, product_name in product_list:
-                v = ProductModule.objects.values_list('id', 'name').filter(project_product=product_id)
                 project['children'].append({
                     'value': product_id,
                     'label': product_name,
-                    'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]})
+                    'children': []})
             options.append(project)
         return ResponseData.success(RESPONSE_MSG_0025, options)
 
