@@ -98,8 +98,8 @@ class UiCaseStepsDetailedViews(ViewSet):
             'step_sort')
         case_data_list = []
         for steps_detailed in ui_page_steps_detailed_obj:
-            if steps_detailed.ope_type:
-                name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_type
+            if steps_detailed.ope_key:
+                name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
 
                 value_dict: dict = steps_detailed.ope_value
                 if 'locating' in value_dict:
@@ -122,8 +122,7 @@ class UiCaseStepsDetailedViews(ViewSet):
                 'page_step_details_name': name,
                 'page_step_details_data': value_dict,
                 'type': steps_detailed.type,
-                'ope_type': steps_detailed.ope_type,
-                'ass_type': steps_detailed.ass_type,
+                'ope_key': steps_detailed.ope_key,
             })
         books.case_data = case_data_list
         books.save()
