@@ -20,7 +20,8 @@ class Parent(QWidget):
         dialog.exec()
         if dialog.data:
             response_model = Mango.post_save_data(self, dialog.data)
-            response_message(self, response_model)
+            if response_model:
+                response_message(self, response_model)
         self.show_data()
 
     def edit(self, row, title='编辑'):
@@ -30,7 +31,8 @@ class Parent(QWidget):
         dialog.exec()
         if dialog.data:
             response_model = Mango.put_save_data(self, row, dialog.data)
-            response_message(self, response_model)
+            if response_model:
+                response_message(self, response_model)
         self.show_data()
 
     def delete(self, row):
