@@ -109,8 +109,3 @@ class SubPage(Parent):
     def back(self):
         self.parent.set_page(self.superior_page)
 
-    def form_data_callback(self, data: FormDataModel):
-        pass
-
-    def save_callback(self, data: dict, is_post: bool = False):
-        pass
