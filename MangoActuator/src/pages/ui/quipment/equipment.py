@@ -45,15 +45,17 @@ class EquipmentPage(TableParent):
 
         response_list = self.get(1, 100, {'user_id': self.user_info.id})
         if not response_list.data:
+            self.v_layout.addStretch()
             return
         for index, i in enumerate(response_list.data):
             if index % 3 == 0 or index == 0:
                 layout_h = QHBoxLayout()
                 self.v_layout.addLayout(layout_h)
-            if i.get('type') == DriveTypeEnum.WEB.value:
-                self.set_web(i, layout_h, 'WEB配置')
-            elif i.get('type') == DriveTypeEnum.ANDROID.value:
-                self.set_android(i, layout_h, '安卓配置')
+            if i.get('config') is not None:
+                if i.get('type') == DriveTypeEnum.WEB.value:
+                    self.set_web(i, layout_h, 'WEB配置')
+                elif i.get('type') == DriveTypeEnum.ANDROID.value:
+                    self.set_android(i, layout_h, '安卓配置')
         self.v_layout.addStretch()
 
     def set_web(self, data: dict, layout: QVBoxLayout, title: str):
