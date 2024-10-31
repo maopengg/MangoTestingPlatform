@@ -59,27 +59,27 @@ class WebDevice(PlaywrightBrowser,
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
         self.element_test_result.element_data.expect = self.element_model \
-            .ass_value \
+            .ope_value \
             .get('expect') if self.element_model \
-            .ass_value \
+            .ope_value \
             .get('expect') else None
         if is_method or is_method_public:
-            if self.element_model.ass_value['actual'] is None:
+            if self.element_model.ope_value['actual'] is None:
                 raise ElementIsEmptyError(*ERROR_MSG_0031,
                                           value=(self.element_model.name, self.element_model.loc))
         try:
             if is_method:
                 self.element_test_result.element_data.actual = '判断元素是什么'
-                await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
+                await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ope_value)
             elif is_method_public:
-                text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
+                text_actual = await self.w_get_text(self.element_model.ope_value['actual'])
                 self.element_test_result.element_data.actual = text_actual
                 getattr(PublicAssertion, self.element_model.ope_key)(
-                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
+                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ope_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.mysql_connect
-                    await SqlAssertion.sql_is_equal(**self.element_model.ass_value)
+                    await SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
                     raise UiSqlAssertionError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
         except AssertionError as error:
@@ -93,9 +93,9 @@ class WebDevice(PlaywrightBrowser,
             raise BrowserObjectClosed(*ERROR_MSG_0010)
         except Error as error:
             raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
-        if 'actual' in self.element_model.ass_value:
-            del self.element_model.ass_value['actual']
-        self.element_test_result.element_data.ope_value = self.element_model.ass_value
+        if 'actual' in self.element_model.ope_value:
+            del self.element_model.ope_value['actual']
+        self.element_test_result.element_data.ope_value = self.element_model.ope_value
 
     @async_retry
     async def web_find_ele(self) -> Locator | list[Locator]:
