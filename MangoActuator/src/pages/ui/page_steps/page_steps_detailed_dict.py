@@ -34,6 +34,7 @@ form_data = [
         'placeholder': '元素表达式',
         'key': 'ope_key',
         'type': 2,
+        'subordinate': 'ope_value'
     },
     {
         'title': '元素名称',
