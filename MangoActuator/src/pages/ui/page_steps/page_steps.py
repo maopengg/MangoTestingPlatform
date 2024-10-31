@@ -35,6 +35,11 @@ class PageStepsPage(TableParent):
         else:
             return init_data
 
+    def subordinate_callback(self, data: FormDataModel):
+        if data.subordinate == 'page':
+            response_model: ResponseModel = HTTP.module_page_name(data.value)
+            return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+
     def debug(self, row):
         user_info = UserModel()
         response_message(self, HTTP.ui_steps_run(user_info.selected_environment, row.get("id")))
