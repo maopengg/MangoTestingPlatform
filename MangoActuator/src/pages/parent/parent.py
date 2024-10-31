@@ -19,10 +19,12 @@ class Parent(QWidget):
         dialog.clicked.connect(self.sub_options)
         dialog.exec()
         if dialog.data:
+            if hasattr(self, 'id_key'):
+                dialog.data[self.id_key] = self.data['id']
             response_model = Mango.post_save_data(self, dialog.data)
             if response_model:
                 response_message(self, response_model)
-        self.show_data()
+            self.show_data()
 
     def edit(self, row, title='编辑'):
         form_data = Mango.edit_form_data(self, row, self.form_data, Methods)
@@ -33,7 +35,7 @@ class Parent(QWidget):
             response_model = Mango.put_save_data(self, row, dialog.data)
             if response_model:
                 response_message(self, response_model)
-        self.show_data()
+            self.show_data()
 
     def delete(self, row):
         response_model = self._delete(row.get('id'))
