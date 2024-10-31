@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+from mangokit import MysqlConnect, MysqlConingModel
+from mangokit.exceptions import MysqlConnectionError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -15,7 +17,6 @@ from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from mangokit import MysqlConnect, MysqlConingModel
 
 
 class DatabaseSerializers(serializers.ModelSerializer):
@@ -79,15 +80,18 @@ class DatabaseViews(ViewSet):
     @error_response('system')
     def test(self, request: Request):
         obj = self.model.objects.get(id=request.query_params.get('id'))
-        mysql_conn = MysqlConnect(MysqlConingModel(
-            host=obj.host,
-            port=obj.port,
-            user=obj.user,
-            password=obj.password,
-            database=obj.name
-        ))
+        try:
+            mysql_conn = MysqlConnect(MysqlConingModel(
+                host=obj.host,
+                port=obj.port,
+                user=obj.user,
+                password=obj.password,
+                database=obj.name
+            ))
+        except MysqlConnectionError:
+            return ResponseData.fail(RESPONSE_MSG_0123, )
+
         if mysql_conn.connection.open:
             return ResponseData.success(RESPONSE_MSG_0122, )
         else:
             return ResponseData.fail(RESPONSE_MSG_0123, )
-

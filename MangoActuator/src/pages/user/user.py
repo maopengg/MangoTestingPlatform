@@ -33,9 +33,9 @@ class UserPage(QWidget):
 
         card_layout2 = QFormLayout()
         card_widget2 = MangoCard(card_layout2, '账户信息')
-        card_layout2.addRow('账号', MangoLabel(self.user_info.username))
-        card_layout2.addRow('角色', MangoLabel(self.user_info.role.get('name') if self.user_info.role else None))
-        card_layout2.addRow('邮箱', MangoLabel(', '.join(self.user_info.mailbox)))
+        card_layout2.addRow('账号：', MangoLabel(self.user_info.username))
+        card_layout2.addRow('角色：', MangoLabel(self.user_info.role.get('name') if self.user_info.role else None))
+        card_layout2.addRow('邮箱：', MangoLabel(', '.join(self.user_info.mailbox) if self.user_info.mailbox else None))
 
         v_layout3 = QVBoxLayout()
         card_widget3 = MangoCard(v_layout3, '过滤条件')
@@ -74,59 +74,10 @@ class UserPage(QWidget):
         card_layout4 = QFormLayout()
         h_layout_4.addLayout(card_layout4)
 
-        card_widget4 = MangoCard(h_layout_4, '前端自动化设置')
-        self.web_max = MangoToggle(self.user_info.config.web_max)
-        card_layout4.addRow('浏览器最大化', self.web_max)
-        self.web_recording = MangoToggle(self.user_info.config.web_recording)
-        card_layout4.addRow('是否视频录制', self.web_recording)
-        self.web_parallel = MangoComboBox(
-            '请选择需要并发的数量',
-            data=[ComboBoxDataModel(id=int(i), name=i) for i in ["1", "2", "3", "5", "10", "15", "20", "30"]],
-            value=self.user_info.config.web_parallel
-        )
-        card_layout4.addRow('浏览器并行数量', self.web_parallel)
-
-        card_layout5 = QFormLayout()
-        h_layout_4.addLayout(card_layout5)
-        self.web_type = MangoComboBox(
-            '请选择浏览器类型',
-            data=[ComboBoxDataModel(**i) for i in BrowserTypeEnum.get_option('id', 'name')],
-            value=self.user_info.config.web_type,
-            is_form=False
-        )
-        card_layout5.addRow('*浏览器类型：', self.web_type)
-        web_h5_data = [ComboBoxDataModel(id=i, name=i) for i in DeviceEnum.get_obj()]
-        web_h5_data.insert(0, ComboBoxDataModel(id=None, name='默认非H5'))
-        self.web_h5 = MangoComboBox(
-            '请选择设备模式',
-            data=web_h5_data,
-            value=self.user_info.config.web_h5,
-            is_form=False
-        )
-        card_layout5.addRow('H5设备模式：', self.web_h5)
-        self.web_path = MangoLineEdit(
-            '请输入浏览器路径',
-            value=self.user_info.config.web_path,
-        )
-        card_layout5.addRow('浏览器路径：', self.web_path)
-        self.web_headers = MangoToggle(self.user_info.config.web_headers)
-        card_layout5.addRow('无头模式：', self.web_headers)
-        card_layout6 = QFormLayout()
-        self.and_equipment = MangoLineEdit('请输入安卓设备号', value=self.user_info.config.and_equipment)
-        self.and_equipment.setMaximumWidth(300)
-        card_layout6.addRow('安卓设备号：', self.and_equipment)
-        h_layout_4.addLayout(card_layout6)
-
-        card_layout7 = QVBoxLayout()
-        but_4 = MangoPushButton('保存')
-        but_4.clicked.connect(self.web_save)
-        card_layout7.addWidget(but_4)
-        h_layout_4.addLayout(card_layout7)
 
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)
         self.layout.addWidget(card_widget3)
-        self.layout.addWidget(card_widget4)
         self.layout.addStretch()
 
     def web_save(self):

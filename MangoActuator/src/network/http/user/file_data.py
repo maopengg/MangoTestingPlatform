@@ -29,5 +29,10 @@ class FileData(HttpBase):
 
     @classmethod
     @request_log()
+    def delete_file(cls, _id):
+        return cls.delete(url=cls.url(FileData._url), headers=cls.headers, params={'id': _id})
+
+    @classmethod
+    @request_log()
     def download(cls, name: str):
         return cls.get(url=cls.url(name), headers=cls.headers)

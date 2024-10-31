@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
+from src.enums.tools_enum import ClientTypeEnum
 
 search_data = [
     {
@@ -39,7 +40,8 @@ table_column = [
     {
         'key': 'source_type',
         'name': '来源',
-        'width': 150
+        'width': 150,
+        'option': ClientTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'ip',

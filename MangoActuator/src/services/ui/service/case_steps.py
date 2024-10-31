@@ -17,7 +17,6 @@ from src.exceptions.error_msg import ERROR_MSG_0037, ERROR_MSG_0039
 from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
 from src.models import queue_notification
 from src.models.ui_model import CaseModel, CaseResultModel
-from src.models.user_model import UserModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.step_elements import StepElements
@@ -47,7 +46,7 @@ class CaseSteps(StepElements):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.base_close()
-        if UserModel().config.web_recording:
+        if self.driver_object.web_config and self.driver_object.web_config.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_deta_hms()}.webm'
             shutil.move(self.case_result.video_path,
                         os.path.join(f'{InitPath.videos}/', video_path))  # 移动并重命名文件
@@ -129,7 +128,7 @@ class CaseSteps(StepElements):
         await self.sava_videos()
 
     async def sava_videos(self):
-        if UserModel().config.web_recording:
+        if self.driver_object.web_config and self.driver_object.web_config.web_recording:
             self.case_result.video_path = await self.page.video.path()  # 获取视频的路径
 
     def get_test_obj(self):

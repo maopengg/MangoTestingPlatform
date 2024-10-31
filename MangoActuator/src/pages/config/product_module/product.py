@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel
 
 from src.network import HTTP
 from .product_dict import *
@@ -17,13 +16,13 @@ class ProductPage(TableParent):
                          form_data=form_data,
                          table_column=table_column,
                          table_menu=table_menu,
-                         right_data=right_data
-                         )
+                         right_data=right_data)
         self.subpage_value = 'module'
         self.get = HTTP.get_product
         self.post = HTTP.post_product
         self.put = HTTP.put_product
         self._delete = HTTP.delete_product
 
-    def form_data_callback(self, data: FormDataModel):
-        return [ComboBoxDataModel(id=i.value, name=i.label) for i in data.select()]
+    def show_data(self, is_refresh=False):
+        super().show_data()
+        Methods.set_project()

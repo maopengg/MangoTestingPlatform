@@ -7,7 +7,6 @@ import asyncio
 from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, CaseModel, PageObject, EquipmentModel
-from src.models.user_model import UserModel
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
 from src.services.ui.service.page_steps import PageSteps
@@ -65,9 +64,9 @@ class UIConsumer:
         @return:
         """
         if PageObject.case_run is None:
-            max_tasks = 5
-            test_case_parallelism = UserModel().config.web_parallel
-            if test_case_parallelism:
-                max_tasks = int(test_case_parallelism)
+            max_tasks = 2
+            for i in data.steps:
+                if i and i.equipment_config:
+                    max_tasks = i.equipment_config.web_parallel
             PageObject.case_run = CaseMain(max_tasks)
         await PageObject.case_run.queue.put(data)

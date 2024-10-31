@@ -90,15 +90,16 @@ class PageStepsDetailedPage(SubPage):
         user_info = UserModel()
         response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
-        if PageObject.page_steps is None:
-            PageObject.page_steps = PageSteps()
-            PageObject.page_steps.progress.connect(self.update_card)
-        data = PageStepsModel(**response_model.data)
-        # if settings.IS_DEBUG:
-        #     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
-        #         f.write(data.model_dump_json(indent=2))
-        asyncio.run_coroutine_threadsafe(
-            PageObject.page_steps.page_steps_mian(data), self.parent.loop)
+        if response_model.code == 200:
+            if PageObject.page_steps is None:
+                PageObject.page_steps = PageSteps()
+                PageObject.page_steps.progress.connect(self.update_card)
+            data = PageStepsModel(**response_model.data)
+            # if settings.IS_DEBUG:
+            #     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
+            #         f.write(data.model_dump_json(indent=2))
+            asyncio.run_coroutine_threadsafe(
+                PageObject.page_steps.page_steps_mian(data), self.parent.loop)
 
     def save_callback(self, data: dict, is_post: bool = False):
         data['step_sort'] = len(self.table_widget.table_widget.data)

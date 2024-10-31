@@ -35,6 +35,14 @@ class Methods:
                     return [ComboBoxDataModel(id=children.value, name=children.label) for children in q.children]
 
     @classmethod
+    def get_product_module_cascader_model(cls) -> list[CascaderModel]:
+        return cls.base_dict.project
+
+    @classmethod
+    def get_project_model(cls) -> list[ComboBoxDataModel]:
+        return [ComboBoxDataModel(id=i.value, name=i.label) for i in cls.base_dict.project]
+
+    @classmethod
     def set_project(cls):
         def run():
             cls.base_dict.project = [CascaderModel(**i) for i in HTTP.project_info()['data']]
@@ -45,5 +53,7 @@ class Methods:
     @classmethod
     def get_product_module_label_model(cls, product_id):
         for i in cls.base_dict.project:
-            if i.value == product_id:
-                return i.children
+            if i.children:
+                for e in i.children:
+                    if e.value == product_id:
+                        return i.children

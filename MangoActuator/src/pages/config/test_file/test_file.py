@@ -22,6 +22,7 @@ class TestFilePage(TableParent):
                          right_data=right_data)
         self.get = HTTP.get_file
         self.post = HTTP.post_file
+        self._delete = HTTP.delete_file
 
     def download(self, row):
         response = HTTP.download(row.get('file'))

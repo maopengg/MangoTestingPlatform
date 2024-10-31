@@ -4,6 +4,7 @@
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
 from src.network import HTTP
+from src.tools.methods import Methods
 from .project_dict import *
 from ...parent.table import TableParent
 
@@ -21,3 +22,7 @@ class ProjectPage(TableParent):
         self.post = HTTP.post_project
         self.put = HTTP.put_project
         self._delete = HTTP.delete_project
+
+    def show_data(self, is_refresh=False):
+        super().show_data()
+        Methods.set_project()

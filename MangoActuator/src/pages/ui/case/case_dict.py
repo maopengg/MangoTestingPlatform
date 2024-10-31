@@ -34,7 +34,7 @@ form_data = [
         'key': 'project_product',
         'type': 2,
         'subordinate': 'module',
-        'select': lambda: Methods.base_dict.project,
+        'select': Methods.get_product_module_cascader_model,
 
     },
     {

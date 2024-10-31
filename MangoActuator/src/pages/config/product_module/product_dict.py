@@ -46,7 +46,7 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project',
         'type': 1,
-        'select': lambda: Methods.base_dict.project,
+        'select': Methods.get_project_model,
     },
     {
         'title': '自动化类型',

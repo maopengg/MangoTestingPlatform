@@ -28,6 +28,12 @@ form_data = [
         'placeholder': '请输入项目名称',
         'key': 'name',
     },
+    {
+        'title': '状态',
+        'placeholder': '请选择项目的启用状态',
+        'key': 'status',
+        'type': 3
+    },
 ]
 table_column = [
     {

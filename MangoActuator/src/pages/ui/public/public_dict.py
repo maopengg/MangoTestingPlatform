@@ -35,7 +35,7 @@ form_data = [
         'placeholder': '请选择项目产品',
         'key': 'project_product',
         'type': 2,
-        'select': lambda: Methods.base_dict.project,
+        'select': Methods.get_product_module_cascader_model,
     },
     {
         'title': '类型',

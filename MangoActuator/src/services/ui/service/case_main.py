@@ -14,7 +14,7 @@ from ..bases.driver_object import DriverObject
 
 class CaseMain:
 
-    def __init__(self, max_tasks=10):
+    def __init__(self, max_tasks=2):
         super().__init__()
         self.queue = asyncio.Queue()
         self.max_tasks = max_tasks

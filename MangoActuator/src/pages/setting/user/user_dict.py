@@ -54,30 +54,30 @@ table_column = [
     {
         'key': 'nickname',
         'name': '昵称',
+        'width': 100
     },
 
     {
         'key': 'username',
         'name': '账号',
-        'width': 150
+        'width': 70
     },
     {
         'key': 'role',
         'name': '角色',
-        'width': 150
+        'width': 100
     },
     {
         'key': 'last_login_time',
         'name': '最近登录时间',
-        'width': 150
+        'width': 100
     }, {
         'key': 'ip',
         'name': '登录IP',
-        'width': 150
+        'width': 100
     }, {
         'key': 'mailbox',
         'name': '邮箱',
-        'width': 200
     },
     {
         'key': 'ope',
@@ -90,9 +90,5 @@ table_menu = [
         'name': '编辑',
         'action': 'edit'
     },
-    {
-        'name': '删除',
-        'action': 'delete'
-    }
 
 ]

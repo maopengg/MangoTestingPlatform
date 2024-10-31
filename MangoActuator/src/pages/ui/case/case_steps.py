@@ -118,8 +118,8 @@ class CaseStepsPage(SubPage):
         self.scroll_area = MangoScrollArea()
         self.h_layout.addWidget(self.scroll_area, 1)
 
-    def show_data(self):
-        response_model = super().show_data()
+    def show_data(self, is_refresh=False):
+        response_model = super().show_data(is_refresh)
         for i in self.data.get('front_custom', []):
             self.front_custom(i)
         for i in self.data.get('front_sql', []):
@@ -251,7 +251,7 @@ class CaseStepsPage(SubPage):
                 card_layout = QGridLayout()
                 card = MangoCard(card_layout)
                 card_layout.addWidget(
-                    MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_type')), 0, 0)
+                    MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_key')), 0, 0)
                 card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
                 if case_data.get('page_step_details_data') != {}:
                     h_layout = QHBoxLayout()
@@ -346,7 +346,9 @@ class CaseStepsPage(SubPage):
         data['case_cache_ass'] = []
         data['case_cache_data'] = []
         data['case'] = self.data.get("id")
-        self.post(data)
+        response = self.post(data)
+        response_message(self, response)
+        self.refresh_case(response.data)
 
     def update_data(self, data):
         response_message(self,

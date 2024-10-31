@@ -12,9 +12,9 @@ table_column = [
     {'key': 'name', 'name': '元素名称', 'width': 100},
     {'key': 'exp', 'name': '表达式类型', 'width': 70, 'option': ElementExpEnum.get_option('value', 'label')},
     {'key': 'loc', 'name': '定位表达式', },
-    {'key': 'is_iframe', 'name': '是否在iframe中', 'width': 40, 'option': Status1Enum.get_option('value', 'label')},
-    {'key': 'sleep', 'name': '等待时间（秒）', 'width': 40},
-    {'key': 'sub', 'name': '元素下标（1开始）', 'width': 40},
+    {'key': 'is_iframe', 'name': 'iframe', 'width': 70, 'option': Status1Enum.get_option('value', 'label')},
+    {'key': 'sleep', 'name': '等待时间(秒)', 'width': 100},
+    {'key': 'sub', 'name': '下标(1开始)', 'width': 100},
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
