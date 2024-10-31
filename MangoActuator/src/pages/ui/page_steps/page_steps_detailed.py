@@ -49,6 +49,7 @@ class PageStepsDetailedPage(SubPage):
         self.select_data = None
 
     def update_card(self, ele_model: ElementResultModel):
+        WidgetTool.remove_layout(self.scroll_area.layout)
         layout = QGridLayout()
         card = MangoCard(layout)
         labels = [
