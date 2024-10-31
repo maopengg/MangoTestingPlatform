@@ -46,7 +46,6 @@ class PageStepsDetailedPage(SubPage):
         self.h_layout.addLayout(self.v_layout, 4)
         self.layout.addLayout(self.h_layout)
 
-        self.eoe_type = None
         self.select_data = None
 
     def update_card(self, ele_model: ElementResultModel):
@@ -54,27 +53,27 @@ class PageStepsDetailedPage(SubPage):
         card = MangoCard(layout)
         labels = [
             f"元素名称: {ele_model.ele_name}",
-            f"元素数量: {ele_model.ele_quantity}",
-            f"测试结果: {'成功' if ele_model.status else '失败'}",
+            f"元素数量: {ele_model.element_data.ele_quantity}",
+            f"测试结果: {'成功' if ele_model.element_data.status else '失败'}",
         ]
 
-        if ele_model.type == ElementOperationEnum.OPE.value:
-            labels.append(f"操作类型: {ele_model.ope_key}")
-        elif ele_model.type == ElementOperationEnum.ASS.value:
-            labels.append(f"断言类型: {ele_model.ope_key}")
-            labels.append(f"预期值: {ele_model.expect}")
-            labels.append(f"实际值: {ele_model.actual}")
-        elif ele_model.type == ElementOperationEnum.SQL.value:
-            labels.append(f"sql_key: {ele_model.key_list}")
-            labels.append(f"sql语句: {ele_model.sql}")
-        elif ele_model.type == ElementOperationEnum.CUSTOM.value:
-            labels.append(f"参数key: {ele_model.key}")
-            labels.append(f"参数value: {ele_model.value}")
+        if ele_model.element_data.type == ElementOperationEnum.OPE.value:
+            labels.append(f"操作类型: {ele_model.element_data.ope_key}")
+        elif ele_model.element_data.type == ElementOperationEnum.ASS.value:
+            labels.append(f"断言类型: {ele_model.element_data.ope_key}")
+            labels.append(f"预期值: {ele_model.element_data.expect}")
+            labels.append(f"实际值: {ele_model.element_data.actual}")
+        elif ele_model.element_data.type == ElementOperationEnum.SQL.value:
+            labels.append(f"sql_key: {ele_model.element_data.key_list}")
+            labels.append(f"sql语句: {ele_model.element_data.sql}")
+        elif ele_model.element_data.type == ElementOperationEnum.CUSTOM.value:
+            labels.append(f"参数key: {ele_model.element_data.key}")
+            labels.append(f"参数value: {ele_model.element_data.value}")
 
-        labels.append(f"元素表达式: {ele_model.loc}")
-        if ele_model.status == StatusEnum.FAIL.value:
-            labels.append(f"失败提示：{ele_model.error_message}")
-            labels.append(f"失败截图: {ele_model.picture_path}")
+        labels.append(f"元素表达式: {ele_model.element_data.loc}")
+        if ele_model.element_data.status == StatusEnum.FAIL.value:
+            labels.append(f"失败提示：{ele_model.element_data.error_message}")
+            labels.append(f"失败截图: {ele_model.element_data.picture_path}")
 
         # 添加3行3列的数据
         for row in range(3):
@@ -102,9 +101,12 @@ class PageStepsDetailedPage(SubPage):
                 PageObject.page_steps.page_steps_mian(data), self.parent.loop)
 
     def save_callback(self, data: dict, is_post: bool = False):
-        data['step_sort'] = len(self.table_widget.table_widget.data)
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
-        response_model: ResponseModel = self.post(data)
+        if is_post:
+            data['step_sort'] = len(self.table_widget.table_widget.data)
+            response_model: ResponseModel = self.post(data)
+        else:
+            response_model: ResponseModel = self.put(data)
         response_message(self, response_model)
 
     def form_data_callback(self, obj: FormDataModel):
@@ -114,7 +116,6 @@ class PageStepsDetailedPage(SubPage):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.subordinate == 'ope_key':
             auto_type = self.data.get('project_product').get('auto_type')
-            self.eoe_type = data.value
             if data.value == ElementOperationEnum.OPE.value:
                 if auto_type == DriveTypeEnum.WEB.value:
                     self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web()]
@@ -143,7 +144,6 @@ class PageStepsDetailedPage(SubPage):
         elif data.subordinate == 'ope_value':
             data.subordinate_input_object \
                 .set_value(json.dumps(self.find_parameter_by_value(self.select_data, data.value)))
-
     @classmethod
     def find_parameter_by_value(cls, data: list[CascaderModel], target_value):
         for item in data:
@@ -159,3 +159,27 @@ class PageStepsDetailedPage(SubPage):
         response_message(self, HTTP.put_step_sort(
             [{'id': i.get('id'), 'step_sort': index} for index, i in
              enumerate(data)]))
+
+    def subordinate_callback(self, data: FormDataModel):
+        if data.subordinate == 'ope_key':
+            auto_type = self.data.get('project_product').get('auto_type')
+            if data.value == ElementOperationEnum.OPE.value:
+                if auto_type == DriveTypeEnum.WEB.value:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
+                elif auto_type == DriveTypeEnum.ANDROID.value:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_android()]
+                else:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
+                return self.select_data
+            elif data.value == ElementOperationEnum.ASS.value:
+                if auto_type == DriveTypeEnum.WEB.value:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web_ass()]
+                elif auto_type == DriveTypeEnum.ANDROID.value:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_android_ass()]
+                else:
+                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_public_ass()]
+                for e in GetClassMethod().get_public_ass():
+                    self.select_data.append(CascaderModel(**e))
+                return self.select_data
+            else:
+                return [CascaderModel(value=0, label='请忽略此选项')]
