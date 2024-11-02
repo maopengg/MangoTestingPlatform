@@ -58,7 +58,7 @@ class WebSocketClient:
         @return:
         """
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?{settings.USERNAME}"
-        log.info(str(f"websockets server url:{server_url}"))
+        log.debug(str(f"websockets server url:{server_url}"))
         while self.is_recv:
             try:
                 async with websockets.connect(server_url, max_size=50000000) as self.websocket:

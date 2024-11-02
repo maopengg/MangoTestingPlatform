@@ -10,28 +10,28 @@ from src.tools.methods import Methods
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
-        'input': None
     },
     {
         'title': '页面名称',
         'placeholder': '请输入页面名称',
         'key': 'name',
-        'input': None
     },
     {
-        'title': '产品',
+        'title': '项目/产品',
         'placeholder': '请选择项目产品',
         'key': 'project_product',
-        'input': None
+        'type': 2,
+        'select': Methods.get_product_module_cascader_model,
+        'subordinate': 'module'
     },
 
     {
         'title': '模块',
-        'placeholder': '请选择产品模块',
+        'placeholder': '请选择模块',
         'key': 'module',
-        'input': None
+        'type': 1,
     }
 ]
 right_data = [

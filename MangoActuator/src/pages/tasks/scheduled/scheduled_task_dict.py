@@ -12,7 +12,7 @@ from src.network import HTTP
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
     },
     {
@@ -34,9 +34,11 @@ form_data = [
         'key': 'name',
     },
     {
-        'title': 'Cron表达式',
-        'placeholder': '请选择周期',
-        'key': 'cron',
+        'title': '定时策略',
+        'placeholder': '请选择定时策略',
+        'key': 'timing_strategy',
+        'type': 1,
+        'select': HTTP.system_time_name
     },
     {
         'title': '自动化类型',
@@ -77,9 +79,11 @@ table_column = [
     {
         'key': 'name',
         'name': '任务名称',
-    }, {
-        'key': 'cron',
-        'name': 'cron',
+    },
+    {
+        'key': 'timing_strategy',
+        'name': '定时策略',
+        'width': 150,
     },
     {
         'key': 'type',
@@ -87,12 +91,12 @@ table_column = [
         'width': 140,
         'option': AutoTestTypeEnum.get_option('value', 'label')
 
-    }, {
+    },
+    {
         'key': 'test_env',
         'name': '测试环境',
         'width': 100,
         'option': EnvironmentEnum.get_option('value', 'label')
-
     },
     {
         'key': 'case_people',
@@ -104,7 +108,6 @@ table_column = [
         'key': 'case_executor',
         'name': '执行器',
         'width': 180
-
     },
     {
         'key': 'status',
@@ -118,7 +121,6 @@ table_column = [
         'name': '通知',
         'width': 70,
         'option': Status1Enum.get_option('value', 'label')
-
     },
     {
         'key': 'ope',

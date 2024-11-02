@@ -27,13 +27,12 @@ class Tasks:
     def create_jobs(cls):
         queryset = TimeTasks.objects.all()
         for timer in queryset:
-            cls.scheduler.add_job(cls.timing,
-                                  trigger=CronTrigger(month=timer.month,
-                                                      day=timer.day,
-                                                      day_of_week=timer.day_of_week,
-                                                      hour=timer.hour,
-                                                      minute=timer.minute),
-                                  args=[timer.id])
+            if timer.cron:
+                cls.scheduler.add_job(
+                    cls.timing,
+                    trigger=CronTrigger.from_crontab(timer.cron),
+                    args=[timer.id]
+                )
         cls.scheduler.start()
 
     @classmethod

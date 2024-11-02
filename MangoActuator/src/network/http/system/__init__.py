@@ -9,7 +9,8 @@ from .notice import Notice
 from .scheduled_tasks import ScheduledTasks
 from .tasks_list import TasksList
 from .test_suite_report import TestSuiteReport
+from .time_tasks import TimeTasks
 
 
-class System(Database, Notice, TasksList, ScheduledTasks, TestSuiteReport, Home):
+class System(Database, Notice, TasksList, ScheduledTasks, TestSuiteReport, Home, TimeTasks):
     pass

@@ -10,3 +10,4 @@ from .page_element.page import PagePage
 from .page_steps.page_steps import PageStepsPage
 from .page_steps.page_steps_detailed import PageStepsDetailedPage
 from .public.public import PublicPage
+from .quipment.equipment import EquipmentPage

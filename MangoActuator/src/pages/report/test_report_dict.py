@@ -16,11 +16,15 @@ search_data = [
         'title': '测试结果',
         'placeholder': '请选择测试结果',
         'key': 'status',
+        'type': 1,
+        'select': Status3Enum.get_select()
     },
     {
         'title': '自动化类型',
         'placeholder': '请选择自动化类型',
         'key': 'type',
+        'type': 1,
+        'select': EnvironmentEnum.get_select()
     }
 ]
 table_column = [

@@ -4,6 +4,7 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from src.enums.tools_enum import ClientTypeEnum
+from src.network import HTTP
 
 search_data = [
     {
@@ -11,12 +12,14 @@ search_data = [
         'placeholder': '请选择用户',
         'key': 'user_id',
         'type': 1,
+        'select': HTTP.get_nickname
     },
     {
         'title': '来源',
         'placeholder': '请选择来源',
         'key': 'source_type',
         'type': 1,
+        'select': ClientTypeEnum.get_select()
     },
 
 ]
@@ -31,7 +34,6 @@ table_column = [
         'key': 'nickname',
         'name': '昵称',
     },
-
     {
         'key': 'username',
         'name': '账号',

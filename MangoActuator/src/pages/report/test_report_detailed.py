@@ -36,7 +36,7 @@ class TestReportDetailedPage(SubPage):
         self.layout_v_2.addWidget(self.scroll_area)
         self.layout_h.addLayout(self.layout_v_2, )
 
-    def show_data(self):
+    def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         response_model: ResponseModel = self.get(self.data.get('id'))
@@ -69,7 +69,8 @@ class TestReportDetailedPage(SubPage):
                 elif element_data.get("type") == ElementOperationEnum.ASS.value:
                     layout.addWidget(MangoLabel(f"断言类型: {element_data.get('ope_key')}"), 3, 0)
                     layout.addWidget(MangoLabel(f"断言数据: {element_data.get('ope_value')}"), 3, 1)
-                    layout.addWidget(MangoLabel(f"预期: {element_data.get('expect')}，期望：{element_data.get('actual')}"), 3, 2)
+                    layout.addWidget(
+                        MangoLabel(f"预期: {element_data.get('expect')}，期望：{element_data.get('actual')}"), 3, 2)
                 elif element_data.get("type") == ElementOperationEnum.SQL.value:
                     layout.addWidget(MangoLabel(f"SQL: {element_data.get('sql')}"), 3, 0)
                     layout.addWidget(MangoLabel(f"SQL_KEY: {element_data.get('key_list')}"), 3, 1)

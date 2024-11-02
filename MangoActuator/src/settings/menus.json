@@ -144,16 +144,34 @@
     },
     {
       "btn_icon": ":/icons/schedule.svg",
-      "btn_id": "time_task",
+      "btn_id": "tasks",
       "btn_text": "定时任务",
       "btn_tooltip": "定时任务",
       "show_top": true,
-      "is_active": false
+      "is_active": false,
+      "submenus": [
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "scheduled_task",
+          "btn_text": "定时任务",
+          "btn_tooltip": "定时任务",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "time",
+          "btn_text": "定时策略",
+          "btn_tooltip": "定时策略",
+          "show_top": true,
+          "is_active": false
+        }
+      ]
     },
     {
       "btn_icon": ":/icons/tool.svg",
-      "btn_id": "small_tools",
-      "btn_text": "小工具",
+      "btn_id": "tools",
+      "btn_text": "测试工具",
       "btn_tooltip": "测试小工具",
       "show_top": true,
       "is_active": false

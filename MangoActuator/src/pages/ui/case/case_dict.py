@@ -13,15 +13,35 @@ from src.tools.methods import Methods
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
     },
     {
-        'title': '用例名称',
-        'placeholder': '请输入用例名称',
+        'title': '名称',
+        'placeholder': '请输入名称',
         'key': 'name',
     },
-
+    {
+        'title': '产品',
+        'placeholder': '请选择项目产品',
+        'key': 'project_product',
+        'type': 2,
+        'select': Methods.get_product_module_cascader_model,
+        'subordinate': 'module'
+    },
+    {
+        'title': '模块',
+        'placeholder': '请选择产品模块',
+        'key': 'module',
+        'type': 1,
+    },
+    {
+        'title': '状态',
+        'placeholder': '请选择步骤状态',
+        'key': 'status',
+        'type': 1,
+        'select': Status3Enum.get_select()
+    }
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
