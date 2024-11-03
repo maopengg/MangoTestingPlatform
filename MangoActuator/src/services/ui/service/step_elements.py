@@ -27,6 +27,7 @@ class StepElements(ElementMain):
 
     async def steps_init(self, page_step_model: PageStepsModel):
         self.page_step_model = page_step_model
+        self.environment_id = page_step_model.environment_config.id
         self.page_step_result_model = PageStepsResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
@@ -95,6 +96,7 @@ class StepElements(ElementMain):
                     test_object_value).netloc.lower() and not data:
                 await self.w_goto(test_object_value)
                 self.url = test_object_value
+
         if self.page and self.url:
             return
         elif self.page:

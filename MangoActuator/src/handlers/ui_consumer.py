@@ -15,8 +15,6 @@ from src.tools.decorator.error_handle import async_error_handle
 
 
 class UIConsumer:
-    # page_steps: PageSteps = None
-    # case_run: CaseMain = None
     lock = asyncio.Lock()
 
     @classmethod
@@ -64,9 +62,6 @@ class UIConsumer:
         @return:
         """
         if PageObject.case_run is None:
-            max_tasks = 2
-            for i in data.steps:
-                if i and i.equipment_config:
-                    max_tasks = i.equipment_config.web_parallel
-            PageObject.case_run = CaseMain(max_tasks)
+            max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
+            PageObject.case_run = CaseMain(max_tasks) if max_tasks is not None else CaseMain()
         await PageObject.case_run.queue.put(data)

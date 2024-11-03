@@ -48,7 +48,7 @@ table_column = [
     {
         'key': 'create_time',
         'name': '执行时间',
-        'width': 100
+        'width': 150
     },
     {
         'key': 'user',

@@ -142,7 +142,7 @@ class EnvConfigPage(SubPage):
         if dialog.data:
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
-                dialog.data['status'] = 0
+                dialog.data['status'] = StatusEnum.FAIL.value
             response_model: ResponseModel = HTTP.post_database(dialog.data)
             response_message(self, response_model)
         self.show_data()
@@ -157,7 +157,7 @@ class EnvConfigPage(SubPage):
         if dialog.data:
             if self.id_key:
                 dialog.data[self.id_key] = self.data.get('id')
-                dialog.data['status'] = 0
+                dialog.data['status'] = StatusEnum.FAIL.value
             response_model: ResponseModel = HTTP.post_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()
@@ -183,7 +183,6 @@ class EnvConfigPage(SubPage):
             if self.id_key:
                 dialog.data['id'] = row['id']
                 dialog.data[self.id_key] = self.data.get('id')
-                dialog.data['status'] = 0
             response_model: ResponseModel = HTTP.put_database(dialog.data)
             response_message(self, response_model)
         self.show_data()
@@ -203,7 +202,6 @@ class EnvConfigPage(SubPage):
             if self.id_key:
                 dialog.data['id'] = row['id']
                 dialog.data[self.id_key] = self.data.get('id')
-                dialog.data['status'] = 0
             response_model: ResponseModel = HTTP.put_notice(dialog.data)
             response_message(self, response_model)
         self.show_data()

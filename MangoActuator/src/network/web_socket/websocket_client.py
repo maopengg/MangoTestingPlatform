@@ -98,7 +98,6 @@ class WebSocketClient:
                          func_args: Optional[Union[list[T], T]] | None = None,
                          is_notice: ClientTypeEnum | None = None,
                          ):
-
         send_data = SocketDataModel(
             code=code,
             msg=msg,
@@ -111,9 +110,10 @@ class WebSocketClient:
         try:
             if not settings.IS_DEBUG:
                 await self.websocket.send(self.__serialize(send_data))
+            elif self.websocket:
+                await self.websocket.send(self.__serialize(send_data))
             else:
                 self.__serialize(send_data)
-
         except ConnectionClosedError:
             await self.client_run()
             await self.websocket.send(self.__serialize(send_data))

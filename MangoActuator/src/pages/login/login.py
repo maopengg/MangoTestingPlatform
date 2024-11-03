@@ -63,7 +63,7 @@ class LoginWindow(QWidget):
         self.horizontalSpacer_6 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer_6)
-        self.verticalLayout = QVBoxLayout()
+        self.verticalLayout = QHBoxLayout()
         self.login_but = MangoPushButton('登录')
         self.login_but.setObjectName("pushButtonLogin")
         self.verticalLayout.addWidget(self.login_but)
@@ -74,5 +74,15 @@ class LoginWindow(QWidget):
 
         self.verticalSpacer = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(self.verticalSpacer)
+
+        self.layout_h = QHBoxLayout()
+        self.layout_h.addStretch(1)
+        self.register_but = QPushButton('注册')
+        self.register_but.setStyleSheet("border: none;")
+        self.register_but.setCursor(Qt.PointingHandCursor)
+
+        self.layout_h.addWidget(self.register_but)
+        self.layout_h.addStretch()
+        self.layout.addLayout(self.layout_h)
 
         QMetaObject.connectSlotsByName(self)

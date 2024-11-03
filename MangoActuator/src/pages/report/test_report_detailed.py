@@ -51,6 +51,7 @@ class TestReportDetailedPage(SubPage):
             test_suite_id=data_key.get('test_suite_id'),
             page_step_id=data_key.get('page_step_id'),
             case_id=data_key.get('case_id'))
+        WidgetTool.remove_layout(self.scroll_area.layout)
         for item in response_data.data:
             element_data: dict | None = item['element_data']
             layout = QGridLayout()

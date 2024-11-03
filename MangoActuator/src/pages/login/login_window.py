@@ -1,21 +1,25 @@
-from mango_ui import show_failed_message
+from mango_ui import show_failed_message, FormDataModel, DialogWidget, response_message
 from mango_ui.init import *
-from mangokit import SQLiteConnect
+from mangokit import SQLiteConnect, Mango, EncryptionTool
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.network import HTTP
-from src.pages.login.login_ui import LoginWindow
+from src.pages.login.login import LoginWindow
 from src.pages.window.mian_window import MainWindow
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.methods import Methods
 from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
+from .login_dict import form_data
 
 
 class LoginLogic(LoginWindow):
     def __init__(self, loop):
         super().__init__()
         self.loop = loop
+        self.form_data = [FormDataModel(**i) for i in form_data]
+
+        self.register_but.clicked.connect(self.register)
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
@@ -59,3 +63,31 @@ class LoginLogic(LoginWindow):
             show_failed_message('IP或端口不正确或服务未启动')
         # except TypeError:
         #     show_failed_message('账号或密码错误!')
+
+    def register(self, ):
+        settings.IP = self.ip_edit.text()
+        settings.PORT = self.prot_edit.text()
+        if not settings.IP:
+            show_failed_message('请先输入IP再使用注册功能！')
+            return
+        if not settings.PORT:
+            show_failed_message('请先输入端口再使用注册功能！')
+            return
+
+        form_data = Mango.add_from_data(self)
+        dialog = DialogWidget('新增用户', form_data)
+        dialog.exec()
+        if dialog.data:
+
+            if dialog.data['password'] == dialog.data['confirm_password']:
+                dialog.data['password'] = EncryptionTool.md5_32_small(**{'data': dialog.data['password']})
+                try:
+                    response_model = HTTP.user_register(dialog.data)
+                    if response_model:
+                        response_message(self, response_model)
+                except (JSONDecodeError, InvalidURL):
+                    show_failed_message('IP或端口不正确')
+                except ConnectionError:
+                    show_failed_message('IP或端口不正确或服务未启动')
+            else:
+                show_failed_message('您输入的两次密码不一致！')

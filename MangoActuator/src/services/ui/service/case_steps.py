@@ -35,6 +35,7 @@ class CaseSteps(StepElements):
         self.test_suite_id = self.case_model.test_suite_id
         self.case_result = CaseResultModel(test_suite_id=self.case_model.test_suite_id,
                                            case_id=self.case_model.id,
+                                           environment_id=self.environment_id,
                                            case_name=self.case_model.name,
                                            module_name=self.case_model.module_name,
                                            case_people=self.case_model.case_people,
@@ -68,6 +69,7 @@ class CaseSteps(StepElements):
                         .page_steps_result_list \
                         .append(page_steps_result_model)
                     self.case_result.test_obj = self.url
+                    self.case_result.environment_id = self.environment_id
                 except MangoActuatorError as error:
                     self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
                     self.case_result.status = StatusEnum.FAIL.value
@@ -81,20 +83,24 @@ class CaseSteps(StepElements):
                         self.case_result.status = StatusEnum.FAIL.value
                         log.warning(page_steps_result_model.error_message)
                         break
-
+            self.case_result.environment_id = self.environment_id
             self.case_result.test_obj = self.get_test_obj()
             await self.case_posterior(self.case_model.posterior_sql)
         except MangoActuatorError as error:
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
-        # except Exception as error:
-        #     await async_global_exception(
-        #         'case_page_step',
-        #         error,
-        #         UiSocketEnum.CASE_RESULT.value,
-        #         self.case_result
-        #     )
+        except Exception as error:
+            await WebSocketClient().async_send(
+                code=200 if self.case_result.status else 300,
+                msg='发生未知错误，请联系管理员检查测试用例数据',
+                is_notice=ClientTypeEnum.WEB,
+                func_name=UiSocketEnum.CASE_RESULT.value,
+                func_args=self.case_result
+            )
+            queue_notification.put(
+                {'type': self.case_result.status, 'value': '发生未知错误，请联系管理员检查测试用例数据'})
         else:
+            self.case_result.environment_id = self.environment_id
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
             await WebSocketClient().async_send(
                 code=200 if self.case_result.status else 300,

@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_system.service.notic_tools.mail_send import SendEmail
 from PyAutoTest.auto_test.auto_system.service.notic_tools.wechat_send import WeChatSend
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
-from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.auto_test.auto_user.models import User, TestObject
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.system_enum import EnvironmentEnum
@@ -26,8 +26,8 @@ from PyAutoTest.tools.log_collector import log
 class NoticeMain:
 
     @classmethod
-    def notice_main(cls, project_id: int, test_suite_id: int):
-        notice_obj = NoticeConfig.objects.filter(project=project_id, status=StatusEnum.SUCCESS.value)
+    def notice_main(cls, test_object_id: int, test_suite_id: int):
+        notice_obj = NoticeConfig.objects.filter(environment=test_object_id, status=StatusEnum.SUCCESS.value)
         for i in notice_obj:
             if i.type == NoticeEnum.MAIL.value:
                 cls.__wend_mail_send(i, cls.test_report(test_suite_id))

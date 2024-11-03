@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 from mangokit import Mango
 
 from src.handlers import InterfaceMethodReflection
-from src.login_window import LoginLogic
+from src.pages.login.login_window import LoginLogic
 from src.tools import InitPath
 from src.tools.log_collector import log
 
