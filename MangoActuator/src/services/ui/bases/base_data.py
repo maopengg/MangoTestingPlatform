@@ -47,6 +47,7 @@ class BaseData(QObject):
         self.case_step_details_id: Optional[int | None] = None
         self.page_step_id: Optional[int | None] = None
         self.project_product_id: Optional[int | None] = None
+        self.environment_id: Optional[int | None] = None
 
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: Optional[DriverObject | None] = driver_object

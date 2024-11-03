@@ -27,6 +27,7 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             self.loop.create_task(self.consumer())
         else:
             settings.IS_DEBUG = debug
+            log.set_debug(settings.IS_DEBUG)
 
     async def consumer(self):
         while True:

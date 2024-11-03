@@ -15,6 +15,7 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.assertion import Assertion
 from src.tools.get_class_methods import GetClassMethod
+from src.tools.log_collector import log
 
 
 class SettingPage(QWidget):
@@ -66,6 +67,7 @@ class SettingPage(QWidget):
 
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
+        log.set_debug(settings.IS_DEBUG)
 
     def click_send_redis_data(self):
         r = GetClassMethod()

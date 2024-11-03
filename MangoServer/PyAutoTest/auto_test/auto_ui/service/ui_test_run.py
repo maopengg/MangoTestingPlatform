@@ -23,6 +23,7 @@ from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
 from PyAutoTest.tools.view.snowflake import Snowflake
 
+
 class UiTestRun:
 
     def __init__(self,
@@ -244,6 +245,7 @@ class UiTestRun:
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
             mysql_config = func_mysql_config(self.test_env, project_product_id)
         return EnvironmentConfigModel(
+            id=test_object.id,
             test_object_value=test_object.value,
             db_c_status=bool(test_object.db_c_status),
             db_rud_status=bool(test_object.db_rud_status),

@@ -28,7 +28,8 @@ class TableParent(Parent):
         self.setLayout(self.layout)
 
         if kwargs.get('search_data'):
-            self.search_data = [SearchDataModel(**i) for i in kwargs.get('search_data', [])]
+            if not isinstance(kwargs.get('search_data')[0], SearchDataModel):
+                self.search_data = [SearchDataModel(**i) for i in kwargs.get('search_data', [])]
             self.titleWidget = SearchWidget(self.search_data)
             self.titleWidget.clicked.connect(self.search)
             self.layout.addWidget(self.titleWidget)
@@ -83,5 +84,8 @@ class TableParent(Parent):
         self.show_data()
 
     def search(self, data):
-        self.params = data
-        self.show_data(True)
+        if isinstance(data, dict):
+            self.params = data
+            self.show_data(True)
+        else:
+            self.sub_options(data)

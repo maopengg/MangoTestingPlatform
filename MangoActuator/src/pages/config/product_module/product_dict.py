@@ -12,7 +12,7 @@ from src.tools.methods import Methods
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入页面ID',
+        'placeholder': '请输入ID',
         'key': 'id',
         'input': None
     },

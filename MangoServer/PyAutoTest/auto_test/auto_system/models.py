@@ -44,12 +44,7 @@ class TimeTasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     name = models.CharField(verbose_name="定时策略名称", max_length=64, null=True, unique=True)
-    trigger_type = models.CharField(verbose_name="触发器类型", max_length=64, null=True)
-    month = models.CharField(verbose_name="月", max_length=64, null=True)
-    day = models.CharField(verbose_name="天", max_length=64, null=True)
-    day_of_week = models.CharField(verbose_name="周", max_length=64, null=True)
-    hour = models.CharField(verbose_name="小时", max_length=64, null=True)
-    minute = models.CharField(verbose_name="分钟", max_length=64, null=True)
+    cron = models.CharField(verbose_name="cron表达式", max_length=64, null=True)
 
     class Meta:
         db_table = 'time_tasks'
@@ -84,12 +79,12 @@ class ScheduledTasks(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境", null=True)
     name = models.CharField(verbose_name="任务名称", max_length=64)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
+                                    null=True)
     case_executor = models.JSONField(verbose_name='用例执行人', null=True)
     type = models.SmallIntegerField(verbose_name="任务类型", null=True)
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    cron = models.CharField(verbose_name="cron表达式", max_length=64, null=True)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知", null=True)
 
     class Meta:

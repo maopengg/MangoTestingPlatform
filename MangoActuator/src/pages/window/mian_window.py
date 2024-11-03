@@ -42,9 +42,3 @@ class MainWindow(WindowLogic):
     @classmethod
     def quit(cls):
         QApplication.quit()
-
-    def resizeEvent(self, event):
-        self.resize_grips()
-
-    def mousePressEvent(self, event):
-        self.drag_pos = QCursor.pos()

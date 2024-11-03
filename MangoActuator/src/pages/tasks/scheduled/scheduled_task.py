@@ -6,11 +6,11 @@
 from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
 from src.network import HTTP
-from .time_task_dict import *
-from ..parent.table import TableParent
+from .scheduled_task_dict import *
+from src.pages.parent.table import TableParent
 
 
-class TimeTaskPage(TableParent):
+class ScheduledTaskPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent,
                          form_data=form_data,
@@ -31,4 +31,4 @@ class TimeTaskPage(TableParent):
         return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in data.select().data]
 
     def run(self, row):
-        response_message(self, Http.get_run_scheduled_tasks(row.get('id')))
+        response_message(self, HTTP.get_run_scheduled_tasks(row.get('id')))

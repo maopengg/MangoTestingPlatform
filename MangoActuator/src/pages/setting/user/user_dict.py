@@ -70,11 +70,11 @@ table_column = [
     {
         'key': 'last_login_time',
         'name': '最近登录时间',
-        'width': 100
+        'width': 150
     }, {
         'key': 'ip',
         'name': '登录IP',
-        'width': 100
+        'width': 150
     }, {
         'key': 'mailbox',
         'name': '邮箱',

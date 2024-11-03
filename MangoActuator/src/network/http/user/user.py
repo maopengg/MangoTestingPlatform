@@ -29,8 +29,14 @@ class User(HttpBase):
         response_dict = response.json()
         if response_dict.get('data'):
             cls.headers['Authorization'] = response_dict.get('data').get('token')
-            cls.get_userinfo(response_dict['data']['userId'])
+            user_model = cls.get_userinfo(response_dict['data']['userId'])
+            log.debug(f'用户配置：{user_model.model_dump_json()}')
         return response
+
+    @classmethod
+    @request_log()
+    def user_register(cls, json_data: dict):
+        return cls.post(cls.url('/register'), json=json_data)
 
     @classmethod
     def get_userinfo(cls, _id: int):

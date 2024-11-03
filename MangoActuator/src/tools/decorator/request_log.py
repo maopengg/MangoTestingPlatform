@@ -15,12 +15,12 @@ def request_log():
 
         def wrapper(*args, **kwargs) -> ResponseModel:
             if settings.IS_DEBUG:
-                log.debug(f'发送的请求：{args}, {kwargs}')
+                log.debug(f'HTTP发送的数据：{args}, {kwargs}')
             response = func(*args, **kwargs)
             if response:
                 if settings.IS_DEBUG:
                     try:
-                        log.debug(f'接收的数据：{response.text}')
+                        log.debug(f'HTTP接收的数据：{response.text}')
                     except AttributeError:
                         pass
                 try:

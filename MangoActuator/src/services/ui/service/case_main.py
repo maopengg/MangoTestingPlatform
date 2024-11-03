@@ -28,7 +28,7 @@ class CaseMain:
             if self.running_tasks < self.max_tasks and not self.queue.empty():
                 case_model = await self.queue.get()
                 self.running_tasks += 1
-                self.loop.create_task(self.execute_task(case_model))
+                await self.loop.create_task(self.execute_task(case_model))
             await asyncio.sleep(0.1)
 
     @async_memory

@@ -28,11 +28,8 @@ class UiPublicModel(BaseModel):
     value: str
 
 
-class AndroidConfigModel(BaseModel):
-    equipment: str
-
-
 class EnvironmentConfigModel(BaseModel):
+    id: int
     test_object_value: str
     db_c_status: bool
     db_rud_status: bool
@@ -135,6 +132,7 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
+    environment_id: int | None = None
     case_name: str
     module_name: str
     case_people: str

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: 芒果测试平台# @Description:
+# @Project: 芒果测试平台
+# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import asyncio
@@ -58,7 +59,7 @@ class WebSocketClient:
         @return:
         """
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?{settings.USERNAME}"
-        log.info(str(f"websockets server url:{server_url}"))
+        log.debug(str(f"websockets server url:{server_url}"))
         while self.is_recv:
             try:
                 async with websockets.connect(server_url, max_size=50000000) as self.websocket:
@@ -98,7 +99,6 @@ class WebSocketClient:
                          func_args: Optional[Union[list[T], T]] | None = None,
                          is_notice: ClientTypeEnum | None = None,
                          ):
-
         send_data = SocketDataModel(
             code=code,
             msg=msg,
@@ -109,11 +109,10 @@ class WebSocketClient:
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
         try:
-            if not settings.IS_DEBUG:
+            if not settings.IS_DEBUG or self.websocket:
                 await self.websocket.send(self.__serialize(send_data))
             else:
                 self.__serialize(send_data)
-
         except ConnectionClosedError:
             await self.client_run()
             await self.websocket.send(self.__serialize(send_data))
@@ -139,9 +138,8 @@ class WebSocketClient:
         """
         try:
             out = json.loads(recv_json)
-            log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
-                log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
+                log.debug(f"SOCKET接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
                 if settings.IS_DEBUG:
                     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
                         f.write(json.dumps(out['data'], ensure_ascii=False))

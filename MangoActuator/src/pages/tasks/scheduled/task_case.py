@@ -7,8 +7,8 @@ from mango_ui import response_message, DialogCallbackModel, ComboBoxDataModel
 
 from src.pages.parent.sub import SubPage
 from .task_case_dict import *
-from ...models.api_model import ResponseModel
-from ...network import HTTP
+from src.models.api_model import ResponseModel
+from src.network import HTTP
 
 
 class TaskCasePage(SubPage):
@@ -20,14 +20,14 @@ class TaskCasePage(SubPage):
                          table_menu=table_menu,
                          field_list=field_list,
                          form_data=form_data)
-        self.superior_page = 'time_task'
+        self.superior_page = 'scheduled_task'
         self.id_key = 'task'
         self.get = HTTP.get_tasks_list
         self.post = HTTP.post_tasks_list
         self.put = HTTP.put_tasks_list
         self._delete = HTTP.delete_tasks_list
 
-    def show_data(self):
+    def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         response_model: ResponseModel = self.get(

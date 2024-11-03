@@ -25,6 +25,7 @@ class AutoSystemConfig(AppConfig):
             self.minute_task()
             self.delayed_task()
             self.save_cache()
+            self.populate_time_tasks()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -64,3 +65,12 @@ class AutoSystemConfig(AppConfig):
                 serializer = CacheDataSerializers(data=key)
                 if serializer.is_valid():
                     serializer.save()
+
+    @staticmethod
+    def populate_time_tasks():
+        from PyAutoTest.auto_test.auto_system.models import TimeTasks
+        if not TimeTasks.objects.exists():
+            TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
+            TimeTasks.objects.create(name="每小时", cron="0 * * * *")
+            TimeTasks.objects.create(name="每天9点", cron="0 9 * * *")
+            TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")

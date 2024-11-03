@@ -5,28 +5,33 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.tools_enum import Status3Enum
 from src.tools.methods import Methods
 
 search_data = [
     {
         'title': 'ID',
-        'placeholder': '请输入步骤ID',
+        'placeholder': '请输入ID',
         'key': 'id',
     },
     {
-        'title': '步骤名称',
-        'placeholder': '请输入步骤名称',
+        'title': '名称',
+        'placeholder': '请输入名称',
         'key': 'name',
     },
     {
         'title': '产品',
         'placeholder': '请选择项目产品',
         'key': 'project_product',
+        'type': 2,
+        'select': Methods.get_product_module_cascader_model,
+        'subordinate': 'module'
     },
     {
         'title': '模块',
         'placeholder': '请选择产品模块',
         'key': 'module',
+        'type': 1,
     },
     {
         'title': '所属页面',
@@ -36,7 +41,9 @@ search_data = [
     {
         'title': '状态',
         'placeholder': '请选择步骤状态',
-        'key': 'status',
+        'key': 'type',
+        'type': 1,
+        'select': Status3Enum.get_select()
     }
 ]
 right_data = [
@@ -95,6 +102,12 @@ table_column = [
     {
         'key': 'run_flow',
         'name': '顺序',
+    },
+    {
+        'key': 'type',
+        'name': '状态',
+        'width': 70,
+        'option': Status3Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',
