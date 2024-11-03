@@ -20,10 +20,10 @@ from src.tools.log_collector import log
 @singleton
 class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
 
-    def __init__(self, l=None, debug: bool = False):
+    def __init__(self, loop=None, debug: bool = False):
         self.queue = asyncio.Queue()
         if not debug:
-            self.loop = l
+            self.loop = loop
             self.loop.create_task(self.consumer())
         else:
             settings.IS_DEBUG = debug

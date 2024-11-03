@@ -44,9 +44,9 @@ class ElementModel(BaseModel):
     exp: int | None
     sleep: int | None
     sub: int | None
+    is_iframe: int | None
     ope_key: str | None
     ope_value: dict | None
-    is_iframe: int | None
     key_list: list | None = None
     sql: str | None = None
     key: str | None = None
@@ -60,7 +60,7 @@ class StepsDataModel(BaseModel):
     page_step_details_name: str | None = None
 
 
-class PageStepsModel(BaseModel):
+class StepsModel(BaseModel):
     id: int | None = None
     name: str
     case_step_details_id: int | None
@@ -69,6 +69,10 @@ class PageStepsModel(BaseModel):
     url: str
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
+
+
+class PageStepsModel(BaseModel):
+    steps: StepsModel
     equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
@@ -84,7 +88,10 @@ class CaseModel(BaseModel):
     front_custom: list
     front_sql: list
     posterior_sql: list
-    steps: list[PageStepsModel]
+    steps: list[StepsModel]
+
+    equipment_config: EquipmentModel
+    environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
 
 

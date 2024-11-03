@@ -12,7 +12,7 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from src.exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
-from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
+from src.models.ui_model import PageStepsResultModel, StepsModel, EquipmentModel
 from src.network import HTTP
 from src.services.ui.bases import ElementMain
 from src.settings import settings
@@ -22,10 +22,10 @@ from src.tools.log_collector import log
 
 
 class StepElements(ElementMain):
-    page_step_model: PageStepsModel = None
+    page_step_model: StepsModel = None
     page_step_result_model: PageStepsResultModel = None
 
-    async def steps_init(self, page_step_model: PageStepsModel):
+    async def steps_init(self, page_step_model: StepsModel):
         self.page_step_model = page_step_model
         self.environment_id = page_step_model.environment_config.id
         self.page_step_result_model = PageStepsResultModel(
@@ -36,7 +36,8 @@ class StepElements(ElementMain):
             page_step_name=page_step_model.name,
             status=StatusEnum.FAIL.value,
             element_result_list=[],
-            error_message=None)
+            error_message=None
+        )
 
         self.page_step_id = page_step_model.id
         self.case_step_details_id = page_step_model.case_step_details_id

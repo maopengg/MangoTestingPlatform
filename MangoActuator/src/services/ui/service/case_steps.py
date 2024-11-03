@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import traceback
+
 from mangokit import RandomTimeData
 
 from src.enums.tools_enum import ClientTypeEnum
@@ -33,14 +34,16 @@ class CaseSteps(StepElements):
         self.project_product_id = case_model.project_product,
         self.case_id = case_model.id
         self.test_suite_id = self.case_model.test_suite_id
-        self.case_result = CaseResultModel(test_suite_id=self.case_model.test_suite_id,
-                                           case_id=self.case_model.id,
-                                           environment_id=self.environment_id,
-                                           case_name=self.case_model.name,
-                                           module_name=self.case_model.module_name,
-                                           case_people=self.case_model.case_people,
-                                           status=StatusEnum.SUCCESS.value,
-                                           page_steps_result_list=[])
+        self.case_result = CaseResultModel(
+            test_suite_id=self.case_model.test_suite_id,
+            case_id=self.case_model.id,
+            environment_id=self.case_model.environment_config.id,
+            case_name=self.case_model.name,
+            module_name=self.case_model.module_name,
+            case_people=self.case_model.case_people,
+            status=StatusEnum.FAIL.value,
+            page_steps_result_list=[]
+        )
 
     async def __aenter__(self):
         return self
@@ -49,8 +52,7 @@ class CaseSteps(StepElements):
         await self.base_close()
         if self.driver_object.web_config and self.driver_object.web_config.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_deta_hms()}.webm'
-            shutil.move(self.case_result.video_path,
-                        os.path.join(f'{InitPath.videos}/', video_path))  # 移动并重命名文件
+            shutil.move(self.case_result.video_path, os.path.join(f'{InitPath.videos}/', video_path))
             self.case_result.video_path = video_path
 
     async def case_init(self):
