@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: 芒果测试平台# @Description:
+# @Project: 芒果测试平台
+# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import asyncio
@@ -108,9 +109,7 @@ class WebSocketClient:
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
         try:
-            if not settings.IS_DEBUG:
-                await self.websocket.send(self.__serialize(send_data))
-            elif self.websocket:
+            if not settings.IS_DEBUG or self.websocket:
                 await self.websocket.send(self.__serialize(send_data))
             else:
                 self.__serialize(send_data)
@@ -139,9 +138,8 @@ class WebSocketClient:
         """
         try:
             out = json.loads(recv_json)
-            log.info(f'接收的消息提示:{out["msg"]}')
             if out['data']:
-                log.debug(f"接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
+                log.debug(f"SOCKET接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
                 if settings.IS_DEBUG:
                     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
                         f.write(json.dumps(out['data'], ensure_ascii=False))

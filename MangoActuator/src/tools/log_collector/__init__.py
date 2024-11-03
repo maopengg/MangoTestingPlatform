@@ -2,44 +2,52 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-04-05 12:40
 # @Author : 毛鹏
-from src.settings import settings
+
+from mangokit import set_log
+
+from src.settings.settings import IS_DEBUG
 from src.tools import InitPath
-from src.tools.log_collector.log_control import LogHandler
 
+log = set_log(InitPath.logs_dir, IS_DEBUG)
 
-class Log:
-    DEBUG = LogHandler(fr"{InitPath.log_dir}\debug-log.log", 'debug')
-    INFO = LogHandler(fr"{InitPath.log_dir}\info-log.log", 'info')
-    WARNING = LogHandler(fr"{InitPath.log_dir}\warning-log.log", 'warning')
-    ERROR = LogHandler(fr"{InitPath.log_dir}\error-log.log", 'error')
-    CRITICAL = LogHandler(fr"{InitPath.log_dir}\critical-log.log", 'critical')
-
-    @classmethod
-    def debug(cls, msg: str):
-        if settings.IS_DEBUG:
-            cls.DEBUG.logger.debug(msg)
-
-    @classmethod
-    def info(cls, msg: str):
-        cls.INFO.logger.info(msg)
-
-    @classmethod
-    def warning(cls, msg: str):
-        cls.WARNING.logger.warning(msg)
-
-    @classmethod
-    def critical(cls, msg: str):
-        cls.CRITICAL.logger.critical(msg)
-
-    @classmethod
-    def error(cls, msg: str):
-        cls.ERROR.logger.error(msg)
-
-
-log = Log
-if __name__ == '__main__':
-    log.debug('DEBUG')
-    log.info("INFO")
-    log.warning("WARNING")
-    log.error("ERROR")
-    log.critical("CRITICAL")
+# from src.settings import settings
+# from src.tools import InitPath
+# from src.tools.log_collector.log_control import LogHandler
+#
+#
+# class Log:
+#     DEBUG = LogHandler(fr"{InitPath.log_dir}\debug-log.log", 'debug')
+#     INFO = LogHandler(fr"{InitPath.log_dir}\info-log.log", 'info')
+#     WARNING = LogHandler(fr"{InitPath.log_dir}\warning-log.log", 'warning')
+#     ERROR = LogHandler(fr"{InitPath.log_dir}\error-log.log", 'error')
+#     CRITICAL = LogHandler(fr"{InitPath.log_dir}\critical-log.log", 'critical')
+#
+#     @classmethod
+#     def debug(cls, msg: str):
+#         if settings.IS_DEBUG:
+#             cls.DEBUG.logger.debug(msg)
+#
+#     @classmethod
+#     def info(cls, msg: str):
+#         cls.INFO.logger.info(msg)
+#
+#     @classmethod
+#     def warning(cls, msg: str):
+#         cls.WARNING.logger.warning(msg)
+#
+#     @classmethod
+#     def critical(cls, msg: str):
+#         cls.CRITICAL.logger.critical(msg)
+#
+#     @classmethod
+#     def error(cls, msg: str):
+#         cls.ERROR.logger.error(msg)
+#
+#
+# log = Log
+# if __name__ == '__main__':
+#     log.debug('DEBUG')
+#     log.info("INFO")
+#     log.warning("WARNING")
+#     log.error("ERROR")
+#     log.critical("CRITICAL")

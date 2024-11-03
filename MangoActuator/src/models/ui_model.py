@@ -28,10 +28,6 @@ class UiPublicModel(BaseModel):
     value: str
 
 
-class AndroidConfigModel(BaseModel):
-    equipment: str
-
-
 class EnvironmentConfigModel(BaseModel):
     id: int
     test_object_value: str

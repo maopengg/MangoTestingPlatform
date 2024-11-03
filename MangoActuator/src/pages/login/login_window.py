@@ -43,7 +43,7 @@ class LoginLogic(LoginWindow):
         if not settings.USERNAME or not settings.PASSWORD:
             show_failed_message('请先输入账号或密码后再进行登录')
         try:
-            res = HTTP.login(settings.USERNAME, settings.PASSWORD)
+            res = HTTP.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
             if res.code == 200:
                 Methods.set_project()
                 self.main_window = MainWindow(self.loop)

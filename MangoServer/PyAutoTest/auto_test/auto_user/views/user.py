@@ -144,7 +144,6 @@ class LoginViews(ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         source_type = request.data.get('type')
-        password = EncryptionTool.md5_32_small(**{'data': password})
         try:
             user_info = User.objects.get(username=username, password=password)
         except User.DoesNotExist:
@@ -185,7 +184,6 @@ class LoginViews(ViewSet):
     def register(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
-        # password = EncryptionTool.md5_32_small(**{'data': password})
         if User.objects.filter(username=username).exists():
             return ResponseData.fail(RESPONSE_MSG_0115)
         else:

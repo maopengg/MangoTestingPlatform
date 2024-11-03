@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 import shutil
-
+import traceback
 from mangokit import RandomTimeData
 
 from src.enums.tools_enum import ClientTypeEnum
@@ -90,6 +90,8 @@ class CaseSteps(StepElements):
             self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
             self.case_result.status = StatusEnum.FAIL.value
         except Exception as error:
+            traceback.print_exc()
+            log.error(error)
             await WebSocketClient().async_send(
                 code=200 if self.case_result.status else 300,
                 msg='发生未知错误，请联系管理员检查测试用例数据',

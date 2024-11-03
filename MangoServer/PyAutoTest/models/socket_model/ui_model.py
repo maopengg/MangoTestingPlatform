@@ -151,7 +151,7 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
-    environment_id: int
+    environment_id: int | None
     case_name: str
     module_name: str
     case_people: str
