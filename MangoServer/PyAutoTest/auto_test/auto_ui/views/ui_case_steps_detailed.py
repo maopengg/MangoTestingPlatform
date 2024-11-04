@@ -104,9 +104,9 @@ class UiCaseStepsDetailedViews(ViewSet):
                 value_dict: dict = steps_detailed.ope_value
                 if 'locating' in value_dict:
                     value_dict.pop('locating')
-            elif steps_detailed.ass_type:
+            elif steps_detailed.ope_key:
                 name = None
-                value_dict: dict = steps_detailed.ass_value
+                value_dict: dict = steps_detailed.ope_key
                 if 'value' in value_dict:
                     value_dict.pop('value')
             elif steps_detailed.sql:
