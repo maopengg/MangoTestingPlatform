@@ -12,5 +12,13 @@ from .test_suite_report import TestSuiteReport
 from .time_tasks import TimeTasks
 
 
-class System(Database, Notice, TasksList, ScheduledTasks, TestSuiteReport, Home, TimeTasks):
+class SystemApi(
+    Database,
+    Notice,
+    TasksList,
+    ScheduledTasks,
+    TestSuiteReport,
+    Home,
+    TimeTasks
+):
     pass

@@ -19,7 +19,7 @@ from ..tools import *
 from ..ui import *
 from ..user import *
 from ...models import queue_notification
-
+from ..api import *
 
 class NotificationTask(QThread):
     notify_signal = Signal(int, str)
@@ -48,6 +48,13 @@ class WindowLogic(MangoMainWindow):
             'case_steps': CaseStepsPage,
             'public': PublicPage,
             'equipment': EquipmentPage,
+
+            'api_info': ApiInfoPage,
+            'api_info_detailed': ApiInfoDetailedPage,
+            'api_case': ApiCasePage,
+            'api_case_detailed': ApiCaseDetailedPage,
+            'api_public': ApiPublicPage,
+
             'project': ProjectPage,
             'product': ProductPage,
             'module': ModulePage,

@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description: 
-# @Time   : 2024-09-01 下午8:57
+# @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
-
 import uuid
 
 from mango_ui import *
 
-from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
-from src.models.api_model import ResponseModel
+from src.models.network_model import ResponseModel
 from src.models.user_model import UserModel
-from src.network import HTTP
-from src.tools.get_class_methods import GetClassMethod
-from .case_steps_dict import *
-from ...parent.sub import SubPage
+from src.pages.parent.sub import SubPage
+from .case_detailed_dict import *
 
 
-class CaseStepsPage(SubPage):
+class ApiCaseDetailedPage(SubPage):
 
     def __init__(self, parent):
-        super().__init__(parent, right_data=right_data, field_list=field_list)
+        super().__init__(parent,
+                         right_data=right_data,
+                         field_list=field_list,
+                         form_data=form_data)
+        self.superior_page = 'api_case'
         self.id_key = 'case'
-        self.superior_page = 'case'
-        self.get = HTTP.get_case_steps_detailed
-        self.post = HTTP.post_case_steps_detailed
-        self.put = HTTP.put_case_steps_detailed
-        self._delete = HTTP.delete_case_steps_detailed
+        self.get = HTTP.get_api_case_detailed
+        self.post = HTTP.post_api_case_detailed
+        self.put = HTTP.put_api_case_detailed
+        self._delete = HTTP.delete_api_case_detailed
         self.h_layout = QHBoxLayout()
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
@@ -78,6 +77,27 @@ class CaseStepsPage(SubPage):
         self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
         v_layout_1_2.addLayout(self.v_layout_2_1)
         v_layout_1_2.addStretch()
+
+        v_layout_1_3 = QVBoxLayout()
+        v_layout_1.addWidget(MangoCard(v_layout_1_3))
+        h_layout_1_3 = QHBoxLayout()
+        h_layout_1_3.setContentsMargins(0, 0, 0, 0)
+        h_layout_1_3.addWidget(MangoLabel('SQL变量'))
+        h_layout_1_3.addStretch()
+        but_1_4 = MangoPushButton('添加')
+        but_1_4.clicked.connect(self.front_sql)
+        but_1_4.set_stylesheet(28, 40)
+        h_layout_1_3.addWidget(but_1_4)
+        but_1_5 = MangoPushButton('保存')
+        but_1_5.clicked.connect(self.save_front_sql)
+        but_1_5.set_stylesheet(28, 40)
+        h_layout_1_3.addWidget(but_1_5)
+        v_layout_1_3.addLayout(h_layout_1_3)
+        self.v_layout_2_3 = QVBoxLayout()
+        self.v_layout_2_3_list: list[dict] = []
+        self.v_layout_2_3.setContentsMargins(10, 0, 10, 0)
+        v_layout_1_3.addLayout(self.v_layout_2_3)
+        v_layout_1_3.addStretch()
         self.mango_tabs.addTab(q_widget_1, '前置数据')
 
         self.table_column = [TableColumnModel(**i) for i in table_column]
@@ -190,6 +210,37 @@ class CaseStepsPage(SubPage):
         self.v_layout_3_1.addLayout(h_layout)
         self.v_layout_3_1_list.append({'key': key, 'value': value, 'delete': push_button, 'layout': h_layout})
 
+    def form_data_callback(self, data: FormDataModel):
+        if data.key == 'module':
+            return data.select(self.data.get('project_product').get('id'))
+
+    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
+        init_data = None
+        if data.subordinate == 'api_info':
+            response_model: ResponseModel = HTTP.get_api_name(data.value)
+            if response_model.data:
+                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+            else:
+                error_message(self, '这个模块还未创建页面')
+        if is_refresh and init_data:
+            data.subordinate_input_object.set_select(init_data, True)
+        else:
+            return init_data
+
+    def save_callback(self, data: dict, is_post: bool = False):
+        data['case_sort'] = len(self.table_widget.table_widget.data)
+        data['ass_response_value'] = []
+        data['ass_sql'] = []
+        data['front_sql'] = []
+        data['posterior_response'] = []
+        data['posterior_sql'] = []
+        data['case'] = self.data.get("id")
+        response = self.post(data)
+        response_message(self, response)
+
+    def refresh(self, row):
+        response_message(self, HTTP.put_api_case_refresh(row.get('id')))
+
     def save_after_sql(self):
         response_message(self, HTTP.put_case({
             'id': self.data.get('id'),
@@ -281,66 +332,6 @@ class CaseStepsPage(SubPage):
     def refresh_case(self, row):
         response_message(self, HTTP.ui_case_steps_refresh(row.get("id")))
         self.show_data()
-
-    def form_data_callback(self, data: FormDataModel):
-        if data.key == 'module':
-            return data.select(self.data.get('project_product').get('id'))
-
-    def sub_options(self, data: DialogCallbackModel, is_refresh=True):
-        init_data = None
-        if data.subordinate == 'page':
-            response_model: ResponseModel = HTTP.module_page_name(data.value)
-            if response_model.data:
-                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
-            else:
-                error_message(self, '这个模块还未创建页面')
-        elif data.subordinate == 'page_step':
-            response_model: ResponseModel = HTTP.get_page_steps_name(data.value)
-            if response_model.data:
-                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
-            else:
-                error_message(self, '这个页面还没有步骤')
-        if is_refresh and init_data:
-            data.subordinate_input_object.set_select(init_data, True)
-        else:
-            return init_data
-
-    def inside_callback(self, data: DialogCallbackModel):
-        auto_type = self.data.get('project_product').get('auto_type')
-        if data.value == ElementOperationEnum.OPE.value:
-            if auto_type == DriveTypeEnum.WEB.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            elif auto_type == DriveTypeEnum.ANDROID.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_android()]
-            else:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-            if data.subordinate_input_object:
-                data.subordinate_input_object.set_select(select, True)
-            return select
-        elif data.value == ElementOperationEnum.ASS.value:
-            if auto_type == DriveTypeEnum.WEB.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_web_ass()]
-            elif auto_type == DriveTypeEnum.ANDROID.value:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_android_ass()]
-            else:
-                select = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
-            for i in GetClassMethod().get_public_ass():
-                select.append(CascaderModel(**i))
-            if data.subordinate_input_object:
-                data.subordinate_input_object.set_select(select, True)
-            return select
-        else:
-            if data.subordinate_input_object:
-                data.subordinate_input_object.set_text('请忽略此选项')
-
-    def save_callback(self, data: dict, is_post: bool = False):
-        data['case_sort'] = len(self.table_widget.table_widget.data)
-        data['case_cache_ass'] = []
-        data['case_cache_data'] = []
-        data['case'] = self.data.get("id")
-        response = self.post(data)
-        response_message(self, response)
-        self.refresh_case(response.data)
 
     def update_data(self, data):
         response_message(self,

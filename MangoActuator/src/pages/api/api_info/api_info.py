@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
 # @Description: 
-# @Time   : 2024-09-01 下午9:01
+# @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-
 from src.network import HTTP
-from src.pages.parent.sub import SubPage
-from .element_dict import *
+from .api_info_dict import *
+from ...parent.table import TableParent
 
 
-class ElementPage(SubPage):
-
+class ApiInfoPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent,
+                         search_data=search_data,
+                         form_data=form_data,
                          table_column=table_column,
-                         right_data=right_data,
                          table_menu=table_menu,
-                         field_list=field_list,
-                         form_data=form_data)
-        self.superior_page = 'page'
-        self.id_key = 'page'
-        self.get = HTTP.get_page_element
-        self.post = HTTP.post_page_element
-        self.put = HTTP.put_page_element
-        self._delete = HTTP.delete_page_element
+                         right_data=right_data)
+        self.subpage_value = 'api_info_detailed'
+        self.get = HTTP.get_api_info
+        self.post = HTTP.post_api_info
+        self.put = HTTP.put_api_info
+        self._delete = HTTP.delete_api_info
+
+    def run(self, row):
+        print(f'点击了运行：{row}')

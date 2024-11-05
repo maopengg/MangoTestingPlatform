@@ -14,5 +14,15 @@ from .user import User
 from .user_log import UserLog
 
 
-class UserApi(User, UserLog, Role, Module, Product, Project, FileData, TestFile, TestObject):
+class UserApi(
+    User,
+    UserLog,
+    Role,
+    Module,
+    Product,
+    Project,
+    FileData,
+    TestFile,
+    TestObject
+):
     pass

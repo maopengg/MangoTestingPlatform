@@ -3,11 +3,12 @@
 # @Description: 
 # @Time   : 2024-09-12 18:08
 # @Author : 毛鹏
-from .http_client import HttpClient
-from .system import System
-from .ui import Ui
+from .api import ApiApi
+from .http_client import HttpClientApi
+from .system import SystemApi
+from .ui import UiApi
 from .user import UserApi
 
 
-class HTTP(Ui, HttpClient, UserApi, System):
+class HTTP(UiApi, HttpClientApi, UserApi, SystemApi, ApiApi):
     pass

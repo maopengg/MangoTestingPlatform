@@ -16,6 +16,17 @@ from .page_steps_result import PageStepsResult
 from .public import Public
 
 
-class Ui(Case, EleResult, Element, CaseResult, Page, PageSteps, PageStepsDetailed, CaseStepsDetailed, PageStepsResult,
-         Public, Config):
+class UiApi(
+    Case,
+    EleResult,
+    Element,
+    CaseResult,
+    Page,
+    PageSteps,
+    PageStepsDetailed,
+    CaseStepsDetailed,
+    PageStepsResult,
+    Public,
+    Config
+):
     pass

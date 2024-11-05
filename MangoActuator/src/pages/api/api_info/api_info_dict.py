@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
+from src.enums.api_enum import MethodEnum
+from src.enums.tools_enum import Status3Enum
 from src.tools.methods import Methods
 
 search_data = [
@@ -14,8 +16,8 @@ search_data = [
         'key': 'id',
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '名称',
+        'placeholder': '请输入名称',
         'key': 'name',
     },
     {
@@ -35,7 +37,8 @@ search_data = [
     }
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
+    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
+    {'name': '导入', 'theme': THEME.blue, 'action': 'import'}
 
 ]
 form_data = [
@@ -54,15 +57,22 @@ form_data = [
         'type': 1,
     },
     {
-        'title': '页面名称',
-        'placeholder': '请输入页面名称',
+        'title': '接口名称',
+        'placeholder': '请输入接口名称',
         'key': 'name',
     },
 
     {
-        'title': '页面地址',
-        'placeholder': '请输入页面地址',
+        'title': 'URL路径',
+        'placeholder': '请输入URL后的路径',
         'key': 'url',
+    },
+    {
+        'title': '请求方法',
+        'placeholder': '请选择请求方法',
+        'key': 'method',
+        'type': 1,
+        'select': MethodEnum.get_select()
     },
 
 ]
@@ -73,24 +83,36 @@ table_column = [
         'width': 7
     },
     {
-        'key': 'module',
-        'name': '模块名称',
-        'width': 100
-    },
-
-    {
         'key': 'project_product',
         'name': '产品名称',
         'width': 100
     },
     {
+        'key': 'module',
+        'name': '模块名称',
+        'width': 100
+    },
+    {
         'key': 'name',
-        'name': '页面名称',
+        'name': '接口名称',
         'width': 150
     },
     {
         'key': 'url',
         'name': 'URL',
+    },
+    {
+        'key': 'method',
+        'name': '方法',
+        'width': 100,
+        'option': MethodEnum.get_option('value', 'label')
+
+    },
+    {
+        'key': 'status',
+        'name': '状态',
+        'width': 100,
+        'option': Status3Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',
@@ -101,17 +123,21 @@ table_column = [
 ]
 table_menu = [
     {
-        'name': '编辑',
-        'action': 'edit'
+        'name': '执行',
+        'action': 'run'
     },
     {
-        'name': '添加元素',
+        'name': '详情',
         'action': 'subpage'
     },
     {
         'name': '···',
         'action': '',
         'son': [
+            {
+                'name': '编辑',
+                'action': 'edit'
+            },
             {
                 'name': '复制',
                 'action': 'copy'

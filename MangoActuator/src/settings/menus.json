@@ -58,6 +58,40 @@
         }
       ]
     },
+     {
+      "btn_icon": ":/icons/robot.svg",
+      "btn_id": "api",
+      "btn_text": "接口自动化",
+      "btn_tooltip": "接口自动化",
+      "show_top": true,
+      "is_active": false,
+      "submenus": [
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "api_info",
+          "btn_text": "接口管理",
+          "btn_tooltip": "接口管理",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "api_case",
+          "btn_text": "测试用例",
+          "btn_tooltip": "测试用例",
+          "show_top": true,
+          "is_active": false
+        },
+        {
+          "btn_icon": ":/icons/mind-mapping.svg",
+          "btn_id": "api_public",
+          "btn_text": "公共参数",
+          "btn_tooltip": "公共参数",
+          "show_top": true,
+          "is_active": false
+        }
+      ]
+    },
     {
       "btn_icon": ":/icons/calendar_clock.svg",
       "btn_id": "test_report",

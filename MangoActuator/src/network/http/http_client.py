@@ -14,7 +14,7 @@ from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
 
 
-class HttpClient(HttpBase):
+class HttpClientApi(HttpBase):
 
     @classmethod
     def project_info(cls):
