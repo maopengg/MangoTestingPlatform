@@ -26,7 +26,6 @@ class SubPage(Parent):
         self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
 
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.layout)
 
         if kwargs.get('right_data'):

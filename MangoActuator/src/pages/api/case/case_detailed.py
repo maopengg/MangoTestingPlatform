@@ -30,7 +30,7 @@ class ApiCaseDetailedPage(SubPage):
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
         self.mango_tabs = MangoTabs()
-        self.h_layout.addWidget(self.mango_tabs, 1)
+        self.h_layout.addWidget(self.mango_tabs, 4)
 
         q_widget_1 = QWidget()
         v_layout_1 = QVBoxLayout()
@@ -136,7 +136,50 @@ class ApiCaseDetailedPage(SubPage):
         self.mango_tabs.setCurrentIndex(1)
 
         self.scroll_area = MangoScrollArea()
-        self.h_layout.addWidget(self.scroll_area, 1)
+        self.mango_tabs_api = MangoTabs()
+        self.scroll_area.layout.addWidget(self.mango_tabs_api)
+
+        self.api_widget_1 = QWidget()
+        self.api_widget_1_layout = QVBoxLayout(self.api_widget_1)
+        self.mango_tabs_api.addTab(self.api_widget_1, '请求配置')
+
+        self.mango_tabs_info = MangoTabs()
+        self.api_widget_1_layout.addWidget(self.mango_tabs_info)
+        self.api_widget_info_headers = QWidget()
+        self.api_widget_info_headers_layout = QVBoxLayout(self.api_widget_info_headers)
+        self.mango_tabs_info.addTab(self.api_widget_info_headers, 'headers')
+        self.api_widget_info_params = QWidget()
+        self.api_widget_info_params_layout = QVBoxLayout(self.api_widget_info_params)
+        self.mango_tabs_info.addTab(self.api_widget_info_params, '参数')
+        self.api_widget_info_data = QWidget()
+        self.api_widget_info_data_layout = QVBoxLayout(self.api_widget_info_data)
+        self.mango_tabs_info.addTab(self.api_widget_info_data, 'data')
+        self.api_widget_info_json = QWidget()
+        self.api_widget_info_json_layout = QVBoxLayout(self.api_widget_info_json)
+        self.mango_tabs_info.addTab(self.api_widget_info_json, 'json')
+        self.api_widget_info_file = QWidget()
+        self.api_widget_info_file_layout = QVBoxLayout(self.api_widget_info_file)
+        self.mango_tabs_info.addTab(self.api_widget_info_file, 'file')
+
+        self.api_widget_2 = QWidget()
+        self.api_widget_2_layout = QVBoxLayout(self.api_widget_2)
+        self.mango_tabs_api.addTab(self.api_widget_2, '前置处理')
+        self.api_widget_3 = QWidget()
+        self.api_widget_3_layout = QVBoxLayout(self.api_widget_3)
+        self.mango_tabs_api.addTab(self.api_widget_3, '响应结果')
+        self.api_widget_4 = QWidget()
+        self.api_widget_4_layout = QVBoxLayout(self.api_widget_4)
+        self.mango_tabs_api.addTab(self.api_widget_4, '接口断言')
+        self.api_widget_5 = QWidget()
+        self.api_widget_5_layout = QVBoxLayout(self.api_widget_5)
+        self.mango_tabs_api.addTab(self.api_widget_5, '后置处理')
+        self.api_widget_6 = QWidget()
+        self.api_widget_6_layout = QVBoxLayout(self.api_widget_6)
+        self.mango_tabs_api.addTab(self.api_widget_6, '缓存数据')
+
+        self.mango_tabs_api.setCurrentIndex(1)
+
+        self.h_layout.addWidget(self.scroll_area, 6)
 
     def show_data(self, is_refresh=False):
         response_model = super().show_data(is_refresh)
@@ -146,6 +189,7 @@ class ApiCaseDetailedPage(SubPage):
             self.front_sql(i)
         for i in self.data.get('posterior_sql', []):
             self.after_sql(i)
+
 
     def front_custom(self, data: dict = None):
         if data:
@@ -288,27 +332,7 @@ class ApiCaseDetailedPage(SubPage):
         self.remove(self.v_layout_3_1_list, self.v_layout_3_1, unique_id, self.save_after_sql)
 
     def click_row(self, row):
-        WidgetTool.remove_layout(self.scroll_area.layout)
-        if row.get('case_data'):
-            for case_data in row.get('case_data'):
-                card_layout = QGridLayout()
-                card = MangoCard(card_layout)
-                card_layout.addWidget(
-                    MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_key')), 0, 0)
-                card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
-                if case_data.get('page_step_details_data') != {}:
-                    h_layout = QHBoxLayout()
-                    _s = 1
-                    for key, value in case_data.get('page_step_details_data').items():
-                        h_layout.addWidget(MangoLabel(f"{key}："))
-                        input_ = MangoLineEdit('请根据帮助文档输入适当内容', value=value)
-                        input_.click.connect(
-                            lambda value, r=row, data=case_data, k=key: self.button_clicked(value, r, data, k))
-                        h_layout.addWidget(input_)
-                        card_layout.addLayout(h_layout, _s, 0)
-                        _s += 1
-                self.scroll_area.layout.addWidget(card)
-            self.scroll_area.layout.addStretch(1)
+        print(row)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):

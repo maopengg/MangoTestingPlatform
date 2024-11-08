@@ -22,23 +22,30 @@ class MainWindow(WindowLogic):
         super().__init__(loop)
         self.loop = loop
         self.drag_pos = None
+        self.is_close_tips = True
+
         self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.activated.connect(self.open_window)
         self.tray_icon.setIcon(QIcon(':/icons/app_icon.png'))
         tray_menu = QMenu(self)
         show_action = QAction(QIcon(':/icons/show_icon.png'), "显示窗口", self)
         show_action.triggered.connect(self.show)
         tray_menu.addAction(show_action)
         exit_action = QAction(QIcon(':/icons/close_icon.png'), "退出", self)
-        exit_action.triggered.connect(self.quit)
+        exit_action.triggered.connect(lambda: QApplication.quit())
         tray_menu.addAction(exit_action)
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.show()
 
+    def open_window(self, reason):
+        if reason == QSystemTrayIcon.Trigger:
+            self.show()
+            self.raise_()
+            self.activateWindow()
+
     def closeEvent(self, event):
-        show_info_message('任务不会关闭，如果想要彻底关闭任务请在任务栏中右键进行退出！')
+        if self.is_close_tips:
+            self.is_close_tips = False
+            show_info_message('测试平台不会退出，想要退出请在右下角右键退出！')
         event.ignore()
         self.hide()
-
-    @classmethod
-    def quit(cls):
-        QApplication.quit()
