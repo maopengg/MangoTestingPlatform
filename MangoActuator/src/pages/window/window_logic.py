@@ -21,6 +21,7 @@ from ..user import *
 from ...models import queue_notification
 from ..api import *
 
+
 class NotificationTask(QThread):
     notify_signal = Signal(int, str)
 
@@ -92,4 +93,4 @@ class WindowLogic(MangoMainWindow):
         elif notification_type == 2:
             info_notification(self, message)
         elif notification_type == 3:
-            warning_notification(self, message)
+            THEME.group.warning_notification(self, message)

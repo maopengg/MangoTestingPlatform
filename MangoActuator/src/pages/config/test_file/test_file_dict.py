@@ -13,7 +13,7 @@ search_data = [
     },
 ]
 right_data = [
-    {'name': '上传', 'theme': THEME.blue, 'action': 'upload'}
+    {'name': '上传', 'theme': THEME.group.info, 'action': 'upload'}
 
 ]
 

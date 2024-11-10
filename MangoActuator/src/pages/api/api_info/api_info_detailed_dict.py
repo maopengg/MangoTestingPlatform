@@ -6,8 +6,8 @@
 from mango_ui import THEME
 
 right_data = [
-    {'name': '保存', 'theme': THEME.blue, 'action': 'save'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '保存', 'theme': THEME.group.info, 'action': 'save'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 
 ]
 field_list = [

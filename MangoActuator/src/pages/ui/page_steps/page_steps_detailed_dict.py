@@ -10,9 +10,9 @@ from src.network import HTTP
 from src.tools.methods import Methods
 
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
-    {'name': '调试', 'theme': THEME.green, 'action': 'debug'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    {'name': '调试', 'theme': THEME.group.success, 'action': 'debug'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 field_list = [
     {'key': 'id', 'name': '步骤ID'},

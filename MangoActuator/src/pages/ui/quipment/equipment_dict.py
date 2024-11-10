@@ -10,8 +10,8 @@ web_h5_data = [ComboBoxDataModel(id=i, name=i) for i in DeviceEnum.get_obj()]
 web_h5_data.insert(0, ComboBoxDataModel(id=None, name='默认非H5'))
 
 right_data = [
-    {'name': '新增WEB', 'theme': THEME.blue, 'action': 'add_web'},
-    {'name': '新增安卓', 'theme': THEME.blue, 'action': 'add_android'}
+    {'name': '新增WEB', 'theme': THEME.group.info, 'action': 'add_web'},
+    {'name': '新增安卓', 'theme': THEME.group.info, 'action': 'add_android'}
 ]
 
 web_form_data = [

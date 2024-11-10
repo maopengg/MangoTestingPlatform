@@ -37,8 +37,8 @@ search_data = [
     }
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
-    {'name': '导入', 'theme': THEME.blue, 'action': 'import'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    {'name': '导入', 'theme': THEME.group.info, 'action': 'import'}
 
 ]
 form_data = [

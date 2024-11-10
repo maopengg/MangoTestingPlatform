@@ -3,8 +3,11 @@
 # @Description: 
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
+import json
 import uuid
 
+import time
+from PySide6.QtCore import Qt
 from mango_ui import *
 
 from src.models.network_model import ResponseModel
@@ -22,6 +25,7 @@ class ApiCaseDetailedPage(SubPage):
                          form_data=form_data)
         self.superior_page = 'api_case'
         self.id_key = 'case'
+        self.row = {}
         self.get = HTTP.get_api_case_detailed
         self.post = HTTP.post_api_case_detailed
         self.put = HTTP.put_api_case_detailed
@@ -36,6 +40,25 @@ class ApiCaseDetailedPage(SubPage):
         v_layout_1 = QVBoxLayout()
         q_widget_1.setLayout(v_layout_1)
 
+        v_layout_1_0 = QVBoxLayout()
+        v_layout_1_0.setContentsMargins(0, 0, 0, 0)
+        v_layout_1.addWidget(MangoCard(v_layout_1_0))
+        h_layout_1_0 = QHBoxLayout()
+        h_layout_1_0.setContentsMargins(0, 0, 0, 0)
+        h_layout_1_0.addWidget(MangoLabel('请求头'))
+        h_layout_1_0.addStretch()
+        but_1_5 = MangoPushButton('保存')
+        but_1_5.clicked.connect(self.save_front_headers)
+        but_1_5.set_stylesheet(28, 40)
+        h_layout_1_0.addWidget(but_1_5)
+        v_layout_1_0.addLayout(h_layout_1_0)
+        self.v_layout_2_3 = QVBoxLayout()
+        self.front_headers = MangoTextEdit('请输入公共请求头')
+        self.v_layout_2_3.addWidget(self.front_headers)
+        self.v_layout_2_3.setContentsMargins(0, 0, 0, 0)
+        v_layout_1_0.addLayout(self.v_layout_2_3)
+        v_layout_1_0.addStretch()
+
         v_layout_1_1 = QVBoxLayout()
         v_layout_1.addWidget(MangoCard(v_layout_1_1))
         h_layout_1_1 = QHBoxLayout()
@@ -47,12 +70,13 @@ class ApiCaseDetailedPage(SubPage):
         but_1_1.set_stylesheet(28, 40)
         h_layout_1_1.addWidget(but_1_1)
         but_1_2 = MangoPushButton('保存')
-        but_1_2.clicked.connect(self.save_front_custom)
         but_1_2.set_stylesheet(28, 40)
         h_layout_1_1.addWidget(but_1_2)
         v_layout_1_1.addLayout(h_layout_1_1)
         self.v_layout_1_1 = QVBoxLayout()
         self.v_layout_1_1_list: list[dict] = []
+        but_1_2.clicked.connect(lambda: self.save_case('front_custom', self.v_layout_1_1_list))
+
         self.v_layout_1_1.setContentsMargins(10, 0, 10, 0)
         v_layout_1_1.addLayout(self.v_layout_1_1)
         v_layout_1_1.addStretch()
@@ -68,36 +92,16 @@ class ApiCaseDetailedPage(SubPage):
         but_1_2.set_stylesheet(28, 40)
         h_layout_1_2.addWidget(but_1_2)
         but_1_3 = MangoPushButton('保存')
-        but_1_3.clicked.connect(self.save_front_sql)
         but_1_3.set_stylesheet(28, 40)
         h_layout_1_2.addWidget(but_1_3)
         v_layout_1_2.addLayout(h_layout_1_2)
         self.v_layout_2_1 = QVBoxLayout()
         self.v_layout_2_1_list: list[dict] = []
+        but_1_3.clicked.connect(lambda: self.save_case('front_sql', self.v_layout_2_1_list))
         self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
         v_layout_1_2.addLayout(self.v_layout_2_1)
         v_layout_1_2.addStretch()
 
-        v_layout_1_3 = QVBoxLayout()
-        v_layout_1.addWidget(MangoCard(v_layout_1_3))
-        h_layout_1_3 = QHBoxLayout()
-        h_layout_1_3.setContentsMargins(0, 0, 0, 0)
-        h_layout_1_3.addWidget(MangoLabel('SQL变量'))
-        h_layout_1_3.addStretch()
-        but_1_4 = MangoPushButton('添加')
-        but_1_4.clicked.connect(self.front_sql)
-        but_1_4.set_stylesheet(28, 40)
-        h_layout_1_3.addWidget(but_1_4)
-        but_1_5 = MangoPushButton('保存')
-        but_1_5.clicked.connect(self.save_front_sql)
-        but_1_5.set_stylesheet(28, 40)
-        h_layout_1_3.addWidget(but_1_5)
-        v_layout_1_3.addLayout(h_layout_1_3)
-        self.v_layout_2_3 = QVBoxLayout()
-        self.v_layout_2_3_list: list[dict] = []
-        self.v_layout_2_3.setContentsMargins(10, 0, 10, 0)
-        v_layout_1_3.addLayout(self.v_layout_2_3)
-        v_layout_1_3.addStretch()
         self.mango_tabs.addTab(q_widget_1, '前置数据')
 
         self.table_column = [TableColumnModel(**i) for i in table_column]
@@ -122,12 +126,13 @@ class ApiCaseDetailedPage(SubPage):
         but_3_1.set_stylesheet(28, 40)
         h_layout_3_1.addWidget(but_3_1)
         but_3_2 = MangoPushButton('保存')
-        but_3_2.clicked.connect(self.save_after_sql)
         but_3_2.set_stylesheet(28, 40)
         h_layout_3_1.addWidget(but_3_2)
         v_layout_3_1.addLayout(h_layout_3_1)
         self.v_layout_3_1 = QVBoxLayout()
         self.v_layout_3_1_list: list[dict] = []
+        but_3_2.clicked.connect(lambda: self.save_case('posterior_sql', self.v_layout_3_1_list))
+
         self.v_layout_3_1.setContentsMargins(10, 0, 10, 0)
         v_layout_3_1.addLayout(self.v_layout_3_1)
         v_layout_3_1.addStretch()
@@ -141,118 +146,239 @@ class ApiCaseDetailedPage(SubPage):
 
         self.api_widget_1 = QWidget()
         self.api_widget_1_layout = QVBoxLayout(self.api_widget_1)
+        self.api_widget_1_layout.addLayout(self.save_but('请求配置'))
         self.mango_tabs_api.addTab(self.api_widget_1, '请求配置')
-
         self.mango_tabs_info = MangoTabs()
         self.api_widget_1_layout.addWidget(self.mango_tabs_info)
-        self.api_widget_info_headers = QWidget()
-        self.api_widget_info_headers_layout = QVBoxLayout(self.api_widget_info_headers)
-        self.mango_tabs_info.addTab(self.api_widget_info_headers, 'headers')
-        self.api_widget_info_params = QWidget()
-        self.api_widget_info_params_layout = QVBoxLayout(self.api_widget_info_params)
-        self.mango_tabs_info.addTab(self.api_widget_info_params, '参数')
-        self.api_widget_info_data = QWidget()
-        self.api_widget_info_data_layout = QVBoxLayout(self.api_widget_info_data)
-        self.mango_tabs_info.addTab(self.api_widget_info_data, 'data')
-        self.api_widget_info_json = QWidget()
-        self.api_widget_info_json_layout = QVBoxLayout(self.api_widget_info_json)
-        self.mango_tabs_info.addTab(self.api_widget_info_json, 'json')
-        self.api_widget_info_file = QWidget()
-        self.api_widget_info_file_layout = QVBoxLayout(self.api_widget_info_file)
-        self.mango_tabs_info.addTab(self.api_widget_info_file, 'file')
+        self.api_widget_info_headers_layout = QVBoxLayout()
+        self.info_headers = MangoTextEdit('请输入JSON格式的请求头数据')
+        self.api_widget_info_headers_layout.addWidget(self.info_headers)
+        self.mango_tabs_info.add_tab(self.api_widget_info_headers_layout, '请求头')
+        self.api_widget_info_params_layout = QVBoxLayout()
+        self.info_params = MangoTextEdit('请输入JSON格式的参数数据')
+        self.api_widget_info_params_layout.addWidget(self.info_params)
+        self.mango_tabs_info.add_tab(self.api_widget_info_params_layout, '参数')
+        self.api_widget_info_data_layout = QVBoxLayout()
+        self.info_data = MangoTextEdit('请输入JSON格式的表单数据')
+        self.api_widget_info_data_layout.addWidget(self.info_data)
+        self.mango_tabs_info.add_tab(self.api_widget_info_data_layout, '表单')
+        self.api_widget_info_json_layout = QVBoxLayout()
+        self.info_json = MangoTextEdit('请输入JSON格式的JSON数据')
+        self.api_widget_info_json_layout.addWidget(self.info_json)
+        self.mango_tabs_info.add_tab(self.api_widget_info_json_layout, 'JSON')
+        self.api_widget_info_file_layout = QVBoxLayout()
+        self.info_file = MangoTextEdit('请输入JSON格式的文件数据')
+        self.api_widget_info_file_layout.addWidget(self.info_file)
+        self.mango_tabs_info.add_tab(self.api_widget_info_file_layout, '文件')
+        self.mango_tabs_info.setCurrentIndex(0)
 
         self.api_widget_2 = QWidget()
         self.api_widget_2_layout = QVBoxLayout(self.api_widget_2)
+        self.api_widget_2_layout.addLayout(self.save_but('front_sql', True))
         self.mango_tabs_api.addTab(self.api_widget_2, '前置处理')
+        self.mango_tabs_front = MangoTabs()
+        self.api_widget_2_layout.addWidget(self.mango_tabs_front)
+        self.api_widget_front_sql_layout = QVBoxLayout()
+        self.api_widget_front_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_front_sql_layout_list: list[dict] = []
+        self.mango_tabs_front.add_tab(self.api_widget_front_sql_layout, '前置SQL')
+        self.mango_tabs_front.setCurrentIndex(0)
+
         self.api_widget_3 = QWidget()
         self.api_widget_3_layout = QVBoxLayout(self.api_widget_3)
         self.mango_tabs_api.addTab(self.api_widget_3, '响应结果')
+        self.mango_tabs_response = MangoTabs()
+        self.api_widget_3_layout.addWidget(self.mango_tabs_response)
+        self.api_widget_response_info_layout = QVBoxLayout()
+        self.response_info = MangoLabel()
+        self.api_widget_response_info_layout.addWidget(self.response_info)
+        self.mango_tabs_response.add_tab(self.api_widget_response_info_layout, '基础信息')
+        self.api_widget_response_headers_layout = QVBoxLayout()
+        self.response_headers = MangoLabel()
+        self.api_widget_response_headers_layout.addWidget(self.response_headers)
+        self.mango_tabs_response.add_tab(self.api_widget_response_headers_layout, '请求头')
+        self.api_widget_response_response_headers_layout = QVBoxLayout()
+        self.response_response_headers = MangoLabel()
+        self.api_widget_response_response_headers_layout.addWidget(self.response_response_headers)
+        self.mango_tabs_response.add_tab(self.api_widget_response_response_headers_layout, '响应头')
+        self.api_widget_response_body_layout = QVBoxLayout()
+        self.response_body = MangoLabel()
+        self.api_widget_response_body_layout.addWidget(self.response_body)
+        self.mango_tabs_response.add_tab(self.api_widget_response_body_layout, '响应体')
+        self.mango_tabs_response.setCurrentIndex(3)
+
         self.api_widget_4 = QWidget()
         self.api_widget_4_layout = QVBoxLayout(self.api_widget_4)
+        self.api_widget_4_layout.addLayout(self.save_but('ass', True))
         self.mango_tabs_api.addTab(self.api_widget_4, '接口断言')
+        self.mango_tabs_ass = MangoTabs()
+        self.api_widget_4_layout.addWidget(self.mango_tabs_ass)
+        self.api_widget_ass_agreement_layout = QVBoxLayout()
+        self.ass_agreement = MangoTextEdit('请输入响应全部内容，进行响应全匹配断言')
+        self.api_widget_ass_agreement_layout.addWidget(self.ass_agreement)
+        self.mango_tabs_ass.add_tab(self.api_widget_ass_agreement_layout, '响应全匹配')
+        self.api_widget_ass_condition_layout = QVBoxLayout()
+        self.api_widget_ass_condition_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_ass_condition_layout_list: list[dict] = []
+        self.mango_tabs_ass.add_tab(self.api_widget_ass_condition_layout, '响应条件')
+        self.api_widget_ass_sql_layout = QVBoxLayout()
+        self.api_widget_ass_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_ass_sql_layout_list: list[dict] = []
+        self.mango_tabs_ass.add_tab(self.api_widget_ass_sql_layout, 'SQL断言')
+        self.mango_tabs_ass.setCurrentIndex(0)
+
         self.api_widget_5 = QWidget()
         self.api_widget_5_layout = QVBoxLayout(self.api_widget_5)
+        self.api_widget_5_layout.addLayout(self.save_but('posterior', True))
         self.mango_tabs_api.addTab(self.api_widget_5, '后置处理')
+        self.mango_tabs_posterior = MangoTabs()
+        self.api_widget_5_layout.addWidget(self.mango_tabs_posterior)
+        self.api_widget_posterior_result_layout = QVBoxLayout()
+        self.api_widget_posterior_result_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_posterior_result_layout_list: list[dict] = []
+        self.mango_tabs_posterior.add_tab(self.api_widget_posterior_result_layout, '结果提取')
+        self.api_widget_posterior_sql_layout = QVBoxLayout()
+        self.api_widget_posterior_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_posterior_sql_layout_list: list[dict] = []
+        self.mango_tabs_posterior.add_tab(self.api_widget_posterior_sql_layout, 'SQL处理')
+        self.api_widget_posterior_sleep_layout = QVBoxLayout()
+        self.sleep = MangoLineEdit('请输入请求后等待时间')
+        self.api_widget_posterior_sleep_layout.addWidget(self.sleep)
+        self.api_widget_posterior_sleep_layout.addStretch()
+        self.mango_tabs_posterior.add_tab(self.api_widget_posterior_sleep_layout, '强制等待')
+        self.mango_tabs_posterior.setCurrentIndex(0)
+
         self.api_widget_6 = QWidget()
         self.api_widget_6_layout = QVBoxLayout(self.api_widget_6)
         self.mango_tabs_api.addTab(self.api_widget_6, '缓存数据')
+        self.mango_tabs_cache = MangoTabs()
+        self.api_widget_6_layout.addWidget(self.mango_tabs_cache)
+        self.api_widget_cache_layout = QVBoxLayout()
+        self.cache_data = MangoLabel()
+        self.api_widget_cache_layout.addWidget(self.cache_data)
+        self.mango_tabs_cache.add_tab(self.api_widget_cache_layout, '执行到此的缓存数据')
+        self.mango_tabs_cache.setCurrentIndex(0)
 
-        self.mango_tabs_api.setCurrentIndex(1)
+        self.mango_tabs_api.setCurrentIndex(0)
 
         self.h_layout.addWidget(self.scroll_area, 6)
 
     def show_data(self, is_refresh=False):
         response_model = super().show_data(is_refresh)
+        if response_model.data:
+            self.click_row(response_model.data[0])
         for i in self.data.get('front_custom', []):
             self.front_custom(i)
         for i in self.data.get('front_sql', []):
             self.front_sql(i)
         for i in self.data.get('posterior_sql', []):
             self.after_sql(i)
+        if self.data.get('front_headers'):
+            self.front_headers.set_value(self.data.get('front_headers'))
 
+    def front_custom(self, data):
+        self.set_form(
+            data,
+            'front_custom',
+            '请输入缓存key',
+            'key',
+            self.save_case,
+            self.v_layout_1_1,
+            self.v_layout_1_1_list,
+            '请输入缓存value',
+            'value',
+        )
 
-    def front_custom(self, data: dict = None):
-        if data:
-            key = MangoLineEdit('请输入缓存key', value=data.get('key'))
-            value = MangoLineEdit('请输入缓存value', value=data.get('value'))
-        else:
-            key = MangoLineEdit('请输入缓存key')
-            value = MangoLineEdit('请输入缓存value')
+    def front_sql(self, data):
+        self.set_form(
+            data,
+            'front_sql',
+            '请输入sql语句',
+            'sql语句',
+            self.save_case,
+            self.v_layout_2_1,
+            self.v_layout_2_1_list,
+            'sql结果的key列表，一一对应',
+            '结果key列表',
+        )
+
+    def after_sql(self, data):
+        self.set_form(
+            data,
+            'posterior_sql',
+            '请输入sql语句',
+            'sql语句',
+            self.save_case,
+            self.v_layout_3_1,
+            self.v_layout_3_1_list,
+            'sql结果的key列表，一一对应',
+            '结果key列表',
+        )
+
+    def set_form(
+            self,
+            data: str | None,
+            key_name,
+            key_placeholder,
+            key_label,
+            save_func,
+            _layout,
+            layout_list,
+            value_placeholder=None,
+            value_label=None,
+            method_placeholder=None,
+            method_label=None
+    ):
         h_layout = QHBoxLayout()
-        h_layout.addWidget(MangoLabel('key'))
+        if method_placeholder:
+            key = MangoLineEdit(key_placeholder, value=data.get('expect') if data else None)
+        else:
+            key = MangoLineEdit(key_placeholder, value=data.get('key') if data else None)
+        _key_label = MangoLabel(key_label)
+        h_layout.addWidget(_key_label)
         h_layout.addWidget(key)
-        h_layout.addWidget(MangoLabel('value'))
-        h_layout.addWidget(value)
-        push_button = MangoPushButton('移除', color=THEME.red)
+        layout_dict = {'key': key, 'layout': h_layout}
+        if value_placeholder is not None and value_placeholder is not None:
+            if method_placeholder:
+                value = MangoLineEdit(value_placeholder, value=data.get('actual') if data else None)
+            else:
+                value = MangoLineEdit(value_placeholder, value=data.get('value') if data else None)
+            _value_label = MangoLabel(value_label)
+            h_layout.addWidget(_value_label)
+            h_layout.addWidget(value)
+            layout_dict['value'] = value
+        if method_placeholder is not None and method_label is not None:
+            method = MangoLineEdit(method_placeholder, value=data.get('method') if data else None)
+            _method_label = MangoLabel(method_label)
+            h_layout.addWidget(_method_label)
+            h_layout.addWidget(method)
+            layout_dict['method'] = method
+        push_button = MangoPushButton('移除', color=THEME.group.error)
         unique_id = str(uuid.uuid4())
         push_button.setProperty("unique_id", unique_id)
-        push_button.clicked.connect(lambda: self.delete_front_custom(unique_id))
+        push_button.clicked.connect(
+            lambda _, g1=layout_list, g2=_layout, g3=unique_id, g4=save_func, g5=key_name: self.remove(g1, g2, g3, g4,
+                                                                                                       g5))
         push_button.set_stylesheet(28, 40)
+        layout_dict['delete'] = push_button
         h_layout.addWidget(push_button)
-        self.v_layout_1_1.addLayout(h_layout)
-        self.v_layout_1_1_list.append({'key': key, 'value': value, 'delete': push_button, 'layout': h_layout})
+        _layout.addLayout(h_layout)
+        layout_list.append(layout_dict)
 
-    def front_sql(self, data: dict = None):
-        if data:
-            key = MangoLineEdit('请输入sql语句', value=data.get('key'))
-            value = MangoLineEdit('sql结果的key列表，一一对应', value=data.get('value'))
-        else:
-            key = MangoLineEdit('请输入sql语句')
-            value = MangoLineEdit('sql结果的key列表，一一对应')
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(MangoLabel('sql语句'))
-        h_layout.addWidget(key)
-        h_layout.addWidget(MangoLabel('结果key列表'))
-        h_layout.addWidget(value)
-        push_button = MangoPushButton('移除', color=THEME.red)
-        unique_id = str(uuid.uuid4())
-        push_button.setProperty("unique_id", unique_id)
-        push_button.clicked.connect(lambda: self.delete_front_sql(unique_id))
-        push_button.set_stylesheet(28, 40)
-        h_layout.addWidget(push_button)
-        self.v_layout_2_1.addLayout(h_layout)
-        self.v_layout_2_1_list.append({'key': key, 'value': value, 'delete': push_button, 'layout': h_layout})
+    def save_front_headers(self):
+        response_message(self, HTTP.put_api_case({
+            'id': self.data.get('id'),
+            'name': self.data.get('name'),
+            'front_headers': self.front_headers.get_value()}))
 
-    def after_sql(self, data: dict = None):
-        if data:
-            key = MangoLineEdit('请输入sql语句', value=data.get('key'))
-            value = MangoLineEdit('sql结果的key列表，一一对应', value=data.get('value'))
-        else:
-            key = MangoLineEdit('请输入sql语句')
-            value = MangoLineEdit('sql结果的key列表，一一对应')
-        h_layout = QHBoxLayout()
-        h_layout.addWidget(MangoLabel('sql语句'))
-        h_layout.addWidget(key)
-        h_layout.addWidget(MangoLabel('结果key列表'))
-        h_layout.addWidget(value)
-        push_button = MangoPushButton('移除', color=THEME.red)
-        unique_id = str(uuid.uuid4())
-        push_button.setProperty("unique_id", unique_id)
-        push_button.clicked.connect(lambda: self.delete_after_sql(unique_id))
-        push_button.set_stylesheet(28, 40)
-        h_layout.addWidget(push_button)
-        self.v_layout_3_1.addLayout(h_layout)
-        self.v_layout_3_1_list.append({'key': key, 'value': value, 'delete': push_button, 'layout': h_layout})
+    def save_case(self, key, layout_list):
+        response_message(self, HTTP.put_api_case({
+            'id': self.data.get('id'),
+            'name': self.data.get('name'),
+            key: [{
+                'key': i.get('key').get_value(),
+                "value": i.get('value').get_value()} for i in layout_list],
+        }))
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'module':
@@ -285,54 +411,234 @@ class ApiCaseDetailedPage(SubPage):
     def refresh(self, row):
         response_message(self, HTTP.put_api_case_refresh(row.get('id')))
 
-    def save_after_sql(self):
-        response_message(self, HTTP.put_case({
-            'id': self.data.get('id'),
-            'name': self.data.get('name'),
-            'posterior_sql': [{
-                'key': i.get('key').get_value(),
-                "value": i.get('value').get_value()} for i in self.v_layout_3_1_list],
-        }))
-
-    def save_front_sql(self):
-        response_message(self, HTTP.put_case({
-            'id': self.data.get('id'),
-            'name': self.data.get('name'),
-            'front_sql': [{
-                'key': i.get('key').get_value(),
-                "value": i.get('value').get_value()} for i in self.v_layout_2_1_list],
-        }))
-
-    def save_front_custom(self):
-        response_message(self, HTTP.put_case({
-            'id': self.data.get('id'),
-            'name': self.data.get('name'),
-            'front_custom': [{
-                'key': i.get('key').get_value(),
-                "value": i.get('value').get_value()} for i in self.v_layout_1_1_list],
-        }))
+    def save_but(self, enum_name: str, is_add: bool = False, layout_list: list | None = None):
+        layout_h = QHBoxLayout()
+        layout_h.addStretch()
+        if is_add:
+            add = MangoPushButton('增加')
+            add.clicked.connect(lambda: self.add_case_info(enum_name))
+            add.set_stylesheet(28, 40)
+            layout_h.addWidget(add)
+        save = MangoPushButton('保存')
+        save.clicked.connect(lambda: self.save_case_info(enum_name, layout_list))
+        save.set_stylesheet(28, 40)
+        layout_h.addWidget(save)
+        layout_h.setContentsMargins(0, 0, 0, 0)
+        return layout_h
 
     @staticmethod
-    def remove(layout_list, _layout, unique_id, func):
+    def remove(layout_list, _layout, unique_id, func, key_name):
         for index, item in enumerate(layout_list):
             if item['delete'].property("unique_id") == unique_id:
                 WidgetTool.remove_layout(item['layout'])
                 layout_list.pop(index)
                 _layout.update()
                 break
-        func()
-
-    def delete_front_custom(self, unique_id):
-        self.remove(self.v_layout_1_1_list, self.v_layout_1_1, unique_id, self.save_front_custom)
-
-    def delete_front_sql(self, unique_id):
-        self.remove(self.v_layout_2_1_list, self.v_layout_2_1, unique_id, self.save_front_sql)
-
-    def delete_after_sql(self, unique_id):
-        self.remove(self.v_layout_3_1_list, self.v_layout_3_1, unique_id, self.save_after_sql)
+        func(key_name, layout_list)
 
     def click_row(self, row):
-        print(row)
+        self.row = row
+        self.info_headers.set_value(self.init_data(row.get('header')))
+        self.info_params.set_value(self.init_data(row.get('params')))
+        self.info_data.set_value(self.init_data(row.get('data')))
+        self.info_json.set_value(self.init_data(row.get('json')))
+        self.info_file.set_value(self.init_data(row.get('file')))
+        self.sleep.set_value(self.init_data(row.get('posterior_sleep')))
+        self.ass_agreement.set_value(self.init_data(row.get('ass_response_whole')))
+        for i in row.get('front_sql', []):
+            self.set_form(
+                i,
+                'front_sql',
+                '请输入前置SQL',
+                'sql',
+                self.save_case_info,
+                self.api_widget_front_sql_layout,
+                self.api_widget_front_sql_layout_list
+            )
+        for i in row.get('ass_sql', []):
+            self.set_form(
+                i,
+                'ass',
+                '请输入jsonpath表达式',
+                '预期',
+                self.save_case_info,
+                self.api_widget_ass_condition_layout,
+                self.api_widget_ass_condition_layout_list,
+                '请输入想要判断的值',
+                '期望',
+                '请选择断言方法',
+                '断言'
+            )
+        for i in row.get('ass_response_value', []):
+            self.set_form(
+                i,
+                'ass',
+                '请输入sql查询语句，只能查询一个字段',
+                '预期',
+                self.save_case_info,
+                self.api_widget_ass_sql_layout,
+                self.api_widget_ass_sql_layout_list,
+                '请输入想要判断的值',
+                '期望',
+                '请选择断言方法',
+                '断言'
+            )
+        for i in row.get('posterior_sql', []):
+            self.set_form(
+                i,
+                'posterior',
+                'key',
+                'key',
+                self.save_case_info,
+                self.api_widget_posterior_result_layout,
+                self.api_widget_posterior_result_layout_list,
+                '请输入jsonpath表达式',
+                'value',
+            )
+        for i in row.get('posterior_sql', []):
+            self.set_form(
+                i,
+                'posterior',
+                '请输入缓存key，删除语句则不用',
+                'key',
+                self.save_case_info,
+                self.api_widget_posterior_sql_layout,
+                self.api_widget_posterior_sql_layout_list,
+                '请输入SQL语句',
+                'sql语句',
+
+            )
+
+    def save_case_info(self, key_name, layout_list: list):
+        s = time.time()
+        api_case_detailed_data = {
+            'id': self.row.get('id'),
+            'header': self.info_headers.get_value() if self.info_headers.get_value() else None,
+            'params': self.init_data(self.info_params.get_value(), True),
+            'data': self.init_data(self.info_data.get_value(), True),
+            'json': self.init_data(self.info_json.get_value(), True),
+            'file': self.init_data(self.info_file.get_value(), True),
+            'ass_response_whole': self.ass_agreement.get_value() if self.ass_agreement.get_value() else None,
+            'posterior_sleep': self.sleep.get_value() if self.sleep.get_value() else None,
+        }
+        if not key_name:
+            pass
+        elif key_name == 'front_sql':
+            api_case_detailed_data['front_sql'] = [i.get('key').get_value() for i in
+                                                   self.api_widget_front_sql_layout_list]
+        elif key_name == 'ass':
+            ass_sql_list = []
+            for i in self.api_widget_ass_sql_layout_list:
+                ass_sql_list.append({
+                    "actual": i.get('value').get_value(),
+                    "expect": i.get('key').get_value(),
+                    "method": i.get('method').get_value()
+                })
+            api_case_detailed_data['ass_sql'] = ass_sql_list
+            ass_response_value_list = []
+            for i in self.api_widget_ass_condition_layout_list:
+                ass_response_value_list.append({
+                    "actual": i.get('value').get_value(),
+                    "expect": i.get('key').get_value(),
+                    "method": i.get('method').get_value()
+                })
+            api_case_detailed_data['ass_response_value'] = ass_response_value_list
+        elif key_name == 'posterior':
+            posterior_sql_list = []
+            for i in self.api_widget_posterior_sql_layout_list:
+                posterior_sql_list.append({
+                    "key": i.get('key').get_value(),
+                    "value": i.get('value').get_value()
+                })
+            api_case_detailed_data['posterior_sql'] = posterior_sql_list
+            posterior_response_list = []
+            for i in self.api_widget_posterior_result_layout_list:
+                posterior_response_list.append({
+                    "key": i.get('key').get_value(),
+                    "value": i.get('value').get_value()
+                })
+            api_case_detailed_data['posterior_response'] = posterior_response_list
+        response_message(self, self.put(api_case_detailed_data))
+
+    def add_case_info(self, menu_name: str):
+        if menu_name == 'front_sql':
+            self.set_form(
+                None,
+                menu_name,
+                '请输入前置SQL',
+                'sql',
+                self.save_case_info,
+                self.api_widget_front_sql_layout,
+                self.api_widget_front_sql_layout_list
+            )
+        elif menu_name == 'ass':
+            if self.mango_tabs_ass.currentIndex() == 1:
+                self.set_form(
+                    None,
+                    menu_name,
+                    '请输入jsonpath表达式',
+                    '预期',
+                    self.save_case_info,
+                    self.api_widget_ass_condition_layout,
+                    self.api_widget_ass_condition_layout_list,
+                    '请输入想要判断的值',
+                    '期望',
+                    '请选择断言方法',
+                    '断言'
+                )
+            elif self.mango_tabs_ass.currentIndex() == 2:
+                self.set_form(
+                    None,
+                    menu_name,
+                    '请输入sql查询语句，只能查询一个字段',
+                    '预期',
+                    self.save_case_info,
+                    self.api_widget_ass_sql_layout,
+                    self.api_widget_ass_sql_layout_list,
+                    '请输入想要判断的值',
+                    '期望',
+                    '请选择断言方法',
+                    '断言'
+                )
+        elif menu_name == 'posterior':
+            if self.mango_tabs_posterior.currentIndex() == 0:
+                self.set_form(
+                    None,
+                    menu_name,
+                    'key',
+                    'key',
+                    self.save_case_info,
+                    self.api_widget_posterior_result_layout,
+                    self.api_widget_posterior_result_layout_list,
+                    '请输入jsonpath表达式',
+                    'value',
+                )
+            elif self.mango_tabs_posterior.currentIndex() == 1:
+                self.set_form(
+                    None,
+                    menu_name,
+                    '请输入缓存key，删除语句则不用',
+                    'key',
+                    self.save_case_info,
+                    self.api_widget_posterior_sql_layout,
+                    self.api_widget_posterior_sql_layout_list,
+                    '请输入SQL语句',
+                    'sql语句',
+
+                )
+
+    @staticmethod
+    def init_data(data: str | dict | list | None, save: bool = False):
+        if not save:
+            if data is None or isinstance(data, str):
+                return data
+            elif isinstance(data, dict) or isinstance(data, list):
+                return json.dumps(data, ensure_ascii=False, indent=4)
+        else:
+            if data is None or data == '':
+                return None
+            else:
+                return json.loads(data)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):

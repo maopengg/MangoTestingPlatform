@@ -40,7 +40,7 @@ class SendEmail:
             用例运行总数: {self.test_report.case_sum} 个
             通过用例个数: {self.test_report.success} 个
             失败用例个数: {self.test_report.fail} 个
-            异常用例个数: {self.test_report.warning} 个
+            异常用例个数: {self.test_report.THEME.group.warning} 个
             跳过用例个数: 暂不统计 个
             成  功   率: {self.test_report.success_rate} %
 

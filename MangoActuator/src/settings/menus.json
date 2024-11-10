@@ -17,7 +17,6 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "page",
           "btn_text": "页面元素",
           "btn_tooltip": "页面元素",
@@ -25,7 +24,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "page_steps",
           "btn_text": "页面步骤",
           "btn_tooltip": "页面步骤",
@@ -33,7 +31,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "case",
           "btn_text": "测试用例",
           "btn_tooltip": "测试用例",
@@ -41,7 +38,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "public",
           "btn_text": "公共参数",
           "btn_tooltip": "测试用例",
@@ -49,7 +45,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "equipment",
           "btn_text": "设备配置",
           "btn_tooltip": "UI用例设备配置",
@@ -58,7 +53,7 @@
         }
       ]
     },
-     {
+    {
       "btn_icon": ":/icons/robot.svg",
       "btn_id": "api",
       "btn_text": "接口自动化",
@@ -67,7 +62,6 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "api_info",
           "btn_text": "接口管理",
           "btn_tooltip": "接口管理",
@@ -75,7 +69,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "api_case",
           "btn_text": "测试用例",
           "btn_tooltip": "测试用例",
@@ -83,7 +76,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "api_public",
           "btn_text": "公共参数",
           "btn_tooltip": "公共参数",
@@ -109,7 +101,6 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "project",
           "btn_text": "项目配置",
           "btn_tooltip": "产品模块",
@@ -117,7 +108,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "product",
           "btn_text": "产品模块",
           "btn_tooltip": "产品模块",
@@ -125,7 +115,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "test_env",
           "btn_text": "测试环境",
           "btn_tooltip": "测试环境",
@@ -133,7 +122,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "test_file",
           "btn_text": "测试文件",
           "btn_tooltip": "测试文件",
@@ -151,7 +139,6 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "user_administration",
           "btn_text": "用户管理",
           "btn_tooltip": "用户管理",
@@ -159,7 +146,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "role",
           "btn_text": "角色管理",
           "btn_tooltip": "角色管理",
@@ -167,7 +153,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "user_log",
           "btn_text": "登录日志",
           "btn_tooltip": "登录日志",
@@ -185,7 +170,6 @@
       "is_active": false,
       "submenus": [
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "scheduled_task",
           "btn_text": "定时任务",
           "btn_tooltip": "定时任务",
@@ -193,7 +177,6 @@
           "is_active": false
         },
         {
-          "btn_icon": ":/icons/mind-mapping.svg",
           "btn_id": "time",
           "btn_text": "定时策略",
           "btn_tooltip": "定时策略",

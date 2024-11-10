@@ -18,8 +18,8 @@ table_column = [
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 table_menu = [
     {'name': '调试', 'action': 'debug'},

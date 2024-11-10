@@ -22,10 +22,10 @@ table_menu = [
     {'name': '删除', 'action': 'delete'}
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
-    # {'name': '刷新步骤', 'theme': THEME.blue, 'action': 'refresh_case'},
-    {'name': '执行', 'theme': THEME.green, 'action': 'run'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    # {'name': '刷新步骤', 'theme': THEME.group.info, 'action': 'refresh_case'},
+    {'name': '执行', 'theme': THEME.group.success, 'action': 'run'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 field_list = [
     {'key': 'id', 'name': '用例ID'},

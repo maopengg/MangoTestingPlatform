@@ -23,7 +23,7 @@ search_data = [
     }
 ]
 # right_data = [
-#     {'name': '新增', 'theme': THEME.blue, 'action': 'add'}
+#     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'}
 #
 # ]
 form_data = [

@@ -10,7 +10,13 @@ from mango_ui.init import *
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.layout = QVBoxLayout(self)
+
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self.bg = QFrame()
+        self._layout.addWidget(self.bg)
+        self.bg.setStyleSheet(f"background: {THEME.background_color};")
+        self.layout = QVBoxLayout(self.bg)
 
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(self.verticalSpacer_2)
@@ -35,7 +41,7 @@ class LoginWindow(QWidget):
         self.horizontalLayout = QHBoxLayout()
         self.label_3 = MangoLabel('账号', self)
         self.horizontalLayout.addWidget(self.label_3)
-        self.horizontalSpacer = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
         self.horizontalLayout.addItem(self.horizontalSpacer)
         self.layout.addLayout(self.horizontalLayout)
 
@@ -45,7 +51,7 @@ class LoginWindow(QWidget):
         self.horizontalLayout_2 = QHBoxLayout()
         self.label_4 = MangoLabel('密码', self)
         self.horizontalLayout_2.addWidget(self.label_4)
-        self.horizontalSpacer_2 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_2 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
         self.horizontalLayout_2.addItem(self.horizontalSpacer_2)
         self.layout.addLayout(self.horizontalLayout_2)
 
@@ -55,12 +61,12 @@ class LoginWindow(QWidget):
         self.horizontalLayout_3 = QHBoxLayout()
         self.remember_box = MangoCheckBox('记住密码', self)
         self.horizontalLayout_3.addWidget(self.remember_box)
-        self.horizontalSpacer_3 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_3 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
         self.horizontalLayout_3.addItem(self.horizontalSpacer_3)
         self.layout.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_4 = QHBoxLayout()
-        self.horizontalSpacer_6 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_6 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer_6)
         self.verticalLayout = QHBoxLayout()
@@ -68,18 +74,18 @@ class LoginWindow(QWidget):
         self.login_but.setObjectName("pushButtonLogin")
         self.verticalLayout.addWidget(self.login_but)
         self.horizontalLayout_4.addLayout(self.verticalLayout)
-        self.horizontalSpacer_5 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalSpacer_5 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
         self.horizontalLayout_4.addItem(self.horizontalSpacer_5)
         self.layout.addLayout(self.horizontalLayout_4)
 
-        self.verticalSpacer = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Expanding)  # type: ignore
         self.layout.addItem(self.verticalSpacer)
 
         self.layout_h = QHBoxLayout()
         self.layout_h.addStretch(1)
         self.register_but = QPushButton('注册')
         self.register_but.setStyleSheet("border: none;")
-        self.register_but.setCursor(Qt.PointingHandCursor)
+        self.register_but.setCursor(Qt.PointingHandCursor)  # type: ignore
 
         self.layout_h.addWidget(self.register_but)
         self.layout_h.addStretch()

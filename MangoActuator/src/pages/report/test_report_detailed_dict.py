@@ -8,9 +8,8 @@ from mango_ui import THEME
 from src.enums.tools_enum import Status1Enum
 from src.enums.ui_enum import ElementExpEnum
 
-
 right_data = [
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 field_list = [
     {'key': 'id', 'name': '测试套ID'},

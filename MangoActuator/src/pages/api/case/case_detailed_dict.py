@@ -11,15 +11,15 @@ from src.network import HTTP
 from src.tools.methods import Methods
 
 table_column = [
-    {'key': 'case', 'name': '接口名称'},
+    {'key': 'api_info', 'name': '接口名称'},
     # {'key': 'method', 'name': '请求方法', 'width': 70, 'option': MethodEnum.get_option('value', 'label')},
     {'key': 'status', 'name': '测试结果', 'width': 100, 'option': Status3Enum.get_option('value', 'label')},
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.blue, 'action': 'add'},
-    {'name': '执行', 'theme': THEME.green, 'action': 'run'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    {'name': '执行', 'theme': THEME.group.success, 'action': 'run'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 table_menu = [
     {'name': '刷新', 'action': 'refresh'},

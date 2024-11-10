@@ -15,7 +15,7 @@ class LogHandler:
     level_relations = {
         'debug': logging.DEBUG,
         'info': logging.INFO,
-        'warning': logging.WARNING,
+        'THEME.group.warning': logging.THEME.group.warning,
         'error': logging.ERROR,
         'critical': logging.CRITICAL
     }
@@ -58,7 +58,7 @@ class LogHandler:
             log_colors={
                 'DEBUG': 'cyan',
                 'INFO': 'green',
-                'WARNING': 'yellow',
+                'THEME.group.warning': 'yellow',
                 'ERROR': 'red',
                 'CRITICAL': 'red',
             }

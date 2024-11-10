@@ -14,6 +14,6 @@ class MangoActuatorError(Exception):
         if error and is_log:
             log.error(f'报错提示：{msg}， 报错内容：{error}')
         elif is_log:
-            log.warning(f'报错提示：{msg}')
+            log.THEME.group.warning(f'报错提示：{msg}')
         self.code = code
         self.msg = msg

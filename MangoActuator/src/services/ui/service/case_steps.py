@@ -37,7 +37,8 @@ class CaseSteps(StepElements):
         self.case_result = CaseResultModel(
             test_suite_id=self.case_model.test_suite_id,
             case_id=self.case_model.id,
-            environment_id=self.case_model.environment_config.id,
+            # environment_id=self.case_model.environment_config.id,
+            environment_id=self.environment_id,
             case_name=self.case_model.name,
             module_name=self.case_model.module_name,
             case_people=self.case_model.case_people,

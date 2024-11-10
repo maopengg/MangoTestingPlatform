@@ -46,8 +46,8 @@ class WeChatSend:
                     >成功用例数：<font color=\"info\">{self.test_report.success}</font>
                     >失败用例数：`{self.test_report.fail}个`
                     >异常用例数：`0 个`
-                    >跳过用例数：<font color=\"warning\">0</font>
-                    >用例执行时长：<font color=\"warning\">{self.test_report.execution_duration} s</font>
+                    >跳过用例数：<font color=\"THEME.group.warning\">0</font>
+                    >用例执行时长：<font color=\"THEME.group.warning\">{self.test_report.execution_duration} s</font>
                     >测试时间：<font color=\"comment\">{self.test_report.test_time}</font>
                     >
                     >非相关负责人员可忽略此消息。

@@ -8,9 +8,9 @@ from mango_ui import THEME
 from src.enums.system_enum import NoticeEnum
 
 right_data = [
-    {'name': '新增数据库', 'theme': THEME.blue, 'action': 'add_database'},
-    {'name': '新增通知', 'theme': THEME.blue, 'action': 'add_notice'},
-    {'name': '返回', 'theme': THEME.orange, 'action': 'back'}
+    {'name': '新增数据库', 'theme': THEME.group.info, 'action': 'add_database'},
+    {'name': '新增通知', 'theme': THEME.group.info, 'action': 'add_notice'},
+    {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 
 database_form_data = [

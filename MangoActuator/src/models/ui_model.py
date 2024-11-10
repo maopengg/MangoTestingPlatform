@@ -60,7 +60,23 @@ class StepsDataModel(BaseModel):
     page_step_details_name: str | None = None
 
 
-class StepsModel(BaseModel):
+# class StepsModel(BaseModel):
+#     id: int | None = None
+#     name: str
+#     case_step_details_id: int | None
+#     project_product: int
+#     type: int
+#     url: str
+#     case_data: list[StepsDataModel] = []
+#     element_list: list[ElementModel] = []
+
+
+# class PageStepsModel(BaseModel):
+#     steps: StepsModel
+#     equipment_config: EquipmentModel
+#     environment_config: EnvironmentConfigModel
+#     public_data_list: list[UiPublicModel] = []
+class PageStepsModel(BaseModel):
     id: int | None = None
     name: str
     case_step_details_id: int | None
@@ -69,10 +85,6 @@ class StepsModel(BaseModel):
     url: str
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
-
-
-class PageStepsModel(BaseModel):
-    steps: StepsModel
     equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
@@ -88,10 +100,9 @@ class CaseModel(BaseModel):
     front_custom: list
     front_sql: list
     posterior_sql: list
-    steps: list[StepsModel]
-
-    equipment_config: EquipmentModel
-    environment_config: EnvironmentConfigModel
+    steps: list[PageStepsModel]
+    # equipment_config: EquipmentModel
+    # environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
 
 
