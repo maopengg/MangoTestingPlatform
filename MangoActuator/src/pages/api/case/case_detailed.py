@@ -212,14 +212,8 @@ class ApiCaseDetailedPage(SubPage):
         self.mango_tabs_response.add_tab(self.api_widget_response_response_headers_layout, '响应头')
         self.api_widget_response_request_layout = QVBoxLayout()
         self.api_widget_response_request_layout.setAlignment(Qt.AlignTop)  # type: ignore
-        self.response_request_params = MangoTextEdit('')
-        self.response_request_data = MangoTextEdit('')
-        self.response_request_json = MangoTextEdit('')
-        self.response_request_file = MangoTextEdit('')
-        self.api_widget_response_request_layout.addWidget(self.response_request_params)
-        self.api_widget_response_request_layout.addWidget(self.response_request_data)
-        self.api_widget_response_request_layout.addWidget(self.response_request_json)
-        self.api_widget_response_request_layout.addWidget(self.response_request_file)
+        self.response_request_body = MangoTextEdit('')
+        self.api_widget_response_request_layout.addWidget(self.response_request_body)
         self.mango_tabs_response.add_tab(self.api_widget_response_request_layout, '请求体')
         self.api_widget_response_body_layout = QVBoxLayout()
         self.api_widget_response_body_layout.setAlignment(Qt.AlignTop)  # type: ignore
@@ -485,12 +479,11 @@ class ApiCaseDetailedPage(SubPage):
             self.response_info_error_msg.setText(f'失败提示:{api_info_result.data.get("error_message")}')
 
         self.response_headers.set_value(self.init_data(api_info_result.data.get("headers")))
-        print(self.init_data(api_info_result.data.get("response_headers")))
         self.response_response_headers.set_value(self.init_data(api_info_result.data.get("response_headers")))
-        self.response_request_params.set_value(self.init_data(api_info_result.data.get("params")))
-        self.response_request_data.set_value(self.init_data(api_info_result.data.get("data")))
-        self.response_request_json.set_value(self.init_data(api_info_result.data.get("json")))
-        self.response_request_file.set_value(self.init_data(api_info_result.data.get("file")))
+        self.response_request_body.set_value(self.init_data(api_info_result.data.get("params")))
+        self.response_request_body.append(self.init_data(api_info_result.data.get("data")))
+        self.response_request_body.append(self.init_data(api_info_result.data.get("json")))
+        self.response_request_body.append(self.init_data(api_info_result.data.get("file")))
         self.response_body.set_value(self.init_data(api_info_result.data.get("response_text")))
         self.cache_data.setText(self.init_data(api_info_result.data.get("all_cache")))
         for i in row.get('ass_sql', []):
@@ -668,8 +661,14 @@ class ApiCaseDetailedPage(SubPage):
     @staticmethod
     def init_data(data: str | dict | list | None, save: bool = False):
         if not save:
-            if data is None or isinstance(data, str):
+            if data is None:
                 return data
+            elif isinstance(data, str):
+                try:
+                    parsed_data = json.loads(data)
+                    return json.dumps(parsed_data, ensure_ascii=False, indent=4)
+                except json.JSONDecodeError:
+                    return data
             elif isinstance(data, dict) or isinstance(data, list):
                 return json.dumps(data, ensure_ascii=False, indent=4)
         else:

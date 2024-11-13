@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
-from src.enums.system_enum import EnvironmentEnum
+from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
 from src.enums.tools_enum import Status3Enum
 
 search_data = [
@@ -24,7 +24,7 @@ search_data = [
         'placeholder': '请选择自动化类型',
         'key': 'type',
         'type': 1,
-        'select': EnvironmentEnum.get_select()
+        'select': AutoTestTypeEnum.get_select()
     }
 ]
 table_column = [
