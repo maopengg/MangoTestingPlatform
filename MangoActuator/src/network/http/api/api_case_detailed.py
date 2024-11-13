@@ -38,7 +38,7 @@ class ApiCaseDetailed(HttpBase):
 
     @classmethod
     @request_log()
-    def put_api_case_sort(cls, case_sort_list: dict):
+    def put_api_case_sort(cls, case_sort_list: list[dict]):
         _json = {
             'case_sort_list': case_sort_list
         }
@@ -46,7 +46,7 @@ class ApiCaseDetailed(HttpBase):
 
     @classmethod
     @request_log()
-    def put_api_case_refresh(cls, _id: dict):
+    def put_api_case_refresh(cls, _id: int):
         _json = {
             'id': _id
         }

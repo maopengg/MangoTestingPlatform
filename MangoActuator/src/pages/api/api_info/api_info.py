@@ -3,6 +3,9 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
+from mango_ui import response_message
+
+from src.models.user_model import UserModel
 from src.network import HTTP
 from .api_info_dict import *
 from ...parent.table import TableParent
@@ -23,4 +26,5 @@ class ApiInfoPage(TableParent):
         self._delete = HTTP.delete_api_info
 
     def run(self, row):
-        print(f'点击了运行：{row}')
+        user_info = UserModel()
+        response_message(self, HTTP.get_api_run(row.get('id'), user_info.selected_environment))

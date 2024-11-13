@@ -54,7 +54,7 @@ class ApiCase(HttpBase):
 
     @classmethod
     @request_log()
-    def get_api_case_run(cls, case_id, test_obj_id, case_sort):
+    def get_api_case_run(cls, case_id, test_obj_id, case_sort: int | None = None):
         _params = {
             'case_id': case_id,
             'test_obj_id': test_obj_id,

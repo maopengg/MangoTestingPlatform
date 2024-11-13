@@ -7,6 +7,8 @@ from .api_case import ApiCase
 from .api_case_detailed import ApiCaseDetailed
 from .api_info import ApiInfo
 from .api_pulic import ApiPublic
+from .api_case_result import ApiCaseResult
+from .api_info_result import ApiInfoResult
 
 
 class ApiApi(
@@ -14,5 +16,7 @@ class ApiApi(
     ApiCase,
     ApiPublic,
     ApiCaseDetailed,
+    ApiCaseResult,
+    ApiInfoResult,
 ):
     pass

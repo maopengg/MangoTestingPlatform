@@ -38,12 +38,11 @@ class ApiInfo(HttpBase):
 
     @classmethod
     @request_log()
-    def get_api_run(cls, test_env, _id=None, _id_list: list = None):
+    def get_api_run(cls, _id, test_env, _id_list: list = None):
         _params = {
+            'id': _id,
             'test_env': test_env,
         }
-        if _id:
-            _params['id'] = _id
         if _id_list:
             _params['id'] = _id_list
         return cls.get(url=cls.url(f'{ApiInfo._url}/run'), headers=cls.headers, params=_params)

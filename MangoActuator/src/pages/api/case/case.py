@@ -7,6 +7,7 @@ from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
 from src.enums.tools_enum import StatusEnum
 from src.models.network_model import ResponseModel
+from src.models.user_model import UserModel
 from .case_dict import *
 from ...parent.table import TableParent
 
@@ -46,4 +47,5 @@ class ApiCasePage(TableParent):
         response_message(self, response_model)
 
     def run(self, row):
-        print(f'点击了运行：{row}')
+        user_info = UserModel()
+        response_message(self, HTTP.get_api_case_run(row.get("id"), user_info.selected_environment, ))

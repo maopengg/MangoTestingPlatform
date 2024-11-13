@@ -190,19 +190,40 @@ class ApiCaseDetailedPage(SubPage):
         self.mango_tabs_response = MangoTabs()
         self.api_widget_3_layout.addWidget(self.mango_tabs_response)
         self.api_widget_response_info_layout = QVBoxLayout()
-        self.response_info = MangoLabel()
-        self.api_widget_response_info_layout.addWidget(self.response_info)
+        self.api_widget_response_info_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.response_info_url = MangoLabel()
+        self.response_info_code = MangoLabel()
+        self.response_info_time = MangoLabel()
+        self.response_info_error_msg = MangoLabel()
+        self.api_widget_response_info_layout.addWidget(self.response_info_url)
+        self.api_widget_response_info_layout.addWidget(self.response_info_code)
+        self.api_widget_response_info_layout.addWidget(self.response_info_time)
+        self.api_widget_response_info_layout.addWidget(self.response_info_error_msg)
         self.mango_tabs_response.add_tab(self.api_widget_response_info_layout, '基础信息')
         self.api_widget_response_headers_layout = QVBoxLayout()
-        self.response_headers = MangoLabel()
+        self.api_widget_response_headers_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.response_headers = MangoTextEdit('')
         self.api_widget_response_headers_layout.addWidget(self.response_headers)
         self.mango_tabs_response.add_tab(self.api_widget_response_headers_layout, '请求头')
         self.api_widget_response_response_headers_layout = QVBoxLayout()
-        self.response_response_headers = MangoLabel()
+        self.api_widget_response_response_headers_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.response_response_headers = MangoTextEdit('')
         self.api_widget_response_response_headers_layout.addWidget(self.response_response_headers)
         self.mango_tabs_response.add_tab(self.api_widget_response_response_headers_layout, '响应头')
+        self.api_widget_response_request_layout = QVBoxLayout()
+        self.api_widget_response_request_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.response_request_params = MangoTextEdit('')
+        self.response_request_data = MangoTextEdit('')
+        self.response_request_json = MangoTextEdit('')
+        self.response_request_file = MangoTextEdit('')
+        self.api_widget_response_request_layout.addWidget(self.response_request_params)
+        self.api_widget_response_request_layout.addWidget(self.response_request_data)
+        self.api_widget_response_request_layout.addWidget(self.response_request_json)
+        self.api_widget_response_request_layout.addWidget(self.response_request_file)
+        self.mango_tabs_response.add_tab(self.api_widget_response_request_layout, '请求体')
         self.api_widget_response_body_layout = QVBoxLayout()
-        self.response_body = MangoLabel()
+        self.api_widget_response_body_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.response_body = MangoTextEdit('')
         self.api_widget_response_body_layout.addWidget(self.response_body)
         self.mango_tabs_response.add_tab(self.api_widget_response_body_layout, '响应体')
         self.mango_tabs_response.setCurrentIndex(3)
@@ -317,7 +338,7 @@ class ApiCaseDetailedPage(SubPage):
 
     def set_form(
             self,
-            data: str | None,
+            data: dict | None,
             key_name,
             key_placeholder,
             key_label,
@@ -438,6 +459,8 @@ class ApiCaseDetailedPage(SubPage):
 
     def click_row(self, row):
         self.row = row
+        api_info_result: ResponseModel = HTTP.get_api_info_result_case(row.get('id'))
+        print()
         self.info_headers.set_value(self.init_data(row.get('header')))
         self.info_params.set_value(self.init_data(row.get('params')))
         self.info_data.set_value(self.init_data(row.get('data')))
@@ -455,6 +478,21 @@ class ApiCaseDetailedPage(SubPage):
                 self.api_widget_front_sql_layout,
                 self.api_widget_front_sql_layout_list
             )
+        self.response_info_url.setText(f'URL:{api_info_result.data.get("url")}')
+        self.response_info_code.setText(f'CODE:{api_info_result.data.get("response_code")}')
+        self.response_info_time.setText(f'请求时间:{api_info_result.data.get("response_time")}')
+        if api_info_result.data.get("status") == StatusEnum.FAIL.value:
+            self.response_info_error_msg.setText(f'失败提示:{api_info_result.data.get("error_message")}')
+
+        self.response_headers.set_value(self.init_data(api_info_result.data.get("headers")))
+        print(self.init_data(api_info_result.data.get("response_headers")))
+        self.response_response_headers.set_value(self.init_data(api_info_result.data.get("response_headers")))
+        self.response_request_params.set_value(self.init_data(api_info_result.data.get("params")))
+        self.response_request_data.set_value(self.init_data(api_info_result.data.get("data")))
+        self.response_request_json.set_value(self.init_data(api_info_result.data.get("json")))
+        self.response_request_file.set_value(self.init_data(api_info_result.data.get("file")))
+        self.response_body.set_value(self.init_data(api_info_result.data.get("response_text")))
+        self.cache_data.setText(self.init_data(api_info_result.data.get("all_cache")))
         for i in row.get('ass_sql', []):
             self.set_form(
                 i,
@@ -653,16 +691,13 @@ class ApiCaseDetailedPage(SubPage):
 
     def run(self):
         user_info = UserModel()
-        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
-
-    def step_run(self):
-        user_info = UserModel()
-        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.get_api_case_run(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
-        response_message(self, HTTP.ui_case_steps_refresh(row.get("id")))
+        response_message(self, HTTP.put_api_case_refresh(row.get("id")))
         self.show_data()
 
     def update_data(self, data):
         response_message(self,
-                         HTTP.put_case_sort([{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))
+                         HTTP.put_api_case_sort(
+                             [{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))
