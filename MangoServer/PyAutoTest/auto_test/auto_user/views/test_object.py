@@ -92,7 +92,7 @@ class TestObjectViews(ViewSet):
         try:
             obj = self.model.objects.get(id=request.data.get('id'))
             if db_c_status == StatusEnum.SUCCESS.value or db_rud_status == StatusEnum.SUCCESS.value:
-                func_mysql_config(request.data.get('id'), obj.project_product.id)
+                func_mysql_config(request.data.get('id'))
             if db_c_status is not None:
                 obj.db_c_status = db_c_status
             if db_rud_status is not None:

@@ -12,15 +12,14 @@ from PyAutoTest.models.tools_model import MysqlConingModel
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049
 
 
-def func_mysql_config(env: int, project_product_id: int) -> MysqlConingModel:
+def func_mysql_config(env: int) -> MysqlConingModel:
     """
     获取mysql的配置信息生成model
     @param env:
-    @param project_product_id:
     @return:
     """
     try:
-        mysql = Database.objects.get(environment=env, project_product=project_product_id)
+        mysql = Database.objects.get(environment=env)
     except Database.DoesNotExist:
         raise DoesNotExistError(*ERROR_MSG_0021)
     try:

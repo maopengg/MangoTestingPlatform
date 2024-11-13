@@ -32,7 +32,7 @@ class CommonBase(DataProcessor):
 
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
             self.mysql_connect = MysqlConnect(
-                func_mysql_config(test_object.id, project_product_id),
+                func_mysql_config(test_object.id),
                 bool(test_object.db_c_status),
                 bool(test_object.db_rud_status)
             )

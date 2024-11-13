@@ -243,7 +243,7 @@ class UiTestRun:
     def __environment_config(self, test_object: TestObject, project_product_id) -> EnvironmentConfigModel:
         mysql_config = None
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = func_mysql_config(self.test_env, project_product_id)
+            mysql_config = func_mysql_config(self.test_env)
         return EnvironmentConfigModel(
             id=test_object.id,
             test_object_value=test_object.value,
