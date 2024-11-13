@@ -10,6 +10,7 @@ from mango_ui.init import *
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
+        # self.setWindowFlags(Qt.FramelessWindowHint)
 
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)

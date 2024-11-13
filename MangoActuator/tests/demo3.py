@@ -1,37 +1,36 @@
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QTabWidget, QPushButton, QHBoxLayout, QSizePolicy
+import sys
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLabel
+from PySide6.QtCore import Qt
 
-class ApiInfoDetailedPage(QWidget):
+
+class CustomWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.layout = QVBoxLayout(self)
+        # 设置窗口样式
+        self.setStyleSheet("background-color: white;")
 
-        # 创建 QTabWidget
-        self.tab_widget = QTabWidget()
+        # 设置窗口为无边框
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
-        # 添加标签页
-        self.tab_widget.addTab(QWidget(), '请求头')
-        self.tab_widget.addTab(QWidget(), '参数')
-        self.tab_widget.addTab(QWidget(), '表单')
-        self.tab_widget.addTab(QWidget(), 'JSON')
-        self.tab_widget.addTab(QWidget(), '文件')
+        # 创建布局
+        layout = QVBoxLayout()
 
-        # 创建按钮
-        self.button = QPushButton('提交')
-        self.button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        # 添加关闭按钮
+        close_button = QPushButton("关闭")
+        close_button.clicked.connect(self.close)
+        layout.addWidget(close_button)
 
-        # 创建一个水平布局，将 QTabWidget 和按钮放在一起
-        self.h_layout = QHBoxLayout()
-        self.h_layout.addWidget(self.tab_widget)
-        self.h_layout.addWidget(self.button)
+        # 添加其他内容
+        layout.addWidget(QLabel("这是一个自定义QWidget窗口，只保留关闭按钮"))
 
-        # 将水平布局添加到主布局
-        self.layout.addLayout(self.h_layout)
+        self.setLayout(layout)
+        self.setWindowTitle("自定义QWidget窗口")
+        self.resize(400, 300)
 
-        self.setLayout(self.layout)
 
-app = QApplication([])
-window = ApiInfoDetailedPage()
-window.resize(400, 300)
-window.show()
-app.exec()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = CustomWindow()
+    window.show()
+    sys.exit(app.exec())
