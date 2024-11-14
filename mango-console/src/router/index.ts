@@ -127,6 +127,19 @@ export const extraRoutes = [
           title: '测试项目',
         },
       },
+      {
+        path: 'test/object/notice',
+        component: () => import('@/views/config/test-object/notice/index.vue'),
+        meta: {
+          title: '通知配置',
+        },
+      },      {
+        path: 'test/object/database',
+        component: () => import('@/views/config/test-object/database/index.vue'),
+        meta: {
+          title: '数据库配置',
+        },
+      },
     ],
   },
 ]

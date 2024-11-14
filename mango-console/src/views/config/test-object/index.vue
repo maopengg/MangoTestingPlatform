@@ -122,6 +122,8 @@
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button type="text" size="mini" @click="clickNotice(record)">通知</a-button>
+                    <a-button type="text" size="mini" @click="clickDataBase(record)">数据库</a-button>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除</a-button
                     >
@@ -217,7 +219,9 @@
   } from '@/api/user'
   import { getUserNickname } from '@/api/user'
   import { getSystemEnumAutotest, getSystemEnumAutoType } from '@/api/system'
-
+  import {usePageData} from "@/store/page-data";
+  import {useRouter} from "vue-router";
+  const router = useRouter()
   const projectInfo = useProject()
   const uEnvironment = useEnvironment()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -359,6 +363,28 @@
           reject(error)
         }
       }, 300)
+    })
+  }
+
+  function clickNotice(record: any) {
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/config/test/object/notice',
+      query: {
+        id: record.id,
+      },
+    })
+  }
+
+  function clickDataBase(record: any) {
+    const pageData = usePageData()
+    pageData.setRecord(record)
+    router.push({
+      path: '/config/test/object/database',
+      query: {
+        id: record.id,
+      },
     })
   }
   function getAutoType() {
