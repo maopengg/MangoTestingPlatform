@@ -86,11 +86,28 @@ export const extraRoutes = [
           title: '用例详情',
         },
       },
+    ],
+  },
+  {
+    path: '/report',
+    name: 'report',
+    component: Layout,
+    meta: {
+      title: '测试报告',
+    },
+    children: [
       {
-        path: 'report/details',
-        component: () => import('@/views/apitest/report/details/index.vue'),
+        path: 'api/details',
+        component: () => import('@/views/report/api-details/index.vue'),
         meta: {
-          title: '接口测试报告详情',
+          title: 'API测试报告',
+        },
+      },
+      {
+        path: 'ui/details',
+        component: () => import('@/views/report/ui-details/index.vue'),
+        meta: {
+          title: 'UI测试报告',
         },
       },
     ],

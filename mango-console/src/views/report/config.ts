@@ -1,7 +1,9 @@
 import { FormItem } from '@/types/components'
 import { reactive } from 'vue'
+import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
+
 export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'id',
@@ -16,6 +18,14 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'status',
     label: '测试结果',
+    value: '',
+    type: 'select',
+    placeholder: '请选择测试结果',
+    optionItems: [],
+    reset: function () {},
+  },  {
+    key: 'type',
+    label: '自动化类型',
     value: '',
     type: 'select',
     placeholder: '请选择测试结果',

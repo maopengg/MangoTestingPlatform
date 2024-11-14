@@ -42,7 +42,7 @@ class CaseSteps(StepElements):
             case_name=self.case_model.name,
             module_name=self.case_model.module_name,
             case_people=self.case_model.case_people,
-            status=StatusEnum.FAIL.value,
+            status=StatusEnum.SUCCESS.value,
             page_steps_result_list=[]
         )
 

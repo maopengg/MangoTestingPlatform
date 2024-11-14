@@ -80,39 +80,32 @@
                 <div>
                   <a-space direction="vertical" style="width: 50%">
                     <p
-                      >输入类型：{{
-                        item.ope_type ? getLabelByValue(reportDetailsData.ope, item.ope_type) : '-'
-                      }}</p
-                    >
-                    <p
-                      >断言类型：{{
-                        item.ass_type ? getLabelByValue(reportDetailsData.ass, item.ass_type) : '-'
+                      >操作类型：{{item.element_data.type === 0 ?getLabelByValue(reportDetailsData.ope, item.element_data.ope_key) : getLabelByValue(reportDetailsData.ass, item.element_data.ope_key)
+
                       }}</p
                     >
                     <p
                       >表达式类型：{{
-                        item.exp ? reportDetailsData.eleExp[item.exp].title : item.exp
+                        item.element_data.exp ? reportDetailsData.eleExp[item.element_data.exp].title : item.element_data.exp
                       }}</p
                     >
                     <p
                       >测试结果：{{
-                        item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                        item.element_data.status === 1 ? '通过' : item.element_data.status === 0 ? '失败' : '未测试'
                       }}</p
                     >
-                    <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                    <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
-                    <p v-if="item.expect">预期：{{ item.expect }}</p>
-                    <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                    <p>等待时间：{{ item.element_data.sleep ? item.element_data.sleep : '-' }}</p>
+                    <p v-if="item.element_data.status === 0">错误提示：{{ item.element_data.error_message }}</p>
+                    <p v-if="item.element_data.expect">预期：{{ item.element_data.expect }}</p>
+                    <p v-if="item.element_data.status === 0">视频路径：{{ item.element_data.video_path }}</p>
                   </a-space>
                   <a-space direction="vertical" style="width: 50%">
-                    <p>输入值：{{ item.ope_value ? item.ope_value : '-' }}</p>
-                    <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                    <p>断言值：{{ item.ass_value ? item.ass_value : '-' }}</p>
-                    <p>元素个数：{{ item.ele_quantity }}</p>
-                    <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                    <div v-if="item.status === 0">
+                    <p style="word-wrap: break-word">元素表达式：{{ item.element_data.loc }}</p>
+                    <p>元素个数：{{ item.element_data.ele_quantity }}</p>
+                    <p>元素下标：{{ item.element_data.sub ? item.element_data.sub : '-' }}</p>
+                    <div v-if="item.element_data.status === 0">
                       <a-image
-                        :src="baseURL + '/' + item.picture_path"
+                        :src="baseURL + '/' + item.element_data.picture_path"
                         title="失败截图"
                         width="260"
                         style="margin-right: 67px; vertical-align: top"
@@ -142,7 +135,7 @@
                         </template>
                       </a-image>
                     </div>
-                    <p v-if="item.expect">实际：{{ item.actual }}</p>
+                    <p v-if="item.expect">实际：{{ item.element_data.actual }}</p>
                   </a-space>
                 </div>
               </a-collapse-item>

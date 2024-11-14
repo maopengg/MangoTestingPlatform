@@ -51,10 +51,6 @@ def ad_routes():
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/equipment/index",
                     "menuName": "设备配置",
-                }, {
-                    "parentPath": "/uitest",
-                    "menuUrl": "/uitest/report/index",
-                    "menuName": "测试报告",
                 },
             ],
         },
@@ -79,13 +75,21 @@ def ad_routes():
                     "menuUrl": "/apitest/public/index",
                     "menuName": "公共参数",
                 },
-                {
-                    "parentPath": "/apitest",
-                    "menuUrl": "/apitest/report/index",
-                    "menuName": "测试报告",
-                },
             ],
         },
+        {
+            "menuUrl": "/report",
+            "menuName": "测试报告",
+            "icon": "icon-calendar-clock",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/report",
+                    "menuUrl": "/report/index",
+                    "menuName": "测试报告",
+                },]
+        },
+
         # {
         #     "menuUrl": "/perf",
         #     "menuName": "性能自动化",

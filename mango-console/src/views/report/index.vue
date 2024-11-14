@@ -19,7 +19,7 @@
                       @blur="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select'">
+                  <template v-else-if="item.type === 'select' && item.key==='status'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -30,6 +30,19 @@
                       value-key="key"
                       allow-clear
                       allow-search
+                    />
+                  </template>
+                  <template v-else-if="item.type === 'select' && item.key==='type'">
+                    <a-select
+                        style="width: 150px"
+                        v-model="item.value"
+                        :placeholder="item.placeholder"
+                        :options="data.type"
+                        @change="doRefresh"
+                        :field-names="fieldNames"
+                        value-key="key"
+                        allow-clear
+                        allow-search
                     />
                   </template>
                 </a-form-item>
@@ -80,8 +93,9 @@
                     {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                   </template>
                   <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                    {{ uEnvironment.data[record.test_env].title }}
+                    {{record.test_env? uEnvironment.data[record.test_env]?.title :'' }}
                   </template>
+
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
                     {{ record.user?.nickname }}
                   </template>
@@ -118,15 +132,15 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { onMounted, nextTick, ref } from 'vue'
+  import {onMounted, nextTick, ref, reactive} from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import * as echarts from 'echarts'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { tableColumns, conditionItems } from './config'
-  import { getApiResultWeek } from '@/api/apitest'
-  import { getSystemTestSuiteReport } from '@/api/system'
+  import { conditionItems, tableColumns } from './config'
+  import {getSystemEnumAutotest, getSystemTestSuiteReport} from '@/api/system'
+  import { getUiCaseResultWeekSum } from '@/api/uitest'
   import { useEnvironment } from '@/store/modules/get-environment'
   import { useStatus } from '@/store/modules/status'
 
@@ -139,7 +153,10 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
+  const data = reactive({
+    type: [],
 
+  })
   function doRefresh() {
     if (uEnvironment.data.length === 0) {
       uEnvironment.getEnvironment()
@@ -147,7 +164,6 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    value['type'] = 1
     getSystemTestSuiteReport(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -165,10 +181,20 @@
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
+    if (record.type == 0){
     router.push({
-      path: '/apitest/report/details',
-      query: {},
-    })
+      path: '/report/ui/details',
+      query: {
+        id: record.id,
+      },
+    })}else if (record.type === 1){
+      router.push({
+        path: '/report/api/details',
+        query: {
+          id: record.id,
+        },
+      })
+    }
   }
 
   const barChart = ref<HTMLElement>()
@@ -176,7 +202,7 @@
 
   function initBarEcharts() {
     myChart1.value = echarts.init(barChart.value!)
-    getApiResultWeek()
+    getUiCaseResultWeekSum()
       .then((res) => {
         myChart1.value.setOption({
           tooltip: {
@@ -233,7 +259,7 @@
 
   function initPieEcharts() {
     myChart2.value = echarts.init(pieChart.value!)
-    getApiResultWeek()
+    getUiCaseResultWeekSum()
       .then((res) => {
         myChart2.value.setOption({
           tooltip: {
@@ -273,14 +299,14 @@
                   value: res.data.successSun,
                   name: '用例通过数',
                   itemStyle: {
-                    color: '#11a834', // Set the color to green for case pass count
+                    color: '#11a834', // Set the color to green for case pass count #00b42a
                   },
                 },
                 {
                   value: res.data.failSun,
                   name: '用例失败数',
                   itemStyle: {
-                    color: '#d34141', // Set the color to red for case fail count
+                    color: '#d34141', // Set the color to red for case fail count  #f53f3f
                   },
                 },
               ],
@@ -292,11 +318,20 @@
       .catch(console.log)
   }
 
+  function getAutoTestName() {
+    getSystemEnumAutotest()
+        .then((res) => {
+          data.type = res.data
+        })
+        .catch(console.log)
+  }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       initPieEcharts()
       initBarEcharts()
+      getAutoTestName()
     })
   })
 </script>
