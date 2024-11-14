@@ -70,18 +70,13 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
-                <template v-else-if="item.key === 'project'" #cell="{ record }">
-                  {{ record.project?.name }}
-                </template>
-                <template v-else-if="item.key === 'environment'" #cell="{ record }">
-                  <a-tag color="orangered" size="small">
-                    {{ uEnvironment.data[record.environment].title }}
-                  </a-tag>
-                </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.type === 0">邮箱</a-tag>
                   <a-tag color="cyan" size="small" v-else-if="record.type === 1">企微群</a-tag>
                   <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
+                </template>
+                <template v-else-if="item.key === 'config'" #cell="{ record }">
+                    {{ record.config }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
@@ -125,28 +120,6 @@
                   :auto-size="{ minRows: 5, maxRows: 9 }"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'environment'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="uEnvironment.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="project.data"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
@@ -184,7 +157,6 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns, mailboxForm, configForm } from './config'
@@ -197,17 +169,16 @@
     putSystemNotice,
     putSystemNoticePutStatus,
   } from '@/api/system'
-  import { useEnvironment } from '@/store/modules/get-environment'
   import { getUserNickname } from '@/api/user'
+  import {useRoute} from "vue-router";
+  const route = useRoute()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
-  const project = useProject()
   const formModel = ref({})
-  const uEnvironment = useEnvironment()
 
   const data: any = reactive({
     noticeType: [],
@@ -218,8 +189,10 @@
     formItems: [],
   })
 
+
   function doRefresh() {
     let value = getFormItems(conditionItems)
+    value['environment_id'] = route.query.id
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemNotice(value)
@@ -304,8 +277,8 @@
     if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
-
       if (data.isAdd) {
+        value['environment'] = route.query.id
         value['status'] = 0
         postSystemNotice(value)
           .then((res) => {

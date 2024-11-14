@@ -71,7 +71,9 @@ class UiConfigViews(ViewSet):
         :return:
         """
         status = request.data.get('status')
-        is_headless = request.data.get('is_headless')
+        web_max = request.data.get('web_max')
+        web_recording = request.data.get('web_recording')
+        web_headers = request.data.get('web_headers')
         obj = self.model.objects.get(id=request.data.get('id'))
 
         if status is not None:
@@ -82,8 +84,16 @@ class UiConfigViews(ViewSet):
             obj.status = status
             obj.save()
             return ResponseData.success(RESPONSE_MSG_0057, )
-        if is_headless is not None:
-            obj.is_headless = is_headless
+        if web_headers is not None:
+            obj.config['web_headers'] = web_headers
+            obj.save()
+            return ResponseData.success(RESPONSE_MSG_0057, )
+        if web_max is not None:
+            obj.config['web_max'] = web_max
+            obj.save()
+            return ResponseData.success(RESPONSE_MSG_0057, )
+        if web_recording is not None:
+            obj.config['web_recording'] = web_recording
             obj.save()
             return ResponseData.success(RESPONSE_MSG_0057, )
 

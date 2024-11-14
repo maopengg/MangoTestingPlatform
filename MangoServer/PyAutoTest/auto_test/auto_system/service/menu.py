@@ -64,11 +64,6 @@ def ad_routes():
             "icon": "IconSend",
             "parentPath": "",
             "children": [
-                # {
-                #     "parentPath": "/apitest",
-                #     "menuUrl": "/apitest/mock",
-                #     "menuName": "Mock服务",
-                # },
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/info/index",
@@ -141,16 +136,6 @@ def ad_routes():
                     "parentPath": "/config",
                     "menuUrl": "/config/test-object/index",
                     "menuName": "测试对象",
-                },
-                {
-                    "parentPath": "/config",
-                    "menuUrl": "/config/database/index",
-                    "menuName": "数据库配置",
-                },
-                {
-                    "parentPath": "/config",
-                    "menuUrl": "/config/notice/index",
-                    "menuName": "通知配置",
                 },
                 {
                     "parentPath": "/config",

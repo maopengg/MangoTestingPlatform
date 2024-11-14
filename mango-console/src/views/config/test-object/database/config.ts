@@ -16,36 +16,7 @@ export const conditionItems: Array<FormItem> = reactive([
   },
 ])
 export const formItems: FormItem[] = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: '',
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '绑定环境',
-    key: 'environment',
-    value: '',
-    type: 'select',
-    required: true,
-    placeholder: '请选择对应环境',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
+
   {
     label: '域名',
     key: 'host',
@@ -124,18 +95,6 @@ export const formItems: FormItem[] = reactive([
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
-    align: 'left',
-    width: 150,
-  },
-  {
-    title: '对应环境',
-    key: 'environment',
-    dataIndex: 'environment',
-  },
   {
     title: '域名',
     key: 'host',

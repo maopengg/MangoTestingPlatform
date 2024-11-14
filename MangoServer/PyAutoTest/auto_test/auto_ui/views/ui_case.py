@@ -71,7 +71,7 @@ class UiCaseViews(ViewSet):
         """
         UiTestRun(
             request.user['id'],
-            request.GET.get("test_env")
+            request.query_params.get("test_env")
         ).case_batch([int(request.GET.get("case_id"))])
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
