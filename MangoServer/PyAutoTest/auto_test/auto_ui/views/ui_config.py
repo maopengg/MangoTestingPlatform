@@ -131,6 +131,8 @@ class UiConfigViews(ViewSet):
                     'value': urllib.parse.urlparse(i.get('value')).netloc,
                     'project_product_id': i.get('project_product_id')
                 })
+            if config_obj.config is None:
+                return ResponseData.fail(RESPONSE_MSG_0124, )
             web_config = EquipmentModel(
                 type=config_obj.type,
                 **config_obj.config,
@@ -138,6 +140,8 @@ class UiConfigViews(ViewSet):
                 host_list=host_list_dict)
         else:
             config_obj = self.model.objects.get(id=request.query_params.get('id'))
+            if config_obj.config is None:
+                return ResponseData.fail(RESPONSE_MSG_0124, )
             web_config = EquipmentModel(type=config_obj.type, **config_obj.config)
 
         send_socket_data = SocketDataModel(
