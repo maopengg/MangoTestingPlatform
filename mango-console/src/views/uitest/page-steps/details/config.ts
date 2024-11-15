@@ -31,18 +31,6 @@ export const columns = reactive([
     ellipsis: true,
     tooltip: true,
   },
-
-  {
-    title: '断言类型',
-    dataIndex: 'ass_type',
-    width: 150,
-  },
-  {
-    title: '断言操作值',
-    dataIndex: 'ass_value',
-    ellipsis: true,
-    tooltip: true,
-  },
   {
     title: 'key_list',
     dataIndex: 'key_list',
@@ -134,7 +122,7 @@ export const sqlForm = reactive([
 export const assForm = reactive([
   {
     label: '断言类型',
-    key: 'ass_type',
+    key: 'ope_type',
     value: '',
     type: 'cascader',
     required: true,

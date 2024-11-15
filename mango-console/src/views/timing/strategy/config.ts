@@ -27,14 +27,6 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
-    label: '定时器类型',
-    key: 'trigger_type',
-    value: 'cron',
-    placeholder: 'cron',
-    required: true,
-    type: 'input',
-  },
-  {
     label: '定时器介绍',
     key: 'name',
     value: '',
@@ -50,96 +42,16 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '每年某月',
-    key: 'month',
+    label: 'cron',
+    key: 'cron',
     value: '',
     type: 'input',
-    required: false,
-    placeholder: '月份请输入1-12之间的数字',
+    required: true,
+    placeholder: '请输入正确的cron表达式',
     validator: function () {
-      if (this.value) {
-        // 判断value是否为1-12之间的数字
-        const value = parseInt(this.value)
-        if (isNaN(value) || value < 1 || value > 12) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-      }
-      return true
-    },
-  },
-  {
-    label: '每月某天',
-    key: 'day',
-    value: '',
-    type: 'input',
-    required: false,
-    placeholder: '天数请输入1-31之间的数字',
-    validator: function () {
-      if (this.value) {
-        // 判断value是否为1-12之间的数字
-        const value = parseInt(this.value)
-        if (isNaN(value) || value < 1 || value > 31) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-      }
-      return true
-    },
-  },
-  {
-    label: '每周几',
-    key: 'day_of_week',
-    value: '',
-    type: 'input',
-    required: false,
-    placeholder: '请输1-7的数字代表周几',
-    validator: function () {
-      if (this.value) {
-        // 判断value是否为1-12之间的数字
-        const value = parseInt(this.value)
-        if (isNaN(value) || value < 1 || value > 7) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-      }
-      return true
-    },
-  },
-  {
-    label: '每天某小时',
-    key: 'hour',
-    value: '',
-    type: 'input',
-    required: false,
-    placeholder: '小时请输入1-24之间的数字',
-    validator: function () {
-      if (this.value) {
-        // 判断value是否为1-12之间的数字
-        const value = parseInt(this.value)
-        if (isNaN(value) || value < 1 || value > 23) {
-          Message.error(this.placeholder || '')
-          return false
-        }
-      }
-      return true
-    },
-  },
-  {
-    label: '某分钟',
-    key: 'minute',
-    value: '',
-    type: 'input',
-    required: false,
-    placeholder: '分钟请输入1-60之间的数字',
-    validator: function () {
-      if (this.value) {
-        // 判断value是否为1-12之间的数字
-        const value = parseInt(this.value)
-        if (isNaN(value) || value < 1 || value > 60) {
-          Message.error(this.placeholder || '')
-          return false
-        }
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
       }
       return true
     },
@@ -148,11 +60,7 @@ export const formItems: FormItem[] = reactive([
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
-  {
-    title: '定时器类型',
-    key: 'trigger_type',
-    dataIndex: 'trigger_type',
-  },
+
   {
     title: '定时器介绍',
     key: 'name',
@@ -161,28 +69,18 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '每年某月',
-    key: 'month',
-    dataIndex: 'month',
+    key: 'cron',
+    dataIndex: 'cron',
   },
   {
-    title: '每月某天',
-    key: 'day',
-    dataIndex: 'day',
+    title: '创建时间',
+    key: 'create_time',
+    dataIndex: 'create_time',
   },
   {
-    title: '每周几',
-    key: 'day_of_week',
-    dataIndex: 'day_of_week',
-  },
-  {
-    title: '每天某小时',
-    key: 'hour',
-    dataIndex: 'hour',
-  },
-  {
-    title: '每小时的某分钟',
-    key: 'minute',
-    dataIndex: 'minute',
+    title: '更新时间',
+    key: 'update_time',
+    dataIndex: 'update_time',
   },
   {
     title: '操作',

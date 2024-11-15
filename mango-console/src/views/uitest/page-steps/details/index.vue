@@ -134,7 +134,7 @@
                   :default-value="item.value"
                   expand-trigger="hover"
                   :placeholder="item.placeholder"
-                  @change="upDataAssValue(item.value)"
+                  @change=""
                   value-key="key"
                   style="width: 380px"
                   allow-search
@@ -151,15 +151,7 @@
                 allow-clear
               />
             </template>
-            <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
-              <a-textarea
-                :auto-size="{ minRows: 4, maxRows: 7 }"
-                :placeholder="item.placeholder"
-                :default-value="item.value"
-                v-model="item.value"
-                allow-clear
-              />
-            </template>
+
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
               <a-radio-group
                 @change="changeStatus"
