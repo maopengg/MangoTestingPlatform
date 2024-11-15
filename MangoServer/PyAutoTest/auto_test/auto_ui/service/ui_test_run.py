@@ -15,7 +15,8 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050, ERROR_MSG_0051
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050, ERROR_MSG_0051, \
+    ERROR_MSG_0055
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.exceptions.user_exception import UserIsNoneError
@@ -229,6 +230,8 @@ class UiTestRun:
                                                   type=DriveTypeEnum.WEB.value)
         except UiConfig.DoesNotExist:
             raise UiConfigQueryIsNoneError(*ERROR_MSG_0029)
+        if user_ui_config.config is None:
+            raise UiConfigQueryIsNoneError(*ERROR_MSG_0055)
         return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
 
     def __get_app_config(self) -> EquipmentModel:
