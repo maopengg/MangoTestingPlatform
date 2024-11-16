@@ -68,9 +68,15 @@ class AutoSystemConfig(AppConfig):
 
     @staticmethod
     def populate_time_tasks():
-        from PyAutoTest.auto_test.auto_system.models import TimeTasks
-        if not TimeTasks.objects.exists():
-            TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
-            TimeTasks.objects.create(name="每小时", cron="0 * * * *")
-            TimeTasks.objects.create(name="每天9点", cron="0 9 * * *")
-            TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")
+        from PyAutoTest.settings import INIT_MANGO_TESTING_PLATFORM
+        if INIT_MANGO_TESTING_PLATFORM:
+            from PyAutoTest.auto_test.auto_system.models import TimeTasks
+            if not TimeTasks.objects.exists():
+                TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
+                TimeTasks.objects.create(name="每30分钟", cron="*/5 * * * *")
+                TimeTasks.objects.create(name="每1小时", cron="0 */1 * * *")
+                TimeTasks.objects.create(name="每2小时", cron="0 */2 * * *")
+                TimeTasks.objects.create(name="每5小时", cron="0 */5 * * *")
+                TimeTasks.objects.create(name="每小时", cron="0 * * * *")
+                TimeTasks.objects.create(name="每天9点", cron="0 9 * * *")
+                TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")

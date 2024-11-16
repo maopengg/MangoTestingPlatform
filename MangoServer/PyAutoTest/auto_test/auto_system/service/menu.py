@@ -87,7 +87,7 @@ def ad_routes():
                     "parentPath": "/report",
                     "menuUrl": "/report/index",
                     "menuName": "测试报告",
-                },]
+                }, ]
         },
 
         # {
@@ -156,15 +156,14 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/timing",
-                    "menuUrl": "/timing/strategy/index",
-                    "menuName": "定时策略",
-                },
-                {
-                    "parentPath": "/timing",
                     "menuUrl": "/timing/scheduled-tasks/index",
                     "menuName": "定时任务",
                 },
-
+                {
+                    "parentPath": "/timing",
+                    "menuUrl": "/timing/strategy/index",
+                    "menuName": "定时策略",
+                },
             ],
         },
         {

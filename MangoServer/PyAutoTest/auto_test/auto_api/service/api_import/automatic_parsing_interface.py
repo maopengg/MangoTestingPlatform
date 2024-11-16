@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 
 import jsonpath
-import requests
+from mangokit import requests
 
 from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum

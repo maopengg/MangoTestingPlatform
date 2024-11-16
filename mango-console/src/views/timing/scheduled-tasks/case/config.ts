@@ -7,25 +7,9 @@ const table = useTable()
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
-    title: '任务名称',
-    key: 'task',
-    dataIndex: 'task',
-    width: 200,
-  },
-  {
     title: '用例名称',
     key: 'case',
     dataIndex: 'case',
-  },
-  {
-    title: '执行排序',
-    key: 'sort',
-    dataIndex: 'sort',
-  },
-  {
-    title: '用例绑定环境',
-    key: 'test_object',
-    dataIndex: 'test_object',
   },
   {
     title: '操作',

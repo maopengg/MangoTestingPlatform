@@ -5,21 +5,23 @@
 # @Author : 毛鹏
 import json
 
+from mangokit import EmailSend, WeChatSend, TestReportModel
+from mangokit.exceptions.exceptions import ToolsError
+
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
-from PyAutoTest.auto_test.auto_system.service.notic_tools.mail_send import SendEmail
-from PyAutoTest.auto_test.auto_system.service.notic_tools.wechat_send import WeChatSend
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
-from PyAutoTest.auto_test.auto_user.models import User, TestObject
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.system_enum import EnvironmentEnum
 from PyAutoTest.enums.system_enum import NoticeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
+from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0012, ERROR_MSG_0031, ERROR_MSG_0048
 from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError, UserEmailIsNullError
-from PyAutoTest.models.tools_model import TestReportModel, EmailNoticeModel, WeChatNoticeModel
+from PyAutoTest.models.tools_model import EmailNoticeModel, WeChatNoticeModel
 from PyAutoTest.tools.log_collector import log
 
 
@@ -59,21 +61,12 @@ class NoticeMain:
             log.system.error('暂不支持钉钉打卡')
 
     @classmethod
-    def mail_send(cls, content: str) -> None:
-        user_list = ['729164035@qq.com', ]
-        send_user, email_host, stamp_key = cls.mail_config()
-        email = SendEmail(EmailNoticeModel(
-            send_user=send_user,
-            email_host=email_host,
-            stamp_key=stamp_key,
-            send_list=user_list,
-        ))
-        email.send_mail(user_list, f'【{ClientNameEnum.PLATFORM_CHINESE.value}服务运行通知】', content)
-
-    @classmethod
     def __we_chat_send(cls, i, test_report: TestReportModel | None = None):
-        wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report)
-        wechat.send_wechat_notification()
+        try:
+            wechat = WeChatSend(WeChatNoticeModel(webhook=i.config), test_report, cls.get_domain_name())
+            wechat.send_wechat_notification()
+        except ToolsError as error:
+            raise MangoServerError(error.code, error.msg)
 
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
@@ -91,12 +84,12 @@ class NoticeMain:
             if not send_list:
                 raise UserEmailIsNullError(*ERROR_MSG_0048)
         send_user, email_host, stamp_key = cls.mail_config()
-        email = SendEmail(EmailNoticeModel(
+        email = EmailSend(EmailNoticeModel(
             send_user=send_user,
             email_host=email_host,
             stamp_key=stamp_key,
             send_list=send_list,
-        ), test_report)
+        ), test_report, cls.get_domain_name())
         email.send_main()
 
     @classmethod
@@ -136,3 +129,15 @@ class NoticeMain:
             if send_user is None or email_host is None or stamp_key is None:
                 raise CacheKetNullError(*ERROR_MSG_0031)
         return send_user, email_host, stamp_key
+
+    @classmethod
+    def get_domain_name(cls):
+        domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
+        try:
+            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
+        except CacheData.DoesNotExist:
+            pass
+        else:
+            if cache_data_obj.value:
+                domain_name = cache_data_obj.value
+        return domain_name

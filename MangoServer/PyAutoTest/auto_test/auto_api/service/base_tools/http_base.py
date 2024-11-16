@@ -4,11 +4,10 @@
 # @Author : 毛鹏
 import logging
 
-import requests
 import time
 from requests import Response
 from requests.exceptions import *
-
+from mangokit import requests
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError

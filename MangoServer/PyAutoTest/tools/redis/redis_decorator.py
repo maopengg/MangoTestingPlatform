@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from functools import wraps
 
-import requests
+from mangokit import requests
 from django.core.cache import cache
 
 

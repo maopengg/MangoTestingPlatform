@@ -4,7 +4,7 @@
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
 from mangokit import MysqlConnect, MysqlConingModel
-from mangokit.exceptions import MysqlConnectionError
+from mangokit.exceptions import ToolsError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -88,7 +88,7 @@ class DatabaseViews(ViewSet):
                 password=obj.password,
                 database=obj.name
             ))
-        except MysqlConnectionError:
+        except ToolsError:
             return ResponseData.fail(RESPONSE_MSG_0123, )
 
         if mysql_conn.connection.open:
