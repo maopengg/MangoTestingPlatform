@@ -27,9 +27,9 @@ def error_send(func, args, kwargs, error, trace):
           参数dict：{kwargs}
 
       **********************************
-      详细情况可前往芒果自动化平台查看，非相关负责人员可忽略此消息。谢谢！
+      详细情况可前往芒果测试平台查看，非相关负责人员可忽略此消息。谢谢！
 
-                                                    -----------芒果自动化平台
+                                                    -----------芒果测试平台
       """
     from mangokit import Mango
     Mango.s(content)
