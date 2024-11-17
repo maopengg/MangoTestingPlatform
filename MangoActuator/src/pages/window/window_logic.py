@@ -7,7 +7,8 @@
 import asyncio
 
 from PySide6.QtCore import QThread, Signal, QTimer
-from mango_ui import warning_notification, error_notification, success_notification, info_notification, MangoMain1Window
+from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
+    MangoMain1Window, DialogWidget, FormDataModel
 
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings.settings import STYLE, MENUS
@@ -77,6 +78,7 @@ class WindowLogic(MangoMain1Window):
         }
         super().__init__(STYLE, MENUS, page_dict, loop, page='home')
         self.loop = loop
+        self.project_list = [FormDataModel(**i) for i in [{}]]
 
         self.socket: WebSocketClient = WebSocketClient()
         self.socket.loop = self.loop
@@ -100,6 +102,12 @@ class WindowLogic(MangoMain1Window):
 
     def title_bar_clicked_func(self, data):
         if data == 'project':
-            pass
+            dialog = DialogWidget('选择项目', self.project_list)
+            dialog.exec()  # 显示对话框，直到关闭
+            if dialog.data:
+                pass
         elif data == 'test_env':
-            pass
+            dialog = DialogWidget('选择项目', self.project_list)
+            dialog.exec()  # 显示对话框，直到关闭
+            if dialog.data:
+                pass
