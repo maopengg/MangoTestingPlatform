@@ -10,6 +10,7 @@ from .scheduled_tasks import ScheduledTasks
 from .tasks_list import TasksList
 from .test_suite_report import TestSuiteReport
 from .time_tasks import TimeTasks
+from .cache_data import CacheData
 
 
 class SystemApi(
@@ -19,6 +20,7 @@ class SystemApi(
     ScheduledTasks,
     TestSuiteReport,
     Home,
-    TimeTasks
+    TimeTasks,
+    CacheData,
 ):
     pass
