@@ -8,8 +8,10 @@ import asyncio
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
-    MangoMain1Window, DialogWidget, FormDataModel
+    MangoMain1Window, DialogWidget, FormDataModel, response_message
 
+from src.enums.system_enum import EnvironmentEnum
+from src.network import HTTP
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings.settings import STYLE, MENUS
 from ..api import *
@@ -22,6 +24,8 @@ from ..tools import *
 from ..ui import *
 from ..user import *
 from ...models import queue_notification
+from ...models.user_model import UserModel
+from ...tools.methods import Methods
 
 
 class NotificationTask(QThread):
@@ -78,8 +82,24 @@ class WindowLogic(MangoMain1Window):
         }
         super().__init__(STYLE, MENUS, page_dict, loop, page='home')
         self.loop = loop
-        self.project_list = [FormDataModel(**i) for i in [{}]]
+        self.user_info = UserModel()
 
+        self.project_list = [FormDataModel(
+            title='项目名称',
+            placeholder='请选择项目进行全局条件过滤',
+            key='selected_project',
+            type=1,
+            select=Methods.get_project_model(),
+            value=str(self.user_info.selected_project)
+        )]
+        self.env_list = [FormDataModel(
+            title='测试环境',
+            placeholder='请选择测试环境，用例执行与测试环境绑定',
+            key='selected_environment',
+            type=1,
+            select=EnvironmentEnum.get_select(),
+            value=str(self.user_info.selected_environment)
+        )]
         self.socket: WebSocketClient = WebSocketClient()
         self.socket.loop = self.loop
         asyncio.run_coroutine_threadsafe(self.socket.client_run(), self.loop)
@@ -103,11 +123,14 @@ class WindowLogic(MangoMain1Window):
     def title_bar_clicked_func(self, data):
         if data == 'project':
             dialog = DialogWidget('选择项目', self.project_list)
-            dialog.exec()  # 显示对话框，直到关闭
+            dialog.exec()
             if dialog.data:
-                pass
+                HTTP.headers['Project'] = str(dialog.data.get('selected_project'))
+                response_message(self.central_widget,
+                                 HTTP.put_user_project(self.user_info.id, dialog.data.get('selected_project')))
         elif data == 'test_env':
-            dialog = DialogWidget('选择项目', self.project_list)
-            dialog.exec()  # 显示对话框，直到关闭
+            dialog = DialogWidget('选择测试环境', self.env_list)
+            dialog.exec()
             if dialog.data:
-                pass
+                response_message(self.central_widget,
+                                 HTTP.put_environment(self.user_info.id, dialog.data.get('selected_environment')))

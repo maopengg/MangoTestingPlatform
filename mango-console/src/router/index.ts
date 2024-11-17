@@ -55,13 +55,6 @@ export const extraRoutes = [
           title: '测试用例详情',
         },
       },
-      {
-        path: 'report/details',
-        component: () => import('@/views/uitest/report/details/index.vue'),
-        meta: {
-          title: '界面测试报告详情',
-        },
-      },
     ],
   },
   {
@@ -150,7 +143,8 @@ export const extraRoutes = [
         meta: {
           title: '通知配置',
         },
-      },      {
+      },
+      {
         path: 'test/object/database',
         component: () => import('@/views/config/test-object/database/index.vue'),
         meta: {
