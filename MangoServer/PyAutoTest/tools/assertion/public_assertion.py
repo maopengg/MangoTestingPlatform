@@ -2,6 +2,8 @@
 # @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
+import json
+
 from assertpy import assert_that
 from deepdiff import DeepDiff
 
@@ -134,7 +136,7 @@ class MatchingAssertion:
 
 class PublicAssertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEqualToAssertion):
     @classmethod
-    def ass_response_whole(cls, actual, expect):
+    def ass_response_whole(cls, actual, expect: str):
         filtered_actual = {key: actual[key] for key in expect if key in actual}
         for key in expect.keys():
             if isinstance(expect[key], dict):

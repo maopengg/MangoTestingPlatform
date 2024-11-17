@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
+import json
 import uuid
 
-import time
 from mango_ui import *
 
 from src.models.network_model import ResponseModel
@@ -531,17 +531,20 @@ class ApiCaseDetailedPage(SubPage):
             )
 
     def save_case_info(self, key_name, layout_list: list):
-        s = time.time()
-        api_case_detailed_data = {
-            'id': self.row.get('id'),
-            'header': self.info_headers.get_value() if self.info_headers.get_value() else None,
-            'params': WidgetTool.json_init_data(self.info_params.get_value(), True),
-            'data': WidgetTool.json_init_data(self.info_data.get_value(), True),
-            'json': WidgetTool.json_init_data(self.info_json.get_value(), True),
-            'file': WidgetTool.json_init_data(self.info_file.get_value(), True),
-            'ass_response_whole': self.ass_agreement.get_value() if self.ass_agreement.get_value() else None,
-            'posterior_sleep': self.sleep.get_value() if self.sleep.get_value() else None,
-        }
+        try:
+            api_case_detailed_data = {
+                'id': self.row.get('id'),
+                'header': self.info_headers.get_value() if self.info_headers.get_value() else None,
+                'params': WidgetTool.json_init_data(self.info_params.get_value(), True),
+                'data': WidgetTool.json_init_data(self.info_data.get_value(), True),
+                'json': WidgetTool.json_init_data(self.info_json.get_value(), True),
+                'file': WidgetTool.json_init_data(self.info_file.get_value(), True),
+                'ass_response_whole': WidgetTool.json_init_data(self.ass_agreement.get_value(), True),
+                'posterior_sleep': self.sleep.get_value() if self.sleep.get_value() else None,
+            }
+        except json.JSONDecodeError:
+            error_message(self, '您输入的数据不是json格式数据，请检查数据格式~')
+            return
         if not key_name:
             pass
         elif key_name == 'front_sql':
