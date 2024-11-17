@@ -19,7 +19,7 @@
                       @blur="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key==='status'">
+                  <template v-else-if="item.type === 'select' && item.key === 'status'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -32,17 +32,17 @@
                       allow-search
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key==='type'">
+                  <template v-else-if="item.type === 'select' && item.key === 'type'">
                     <a-select
-                        style="width: 150px"
-                        v-model="item.value"
-                        :placeholder="item.placeholder"
-                        :options="data.type"
-                        @change="doRefresh"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
+                      style="width: 150px"
+                      v-model="item.value"
+                      :placeholder="item.placeholder"
+                      :options="data.type"
+                      @change="doRefresh"
+                      :field-names="fieldNames"
+                      value-key="key"
+                      allow-clear
+                      allow-search
                     />
                   </template>
                 </a-form-item>
@@ -93,7 +93,7 @@
                     {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
                   </template>
                   <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                    {{record.test_env? uEnvironment.data[record.test_env]?.title :'' }}
+                    {{ record.test_env ? uEnvironment.data[record.test_env]?.title : '' }}
                   </template>
 
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
@@ -132,14 +132,14 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import {onMounted, nextTick, ref, reactive} from 'vue'
+  import { onMounted, nextTick, ref, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import * as echarts from 'echarts'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
-  import {getSystemEnumAutotest, getSystemTestSuiteReport} from '@/api/system'
+  import { getSystemEnumAutotest, getSystemTestSuiteReport } from '@/api/system'
   import { getUiCaseResultWeekSum } from '@/api/uitest'
   import { useEnvironment } from '@/store/modules/get-environment'
   import { useStatus } from '@/store/modules/status'
@@ -155,7 +155,6 @@
   const router = useRouter()
   const data = reactive({
     type: [],
-
   })
   function doRefresh() {
     if (uEnvironment.data.length === 0) {
@@ -181,13 +180,14 @@
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
-    if (record.type == 0){
-    router.push({
-      path: '/report/ui/details',
-      query: {
-        id: record.id,
-      },
-    })}else if (record.type === 1){
+    if (record.type == 0) {
+      router.push({
+        path: '/report/ui/details',
+        query: {
+          id: record.id,
+        },
+      })
+    } else if (record.type === 1) {
       router.push({
         path: '/report/api/details',
         query: {
@@ -320,10 +320,10 @@
 
   function getAutoTestName() {
     getSystemEnumAutotest()
-        .then((res) => {
-          data.type = res.data
-        })
-        .catch(console.log)
+      .then((res) => {
+        data.type = res.data
+      })
+      .catch(console.log)
   }
 
   onMounted(() => {
