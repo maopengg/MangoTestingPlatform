@@ -3,11 +3,10 @@
 # @Description: 
 # @Time   : 2024-10-15 14:54
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
 from src.network import HTTP
-from .time_strategy_dict import *
 from src.pages.parent.table import TableParent
+from .time_strategy_dict import *
 
 
 class TimePage(TableParent):

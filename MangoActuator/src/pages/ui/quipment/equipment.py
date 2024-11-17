@@ -26,7 +26,7 @@ class EquipmentPage(TableParent):
         self.post = HTTP.post_config
         self.put = HTTP.put_config
         self._delete = HTTP.delete_config
-        self.v_layout = QVBoxLayout()
+        self.v_layout = MangoVBoxLayout()
         self.layout.addLayout(self.v_layout)
         self.v_layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setContentsMargins(20, 20, 20, 20)
@@ -56,7 +56,7 @@ class EquipmentPage(TableParent):
             return
         for index, i in enumerate(response_list.data):
             if index % 3 == 0 or index == 0:
-                layout_h = QHBoxLayout()
+                layout_h = MangoHBoxLayout()
                 self.v_layout.addLayout(layout_h)
             if i.get('type') == DriveTypeEnum.WEB.value:
                 self.set_web(i, layout_h, 'WEB配置')
@@ -64,8 +64,8 @@ class EquipmentPage(TableParent):
                 self.set_android(i, layout_h, '安卓配置')
         self.v_layout.addStretch()
 
-    def set_web(self, data: dict, layout: QVBoxLayout, title: str):
-        v_layout = QVBoxLayout()
+    def set_web(self, data: dict, layout: MangoVBoxLayout, title: str):
+        v_layout = MangoVBoxLayout()
         if data.get('config') is None:
             v_layout.addWidget(MangoLabel('请删除这个脏数据'))
             but_2 = MangoPushButton('删除')
@@ -76,7 +76,7 @@ class EquipmentPage(TableParent):
         else:
             mango_card = MangoCard(v_layout)
             layout.addWidget(mango_card)
-            h_layout_1 = QHBoxLayout()
+            h_layout_1 = MangoHBoxLayout()
             h_layout_1.addWidget(MangoLabel(title))
             h_layout_1.addStretch()
 
@@ -102,7 +102,7 @@ class EquipmentPage(TableParent):
             but_2.set_stylesheet(28, 40)
             h_layout_1.addWidget(but_2)
             v_layout.addLayout(h_layout_1)
-            from_layout = QFormLayout()
+            from_layout = MangoFormLayout()
             from_layout.addRow('类型：', MangoLabel(BrowserTypeEnum.get_value(data.get('config').get('web_type'))))
             from_layout.addRow('最大化：', MangoLabel(Status5Enum.get_value(data.get('config').get('web_max'))))
             from_layout.addRow('无头模式：', MangoLabel(Status5Enum.get_value(data.get('config').get('web_headers'))))
@@ -112,8 +112,8 @@ class EquipmentPage(TableParent):
             from_layout.addRow('并行数：', MangoLabel(data.get('config').get('web_parallel')))
             v_layout.addLayout(from_layout)
 
-    def set_android(self, data: dict, layout: QVBoxLayout, title: str):
-        v_layout = QVBoxLayout()
+    def set_android(self, data: dict, layout: MangoVBoxLayout, title: str):
+        v_layout = MangoVBoxLayout()
         if data.get('config') is None:
             v_layout.addWidget(MangoLabel('请删除这个脏数据'))
             but_2 = MangoPushButton('删除')
@@ -124,7 +124,7 @@ class EquipmentPage(TableParent):
         else:
             mango_card = MangoCard(v_layout)
             layout.addWidget(mango_card)
-            h_layout_1 = QHBoxLayout()
+            h_layout_1 = MangoHBoxLayout()
             h_layout_1.addWidget(MangoLabel(title))
             h_layout_1.addStretch()
 
@@ -152,7 +152,7 @@ class EquipmentPage(TableParent):
 
             v_layout.addLayout(h_layout_1)
 
-            from_layout = QFormLayout()
+            from_layout = MangoFormLayout()
             from_layout.addRow('设备号：', MangoLabel(data.get('config').get('and_equipment')))
             v_layout.addLayout(from_layout)
 

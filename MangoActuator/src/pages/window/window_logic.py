@@ -7,9 +7,11 @@
 import asyncio
 
 from PySide6.QtCore import QThread, Signal, QTimer
-from mango_ui import warning_notification, error_notification, success_notification, info_notification, MangoMainWindow
+from mango_ui import warning_notification, error_notification, success_notification, info_notification, MangoMain1Window
+
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings.settings import STYLE, MENUS
+from ..api import *
 from ..config import *
 from ..home import *
 from ..report import *
@@ -19,7 +21,6 @@ from ..tools import *
 from ..ui import *
 from ..user import *
 from ...models import queue_notification
-from ..api import *
 
 
 class NotificationTask(QThread):
@@ -37,7 +38,7 @@ class NotificationTask(QThread):
             self.notify_signal.emit(data.get('type'), data.get('value'))
 
 
-class WindowLogic(MangoMainWindow):
+class WindowLogic(MangoMain1Window):
     def __init__(self, loop):
         page_dict = {
             'home': HomePage,
@@ -85,6 +86,8 @@ class WindowLogic(MangoMainWindow):
         self.notification_thread.notify_signal.connect(self.handle_notification)
         self.notification_thread.start()
 
+        self.clicked.connect(self.title_bar_clicked_func)
+
     def handle_notification(self, notification_type, message):
         if notification_type == 0:
             error_notification(self.content_area_frame, message)
@@ -94,3 +97,9 @@ class WindowLogic(MangoMainWindow):
             info_notification(self.content_area_frame, message)
         elif notification_type == 3:
             warning_notification(self.content_area_frame, message)
+
+    def title_bar_clicked_func(self, data):
+        if data == 'project':
+            pass
+        elif data == 'test_env':
+            pass

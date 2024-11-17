@@ -5,9 +5,6 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.tools_enum import Status1Enum
-from src.enums.ui_enum import ElementExpEnum
-
 right_data = [
     {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]

@@ -172,7 +172,7 @@ class CaseMethod(CommonBase, PublicAssertion):
 
     def __assertion_response_whole(self, actual, expect):
         try:
-            assert Counter(actual) == Counter(json.loads(expect))
+            self.ass_response_whole(actual, expect)
         except AssertionError as error:
             log.warning(error)
             self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})

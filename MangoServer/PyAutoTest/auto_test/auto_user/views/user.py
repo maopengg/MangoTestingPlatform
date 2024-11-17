@@ -16,11 +16,11 @@ from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
-from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from mangokit import EncryptionTool
 
 
 class UserSerializers(serializers.ModelSerializer):

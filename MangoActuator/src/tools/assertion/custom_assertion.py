@@ -17,5 +17,5 @@ if __name__ == '__main__':
 a=2
 b=4
 c=6
-assert a+b >= c
+assert a+b > c
 """)

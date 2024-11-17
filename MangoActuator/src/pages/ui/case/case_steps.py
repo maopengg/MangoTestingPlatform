@@ -27,19 +27,19 @@ class CaseStepsPage(SubPage):
         self.post = HTTP.post_case_steps_detailed
         self.put = HTTP.put_case_steps_detailed
         self._delete = HTTP.delete_case_steps_detailed
-        self.h_layout = QHBoxLayout()
+        self.h_layout = MangoHBoxLayout()
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
         self.mango_tabs = MangoTabs()
         self.h_layout.addWidget(self.mango_tabs, 1)
 
         q_widget_1 = QWidget()
-        v_layout_1 = QVBoxLayout()
+        v_layout_1 = MangoVBoxLayout()
         q_widget_1.setLayout(v_layout_1)
 
-        v_layout_1_1 = QVBoxLayout()
+        v_layout_1_1 = MangoVBoxLayout()
         v_layout_1.addWidget(MangoCard(v_layout_1_1))
-        h_layout_1_1 = QHBoxLayout()
+        h_layout_1_1 = MangoHBoxLayout()
         h_layout_1_1.setContentsMargins(0, 0, 0, 0)
         h_layout_1_1.addWidget(MangoLabel('自定义变量'))
         h_layout_1_1.addStretch()
@@ -52,15 +52,15 @@ class CaseStepsPage(SubPage):
         but_1_2.set_stylesheet(28, 40)
         h_layout_1_1.addWidget(but_1_2)
         v_layout_1_1.addLayout(h_layout_1_1)
-        self.v_layout_1_1 = QVBoxLayout()
+        self.v_layout_1_1 = MangoVBoxLayout()
         self.v_layout_1_1_list: list[dict] = []
         self.v_layout_1_1.setContentsMargins(10, 0, 10, 0)
         v_layout_1_1.addLayout(self.v_layout_1_1)
         v_layout_1_1.addStretch()
 
-        v_layout_1_2 = QVBoxLayout()
+        v_layout_1_2 = MangoVBoxLayout()
         v_layout_1.addWidget(MangoCard(v_layout_1_2))
-        h_layout_1_2 = QHBoxLayout()
+        h_layout_1_2 = MangoHBoxLayout()
         h_layout_1_2.setContentsMargins(0, 0, 0, 0)
         h_layout_1_2.addWidget(MangoLabel('SQL变量'))
         h_layout_1_2.addStretch()
@@ -73,7 +73,7 @@ class CaseStepsPage(SubPage):
         but_1_3.set_stylesheet(28, 40)
         h_layout_1_2.addWidget(but_1_3)
         v_layout_1_2.addLayout(h_layout_1_2)
-        self.v_layout_2_1 = QVBoxLayout()
+        self.v_layout_2_1 = MangoVBoxLayout()
         self.v_layout_2_1_list: list[dict] = []
         self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
         v_layout_1_2.addLayout(self.v_layout_2_1)
@@ -89,11 +89,11 @@ class CaseStepsPage(SubPage):
         self.mango_tabs.addTab(self.table_widget, '用例步骤')
 
         q_widget_3 = QWidget()
-        v_layout_3 = QVBoxLayout()
+        v_layout_3 = MangoVBoxLayout()
         q_widget_3.setLayout(v_layout_3)
-        v_layout_3_1 = QVBoxLayout()
+        v_layout_3_1 = MangoVBoxLayout()
         v_layout_3.addWidget(MangoCard(v_layout_3_1))
-        h_layout_3_1 = QHBoxLayout()
+        h_layout_3_1 = MangoHBoxLayout()
         h_layout_3_1.setContentsMargins(0, 0, 0, 0)
         h_layout_3_1.addWidget(MangoLabel('后置sql'))
         h_layout_3_1.addStretch()
@@ -106,7 +106,7 @@ class CaseStepsPage(SubPage):
         but_3_2.set_stylesheet(28, 40)
         h_layout_3_1.addWidget(but_3_2)
         v_layout_3_1.addLayout(h_layout_3_1)
-        self.v_layout_3_1 = QVBoxLayout()
+        self.v_layout_3_1 = MangoVBoxLayout()
         self.v_layout_3_1_list: list[dict] = []
         self.v_layout_3_1.setContentsMargins(10, 0, 10, 0)
         v_layout_3_1.addLayout(self.v_layout_3_1)
@@ -134,7 +134,7 @@ class CaseStepsPage(SubPage):
         else:
             key = MangoLineEdit('请输入缓存key')
             value = MangoLineEdit('请输入缓存value')
-        h_layout = QHBoxLayout()
+        h_layout = MangoHBoxLayout()
         h_layout.addWidget(MangoLabel('key'))
         h_layout.addWidget(key)
         h_layout.addWidget(MangoLabel('value'))
@@ -155,7 +155,7 @@ class CaseStepsPage(SubPage):
         else:
             key = MangoLineEdit('请输入sql语句')
             value = MangoLineEdit('sql结果的key列表，一一对应')
-        h_layout = QHBoxLayout()
+        h_layout = MangoHBoxLayout()
         h_layout.addWidget(MangoLabel('sql语句'))
         h_layout.addWidget(key)
         h_layout.addWidget(MangoLabel('结果key列表'))
@@ -176,7 +176,7 @@ class CaseStepsPage(SubPage):
         else:
             key = MangoLineEdit('请输入sql语句')
             value = MangoLineEdit('sql结果的key列表，一一对应')
-        h_layout = QHBoxLayout()
+        h_layout = MangoHBoxLayout()
         h_layout.addWidget(MangoLabel('sql语句'))
         h_layout.addWidget(key)
         h_layout.addWidget(MangoLabel('结果key列表'))
@@ -240,13 +240,13 @@ class CaseStepsPage(SubPage):
         WidgetTool.remove_layout(self.scroll_area.layout)
         if row.get('case_data'):
             for case_data in row.get('case_data'):
-                card_layout = QGridLayout()
+                card_layout = MangoGridLayout()
                 card = MangoCard(card_layout)
                 card_layout.addWidget(
                     MangoLabel('断言：' if case_data.get('type') else f'操作：' + case_data.get('ope_key')), 0, 0)
                 card_layout.addWidget(MangoLabel(f'元素名称：{case_data.get("page_step_details_name")}'), 0, 1)
                 if case_data.get('page_step_details_data') != {}:
-                    h_layout = QHBoxLayout()
+                    h_layout = MangoHBoxLayout()
                     _s = 1
                     for key, value in case_data.get('page_step_details_data').items():
                         h_layout.addWidget(MangoLabel(f"{key}："))

@@ -12,6 +12,7 @@ from pydantic import BaseModel
 class UserConfigModel(BaseModel):
     pass
 
+
 @singleton
 class UserModel(BaseModel):
     """用户表"""

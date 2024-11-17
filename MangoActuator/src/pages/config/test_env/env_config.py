@@ -6,7 +6,6 @@
 import copy
 
 from mango_ui import *
-from mango_ui.init import *
 
 from src.models.network_model import ResponseModel
 from src.network import HTTP
@@ -20,7 +19,7 @@ class EnvConfigPage(SubPage):
         super().__init__(parent, right_data=right_data)
         self.superior_page = 'test_env'
         self.id_key = 'environment'
-        self.h_layout = QGridLayout()
+        self.h_layout = MangoGridLayout()
         self.layout.addLayout(self.h_layout)
         self.layout.addStretch()
         self.current_row = 0
@@ -43,9 +42,9 @@ class EnvConfigPage(SubPage):
         response: ResponseModel = HTTP.get_database(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
-                v_layout = QVBoxLayout()
+                v_layout = MangoVBoxLayout()
 
-                h_layout_1 = QHBoxLayout()
+                h_layout_1 = MangoHBoxLayout()
                 h_layout_1.addWidget(MangoLabel('数据库配置'))
                 h_layout_1.addStretch()
 
@@ -72,7 +71,7 @@ class EnvConfigPage(SubPage):
 
                 v_layout.addLayout(h_layout_1)
 
-                from_layout = QFormLayout()
+                from_layout = MangoFormLayout()
                 from_layout.addRow('主机：', MangoLabel(i.get('host')))
                 from_layout.addRow('端口：', MangoLabel(str(i.get('port'))))
                 from_layout.addRow('用户名：', MangoLabel(i.get('user')))
@@ -92,8 +91,8 @@ class EnvConfigPage(SubPage):
         response: ResponseModel = HTTP.get_notice(params={f"{self.id_key}_id": self.data.get('id')})
         if response.data:
             for i in response.data:
-                v_layout = QVBoxLayout()
-                h_layout_1 = QHBoxLayout()
+                v_layout = MangoVBoxLayout()
+                h_layout_1 = MangoHBoxLayout()
                 h_layout_1.addWidget(MangoLabel('通知配置'))
                 h_layout_1.addStretch()
                 toggle = MangoToggle(bool(i.get('status')), False)
@@ -119,7 +118,7 @@ class EnvConfigPage(SubPage):
 
                 v_layout.addLayout(h_layout_1)
 
-                from_layout = QFormLayout()
+                from_layout = MangoFormLayout()
                 from_layout.addRow('类型：', MangoLabel(NoticeEnum.get_value(i.get('type'))))
                 from_layout.addRow('配置：', MangoLabel(i.get('config')))
                 v_layout.addLayout(from_layout)

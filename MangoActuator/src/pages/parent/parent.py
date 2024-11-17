@@ -16,7 +16,10 @@ class Parent(QWidget):
 
     def add(self, title='新建'):
         form_data = Mango.add_from_data(self)
-        dialog = DialogWidget(title, form_data)
+        if hasattr(self, 'dialog_widget_size'):
+            dialog = DialogWidget(title, form_data, self.dialog_widget_size)
+        else:
+            dialog = DialogWidget(title, form_data)
         dialog.clicked.connect(self.sub_options)
         dialog.exec()
         if dialog.data:
@@ -29,7 +32,10 @@ class Parent(QWidget):
 
     def edit(self, row, title='编辑'):
         form_data = Mango.edit_form_data(self, row, self.form_data, Methods)
-        dialog = DialogWidget(title, form_data)
+        if hasattr(self, 'dialog_widget_size'):
+            dialog = DialogWidget(title, form_data, self.dialog_widget_size)
+        else:
+            dialog = DialogWidget(title, form_data)
         dialog.clicked.connect(self.sub_options)
         dialog.exec()
         if dialog.data:

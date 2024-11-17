@@ -221,9 +221,15 @@
   ],
   "title_bar_menus": [
     {
-      "btn_icon": ":/icons/icon_search.svg",
-      "btn_id": "btn_search",
-      "btn_tooltip": "搜索",
+      "btn_icon": ":/icons/project.ico",
+      "btn_id": "project",
+      "btn_tooltip": "请点击后选择项目",
+      "is_active": false
+    },
+    {
+      "btn_icon": ":/icons/env.ico",
+      "btn_id": "test_env",
+      "btn_tooltip": "请点击后选择测试环境",
       "is_active": false
     }
   ]

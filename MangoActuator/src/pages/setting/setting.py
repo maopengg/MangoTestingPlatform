@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from PySide6.QtWidgets import QWidget
 from mango_ui import *
 
 from src.enums.system_enum import CacheDataKey2Enum
@@ -22,10 +21,10 @@ class SettingPage(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.layout = QVBoxLayout()
+        self.layout = MangoVBoxLayout()
         self.layout.setContentsMargins(5, 5, 5, 5)
 
-        card_layout1 = QFormLayout()
+        card_layout1 = MangoFormLayout()
         card_widget = MangoCard(card_layout1, '系统设置')
         self.toggle1 = MangoToggle()
         self.toggle1.set_value(settings.IS_DEBUG)
@@ -41,14 +40,14 @@ class SettingPage(QWidget):
         input_3 = MangoLineEdit('请输入邮箱的stamp_key-不可用', )
         card_layout1.addRow('邮箱stamp_key', input_3)
 
-        card_layout2 = QHBoxLayout()
+        card_layout2 = MangoHBoxLayout()
         card_widget2 = MangoCard(card_layout2, '接口自动化设置')
         input_2_1 = MangoLineEdit('请输入请求超时时间-不可用', )
         card_layout2.addWidget(MangoLabel('请求超时时间'))
         card_layout2.addWidget(input_2_1)
         card_layout2.addStretch()
 
-        card_layout3 = QFormLayout()
+        card_layout3 = MangoFormLayout()
         card_widget3 = MangoCard(card_layout3, '测试卡片')
         self.input_3_1 = MangoLineEdit('请输入请求超时时间-不可用', )
         card_layout3.addRow('发送缓存数据', self.input_3_1)

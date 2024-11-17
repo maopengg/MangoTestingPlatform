@@ -18,15 +18,15 @@ class TestReportPage(TableParent):
         self.post = HTTP.post_test_suite_report
         self.put = HTTP.put_test_suite_report
         self._delete = HTTP.delete_test_suite_report
-        self.layout_v = QVBoxLayout()
+        self.layout_v = MangoVBoxLayout()
         self.layout.addLayout(self.layout_v)
-        self.layout_h = QHBoxLayout()
+        self.layout_h = MangoHBoxLayout()
         self.layout_v.addLayout(self.layout_h, 3)
-        self.layout_v_1 = QVBoxLayout()
+        self.layout_v_1 = MangoVBoxLayout()
         self.layout_h.addLayout(self.layout_v_1, 2)
         self.pie_plot_1 = MangoPiePlot()
         self.layout_v_1.addWidget(self.pie_plot_1)
-        self.layout_v_2 = QVBoxLayout()
+        self.layout_v_2 = MangoVBoxLayout()
         self.layout_h.addLayout(self.layout_v_2, 8)
         self.line_plot_1 = MangoLinePlot('', '数量', '周')
         self.layout_v_2.addWidget(self.line_plot_1)

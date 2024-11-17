@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from PySide6.QtCore import Qt
 from mango_ui import *
 
 from src.enums.api_enum import MethodEnum
@@ -27,14 +26,14 @@ class TestReportDetailedPage(SubPage):
         self.superior_page = 'test_report'
         self.id_key = 'test_suite'
 
-        self.layout_h = QHBoxLayout()
+        self.layout_h = MangoHBoxLayout()
         self.layout.addLayout(self.layout_h)
-        self.layout_v_1 = QVBoxLayout()
+        self.layout_v_1 = MangoVBoxLayout()
         self.mango_tree = MangoTree('测试套')
         self.mango_tree.clicked.connect(self.mango_tree_click)
         self.layout_v_1.addWidget(self.mango_tree)
         self.layout_h.addLayout(self.layout_v_1)
-        self.layout_v_2 = QVBoxLayout()
+        self.layout_v_2 = MangoVBoxLayout()
         self.scroll_area = MangoScrollArea()
         self.layout_v_2.addWidget(self.scroll_area)
         self.layout_h.addLayout(self.layout_v_2, )
@@ -62,44 +61,44 @@ class TestReportDetailedPage(SubPage):
 
         mango_tabs = MangoTabs()
         self.scroll_area.layout.addWidget(mango_tabs)
-        layout_request = QHBoxLayout()
+        layout_request = MangoHBoxLayout()
         request_tabs = MangoTabs()
         layout_request.addWidget(request_tabs)
-        request_info = QVBoxLayout()
+        request_info = MangoVBoxLayout()
         request_info.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_info, '基础信息')
-        request_headers = QVBoxLayout()
+        request_headers = MangoVBoxLayout()
         request_headers.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_headers, '请求头')
-        request_params = QVBoxLayout()
+        request_params = MangoVBoxLayout()
         request_params.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_params, '参数')
-        request_data = QVBoxLayout()
+        request_data = MangoVBoxLayout()
         request_data.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_data, '表单')
-        request_json = QVBoxLayout()
+        request_json = MangoVBoxLayout()
         request_json.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_json, '表单')
-        request_file = QVBoxLayout()
+        request_file = MangoVBoxLayout()
         request_file.setAlignment(Qt.AlignTop)  # type: ignore
         request_tabs.add_tab(request_file, '文件')
         mango_tabs.add_tab(layout_request, '请求信息')
 
-        layout_response = QHBoxLayout()
+        layout_response = MangoHBoxLayout()
         response_tabs = MangoTabs()
         layout_response.addWidget(response_tabs)
-        response_info = QVBoxLayout()
+        response_info = MangoVBoxLayout()
         response_info.setAlignment(Qt.AlignTop)  # type: ignore
         response_tabs.add_tab(response_info, '基础信息')
-        response_headers = QVBoxLayout()
+        response_headers = MangoVBoxLayout()
         response_headers.setAlignment(Qt.AlignTop)  # type: ignore
         response_tabs.add_tab(response_headers, '响应头')
-        response_body = QVBoxLayout()
+        response_body = MangoVBoxLayout()
         response_body.setAlignment(Qt.AlignTop)  # type: ignore
         response_tabs.add_tab(response_body, '响应体')
         mango_tabs.add_tab(layout_response, '响应信息')
 
-        layout_ass = QHBoxLayout()
+        layout_ass = MangoHBoxLayout()
         layout_ass.setAlignment(Qt.AlignTop)  # type: ignore
         mango_tabs.add_tab(layout_ass, '断言信息')
 
@@ -133,7 +132,7 @@ class TestReportDetailedPage(SubPage):
         WidgetTool.remove_layout(self.scroll_area.layout)
         for item in response_data.data:
             element_data: dict | None = item['element_data']
-            layout = QGridLayout()
+            layout = MangoGridLayout()
             card = MangoCard(layout)
             layout.addWidget(MangoLabel(f"元素名称: {item['ele_name']}"), 0, 0)
             if element_data:

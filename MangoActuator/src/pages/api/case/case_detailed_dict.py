@@ -6,8 +6,6 @@
 from mango_ui import THEME
 
 from src.enums.tools_enum import Status3Enum
-from src.enums.ui_enum import ElementExpEnum
-from src.network import HTTP
 from src.tools.methods import Methods
 
 table_column = [

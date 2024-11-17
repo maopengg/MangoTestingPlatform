@@ -4,9 +4,10 @@
 # @Author : 毛鹏
 import re
 
+from mangokit import Mango
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
 from playwright.async_api._generated import Locator
-from mangokit import Mango
+
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from src.exceptions.error_msg import *

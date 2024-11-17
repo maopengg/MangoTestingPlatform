@@ -25,7 +25,7 @@ class SubPage(Parent):
 
         self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
 
-        self.layout = QVBoxLayout()
+        self.layout = MangoVBoxLayout()
         self.setLayout(self.layout)
 
         if kwargs.get('right_data'):
@@ -107,4 +107,3 @@ class SubPage(Parent):
 
     def back(self):
         self.parent.set_page(self.superior_page)
-

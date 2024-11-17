@@ -3,33 +3,33 @@
 # @Description:
 # @Time   : 2023-09-28 16:03
 # @Author : 毛鹏
+from PySide6.QtCore import QMetaObject
+from PySide6.QtWidgets import QFrame, QSpacerItem, QPushButton
 from mango_ui import *
-from mango_ui.init import *
 
 
 class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
-        # self.setWindowFlags(Qt.FramelessWindowHint)
 
-        self._layout = QVBoxLayout(self)
+        self._layout = MangoVBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.bg = QFrame()
         self._layout.addWidget(self.bg)
         self.bg.setStyleSheet(f"background: {THEME.background_color};")
-        self.layout = QVBoxLayout(self.bg)
+        self.layout = MangoVBoxLayout(self.bg)
 
         self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(self.verticalSpacer_2)
 
-        self.horizontalLayout_5 = QHBoxLayout()
-        self.verticalLayout_3 = QVBoxLayout()
+        self.horizontalLayout_5 = MangoHBoxLayout()
+        self.verticalLayout_3 = MangoVBoxLayout()
         self.label = MangoLabel('IP', self)
         self.verticalLayout_3.addWidget(self.label)
         self.ip_edit = MangoLineEdit("请输入后端服务IP", "", )
         self.verticalLayout_3.addWidget(self.ip_edit)
         self.horizontalLayout_5.addLayout(self.verticalLayout_3)
-        self.verticalLayout_2 = QVBoxLayout()
+        self.verticalLayout_2 = MangoVBoxLayout()
         self.label_2 = MangoLabel('端口', self)
         self.verticalLayout_2.addWidget(self.label_2)
         self.prot_edit = MangoLineEdit("请输入后端服务端口", "", )
@@ -39,7 +39,7 @@ class LoginWindow(QWidget):
         self.horizontalLayout_5.setStretch(1, 3)
         self.layout.addLayout(self.horizontalLayout_5)
 
-        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout = MangoHBoxLayout()
         self.label_3 = MangoLabel('账号', self)
         self.horizontalLayout.addWidget(self.label_3)
         self.horizontalSpacer = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
@@ -49,7 +49,7 @@ class LoginWindow(QWidget):
         self.username_edit = MangoLineEdit("请输入登录账号", "", )
         self.layout.addWidget(self.username_edit)
 
-        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2 = MangoHBoxLayout()
         self.label_4 = MangoLabel('密码', self)
         self.horizontalLayout_2.addWidget(self.label_4)
         self.horizontalSpacer_2 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
@@ -59,18 +59,18 @@ class LoginWindow(QWidget):
         self.password_edit = MangoLineEdit("请输入登录密码", "", is_password=True)
         self.layout.addWidget(self.password_edit)
 
-        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3 = MangoHBoxLayout()
         self.remember_box = MangoCheckBox('记住密码', self)
         self.horizontalLayout_3.addWidget(self.remember_box)
         self.horizontalSpacer_3 = QSpacerItem(188, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
         self.horizontalLayout_3.addItem(self.horizontalSpacer_3)
         self.layout.addLayout(self.horizontalLayout_3)
 
-        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4 = MangoHBoxLayout()
         self.horizontalSpacer_6 = QSpacerItem(98, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)  # type: ignore
 
         self.horizontalLayout_4.addItem(self.horizontalSpacer_6)
-        self.verticalLayout = QHBoxLayout()
+        self.verticalLayout = MangoHBoxLayout()
         self.login_but = MangoPushButton('登录')
         self.login_but.setObjectName("pushButtonLogin")
         self.verticalLayout.addWidget(self.login_but)
@@ -82,7 +82,7 @@ class LoginWindow(QWidget):
         self.verticalSpacer = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Expanding)  # type: ignore
         self.layout.addItem(self.verticalSpacer)
 
-        self.layout_h = QHBoxLayout()
+        self.layout_h = MangoHBoxLayout()
         self.layout_h.addStretch(1)
         self.register_but = QPushButton('注册')
         self.register_but.setStyleSheet("border: none;")

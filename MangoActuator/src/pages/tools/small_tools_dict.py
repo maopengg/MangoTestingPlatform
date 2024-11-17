@@ -7,7 +7,8 @@
 tools_data = [
     {'title': '百度', 'url': 'https://www.baidu.com', 'describe': '感谢百度帮我解决开发过程中的问题'},
     {'title': '豆包', 'url': 'https://www.doubao.com/', 'describe': '感谢豆包AI帮我解决开发过程中的问题'},
-    {'title': 'bilibili', 'url': 'https://space.bilibili.com/266410261?spm_id_from=333.937.0.0/', 'describe': '感谢哔哩哔哩提供很好的学习平台'},
+    {'title': 'bilibili', 'url': 'https://space.bilibili.com/266410261?spm_id_from=333.937.0.0/',
+     'describe': '感谢哔哩哔哩提供很好的学习平台'},
 
     {'title': 'Gitee', 'url': 'https://gitee.com/mao-peng/MangoTestingPlatform', 'describe': '本项目开源地址'},
     {'title': 'github', 'url': 'https://github.com/maopengg/MangoTestingPlatform', 'describe': '本项目开源地址'},

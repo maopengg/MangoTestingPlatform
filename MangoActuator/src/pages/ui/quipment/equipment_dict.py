@@ -4,6 +4,7 @@
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
 from mango_ui import THEME, ComboBoxDataModel
+
 from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
 
 web_h5_data = [ComboBoxDataModel(id=i, name=i) for i in DeviceEnum.get_obj()]

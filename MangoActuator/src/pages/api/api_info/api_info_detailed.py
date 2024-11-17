@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from PySide6.QtWidgets import QSizePolicy
 from mango_ui import *
 
 from src.network import HTTP
@@ -26,35 +25,35 @@ class ApiInfoDetailedPage(SubPage):
         self.mango_tabs = MangoTabs()
 
         self.widget_1 = QWidget()
-        self.layout_1 = QHBoxLayout(self.widget_1)
+        self.layout_1 = MangoHBoxLayout(self.widget_1)
         self._headers = MangoTextEdit('请输入请求头，字符串形式')
         self._headers.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.layout_1.addWidget(self._headers)
         self.mango_tabs.addTab(self.widget_1, '请求头')
 
         self.widget_2 = QWidget()
-        self.layout_2 = QHBoxLayout(self.widget_2)
+        self.layout_2 = MangoHBoxLayout(self.widget_2)
         self._params = MangoTextEdit('请输入json格式数据')
         self._params.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.layout_2.addWidget(self._params)
         self.mango_tabs.addTab(self.widget_2, '参数')
 
         self.widget_3 = QWidget()
-        self.layout_3 = QHBoxLayout(self.widget_3)
+        self.layout_3 = MangoHBoxLayout(self.widget_3)
         self._data = MangoTextEdit('请输入json格式数据')
         self._data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.layout_3.addWidget(self._data)
         self.mango_tabs.addTab(self.widget_3, '表单')
 
         self.widget_4 = QWidget()
-        self.layout_4 = QHBoxLayout(self.widget_4)
+        self.layout_4 = MangoHBoxLayout(self.widget_4)
         self._json = MangoTextEdit('请输入json格式数据')
         self._json.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.layout_4.addWidget(self._json)
         self.mango_tabs.addTab(self.widget_4, 'JSON')
 
         self.widget_5 = QWidget()
-        self.layout_5 = QHBoxLayout(self.widget_5)
+        self.layout_5 = MangoHBoxLayout(self.widget_5)
         self._file = MangoTextEdit(
             '请输入json格式的文件上传数据，请查看帮助文档')
         self._file.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)

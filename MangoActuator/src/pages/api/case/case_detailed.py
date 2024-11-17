@@ -3,15 +3,14 @@
 # @Description: 
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
-import json
 import uuid
 
 import time
-from PySide6.QtCore import Qt
 from mango_ui import *
 
 from src.models.network_model import ResponseModel
 from src.models.user_model import UserModel
+from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .case_detailed_dict import *
 
@@ -30,20 +29,20 @@ class ApiCaseDetailedPage(SubPage):
         self.post = HTTP.post_api_case_detailed
         self.put = HTTP.put_api_case_detailed
         self._delete = HTTP.delete_api_case_detailed
-        self.h_layout = QHBoxLayout()
+        self.h_layout = MangoHBoxLayout()
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
         self.mango_tabs = MangoTabs()
         self.h_layout.addWidget(self.mango_tabs, 4)
 
         q_widget_1 = QWidget()
-        v_layout_1 = QVBoxLayout()
+        v_layout_1 = MangoVBoxLayout()
         q_widget_1.setLayout(v_layout_1)
 
-        v_layout_1_0 = QVBoxLayout()
+        v_layout_1_0 = MangoVBoxLayout()
         v_layout_1_0.setContentsMargins(0, 0, 0, 0)
         v_layout_1.addWidget(MangoCard(v_layout_1_0))
-        h_layout_1_0 = QHBoxLayout()
+        h_layout_1_0 = MangoHBoxLayout()
         h_layout_1_0.setContentsMargins(0, 0, 0, 0)
         h_layout_1_0.addWidget(MangoLabel('请求头'))
         h_layout_1_0.addStretch()
@@ -52,16 +51,16 @@ class ApiCaseDetailedPage(SubPage):
         but_1_5.set_stylesheet(28, 40)
         h_layout_1_0.addWidget(but_1_5)
         v_layout_1_0.addLayout(h_layout_1_0)
-        self.v_layout_2_3 = QVBoxLayout()
+        self.v_layout_2_3 = MangoVBoxLayout()
         self.front_headers = MangoTextEdit('请输入公共请求头')
         self.v_layout_2_3.addWidget(self.front_headers)
         self.v_layout_2_3.setContentsMargins(0, 0, 0, 0)
         v_layout_1_0.addLayout(self.v_layout_2_3)
         v_layout_1_0.addStretch()
 
-        v_layout_1_1 = QVBoxLayout()
+        v_layout_1_1 = MangoVBoxLayout()
         v_layout_1.addWidget(MangoCard(v_layout_1_1))
-        h_layout_1_1 = QHBoxLayout()
+        h_layout_1_1 = MangoHBoxLayout()
         h_layout_1_1.setContentsMargins(0, 0, 0, 0)
         h_layout_1_1.addWidget(MangoLabel('自定义变量'))
         h_layout_1_1.addStretch()
@@ -73,7 +72,7 @@ class ApiCaseDetailedPage(SubPage):
         but_1_2.set_stylesheet(28, 40)
         h_layout_1_1.addWidget(but_1_2)
         v_layout_1_1.addLayout(h_layout_1_1)
-        self.v_layout_1_1 = QVBoxLayout()
+        self.v_layout_1_1 = MangoVBoxLayout()
         self.v_layout_1_1_list: list[dict] = []
         but_1_2.clicked.connect(lambda: self.save_case('front_custom', self.v_layout_1_1_list))
 
@@ -81,9 +80,9 @@ class ApiCaseDetailedPage(SubPage):
         v_layout_1_1.addLayout(self.v_layout_1_1)
         v_layout_1_1.addStretch()
 
-        v_layout_1_2 = QVBoxLayout()
+        v_layout_1_2 = MangoVBoxLayout()
         v_layout_1.addWidget(MangoCard(v_layout_1_2))
-        h_layout_1_2 = QHBoxLayout()
+        h_layout_1_2 = MangoHBoxLayout()
         h_layout_1_2.setContentsMargins(0, 0, 0, 0)
         h_layout_1_2.addWidget(MangoLabel('SQL变量'))
         h_layout_1_2.addStretch()
@@ -95,7 +94,7 @@ class ApiCaseDetailedPage(SubPage):
         but_1_3.set_stylesheet(28, 40)
         h_layout_1_2.addWidget(but_1_3)
         v_layout_1_2.addLayout(h_layout_1_2)
-        self.v_layout_2_1 = QVBoxLayout()
+        self.v_layout_2_1 = MangoVBoxLayout()
         self.v_layout_2_1_list: list[dict] = []
         but_1_3.clicked.connect(lambda: self.save_case('front_sql', self.v_layout_2_1_list))
         self.v_layout_2_1.setContentsMargins(10, 0, 10, 0)
@@ -113,11 +112,11 @@ class ApiCaseDetailedPage(SubPage):
         self.mango_tabs.addTab(self.table_widget, '用例步骤')
 
         q_widget_3 = QWidget()
-        v_layout_3 = QVBoxLayout()
+        v_layout_3 = MangoVBoxLayout()
         q_widget_3.setLayout(v_layout_3)
-        v_layout_3_1 = QVBoxLayout()
+        v_layout_3_1 = MangoVBoxLayout()
         v_layout_3.addWidget(MangoCard(v_layout_3_1))
-        h_layout_3_1 = QHBoxLayout()
+        h_layout_3_1 = MangoHBoxLayout()
         h_layout_3_1.setContentsMargins(0, 0, 0, 0)
         h_layout_3_1.addWidget(MangoLabel('后置sql'))
         h_layout_3_1.addStretch()
@@ -129,7 +128,7 @@ class ApiCaseDetailedPage(SubPage):
         but_3_2.set_stylesheet(28, 40)
         h_layout_3_1.addWidget(but_3_2)
         v_layout_3_1.addLayout(h_layout_3_1)
-        self.v_layout_3_1 = QVBoxLayout()
+        self.v_layout_3_1 = MangoVBoxLayout()
         self.v_layout_3_1_list: list[dict] = []
         but_3_2.clicked.connect(lambda: self.save_case('posterior_sql', self.v_layout_3_1_list))
 
@@ -145,52 +144,50 @@ class ApiCaseDetailedPage(SubPage):
         self.scroll_area.layout.addWidget(self.mango_tabs_api)
 
         self.api_widget_1 = QWidget()
-        self.api_widget_1_layout = QVBoxLayout(self.api_widget_1)
+        self.api_widget_1_layout = MangoVBoxLayout(self.api_widget_1)
         self.api_widget_1_layout.addLayout(self.save_but('请求配置'))
         self.mango_tabs_api.addTab(self.api_widget_1, '请求配置')
         self.mango_tabs_info = MangoTabs()
         self.api_widget_1_layout.addWidget(self.mango_tabs_info)
-        self.api_widget_info_headers_layout = QVBoxLayout()
+        self.api_widget_info_headers_layout = MangoVBoxLayout()
         self.info_headers = MangoTextEdit('请输入JSON格式的请求头数据')
         self.api_widget_info_headers_layout.addWidget(self.info_headers)
         self.mango_tabs_info.add_tab(self.api_widget_info_headers_layout, '请求头')
-        self.api_widget_info_params_layout = QVBoxLayout()
+        self.api_widget_info_params_layout = MangoVBoxLayout()
         self.info_params = MangoTextEdit('请输入JSON格式的参数数据')
         self.api_widget_info_params_layout.addWidget(self.info_params)
         self.mango_tabs_info.add_tab(self.api_widget_info_params_layout, '参数')
-        self.api_widget_info_data_layout = QVBoxLayout()
+        self.api_widget_info_data_layout = MangoVBoxLayout()
         self.info_data = MangoTextEdit('请输入JSON格式的表单数据')
         self.api_widget_info_data_layout.addWidget(self.info_data)
         self.mango_tabs_info.add_tab(self.api_widget_info_data_layout, '表单')
-        self.api_widget_info_json_layout = QVBoxLayout()
+        self.api_widget_info_json_layout = MangoVBoxLayout()
         self.info_json = MangoTextEdit('请输入JSON格式的JSON数据')
         self.api_widget_info_json_layout.addWidget(self.info_json)
         self.mango_tabs_info.add_tab(self.api_widget_info_json_layout, 'JSON')
-        self.api_widget_info_file_layout = QVBoxLayout()
+        self.api_widget_info_file_layout = MangoVBoxLayout()
         self.info_file = MangoTextEdit('请输入JSON格式的文件数据')
         self.api_widget_info_file_layout.addWidget(self.info_file)
         self.mango_tabs_info.add_tab(self.api_widget_info_file_layout, '文件')
         self.mango_tabs_info.setCurrentIndex(0)
 
         self.api_widget_2 = QWidget()
-        self.api_widget_2_layout = QVBoxLayout(self.api_widget_2)
+        self.api_widget_2_layout = MangoVBoxLayout(self.api_widget_2)
         self.api_widget_2_layout.addLayout(self.save_but('front_sql', True))
         self.mango_tabs_api.addTab(self.api_widget_2, '前置处理')
         self.mango_tabs_front = MangoTabs()
         self.api_widget_2_layout.addWidget(self.mango_tabs_front)
-        self.api_widget_front_sql_layout = QVBoxLayout()
-        self.api_widget_front_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_front_sql_layout = MangoVBoxLayout()
         self.api_widget_front_sql_layout_list: list[dict] = []
         self.mango_tabs_front.add_tab(self.api_widget_front_sql_layout, '前置SQL')
         self.mango_tabs_front.setCurrentIndex(0)
 
         self.api_widget_3 = QWidget()
-        self.api_widget_3_layout = QVBoxLayout(self.api_widget_3)
+        self.api_widget_3_layout = MangoVBoxLayout(self.api_widget_3)
         self.mango_tabs_api.addTab(self.api_widget_3, '响应结果')
         self.mango_tabs_response = MangoTabs()
         self.api_widget_3_layout.addWidget(self.mango_tabs_response)
-        self.api_widget_response_info_layout = QVBoxLayout()
-        self.api_widget_response_info_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_response_info_layout = MangoVBoxLayout()
         self.response_info_url = MangoLabel()
         self.response_info_code = MangoLabel()
         self.response_info_time = MangoLabel()
@@ -200,63 +197,55 @@ class ApiCaseDetailedPage(SubPage):
         self.api_widget_response_info_layout.addWidget(self.response_info_time)
         self.api_widget_response_info_layout.addWidget(self.response_info_error_msg)
         self.mango_tabs_response.add_tab(self.api_widget_response_info_layout, '基础信息')
-        self.api_widget_response_headers_layout = QVBoxLayout()
-        self.api_widget_response_headers_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_response_headers_layout = MangoVBoxLayout()
         self.response_headers = MangoTextEdit('')
         self.api_widget_response_headers_layout.addWidget(self.response_headers)
         self.mango_tabs_response.add_tab(self.api_widget_response_headers_layout, '请求头')
-        self.api_widget_response_response_headers_layout = QVBoxLayout()
-        self.api_widget_response_response_headers_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_response_response_headers_layout = MangoVBoxLayout()
         self.response_response_headers = MangoTextEdit('')
         self.api_widget_response_response_headers_layout.addWidget(self.response_response_headers)
         self.mango_tabs_response.add_tab(self.api_widget_response_response_headers_layout, '响应头')
-        self.api_widget_response_request_layout = QVBoxLayout()
-        self.api_widget_response_request_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_response_request_layout = MangoVBoxLayout()
         self.response_request_body = MangoTextEdit('')
         self.api_widget_response_request_layout.addWidget(self.response_request_body)
         self.mango_tabs_response.add_tab(self.api_widget_response_request_layout, '请求体')
-        self.api_widget_response_body_layout = QVBoxLayout()
-        self.api_widget_response_body_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_response_body_layout = MangoVBoxLayout()
         self.response_body = MangoTextEdit('')
         self.api_widget_response_body_layout.addWidget(self.response_body)
         self.mango_tabs_response.add_tab(self.api_widget_response_body_layout, '响应体')
         self.mango_tabs_response.setCurrentIndex(3)
 
         self.api_widget_4 = QWidget()
-        self.api_widget_4_layout = QVBoxLayout(self.api_widget_4)
+        self.api_widget_4_layout = MangoVBoxLayout(self.api_widget_4)
         self.api_widget_4_layout.addLayout(self.save_but('ass', True))
         self.mango_tabs_api.addTab(self.api_widget_4, '接口断言')
         self.mango_tabs_ass = MangoTabs()
         self.api_widget_4_layout.addWidget(self.mango_tabs_ass)
-        self.api_widget_ass_agreement_layout = QVBoxLayout()
+        self.api_widget_ass_agreement_layout = MangoVBoxLayout()
         self.ass_agreement = MangoTextEdit('请输入响应全部内容，进行响应全匹配断言')
         self.api_widget_ass_agreement_layout.addWidget(self.ass_agreement)
         self.mango_tabs_ass.add_tab(self.api_widget_ass_agreement_layout, '响应全匹配')
-        self.api_widget_ass_condition_layout = QVBoxLayout()
-        self.api_widget_ass_condition_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_ass_condition_layout = MangoVBoxLayout()
         self.api_widget_ass_condition_layout_list: list[dict] = []
         self.mango_tabs_ass.add_tab(self.api_widget_ass_condition_layout, '响应条件')
-        self.api_widget_ass_sql_layout = QVBoxLayout()
-        self.api_widget_ass_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_ass_sql_layout = MangoVBoxLayout()
         self.api_widget_ass_sql_layout_list: list[dict] = []
         self.mango_tabs_ass.add_tab(self.api_widget_ass_sql_layout, 'SQL断言')
         self.mango_tabs_ass.setCurrentIndex(0)
 
         self.api_widget_5 = QWidget()
-        self.api_widget_5_layout = QVBoxLayout(self.api_widget_5)
+        self.api_widget_5_layout = MangoVBoxLayout(self.api_widget_5)
         self.api_widget_5_layout.addLayout(self.save_but('posterior', True))
         self.mango_tabs_api.addTab(self.api_widget_5, '后置处理')
         self.mango_tabs_posterior = MangoTabs()
         self.api_widget_5_layout.addWidget(self.mango_tabs_posterior)
-        self.api_widget_posterior_result_layout = QVBoxLayout()
-        self.api_widget_posterior_result_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_posterior_result_layout = MangoVBoxLayout()
         self.api_widget_posterior_result_layout_list: list[dict] = []
         self.mango_tabs_posterior.add_tab(self.api_widget_posterior_result_layout, '结果提取')
-        self.api_widget_posterior_sql_layout = QVBoxLayout()
-        self.api_widget_posterior_sql_layout.setAlignment(Qt.AlignTop)  # type: ignore
+        self.api_widget_posterior_sql_layout = MangoVBoxLayout()
         self.api_widget_posterior_sql_layout_list: list[dict] = []
         self.mango_tabs_posterior.add_tab(self.api_widget_posterior_sql_layout, 'SQL处理')
-        self.api_widget_posterior_sleep_layout = QVBoxLayout()
+        self.api_widget_posterior_sleep_layout = MangoVBoxLayout()
         self.sleep = MangoLineEdit('请输入请求后等待时间')
         self.api_widget_posterior_sleep_layout.addWidget(self.sleep)
         self.api_widget_posterior_sleep_layout.addStretch()
@@ -264,11 +253,11 @@ class ApiCaseDetailedPage(SubPage):
         self.mango_tabs_posterior.setCurrentIndex(0)
 
         self.api_widget_6 = QWidget()
-        self.api_widget_6_layout = QVBoxLayout(self.api_widget_6)
+        self.api_widget_6_layout = MangoVBoxLayout(self.api_widget_6)
         self.mango_tabs_api.addTab(self.api_widget_6, '缓存数据')
         self.mango_tabs_cache = MangoTabs()
         self.api_widget_6_layout.addWidget(self.mango_tabs_cache)
-        self.api_widget_cache_layout = QVBoxLayout()
+        self.api_widget_cache_layout = MangoVBoxLayout()
         self.cache_data = MangoLabel()
         self.api_widget_cache_layout.addWidget(self.cache_data)
         self.mango_tabs_cache.add_tab(self.api_widget_cache_layout, '执行到此的缓存数据')
@@ -344,7 +333,7 @@ class ApiCaseDetailedPage(SubPage):
             method_placeholder=None,
             method_label=None
     ):
-        h_layout = QHBoxLayout()
+        h_layout = MangoHBoxLayout()
         if method_placeholder:
             key = MangoLineEdit(key_placeholder, value=data.get('expect') if data else None)
         else:
@@ -427,7 +416,7 @@ class ApiCaseDetailedPage(SubPage):
         response_message(self, HTTP.put_api_case_refresh(row.get('id')))
 
     def save_but(self, enum_name: str, is_add: bool = False, layout_list: list | None = None):
-        layout_h = QHBoxLayout()
+        layout_h = MangoHBoxLayout()
         layout_h.addStretch()
         if is_add:
             add = MangoPushButton('增加')

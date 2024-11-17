@@ -31,14 +31,14 @@ class PageStepsDetailedPage(SubPage):
         self.post = HTTP.post_page_steps_detailed
         self.put = HTTP.put_page_steps_detailed
         self._delete = HTTP.delete_page_steps_detailed
-        self.h_layout = QHBoxLayout()
+        self.h_layout = MangoHBoxLayout()
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
         self.table_widget = TableList(self.table_column, self.table_menu, )
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.table_widget.clicked.connect(self.callback)
         self.h_layout.addWidget(self.table_widget, 6)
-        self.v_layout = QVBoxLayout()
+        self.v_layout = MangoVBoxLayout()
         self.v_layout.addWidget(MangoLabel('调试元素信息展示'))
         self.scroll_area = MangoScrollArea()
 
@@ -50,7 +50,7 @@ class PageStepsDetailedPage(SubPage):
 
     def update_card(self, ele_model: ElementResultModel):
         WidgetTool.remove_layout(self.scroll_area.layout)
-        layout = QGridLayout()
+        layout = MangoGridLayout()
         card = MangoCard(layout)
         labels = [
             f"元素名称: {ele_model.ele_name}",
@@ -145,6 +145,7 @@ class PageStepsDetailedPage(SubPage):
         elif data.subordinate == 'ope_value':
             data.subordinate_input_object \
                 .set_value(json.dumps(self.find_parameter_by_value(self.select_data, data.value)))
+
     @classmethod
     def find_parameter_by_value(cls, data: list[CascaderModel], target_value):
         for item in data:

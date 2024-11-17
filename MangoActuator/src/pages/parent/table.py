@@ -23,7 +23,7 @@ class TableParent(Parent):
 
         self.form_data = [FormDataModel(**i) for i in kwargs.get('form_data', [])]
 
-        self.layout = QVBoxLayout(self)
+        self.layout = MangoVBoxLayout(self)
         self.setLayout(self.layout)
 
         if kwargs.get('search_data'):

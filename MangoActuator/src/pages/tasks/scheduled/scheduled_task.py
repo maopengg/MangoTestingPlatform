@@ -5,9 +5,8 @@
 # @Author : 毛鹏
 from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
-from src.network import HTTP
-from .scheduled_task_dict import *
 from src.pages.parent.table import TableParent
+from .scheduled_task_dict import *
 
 
 class ScheduledTaskPage(TableParent):
@@ -23,6 +22,7 @@ class ScheduledTaskPage(TableParent):
         self.put = HTTP.put_scheduled_tasks
         self._delete = HTTP.delete_scheduled_tasks
         self.subpage_value = 'task_case'
+        self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'project_product':

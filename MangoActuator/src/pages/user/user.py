@@ -1,12 +1,10 @@
 import json
 from typing import Optional
 
-from PySide6.QtWidgets import QWidget
 from mango_ui import *
 
 from src.enums.system_enum import CacheDataKey2Enum, EnvironmentEnum
 from src.enums.tools_enum import ClientTypeEnum
-from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
@@ -19,27 +17,27 @@ class UserPage(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.layout = QVBoxLayout()
+        self.layout = MangoVBoxLayout()
 
         self.user_info: Optional[UserModel | None] = None
         self.setLayout(self.layout)
 
     def show_data(self):
         self.user_info = HTTP.get_userinfo(UserModel().id)
-        card_layout1 = QFormLayout()
+        card_layout1 = MangoFormLayout()
         card_widget = MangoCard(card_layout1, '基本信息')
         card_layout1.addRow('头像', MangoLabel('-'))
         card_layout1.addRow('昵称', MangoLabel(self.user_info.nickname))
 
-        card_layout2 = QFormLayout()
+        card_layout2 = MangoFormLayout()
         card_widget2 = MangoCard(card_layout2, '账户信息')
         card_layout2.addRow('账号：', MangoLabel(self.user_info.username))
         card_layout2.addRow('角色：', MangoLabel(self.user_info.role.get('name') if self.user_info.role else None))
         card_layout2.addRow('邮箱：', MangoLabel(', '.join(self.user_info.mailbox) if self.user_info.mailbox else None))
 
-        v_layout3 = QVBoxLayout()
+        v_layout3 = MangoVBoxLayout()
         card_widget3 = MangoCard(v_layout3, '过滤条件')
-        h_layout3_1 = QHBoxLayout()
+        h_layout3_1 = MangoHBoxLayout()
         v_layout3.addLayout(h_layout3_1)
         h_layout3_1.addWidget(MangoLabel('选中的项目'))
         select_3_1_data = [ComboBoxDataModel(id=i.value, name=i.label) for i in Methods.base_dict.project]
@@ -54,7 +52,7 @@ class UserPage(QWidget):
         select_3_1.click.connect(self.func_select_3_1)
         h_layout3_1.addWidget(select_3_1)
         h_layout3_1.addStretch()
-        h_layout3_2 = QHBoxLayout()
+        h_layout3_2 = MangoHBoxLayout()
         v_layout3.addLayout(h_layout3_2)
         h_layout3_2.addWidget(MangoLabel('选中的环境'))
         select_3_2_data = [ComboBoxDataModel(**i) for i in EnvironmentEnum.get_option('id', 'name')]
@@ -70,10 +68,9 @@ class UserPage(QWidget):
         h_layout3_2.addWidget(select_3_2)
         h_layout3_2.addStretch()
 
-        h_layout_4 = QHBoxLayout()
-        card_layout4 = QFormLayout()
+        h_layout_4 = MangoHBoxLayout()
+        card_layout4 = MangoFormLayout()
         h_layout_4.addLayout(card_layout4)
-
 
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)

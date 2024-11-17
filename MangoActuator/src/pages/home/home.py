@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2024-08-27 14:45
 # @Author : 毛鹏
-
+from PySide6.QtCore import QTimer
+from PySide6.QtGui import QPixmap
 from mango_ui import *
-from mango_ui.init import *
 
 from src.network import HTTP
 from src.pages.home.home_dict import table_column
@@ -17,16 +17,16 @@ class HomePage(QWidget):
         self.page = 1
         self.page_size = 10
         self.parent = parent
-        self.layout = QHBoxLayout(self)
+        self.layout = MangoHBoxLayout(self)
 
-        self.layout_v_1 = QVBoxLayout()
-        self.layout_v_2 = QVBoxLayout()
-        self.layout_v_2_1 = QVBoxLayout()
-        self.layout_v_2_2 = QVBoxLayout()
+        self.layout_v_1 = MangoVBoxLayout()
+        self.layout_v_2 = MangoVBoxLayout()
+        self.layout_v_2_1 = MangoVBoxLayout()
+        self.layout_v_2_2 = MangoVBoxLayout()
         self.layout_v_2.addLayout(self.layout_v_2_1, 4)
         self.layout_v_2.addLayout(self.layout_v_2_2, 6)
-        self.layout_v_1_1 = QVBoxLayout()
-        self.layout_v_1_2 = QVBoxLayout()
+        self.layout_v_1_1 = MangoVBoxLayout()
+        self.layout_v_1_2 = MangoVBoxLayout()
         self.layout_v_1.addLayout(self.layout_v_1_1)
         self.layout_v_1.addLayout(self.layout_v_1_2)
         self.layout.addLayout(self.layout_v_1, 3)
@@ -36,7 +36,7 @@ class HomePage(QWidget):
         self.pie_plot_1 = MangoPiePlot()
         self.layout_v_1_1.addWidget(self.pie_plot_1)
 
-        h_layout_1 = QHBoxLayout()
+        h_layout_1 = MangoHBoxLayout()
         h_layout_1.addWidget(self.label_6, alignment=Qt.AlignCenter)
         self.layout_v_1_1.addLayout(h_layout_1)
 
@@ -44,7 +44,7 @@ class HomePage(QWidget):
         self.pie_plot_2 = MangoPiePlot()
         self.layout_v_1_2.addWidget(self.pie_plot_2)
 
-        h_layout_2 = QHBoxLayout()
+        h_layout_2 = MangoHBoxLayout()
         h_layout_2.addWidget(self.label_7, alignment=Qt.AlignCenter)
         self.layout_v_1_2.addLayout(h_layout_2)
         self.line_plot = MangoLinePlot('用例执行趋势图', '数量', '周')
@@ -54,7 +54,7 @@ class HomePage(QWidget):
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.layout_v_2_2.addWidget(self.table_widget)
         self.mango_dialog = MangoDialog('添加作者微信进芒果测试平台交流群', (260, 340))
-        label = QLabel()
+        label = MangoLabel()
         pixmap = QPixmap(":/picture/author.png")  # 替换为你的图片路径
         label.setPixmap(pixmap)
         label.setScaledContents(True)  # 允许缩放
