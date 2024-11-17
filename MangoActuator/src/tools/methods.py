@@ -19,7 +19,7 @@ class Methods:
     def get_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
         for e in cls.base_dict.project:
             for q in e.children:
-                if q.value == data.value:
+                if q.value == str(data.value):
                     init_data = []
                     for i in q.children:
                         init_data.append(ComboBoxDataModel(id=i.value, name=i.label))
@@ -28,11 +28,11 @@ class Methods:
                     return init_data
 
     @classmethod
-    def get_product_module_label(cls, product_id: int) -> list[ComboBoxDataModel]:
+    def get_product_module_label(cls, product_id: str) -> list[ComboBoxDataModel]:
         for e in cls.base_dict.project:
             for q in e.children:
-                if q.value == product_id:
-                    return [ComboBoxDataModel(id=children.value, name=children.label) for children in q.children]
+                if q.value == str(product_id):
+                    return [ComboBoxDataModel(id=str(children.value), name=children.label) for children in q.children]
 
     @classmethod
     def get_product_module_cascader_model(cls) -> list[CascaderModel]:
@@ -40,20 +40,29 @@ class Methods:
 
     @classmethod
     def get_project_model(cls) -> list[ComboBoxDataModel]:
-        return [ComboBoxDataModel(id=i.value, name=i.label) for i in cls.base_dict.project]
+        return [ComboBoxDataModel(id=str(i.value) if i.value else None, name=i.label) for i in cls.base_dict.project]
 
     @classmethod
     def set_project(cls):
         def run():
-            cls.base_dict.project = [CascaderModel(**i) for i in HTTP.project_info()['data']]
+            cls.base_dict.project = [cls.convert_to_cascader_model(i) for i in HTTP.project_info()['data']]
 
         thread = threading.Thread(target=run)
         thread.start()
+
+    @classmethod
+    def convert_to_cascader_model(cls, data):
+        return CascaderModel(
+            value=str(data['value']),
+            label=data['label'],
+            parameter=data.get('parameter'),
+            children=[cls.convert_to_cascader_model(child) for child in data.get('children', [])]
+        )
 
     @classmethod
     def get_product_module_label_model(cls, product_id):
         for i in cls.base_dict.project:
             if i.children:
                 for e in i.children:
-                    if e.value == product_id:
+                    if e.value == str(product_id):
                         return i.children

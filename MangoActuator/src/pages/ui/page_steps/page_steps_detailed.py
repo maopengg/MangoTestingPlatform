@@ -112,7 +112,7 @@ class PageStepsDetailedPage(SubPage):
 
     def form_data_callback(self, obj: FormDataModel):
         select = obj.select(self.data['page']['id']).data
-        return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in select]
+        return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in select]
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.subordinate == 'ope_key':
@@ -184,4 +184,4 @@ class PageStepsDetailedPage(SubPage):
                     self.select_data.append(CascaderModel(**e))
                 return self.select_data
             else:
-                return [CascaderModel(value=0, label='请忽略此选项')]
+                return [CascaderModel(value='0', label='请忽略此选项')]

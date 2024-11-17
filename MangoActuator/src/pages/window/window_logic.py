@@ -83,7 +83,6 @@ class WindowLogic(MangoMain1Window):
         super().__init__(STYLE, MENUS, page_dict, loop, page='home')
         self.loop = loop
         self.user_info = UserModel()
-
         self.project_list = [FormDataModel(
             title='项目名称',
             placeholder='请选择项目进行全局条件过滤',

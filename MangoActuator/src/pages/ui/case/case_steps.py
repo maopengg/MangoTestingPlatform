@@ -291,13 +291,13 @@ class CaseStepsPage(SubPage):
         if data.subordinate == 'page':
             response_model: ResponseModel = HTTP.module_page_name(data.value)
             if response_model.data:
-                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+                init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
             else:
                 error_message(self, '这个模块还未创建页面')
         elif data.subordinate == 'page_step':
             response_model: ResponseModel = HTTP.get_page_steps_name(data.value)
             if response_model.data:
-                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+                init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
             else:
                 error_message(self, '这个页面还没有步骤')
         if is_refresh and init_data:

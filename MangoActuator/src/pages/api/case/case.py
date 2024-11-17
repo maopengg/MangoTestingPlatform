@@ -28,7 +28,7 @@ class ApiCasePage(TableParent):
 
     def form_data_callback(self, obj: FormDataModel):
         if obj.key == 'case_people':
-            return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in obj.select().data]
+            return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in obj.select().data]
         else:
             return obj.select()
 

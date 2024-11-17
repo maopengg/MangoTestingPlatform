@@ -14,7 +14,8 @@ class UserLogPage(TableParent):
         self.search_data = []
         for i in search_data:
             if i.get('key') == 'user_id':
-                i['select'] = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in i.get('select')().data]
+                i['select'] = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in
+                               i.get('select')().data]
             self.search_data.append(SearchDataModel(**i))
         super().__init__(parent, search_data=self.search_data, table_column=table_column, )
         self.page_size = 30

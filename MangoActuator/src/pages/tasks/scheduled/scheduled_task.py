@@ -28,7 +28,7 @@ class ScheduledTaskPage(TableParent):
         if data.key == 'project_product':
             return data.select()
 
-        return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in data.select().data]
+        return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
 
     def run(self, row):
         response_message(self, HTTP.get_run_scheduled_tasks(row.get('id')))

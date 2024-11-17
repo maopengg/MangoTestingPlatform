@@ -22,4 +22,4 @@ class UserAdministrationPage(TableParent):
         self._delete = HTTP.delete_user_info
 
     def form_data_callback(self, data: FormDataModel):
-        return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in data.select().data]
+        return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]

@@ -393,7 +393,7 @@ class ApiCaseDetailedPage(SubPage):
         if data.subordinate == 'api_info':
             response_model: ResponseModel = HTTP.get_api_name(data.value)
             if response_model.data:
-                init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+                init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
             else:
                 error_message(self, '这个模块还未创建页面')
         if is_refresh and init_data:

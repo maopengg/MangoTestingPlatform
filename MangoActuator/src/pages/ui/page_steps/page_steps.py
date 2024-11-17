@@ -29,7 +29,7 @@ class PageStepsPage(TableParent):
             init_data = Methods.get_product_module(self, data)
         elif data.subordinate == 'page':
             response_model: ResponseModel = HTTP.module_page_name(data.value)
-            init_data = [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+            init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
         if is_refresh and init_data:
             data.subordinate_input_object.set_select(init_data, True)
         else:
@@ -38,7 +38,7 @@ class PageStepsPage(TableParent):
     def subordinate_callback(self, data: FormDataModel):
         if data.subordinate == 'page':
             response_model: ResponseModel = HTTP.module_page_name(data.value)
-            return [ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in response_model.data]
+            return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
 
     def debug(self, row):
         user_info = UserModel()

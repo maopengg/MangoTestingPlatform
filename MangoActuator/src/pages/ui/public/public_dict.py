@@ -92,7 +92,7 @@ table_column = [
     {
         'key': 'key',
         'name': 'key',
-        'width': 50
+        'width': 150
     },
     {
         'key': 'value',
