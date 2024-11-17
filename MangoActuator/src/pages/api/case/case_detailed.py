@@ -455,13 +455,13 @@ class ApiCaseDetailedPage(SubPage):
         self.row = row
         api_info_result: ResponseModel = HTTP.get_api_info_result_case(row.get('id'))
         print()
-        self.info_headers.set_value(self.init_data(row.get('header')))
-        self.info_params.set_value(self.init_data(row.get('params')))
-        self.info_data.set_value(self.init_data(row.get('data')))
-        self.info_json.set_value(self.init_data(row.get('json')))
-        self.info_file.set_value(self.init_data(row.get('file')))
-        self.sleep.set_value(self.init_data(row.get('posterior_sleep')))
-        self.ass_agreement.set_value(self.init_data(row.get('ass_response_whole')))
+        self.info_headers.set_value(WidgetTool.json_init_data(row.get('header')))
+        self.info_params.set_value(WidgetTool.json_init_data(row.get('params')))
+        self.info_data.set_value(WidgetTool.json_init_data(row.get('data')))
+        self.info_json.set_value(WidgetTool.json_init_data(row.get('json')))
+        self.info_file.set_value(WidgetTool.json_init_data(row.get('file')))
+        self.sleep.set_value(WidgetTool.json_init_data(row.get('posterior_sleep')))
+        self.ass_agreement.set_value(WidgetTool.json_init_data(row.get('ass_response_whole')))
         for i in row.get('front_sql', []):
             self.set_form(
                 i,
@@ -478,14 +478,15 @@ class ApiCaseDetailedPage(SubPage):
         if api_info_result.data.get("status") == StatusEnum.FAIL.value:
             self.response_info_error_msg.setText(f'失败提示:{api_info_result.data.get("error_message")}')
 
-        self.response_headers.set_value(self.init_data(api_info_result.data.get("headers")))
-        self.response_response_headers.set_value(self.init_data(api_info_result.data.get("response_headers")))
-        self.response_request_body.set_value(self.init_data(api_info_result.data.get("params")))
-        self.response_request_body.append(self.init_data(api_info_result.data.get("data")))
-        self.response_request_body.append(self.init_data(api_info_result.data.get("json")))
-        self.response_request_body.append(self.init_data(api_info_result.data.get("file")))
-        self.response_body.set_value(self.init_data(api_info_result.data.get("response_text")))
-        self.cache_data.setText(self.init_data(api_info_result.data.get("all_cache")))
+        self.response_headers.set_value(WidgetTool.json_init_data(api_info_result.data.get("headers")))
+        self.response_response_headers.set_value(
+            WidgetTool.json_init_data(api_info_result.data.get("response_headers")))
+        self.response_request_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("params")))
+        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("data")))
+        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("json")))
+        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("file")))
+        self.response_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("response_text")))
+        self.cache_data.setText(WidgetTool.json_init_data(api_info_result.data.get("all_cache")))
         for i in row.get('ass_sql', []):
             self.set_form(
                 i,
@@ -545,10 +546,10 @@ class ApiCaseDetailedPage(SubPage):
         api_case_detailed_data = {
             'id': self.row.get('id'),
             'header': self.info_headers.get_value() if self.info_headers.get_value() else None,
-            'params': self.init_data(self.info_params.get_value(), True),
-            'data': self.init_data(self.info_data.get_value(), True),
-            'json': self.init_data(self.info_json.get_value(), True),
-            'file': self.init_data(self.info_file.get_value(), True),
+            'params': WidgetTool.json_init_data(self.info_params.get_value(), True),
+            'data': WidgetTool.json_init_data(self.info_data.get_value(), True),
+            'json': WidgetTool.json_init_data(self.info_json.get_value(), True),
+            'file': WidgetTool.json_init_data(self.info_file.get_value(), True),
             'ass_response_whole': self.ass_agreement.get_value() if self.ass_agreement.get_value() else None,
             'posterior_sleep': self.sleep.get_value() if self.sleep.get_value() else None,
         }
@@ -657,25 +658,6 @@ class ApiCaseDetailedPage(SubPage):
                     'sql语句',
 
                 )
-
-    @staticmethod
-    def init_data(data: str | dict | list | None, save: bool = False):
-        if not save:
-            if data is None:
-                return data
-            elif isinstance(data, str):
-                try:
-                    parsed_data = json.loads(data)
-                    return json.dumps(parsed_data, ensure_ascii=False, indent=4)
-                except json.JSONDecodeError:
-                    return data
-            elif isinstance(data, dict) or isinstance(data, list):
-                return json.dumps(data, ensure_ascii=False, indent=4)
-        else:
-            if data is None or data == '':
-                return None
-            else:
-                return json.loads(data)
 
     def button_clicked(self, value, row, data, key):
         for case_data in row.get('case_data'):

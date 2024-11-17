@@ -5,11 +5,15 @@
 # @Author : 毛鹏
 import json
 
+from PySide6.QtCore import Qt
 from mango_ui import *
-from src.enums.tools_enum import Status3Enum
+
+from src.enums.api_enum import MethodEnum
+from src.enums.tools_enum import Status3Enum, StatusEnum
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .test_report_detailed_dict import *
+from ...enums.system_enum import AutoTestTypeEnum
 from ...enums.ui_enum import ElementOperationEnum
 from ...models.network_model import ResponseModel
 
@@ -22,7 +26,6 @@ class TestReportDetailedPage(SubPage):
                          field_list=field_list, )
         self.superior_page = 'test_report'
         self.id_key = 'test_suite'
-        self.get = HTTP.suite_get_case
 
         self.layout_h = QHBoxLayout()
         self.layout.addLayout(self.layout_h)
@@ -39,13 +42,89 @@ class TestReportDetailedPage(SubPage):
     def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
-        response_model: ResponseModel = self.get(self.data.get('id'))
+        if self.data.get('type') == AutoTestTypeEnum.UI.value:
+            response_model: ResponseModel = HTTP.suite_get_case(self.data.get('id'))
+        else:
+            response_model: ResponseModel = HTTP.get_api_result_suite_case(self.data.get('id'))
         self.mango_tree.set_item([TreeModel(**i) for i in response_model.data.get('data')])
         if response_model.code != 200:
             response_message(self, response_model)
         return response_model
 
     def mango_tree_click(self, data: TreeModel):
+        if self.data.get('type') == AutoTestTypeEnum.UI.value:
+            self.set_ui(data)
+        else:
+            self.set_api(data)
+
+    def set_api(self, data: TreeModel):
+        WidgetTool.remove_layout(self.scroll_area.layout)
+
+        mango_tabs = MangoTabs()
+        self.scroll_area.layout.addWidget(mango_tabs)
+        layout_request = QHBoxLayout()
+        request_tabs = MangoTabs()
+        layout_request.addWidget(request_tabs)
+        request_info = QVBoxLayout()
+        request_info.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_info, '基础信息')
+        request_headers = QVBoxLayout()
+        request_headers.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_headers, '请求头')
+        request_params = QVBoxLayout()
+        request_params.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_params, '参数')
+        request_data = QVBoxLayout()
+        request_data.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_data, '表单')
+        request_json = QVBoxLayout()
+        request_json.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_json, '表单')
+        request_file = QVBoxLayout()
+        request_file.setAlignment(Qt.AlignTop)  # type: ignore
+        request_tabs.add_tab(request_file, '文件')
+        mango_tabs.add_tab(layout_request, '请求信息')
+
+        layout_response = QHBoxLayout()
+        response_tabs = MangoTabs()
+        layout_response.addWidget(response_tabs)
+        response_info = QVBoxLayout()
+        response_info.setAlignment(Qt.AlignTop)  # type: ignore
+        response_tabs.add_tab(response_info, '基础信息')
+        response_headers = QVBoxLayout()
+        response_headers.setAlignment(Qt.AlignTop)  # type: ignore
+        response_tabs.add_tab(response_headers, '响应头')
+        response_body = QVBoxLayout()
+        response_body.setAlignment(Qt.AlignTop)  # type: ignore
+        response_tabs.add_tab(response_body, '响应体')
+        mango_tabs.add_tab(layout_response, '响应信息')
+
+        layout_ass = QHBoxLayout()
+        layout_ass.setAlignment(Qt.AlignTop)  # type: ignore
+        mango_tabs.add_tab(layout_ass, '断言信息')
+
+        response_data = HTTP.get_api_info_result(params={'id': int(data.key.split("-")[1])})
+        response_data = response_data.data[0] if response_data.data else {}
+        request_info.addWidget(MangoLabel(f'接口ID：{response_data.get("api_info").get("id")}'))
+        request_info.addWidget(MangoLabel(f'接口名称：{response_data.get("api_info").get("name")}'))
+        request_info.addWidget(
+            MangoLabel(f'请求方法：{MethodEnum.get_value(response_data.get("api_info").get("method"))}'))
+        request_info.addWidget(MangoLabel(f'接口URL：{response_data.get("url")}'))
+        request_headers.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("headers"))))
+        request_params.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("params"))))
+        request_data.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("data"))))
+        request_json.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("json"))))
+        request_file.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("file"))))
+
+        response_info.addWidget(MangoLabel(f'CODE：{response_data.get("response_code")}'))
+        response_info.addWidget(MangoLabel(f'响应时间：{response_data.get("response_code")}'))
+        response_info.addWidget(MangoLabel(f'测试结果：{Status3Enum.get_value(response_data.get("status"))}'))
+        response_info.addWidget(MangoLabel(f'失败提示：{response_data.get("error_message")}'))
+        response_headers.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("response_headers"))))
+        response_body.addWidget(MangoTextEdit('', WidgetTool.json_init_data(response_data.get("response_text"))))
+        layout_ass.addWidget(MangoLabel(f'{response_data.get("assertion")}'))
+
+    def set_ui(self, data: TreeModel):
         data_key = json.loads(data.key)
         response_data = HTTP.get_ele_result(
             test_suite_id=data_key.get('test_suite_id'),

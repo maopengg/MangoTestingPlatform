@@ -87,10 +87,10 @@ class WindowLogic(MangoMainWindow):
 
     def handle_notification(self, notification_type, message):
         if notification_type == 0:
-            error_notification(self, message)
+            error_notification(self.content_area_frame, message)
         elif notification_type == 1:
-            success_notification(self, message)
+            success_notification(self.content_area_frame, message)
         elif notification_type == 2:
-            info_notification(self, message)
+            info_notification(self.content_area_frame, message)
         elif notification_type == 3:
-            THEME.group.warning_notification(self, message)
+            warning_notification(self.content_area_frame, message)

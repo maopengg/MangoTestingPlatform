@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
-from src.enums.tools_enum import Status1Enum
+from src.enums.tools_enum import Status5Enum
 from src.network import HTTP
 
 search_data = [
@@ -69,6 +69,21 @@ form_data = [
         'type': 4,
         'select': HTTP.get_nickname
     },
+    {
+        'title': '状态',
+        'placeholder': '请选择状态',
+        'key': 'status',
+        'type': 3,
+        'select': Status5Enum.get_select()
+    },
+    {
+        'title': '通知状态',
+        'placeholder': '请选择通知状态',
+        'key': 'is_notice',
+        'type': 3,
+        'select': Status5Enum.get_select()
+
+    },
 ]
 table_column = [
     {
@@ -113,14 +128,14 @@ table_column = [
         'key': 'status',
         'name': '状态',
         'width': 70,
-        'option': Status1Enum.get_option('value', 'label')
+        'option': Status5Enum.get_option('value', 'label')
 
     },
     {
         'key': 'is_notice',
         'name': '通知',
         'width': 70,
-        'option': Status1Enum.get_option('value', 'label')
+        'option': Status5Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',
