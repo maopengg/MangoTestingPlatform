@@ -9,7 +9,6 @@ import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error
 from mangokit import Mango
-from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 
 log = logging.getLogger('system')
 

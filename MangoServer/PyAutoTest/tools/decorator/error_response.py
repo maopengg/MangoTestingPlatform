@@ -58,7 +58,7 @@ def error_response(app: str):
                                                                 -----------芒果测试平台
                   """
                 from mangokit import Mango
-                Mango.s(content)
+                mango.s(content)
                 return ResponseData.fail(ERROR_MSG_0000)
 
         return wrapper
