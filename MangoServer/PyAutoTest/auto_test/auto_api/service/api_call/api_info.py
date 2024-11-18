@@ -17,8 +17,6 @@ class ApiInfoRun(CaseMethod):
     def __init__(self, test_env: int, api_info_id: int):
         super().__init__()
         self.api_info = ApiInfo.objects.get(id=api_info_id)
-        print(test_env, self.api_info.project_product_id, AutoTypeEnum.API.value)
-
         self.test_object = func_test_object_value(test_env,
                                                   self.api_info.project_product_id,
                                                   AutoTypeEnum.API.value)
