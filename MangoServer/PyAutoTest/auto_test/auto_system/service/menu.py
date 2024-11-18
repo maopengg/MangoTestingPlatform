@@ -213,23 +213,8 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "/help/variable/index",
-                    "menuName": "公共变量",
-                },
-                {
-                    "parentPath": "/help",
-                    "menuUrl": "/help/assertion/index",
-                    "menuName": "断言策略",
-                },
-                {
-                    "parentPath": "/help",
                     "menuUrl": "http://121.37.174.56:8002/",
-                    "menuName": "使用手册",
-                },
-                {
-                    "parentPath": "/help",
-                    "menuUrl": "/help/test",
-                    "menuName": "测试页面",
+                    "menuName": "帮助文档",
                 },
             ],
         },
