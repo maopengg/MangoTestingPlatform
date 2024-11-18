@@ -2,11 +2,10 @@
 # @Project: 芒果测试平台# @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
-import json
 import logging
-from collections import Counter
 
 import time
+from mangokit import ToolsError
 from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonBase
@@ -148,6 +147,8 @@ class CaseMethod(CommonBase, PublicAssertion):
             log.warning(error)
             self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
             raise ResponseValueAssError(*ERROR_MSG_0005)
+        except ToolsError as error:
+            raise ResponseValueAssError(error.code, error.msg)
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
