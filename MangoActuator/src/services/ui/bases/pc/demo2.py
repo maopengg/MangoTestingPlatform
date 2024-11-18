@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-08-13 14:07
 # @Author : 毛鹏
@@ -19,8 +19,6 @@ def get_pid(processName):
     for proc in psutil.process_iter():
         try:
             if (proc.name() == processName):
-                print(proc.name())
-                print(str(proc.pid))
                 return proc.pid
         except psutil.NoSuchProcess:
             pass
@@ -37,8 +35,7 @@ def get_pid(processName):
 
 procId = get_pid("WeChat.exe")
 if (procId == -1):
-    print("WeChat.exe  is not running")
-
+    pass
 app = Application(backend='uia').connect(process=procId)
 
 # 获取主窗口
@@ -60,7 +57,7 @@ try:
     selectItem = main_Dialog.child_window(title=searchKey, control_type="ListItem").wrapper_object()
     selectItem.click_input()
 except:
-    print("对话框已打开")
+    pass
 
 # 发送消息
 sendMsg = "this is a text.txt";

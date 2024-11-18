@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
-import requests
+import json
+
+from mangokit import requests
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -65,8 +68,6 @@ class NoticeConfigViews(ViewSet):
         _id = request.query_params.get('id')
         try:
             NoticeMain.test_notice_send(_id)
-        except requests.exceptions.SSLError:
-            return ResponseData.fail(RESPONSE_MSG_0045)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         else:
@@ -80,12 +81,20 @@ class NoticeConfigViews(ViewSet):
         :param request:
         :return:
         """
-        obj = self.model.objects.get(id=request.data.get('id'))
-        if self.model.objects \
-                .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
-                and request.data.get('status') == StatusEnum.SUCCESS.value:
-            return ResponseData.success(RESPONSE_MSG_0119, )
-
-        obj.status = request.data.get('status')
-        obj.save()
+        obj_ = self.model.objects.get(id=request.data.get('id'))
+        if obj_.config is None or obj_.config == '':
+            return ResponseData.fail(RESPONSE_MSG_0126)
+        if request.data.get('status') == StatusEnum.SUCCESS.value:
+            obj = self.model.objects.filter(environment=request.data.get('environment')).values('status')
+            if any(item['status'] == 1 for item in obj):
+                return ResponseData.fail(RESPONSE_MSG_0119, )
+            for i in json.loads(obj_.config):
+                try:
+                    user = User.objects.get(nickname=i)
+                except User.DoesNotExist:
+                    return ResponseData.fail(RESPONSE_MSG_0125)
+                if user.mailbox is None or user.mailbox == []:
+                    return ResponseData.fail(RESPONSE_MSG_0125, )
+        obj_.status = request.data.get('status')
+        obj_.save()
         return ResponseData.success(RESPONSE_MSG_0047, )

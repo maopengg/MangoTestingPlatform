@@ -1,30 +1,29 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 from typing import Optional
 from urllib.parse import urljoin
-
+from mangokit import DataProcessor
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions.api_exception import LoginError
-from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
+from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError, FileDoesNotEexistError
 from PyAutoTest.models.apimodel import RequestDataModel
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-from PyAutoTest.tools.data_processor import DataProcessor
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035, ERROR_MSG_0026
 
 
 class CommonBase(DataProcessor):
 
     def __init__(self):
         self.project_product_id = None
-        DataProcessor.__init__(self, self.project_product_id)
+        DataProcessor.__init__(self)
         self.mysql_connect: Optional[None | MysqlConnect] = None
 
     def common_init(self, test_object: TestObject, project_product_id: int):
@@ -32,7 +31,7 @@ class CommonBase(DataProcessor):
 
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
             self.mysql_connect = MysqlConnect(
-                func_mysql_config(test_object.id, project_product_id),
+                func_mysql_config(test_object.id),
                 bool(test_object.db_c_status),
                 bool(test_object.db_rud_status)
             )
@@ -88,3 +87,9 @@ class CommonBase(DataProcessor):
                         raise SyntaxErrorError(*ERROR_MSG_0035)
                 if not result_list:
                     raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
+
+    @classmethod
+    def get_file(cls, **kwargs) -> None:
+        """传入文件名称，返回文件对象"""
+        file_name = kwargs.get('data')
+        raise FileDoesNotEexistError(*ERROR_MSG_0026, value=(file_name,))

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/4/6 13:31
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/4/6 13:31
 # @Author : 毛鹏
 
 from uiautomator2 import Direction

@@ -1,5 +1,5 @@
 # # -*- coding: utf-8 -*-
-# # @Project: auto_test
+# # @Project: 芒果测试平台
 # # @Description: 日志封装，可设置不同等级的日志颜色
 # # @Time   : 2022-11-04 22:05
 # # @Author : 毛鹏
@@ -15,7 +15,7 @@ class LogHandler:
     level_relations = {
         'debug': logging.DEBUG,
         'info': logging.INFO,
-        'warning': logging.WARNING,
+        'THEME.group.warning': logging.THEME.group.warning,
         'error': logging.ERROR,
         'critical': logging.CRITICAL
     }
@@ -58,7 +58,7 @@ class LogHandler:
             log_colors={
                 'DEBUG': 'cyan',
                 'INFO': 'green',
-                'WARNING': 'yellow',
+                'THEME.group.warning': 'yellow',
                 'ERROR': 'red',
                 'CRITICAL': 'red',
             }

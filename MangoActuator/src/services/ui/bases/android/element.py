@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description:
+# @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 import traceback
@@ -12,6 +11,7 @@ from uiautomator2.xpath import XPathSelector
 from src.exceptions.error_msg import ERROR_MSG_0043, ERROR_MSG_0044
 from src.exceptions.ui_exception import ElementNotFoundError, ElementNotDisappearError
 from src.services.ui.bases.base_data import BaseData
+from src.tools.log_collector import log
 
 
 class UiautomatorElement(BaseData):
@@ -24,7 +24,7 @@ class UiautomatorElement(BaseData):
             locating.click()
         except Exception as error:
             traceback.print_exc()
-            print(error)
+            log.error(str(error))
 
     @classmethod
     def a_double_click(cls, locating: UiObject):

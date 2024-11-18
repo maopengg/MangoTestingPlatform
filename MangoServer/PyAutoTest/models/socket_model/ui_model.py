@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
@@ -12,6 +12,20 @@ class UiPublicModel(BaseModel):
     type: int
     key: str
     value: str
+
+
+class EquipmentModel(BaseModel):
+    type: int
+    web_max: bool | None = None
+    web_recording: bool | None = None
+    web_parallel: int | None = None
+    web_type: int | None = None
+    web_h5: str | None = None
+    web_path: str | None = None
+    web_headers: bool | None = None
+    and_equipment: str | None = None
+    host_list: list[dict] | None = None
+    is_header_intercept: bool | None = None
 
 
 class WEBConfigModel(BaseModel):
@@ -30,6 +44,7 @@ class AndroidConfigModel(BaseModel):
 
 
 class EnvironmentConfigModel(BaseModel):
+    id: int
     test_object_value: str
     db_c_status: bool
     db_rud_status: bool
@@ -44,11 +59,9 @@ class ElementModel(BaseModel):
     exp: int | None
     sleep: int | None
     sub: int | None
-    ope_type: str | None
+    ope_key: str | None
     ope_value: dict | None
     is_iframe: int | None
-    ass_type: str | None
-    ass_value: dict | None
     key_list: list | None = None
     sql: str | None = None
     key: str | None = None
@@ -71,7 +84,7 @@ class PageStepsModel(BaseModel):
     url: str
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
-    equipment_config: AndroidConfigModel | WEBConfigModel
+    equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
 
@@ -90,12 +103,7 @@ class CaseModel(BaseModel):
     public_data_list: list[UiPublicModel] = []
 
 
-class ElementResultModel(BaseModel):
-    page_step_id: int | None = None
-    test_suite_id: int | None = None
-    case_id: int | None = None
-    case_step_details_id: int | None = None
-
+class ElementDataModel(BaseModel):
     ele_name: str | None = None
     ele_quantity: int
     error_message: str | None = None
@@ -107,12 +115,24 @@ class ElementResultModel(BaseModel):
     sleep: int | None = None
     sub: int | None = None
 
-    ope_type: str | None = None
+    type: int
+    ope_key: str | None = None
     ope_value: dict | str | None = None
-    ass_type: str | None = None
     ass_value: dict | None = None
     expect: str | None = None
     actual: str | None = None
+    sql: str | None = None
+    key_list: str | None = None
+    key: str | None = None
+    value: str | None = None
+
+
+class ElementResultModel(BaseModel):
+    page_step_id: int | None = None
+    test_suite_id: int | None = None
+    case_id: int | None = None
+    ele_name: str | None = None
+    element_data: ElementDataModel
 
 
 class PageStepsResultModel(BaseModel):
@@ -131,6 +151,7 @@ class PageStepsResultModel(BaseModel):
 class CaseResultModel(BaseModel):
     test_suite_id: int
     case_id: int
+    environment_id: int | None
     case_name: str
     module_name: str
     case_people: str
@@ -139,4 +160,3 @@ class CaseResultModel(BaseModel):
     error_message: str | None = None
     page_steps_result_list: list[PageStepsResultModel]
     video_path: str | None = None
-

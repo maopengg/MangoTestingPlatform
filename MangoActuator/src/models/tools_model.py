@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-11-08 15:48
 # @Author : 毛鹏
+
+from mango_ui import CascaderModel
 from pydantic import BaseModel
 
 
@@ -33,3 +35,8 @@ class TestReportModel(BaseModel):
     fail: int
     execution_duration: int
     test_time: str
+
+
+class BaseDictModel(BaseModel):
+    project: list[CascaderModel] | None = None
+    ui_option: list

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-05-23 15:04
 # @Author : 毛鹏
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2024-04-24 10:43
 # @Author : 毛鹏
@@ -15,26 +15,23 @@ import string
 from typing import Optional
 from urllib import parse
 
-import time
 from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
 from playwright.async_api._generated import Route
 
 from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
-from src.network.web_socket.socket_api_enum import ApiSocketEnum
-from src.enums.tools_enum import CacheKeyEnum, StatusEnum
+from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
 from src.exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
 from src.models.api_model import ApiInfoModel
-from src.models.ui_model import WEBConfigModel
+from src.models.ui_model import EquipmentModel
+from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
 from src.tools import InitPath
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.decorator.error_handle import async_error_handle
-from src.tools.desktop.signal_send import SignalSend
 
 """
 python -m uiautomator2 init
@@ -45,7 +42,7 @@ python -m weditor
 
 class NewBrowser:
 
-    def __init__(self, web_config: WEBConfigModel = None):
+    def __init__(self, web_config: EquipmentModel = None):
         self.lock = asyncio.Lock()
         self.web_config = web_config
         self.browser_path = ['chrome.exe', 'msedge.exe', 'firefox.exe', '苹果', '360se.exe']
@@ -59,56 +56,53 @@ class NewBrowser:
             async with self.lock:
                 if self.browser is None:
                     self.browser = await self.new_browser()
-                    time.sleep(1)
-        SignalSend.notice_signal_c('正在创建浏览器窗口')
+                    await asyncio.sleep(1)
         context = await self.new_context()
         page = await self.new_page(context)
         return context, page
 
     async def new_browser(self) -> Browser:
-        SignalSend.notice_signal_c('正在启动浏览器')
         self.playwright = await async_playwright().start()
-        if self.web_config.browser_type \
-                == BrowserTypeEnum.CHROMIUM.value or self.web_config.browser_type == BrowserTypeEnum.EDGE.value:
+        if self.web_config.web_type \
+                == BrowserTypeEnum.CHROMIUM.value or self.web_config.web_type == BrowserTypeEnum.EDGE.value:
             browser = self.playwright.chromium
-        elif self.web_config.browser_type == BrowserTypeEnum.FIREFOX.value:
+        elif self.web_config.web_type == BrowserTypeEnum.FIREFOX.value:
             browser = self.playwright.firefox
-        elif self.web_config.browser_type == BrowserTypeEnum.WEBKIT.value:
+        elif self.web_config.web_type == BrowserTypeEnum.WEBKIT.value:
             browser = self.playwright.webkit
         else:
             raise BrowserPathError(*ERROR_MSG_0008)
         try:
             self.web_config \
-                .browser_path = self.web_config \
-                .browser_path if self.web_config \
-                .browser_path else self.__search_path()
+                .web_path = self.web_config \
+                .web_path if self.web_config \
+                .web_path else self.__search_path()
 
-            if SqlCache.get_sql_cache(CacheKeyEnum.BROWSER_IS_MAXIMIZE.value):
+            if self.web_config.web_max:
                 return await browser.launch(
-                    headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
-                    executable_path=self.web_config.browser_path,
+                    headless=self.web_config.web_headers == StatusEnum.SUCCESS.value,
+                    executable_path=self.web_config.web_path,
                     args=['--start-maximized']
                 )
             else:
                 return await browser.launch(
-                    headless=self.web_config.is_headless == StatusEnum.SUCCESS.value,
-                    executable_path=self.web_config.browser_path
+                    headless=self.web_config.web_headers == StatusEnum.SUCCESS.value,
+                    executable_path=self.web_config.web_path
                 )
         except Error:
-            raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.browser_path,))
+            raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.web_path,))
 
     async def new_context(self) -> BrowserContext:
         args_dict = {
             'no_viewport': True,
         }
 
-        IS_RECORDING = SqlCache.get_sql_cache(CacheKeyEnum.IS_RECORDING.value)
-        if IS_RECORDING:
+        if self.web_config.web_recording:
             args_dict['record_video_dir'] = f'{InitPath.videos}'
 
-        if self.web_config.device:
+        if self.web_config.web_h5:
             del args_dict['no_viewport']
-            args_dict.update(self.playwright.devices[self.web_config.device])
+            args_dict.update(self.playwright.devices[self.web_config.web_h5])
         return await self.browser.new_context(**args_dict)
 
     async def new_page(self, context: BrowserContext) -> Page:
@@ -130,8 +124,8 @@ class NewBrowser:
                 drives.append(drive)
         for i in drives:
             for root, dirs, files in os.walk(i):
-                if self.browser_path[self.web_config.browser_type] in files:
-                    return os.path.join(root, self.browser_path[self.web_config.browser_type])
+                if self.browser_path[self.web_config.web_type] in files:
+                    return os.path.join(root, self.browser_path[self.web_config.web_type])
 
         raise NoBrowserError(*ERROR_MSG_0055)
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
@@ -15,12 +15,13 @@ from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import MangoServerError
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050, ERROR_MSG_0051, \
+    ERROR_MSG_0055
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, SocketClientNotPresentError
 from PyAutoTest.exceptions.ui_exception import UiConfigQueryIsNoneError
 from PyAutoTest.exceptions.user_exception import UserIsNoneError
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.socket_model.ui_model import *
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0029, ERROR_MSG_0030, ERROR_MSG_0050
 from PyAutoTest.tools.view.snowflake import Snowflake
 
 
@@ -32,12 +33,14 @@ class UiTestRun:
                  case_executor: list | None = None,
                  tasks_id: int = None,
                  is_notice: int = 0,
+                 is_send=True,
                  ):
         self.user_id = user_id
         self.username = User.objects.get(id=user_id).username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
+        self.is_send = is_send
         self.case_executor = case_executor
         if self.case_executor:
             username_list = []
@@ -90,7 +93,7 @@ class UiTestRun:
                 'user': self.user_id,
                 'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
             })
-            # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\text.txt.json', 'w') as f:
+            # with open(r'D:\GitCode\MangoTestingPlatform\MangoServer\test.json', 'w') as f:
             #     json.dump(case_model_list, f, indent=4, ensure_ascii=False)
 
     def send_case(self, case_id: int, test_suite_id) -> CaseModel:
@@ -142,8 +145,7 @@ class UiTestRun:
             project_product=data['project_product_id'],
             url=page_obj.url,
             type=page_obj.project_product.client_type,
-            equipment_config=self.__get_web_config(
-                test_object.value) if page_obj.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            equipment_config=self.__get_web_config() if page_obj.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object, page_obj.project_product_id)
         )
         page_steps_model.element_list.append(ElementModel(
@@ -154,24 +156,23 @@ class UiTestRun:
             exp=element_obj.exp,
             sleep=element_obj.sleep,
             sub=element_obj.sub,
-            ope_type=data['ope_type'] if data.get('ope_type') else None,
+            ope_key=data['ope_type'] if data.get('ope_type') else data.get('ass_type'),
             ope_value=data['ope_value'] if data.get('ope_value') else None,
-            ass_type=data['ass_type'] if data.get('ass_type') else None,
             ass_value=data['ass_value'] if data.get('ass_value') else None,
             is_iframe=element_obj.is_iframe,
         ))
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, case_model=page_steps_model)
 
     def __socket_send(self, case_model, func_name: str, username: str = None) -> None:
-
-        data = QueueModel(func_name=func_name, func_args=case_model)
-        ChatConsumer.active_send(SocketDataModel(
-            code=200,
-            msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-            user=username if username else self.username,
-            is_notice=ClientTypeEnum.ACTUATOR.value,
-            data=data,
-        ))
+        if self.is_send:
+            data = QueueModel(func_name=func_name, func_args=case_model)
+            ChatConsumer.active_send(SocketDataModel(
+                code=200,
+                msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
+                user=username if username else self.username,
+                is_notice=ClientTypeEnum.ACTUATOR.value,
+                data=data,
+            ))
 
     def __page_steps(self,
                      page_steps_id: int,
@@ -189,8 +190,7 @@ class UiTestRun:
             test_object_value=test_object.value,
             url=step.page.url,
             type=step.project_product.client_type,
-            equipment_config=self.__get_web_config(
-                test_object.value) if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
+            equipment_config=self.__get_web_config() if step.project_product.client_type == DriveTypeEnum.WEB.value else self.__get_app_config(),
             environment_config=self.__environment_config(test_object, step.project_product_id)
         )
         if case_step_details_id:
@@ -210,10 +210,8 @@ class UiTestRun:
                 exp=i.ele_name.exp if i.ele_name else None,
                 sleep=i.ele_name.sleep if i.ele_name else None,
                 sub=i.ele_name.sub if i.ele_name else None,
-                ope_type=i.ope_type,
+                ope_key=i.ope_key,
                 ope_value=i.ope_value,
-                ass_type=i.ass_type,
-                ass_value=i.ass_value,
                 is_iframe=i.ele_name.is_iframe if i.ele_name else None,
                 key_list=i.key_list,
                 sql=i.sql,
@@ -225,32 +223,32 @@ class UiTestRun:
     def __get_equipment_config(self):
         pass
 
-    def __get_web_config(self, host: str) -> WEBConfigModel:
+    def __get_web_config(self) -> EquipmentModel:
         try:
             user_ui_config = UiConfig.objects.get(user_id=self.user_id,
                                                   status=StatusEnum.SUCCESS.value,
                                                   type=DriveTypeEnum.WEB.value)
         except UiConfig.DoesNotExist:
             raise UiConfigQueryIsNoneError(*ERROR_MSG_0029)
-        return WEBConfigModel(
-            browser_port=user_ui_config.browser_port,
-            browser_path=user_ui_config.browser_path,
-            browser_type=user_ui_config.browser_type,
-            is_headless=user_ui_config.is_headless,
-            device=user_ui_config.device,
-            host=host)
+        if user_ui_config.config is None:
+            raise UiConfigQueryIsNoneError(*ERROR_MSG_0055)
+        return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
 
-    def __get_app_config(self) -> AndroidConfigModel:
-        user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                              status=StatusEnum.SUCCESS.value,
-                                              type=DriveTypeEnum.ANDROID.value)
-        return AndroidConfigModel(equipment=user_ui_config.equipment)
+    def __get_app_config(self) -> EquipmentModel:
+        try:
+            user_ui_config = UiConfig.objects.get(user_id=self.user_id,
+                                                  status=StatusEnum.SUCCESS.value,
+                                                  type=DriveTypeEnum.ANDROID.value)
+        except UiConfig.DoesNotExist:
+            raise UiConfigQueryIsNoneError(*ERROR_MSG_0051)
+        return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
 
     def __environment_config(self, test_object: TestObject, project_product_id) -> EnvironmentConfigModel:
         mysql_config = None
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = func_mysql_config(self.test_env, project_product_id)
+            mysql_config = func_mysql_config(self.test_env)
         return EnvironmentConfigModel(
+            id=test_object.id,
             test_object_value=test_object.value,
             db_c_status=bool(test_object.db_c_status),
             db_rud_status=bool(test_object.db_rud_status),

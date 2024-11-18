@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/5/4 14:34
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
+from mangokit import RandomTimeData
 from playwright._impl._errors import TargetClosedError, Error
 
 from src.enums.tools_enum import StatusEnum
@@ -12,14 +12,12 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import MangoActuatorError
 from src.exceptions.error_msg import ERROR_MSG_0025, ERROR_MSG_0010
 from src.exceptions.ui_exception import UiCacheDataIsNullError, BrowserObjectClosed
-from src.models.ui_model import PageStepsResultModel, PageStepsModel, WEBConfigModel
-from src.network.http.http_client import HttpClient
+from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
+from src.network import HTTP
 from src.services.ui.bases import ElementMain
 from src.settings import settings
 from src.tools import InitPath
-from src.tools.data_processor.random_time_data import RandomTimeData
 from src.tools.decorator.memory import async_memory
-from src.tools.desktop.signal_send import SignalSend
 from src.tools.log_collector import log
 
 
@@ -29,6 +27,7 @@ class StepElements(ElementMain):
 
     async def steps_init(self, page_step_model: PageStepsModel):
         self.page_step_model = page_step_model
+        self.environment_id = page_step_model.environment_config.id
         self.page_step_result_model = PageStepsResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
@@ -37,7 +36,8 @@ class StepElements(ElementMain):
             page_step_name=page_step_model.name,
             status=StatusEnum.FAIL.value,
             element_result_list=[],
-            error_message=None)
+            error_message=None
+        )
 
         self.page_step_id = page_step_model.id
         self.case_step_details_id = page_step_model.case_step_details_id
@@ -46,7 +46,6 @@ class StepElements(ElementMain):
 
     @async_memory
     async def steps_main(self) -> PageStepsResultModel:
-        SignalSend.notice_signal_c(f'正在准备执行步骤：{self.page_step_model.name}')
         for element_model in self.page_step_model.element_list:
             element_data = None
             if not self.is_step:
@@ -59,12 +58,13 @@ class StepElements(ElementMain):
             try:
                 await self.element_setup(element_model, element_data, self.page_step_model.type)
                 await self.element_main()
+                self.progress.emit(self.element_test_result)
             except MangoActuatorError as error:
                 await self.__error(error)
                 return self.page_step_result_model
             except TargetClosedError as error:
                 await self.setup()
-                self.element_test_result.error_message = error.message
+                self.element_test_result.element_data.error_message = error.message
                 self.page_step_result_model.error_message = error.message
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
                 raise BrowserObjectClosed(*ERROR_MSG_0010)
@@ -73,7 +73,6 @@ class StepElements(ElementMain):
             else:
                 self.page_step_result_model.element_result_list.append(self.element_test_result)
         self.page_step_result_model.status = StatusEnum.SUCCESS.value
-        SignalSend.notice_signal_c(f'步骤：{self.page_step_model.name} 执行完成！')
         return self.page_step_result_model
 
     @async_memory
@@ -90,29 +89,34 @@ class StepElements(ElementMain):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
-    async def web_init(self, data: WEBConfigModel | None = None):
-        if self.page:
-            return
-        try:
+    async def web_init(self, data: EquipmentModel | None = None):
+        async def open_url():
+            test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
+                                        self.page_step_model.url)
+            if self.page and urlparse(self.url).netloc.lower() != urlparse(
+                    test_object_value).netloc.lower() and not data:
+                await self.w_goto(test_object_value)
+                self.url = test_object_value
 
-            if data:
-                self.driver_object.web_config = data
-                self.context, self.page = await self.driver_object.new_web_page()
-            else:
-                self.driver_object.web_config = self.page_step_model.equipment_config
-                self.context, self.page = await self.driver_object.new_web_page()
-                test_object_value = urljoin(self.page_step_model.environment_config.test_object_value,
-                                            self.page_step_model.url)
-                if self.page and urlparse(self.url).netloc.lower() != urlparse(
-                        test_object_value).netloc.lower() and not data:
-                    await self.w_goto(test_object_value)
-                    self.url = test_object_value
-        except TargetClosedError as error:
-            await self.setup()
-            self.page_step_result_model.status = StatusEnum.FAIL.value
-            self.page_step_result_model.error_message = error.message
-            self.page_step_result_model.element_result_list.append(self.element_test_result)
-            raise BrowserObjectClosed(*ERROR_MSG_0010)
+        if self.page and self.url:
+            return
+        elif self.page:
+            await open_url()
+        else:
+            try:
+                if data:
+                    self.driver_object.web_config = data
+                    self.context, self.page = await self.driver_object.new_web_page()
+                else:
+                    self.driver_object.web_config = self.page_step_model.equipment_config
+                    self.context, self.page = await self.driver_object.new_web_page()
+                    await open_url()
+            except TargetClosedError as error:
+                await self.setup()
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.message
+                self.page_step_result_model.element_result_list.append(self.element_test_result)
+                raise BrowserObjectClosed(*ERROR_MSG_0010)
 
     def __android_init(self):
         package_name = self.page_step_model.environment_config.test_object_value
@@ -142,18 +146,9 @@ class StepElements(ElementMain):
         if self.element_test_result:
             file_name = f'失败截图-{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
             file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
-            self.element_test_result.picture_path = f'files/{file_name}'
+            self.element_test_result.element_data.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
-            self.element_test_result.error_message = error.msg
-            SignalSend.notice_signal_c(f'''元素名称：{self.element_test_result.ele_name}
-                                           元素表达式：{self.element_test_result.loc}
-                                           操作类型：{self.element_test_result.ope_type}
-                                           操作值：{self.element_test_result.ope_value}
-                                           断言类型：{self.element_test_result.ass_type}
-                                           断言值：{self.element_test_result.ass_value}
-                                           元素个数：{self.element_test_result.ele_quantity}
-                                           截图路径：{file_path}
-                                           元素失败提示：{error.msg}''')
+            self.element_test_result.element_data.error_message = error.msg
             await self.__error_screenshot(file_path, file_name)
         self.page_step_result_model.status = StatusEnum.FAIL.value
         self.page_step_result_model.error_message = error.msg
@@ -179,7 +174,4 @@ class StepElements(ElementMain):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
         if not settings.IS_DEBUG:
-            HttpClient().upload_file(self.project_product_id, file_path, file_name)
-        # except Exception as error:
-        #     log.error(f'截图居然会失败，管理员快检查代码。错误消息：{error}')
-        #     raise ScreenshotError(*ERROR_MSG_0040)
+            HTTP.upload_file(self.project_product_id, file_path, file_name)

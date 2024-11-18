@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
@@ -16,11 +16,11 @@ from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
 from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
-from PyAutoTest.tools.data_processor.encryption_tool import EncryptionTool
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from mangokit import EncryptionTool
 
 
 class UserSerializers(serializers.ModelSerializer):
@@ -144,7 +144,6 @@ class LoginViews(ViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         source_type = request.data.get('type')
-        password = EncryptionTool.md5_32_small(**{'data': password})
         try:
             user_info = User.objects.get(username=username, password=password)
         except User.DoesNotExist:
@@ -185,7 +184,6 @@ class LoginViews(ViewSet):
     def register(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
-        password = EncryptionTool.md5_32_small(**{'data': password})
         if User.objects.filter(username=username).exists():
             return ResponseData.fail(RESPONSE_MSG_0115)
         if User.objects.filter(nickname=request.data.get('nickname')).exists():

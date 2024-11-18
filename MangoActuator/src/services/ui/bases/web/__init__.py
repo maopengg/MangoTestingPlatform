@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/5/16 14:50
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import re
 
+from mangokit import Mango
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
 from playwright.async_api._generated import Locator
 
@@ -21,7 +21,6 @@ from src.services.ui.bases.web.input_device import PlaywrightDeviceInput
 from src.services.ui.bases.web.page import PlaywrightPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.async_retry import async_retry
-from src.tools.desktop.signal_send import SignalSend
 
 re = re
 
@@ -37,7 +36,7 @@ class WebDevice(PlaywrightBrowser,
     @async_retry
     async def web_action_element(self) -> None:
         try:
-            await getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
+            await Mango.a_e(self, self.element_model.ope_key, self.element_model.ope_value)
         except TimeoutError as error:
             raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
@@ -50,40 +49,38 @@ class WebDevice(PlaywrightBrowser,
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
-            self.element_test_result.ope_value = self.element_model.ope_value
+            self.element_test_result.element_data.ope_value = self.element_model.ope_value
             if self.element_model.sleep:
                 await self.w_wait_for_timeout(self.element_model.sleep)
 
     @async_retry
     async def web_assertion_element(self) -> None:
         from src.tools.assertion import PublicAssertion
-        is_method = callable(getattr(PlaywrightAssertion, self.element_model.ass_type, None))
-        is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
-        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
-        self.element_test_result.expect = self.element_model \
-            .ass_value \
+        is_method = callable(getattr(PlaywrightAssertion, self.element_model.ope_key, None))
+        is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
+        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
+        self.element_test_result.element_data.expect = self.element_model \
+            .ope_value \
             .get('expect') if self.element_model \
-            .ass_value \
+            .ope_value \
             .get('expect') else None
         if is_method or is_method_public:
-            if self.element_model.ass_value['actual'] is None:
+            if self.element_model.ope_value['actual'] is None:
                 raise ElementIsEmptyError(*ERROR_MSG_0031,
                                           value=(self.element_model.name, self.element_model.loc))
         try:
             if is_method:
-                self.element_test_result.actual = '判断元素是什么'
-                await getattr(PlaywrightAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
+                self.element_test_result.element_data.actual = '判断元素是什么'
+                await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ope_value)
             elif is_method_public:
-                text_actual = await self.w_get_text(self.element_model.ass_value['actual'])
-                self.element_test_result.actual = text_actual
-                SignalSend.notice_signal_c(
-                    f'开始断言-元素：<{self.element_model.name}>实际：<{text_actual}>预期：<{self.element_model.ass_value.get("expect")}>')
-                getattr(PublicAssertion, self.element_model.ass_type)(
-                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ass_value.items()})
+                text_actual = await self.w_get_text(self.element_model.ope_value['actual'])
+                self.element_test_result.element_data.actual = text_actual
+                getattr(PublicAssertion, self.element_model.ope_key)(
+                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ope_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.mysql_connect
-                    await SqlAssertion.sql_is_equal(**self.element_model.ass_value)
+                    await SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
                     raise UiSqlAssertionError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
         except AssertionError as error:
@@ -97,14 +94,14 @@ class WebDevice(PlaywrightBrowser,
             raise BrowserObjectClosed(*ERROR_MSG_0010)
         except Error as error:
             raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
-        if 'actual' in self.element_model.ass_value:
-            del self.element_model.ass_value['actual']
-        self.element_test_result.ass_value = self.element_model.ass_value
+        if 'actual' in self.element_model.ope_value:
+            del self.element_model.ope_value['actual']
+        self.element_test_result.element_data.ope_value = self.element_model.ope_value
 
     @async_retry
     async def web_find_ele(self) -> Locator | list[Locator]:
         locator_str = self.element_model.loc
-        self.element_test_result.loc = locator_str
+        self.element_test_result.element_data.loc = locator_str
         # 是否在iframe中
         if self.element_model.is_iframe == StatusEnum.SUCCESS.value:
             ele_list: list[Locator] = []
@@ -121,7 +118,7 @@ class WebDevice(PlaywrightBrowser,
                 else:
                     raise LocatorError(*ERROR_MSG_0023)
 
-            self.element_test_result.ele_quantity = len(ele_list)
+            self.element_test_result.element_data.ele_quantity = len(ele_list)
             if not ele_list:
                 raise LocatorError(*ERROR_MSG_0023)
             # 这里需要进行调整
@@ -134,7 +131,7 @@ class WebDevice(PlaywrightBrowser,
                 count = await locator.count()
             except Error:
                 raise LocatorError(*ERROR_MSG_0041, )
-            self.element_test_result.ele_quantity = count
+            self.element_test_result.element_data.ele_quantity = count
             if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
                 if self.element_model.type == ElementOperationEnum.OPE.value:
                     raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))

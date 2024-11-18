@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-04-26 10:53
 # @Author : 毛鹏
@@ -14,7 +14,7 @@ from ..bases.driver_object import DriverObject
 
 class CaseMain:
 
-    def __init__(self, max_tasks=10):
+    def __init__(self, max_tasks=2):
         super().__init__()
         self.queue = asyncio.Queue()
         self.max_tasks = max_tasks
@@ -28,7 +28,7 @@ class CaseMain:
             if self.running_tasks < self.max_tasks and not self.queue.empty():
                 case_model = await self.queue.get()
                 self.running_tasks += 1
-                self.loop.create_task(self.execute_task(case_model))
+                await self.loop.create_task(self.execute_task(case_model))
             await asyncio.sleep(0.1)
 
     @async_memory

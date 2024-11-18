@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-11-20 9:47
 # @Author : 毛鹏
 import asyncio
 
-from src.tools.database.mysql_connect import MysqlConnect
+from mangokit import MysqlConnect
 
 
 class SqlAssertion:

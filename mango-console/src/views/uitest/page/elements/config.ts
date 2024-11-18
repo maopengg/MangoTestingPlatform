@@ -78,7 +78,7 @@ export const formItems: FormItem[] = reactive([
     key: 'loc',
     value: '',
     type: 'input',
-    required: false,
+    required: true,
     placeholder: '请输入元素表达式',
     validator: function () {
       return true

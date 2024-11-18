@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023/1/9 17:37
 # @Author : 毛鹏
 
 import jsonpath
-import requests
+from mangokit import requests
 
 from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum

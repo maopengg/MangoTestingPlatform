@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-07-12 14:15
 # @Author : 毛鹏
@@ -20,6 +20,12 @@ elif DJANGO_ENV == SystemEnvEnum.MASTER.value:
 else:
     raise Exception('你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 nuw_dir()
+
+# *********************** 是否初始化项目 *********************** #
+
+INIT_MANGO_TESTING_PLATFORM = False  # 可以初始化部分原始数据，快速开展简单的自动化任务
+
+# *********************** 是否初始化项目 *********************** #
 
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'

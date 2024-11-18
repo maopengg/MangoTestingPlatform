@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 系统设置模块子路由
 # @Time   : 2023-01-19 18:56
 # @Author : 毛鹏
@@ -12,7 +12,7 @@ from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews, Sche
 from .views.socket_api import SocketApiViews
 from .views.tasks_run_case_list import TasksRunCaseListCRUD, TasksRunCaseListViews
 from .views.test_suite_report import TestSuiteReportCRUD
-from ..auto_system.views.database import DatabaseCRUD
+from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
 from ..auto_system.views.system_api import SystemViews
@@ -24,6 +24,8 @@ urlpatterns = [
     path('notice/put/status', NoticeConfigViews.as_view({'put': 'put_status'})),
     #
     path('database', DatabaseCRUD.as_view()),
+    path('database/test', DatabaseViews.as_view({'get': 'test'})),
+    path('database/put/status', DatabaseViews.as_view({'put': 'put_status'})),
     #
     path('time', TimeTasksCRUD.as_view()),
     path('get/timing/list', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),

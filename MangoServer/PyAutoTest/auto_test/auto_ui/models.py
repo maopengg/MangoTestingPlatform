@@ -61,14 +61,14 @@ class UiPageStepsDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     page_step = models.ForeignKey(to=UiPageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
-    ele_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
-    step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
-    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.JSONField(verbose_name="操作内容", null=True)
     # type==0是进行操作，==1是进行断言
     type = models.SmallIntegerField(verbose_name="操作类型", null=True)
-    ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.JSONField(verbose_name="操作内容", null=True)
+    ele_name = models.ForeignKey(to=UiElement, to_field="id", on_delete=models.SET_NULL, null=True)
+    step_sort = models.IntegerField(verbose_name="顺序的排序", null=True)
+
+    ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
+    ope_value = models.JSONField(verbose_name="对该元素的操作类型",  null=True)
+
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
@@ -142,14 +142,8 @@ class UiConfig(models.Model):
     user_id = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0是web，1是安卓
     type = models.SmallIntegerField(verbose_name="什么客户端", null=True)
-    browser_port = models.CharField(verbose_name="web端口", max_length=64, null=True)
-    browser_path = models.CharField(verbose_name="chrome路径", max_length=1024, null=True)
-    browser_type = models.SmallIntegerField(verbose_name="浏览器类型", null=True)
-    device = models.CharField(verbose_name="浏览器模式", max_length=64, null=True)
-    equipment = models.CharField(verbose_name="安卓设备名称", max_length=64, null=True)
-    # 0关闭，1开启
-    is_headless = models.SmallIntegerField(verbose_name="状态", null=True)
-    # 0未选中，1选中
+    config = models.JSONField(verbose_name="配置json", null=True)
+    # 是否开启
     status = models.SmallIntegerField(verbose_name="状态", null=True)
 
     class Meta:
@@ -196,20 +190,7 @@ class UiEleResult(models.Model):
     case_id = models.IntegerField(verbose_name="用例ID", null=True)
     page_step_id = models.IntegerField(verbose_name="步骤id", null=True)
     ele_name = models.CharField(verbose_name="元素名称", max_length=64, null=True)
-    ele_quantity = models.SmallIntegerField(verbose_name="元素个数", null=True)
-    status = models.SmallIntegerField(verbose_name="元素测试结果", null=True)
-    picture_path = models.CharField(verbose_name="用例名称", max_length=1000, null=True)
-    exp = models.SmallIntegerField(verbose_name="元素表达式", null=True)
-    loc = models.CharField(verbose_name="元素定位", max_length=1048, null=True)
-    sleep = models.IntegerField(verbose_name="等待时间", null=True)
-    sub = models.IntegerField(verbose_name="下标", null=True)
-    ope_type = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
-    ass_type = models.CharField(verbose_name="断言类型", max_length=1048, null=True)
-    ass_value = models.JSONField(verbose_name="操作内容", max_length=1048, null=True)
-    error_message = models.CharField(verbose_name="元素错误提示语", max_length=2048, null=True)
-    expect = models.TextField(verbose_name="预期", null=True)
-    actual = models.TextField(verbose_name="实际", null=True)
+    element_data = models.JSONField(verbose_name="元素测试结果", null=True)
 
     class Meta:
         db_table = 'ui_ele_result'

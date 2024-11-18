@@ -21,25 +21,13 @@ export const columns = reactive([
     width: 90,
   },
   {
-    title: '元素操作类型',
-    dataIndex: 'ope_type',
+    title: '操作类型',
+    dataIndex: 'ope_key',
     width: 150,
   },
   {
-    title: '元素操作值',
+    title: '操作值',
     dataIndex: 'ope_value',
-    ellipsis: true,
-    tooltip: true,
-  },
-
-  {
-    title: '断言类型',
-    dataIndex: 'ass_type',
-    width: 150,
-  },
-  {
-    title: '断言操作值',
-    dataIndex: 'ass_value',
     ellipsis: true,
     tooltip: true,
   },
@@ -133,8 +121,8 @@ export const sqlForm = reactive([
 ])
 export const assForm = reactive([
   {
-    label: '断言类型',
-    key: 'ass_type',
+    label: '断言操作',
+    key: 'ope_key',
     value: '',
     type: 'cascader',
     required: true,
@@ -158,7 +146,7 @@ export const assForm = reactive([
 export const eleForm = reactive([
   {
     label: '元素操作',
-    key: 'ope_type',
+    key: 'ope_key',
     value: '',
     type: 'cascader',
     required: true,

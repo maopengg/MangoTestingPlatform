@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 错误消息统一管理
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏
@@ -65,3 +65,4 @@ ERROR_MSG_0054 = (354, '浏览器已被关闭，可能是手动关闭，用例�
 ERROR_MSG_0055 = (355, '您的电脑未安装指定浏览器！')
 ERROR_MSG_0056 = (356, '输入的参数类型不正确，请检查操作输入框的类型是否正确')
 ERROR_MSG_0057 = (357, '必要配置未安装，在执行器的虚拟环境中安装：playwright install ffmpeg')
+ERROR_MSG_0058 = (358, '电脑可能无网络，或者设置了代理，浏览器无法进行请求！')

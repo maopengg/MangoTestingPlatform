@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-12-08 9:50
 # @Author : 毛鹏
@@ -44,6 +44,46 @@ class StatusEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {0: "关闭&进行中&失败", 1: "启用&已完成&通过"}
+
+
+class Status3Enum(BaseEnum):
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "失败", 1: "通过"}
+
+
+class Status1Enum(BaseEnum):
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "否", 1: "是"}
+
+
+class Status4Enum(BaseEnum):
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "进行中", 1: "已完成"}
+
+
+class Status5Enum(BaseEnum):
+    """状态枚举"""
+    SUCCESS = 1
+    FAIL = 0
+
+    @classmethod
+    def obj(cls):
+        return {0: "关闭", 1: "启用"}
 
 
 class ProductTypeEnum(BaseEnum):

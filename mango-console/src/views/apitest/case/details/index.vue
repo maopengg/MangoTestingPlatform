@@ -543,6 +543,7 @@
   import { getSystemEnumMethod } from '@/api/system'
   import { getUserProductAllModuleName } from '@/api/user'
   import { useEnvironment } from '@/store/modules/get-environment'
+
   const uEnvironment = useEnvironment()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -660,7 +661,7 @@
   }
 
   function blurSave(key: string, item: string | null) {
-    if (key === 'header' || key === 'ass_response_whole' || key === 'posterior_sleep') {
+    if (key === 'header' || key === 'posterior_sleep') {
       if (item === '') {
         item = null
       }
@@ -680,6 +681,9 @@
         Message.success(res.msg)
       })
       .catch(console.log)
+    if (typeof data.selectDataObj.ass_response_whole == 'object') {
+      data.selectDataObj['ass_response_whole'] = formatJson(data.selectDataObj.ass_response_whole)
+    }
   }
 
   function removeFrontSql(item: any, index: number, key: string) {
@@ -733,6 +737,7 @@
       })
       .catch(console.log)
   }
+
   function getModuleApi(moduleId: number) {
     getApiInfoName(moduleId)
       .then((res) => {
@@ -821,6 +826,9 @@
 
   function select(record: any) {
     data.selectDataObj = record
+    if (typeof record.ass_response_whole == 'object') {
+      data.selectDataObj['ass_response_whole'] = formatJson(record.ass_response_whole)
+    }
     try {
       data.request.headers = formatJson(JSON.parse(record.header))
     } catch (e) {

@@ -1,6 +1,6 @@
 from django.db import models
 
-from PyAutoTest.auto_test.auto_user.models import ProjectProduct, TestObject, Project
+from PyAutoTest.auto_test.auto_user.models import ProjectProduct, TestObject
 from PyAutoTest.auto_test.auto_user.models import User
 
 """
@@ -13,8 +13,7 @@ class NoticeConfig(models.Model):
     """通知配置表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
-    environment = models.SmallIntegerField(verbose_name="环境类型", null=True)
+    environment = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型", null=True)
     config = models.CharField(verbose_name="通知配置", max_length=1028, null=True)
     status = models.SmallIntegerField(verbose_name="是否选中发送", null=True)
@@ -28,13 +27,13 @@ class Database(models.Model):
     """数据库表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    environment = models.SmallIntegerField(verbose_name="环境类型", null=True)
+    environment = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="数据库名称", max_length=64)
     user = models.CharField(verbose_name="登录用户名", max_length=64, null=True)
     password = models.CharField(verbose_name="登录密码", max_length=64, null=True)
     host = models.CharField(verbose_name="数据库地址", max_length=64, null=True)
     port = models.IntegerField(verbose_name="端口", null=True)
+    status = models.SmallIntegerField(verbose_name="是否启用", null=True)
 
     class Meta:
         db_table = 'data_base'
@@ -45,12 +44,7 @@ class TimeTasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     name = models.CharField(verbose_name="定时策略名称", max_length=64, null=True, unique=True)
-    trigger_type = models.CharField(verbose_name="触发器类型", max_length=64, null=True)
-    month = models.CharField(verbose_name="月", max_length=64, null=True)
-    day = models.CharField(verbose_name="天", max_length=64, null=True)
-    day_of_week = models.CharField(verbose_name="周", max_length=64, null=True)
-    hour = models.CharField(verbose_name="小时", max_length=64, null=True)
-    minute = models.CharField(verbose_name="分钟", max_length=64, null=True)
+    cron = models.CharField(verbose_name="cron表达式", max_length=64, null=True)
 
     class Meta:
         db_table = 'time_tasks'
@@ -85,7 +79,8 @@ class ScheduledTasks(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境", null=True)
     name = models.CharField(verbose_name="任务名称", max_length=64)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
+                                    null=True)
     case_executor = models.JSONField(verbose_name='用例执行人', null=True)
     type = models.SmallIntegerField(verbose_name="任务类型", null=True)
     status = models.SmallIntegerField(verbose_name="任务状态", null=True)

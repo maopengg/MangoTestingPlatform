@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 项目表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
@@ -77,9 +77,16 @@ class ProjectViews(ViewSet):
             }
             product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
             for product_id, product_name in product_list:
-                project['children'].append({
-                    'value': product_id,
-                    'label': product_name})
+                if request.query_params.get('client_type'):
+                    v = ProductModule.objects.values_list('id', 'name').filter(project_product=product_id)
+                    project['children'].append({
+                        'value': product_id,
+                        'label': product_name,
+                        'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]})
+                else:
+                    project['children'].append({
+                        'value': product_id,
+                        'label': product_name})
             options.append(project)
         return ResponseData.success(RESPONSE_MSG_0025, options)
 

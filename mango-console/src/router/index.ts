@@ -55,13 +55,6 @@ export const extraRoutes = [
           title: '测试用例详情',
         },
       },
-      {
-        path: 'report/details',
-        component: () => import('@/views/uitest/report/details/index.vue'),
-        meta: {
-          title: '界面测试报告详情',
-        },
-      },
     ],
   },
   {
@@ -86,11 +79,28 @@ export const extraRoutes = [
           title: '用例详情',
         },
       },
+    ],
+  },
+  {
+    path: '/report',
+    name: 'report',
+    component: Layout,
+    meta: {
+      title: '测试报告',
+    },
+    children: [
       {
-        path: 'report/details',
-        component: () => import('@/views/apitest/report/details/index.vue'),
+        path: 'api/details',
+        component: () => import('@/views/report/api-details/index.vue'),
         meta: {
-          title: '接口测试报告详情',
+          title: 'API测试报告',
+        },
+      },
+      {
+        path: 'ui/details',
+        component: () => import('@/views/report/ui-details/index.vue'),
+        meta: {
+          title: 'UI测试报告',
         },
       },
     ],
@@ -125,6 +135,20 @@ export const extraRoutes = [
         component: () => import('@/views/config/product/module/index.vue'),
         meta: {
           title: '测试项目',
+        },
+      },
+      {
+        path: 'test/object/notice',
+        component: () => import('@/views/config/test-object/notice/index.vue'),
+        meta: {
+          title: '通知配置',
+        },
+      },
+      {
+        path: 'test/object/database',
+        component: () => import('@/views/config/test-object/database/index.vue'),
+        meta: {
+          title: '数据库配置',
         },
       },
     ],

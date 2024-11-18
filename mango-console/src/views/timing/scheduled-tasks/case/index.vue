@@ -274,7 +274,7 @@
 
   function doRefresh() {
     getSystemTasksRunCase({
-      id: route.query.id,
+      task_id: route.query.id,
       type: route.query.type,
       page: pagination.page,
       pageSize: pagination.pageSize,

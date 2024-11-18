@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-07-26 上午10:03
 # @Author : 毛鹏
 
 from typing import Optional
 
-import requests
+from mangokit import requests
 import time
 from requests import Response
 from requests.exceptions import *
@@ -30,6 +30,7 @@ class BaseRequest:
     def request(self, request_data: RequestDataModel) -> Response:
         self.request_data = request_data
         log.api.info(self.request_data.model_dump_json())
+        requests.timeout = int(self.timeout)
         try:
             s = time.time()
             self.response = requests.request(
@@ -40,7 +41,7 @@ class BaseRequest:
                 data=request_data.data,
                 json=request_data.json_data,
                 files=request_data.file,
-                timeout=int(self.timeout)
+
             )
             self.response_time = time.time() - s
         except ProxyError:
@@ -94,6 +95,7 @@ class BaseRequest:
 
 if __name__ == '__main__':
     response = BaseRequest.test_http({"method": "POST", "url": "http://172.16.100.27:8819/login",
-     "headers": {"Accept": "application/json, text/plain, */*", "Content-Type": "application/json", "tenant_id": "14"},
-     "params": None, "data": None, "json_data": None, "file": None})
+                                      "headers": {"Accept": "application/json, text/plain, */*",
+                                                  "Content-Type": "application/json", "tenant_id": "14"},
+                                      "params": None, "data": None, "json_data": None, "file": None})
     print(response.text)

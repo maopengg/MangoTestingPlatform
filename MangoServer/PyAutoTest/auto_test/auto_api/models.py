@@ -74,7 +74,7 @@ class ApiCaseDetailed(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     # 断言
     ass_sql = models.JSONField(verbose_name="sql断言", null=True)
-    ass_response_whole = models.TextField(verbose_name="响应全匹配断言", null=True)
+    ass_response_whole = models.JSONField(verbose_name="响应全匹配断言", null=True)
     ass_response_value = models.JSONField(verbose_name="响应值断言", null=True)
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)

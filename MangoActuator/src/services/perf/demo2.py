@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-08-03 16:54
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-08-03 16:54
 # @Author : 毛鹏
 import multiprocessing
 

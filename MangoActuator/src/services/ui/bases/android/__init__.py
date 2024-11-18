@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description:
+# @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
 from retrying import retry
-from uiautomator2 import UiObject, NullPointerExceptionError, UiObjectNotFoundError
+from uiautomator2 import UiObject, UiObjectNotFoundError
 from uiautomator2.exceptions import XPathElementNotFoundError
 from uiautomator2.xpath import XPathSelector
 
 from src.enums.ui_enum import ElementExpEnum
 from src.exceptions.error_msg import ERROR_MSG_0022, ERROR_MSG_0020, ERROR_MSG_0032, ERROR_MSG_0012, ERROR_MSG_0050, \
-    ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018
+    ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018, ERROR_MSG_0019
 from src.exceptions.ui_exception import LocatorError, UiTimeoutError, ElementLocatorError, XpathElementNoError, \
     ElementIsEmptyError, UiSqlAssertionError, UiAssertionError
 from src.models.ui_model import ElementModel, ElementResultModel
@@ -60,11 +59,11 @@ class AndroidDriver(UiautomatorEquipment,
     @sync_error_handle(True)
     def a_action_element(self) -> None:
         try:
-            getattr(self, self.element_model.ope_type)(**self.element_model.ope_value)
+            getattr(self, self.element_model.ope_key)(**self.element_model.ope_value)
         except ValueError as error:
             raise UiTimeoutError(*ERROR_MSG_0012, error=error)
-        except NullPointerExceptionError as error:
-            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+        # except NullPointerExceptionError as error:
+        #     raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except UiObjectNotFoundError as error:
             raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except XPathElementNotFoundError as error:
@@ -78,10 +77,10 @@ class AndroidDriver(UiautomatorEquipment,
 
     @retry(stop_max_attempt_number=10, wait_fixed=500)
     def a_assertion_element(self) -> None:
-        is_method = callable(getattr(UiautomatorAssertion, self.element_model.ass_type, None))
+        is_method = callable(getattr(UiautomatorAssertion, self.element_model.ope_key, None))
         from src.tools.assertion import PublicAssertion
-        is_method_public = callable(getattr(PublicAssertion, self.element_model.ass_type, None))
-        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ass_type, None))
+        is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
+        is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
         self.element_test_result.expect = self.element_model \
             .ass_value \
             .get('expect') if self.element_model \
@@ -96,7 +95,7 @@ class AndroidDriver(UiautomatorEquipment,
         try:
             if is_method:
                 self.element_test_result.actual = '判断元素是什么'
-                getattr(UiautomatorAssertion, self.element_model.ass_type)(**self.element_model.ass_value)
+                getattr(UiautomatorAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
             elif is_method_public:
                 if self.element_model.ass_value.get('value'):
                     value = self.element_model.ass_value.get('value')
@@ -104,7 +103,7 @@ class AndroidDriver(UiautomatorEquipment,
                 else:
                     value = self.a_get_text(self.element_model.ass_value['value'])
                     self.element_test_result.actual = value
-                getattr(PublicAssertion, self.element_model.ass_type)(
+                getattr(PublicAssertion, self.element_model.ope_key)(
                     **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:

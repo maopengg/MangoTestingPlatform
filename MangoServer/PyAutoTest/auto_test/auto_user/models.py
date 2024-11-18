@@ -69,7 +69,8 @@ class User(models.Model):
     mailbox = models.JSONField(verbose_name="邮箱", max_length=64, null=True)
     selected_project = models.SmallIntegerField(verbose_name="选中的项目ID", null=True)
     selected_environment = models.SmallIntegerField(verbose_name="选中的环境ID", null=True)
-    last_login_time = models.DateTimeField(verbose_name="修改时间",  null=True)
+    last_login_time = models.DateTimeField(verbose_name="修改时间", null=True)
+    config = models.JSONField(verbose_name="用户配置", null=True)
 
     class Meta:
         db_table = 'user'

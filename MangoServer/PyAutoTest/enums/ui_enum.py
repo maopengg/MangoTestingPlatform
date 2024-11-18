@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2022-12-06 21:05
 # @Author : 毛鹏
@@ -15,7 +15,7 @@ class DriveTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "WEB", 1: "PC桌面", 2: "安卓", 3: "IOS"}
+        return {0: "WEB", 1: "安卓", 2: "PC桌面", 3: "IOS"}
 
 
 class BrowserTypeEnum(BaseEnum):

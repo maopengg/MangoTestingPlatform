@@ -126,6 +126,8 @@
   import { reactive } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { post, Response } from '@/api/http'
+  import { md5 } from 'js-md5'
+
   import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
   import { UserState } from '@/store/types'
@@ -152,7 +154,7 @@
       url: login,
       data: {
         username: baseData.username,
-        password: baseData.password,
+        password: md5(baseData.password),
         type: 1,
       },
     })
@@ -199,7 +201,7 @@
         data: {
           nickname: baseData.nickname,
           username: baseData.username,
-          password: baseData.password,
+          password: md5(baseData.password),
         },
       })
         .then((data) => {

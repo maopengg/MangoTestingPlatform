@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
@@ -25,6 +25,7 @@ class AutoSystemConfig(AppConfig):
             self.minute_task()
             self.delayed_task()
             self.save_cache()
+            self.populate_time_tasks()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -64,3 +65,17 @@ class AutoSystemConfig(AppConfig):
                 serializer = CacheDataSerializers(data=key)
                 if serializer.is_valid():
                     serializer.save()
+
+    @staticmethod
+    def populate_time_tasks():
+        from PyAutoTest.auto_test.auto_system.models import TimeTasks
+        if not TimeTasks.objects.exists():
+            TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
+            TimeTasks.objects.create(name="每30分钟", cron="*/5 * * * *")
+            TimeTasks.objects.create(name="每1小时", cron="0 * * * *")
+            TimeTasks.objects.create(name="每2小时", cron="0 */2 * * *")
+            TimeTasks.objects.create(name="每5小时", cron="0 */5 * * *")
+            TimeTasks.objects.create(name="每天9点", cron="0 9 * * *")
+            TimeTasks.objects.create(name="每天12点", cron="0 12 * * *")
+            TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")
+            TimeTasks.objects.create(name="每周一8点", cron="0 8 * * 1")

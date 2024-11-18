@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-09-28 16:45
 # @Author : 毛鹏
-
 from typing import Union, Optional, TypeVar
 
+from mangokit import singleton
 from pydantic import BaseModel
 
 from src.enums.tools_enum import ClientTypeEnum
-from src.tools.decorator.singleton import singleton
 
 T = TypeVar('T')
 

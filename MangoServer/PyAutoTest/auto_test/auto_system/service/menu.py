@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-02-02 19:51
 # @Author : 毛鹏
@@ -51,10 +51,6 @@ def ad_routes():
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/equipment/index",
                     "menuName": "设备配置",
-                }, {
-                    "parentPath": "/uitest",
-                    "menuUrl": "/uitest/report/index",
-                    "menuName": "测试报告",
                 },
             ],
         },
@@ -64,11 +60,6 @@ def ad_routes():
             "icon": "IconSend",
             "parentPath": "",
             "children": [
-                # {
-                #     "parentPath": "/apitest",
-                #     "menuUrl": "/apitest/mock",
-                #     "menuName": "Mock服务",
-                # },
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/info/index",
@@ -84,13 +75,21 @@ def ad_routes():
                     "menuUrl": "/apitest/public/index",
                     "menuName": "公共参数",
                 },
-                {
-                    "parentPath": "/apitest",
-                    "menuUrl": "/apitest/report/index",
-                    "menuName": "测试报告",
-                },
             ],
         },
+        {
+            "menuUrl": "/report",
+            "menuName": "测试报告",
+            "icon": "icon-calendar-clock",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/report",
+                    "menuUrl": "/report/index",
+                    "menuName": "测试报告",
+                }, ]
+        },
+
         # {
         #     "menuUrl": "/perf",
         #     "menuName": "性能自动化",
@@ -144,16 +143,6 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/config",
-                    "menuUrl": "/config/database/index",
-                    "menuName": "数据库配置",
-                },
-                {
-                    "parentPath": "/config",
-                    "menuUrl": "/config/notice/index",
-                    "menuName": "通知配置",
-                },
-                {
-                    "parentPath": "/config",
                     "menuUrl": "/config/test-files/index",
                     "menuName": "测试文件",
                 }
@@ -167,15 +156,14 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/timing",
-                    "menuUrl": "/timing/strategy/index",
-                    "menuName": "定时策略",
-                },
-                {
-                    "parentPath": "/timing",
                     "menuUrl": "/timing/scheduled-tasks/index",
                     "menuName": "定时任务",
                 },
-
+                {
+                    "parentPath": "/timing",
+                    "menuUrl": "/timing/strategy/index",
+                    "menuName": "定时策略",
+                },
             ],
         },
         {
@@ -225,23 +213,8 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "/help/variable/index",
-                    "menuName": "公共变量",
-                },
-                {
-                    "parentPath": "/help",
-                    "menuUrl": "/help/assertion/index",
-                    "menuName": "断言策略",
-                },
-                {
-                    "parentPath": "/help",
                     "menuUrl": "http://121.37.174.56:8002/",
-                    "menuName": "使用手册",
-                },
-                {
-                    "parentPath": "/help",
-                    "menuUrl": "/help/test",
-                    "menuName": "测试页面",
+                    "menuName": "帮助文档",
                 },
             ],
         },

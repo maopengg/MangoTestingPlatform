@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
@@ -60,7 +60,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
     @error_response('system')
     def get(self, request: Request):
         _type = request.GET.get('type')
-        books = self.model.objects.filter(task=request.GET.get('id')).order_by('sort')
+        books = self.model.objects.filter(task=request.GET.get('task_id')).order_by('sort')
         data = []
         for i in books:
             _dict = model_to_dict(i)

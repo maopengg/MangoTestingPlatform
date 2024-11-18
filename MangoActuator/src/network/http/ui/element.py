@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-09-13 11:11
 # @Author : 毛鹏
-from src.models.network_model import ResponseModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
@@ -20,22 +19,19 @@ class Element(HttpBase):
         }
         if params:
             _params.update(params)
-        response = cls.get(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_page_element(cls, json_data: dict):
         url = cls.url(f'/ui/element')
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_page_element(cls, json_data: dict):
         url = cls.url(f'/ui/element')
-        response = cls.put(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.put(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -44,8 +40,7 @@ class Element(HttpBase):
         _params = {
             'id': _id,
         }
-        response = cls.delete(url=url, headers=cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.delete(url=url, headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -56,8 +51,7 @@ class Element(HttpBase):
             'page_id': page_id,
             'id': element_id,
         }
-        response = cls.post(url=url, headers=cls.headers, json=json_data)
-        return ResponseModel(**response.json())
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
@@ -66,5 +60,4 @@ class Element(HttpBase):
         _params = {
             'id': page_id,
         }
-        response = cls.get(url, cls.headers, params=_params)
-        return ResponseModel(**response.json())
+        return cls.get(url, cls.headers, params=_params)

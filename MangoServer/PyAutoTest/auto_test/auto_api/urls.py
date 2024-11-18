@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: api接口自动化子路由
 # @Time   : 2023-01-19 19:12
 # @Author : 毛鹏

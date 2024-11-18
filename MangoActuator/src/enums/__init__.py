@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-04-29 11:23
 # @Author : 毛鹏
 from enum import Enum
+
+from mango_ui import ComboBoxDataModel
 
 
 class BaseEnum(Enum):
@@ -11,7 +13,7 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_option(cls, k='key', v='title') -> list:
-        return ([{k: key, v: value} for key, value in cls.obj().items()])
+        return [{k: str(key), v: value} for key, value in cls.obj().items()]
 
     @classmethod
     def get_obj(cls) -> dict:
@@ -43,5 +45,4 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_select(cls):
-        from src.models.gui_model import ComboBoxDataModel
-        return [ComboBoxDataModel(id=_id, name=name) for _id, name in cls.obj().items()]
+        return [ComboBoxDataModel(id=str(_id), name=name) for _id, name in cls.obj().items()]

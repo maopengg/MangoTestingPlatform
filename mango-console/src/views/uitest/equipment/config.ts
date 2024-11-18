@@ -19,7 +19,7 @@ export const formItems: FormItem[] = reactive([
 export const webFormItems: FormItem[] = reactive([
   {
     label: '浏览器类型',
-    key: 'browser_type',
+    key: 'web_type',
     value: '',
     type: 'select',
     required: true,
@@ -33,45 +33,68 @@ export const webFormItems: FormItem[] = reactive([
     },
   },
   {
+    label: '并行数',
+    key: 'web_parallel',
+    value: '',
+    type: 'select',
+    required: true,
+    placeholder: '请选择浏览器并行数',
+    validator: function () {
+      return true
+    },
+  },
+  {
     label: '设备模式',
-    key: 'device',
+    key: 'web_h5',
     value: '',
     type: 'select',
     required: false,
-    placeholder: '请选择设备',
+    placeholder: '请选择设备模式（H5）（不必填可以不用填）',
     validator: function () {
       return true
     },
-  },
-  {
-    label: '浏览器端口',
-    key: 'browser_port',
-    value: '',
-    placeholder: '请输入浏览器调试端口',
-    required: false,
-    type: 'input',
-    validator: function () {
-      return true
-    },
-  },
-  {
+  },{
     label: '浏览器路径',
-    key: 'browser_path',
+    key: 'web_path',
     value: '',
-    type: 'textarea',
+    type: 'input',
     required: false,
-    placeholder: '请输入浏览器路径',
+    placeholder: '请输入浏览器路径（不必填可以不用填）',
     validator: function () {
       return true
     },
   },
   {
-    label: '无头模式',
-    key: 'is_headless',
+    label: '最大化',
+    key: 'web_max',
+    value: '',
+    placeholder: '请输入浏览器调试端口（不必填可以不用填）',
+    required: false,
+    type: 'switch',
+    validator: function () {
+      return true
+    },
+  },
+
+  {
+    label: '视频录制',
+    key: 'web_recording',
     value: '',
     type: 'switch',
     required: false,
-    placeholder: '请输入无头模式',
+    placeholder: '请输入浏览器路径（不必填可以不用填）',
+    validator: function () {
+      return true
+    },
+  },
+
+  {
+    label: '无头模式',
+    key: 'web_headers',
+    value: '',
+    type: 'switch',
+    required: false,
+    placeholder: '请输入无头模式（不必填可以不用填）',
     validator: function () {
       return true
     },
@@ -102,46 +125,54 @@ export const tableColumns = useTableColumn([
     dataIndex: 'type',
   },
   {
-    title: '浏览器类型',
-    key: 'browser_type',
-    dataIndex: 'browser_type',
-  },
-  {
-    title: '设备模式',
-    key: 'device',
-    dataIndex: 'device',
-  },
-  {
-    title: '浏览器端口',
-    key: 'browser_port',
-    dataIndex: 'browser_port',
-  },
-  {
-    title: '浏览器地址',
-    key: 'browser_path',
-    dataIndex: 'browser_path',
-    align: 'left',
-  },
-  {
-    title: '安卓设备号',
-    key: 'equipment',
-    dataIndex: 'equipment',
-    align: 'left',
-  },
-  {
     title: '所属用户',
     key: 'user_id',
     dataIndex: 'user_id',
   },
   {
-    title: '是否开启无头',
-    key: 'is_headless',
-    dataIndex: 'is_headless',
-  },
-  {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
+  },
+  {
+    title: '浏览器类型',
+    key: 'web_type',
+    dataIndex: 'web_type',
+  },
+  {
+    title: '最大化',
+    key: 'web_max',
+    dataIndex: 'web_max',
+  },
+  {
+    title: '录制',
+    key: 'web_recording',
+    dataIndex: 'web_recording',
+  },
+  {
+    title: '并行数',
+    key: 'web_parallel',
+    dataIndex: 'web_parallel',
+  },
+  {
+    title: '设备模式（H5）',
+    key: 'web_h5',
+    dataIndex: 'web_h5',
+  },
+  {
+    title: '浏览器路径',
+    key: 'web_path',
+    dataIndex: 'web_path',
+  },  {
+    title: '无头模式',
+    key: 'web_headers',
+    dataIndex: 'web_headers',
+  },
+  {
+    title: '安卓设备号',
+    key: 'and_equipment',
+    dataIndex: 'and_equipment',
+    align: 'left',
   },
   {
     title: '操作',

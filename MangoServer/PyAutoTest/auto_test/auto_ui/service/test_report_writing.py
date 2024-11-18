@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
@@ -53,7 +53,7 @@ class TestReportWriting:
                 UiEleResultCRUD.inside_post(element_result.model_dump())
 
         UiCaseResultCRUD.inside_post(data.model_dump())
-        cls.update_test_suite(data.test_suite_id)
+        cls.update_test_suite(data.test_suite_id, data.environment_id)
 
     @classmethod
     @orm_retry('update_step')
@@ -69,7 +69,7 @@ class TestReportWriting:
 
     @classmethod
     @orm_retry('update_test_suite')
-    def update_test_suite(cls, test_suite_id: int):
+    def update_test_suite(cls, test_suite_id: int, test_object_id: int):
         test_suite_obj = TestSuiteReport.objects.get(id=test_suite_id)
         case_id_status = UiCaseResult \
             .objects \
@@ -96,7 +96,7 @@ class TestReportWriting:
             test_suite_obj.error_message = json.dumps(error_message_list, ensure_ascii=False)
             test_suite_obj.save()
             if test_suite_obj.is_notice:
-                NoticeMain.notice_main(test_suite_obj.project_product.project_id, test_suite_id)
+                NoticeMain.notice_main(test_object_id, test_suite_id)
             from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
             ChatConsumer.active_send(SocketDataModel(
                 code=code,

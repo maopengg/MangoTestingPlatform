@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description:
+# @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
+
 from assertpy import assert_that
+from deepdiff import DeepDiff
 
 
 class WhatIsItAssertion:
@@ -133,44 +134,24 @@ class MatchingAssertion:
 
 
 class PublicAssertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEqualToAssertion):
-    pass
-    # @staticmethod
-    # def p_is_unicode(actual):
-    #     """actual是unicode"""
-    #     assert_that(actual).is_unicode()
-    # @staticmethod
-    # def p_is_iterable(actual):
-    #     """actual是可迭代对象"""
-    #     assert_that(actual).is_iterable()
-    # @staticmethod
-    # def p_is_type_of(actual, type_):
-    #     """判断类型"""
-    #     assert_that(actual).is_type_of(eval(type_))
+    @classmethod
+    def ass_response_whole(cls, actual: dict, expect: dict):
+        filtered_actual = {key: actual[key] for key in expect if key in actual}
+        for key in expect.keys():
+            if isinstance(expect[key], dict):
+                if actual.get(key) is not None:
+                    filtered_actual[key] = {k: actual[key][k] for k in expect[key] if k in actual[key]}
+                else:
+                    filtered_actual[key] = {}
 
-    # @staticmethod
-    # def p_is_instance_of(actual, type_):
-    #     """是实例-未测试"""
-    #     assert_that(actual).is_instance_of(type_)
-    # @staticmethod
-    # def p_is_subset_of(actual, expect):
-    #     """在里面"""
-    #     assert_that(actual).is_subset_of(expect)
-    # @staticmethod
-    # def p_contains_sequence(actual, expect):
-    #     """包含序列"""
-    #     assert_that(actual).contains_sequence(expect)
+        diff = DeepDiff(filtered_actual, expect, ignore_order=True)
+        assert not diff, f"字典不匹配: {diff}"
 
-    # @staticmethod
-    # def p_contains_duplicates(actual):
-    #     """仅包含"""
-    #     assert_that(actual).contains_duplicates()
-    #
-    # @staticmethod
-    # def p_does_not_contain_duplicates(actual):
-    #     """不包含重复项"""
-    #     assert_that(actual).does_not_contain_duplicates()
 
-    # @staticmethod
-    # def p_is_upper(actual):
-    #     """actual在什么上面"""
-    #     assert_that(actual).is_upper()
+if __name__ == '__main__':
+    actual = {'data': None, 'errorCode': -1, 'errorMsg': '账号密码不匹配！'}
+    expect = {
+        'data': {'id': 158877, 'icon': '', 'type': 0, 'admin': False, 'email': '', 'token': '', 'nickname': 'maopeng',
+                 'password': '', 'username': 'maopeng', 'coinCount': 1899, 'collectIds': [], 'publicName': 'maopeng',
+                 'chapterTops': []}, 'errorMsg': '', 'errorCode': 0}
+    PublicAssertion.ass_response_whole(actual, expect)

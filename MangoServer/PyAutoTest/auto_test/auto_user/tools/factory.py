@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-07-25 上午11:56
 # @Author : 毛鹏
@@ -7,22 +7,24 @@ from pydantic import ValidationError
 
 from PyAutoTest.auto_test.auto_system.models import Database, TestObject
 from PyAutoTest.enums.tools_enum import AutoTypeEnum
+from PyAutoTest.exceptions.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049, \
+    ERROR_MSG_0056
 from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError, TestObjectNullError
 from PyAutoTest.models.tools_model import MysqlConingModel
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049
 
 
-def func_mysql_config(env: int, project_product_id: int) -> MysqlConingModel:
+def func_mysql_config(env: int) -> MysqlConingModel:
     """
     获取mysql的配置信息生成model
     @param env:
-    @param project_product_id:
     @return:
     """
     try:
-        mysql = Database.objects.get(environment=env, project_product=project_product_id)
+        mysql = Database.objects.get(environment=env)
     except Database.DoesNotExist:
         raise DoesNotExistError(*ERROR_MSG_0021)
+    except Database.MultipleObjectsReturned:
+        raise MysqlConfigError(*ERROR_MSG_0056)
     try:
         return MysqlConingModel(
             host=mysql.host,

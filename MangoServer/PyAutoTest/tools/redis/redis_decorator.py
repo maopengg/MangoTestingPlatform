@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: redis缓存装饰器
 # @Time   : 2022-11-22 8:34
 # @Author : 毛鹏
 from functools import wraps
 
-import requests
+from mangokit import requests
 from django.core.cache import cache
 
 

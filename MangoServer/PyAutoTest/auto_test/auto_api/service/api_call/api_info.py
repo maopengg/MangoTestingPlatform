@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: api用例执行类
+# @Project: 芒果测试平台# @Description: api用例执行类
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.base_tools.dependence import CaseMethod
-from PyAutoTest.auto_test.auto_api.service.base_tools.http_base import HTTPRequest
 from PyAutoTest.auto_test.auto_user.tools.factory import func_test_object_value
 from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
@@ -19,7 +17,6 @@ class ApiInfoRun(CaseMethod):
     def __init__(self, test_env: int, api_info_id: int):
         super().__init__()
         self.api_info = ApiInfo.objects.get(id=api_info_id)
-
         self.test_object = func_test_object_value(test_env,
                                                   self.api_info.project_product_id,
                                                   AutoTypeEnum.API.value)

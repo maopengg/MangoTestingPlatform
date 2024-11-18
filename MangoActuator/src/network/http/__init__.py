@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-# @Project: auto_test
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2024-09-12 18:08
 # @Author : 毛鹏
-from .http_client import HttpClient
-from src.network.http.ui import Ui
+from .api import ApiApi
+from .http_client import HttpClientApi
+from .system import SystemApi
+from .ui import UiApi
+from .user import UserApi
 
 
-class Http(Ui, HttpClient):
+class HTTP(UiApi, HttpClientApi, UserApi, SystemApi, ApiApi):
     pass

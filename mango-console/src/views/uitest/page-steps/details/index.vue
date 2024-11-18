@@ -50,23 +50,18 @@
             :tooltip="item.tooltip"
           >
             <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-              {{ record.page_step.name }}
+              {{ record.page_step?.name }}
             </template>
             <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
-              {{ record.ele_name == null ? '-' : record.ele_name.name }}
+              {{ record.ele_name?.name }}
             </template>
-            <template v-else-if="item.dataIndex === 'ope_type'" #cell="{ record }">
-              {{ record.ope_type == null ? '-' : getLabelByValue(data.ope, record.ope_type) }}
+            <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
+              {{ record.ope_key == null ? '-' : getLabelByValue(record.type, record.ope_key) }}
             </template>
             <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-              {{ record.ope_value == null ? '-' : record.ope_value }}
+              {{ record.ope_value }}
             </template>
-            <template v-else-if="item.dataIndex === 'ass_type'" #cell="{ record }">
-              {{ record.ass_type == null ? '-' : getLabelByValue(data.ass, record.ass_type) }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ass_value'" #cell="{ record }">
-              {{ record.ass_value == null ? '-' : record.ass_value }}
-            </template>
+
             <template v-else-if="item.dataIndex === 'key_list'" #cell="{ record }">
               {{ record.key_list }}
             </template>
@@ -110,7 +105,7 @@
               />
             </template>
 
-            <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
+            <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
               <a-space direction="vertical">
                 <a-cascader
                   v-model="item.value"
@@ -126,7 +121,7 @@
                 />
               </a-space>
             </template>
-            <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
+            <template v-else-if="item.type === 'cascader' && item.label === '断言操作'">
               <a-space direction="vertical">
                 <a-cascader
                   v-model="item.value"
@@ -151,15 +146,7 @@
                 allow-clear
               />
             </template>
-            <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
-              <a-textarea
-                :auto-size="{ minRows: 4, maxRows: 7 }"
-                :placeholder="item.placeholder"
-                :default-value="item.value"
-                v-model="item.value"
-                allow-clear
-              />
-            </template>
+
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
               <a-radio-group
                 @change="changeStatus"
@@ -215,13 +202,14 @@
   } from '@/api/uitest'
   import { getSystemEnumUiElementOperation } from '@/api/system'
   import { useEnvironment } from '@/store/modules/get-environment'
+
   const pageData = usePageData()
   const uEnvironment = useEnvironment()
 
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const data = reactive({
+  const data: any = reactive({
     isAdd: false,
     updateId: 0,
     actionTitle: '添加测试对象',
@@ -243,13 +231,15 @@
     if (event === 0) {
       if (
         !formItems.some(
-          (item) => item.key === 'ele_name' || formItems.some((item) => item.key === 'ope_type')
+          (item) =>
+            item.key === 'ele_name' ||
+            formItems.some((item) => item.key === 'ope_key' && item.label == '元素操作')
         )
       ) {
         formItems.push(...eleForm)
       }
     } else if (event === 1) {
-      if (!formItems.some((item) => item.key === 'ass_type')) {
+      if (!formItems.some((item) => item.key === 'ope_key' && item.label == '断言操作')) {
         formItems.push(...assForm)
       }
     } else if (event === 2) {
@@ -269,14 +259,24 @@
     }
   }
 
-  function getLabelByValue(data: any, value: string): string {
-    const list = [...data]
-    for (const item of list) {
-      if (item.children) {
-        list.push(...item.children)
+  function getLabelByValue(type: any, value: string): string {
+    if (type === 0) {
+      const data_list = [...data.ope]
+      for (const item of data_list) {
+        if (item.children) {
+          data_list.push(...item.children)
+        }
       }
+      return data_list.find((item: any) => item.value === value)?.label
+    } else {
+      const data_list = [...data.ass]
+      for (const item of data_list) {
+        if (item.children) {
+          data_list.push(...item.children)
+        }
+      }
+      return data_list.find((item: any) => item.value === value)?.label
     }
-    return list.find((item: any) => item.value === value)?.label
   }
 
   function doAppend() {
@@ -318,12 +318,12 @@
   function onUpdate(item: any) {
     data.type = item.type
     changeStatus(item.type)
-    if (item.ope_type) {
-      upDataOpeValue(item.ope_type)
+    if (item.ope_key && item.type === 0) {
+      upDataOpeValue(item.ope_key)
     }
 
-    if (item.ass_type) {
-      upDataAssValue(item.ass_type)
+    if (item.ope_key && item.type === 1) {
+      upDataAssValue(item.ope_key)
     }
     data.actionTitle = '编辑详细步骤'
     data.isAdd = false
@@ -333,7 +333,7 @@
       formItems.forEach((it: any) => {
         const propName = item[it.key]
         if (typeof propName === 'object' && propName !== null) {
-          if (it.key === 'ope_value' || it.key === 'ass_value' || it.key === 'key_list') {
+          if (it.key === 'ope_value' || it.key === 'key_list') {
             it.value = JSON.stringify(propName)
           } else {
             it.value = propName.id
@@ -430,10 +430,10 @@
       Object.keys(parameter).forEach((key) => {
         parameter[key] = ''
       })
-      if (!formItems.some((item) => item.key === 'ass_value')) {
+      if (!formItems.some((item) => item.key === 'ope_value')) {
         formItems.push({
           label: '断言值',
-          key: 'ass_value',
+          key: 'ope_value',
           value: JSON.stringify(parameter),
           type: 'textarea',
           required: true,
@@ -450,6 +450,11 @@
             return true
           },
         })
+      } else {
+        const existingItem = formItems.find((item: any) => item.key === 'ope_value')
+        if (existingItem) {
+          existingItem.value = JSON.stringify(parameter)
+        }
       }
     }
   }
@@ -481,6 +486,11 @@
             return true
           },
         })
+      } else {
+        const existingItem = formItems.find((item: any) => item.key === 'ope_value')
+        if (existingItem) {
+          existingItem.value = JSON.stringify(parameter)
+        }
       }
     }
   }

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-04-29 12:11
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-04-29 12:11
 # @Author : 毛鹏
 import asyncio
 
@@ -49,9 +48,9 @@ class PlaywrightDeviceInput(BaseData):
         """直接输入文字"""
         await self.page.keyboard.insert_text(text)
 
-    async def w_keys(self, key: str):
+    async def w_keys(self, keyboard: str):
         """模拟按下指定的键"""
-        await self.page.keyboard.press(key)
+        await self.page.keyboard.press(keyboard)
 
     async def w_keyboard_delete_text(self, count: int):
         """删除光标左侧的字符"""

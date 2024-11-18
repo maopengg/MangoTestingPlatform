@@ -1,24 +1,20 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023/5/10 11:43
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023/5/10 11:43
 # @Author : 毛鹏
 import asyncio
 
-from src.enums.tools_enum import ClientTypeEnum, CacheKeyEnum
+from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
-from src.models.ui_model import PageStepsModel, WEBConfigModel, CaseModel
+from src.models.ui_model import PageStepsModel, CaseModel, PageObject, EquipmentModel
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_main import CaseMain
 from src.services.ui.service.page_steps import PageSteps
-from src.tools.data_processor.sql_cache import SqlCache
 from src.tools.decorator.convert_args import convert_args
 from src.tools.decorator.error_handle import async_error_handle
 
 
 class UIConsumer:
-    page_steps: PageSteps = None
-    case_run: CaseMain = None
     lock = asyncio.Lock()
 
     @classmethod
@@ -32,30 +28,29 @@ class UIConsumer:
         """
         try:
             async with cls.lock:
-                if cls.page_steps is None:
-                    cls.page_steps = PageSteps(data.project_product)
-                await cls.page_steps.page_steps_setup(data)
-                await cls.page_steps.page_steps_mian()
+                if PageObject.page_steps is None:
+                    PageObject.page_steps = PageSteps()
+                await PageObject.page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
                 code=error.code,
                 msg=error.msg,
-                is_notice=ClientTypeEnum.WEB.value
+                is_notice=ClientTypeEnum.WEB
             )
 
     @classmethod
     @async_error_handle()
-    @convert_args(WEBConfigModel)
-    async def u_page_new_obj(cls, data: WEBConfigModel):
+    @convert_args(EquipmentModel)
+    async def u_page_new_obj(cls, data: EquipmentModel):
         """
         实例化浏览器对象
         @param data:
         @return:
         """
         async with cls.lock:
-            if cls.page_steps is None:
-                cls.page_steps = PageSteps()
-            await cls.page_steps.new_web_obj(data)
+            if PageObject.page_steps is None:
+                PageObject.page_steps = PageSteps()
+            await PageObject.page_steps.new_web_obj(data)
 
     @classmethod
     @async_error_handle()
@@ -66,10 +61,7 @@ class UIConsumer:
         @param data:
         @return:
         """
-        if cls.case_run is None:
-            max_tasks = 5
-            test_case_parallelism = SqlCache.get_sql_cache(CacheKeyEnum.TEST_CASE_PARALLELISM.value)
-            if test_case_parallelism:
-                max_tasks = int(test_case_parallelism)
-            cls.case_run = CaseMain(max_tasks)
-        await cls.case_run.queue.put(data)
+        if PageObject.case_run is None:
+            max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
+            PageObject.case_run = CaseMain(max_tasks) if max_tasks is not None else CaseMain()
+        await PageObject.case_run.queue.put(data)

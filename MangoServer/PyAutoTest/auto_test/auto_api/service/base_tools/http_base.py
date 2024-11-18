@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 封装请求
+# @Project: 芒果测试平台# @Description: 封装请求
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import logging
 
-import requests
 import time
 from requests import Response
 from requests.exceptions import *
-
+from mangokit import requests
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.exceptions.api_exception import AgentError, UnknownError

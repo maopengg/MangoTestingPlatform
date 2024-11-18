@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoActuator
-# @Description: 
-# @Time   : 2023-08-28 21:23
+# @Project: 芒果测试平台
+# @Description: # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
 import os
@@ -13,30 +12,15 @@ from src.network.http.http_base import HttpBase
 from src.tools import InitPath
 from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
-from src.tools.other.path import Path
 
 
-class HttpClient(HttpBase):
-
-    @classmethod
-    def login(cls, username: str = None, password=None):
-        url = cls.url('/login')
-        data = {
-            'username': username,
-            'password': password,
-            'type': ClientTypeEnum.ACTUATOR.value
-        }
-        response = cls.post(url=url, data=data)
-        response_dict = response.json()
-        cls.headers['Authorization'] = response_dict['data']['token']
-        return response_dict
+class HttpClientApi(HttpBase):
 
     @classmethod
     def project_info(cls):
-        url = cls.url('/user/project/product/name')
+        url = cls.url('/user/project/product/name?client_type=1')
         response = cls.get(url=url, headers=cls.headers)
-        response_dict = response.json()
-        return response_dict
+        return response.json()
 
     @classmethod
     @request_log()
@@ -44,15 +28,13 @@ class HttpClient(HttpBase):
         url = cls.url(f'files/{file_name}')
         response = cls.get(url, headers=cls.headers)
         file_path = InitPath.upload_files
-        file_path = Path.ensure_path_sep(rf'{file_path}\{file_name}')
         try:
-            with open(file_path, 'wb') as f:
+            with open(fr'{file_path}\{file_name}', 'wb') as f:
                 f.write(response.content)
         except FileNotFoundError:
             raise FileNotError(*ERROR_MSG_0007)
 
     @classmethod
-    @request_log()
     def upload_file(cls, project_product_id: int, file_path: str, file_name: str):
         url = cls.url('/user/file')
         file_size = os.path.getsize(file_path)
@@ -72,10 +54,3 @@ class HttpClient(HttpBase):
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
-
-
-if __name__ == '__main__':
-    username1 = 'admin'
-    password1 = 'as123456'
-    HttpClient.login(username1, password1)
-    HttpClient.download_file('author.jpg')

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-02-17 21:39
 # @Author : 毛鹏
@@ -78,6 +78,5 @@ class ApiPublicViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def get_set_cache(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonParameters
         CommonParameters(request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0105, )

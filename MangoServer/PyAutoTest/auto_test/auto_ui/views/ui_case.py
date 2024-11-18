@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# @Project: MangoServer
+# @Project: 芒果测试平台
 # @Description: 
 # @Time   : 2023-03-25 18:53
 # @Author : 毛鹏
@@ -71,7 +71,7 @@ class UiCaseViews(ViewSet):
         """
         UiTestRun(
             request.user['id'],
-            request.GET.get("test_env")
+            request.query_params.get("test_env")
         ).case_batch([int(request.GET.get("case_id"))])
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
