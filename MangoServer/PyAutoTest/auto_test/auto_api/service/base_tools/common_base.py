@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 from typing import Optional
 from urllib.parse import urljoin
-from mangokit import DataProcessor
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
@@ -17,13 +16,14 @@ from PyAutoTest.models.apimodel import RequestDataModel
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
 from PyAutoTest.tools.database.mysql_control import MysqlConnect
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035, ERROR_MSG_0026
+from PyAutoTest.tools.obtain_test_data import ObtainTestData
 
 
-class CommonBase(DataProcessor):
+class CommonBase(ObtainTestData):
 
     def __init__(self):
         self.project_product_id = None
-        DataProcessor.__init__(self)
+        ObtainTestData.__init__(self)
         self.mysql_connect: Optional[None | MysqlConnect] = None
 
     def common_init(self, test_object: TestObject, project_product_id: int):

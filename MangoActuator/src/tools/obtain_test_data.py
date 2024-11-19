@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+# @Project: 芒果测试平台
+# @Description: 
+# @Time   : 2024-11-19 11:36
+# @Author : 毛鹏
+import os
+
+from mangokit import DataProcessor
+
+from src.exceptions import FileDoesNotEexistError, ERROR_MSG_0026
+from src.network import HTTP
+from src.tools import InitPath
+
+
+class ObtainTestData(DataProcessor):
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def get_file(cls, **kwargs) -> str:
+        """传入文件名称，返回文件"""
+        file_name = kwargs.get('data')
+        HTTP.download_file(file_name)
+        file_path = os.path.join(InitPath.upload_files, file_name)
+        if os.path.exists(file_path):
+            return file_path
+        else:
+            raise FileDoesNotEexistError(*ERROR_MSG_0026)
+
+
+if __name__ == '__main__':
+    pass

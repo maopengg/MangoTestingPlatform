@@ -7,7 +7,7 @@ import os
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal
-from mangokit import MysqlConnect, DataProcessor
+from mangokit import MysqlConnect
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
 
@@ -21,20 +21,7 @@ from src.models.tools_model import MysqlConingModel
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
 from src.network import HTTP
 from src.tools import InitPath
-
-
-class DataP(DataProcessor):
-    @classmethod
-    def get_file(cls, **kwargs) -> str:
-        """传入文件名称，返回文件"""
-        file_name = kwargs.get('data')
-        HTTP.download_file(file_name)
-        file_path = os.path.join(InitPath.upload_files, file_name)
-        if os.path.exists(file_path):
-            return file_path
-        else:
-            raise FileDoesNotEexistError(*ERROR_MSG_0026)
-
+from src.tools.obtain_test_data import ObtainTestData
 
 class BaseData(QObject):
     progress = Signal(object)
@@ -51,7 +38,7 @@ class BaseData(QObject):
 
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: Optional[DriverObject | None] = driver_object
-        self.data_processor = DataP()
+        self.data_processor = ObtainTestData()
         self.is_step: bool = False  # 判断是不是步骤，默认不是步骤是用例
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
