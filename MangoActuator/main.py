@@ -4,6 +4,7 @@
 # @Time   : 2023-03-05 11:34
 # @Author : 毛鹏
 import asyncio
+import os
 import traceback
 
 from PySide6.QtWidgets import QApplication
@@ -13,6 +14,13 @@ from src.handlers import InterfaceMethodReflection
 from src.pages.login.login_window import LoginLogic
 from src.tools import InitPath
 from src.tools.log_collector import log
+
+
+os.environ["QT_FONT_DPI"] = "96"
+
+
+# 4K
+# os.environ["QT_SCALE_FACTOR"] = "2"
 
 
 async def main():
