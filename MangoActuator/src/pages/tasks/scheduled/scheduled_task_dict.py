@@ -103,38 +103,38 @@ table_column = [
     {
         'key': 'type',
         'name': '任务类型',
-        'width': 140,
+        'width': 80,
         'option': AutoTestTypeEnum.get_option('value', 'label')
 
     },
     {
         'key': 'test_env',
         'name': '测试环境',
-        'width': 100,
+        'width': 80,
         'option': EnvironmentEnum.get_option('value', 'label')
     },
     {
         'key': 'case_people',
         'name': '负责人',
-        'width': 100
+        'width': 70
 
     },
     {
         'key': 'case_executor',
         'name': '执行器',
-        'width': 180
+        'width': 150
     },
     {
         'key': 'status',
         'name': '状态',
-        'width': 70,
+        'width': 50,
         'option': Status5Enum.get_option('value', 'label')
 
     },
     {
         'key': 'is_notice',
         'name': '通知',
-        'width': 70,
+        'width': 50,
         'option': Status5Enum.get_option('value', 'label')
     },
     {

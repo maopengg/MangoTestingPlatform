@@ -31,6 +31,9 @@ class LoginLogic(LoginWindow):
             self.prot_edit.setText(user_info[0].get("port"))
             self.username_edit.setText(user_info[0].get('username'))
             self.password_edit.setText(user_info[0].get('password'))
+        else:
+            self.ip_edit.setText('121.37.174.56')
+            self.prot_edit.setText('8000')
 
     @Slot()
     def on_pushButtonLogin_clicked(self):

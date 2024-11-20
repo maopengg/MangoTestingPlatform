@@ -80,7 +80,15 @@ class WindowLogic(MangoMain1Window):
             'tools': SmallToolsPage,
             'settings': SettingPage,
         }
-        super().__init__(STYLE, MENUS, page_dict, loop, page='home')
+        super().__init__(
+            STYLE,
+            MENUS,
+            page_dict,
+            loop,
+            page='home',
+            width_coefficient=0.7,
+            height_coefficient=0.815
+        )
         self.loop = loop
         self.user_info = UserModel()
         self.project_list = [FormDataModel(
