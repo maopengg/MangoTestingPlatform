@@ -144,7 +144,7 @@ class StepElements(ElementMain):
             """
         )
         if self.element_test_result:
-            file_name = f'失败截图-{self.element_model.name}{RandomTimeData.get_deta_hms()}.jpg'
+            file_name = f'失败截图-{self.element_model.name}{RandomTimeData.time_now_int()}.jpg'
             file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
             self.element_test_result.element_data.picture_path = f'files/{file_name}'
             self.page_step_result_model.element_result_list.append(self.element_test_result)
