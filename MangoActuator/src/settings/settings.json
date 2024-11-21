@@ -5,14 +5,6 @@
   "year": 2021,
   "theme_name": "mango",
   "custom_title_bar": true,
-  "startup_size": [
-    1200,
-    800
-  ],
-  "minimum_size": [
-    960,
-    640
-  ],
   "lef_menu_size": {
     "minimum": 50,
     "maximum": 240
@@ -25,11 +17,5 @@
   "right_column_size": {
     "minimum": 0,
     "maximum": 240
-  },
-  "time_animation": 500,
-  "font": {
-    "family": "微软雅黑",
-    "title_size": 11,
-    "text_size": 10
   }
 }
