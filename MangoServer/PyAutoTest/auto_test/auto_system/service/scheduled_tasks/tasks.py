@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
-import logging
 from threading import Thread
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -11,13 +10,12 @@ from apscheduler.triggers.cron import CronTrigger
 
 from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
 from PyAutoTest.auto_test.auto_system.models import ScheduledTasks, TasksRunCaseList, TimeTasks
-from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.retry import orm_retry
-
-log = logging.getLogger('system')
+from PyAutoTest.tools.log_collector import log
 
 
 class Tasks:
@@ -38,9 +36,6 @@ class Tasks:
     @classmethod
     @orm_retry('timing')
     def timing(cls, timing_strategy_id):
-        log.info(f'开始执行任务ID为：{timing_strategy_id}的用例')
-        # 执行数据库查询操作
-
         scheduled_tasks_obj = ScheduledTasks.objects.filter(timing_strategy=timing_strategy_id,
                                                             status=StatusEnum.SUCCESS.value)
         for scheduled_tasks in scheduled_tasks_obj:
@@ -65,10 +60,11 @@ class Tasks:
                         scheduled_tasks.case_executor,
                         True)
         else:
-            log.error('开始执行性能自动化任务')
+            log.system.error('开始执行性能自动化任务')
 
     @classmethod
     def distribute(cls, scheduled_tasks):
+        log.system.info(f'开始执行任务ID为：{scheduled_tasks}的用例')
         # scheduled_tasks: ScheduledTasks = scheduled_tasks
         if scheduled_tasks.type == AutoTestTypeEnum.API.value:
             task = Thread(
@@ -90,7 +86,7 @@ class Tasks:
                                                     ))
             task.start()
         else:
-            log.error('开始执行性能自动化任务')
+            log.system.error('开始执行性能自动化任务')
 
     @classmethod
     @orm_retry('api_task')
@@ -105,12 +101,12 @@ class Tasks:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
-                log.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
+                log.system.info(f'定时任务开始执行API用例，包含用例ID：{case_id_list}')
 
                 ApiCaseRun(test_env, is_notice=is_notice, user_obj=user_obj).case_batch(
                     case_id_list)
         except MangoServerError as error:
-            log.error(f'执行API定时任务失败，错误消息：{error.msg}')
+            log.system.error(f'执行API定时任务失败，错误消息：{error.msg}')
             if is_trigger:
                 raise error
 
@@ -129,15 +125,15 @@ class Tasks:
             run_case = TasksRunCaseList.objects.filter(task=scheduled_tasks_id).order_by('sort')
             case_id_list = [case.case for case in run_case]
             if case_id_list:
-                log.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')
-                UiTestRun(
+                log.system.info(f'定时任务开始执行UI用例，包含用例ID：{case_id_list}')
+                SendTestData(
                     user_id=user_id,
                     test_env=test_env,
                     case_executor=case_executor,
                     tasks_id=scheduled_tasks_id,
                     is_notice=is_notice,
-                ).case_batch(case_id_list)
+                ).test_case_batch(case_id_list)
         except MangoServerError as error:
-            log.error(f'执行UI定时任务失败，错误消息：{error.msg}')
+            log.system.error(f'执行UI定时任务失败，错误消息：{error.msg}')
             if is_trigger:
                 raise error

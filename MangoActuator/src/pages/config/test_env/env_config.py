@@ -7,7 +7,7 @@ import copy
 
 from mango_ui import *
 
-from src.models.network_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .env_config_dict import *

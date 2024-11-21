@@ -6,8 +6,7 @@ import copy
 import os
 
 from src.enums.tools_enum import ClientTypeEnum
-from src.exceptions.error_msg import ERROR_MSG_0007
-from src.exceptions.tools_exception import FileNotError
+from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
 from src.tools import InitPath
 from src.tools.decorator.request_log import request_log
@@ -32,7 +31,7 @@ class HttpClientApi(HttpBase):
             with open(fr'{file_path}\{file_name}', 'wb') as f:
                 f.write(response.content)
         except FileNotFoundError:
-            raise FileNotError(*ERROR_MSG_0007)
+            raise ToolsError(*ERROR_MSG_0007)
 
     @classmethod
     def upload_file(cls, project_product_id: int, file_path: str, file_name: str):

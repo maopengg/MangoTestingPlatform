@@ -9,8 +9,7 @@ from urllib.parse import urlparse
 from playwright._impl._errors import TimeoutError, Error
 from playwright.async_api import Locator
 
-from src.exceptions.error_msg import ERROR_MSG_0013, ERROR_MSG_0049, ERROR_MSG_0058
-from src.exceptions.ui_exception import UiTimeoutError, UrlError
+from src.exceptions import UiError, ERROR_MSG_0013, ERROR_MSG_0049, ERROR_MSG_0058
 from src.services.ui.bases.base_data import BaseData
 from src.tools import InitPath
 
@@ -28,13 +27,13 @@ class PlaywrightBrowser(BaseData):
         try:
             result = urlparse(url)
             if not all([result.scheme, result.netloc]):
-                raise UrlError(*ERROR_MSG_0049)
+                raise UiError(*ERROR_MSG_0049)
             await self.page.goto(url, timeout=60000)
             await asyncio.sleep(2)
         except TimeoutError:
-            raise UiTimeoutError(*ERROR_MSG_0013, value=(url,))
+            raise UiError(*ERROR_MSG_0013, value=(url,))
         except Error:
-            raise UiTimeoutError(*ERROR_MSG_0058, value=(url,))
+            raise UiError(*ERROR_MSG_0058, value=(url,))
 
     async def w_screenshot(self, path: str, full_page=True):
         """整个页面截图"""

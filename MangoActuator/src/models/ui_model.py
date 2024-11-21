@@ -3,9 +3,8 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
+from mangokit import MysqlConingModel
 from pydantic import BaseModel
-
-from src.models.tools_model import MysqlConingModel
 
 
 class EquipmentModel(BaseModel):
@@ -60,31 +59,26 @@ class StepsDataModel(BaseModel):
     page_step_details_name: str | None = None
 
 
-# class StepsModel(BaseModel):
-#     id: int | None = None
-#     name: str
-#     case_step_details_id: int | None
-#     project_product: int
-#     type: int
-#     url: str
-#     case_data: list[StepsDataModel] = []
-#     element_list: list[ElementModel] = []
-
-
-# class PageStepsModel(BaseModel):
-#     steps: StepsModel
-#     equipment_config: EquipmentModel
-#     environment_config: EnvironmentConfigModel
-#     public_data_list: list[UiPublicModel] = []
-class PageStepsModel(BaseModel):
-    id: int | None = None
+class StepsModel(BaseModel):
+    id: int
     name: str
-    case_step_details_id: int | None
     project_product: int
+    module_name: str
     type: int
     url: str
+    case_step_details_id: int | None = None
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
+
+
+class PageStepsModel(BaseModel):
+    id: int
+    name: str
+    project_product: int
+    module_name: str
+    type: int
+    url: str
+    steps: StepsModel
     equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
@@ -93,16 +87,16 @@ class PageStepsModel(BaseModel):
 class CaseModel(BaseModel):
     test_suite_id: int
     id: int
+    name: str
     project_product: int
     module_name: str
-    name: str
     case_people: str
     front_custom: list
     front_sql: list
     posterior_sql: list
-    steps: list[PageStepsModel]
-    # equipment_config: EquipmentModel
-    # environment_config: EnvironmentConfigModel
+    steps: list[StepsModel]
+    equipment_config: EquipmentModel
+    environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
 
 

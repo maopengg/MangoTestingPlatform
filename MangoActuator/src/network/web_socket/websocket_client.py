@@ -13,7 +13,7 @@ from websockets.exceptions import ConnectionClosedError
 from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.tools_enum import ClientTypeEnum, ClientNameEnum
-from src.models.network_model import SocketDataModel, QueueModel
+from src.models.socket_model import SocketDataModel, QueueModel
 from src.settings import settings
 from src.tools import InitPath
 from src.tools.log_collector import log

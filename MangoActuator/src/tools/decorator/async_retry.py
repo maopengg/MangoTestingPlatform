@@ -8,7 +8,7 @@ import functools
 
 import time
 
-from src.exceptions.ui_exception import UiError
+from src.exceptions import UiError
 
 
 # 定义装饰器，用于重试异步函数

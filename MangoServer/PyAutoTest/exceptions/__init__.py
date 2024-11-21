@@ -2,11 +2,9 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-07-07 10:14
 # @Author : 毛鹏
-import logging
 
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0011
-
-log = logging.getLogger('system')
+from PyAutoTest.exceptions.error_msg import *
+from PyAutoTest.tools.log_collector import log
 
 
 class MangoServerError(Exception):
@@ -15,11 +13,35 @@ class MangoServerError(Exception):
         if value:
             msg = msg.format(*value)
         if error and is_log:
-            log.error(f'报错提示：{msg}， 报错内容：{error}')
+            log.system.error(f'报错提示：{msg}， 报错内容：{error}')
         else:
-            log.error(f'报错提示：{msg}')
+            log.system.error(f'报错提示：{msg}')
         self.code = code
         self.msg = msg
+
+
+class UiError(MangoServerError):
+    pass
+
+
+class ApiError(MangoServerError):
+    pass
+
+
+class ToolsError(MangoServerError):
+    pass
+
+
+class PerfError(MangoServerError):
+    pass
+
+
+class SystemEError(MangoServerError):
+    pass
+
+
+class UserError(MangoServerError):
+    pass
 
 
 if __name__ == '__main__':

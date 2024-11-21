@@ -10,11 +10,8 @@ from requests.exceptions import *
 from mangokit import requests
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
-from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
+from PyAutoTest.exceptions import *
 from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
-from PyAutoTest.exceptions.error_msg import *
-
-log = logging.getLogger('api')
 
 
 class HTTPRequest:
@@ -38,14 +35,14 @@ class HTTPRequest:
             )
             end = time.time() - s
         except ProxyError:
-            raise AgentError(*ERROR_MSG_0001)
+            raise ApiError(*ERROR_MSG_0001)
         except SSLError:
-            raise AgentError(*ERROR_MSG_0001)
+            raise ApiError(*ERROR_MSG_0001)
         except Timeout:
-            raise UnknownError(*ERROR_MSG_0037)
+            raise ApiError(*ERROR_MSG_0037)
         except RequestException as error:
-            log.error(f'接口请求时发生未知错误，错误数据：{request_data.dict()}，报错内容：{error}')
-            raise UnknownError(*ERROR_MSG_0002)
+            log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.dict()}，报错内容：{error}')
+            raise ApiError(*ERROR_MSG_0002)
         try:
             response_json = response.json()
         except JSONDecodeError:

@@ -8,7 +8,7 @@ import uuid
 
 from mango_ui import *
 
-from src.models.network_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage

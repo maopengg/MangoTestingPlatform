@@ -3,9 +3,8 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-import logging
 import re
-from mangokit import ObtainRandomData
+
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -14,10 +13,8 @@ from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.redis.redis import Cache
-from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('system')
+from PyAutoTest.tools.view import *
+from mangokit import ObtainRandomData
 
 
 class SystemViews(ViewSet):

@@ -3,8 +3,6 @@
 # @Description: 项目表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
-import logging
-
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -13,13 +11,10 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.enums.system_enum import EnvironmentEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import *
 from ..models import Project, ProjectProduct, ProductModule
 from ...auto_system.models import TestObject
-
-log = logging.getLogger('user')
 
 
 class ProjectSerializers(serializers.ModelSerializer):

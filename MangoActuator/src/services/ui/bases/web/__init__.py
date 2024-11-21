@@ -10,8 +10,7 @@ from playwright.async_api._generated import Locator
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
-from src.exceptions.error_msg import *
-from src.exceptions.ui_exception import *
+from src.exceptions import *
 from src.models.ui_model import ElementModel, ElementResultModel
 from src.services.ui.bases.web.assertion import PlaywrightAssertion
 from src.services.ui.bases.web.browser import PlaywrightBrowser
@@ -38,14 +37,14 @@ class WebDevice(PlaywrightBrowser,
         try:
             await Mango.a_e(self, self.element_model.ope_key, self.element_model.ope_value)
         except TimeoutError as error:
-            raise UiTimeoutError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
+            raise UiError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
             await self.setup()
-            raise BrowserObjectClosed(*ERROR_MSG_0010)
+            raise UiError(*ERROR_MSG_0010)
         except Error as error:
-            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+            raise UiError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except ValueError as error:
-            raise UiTimeoutError(*ERROR_MSG_0012, error=error)
+            raise UiError(*ERROR_MSG_0012, error=error)
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
@@ -66,8 +65,7 @@ class WebDevice(PlaywrightBrowser,
             .get('expect') else None
         if is_method or is_method_public:
             if self.element_model.ope_value['actual'] is None:
-                raise ElementIsEmptyError(*ERROR_MSG_0031,
-                                          value=(self.element_model.name, self.element_model.loc))
+                raise UiError(*ERROR_MSG_0031, value=(self.element_model.name, self.element_model.loc))
         try:
             if is_method:
                 self.element_test_result.element_data.actual = '判断元素是什么'
@@ -82,18 +80,18 @@ class WebDevice(PlaywrightBrowser,
                     SqlAssertion.mysql_obj = self.mysql_connect
                     await SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
-                    raise UiSqlAssertionError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
+                    raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
         except AssertionError as error:
-            raise UiAssertionError(*ERROR_MSG_0017, error=error)
+            raise UiError(*ERROR_MSG_0017, error=error)
         except AttributeError as error:
-            raise UiAssertionError(*ERROR_MSG_0030, error=error)
+            raise UiError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
-            raise UiAssertionError(*ERROR_MSG_0018, error=error)
+            raise UiError(*ERROR_MSG_0018, error=error)
         except TargetClosedError:
             await self.setup()
-            raise BrowserObjectClosed(*ERROR_MSG_0010)
+            raise UiError(*ERROR_MSG_0010)
         except Error as error:
-            raise ElementLocatorError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
+            raise UiError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
         if 'actual' in self.element_model.ope_value:
             del self.element_model.ope_value['actual']
         self.element_test_result.element_data.ope_value = self.element_model.ope_value
@@ -110,31 +108,31 @@ class WebDevice(PlaywrightBrowser,
                 try:
                     count = await locator.count()
                 except Error as error:
-                    raise LocatorError(*ERROR_MSG_0041, )
+                    raise UiError(*ERROR_MSG_0041, )
 
                 if count > 0:
                     for nth in range(0, count):
                         ele_list.append(locator.nth(nth))
                 else:
-                    raise LocatorError(*ERROR_MSG_0023)
+                    raise UiError(*ERROR_MSG_0023)
 
             self.element_test_result.element_data.ele_quantity = len(ele_list)
             if not ele_list:
-                raise LocatorError(*ERROR_MSG_0023)
+                raise UiError(*ERROR_MSG_0023)
             # 这里需要进行调整
             if not ele_list and self.element_model.type == ElementOperationEnum.OPE.value:
-                raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
+                raise UiError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
             return ele_list[self.element_model.sub - 1] if self.element_model.sub else ele_list[0]
         else:
             locator: Locator = await self.__find_ele(self.page, locator_str)
             try:
                 count = await locator.count()
             except Error:
-                raise LocatorError(*ERROR_MSG_0041, )
+                raise UiError(*ERROR_MSG_0041, )
             self.element_test_result.element_data.ele_quantity = count
             if count < 1 or locator is None and self.element_model.type == ElementOperationEnum.OPE.value:
                 if self.element_model.type == ElementOperationEnum.OPE.value:
-                    raise ElementIsEmptyError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
+                    raise UiError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
             return locator.nth(self.element_model.sub - 1) if self.element_model.sub else locator
 
     async def __find_ele(self, page, loc) -> Locator:
@@ -146,7 +144,7 @@ class WebDevice(PlaywrightBrowser,
                     try:
                         return eval(f"page.{loc}")
                     except SyntaxError:
-                        raise LocatorError(*ERROR_MSG_0022)
+                        raise UiError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:
@@ -166,4 +164,4 @@ class WebDevice(PlaywrightBrowser,
             case ElementExpEnum.AIT_TEXT.value:
                 return page.get_by_alt_text(loc)
             case _:
-                raise LocatorError(*ERROR_MSG_0020)
+                raise UiError(*ERROR_MSG_0020)

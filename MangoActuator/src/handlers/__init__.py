@@ -12,7 +12,7 @@ from src.handlers.api_consumer import APIConsumer
 from src.handlers.perf_consumer import PerfConsumer
 from src.handlers.tools_consumer import ToolsConsumer
 from src.handlers.ui_consumer import UIConsumer
-from src.models.network_model import QueueModel
+from src.models.socket_model import QueueModel
 from src.models.user_model import UserModel
 from src.tools.log_collector import log
 

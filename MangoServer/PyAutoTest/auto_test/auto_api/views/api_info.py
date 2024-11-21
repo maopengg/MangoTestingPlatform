@@ -16,7 +16,7 @@ from PyAutoTest.auto_test.auto_api.service.api_import.import_api import ImportAp
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.models.apimodel import ResponseDataModel
+from PyAutoTest.models.api_model import ResponseDataModel
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData

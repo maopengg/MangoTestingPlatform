@@ -3,13 +3,10 @@
 # @Description: 
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
-import logging
 
 from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.auto_test.auto_system.views.cache_data import CacheDataCRUD
 from PyAutoTest.enums.system_enum import CacheValueTypeEnum
-
-log = logging.getLogger('system')
 
 
 class SystemConsumer:

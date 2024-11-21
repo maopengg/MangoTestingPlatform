@@ -3,43 +3,48 @@
 # @Description: 
 # @Time   : 2024-02-04 10:43
 # @Author : 毛鹏
-import os
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal
-from mangokit import MysqlConnect
+from mangokit import MysqlConnect, MysqlConingModel
 from playwright.async_api import Page, BrowserContext
 from uiautomator2 import Device
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import UiPublicTypeEnum
-from src.exceptions.error_msg import ERROR_MSG_0026
-from src.exceptions.error_msg import ERROR_MSG_0036, ERROR_MSG_0038
-from src.exceptions.tools_exception import FileDoesNotEexistError
-from src.exceptions.tools_exception import MysqlQueryIsNullError, SyntaxErrorError
-from src.models.tools_model import MysqlConingModel
-from src.models.ui_model import EnvironmentConfigModel, UiPublicModel
-from src.network import HTTP
-from src.tools import InitPath
+from src.exceptions import ToolsError, ERROR_MSG_0036, ERROR_MSG_0038
+from src.models.ui_model import EnvironmentConfigModel, UiPublicModel, EquipmentModel
 from src.tools.obtain_test_data import ObtainTestData
+
 
 class BaseData(QObject):
     progress = Signal(object)
     finished = Signal(object)
 
-    def __init__(self, driver_object) -> None:
+    def __init__(self,
+                 driver_object,
+                 project_product_id,
+                 equipment_config,
+                 environment_config,
+                 test_suite_id: int | None = None,
+                 case_id: int | None = None,
+                 case_step_details_id: int | None = None,
+                 page_step_id: int | None = None,
+                 is_step: bool = False) -> None:
         super().__init__()
-        self.test_suite_id: Optional[int | None] = None
-        self.case_id: Optional[int | None] = None
-        self.case_step_details_id: Optional[int | None] = None
-        self.page_step_id: Optional[int | None] = None
-        self.project_product_id: Optional[int | None] = None
-        self.environment_id: Optional[int | None] = None
+        self.project_product_id = project_product_id
+        self.test_suite_id: Optional[int | None] = test_suite_id
+        self.case_id: Optional[int | None] = case_id
+        self.case_step_details_id: Optional[int | None] = case_step_details_id
+        self.page_step_id: Optional[int | None] = page_step_id
+        self.is_step: bool = is_step
+        self.equipment_config: EquipmentModel = equipment_config
+        self.environment_config: EnvironmentConfigModel = environment_config
 
         from src.services.ui.bases.driver_object import DriverObject
-        self.driver_object: Optional[DriverObject | None] = driver_object
-        self.data_processor = ObtainTestData()
-        self.is_step: bool = False  # 判断是不是步骤，默认不是步骤是用例
+        self.driver_object: DriverObject = driver_object
+
+        self.test_case = ObtainTestData()
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
 
@@ -73,18 +78,18 @@ class BaseData(QObject):
     async def public_front(self, public_model: list[UiPublicModel]):
         for cache_data in public_model:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                self.data_processor.set_cache(cache_data.key, cache_data.value)
+                self.test_case.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
                 if self.mysql_connect:
-                    sql = self.data_processor.replace(cache_data.value)
+                    sql = self.test_case.replace(cache_data.value)
                     result_list: list[dict] = self.mysql_connect.condition_execute(sql)
                     if isinstance(result_list, list):
                         for result in result_list:
                             try:
                                 for value, key in zip(result, eval(cache_data.key)):
-                                    self.data_processor.set_cache(key, result.get(value))
+                                    self.test_case.set_cache(key, result.get(value))
                             except SyntaxError:
-                                raise SyntaxErrorError(*ERROR_MSG_0038)
+                                raise ToolsError(*ERROR_MSG_0038)
 
                         if not result_list:
-                            raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(sql,))
+                            raise ToolsError(*ERROR_MSG_0036, value=(sql,))

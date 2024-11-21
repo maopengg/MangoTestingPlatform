@@ -23,22 +23,30 @@ class PageSteps(StepElements):
 
     def __init__(self, ):
         self.driver_object = DriverObject()
-        super().__init__(self.driver_object)
+        super().__init__(
+            self.driver_object,
+            None,
+            None,
+            None,
+            None
+        )
         self.msg = ''
         self.page_step_model: Optional[PageStepsModel | None] = None
         self.lock = asyncio.Lock()
 
-    async def page_steps_setup(self, data: PageStepsModel):
-        self.page_step_model: PageStepsModel = data
+    async def page_init(self, data: PageStepsModel):
+        self.page_step_model = data
         self.project_product_id = data.project_product
+        self.equipment_config = data.equipment_config
+        self.environment_config = data.environment_config
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
     async def page_steps_mian(self, data: PageStepsModel) -> None:
-        await self.page_steps_setup(data)
+        await self.page_init(data)
         try:
             async with self.lock:
-                await self.steps_init(self.page_step_model)
+                await self.steps_init(self.page_step_model.steps)
                 await self.driver_init()
                 await self.steps_main()
         except MangoActuatorError as error:

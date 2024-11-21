@@ -4,9 +4,7 @@
 # @Author : 毛鹏
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
-from src.exceptions.error_msg import *
-from src.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
-from src.exceptions.ui_exception import *
+from src.exceptions import *
 from src.models.ui_model import ElementResultModel, ElementModel, ElementDataModel
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
@@ -48,7 +46,7 @@ class ElementMain(WebDevice, AndroidDriver):
         )
         try:
             for key, value in self.element_model:
-                value = self.data_processor.replace(value)
+                value = self.test_case.replace(value)
                 setattr(self.element_model, key, value)
         except MangoActuatorError as error:
             raise error
@@ -64,7 +62,7 @@ class ElementMain(WebDevice, AndroidDriver):
         elif self.element_model.type == ElementOperationEnum.CUSTOM.value:
             await self.__custom()
         else:
-            raise ElementTypeError(*ERROR_MSG_0015)
+            raise UiError(*ERROR_MSG_0015)
         self.element_test_result.element_data.status = StatusEnum.SUCCESS.value
 
     async def action_element(self):
@@ -102,17 +100,17 @@ class ElementMain(WebDevice, AndroidDriver):
                     # 清洗元素需要的数据
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
         except AttributeError:
-            raise ElementOpeNoneError(*ERROR_MSG_0027)
+            raise UiError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
         try:
             func_doc = getattr(self, self.element_model.ope_key).__doc__
         except AttributeError:
-            raise ElementOpeNoneError(*ERROR_MSG_0048)
+            raise UiError(*ERROR_MSG_0048)
         try:
             await self.action_element()
         except AttributeError:
-            raise ElementOpeNoneError(*ERROR_MSG_0054)
+            raise UiError(*ERROR_MSG_0054)
 
     async def __ass(self):
         for key, expect in self.element_model.ope_value.items():
@@ -135,12 +133,12 @@ class ElementMain(WebDevice, AndroidDriver):
                 for result in result_list:
                     try:
                         for value, key in zip(result, key_list):
-                            self.data_processor.set_cache(key, result.get(value))
+                            self.test_case.set_cache(key, result.get(value))
                     except SyntaxError:
-                        raise SyntaxErrorError(*ERROR_MSG_0038)
+                        raise ToolsError(*ERROR_MSG_0038)
 
                 if not result_list:
-                    raise MysqlQueryIsNullError(*ERROR_MSG_0036, value=(self.element_model.sql,))
+                    raise ToolsError(*ERROR_MSG_0036, value=(self.element_model.sql,))
 
     async def __custom(self):
         if self.is_step:
@@ -149,7 +147,7 @@ class ElementMain(WebDevice, AndroidDriver):
         else:
             key = self.element_data.get('key')
             value = self.element_data.get('value')
-        self.data_processor.set_cache(key, value)
+        self.test_case.set_cache(key, value)
 
     async def __find_element(self):
         if self.drive_type == DriveTypeEnum.WEB.value:
@@ -172,5 +170,5 @@ class ElementMain(WebDevice, AndroidDriver):
             for ele_name, case_data in self.element_data.items():
                 if ele_name == key:
                     value = case_data
-                    return self.data_processor.replace(value)
+                    return self.test_case.replace(value)
         return value

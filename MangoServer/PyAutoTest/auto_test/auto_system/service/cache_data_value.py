@@ -7,8 +7,7 @@ import json
 
 from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.enums.system_enum import CacheValueTypeEnum
-from PyAutoTest.exceptions.tools_exception import CacheKetNullError
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0038
+from PyAutoTest.exceptions import *
 
 
 class CacheDataValue:
@@ -18,7 +17,7 @@ class CacheDataValue:
         try:
             cache_data_obj = CacheData.objects.get(key=key)
         except CacheData.DoesNotExist:
-            raise CacheKetNullError(*ERROR_MSG_0038)
+            raise SystemEError(*ERROR_MSG_0038)
         if cache_data_obj.value_type == CacheValueTypeEnum.STR.value or cache_data_obj.value_type is None:
             return cache_data_obj.value
         elif cache_data_obj.value_type == CacheValueTypeEnum.INT.value:

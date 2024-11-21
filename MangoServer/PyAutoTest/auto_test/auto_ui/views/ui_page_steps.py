@@ -10,7 +10,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiPageStepsDetailed
-from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
@@ -70,17 +70,15 @@ class UiPageStepsViews(ViewSet):
         @param request:
         @return:
         """
-        is_send = request.GET.get("is_send", None)
+        is_send = request.GET.get("is_send", True)
         if is_send:
             is_send = bool(int(is_send))
-        else:
-            is_send = True
         try:
-            case_json = UiTestRun(
+            case_json = SendTestData(
                 request.user['id'],
                 request.GET.get("te"),
                 is_send=is_send) \
-                .steps(steps_id=int(request.GET.get("page_step_id")))
+                .test_steps(int(request.GET.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))

@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-01-08 15:51
 # @Author : 毛鹏
-import logging
 
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -14,10 +13,7 @@ from PyAutoTest.enums.system_enum import *
 from PyAutoTest.enums.tools_enum import *
 from PyAutoTest.enums.ui_enum import *
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import *
-
-log = logging.getLogger('system')
+from PyAutoTest.tools.view import *
 
 
 class EnumOptionViews(ViewSet):

@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRU
 from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.view.snowflake import Snowflake
 
 

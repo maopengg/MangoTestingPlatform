@@ -6,8 +6,7 @@
 import time
 from playwright.async_api import Locator, Error
 
-from src.exceptions.error_msg import ERROR_MSG_0024, ERROR_MSG_0056
-from src.exceptions.ui_exception import UploadElementInputError, MethodParameterError
+from src.exceptions import *
 from src.services.ui.bases.base_data import BaseData
 
 
@@ -28,7 +27,7 @@ class PlaywrightElement(BaseData):
         """获取元素文本"""
         value = await locating.inner_text()
         if set_cache_key:
-            self.data_processor.set_cache(key=set_cache_key, value=value)
+            self.test_case.set_cache(key=set_cache_key, value=value)
         return value
 
     @classmethod
@@ -41,7 +40,7 @@ class PlaywrightElement(BaseData):
                 for file in file_path:
                     await locating.set_input_files(file)
         except Error:
-            raise UploadElementInputError(*ERROR_MSG_0024)
+            raise UiError(*ERROR_MSG_0024)
 
     async def w_click_upload_files(self, locating: Locator, file_path: str | list):
         """点击并选择文件上传"""
@@ -68,7 +67,7 @@ class PlaywrightElement(BaseData):
         try:
             n = int(n)
         except ValueError:
-            raise MethodParameterError(*ERROR_MSG_0056)
+            raise UiError(*ERROR_MSG_0056)
         s = time.time()
         while True:
             await locating.click()
@@ -80,7 +79,7 @@ class PlaywrightElement(BaseData):
         try:
             n = int(n)
         except ValueError:
-            raise MethodParameterError(*ERROR_MSG_0056)
+            raise UiError(*ERROR_MSG_0056)
 
         box = await locating.bounding_box()
 
@@ -95,7 +94,7 @@ class PlaywrightElement(BaseData):
         try:
             n = int(n)
         except ValueError:
-            raise MethodParameterError(*ERROR_MSG_0056)
+            raise UiError(*ERROR_MSG_0056)
 
         box = await locating.bounding_box()
 
@@ -110,7 +109,7 @@ class PlaywrightElement(BaseData):
         try:
             n = int(n)
         except ValueError:
-            raise MethodParameterError(*ERROR_MSG_0056)
+            raise UiError(*ERROR_MSG_0056)
 
         box = await locating.bounding_box()
 
@@ -125,7 +124,7 @@ class PlaywrightElement(BaseData):
         try:
             n = int(n)
         except ValueError:
-            raise MethodParameterError(*ERROR_MSG_0056)
+            raise UiError(*ERROR_MSG_0056)
         box = await locating.bounding_box()
 
         if box:  # 检查元素是否可见

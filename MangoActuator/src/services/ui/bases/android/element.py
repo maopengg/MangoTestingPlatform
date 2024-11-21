@@ -8,8 +8,7 @@ import time
 from uiautomator2 import UiObject
 from uiautomator2.xpath import XPathSelector
 
-from src.exceptions.error_msg import ERROR_MSG_0043, ERROR_MSG_0044
-from src.exceptions.ui_exception import ElementNotFoundError, ElementNotDisappearError
+from src.exceptions import UiError, ERROR_MSG_0043, ERROR_MSG_0044
 from src.services.ui.bases.base_data import BaseData
 from src.tools.log_collector import log
 
@@ -65,7 +64,7 @@ class UiautomatorElement(BaseData):
         """获取元素文本"""
         value = locating.get_text()
         if set_cache_key:
-            self.data_processor.set_cache(key=set_cache_key, value=value)
+            self.test_case.set_cache(key=set_cache_key, value=value)
         return value
 
     @classmethod
@@ -88,13 +87,13 @@ class UiautomatorElement(BaseData):
     def a_wait(cls, locating: UiObject, time_):
         """等待元素出现"""
         if not locating.wait(timeout=time_):
-            raise ElementNotFoundError(*ERROR_MSG_0043)
+            raise UiError(*ERROR_MSG_0043)
 
     @classmethod
     def a_wait_gone(cls, locating: UiObject, time_):
         """等待元素消失"""
         if not locating.wait_gone(timeout=time_):
-            raise ElementNotDisappearError(*ERROR_MSG_0044)
+            raise UiError(*ERROR_MSG_0044)
 
     @classmethod
     def a_drag_to_ele(cls, locating: UiObject, locating2: UiObject):
@@ -130,6 +129,6 @@ class UiautomatorElement(BaseData):
         """提取元素坐标"""
         x, y = locating.center()
         if x_key and y_key:
-            self.data_processor.set_cache(key=x_key, value=x)
-            self.data_processor.set_cache(key=y_key, value=y)
+            self.test_case.set_cache(key=x_key, value=x)
+            self.test_case.set_cache(key=y_key, value=y)
         return x, y

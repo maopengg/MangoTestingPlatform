@@ -7,8 +7,7 @@
 import uiautomator2 as us
 from adbutils import AdbTimeout
 
-from src.exceptions.error_msg import ERROR_MSG_0042, ERROR_MSG_0045, ERROR_MSG_0047
-from src.exceptions.ui_exception import NewObjectError
+from src.exceptions import *
 from src.models.ui_model import EquipmentModel
 
 """
@@ -25,15 +24,15 @@ class NewAndroid:
 
     def new_android(self):
         if self.android_config is None:
-            raise NewObjectError(*ERROR_MSG_0042)
+            raise UiError(*ERROR_MSG_0042)
         android = us.connect(self.android_config.and_equipment)
 
         try:
             msg = f"设备启动成功！产品名称：{android.info.get('productName')}"
         except RuntimeError:
-            raise NewObjectError(*ERROR_MSG_0045, value=(self.android_config.equipment,))
+            raise UiError(*ERROR_MSG_0045, value=(self.android_config.equipment,))
         except (AdbTimeout, TimeoutError):
-            raise NewObjectError(*ERROR_MSG_0047, value=(self.android_config.equipment,))
+            raise UiError(*ERROR_MSG_0047, value=(self.android_config.equipment,))
         else:
             android.implicitly_wait(10)
             return android

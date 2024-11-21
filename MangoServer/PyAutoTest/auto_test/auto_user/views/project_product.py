@@ -12,13 +12,10 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_user.models import ProductModule
 from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import *
 from .project import ProjectSerializers
 from ..models import ProjectProduct
-
-log = logging.getLogger('user')
 
 
 class ProjectProductSerializers(serializers.ModelSerializer):

@@ -8,10 +8,7 @@ from uiautomator2.exceptions import XPathElementNotFoundError
 from uiautomator2.xpath import XPathSelector
 
 from src.enums.ui_enum import ElementExpEnum
-from src.exceptions.error_msg import ERROR_MSG_0022, ERROR_MSG_0020, ERROR_MSG_0032, ERROR_MSG_0012, ERROR_MSG_0050, \
-    ERROR_MSG_0031, ERROR_MSG_0017, ERROR_MSG_0030, ERROR_MSG_0018, ERROR_MSG_0019
-from src.exceptions.ui_exception import LocatorError, UiTimeoutError, ElementLocatorError, XpathElementNoError, \
-    ElementIsEmptyError, UiSqlAssertionError, UiAssertionError
+from src.exceptions import *
 from src.models.ui_model import ElementModel, ElementResultModel
 from src.services.ui.bases.android.application import UiautomatorApplication
 from src.services.ui.bases.android.assertion import UiautomatorAssertion
@@ -41,7 +38,7 @@ class AndroidDriver(UiautomatorEquipment,
                     else:
                         return eval(f"self.android{self.element_model.loc}")
                 except SyntaxError:
-                    raise LocatorError(*ERROR_MSG_0022)
+                    raise UiError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
                 return self.android.xpath(self.element_model.loc)
             case ElementExpEnum.BOUNDS.value:
@@ -53,7 +50,7 @@ class AndroidDriver(UiautomatorEquipment,
             case ElementExpEnum.RESOURCE_ID.value:
                 return self.android(resourceId=self.element_model.loc)
             case _:
-                raise LocatorError(*ERROR_MSG_0020)
+                raise UiError(*ERROR_MSG_0020)
 
     @retry(stop_max_attempt_number=10, wait_fixed=500)
     @sync_error_handle(True)
@@ -61,13 +58,13 @@ class AndroidDriver(UiautomatorEquipment,
         try:
             getattr(self, self.element_model.ope_key)(**self.element_model.ope_value)
         except ValueError as error:
-            raise UiTimeoutError(*ERROR_MSG_0012, error=error)
+            raise UiError(*ERROR_MSG_0012, error=error)
         # except NullPointerExceptionError as error:
         #     raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except UiObjectNotFoundError as error:
-            raise ElementLocatorError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
+            raise UiError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
         except XPathElementNotFoundError as error:
-            raise XpathElementNoError(*ERROR_MSG_0050, value=(self.element_model.name,), error=error, )
+            raise UiError(*ERROR_MSG_0050, value=(self.element_model.name,), error=error, )
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
@@ -89,8 +86,7 @@ class AndroidDriver(UiautomatorEquipment,
 
         if is_method or is_method_public:
             if self.element_model.ass_value['value'] is None:
-                raise ElementIsEmptyError(*ERROR_MSG_0031,
-                                          value=(self.element_model.name, self.element_model.loc))
+                raise UiError(*ERROR_MSG_0031, value=(self.element_model.name, self.element_model.loc))
 
         try:
             if is_method:
@@ -110,13 +106,13 @@ class AndroidDriver(UiautomatorEquipment,
                     SqlAssertion.mysql_obj = self.mysql_connect
                     SqlAssertion.sql_is_equal(**self.element_model.ass_value)
                 else:
-                    raise UiSqlAssertionError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
+                    raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
         except AssertionError as error:
-            raise UiAssertionError(*ERROR_MSG_0017, error=error)
+            raise UiError(*ERROR_MSG_0017, error=error)
         except AttributeError as error:
-            raise UiAssertionError(*ERROR_MSG_0030, error=error)
+            raise UiError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
-            raise UiAssertionError(*ERROR_MSG_0018, error=error)
+            raise UiError(*ERROR_MSG_0018, error=error)
         if 'value' in self.element_model.ass_value:
             del self.element_model.ass_value['value']
         self.element_test_result.ass_value = self.element_model.ass_value

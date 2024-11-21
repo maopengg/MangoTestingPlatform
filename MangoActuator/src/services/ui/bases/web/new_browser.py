@@ -23,8 +23,7 @@ from playwright.async_api._generated import Route
 from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
-from src.exceptions.error_msg import ERROR_MSG_0008, ERROR_MSG_0009, ERROR_MSG_0042, ERROR_MSG_0055
-from src.exceptions.ui_exception import BrowserPathError, NewObjectError, NoBrowserError
+from src.exceptions import *
 from src.models.api_model import ApiInfoModel
 from src.models.ui_model import EquipmentModel
 from src.network.web_socket.socket_api_enum import ApiSocketEnum
@@ -51,7 +50,7 @@ class NewBrowser:
 
     async def new_web_page(self) -> tuple[BrowserContext, Page]:
         if self.web_config is None:
-            raise NewObjectError(*ERROR_MSG_0042)
+            raise UiError(*ERROR_MSG_0042)
         if self.browser is None:
             async with self.lock:
                 if self.browser is None:
@@ -71,7 +70,7 @@ class NewBrowser:
         elif self.web_config.web_type == BrowserTypeEnum.WEBKIT.value:
             browser = self.playwright.webkit
         else:
-            raise BrowserPathError(*ERROR_MSG_0008)
+            raise UiError(*ERROR_MSG_0008)
         try:
             self.web_config \
                 .web_path = self.web_config \
@@ -90,7 +89,7 @@ class NewBrowser:
                     executable_path=self.web_config.web_path
                 )
         except Error:
-            raise BrowserPathError(*ERROR_MSG_0009, value=(self.web_config.web_path,))
+            raise UiError(*ERROR_MSG_0009, value=(self.web_config.web_path,))
 
     async def new_context(self) -> BrowserContext:
         args_dict = {
@@ -127,7 +126,7 @@ class NewBrowser:
                 if self.browser_path[self.web_config.web_type] in files:
                     return os.path.join(root, self.browser_path[self.web_config.web_type])
 
-        raise NoBrowserError(*ERROR_MSG_0055)
+        raise UiError(*ERROR_MSG_0055)
 
     async def __intercept_request(self, route: Route, request: Request):
         """
@@ -179,20 +178,7 @@ class NewBrowser:
 
 
 async def test_main():
-    r = NewBrowser(web_config=WEBConfigModel(**{
-        "browser_type": 0,
-        "browser_port": "9222",
-        "browser_path": None,
-        "is_headless": 0,
-        "is_header_intercept": False,
-        "host": "https://app-test.growknows.cn/",
-        "project_id": None,
-        'device': 'BlackBerry Z30 landscape'
-    }))
-    r = NewBrowser(web_config=WEBConfigModel(**{
-        'browser_type': 0, 'browser_port': None, 'browser_path': None, 'is_headless': None,
-        'is_header_intercept': False, 'device': 'Desktop Chrome', 'host_list': None
-    }))
+    r = NewBrowser()
     for i in range(10):
         context1, page1 = await r.new_web_page()
         await page1.goto('https://www.baidu.com/')

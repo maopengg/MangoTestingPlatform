@@ -9,14 +9,10 @@ from mangokit import ToolsError
 from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonBase
-from PyAutoTest.exceptions.api_exception import *
-from PyAutoTest.exceptions.error_msg import *
-from PyAutoTest.exceptions.tools_exception import CacheIsEmptyError
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.exceptions import *
+from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-
-log = logging.getLogger('api')
 
 
 class CaseMethod(CommonBase, PublicAssertion):
@@ -33,7 +29,7 @@ class CaseMethod(CommonBase, PublicAssertion):
                 if is_debug:
                     try:
                         value = self.replace(value)
-                    except CacheIsEmptyError:
+                    except ApiError:
                         pass
                 else:
                     value = self.replace(value)
@@ -72,7 +68,7 @@ class CaseMethod(CommonBase, PublicAssertion):
                     for i in res:
                         for key, value in i.items():
                             self.set_cache(key, value)
-                            log.info(f'前置sql写入的数据：{self.get_cache(key)}')
+                            log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
     def assertion(self, response: ResponseDataModel, case_detailed) -> None:
         if response.response_json:
@@ -81,9 +77,9 @@ class CaseMethod(CommonBase, PublicAssertion):
             try:
                 response_data = eval(response.response_text)
             except SyntaxError:
-                raise ResponseSyntaxError(*ERROR_MSG_0007)
+                raise ApiError(*ERROR_MSG_0007)
             except ValueError:
-                raise ResponseSyntaxError(*ERROR_MSG_0039)
+                raise ApiError(*ERROR_MSG_0039)
         self.ass_result = []
         if case_detailed.ass_response_value:
             self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
@@ -117,7 +113,7 @@ class CaseMethod(CommonBase, PublicAssertion):
                     for res_dict in res:
                         for key, value in res_dict.items():
                             self.set_cache(sql_obj.get('value'), str(value))
-                            log.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
+                            log.api.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
@@ -144,11 +140,11 @@ class CaseMethod(CommonBase, PublicAssertion):
                     method = i.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.warning(error)
+            log.api.warning(error)
             self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
-            raise ResponseValueAssError(*ERROR_MSG_0005)
+            raise ApiError(*ERROR_MSG_0005)
         except ToolsError as error:
-            raise ResponseValueAssError(error.code, error.msg)
+            raise ApiError(error.code, error.msg)
 
     @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
@@ -159,7 +155,7 @@ class CaseMethod(CommonBase, PublicAssertion):
                 for sql in sql_list:
                     actual = self.mysql_connect.condition_execute(self.replace(sql.get('actual')))
                     if not actual:
-                        raise SqlResultIsNoneError(*ERROR_MSG_0041)
+                        raise ApiError(*ERROR_MSG_0041)
                     if isinstance(actual, list):
                         _dict = {'actual': str(list(actual[0].values())[0])}
                     if sql.get('expect'):
@@ -167,17 +163,17 @@ class CaseMethod(CommonBase, PublicAssertion):
                     method = sql.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.warning(error)
+            log.api.warning(error)
             self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
-            raise SqlAssError(*ERROR_MSG_0006)
+            raise ApiError(*ERROR_MSG_0006)
 
     def __assertion_response_whole(self, actual, expect):
         try:
             self.ass_response_whole(actual, expect)
         except AssertionError as error:
-            log.warning(error)
+            log.api.warning(error)
             self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
-            raise ResponseWholeAssError(*ERROR_MSG_0004, value=(expect, actual))
+            raise ApiError(*ERROR_MSG_0004, value=(expect, actual))
 
     @classmethod
     def __merge_dicts(cls, base_dict, new_dict):

@@ -7,7 +7,7 @@ import os
 
 from mangokit import DataProcessor
 
-from src.exceptions import FileDoesNotEexistError, ERROR_MSG_0026
+from src.exceptions import ToolsError, ERROR_MSG_0026
 from src.network import HTTP
 from src.tools import InitPath
 
@@ -26,7 +26,7 @@ class ObtainTestData(DataProcessor):
         if os.path.exists(file_path):
             return file_path
         else:
-            raise FileDoesNotEexistError(*ERROR_MSG_0026)
+            raise ToolsError(*ERROR_MSG_0026)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@
 from mango_ui import ComboBoxDataModel, FormDataModel, response_message
 
 from src.enums.tools_enum import StatusEnum
-from src.models.network_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel
 from .case_dict import *
 from ...parent.table import TableParent

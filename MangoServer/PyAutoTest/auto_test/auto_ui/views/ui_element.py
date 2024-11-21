@@ -10,7 +10,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiElement
-from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -75,7 +75,7 @@ class UiElementViews(ViewSet):
         获取所有的页面名称
         """
         try:
-            UiTestRun(request.user.get('id'), request.data.get("test_env")).element(request.data)
+            SendTestData(request.user.get('id'), request.data.get("test_env")).test_element(request.data)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))

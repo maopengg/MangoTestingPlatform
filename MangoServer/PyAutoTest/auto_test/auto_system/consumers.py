@@ -4,9 +4,8 @@
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
 import json
-import logging
 from typing import Union, Optional, TypeVar
-from PyAutoTest.settings import DEBUG
+
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
@@ -14,11 +13,11 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_refle
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from PyAutoTest.enums.system_enum import SocketEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
-from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
+from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
+from PyAutoTest.settings import DEBUG
 
 T = TypeVar('T')
-log = logging.getLogger('system')
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -48,12 +47,13 @@ class ChatConsumer(WebsocketConsumer):
                     self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
                                      is_notice=ClientTypeEnum.WEB.value)
 
-                except SocketClientNotPresentError:
-                    self.inside_send(f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
+                except SystemEError:
+                    self.inside_send(
+                        f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
             SocketUser.set_user_client_obj(self.user, self)
 
         else:
-            log.error('请使用正确的链接域名访问！')
+            log.system.error('请使用正确的链接域名访问！')
 
     def websocket_receive(self, message):
         """
@@ -65,7 +65,7 @@ class ChatConsumer(WebsocketConsumer):
         try:
             msg = SocketDataModel(**json.loads(message.get('text')))
         except json.decoder.JSONDecodeError as e:
-            log.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
+            log.system.error(f'序列化数据失败，请检查客户端传递的消息：{e}，数据：{message.get("text")}')
         else:
             self.__serialize(msg)
             if msg.data:
@@ -88,7 +88,7 @@ class ChatConsumer(WebsocketConsumer):
             try:
                 self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！',
                                  is_notice=ClientTypeEnum.WEB.value)
-            except SocketClientNotPresentError:
+            except SystemEError:
                 pass
             raise StopConsumer()
 
@@ -107,7 +107,7 @@ class ChatConsumer(WebsocketConsumer):
                 else:
                     obj.send(send_data.model_dump_json())
                     if DEBUG:
-                        log.info(
+                        log.system.info(
                             f'发送的用户：{send_data.user}\n'
                             f'发送的客户端类型：{ClientTypeEnum.get_value(1)}\n'
                             f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
@@ -116,7 +116,7 @@ class ChatConsumer(WebsocketConsumer):
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
                 if DEBUG:
-                    log.info(
+                    log.system.info(
                         f'发送的用户：{send_data.user}\n'
                         f'发送的客户端类型：{ClientTypeEnum.get_value(2)}\n'
                         f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
@@ -148,8 +148,8 @@ class ChatConsumer(WebsocketConsumer):
         try:
             data_json = data.model_dump_json()
         except TypeError:
-            log.error(f'序列化数据错误，请检查发送数据！')
+            log.system.error(f'序列化数据错误，请检查发送数据！')
         else:
             if DEBUG:
-                log.debug(f"发送的数据：{data_json}")
+                log.system.debug(f"发送的数据：{data_json}")
             return data_json
