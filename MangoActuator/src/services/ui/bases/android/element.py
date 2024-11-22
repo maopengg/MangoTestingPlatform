@@ -2,7 +2,6 @@
 # @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
-import traceback
 
 import time
 from uiautomator2 import UiObject
@@ -10,7 +9,6 @@ from uiautomator2.xpath import XPathSelector
 
 from src.exceptions import UiError, ERROR_MSG_0043, ERROR_MSG_0044
 from src.services.ui.bases.base_data import BaseData
-from src.tools.log_collector import log
 
 
 class UiautomatorElement(BaseData):
@@ -19,11 +17,7 @@ class UiautomatorElement(BaseData):
     @classmethod
     def a_click(cls, locating: UiObject | XPathSelector):
         """元素单击"""
-        try:
-            locating.click()
-        except Exception as error:
-            traceback.print_exc()
-            log.error(str(error))
+        locating.click()
 
     @classmethod
     def a_double_click(cls, locating: UiObject):

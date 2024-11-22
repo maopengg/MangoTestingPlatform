@@ -54,6 +54,7 @@ class BaseData(QObject):
 
         self.package_name: Optional[str | None] = None
         self.android: Optional[Device | None] = None
+        self.android_info: Optional[dict | None] = None
 
     async def setup(self) -> None:
         self.url = None

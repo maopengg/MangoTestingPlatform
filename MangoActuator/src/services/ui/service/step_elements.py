@@ -114,12 +114,20 @@ class StepElements(ElementMain):
                 raise UiError(*ERROR_MSG_0010)
 
     def __android_init(self):
-        package_name = self.steps_model.test_object_value
+        package_name = self.environment_config.test_object_value
         if self.android is None:
             self.driver_object.android_config = self.equipment_config
             self.android = self.driver_object.new_android()
+            self.android_info = self.driver_object.info
+
+            self.a_press_home()
+            self.a_app_stop_all()
+            # if self.is_screen_locked():
+            #     raise UiError(*ERROR_MSG_0059)
+            # else:
+            #     print("屏幕处于解锁状态。")
+
         if self.android and self.package_name != package_name:
-            self.a_clear_app(package_name)
             self.a_start_app(package_name)
             self.package_name = package_name
 

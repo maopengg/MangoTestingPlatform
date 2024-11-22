@@ -16,11 +16,11 @@ class UiautomatorApplication(BaseData):
         """启动应用"""
         if not package_name:
             raise UiError(*ERROR_MSG_0046)
-        try:
-            self.android.app_start(package_name)
-            time.sleep(4)
-        except uiautomator2.exceptions.BaseError:
-            raise UiError(*ERROR_MSG_0046)
+        # try:
+        self.android.app_start(package_name)
+        time.sleep(4)
+        # except uiautomator2.exceptions.BaseError:
+        #     raise UiError(*ERROR_MSG_0046)
 
     def a_close_app(self, package_name: str):
         """关闭应用"""

@@ -48,6 +48,7 @@ form_data = [
         'title': '操作值',
         'placeholder': '请输入元素操作值',
         'key': 'ope_value',
+        'type': 5,
     },
 
 ]

@@ -2,7 +2,8 @@
 # @Project: 芒果测试平台# @Description:
 # @Time   : 2023-09-09 23:17
 # @Author : 毛鹏
-from retrying import retry
+import time
+
 from uiautomator2 import UiObject, UiObjectNotFoundError
 from uiautomator2.exceptions import XPathElementNotFoundError
 from uiautomator2.xpath import XPathSelector
@@ -17,7 +18,7 @@ from src.services.ui.bases.android.element import UiautomatorElement
 from src.services.ui.bases.android.equipment import UiautomatorEquipment
 from src.services.ui.bases.android.page import UiautomatorPage
 from src.tools.assertion.sql_assertion import SqlAssertion
-from src.tools.decorator.error_handle import sync_error_handle
+from src.tools.decorator.async_retry import sync_retry
 
 
 class AndroidDriver(UiautomatorEquipment,
@@ -28,7 +29,7 @@ class AndroidDriver(UiautomatorEquipment,
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
 
-    @retry(stop_max_attempt_number=10, wait_fixed=500)
+    @sync_retry
     def a_find_ele(self) -> UiObject | XPathSelector:
         match self.element_model.exp:
             case ElementExpEnum.LOCATOR.value:
@@ -52,8 +53,7 @@ class AndroidDriver(UiautomatorEquipment,
             case _:
                 raise UiError(*ERROR_MSG_0020)
 
-    @retry(stop_max_attempt_number=10, wait_fixed=500)
-    @sync_error_handle(True)
+    @sync_retry
     def a_action_element(self) -> None:
         try:
             getattr(self, self.element_model.ope_key)(**self.element_model.ope_value)
@@ -68,43 +68,43 @@ class AndroidDriver(UiautomatorEquipment,
         else:
             if 'locating' in self.element_model.ope_value:
                 del self.element_model.ope_value['locating']
-            self.element_test_result.ope_value = self.element_model.ope_value
+            self.element_test_result.element_data.ope_value = self.element_model.ope_value
             if self.element_model.sleep:
                 self.a_sleep(self.element_model.sleep)
 
-    @retry(stop_max_attempt_number=10, wait_fixed=500)
+    @sync_retry
     def a_assertion_element(self) -> None:
         is_method = callable(getattr(UiautomatorAssertion, self.element_model.ope_key, None))
         from src.tools.assertion import PublicAssertion
         is_method_public = callable(getattr(PublicAssertion, self.element_model.ope_key, None))
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
-        self.element_test_result.expect = self.element_model \
-            .ass_value \
+        self.element_test_result.element_data.expect = self.element_model \
+            .ope_value \
             .get('expect') if self.element_model \
-            .ass_value \
+            .ope_value \
             .get('expect') else None
 
         if is_method or is_method_public:
-            if self.element_model.ass_value['value'] is None:
+            if self.element_model.ope_value['value'] is None:
                 raise UiError(*ERROR_MSG_0031, value=(self.element_model.name, self.element_model.loc))
 
         try:
             if is_method:
-                self.element_test_result.actual = '判断元素是什么'
-                getattr(UiautomatorAssertion, self.element_model.ope_key)(**self.element_model.ass_value)
+                self.element_test_result.element_data.actual = '判断元素是什么'
+                getattr(UiautomatorAssertion, self.element_model.ope_key)(**self.element_model.ope_value)
             elif is_method_public:
-                if self.element_model.ass_value.get('value'):
-                    value = self.element_model.ass_value.get('value')
-                    self.element_test_result.actual = f'断言元素本身，元素：{str(value)}'
+                if self.element_model.ope_value.get('value'):
+                    value = self.element_model.ope_value.get('value')
+                    self.element_test_result.element_data.actual = f'断言元素本身，元素：{str(value)}'
                 else:
-                    value = self.a_get_text(self.element_model.ass_value['value'])
-                    self.element_test_result.actual = value
+                    value = self.a_get_text(self.element_model.ope_value['value'])
+                    self.element_test_result.element_data.actual = value
                 getattr(PublicAssertion, self.element_model.ope_key)(
-                    **{k: value if k == 'value' else v for k, v in self.element_model.ass_value.items()})
+                    **{k: value if k == 'value' else v for k, v in self.element_model.ope_value.items()})
             elif is_method_sql:
                 if self.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.mysql_connect
-                    SqlAssertion.sql_is_equal(**self.element_model.ass_value)
+                    SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
                     raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
         except AssertionError as error:
@@ -113,6 +113,6 @@ class AndroidDriver(UiautomatorEquipment,
             raise UiError(*ERROR_MSG_0030, error=error)
         except ValueError as error:
             raise UiError(*ERROR_MSG_0018, error=error)
-        if 'value' in self.element_model.ass_value:
-            del self.element_model.ass_value['value']
-        self.element_test_result.ass_value = self.element_model.ass_value
+        if 'value' in self.element_model.ope_value:
+            del self.element_model.ope_value['value']
+        self.element_test_result.element_data.ope_value = self.element_model.ope_value

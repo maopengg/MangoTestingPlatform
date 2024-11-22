@@ -4,6 +4,8 @@
 # @Time   : 2024-05-23 15:05
 # @Author : 毛鹏
 
+from typing import Optional
+
 import uiautomator2 as us
 from adbutils import AdbTimeout
 
@@ -21,12 +23,13 @@ class NewAndroid:
 
     def __init__(self, android_config: EquipmentModel = None):
         self.android_config = android_config
+        self.info: Optional[dict | None] = None
 
     def new_android(self):
         if self.android_config is None:
             raise UiError(*ERROR_MSG_0042)
         android = us.connect(self.android_config.and_equipment)
-
+        self.info = android.info
         try:
             msg = f"设备启动成功！产品名称：{android.info.get('productName')}"
         except RuntimeError:
