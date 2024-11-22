@@ -37,6 +37,7 @@ class LoginLogic(LoginWindow):
 
     @Slot()
     def on_pushButtonLogin_clicked(self):
+        self.login_but.setEnabled(False)
         settings.IP = self.ip_edit.text()
         settings.PORT = self.prot_edit.text()
         settings.USERNAME = self.username_edit.text()
@@ -64,8 +65,7 @@ class LoginLogic(LoginWindow):
             show_failed_message('IP或端口不正确')
         except ConnectionError:
             show_failed_message('IP或端口不正确或服务未启动')
-        # except TypeError:
-        #     show_failed_message('账号或密码错误!')
+        self.login_but.setEnabled(True)
 
     def register(self, ):
         settings.IP = self.ip_edit.text()
