@@ -81,8 +81,6 @@ class SendTestData:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             steps=[self.steps_model(i.page_step, i.id) for i in objects_filter],
-            equipment_config=self.__equipment_config(case.project_product.client_type),
-            environment_config=self.__environment_config(case.project_product_id),
             public_data_list=self.__public_data(case.project_product_id)
         )
 
@@ -125,14 +123,12 @@ class SendTestData:
                 url=page.url,
                 element_list=[self.element_model(element_obj, True, data)]
             ),
-            equipment_config=self.__equipment_config(page.project_product.client_type),
-            environment_config=self.__environment_config(page.project_product_id),
+
             public_data_list=self.__public_data(page.project_product_id)
         )
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
-    @classmethod
-    def steps_model(cls,
+    def steps_model(self,
                     page_steps: UiPageSteps,
                     case_step_details_id: int | None = None) -> StepsModel:
         page_steps_model = StepsModel(
@@ -143,6 +139,8 @@ class SendTestData:
             type=page_steps.project_product.client_type,
             url=page_steps.page.url,
             case_step_details_id=case_step_details_id,
+            equipment_config=self.__equipment_config(page_steps.project_product.client_type),
+            environment_config=self.__environment_config(page_steps.project_product.id),
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
@@ -151,7 +149,7 @@ class SendTestData:
         page_steps_element: list[UiPageStepsDetailed] = UiPageStepsDetailed \
             .objects.filter(page_step=page_steps.id).order_by('step_sort')
         for i in page_steps_element:
-            page_steps_model.element_list.append(cls.element_model(i))
+            page_steps_model.element_list.append(self.element_model(i))
         return page_steps_model
 
     @classmethod

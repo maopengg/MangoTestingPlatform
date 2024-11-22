@@ -32,14 +32,11 @@ class CaseSteps(StepElements):
             project_product_id=case_model.project_product,
             test_suite_id=case_model.test_suite_id,
             case_id=case_model.id,
-            equipment_config=case_model.equipment_config,
-            environment_config=case_model.environment_config,
         )
         self.case_model: CaseModel = case_model
         self.case_result = CaseResultModel(
             test_suite_id=self.test_suite_id,
             case_id=self.case_id,
-            environment_id=self.environment_config.id,
             case_name=self.case_model.name,
             module_name=self.case_model.module_name,
             case_people=self.case_model.case_people,
@@ -67,6 +64,7 @@ class CaseSteps(StepElements):
             for steps in self.case_model.steps:
                 try:
                     await self.steps_init(steps)
+                    self.case_result.environment_id = self.environment_config.id
                     await self.driver_init()
                     page_steps_result_model = await self.steps_main()
                     self.case_result \

@@ -28,6 +28,8 @@ class StepElements(ElementMain):
         self.steps_model = steps_model
         self.case_step_details_id = steps_model.case_step_details_id
         self.page_step_id = steps_model.id
+        self.environment_config = steps_model.environment_config
+        self.equipment_config = steps_model.equipment_config
 
         self.page_step_result_model = PageStepsResultModel(
             test_suite_id=self.test_suite_id,

@@ -26,8 +26,6 @@ class PageSteps(StepElements):
         super().__init__(
             self.driver_object,
             None,
-            None,
-            None,
             None
         )
         self.msg = ''

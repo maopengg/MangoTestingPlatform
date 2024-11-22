@@ -34,6 +34,9 @@ class WebDevice(PlaywrightBrowser,
 
     @async_retry
     async def web_action_element(self) -> None:
+        if self.element_model.name == "测试平台文字介绍":
+            pass
+        log.debug(f'元素操作：{self.element_model.model_dump()}')
         try:
             await Mango.a_e(self, self.element_model.ope_key, self.element_model.ope_value)
         except TimeoutError as error:

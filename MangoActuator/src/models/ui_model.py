@@ -69,7 +69,8 @@ class StepsModel(BaseModel):
     case_step_details_id: int | None = None
     case_data: list[StepsDataModel] = []
     element_list: list[ElementModel] = []
-
+    equipment_config: EquipmentModel
+    environment_config: EnvironmentConfigModel
 
 class PageStepsModel(BaseModel):
     id: int
@@ -95,8 +96,7 @@ class CaseModel(BaseModel):
     front_sql: list
     posterior_sql: list
     steps: list[StepsModel]
-    equipment_config: EquipmentModel
-    environment_config: EnvironmentConfigModel
+
     public_data_list: list[UiPublicModel] = []
 
 

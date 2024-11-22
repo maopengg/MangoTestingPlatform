@@ -7,7 +7,7 @@ import asyncio
 import functools
 
 import time
-from mangokit.exceptions import ToolsError as ToolsE
+from mangokit.exceptions import MangoKitError
 
 from src.exceptions import UiError, ToolsError
 
@@ -24,7 +24,7 @@ def async_retry(func):
                     return result
                 else:
                     break
-            except (UiError, ToolsError, ToolsE) as e:
+            except (UiError, ToolsError, MangoKitError) as e:
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
                     raise e
                 await asyncio.sleep(0.1)
@@ -43,7 +43,7 @@ def sync_retry(func):
                     return result
                 else:
                     break
-            except (UiError, ToolsError, ToolsE) as e:
+            except (UiError, ToolsError, MangoKitError) as e:
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
                     raise e
                 time.sleep(0.1)

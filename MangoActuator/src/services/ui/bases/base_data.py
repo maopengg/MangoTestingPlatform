@@ -24,8 +24,8 @@ class BaseData(QObject):
     def __init__(self,
                  driver_object,
                  project_product_id,
-                 equipment_config,
-                 environment_config,
+                 equipment_config: None = None,
+                 environment_config: None = None,
                  test_suite_id: int | None = None,
                  case_id: int | None = None,
                  case_step_details_id: int | None = None,
@@ -38,8 +38,8 @@ class BaseData(QObject):
         self.case_step_details_id: Optional[int | None] = case_step_details_id
         self.page_step_id: Optional[int | None] = page_step_id
         self.is_step: bool = is_step
-        self.equipment_config: EquipmentModel = equipment_config
-        self.environment_config: EnvironmentConfigModel = environment_config
+        self.equipment_config: Optional[EquipmentModel | None] = equipment_config
+        self.environment_config: Optional[EnvironmentConfigModel | None] = environment_config
 
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: DriverObject = driver_object

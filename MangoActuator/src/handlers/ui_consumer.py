@@ -62,6 +62,6 @@ class UIConsumer:
         @return:
         """
         if PageObject.case_run is None:
-            max_tasks = data.equipment_config.web_parallel
+            max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
             PageObject.case_run = CaseMain(max_tasks) if max_tasks is not None else CaseMain()
         await PageObject.case_run.queue.put(data)
