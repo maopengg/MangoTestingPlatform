@@ -12,7 +12,7 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -91,15 +91,12 @@ class PageStepsDetailedPage(SubPage):
         response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:
-            if PageObject.page_steps is None:
-                PageObject.page_steps = PageSteps()
-                PageObject.page_steps.progress.connect(self.update_card)
             data = PageStepsModel(**response_model.data)
-            # if settings.IS_DEBUG:
-            #     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
-            #         f.write(data.model_dump_json(indent=2))
+            if PageObject.test_page_steps is None:
+                PageObject.test_page_steps = TestPageSteps(data.project_product)
+                PageObject.test_page_steps.progress.connect(self.update_card)
             asyncio.run_coroutine_threadsafe(
-                PageObject.page_steps.page_steps_mian(data), self.parent.loop)
+                PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)
 
     def save_callback(self, data: dict, is_post: bool = False):
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
@@ -150,6 +147,7 @@ class PageStepsDetailedPage(SubPage):
             client_type = self.data.get('project_product').get('client_type')
             self.select_data = self.ope_select_data(int(data.value), client_type)
             return self.select_data
+
     @classmethod
     def ope_select_data(cls, ope_type: int, client_type):
         if ope_type == ElementOperationEnum.OPE.value:

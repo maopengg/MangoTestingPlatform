@@ -13,7 +13,7 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.models.ui_model import EquipmentModel, PageObject
 from src.models.user_model import UserModel
 from src.network import HTTP
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.methods import Methods
 from .equipment_dict import *
 from ...parent.table import TableParent
@@ -223,6 +223,6 @@ class EquipmentPage(TableParent):
 
     def launch_browser(self, data):
         equipment_model = EquipmentModel(type=data.get('type'), **data.get('config'))
-        if PageObject.page_steps is None:
-            PageObject.page_steps = PageSteps()
-        self.parent.loop.create_task(PageObject.page_steps.new_web_obj(equipment_model))
+        if PageObject.test_page_steps is None:
+            PageObject.test_page_steps = TestPageSteps(None)
+        self.parent.loop.create_task(PageObject.test_page_steps.new_web_obj(equipment_model))

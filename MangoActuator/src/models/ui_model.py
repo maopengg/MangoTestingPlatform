@@ -59,19 +59,6 @@ class StepsDataModel(BaseModel):
     page_step_details_name: str | None = None
 
 
-class StepsModel(BaseModel):
-    id: int
-    name: str
-    project_product: int
-    module_name: str
-    type: int
-    url: str
-    case_step_details_id: int | None = None
-    case_data: list[StepsDataModel] = []
-    element_list: list[ElementModel] = []
-    equipment_config: EquipmentModel
-    environment_config: EnvironmentConfigModel
-
 class PageStepsModel(BaseModel):
     id: int
     name: str
@@ -79,10 +66,13 @@ class PageStepsModel(BaseModel):
     module_name: str
     type: int
     url: str
-    steps: StepsModel
+    element_list: list[ElementModel] = []
     equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
+
     public_data_list: list[UiPublicModel] = []
+    case_step_details_id: int | None = None
+    case_data: list[StepsDataModel] = []
 
 
 class CaseModel(BaseModel):
@@ -95,7 +85,7 @@ class CaseModel(BaseModel):
     front_custom: list
     front_sql: list
     posterior_sql: list
-    steps: list[StepsModel]
+    steps: list[PageStepsModel]
 
     public_data_list: list[UiPublicModel] = []
 
@@ -156,5 +146,5 @@ class CaseResultModel(BaseModel):
 
 
 class PageObject:
-    page_steps = None
-    case_run = None
+    test_page_steps = None
+    case_flow = None

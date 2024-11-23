@@ -18,13 +18,13 @@ from src.models import queue_notification
 from src.models.ui_model import CaseModel, CaseResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
-from src.services.ui.service.step_elements import StepElements
+from src.services.ui.service.page_steps import PageSteps
 from src.tools import InitPath
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
 
-class CaseSteps(StepElements):
+class TestCase(PageSteps):
 
     def __init__(self, case_model: CaseModel, driver_object):
         super().__init__(
@@ -49,7 +49,7 @@ class CaseSteps(StepElements):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.base_close()
-        if self.driver_object.web_config and self.driver_object.web_config.web_recording:
+        if self.driver_object.web.config and self.driver_object.web.config.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_time_for_min()}.webm'
             shutil.move(self.case_result.video_path, os.path.join(f'{InitPath.videos}/', video_path))
             self.case_result.video_path = video_path
@@ -135,7 +135,7 @@ class CaseSteps(StepElements):
         await self.sava_videos()
 
     async def sava_videos(self):
-        if self.driver_object.web_config and self.driver_object.web_config.web_recording:
+        if self.driver_object.web.config and self.driver_object.web.config.web_recording:
             self.case_result.video_path = await self.page.video.path()  # 获取视频的路径
 
     def get_test_obj(self):

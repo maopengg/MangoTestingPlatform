@@ -50,7 +50,6 @@ form_data = [
         'key': 'ope_value',
         'type': 5,
     },
-
 ]
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 70, 'option': ElementOperationEnum.get_option('value', 'label')},

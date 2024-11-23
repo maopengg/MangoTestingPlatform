@@ -8,5 +8,8 @@ from src.services.ui.bases.android.new_android import NewAndroid
 from src.services.ui.bases.web.new_browser import NewBrowser
 
 
-class DriverObject(NewBrowser, NewAndroid):
-    pass
+class DriverObject:
+
+    def __init__(self):
+        self.web = NewBrowser()
+        self.android = NewAndroid()

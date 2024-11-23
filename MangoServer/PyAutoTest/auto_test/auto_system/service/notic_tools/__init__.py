@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel
+from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangokit.exceptions.exceptions import ToolsError
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult

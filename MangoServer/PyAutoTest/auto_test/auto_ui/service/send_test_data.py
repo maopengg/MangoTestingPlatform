@@ -69,7 +69,6 @@ class SendTestData:
     def test_case(self, case_id: int, test_suite_id) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-
         return CaseModel(
             test_suite_id=test_suite_id,
             id=case.id,
@@ -80,24 +79,12 @@ class SendTestData:
             front_custom=case.front_custom,
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
-            steps=[self.steps_model(i.page_step, i.id) for i in objects_filter],
+            steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
             public_data_list=self.__public_data(case.project_product_id)
         )
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
-        step = UiPageSteps.objects.get(id=steps_id)
-        page_steps_model = PageStepsModel(
-            id=step.id,
-            name=step.name,
-            project_product=step.project_product.id,
-            module_name=step.module.name,
-            type=step.project_product.client_type,
-            url=step.page.url,
-            steps=self.steps_model(step),
-            equipment_config=self.__equipment_config(step.project_product.client_type),
-            environment_config=self.__environment_config(step.project_product_id),
-            public_data_list=self.__public_data(step.project_product_id)
-        )
+        page_steps_model = self.steps_model(steps_id)
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
         return page_steps_model
 
@@ -114,33 +101,29 @@ class SendTestData:
             module_name=page.module.name,
             type=page.project_product.client_type,
             url=page.url,
-            steps=StepsModel(
-                id=page.id,
-                name=page.name,
-                project_product=page.project_product.id,
-                module_name=page.module.name,
-                type=page.project_product.client_type,
-                url=page.url,
-                element_list=[self.element_model(element_obj, True, data)]
-            ),
-
-            public_data_list=self.__public_data(page.project_product_id)
+            element_list=[self.element_model(element_obj, True, data)],
+            equipment_config=self.__equipment_config(page.project_product.client_type),
+            environment_config=self.__environment_config(page.project_product.id),
+            public_data_list=self.__public_data(page.project_product_id),
         )
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
     def steps_model(self,
-                    page_steps: UiPageSteps,
-                    case_step_details_id: int | None = None) -> StepsModel:
-        page_steps_model = StepsModel(
+                    page_steps_id: id,
+                    case_step_details_id: int | None = None) -> PageStepsModel:
+        page_steps = UiPageSteps.objects.get(id=page_steps_id)
+        page_steps_model = PageStepsModel(
             id=page_steps.id,
             name=page_steps.name,
             project_product=page_steps.project_product.id,
             module_name=page_steps.module.name,
             type=page_steps.project_product.client_type,
             url=page_steps.page.url,
-            case_step_details_id=case_step_details_id,
             equipment_config=self.__equipment_config(page_steps.project_product.client_type),
             environment_config=self.__environment_config(page_steps.project_product.id),
+            public_data_list=self.__public_data(page_steps.project_product_id),
+            case_step_details_id=case_step_details_id,
+
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:

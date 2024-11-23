@@ -12,7 +12,7 @@ from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
 
-class ElementMain(WebDevice, AndroidDriver):
+class ElementOperation(WebDevice, AndroidDriver):
     element_test_result: ElementResultModel = None
     element_model: ElementModel = None
     element_data: dict = None

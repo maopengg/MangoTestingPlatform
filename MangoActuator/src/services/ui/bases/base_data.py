@@ -54,18 +54,26 @@ class BaseData(QObject):
 
         self.package_name: Optional[str | None] = None
         self.android: Optional[Device | None] = None
-        self.android_info: Optional[dict | None] = None
 
     async def setup(self) -> None:
         self.url = None
         self.page = None
         self.context = None
 
+        self.package_name = None
+        self.android = None
+        self.mysql_connect = None
+        self.mysql_config = None
+        self.test_case = ObtainTestData()
+
     async def base_close(self):
         if self.context and isinstance(self.context, BrowserContext):
             await self.context.close()
         if self.page and isinstance(self.page, Page):
             await self.page.close()
+        if self.driver_object.android.example_dict:
+            for i in self.driver_object.android.example_dict:
+                pass
         if self.mysql_connect:
             self.mysql_connect.close()
 
