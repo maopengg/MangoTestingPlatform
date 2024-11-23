@@ -158,7 +158,7 @@ class SendTestData:
                 value=steps_element.value
             )
         else:
-            ElementModel(
+            return ElementModel(
                 id=steps_element.id,
                 type=data.get('type'),
                 name=steps_element.name,
@@ -166,8 +166,8 @@ class SendTestData:
                 exp=steps_element.exp,
                 sleep=steps_element.sleep,
                 sub=steps_element.sub,
-                ope_key=data['ope_type'] if data.get('ope_type') else data.get('ass_type'),
-                ope_value=data['ope_value'] if data.get('ope_value') else None,
+                ope_key=data['ope_key'],
+                ope_value=data['ope_value'],
                 is_iframe=steps_element.is_iframe,
             )
 

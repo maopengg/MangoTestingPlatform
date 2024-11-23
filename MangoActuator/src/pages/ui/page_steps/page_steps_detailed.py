@@ -114,13 +114,13 @@ class PageStepsDetailedPage(SubPage):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         client_type = self.data.get('project_product').get('client_type')
         if data.subordinate == 'ope_key':
-            self.select_data = self.ope_select_data(int(data.value), client_type)
+            self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
             if data.subordinate_input_object:
                 data.subordinate_input_object.set_select(self.select_data, True)
             return self.select_data
         elif data.subordinate == 'ope_value':
-            ope_value: dict = self.find_parameter_by_value(self.select_data, data.value)
-            if ope_value == {'locating': ''}:
+            ope_value: dict = GetClassMethod.find_parameter_by_value(self.select_data, data.value)
+            if ope_value == {'locating': ''} or ope_value == {}:
                 data.subordinate_input_object.setReadOnly(True)
             else:
                 data.subordinate_input_object.setReadOnly(False)
@@ -145,7 +145,7 @@ class PageStepsDetailedPage(SubPage):
     def subordinate_callback(self, data: FormDataModel):
         if data.subordinate == 'ope_key':
             client_type = self.data.get('project_product').get('client_type')
-            self.select_data = self.ope_select_data(int(data.value), client_type)
+            self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
             return self.select_data
 
     @classmethod

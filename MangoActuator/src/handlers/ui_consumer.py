@@ -31,7 +31,7 @@ class UIConsumer:
                 if PageObject.test_page_steps is None:
                     PageObject.test_page_steps = TestPageSteps(data.project_product)
                 else:
-                    TestPageSteps.test_page_steps.project_product_id = data.project_product
+                    PageObject.test_page_steps.project_product_id = data.project_product
                 await PageObject.test_page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
