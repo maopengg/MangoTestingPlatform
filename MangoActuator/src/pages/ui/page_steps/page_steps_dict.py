@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import Status3Enum, TaskEnum
 from src.tools.methods import Methods
 
 search_data = [
@@ -41,9 +41,9 @@ search_data = [
     {
         'title': '状态',
         'placeholder': '请选择步骤状态',
-        'key': 'type',
+        'key': 'status',
         'type': 1,
-        'select': Status3Enum.get_select()
+        'select': TaskEnum.get_select()
     }
 ]
 right_data = [
@@ -104,10 +104,10 @@ table_column = [
         'name': '顺序',
     },
     {
-        'key': 'type',
+        'key': 'status',
         'name': '状态',
         'width': 70,
-        'option': Status3Enum.get_option('value', 'label')
+        'option': TaskEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',

@@ -11,9 +11,9 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
-from PyAutoTest.auto_test.auto_ui.models import UiPageStepsDetailed, UiPageSteps
-from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
+from PyAutoTest.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
+from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
@@ -23,23 +23,23 @@ from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class UiPageStepsDetailedSerializers(serializers.ModelSerializer):
+class PageStepsDetailedSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiPageStepsDetailed
+        model = PageStepsDetailed
         fields = '__all__'
 
 
-class UiPageStepsDetailedSerializersC(serializers.ModelSerializer):
-    page_step = UiPageStepsSerializers(read_only=True)
-    ele_name = UiElementSerializers(read_only=True)
+class PageStepsDetailedSerializersC(serializers.ModelSerializer):
+    page_step = PageStepsSerializers(read_only=True)
+    ele_name = PageElementSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiPageStepsDetailed
+        model = PageStepsDetailed
         fields = '__all__'
 
     @staticmethod
@@ -50,14 +50,14 @@ class UiPageStepsDetailedSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class UiPageStepsDetailedCRUD(ModelCRUD):
+class PageStepsDetailedCRUD(ModelCRUD):
     """
         haha
     """
-    model = UiPageStepsDetailed
-    queryset = UiPageStepsDetailed.objects.all().order_by('step_sort')
-    serializer_class = UiPageStepsDetailedSerializersC
-    serializer = UiPageStepsDetailedSerializers
+    model = PageStepsDetailed
+    queryset = PageStepsDetailed.objects.all().order_by('step_sort')
+    serializer_class = PageStepsDetailedSerializersC
+    serializer = PageStepsDetailedSerializers
 
     @error_response('ui')
     def get(self, request: Request):
@@ -91,18 +91,18 @@ class UiPageStepsDetailedCRUD(ModelCRUD):
             else:
                 data['run_flow'] += i.ope_type if i.ope_type else '无元素操作'
         data['name'] = run[0].page_step.name
-        from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsCRUD
-        ui_case = UiPageStepsCRUD()
-        res = ui_case.serializer(instance=UiPageSteps.objects.get(pk=_id), data=data)
+        from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD
+        ui_case = PageStepsCRUD()
+        res = ui_case.serializer(instance=PageSteps.objects.get(pk=_id), data=data)
         if res.is_valid():
             res.save()
         else:
             log.ui.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
 
 
-class UiPageStepsDetailedView(ViewSet):
-    model = UiPageStepsDetailed
-    serializer_class = UiPageStepsDetailedSerializers
+class PageStepsDetailedView(ViewSet):
+    model = PageStepsDetailed
+    serializer_class = PageStepsDetailedSerializers
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
@@ -200,5 +200,5 @@ class UiPageStepsDetailedView(ViewSet):
             obj.step_sort = i['step_sort']
             page_step_id = obj.page_step.id
             obj.save()
-        UiPageStepsDetailedCRUD().callback(page_step_id)
+        PageStepsDetailedCRUD().callback(page_step_id)
         return ResponseData.success(RESPONSE_MSG_0020, )

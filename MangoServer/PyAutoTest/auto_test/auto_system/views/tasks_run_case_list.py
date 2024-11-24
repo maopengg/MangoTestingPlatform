@@ -12,10 +12,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_system.models import TasksRunCaseList
-from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import ScheduledTasksSerializers
+from PyAutoTest.auto_test.auto_system.models import TasksDetails
+from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import TasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializers
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
@@ -24,23 +24,23 @@ from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class TasksRunCaseListSerializers(serializers.ModelSerializer):
+class TasksDetailsSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = TasksRunCaseList
+        model = TasksDetails
         fields = '__all__'
 
 
-class TasksRunCaseListSerializersC(serializers.ModelSerializer):
+class TasksDetailsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    task = ScheduledTasksSerializers(read_only=True)
+    task = TasksSerializers(read_only=True)
     test_object = TestObjectSerializers(read_only=True)
 
     class Meta:
-        model = TasksRunCaseList
+        model = TasksDetails
         fields = '__all__'
 
     @staticmethod
@@ -51,26 +51,24 @@ class TasksRunCaseListSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class TasksRunCaseListCRUD(ModelCRUD):
-    model = TasksRunCaseList
-    queryset = TasksRunCaseList.objects.all()
-    serializer_class = TasksRunCaseListSerializersC
-    serializer = TasksRunCaseListSerializers
+class TasksDetailsCRUD(ModelCRUD):
+    model = TasksDetails
+    queryset = TasksDetails.objects.all()
+    serializer_class = TasksDetailsSerializersC
+    serializer = TasksDetailsSerializers
 
     @error_response('system')
     def get(self, request: Request):
         _type = request.GET.get('type')
-        books = self.model.objects.filter(task=request.GET.get('task_id')).order_by('sort')
+        books = self.model.objects.filter(task=request.GET.get('task_id'))
         data = []
         for i in books:
             _dict = model_to_dict(i)
             _dict['task'] = model_to_dict(i.task)
-            if i.test_object:
-                _dict['test_object'] = model_to_dict(i.test_object)
-            if int(_type) == AutoTestTypeEnum.UI.value and i.case:
-                _dict['case'] = UiCase.objects.get(id=i.case).name
-            elif int(_type) == AutoTestTypeEnum.API.value and i.case:
-                _dict['case'] = ApiCase.objects.get(id=i.case).name
+            if int(_type) == AutoTestTypeEnum.UI.value and i.case_id:
+                _dict['case_id'] = UiCase.objects.get(id=i.case_id).name
+            elif int(_type) == AutoTestTypeEnum.API.value and i.case_id:
+                _dict['case_id'] = ApiCase.objects.get(id=i.case_id).name
             data.append(_dict)
         return ResponseData.success(RESPONSE_MSG_0064, data)
 
@@ -78,7 +76,7 @@ class TasksRunCaseListCRUD(ModelCRUD):
     def post(self, request: Request):
         serializer = self.serializer(data=request.data)
         try:
-            existing_object = self.model.objects.get(task=request.data['task'], case=request.data['case'])
+            existing_object = self.model.objects.get(task=request.data['task'], case_id=request.data['case_id'])
             if existing_object:
                 return ResponseData.fail(RESPONSE_MSG_0112)
         except self.model.DoesNotExist:
@@ -91,9 +89,9 @@ class TasksRunCaseListCRUD(ModelCRUD):
                 return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 
-class TasksRunCaseListViews(ViewSet):
-    model = TasksRunCaseList
-    serializer_class = TasksRunCaseListSerializers
+class TasksDetailsViews(ViewSet):
+    model = TasksDetails
+    serializer_class = TasksDetailsSerializers
 
     @action(methods=['get'], detail=False)
     @error_response('system')
@@ -112,11 +110,11 @@ class TasksRunCaseListViews(ViewSet):
     def batch_set_cases(self, request: Request):
         case_id_list = request.data.get('case_id_list')
         scheduled_tasks_id = request.data.get('scheduled_tasks_id')
-        tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list('case')
+        tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list('case_id')
         tasks_run_case_list = [i[0] for i in list(tasks_run_case_list)]
         for case_id in case_id_list:
             if case_id not in tasks_run_case_list:
-                serializer = self.serializer_class(data={'task': scheduled_tasks_id, 'case': case_id})
+                serializer = self.serializer_class(data={'task': scheduled_tasks_id, 'case_id': case_id})
                 if serializer.is_valid():
                     serializer.save()
                 else:

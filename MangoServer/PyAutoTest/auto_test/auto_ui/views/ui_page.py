@@ -9,34 +9,34 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiPage, UiElement
-from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_ui.models import Page, PageElement
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class UiPageSerializers(serializers.ModelSerializer):
+class PageSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiPage
+        model = Page
         fields = '__all__'  # 全部进行序列化
         # fields = ['project']  # 选中部分进行序列化
         # exclude = ['name']  # 除了这个字段，其他全序列化
 
 
-class UiPageSerializersC(serializers.ModelSerializer):
+class PageSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     module = ProductModuleSerializers(read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
-        model = UiPage
+        model = Page
         fields = '__all__'
 
     @staticmethod
@@ -47,17 +47,17 @@ class UiPageSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class UiPageCRUD(ModelCRUD):
-    model = UiPage
-    queryset = UiPage.objects.all()
-    serializer_class = UiPageSerializersC
+class PageCRUD(ModelCRUD):
+    model = Page
+    queryset = Page.objects.all()
+    serializer_class = PageSerializersC
     # post专用序列化器
-    serializer = UiPageSerializers
+    serializer = PageSerializers
 
 
-class UiPageViews(ViewSet):
-    model = UiPage
-    serializer_class = UiPageSerializers
+class PageViews(ViewSet):
+    model = Page
+    serializer_class = PageSerializers
 
     @action(methods=['GET'], detail=False)
     @error_response('ui')
@@ -67,9 +67,9 @@ class UiPageViews(ViewSet):
         """
         module_id = request.query_params.get('module_id')
         if module_id:
-            res = UiPage.objects.filter(module=module_id).values_list('id', 'name')
+            res = Page.objects.filter(module=module_id).values_list('id', 'name')
         else:
-            res = UiPage.objects.all().values_list('id', 'name')
+            res = Page.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         if data:
             return ResponseData.success(RESPONSE_MSG_0052, data)
@@ -80,9 +80,9 @@ class UiPageViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('ui')
     def page_copy(self, request: Request):
-        from PyAutoTest.auto_test.auto_ui.views.ui_element import UiElementSerializers
+        from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
         page_id = request.data.get('page_id')
-        page_obj = UiPage.objects.get(id=page_id)
+        page_obj = Page.objects.get(id=page_id)
         page_obj = model_to_dict(page_obj)
         page_id = page_obj['id']
         page_obj['name'] = '(副本)' + page_obj['name']
@@ -90,12 +90,12 @@ class UiPageViews(ViewSet):
         serializer = self.serializer_class(data=page_obj)
         if serializer.is_valid():
             serializer.save()
-            page_elements = UiElement.objects.filter(page=page_id)
+            page_elements = PageElement.objects.filter(page=page_id)
             for i in page_elements:
                 page_element = model_to_dict(i)
                 del page_element['id']
                 page_element['page'] = serializer.data['id']
-                page_element_serializer = UiElementSerializers(data=page_element)
+                page_element_serializer = PageElementSerializers(data=page_element)
                 if page_element_serializer.is_valid():
                     page_element_serializer.save()
                 else:

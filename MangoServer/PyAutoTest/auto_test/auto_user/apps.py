@@ -42,7 +42,7 @@ class AutoUserConfig(AppConfig):
             from PyAutoTest.auto_test.auto_user.models import User
             if not User.objects.exists():
                 User.objects.create(
-                    nickname="admin",
+                    name="admin",
                     username="admin",
                     password="e10adc3949ba59abbe56e057f20f883e",
                 )

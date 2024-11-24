@@ -6,15 +6,15 @@
 
 from django.urls import path
 
-from .views.file_data import FileDataCRUD
-from .views.product_module import ProductModuleViews, ProductModuleCRUD
-from .views.project import ProjectCRUD, ProjectViews
+from PyAutoTest.auto_test.auto_system.views.file_data import FileDataCRUD
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
+from PyAutoTest.auto_test.auto_system.views.project import ProjectCRUD, ProjectViews
 # from .views.project_file import ProjectFileViews
-from .views.project_product import ProjectProductCRUD, ProjectProductViews
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
-from .views.test_object import TestObjectCRUD, TestObjectViews
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
     #
@@ -42,7 +42,7 @@ urlpatterns = [
     path("user/logs", UserLogsCRUD.as_view()),
     #
     path("info", UserCRUD.as_view()),
-    path("nickname", UserViews.as_view({'get': 'get_nickname'})),
+    path("name", UserViews.as_view({'get': 'get_name'})),
     path("project/put", UserViews.as_view({'put': 'put_project'})),
     path("environment", UserViews.as_view({'put': 'put_environment'})),
     path("password", UserViews.as_view({'put': 'put_password'})),

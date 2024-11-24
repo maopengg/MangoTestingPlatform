@@ -7,7 +7,7 @@ form_data = [
     {
         'title': '用户昵称',
         'placeholder': '请输入用户昵称',
-        'key': 'nickname',
+        'key': 'name',
     },
     {
         'title': '用户账号',

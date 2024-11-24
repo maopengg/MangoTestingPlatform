@@ -8,6 +8,14 @@ from typing import Any
 from pydantic import BaseModel
 
 
+class ApiCaseModel(BaseModel):
+    test_suite: int
+    case_id: int
+    test_env: int
+    user_id: int
+    tasks_id: int
+
+
 class RequestDataModel(BaseModel):
     method: str | None
     url: str | None
@@ -42,11 +50,6 @@ class RequestModel(BaseModel):
     header: str | None
     body_type: int = None
     body: dict | str = None
-
-
-class ApiCaseGroupModel(BaseModel):
-    group_name: str
-    case_group_list: list[RequestModel]
 
 
 class PublicModel(BaseModel):

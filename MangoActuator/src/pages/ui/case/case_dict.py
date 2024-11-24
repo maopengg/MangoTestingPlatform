@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.system_enum import CaseLevelEnum
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import TaskEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 
@@ -40,7 +40,7 @@ search_data = [
         'placeholder': '请选择步骤状态',
         'key': 'status',
         'type': 1,
-        'select': Status3Enum.get_select()
+        'select': TaskEnum.get_select()
     }
 ]
 right_data = [
@@ -80,7 +80,7 @@ form_data = [
         'placeholder': '请设置用例负责人',
         'key': 'case_people',
         'type': 1,
-        'select': HTTP.get_nickname
+        'select': HTTP.get_name
     },
 
 ]
@@ -126,7 +126,7 @@ table_column = [
         'key': 'status',
         'name': '结果',
         'width': 100,
-        'option': Status3Enum.get_option('value', 'label')
+        'option': TaskEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',

@@ -12,7 +12,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 
 
-class ApiInfoRun(CaseMethod):
+class TestApiInfo(CaseMethod):
 
     def __init__(self, test_env: int, api_info_id: int):
         super().__init__()

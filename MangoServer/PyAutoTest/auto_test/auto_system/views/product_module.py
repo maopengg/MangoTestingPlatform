@@ -8,8 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProductModule
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializers
+from PyAutoTest.auto_test.auto_system.models import ProductModule
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData

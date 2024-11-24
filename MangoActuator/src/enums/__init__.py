@@ -29,7 +29,7 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_value(cls, key: int):
-        return cls.obj().get(key)
+        return cls.obj().get(int(key))
 
     @classmethod
     def get_key(cls, value):

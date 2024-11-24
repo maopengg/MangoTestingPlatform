@@ -9,8 +9,8 @@ from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import FileData, ProjectProduct
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_system.models import FileData, ProjectProduct
+from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view import *

@@ -10,7 +10,8 @@ table_column = [
     {'key': 'create_time', 'name': '创建时间', 'width': 150},
     {'key': 'update_time', 'name': '更新时间', 'width': 150},
     {'key': 'name', 'name': '模块名称', },
-    {'key': 'superior_module', 'name': '上级模块(一级模块)', 'width': 150},
+    {'key': 'superior_module_1', 'name': '一级模块模块名称', 'width': 150},
+    {'key': 'superior_module_2', 'name': '二级模块模块名称', 'width': 150},
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [
@@ -27,14 +28,20 @@ field_list = [
 ]
 form_data = [
     {
+        'title': '一级模块模块名称',
+        'placeholder': '请输入一级模块模块名称',
+        'key': 'superior_module_1',
+        'required': False,
+    },
+    {
+        'title': '二级模块模块名称',
+        'placeholder': '请输入二级模块模块名称',
+        'key': 'superior_module_2',
+        'required': False,
+    },
+    {
         'title': '模块名称',
         'placeholder': '请输入模块名称',
         'key': 'name',
     },
-    {
-        'title': '上级模块',
-        'placeholder': '请输入上级模块名称',
-        'key': 'superior_module',
-        'required': False,
-    }
 ]

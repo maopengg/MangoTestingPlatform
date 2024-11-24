@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_api.service.base_tools.dependence import CaseMeth
 from PyAutoTest.auto_test.auto_api.service.base_tools.test_result import TestResult
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
-from PyAutoTest.auto_test.auto_user.models import TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.tools.factory import func_test_object_value
 from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, AutoTypeEnum

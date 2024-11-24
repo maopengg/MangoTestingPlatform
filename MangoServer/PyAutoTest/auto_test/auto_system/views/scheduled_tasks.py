@@ -8,57 +8,59 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.models import ScheduledTasks
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
+from PyAutoTest.auto_test.auto_system.models import Tasks
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import RunTasks
+from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
-from PyAutoTest.auto_test.auto_user.views.test_object import TestObjectSerializersC
+from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class ScheduledTasksSerializers(serializers.ModelSerializer):
+class TasksSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = ScheduledTasks
+        model = Tasks
         fields = '__all__'
 
 
-class ScheduledTasksSerializersC(serializers.ModelSerializer):
+class TasksSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project = ProjectSerializers(read_only=True)
     test_obj = TestObjectSerializersC(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
 
     class Meta:
-        model = ScheduledTasks
+        model = Tasks
         fields = '__all__'
 
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
+            'project',
             'test_obj',
             'timing_strategy',
             'case_people')
         return queryset
 
 
-class ScheduledTasksCRUD(ModelCRUD):
-    model = ScheduledTasks
-    queryset = ScheduledTasks.objects.all()
-    serializer_class = ScheduledTasksSerializersC
-    serializer = ScheduledTasksSerializers
+class TasksCRUD(ModelCRUD):
+    model = Tasks
+    queryset = Tasks.objects.all()
+    serializer_class = TasksSerializersC
+    serializer = TasksSerializers
 
 
-class ScheduledTasksViews(ViewSet):
-    model = ScheduledTasks
-    serializer_class = ScheduledTasksSerializers
+class TasksViews(ViewSet):
+    model = Tasks
+    serializer_class = TasksSerializers
 
     @action(methods=['put'], detail=False)
     @error_response('system')
@@ -95,19 +97,18 @@ class ScheduledTasksViews(ViewSet):
         :return:
         """
         case_type = request.query_params.get('case_type')
-        scheduled_tasks_list = self.model.objects.filter(type=case_type).values_list('id', 'name')
-        data = [{'key': _id, 'title': name} for _id, name in scheduled_tasks_list]
+        _tasks_list = self.model.objects.filter(type=case_type).values_list('id', 'name')
+        data = [{'key': _id, 'title': name} for _id, name in _tasks_list]
         return ResponseData.success(RESPONSE_MSG_0099, data)
 
 
-class ScheduledTasksNoPermissionViews(ViewSet):
-    model = ScheduledTasks
-    serializer_class = ScheduledTasksSerializers
+class TasksNoPermissionViews(ViewSet):
+    model = Tasks
+    serializer_class = TasksSerializers
     authentication_classes = []
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def trigger_timing(self, request: Request):
-        Tasks.trigger(request.query_params.get('id'))
+        RunTasks.trigger(request.query_params.get('id'))
         return ResponseData.success(RESPONSE_MSG_0100)
-

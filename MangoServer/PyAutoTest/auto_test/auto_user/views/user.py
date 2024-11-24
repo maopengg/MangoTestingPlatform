@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 from datetime import datetime
 
+from django.forms import model_to_dict
+from mangokit import EncryptionTool
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -13,14 +15,12 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.service.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
-from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from mangokit import EncryptionTool
 
 
 class UserSerializers(serializers.ModelSerializer):
@@ -74,41 +74,34 @@ class UserViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('user')
-    def get_nickname(self, request: Request):
+    def get_name(self, request: Request):
         """
         获取用户名称
         :param request:
         :return:
         """
-        res = User.objects.values_list('id', 'nickname')
+        res = User.objects.values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0033, data)
 
     @action(methods=['put'], detail=False)
     @error_response('user')
     def put_project(self, request: Request):
-        serializer = self.serializer(instance=self.model.objects.get(
-            id=request.data.get('id')),
-            data={'selected_project': request.data.get('selected_project')})
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseData.success(RESPONSE_MSG_0034, serializer.data)
 
-        else:
-            return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
+        user = self.model.objects.get(id=request.data.get('id'))
+        user.selected_project = request.data.get('selected_project')
+        user.save()
+        return ResponseData.success(RESPONSE_MSG_0034, model_to_dict(user, exclude=['password']))
+        # return ResponseData.fail(RESPONSE_MSG_0035, serializer.errors)
 
     @action(methods=['put'], detail=False)
     @error_response('user')
     def put_environment(self, request: Request):
-        serializer = self.serializer(instance=self.model.objects.get(
-            id=request.data.get('id')),
-            data={'selected_environment': request.data.get('selected_environment')})
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseData.success(RESPONSE_MSG_0036, serializer.data)
-
-        else:
-            return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
+        user = self.model.objects.get(id=request.data.get('id'))
+        user.selected_environment = request.data.get('selected_environment')
+        user.save()
+        return ResponseData.success(RESPONSE_MSG_0036, model_to_dict(user, exclude=['password']))
+        # return ResponseData.fail(RESPONSE_MSG_0037, serializer.errors)
 
     @action(methods=['get'], detail=False)
     @error_response('user')
@@ -156,19 +149,18 @@ class LoginViews(ViewSet):
         if source_type == ClientTypeEnum.WEB.value:
             user_info.last_login_time = datetime.now()
         user_info.save()
+        from PyAutoTest.auto_test.auto_user.views.user_logs import UserLogsCRUD
         UserLogsCRUD().inside_post({
-            "nickname": user_info.nickname,
-            "username": user_info.username,
-            "ip": ip,
+            "user": user_info.id,
             "source_type": source_type,
-            "user_id": user_info.id
+            "ip": ip
         })
         return ResponseData.success(RESPONSE_MSG_0043, {
-            "nickName": user_info.nickname,
+            "name": user_info.name,
             "userName": user_info.username,
             "userId": user_info.id,
             "roleId": user_info.role.id if user_info.role else None,
-            "token": create_token({'id': user_info.id, 'username': user_info.username, 'nickname': user_info.nickname}),
+            "token": create_token({'id': user_info.id, 'username': user_info.username, 'name': user_info.name}),
             "selected_project": user_info.selected_project,
             "selected_environment": user_info.selected_environment,
             "roles": [
@@ -186,11 +178,11 @@ class LoginViews(ViewSet):
         password = request.data.get('password')
         if User.objects.filter(username=username).exists():
             return ResponseData.fail(RESPONSE_MSG_0115)
-        if User.objects.filter(nickname=request.data.get('nickname')).exists():
+        if User.objects.filter(name=request.data.get('name')).exists():
             return ResponseData.fail(RESPONSE_MSG_0122)
         else:
             data = UserCRUD.inside_post({
-                "nickname": request.data.get('nickname'),
+                "name": request.data.get('name'),
                 "username": username,
                 "password": password,
             })

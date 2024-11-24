@@ -51,16 +51,9 @@ form_data = [
     {
         'title': '自动化类型',
         'placeholder': '请选择自动化类型',
-        'key': 'auto_type',
-        'type': 1,
-        'select': AutoTestTypeEnum.get_select()
-    },
-    {
-        'title': '产品类型',
-        'placeholder': '请选择产品类型',
         'key': 'client_type',
         'type': 1,
-        'select': ProductTypeEnum.get_select()
+        'select': AutoTestTypeEnum.get_select()
     },
     {
         'title': '产品名称',
@@ -96,16 +89,10 @@ table_column = [
         'name': '产品名称',
     },
     {
-        'key': 'auto_type',
+        'key': 'client_type',
         'name': '自动化类型',
         'width': 80,
         'option': AutoTestTypeEnum.get_option('value', 'label')
-    },
-    {
-        'key': 'client_type',
-        'name': '产品类型',
-        'width': 200,
-        'option': ProductTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',

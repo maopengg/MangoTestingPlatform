@@ -13,8 +13,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from ..models import Project, ProjectProduct, ProductModule
-from ...auto_system.models import TestObject
+from PyAutoTest.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
 
 
 class ProjectSerializers(serializers.ModelSerializer):

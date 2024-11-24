@@ -4,7 +4,8 @@
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_ui.service.test_report_writing import TestReportWriting
-from PyAutoTest.models.ui_model import PageStepsResultModel, CaseResultModel
+from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
+from PyAutoTest.models.ui_model import PageStepsResultModel
 from PyAutoTest.tools.decorator.convert_args import convert_args
 
 
@@ -16,6 +17,6 @@ class UIConsumer:
         TestReportWriting.update_page_step_status(data)
 
     @classmethod
-    @convert_args(CaseResultModel)
-    def u_case_result(cls, data: CaseResultModel):
-        TestReportWriting.update_case(data)
+    @convert_args(TestSuiteDetailsResultModel)
+    def u_case_result(cls, data: TestSuiteDetailsResultModel):
+        TestReportWriting.update_case1(data)

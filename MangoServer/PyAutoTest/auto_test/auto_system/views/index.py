@@ -8,13 +8,15 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiCaseResult
-from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
+from PyAutoTest.auto_test.auto_api.models import ApiCase
+from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_user.models import UserLogs
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+
+from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
 
 
 class IndexViews(ViewSet):
@@ -28,7 +30,7 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        api_result = ApiCaseResult.objects.raw(
+        api_result = TestSuiteDetails.objects.raw(
             """
                 SELECT
                     weeks.id,
@@ -53,17 +55,17 @@ class IndexViews(ViewSet):
                 ) weeks
                 LEFT JOIN (
                     SELECT 
-                        MAX(api_case_result.id) as id,
+                        MAX(test_suite_details.id) as id,
                         YEARWEEK(create_time) AS yearweek, 
                         COUNT(YEARWEEK(create_time)) AS total_count
-                    FROM api_case_result
+                    FROM test_suite_details
                     WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
                     GROUP BY YEARWEEK(create_time)
                 ) api_counts ON weeks.yearweek = api_counts.yearweek
                 ORDER BY weeks.yearweek;
             """
         )
-        ui_result = UiCaseResult.objects.raw(
+        ui_result = TestSuiteDetails.objects.raw(
             """
                 SELECT
                     weeks.id,
@@ -88,10 +90,10 @@ class IndexViews(ViewSet):
                 ) weeks
                 LEFT JOIN (
                     SELECT 
-                        MAX(ui_case_result.id) as id,
+                        MAX(test_suite_details.id) as id,
                         YEARWEEK(create_time) AS yearweek, 
                         COUNT(YEARWEEK(create_time)) AS total_count
-                    FROM ui_case_result
+                    FROM test_suite_details
                     WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
                     GROUP BY YEARWEEK(create_time)
                 ) api_counts ON weeks.yearweek = api_counts.yearweek
@@ -137,9 +139,9 @@ class IndexViews(ViewSet):
         """
         return ResponseData.success(RESPONSE_MSG_0094,
                                     [
-                                        {'value': UiCaseResult.objects.count(),
+                                        {'value': TestSuiteDetails.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
-                                        {'value': ApiCaseResult.objects.count(),
+                                        {'value': TestSuiteDetails.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)}
                                     ])
 
@@ -151,14 +153,14 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        active_user_counts = UserLogs.objects.values('user_id', 'nickname').annotate(total_logins=Count('id')).order_by(
+        active_user_counts = UserLogs.objects.values('user_id', 'name').annotate(total_logins=Count('id')).order_by(
             '-total_logins')[:10]
-        nickname_list = []
+        name_list = []
         total_logins_list = []
         for user_count in active_user_counts:
-            nickname_list.append(user_count['nickname'])
+            name_list.append(user_count['name'])
             total_logins_list.append(user_count['total_logins'])
         return ResponseData.success(RESPONSE_MSG_0092, {
-            'nickname': nickname_list[::-1],
+            'name': name_list[::-1],
             'total_logins': total_logins_list[::-1],
         })

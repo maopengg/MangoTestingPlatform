@@ -9,9 +9,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiElement
+from PyAutoTest.auto_test.auto_ui.models import PageElement
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
-from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_page import PageSerializers
 from PyAutoTest.enums.tools_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
@@ -20,22 +20,22 @@ from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class UiElementSerializers(serializers.ModelSerializer):
+class PageElementSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiElement
+        model = PageElement
         fields = '__all__'
 
 
-class UiElementSerializersC(serializers.ModelSerializer):
-    page = UiPageSerializers(read_only=True)
+class PageElementSerializersC(serializers.ModelSerializer):
+    page = PageSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiElement
+        model = PageElement
         fields = '__all__'  # 全部进行序列化
 
     @staticmethod
@@ -45,11 +45,11 @@ class UiElementSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class UiElementCRUD(ModelCRUD):
-    model = UiElement
-    queryset = UiElement.objects.all()
-    serializer_class = UiElementSerializersC
-    serializer = UiElementSerializers
+class PageElementCRUD(ModelCRUD):
+    model = PageElement
+    queryset = PageElement.objects.all()
+    serializer_class = PageElementSerializersC
+    serializer = PageElementSerializers
 
     @error_response('ui')
     def get(self, request):
@@ -64,9 +64,9 @@ class UiElementCRUD(ModelCRUD):
                                     books.count())
 
 
-class UiElementViews(ViewSet):
-    model = UiElement
-    serializer_class = UiElementSerializers
+class PageElementViews(ViewSet):
+    model = PageElement
+    serializer_class = PageElementSerializers
 
     @action(methods=['POST'], detail=False)
     @error_response('ui')
@@ -88,7 +88,7 @@ class UiElementViews(ViewSet):
         :param request:
         :return:
         """
-        res = UiElement.objects.filter(page=request.query_params.get('id')).values_list('id', 'name')
+        res = PageElement.objects.filter(page=request.query_params.get('id')).values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in res]
         return ResponseData.success(RESPONSE_MSG_0080, data)
 

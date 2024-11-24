@@ -33,7 +33,6 @@ class ApiCasePage(TableParent):
             return obj.select()
 
     def save_callback(self, data, is_post=False):
-        data['status'] = StatusEnum.FAIL.value
         if data.get('front_custom') is None:
             data['front_custom'] = []
         if data.get('front_sql') is None:

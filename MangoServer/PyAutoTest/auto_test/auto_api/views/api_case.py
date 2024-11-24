@@ -11,13 +11,20 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
+from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
+from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
 from PyAutoTest.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
-from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.models.api_model import ApiCaseModel
+from PyAutoTest.models.user_model import UserModel
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
+from PyAutoTest.tools.view import Snowflake
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -65,8 +72,7 @@ class ApiCaseViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('api')
-    def api_case_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
+    def api_test_case(self, request: Request):
         case_id = request.query_params.get('case_id')
         test_obj_id = request.query_params.get('test_obj_id')
         case_sort = request.query_params.get('case_sort')
@@ -78,13 +84,24 @@ class ApiCaseViews(ViewSet):
 
     @action(methods=['post'], detail=False)
     @error_response('api')
-    def api_case_batch_run(self, request: Request):
-        from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
+    def api_test_case_batch(self, request: Request):
         case_id_list = request.data.get('case_id_list')
-        test_obj_id = request.data.get('test_obj_id')
-        api_case_run = ApiCaseRun(test_obj_id, user_obj=request.user)
-        test_result: dict = api_case_run.case_batch(case_id_list)
-        return ResponseData.success(RESPONSE_MSG_0111, test_result)
+        case_project = None
+        for i in case_id_list:
+            if case_project is None:
+                case_project = ApiCase.objects.get(id=i).project_product.project.id
+            else:
+                if case_project != ApiCase.objects.get(id=i).project_product.project.id:
+                    return ResponseData.fail(RESPONSE_MSG_0128, )
+        add_tasks = AddTasks(
+            project=case_project,
+            test_env=request.data.get('test_env'),
+            is_notice=StatusEnum.FAIL.value,
+            user_id=request.user['id'],
+            _type=AutoTestTypeEnum.API.value,
+        )
+        add_tasks.add_test_suite_details(case_id_list)
+        return ResponseData.success(RESPONSE_MSG_0111)
 
     @action(methods=['get'], detail=False)
     @error_response('api')

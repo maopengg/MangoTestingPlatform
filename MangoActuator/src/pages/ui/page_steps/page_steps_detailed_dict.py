@@ -17,7 +17,7 @@ right_data = [
 field_list = [
     {'key': 'id', 'name': '步骤ID'},
     {'key': 'name', 'name': '步骤名称'},
-    {'key': 'type', 'name': '调试状态'},
+    {'key': 'status', 'name': '调试状态'},
     {'key': 'run_flow', 'name': '步骤顺序'},
 ]
 form_data = [

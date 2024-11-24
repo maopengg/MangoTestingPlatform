@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2023-12-26 15:42
 # @Author : 毛鹏
 import json
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiInfo, ApiCaseDetailed
-from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD
-from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD
-from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
+from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteCRUD
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
@@ -29,7 +27,7 @@ class TestResult:
         self.case_status = StatusEnum.FAIL.value
         self.case_error_message = None
         if self.test_suite_data is None:
-            self.test_suite_data = TestSuiteReportCRUD.inside_post({
+            self.test_suite_data = TestSuiteCRUD.inside_post({
                 'id': self.test_suite_id,
                 'type': AutoTestTypeEnum.API.value,
                 'project_product': self.project_product_id,
@@ -115,4 +113,4 @@ class TestResult:
             'run_status': StatusEnum.SUCCESS.value,
             'status': status
         }
-        TestSuiteReportCRUD.inside_put(self.test_suite_id, test_suite_data)
+        TestSuiteCRUD.inside_put(self.test_suite_id, test_suite_data)

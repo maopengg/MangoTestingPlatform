@@ -9,16 +9,22 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
+from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteCRUD
+from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
-from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
+from PyAutoTest.enums.tools_enum import TaskEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from PyAutoTest.tools.view.snowflake import Snowflake
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
@@ -63,19 +69,20 @@ class UiCaseViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
-    def ui_case_run(self, request: Request):
+    def ui_test_case(self, request: Request):
         """
         执行单个用例组
         @param request:
         @return:
         """
-        SendTestData(
+        case_model = SendTestData(
             request.user['id'],
             request.query_params.get("test_env")
-        ).test_case_batch([int(request.GET.get("case_id"))])
-        return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
+        ).test_case(int(request.GET.get("case_id")))
+        return ResponseData.success(RESPONSE_MSG_0074, data=case_model.model_dump(),
+                                    value=(ClientNameEnum.DRIVER.value,))
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['post'], detail=False)
     @error_response('ui')
     def ui_batch_run(self, request: Request):
         """
@@ -83,11 +90,22 @@ class UiCaseViews(ViewSet):
         @param request:
         @return:
         """
-        case_id_list = [int(id_str) for id_str in request.query_params.getlist('case_id_list[]')]
-        SendTestData(
-            request.user['id'],
-            request.GET.get("test_env")
-        ).test_case_batch(case_id_list=case_id_list)
+        case_id_list = request.data.get('case_id_list')
+        case_project = None
+        for i in case_id_list:
+            if case_project is None:
+                case_project = UiCase.objects.get(id=i).project_product.project.id
+            else:
+                if case_project != UiCase.objects.get(id=i).project_product.project.id:
+                    return ResponseData.fail(RESPONSE_MSG_0128, )
+        add_tasks = AddTasks(
+            project=case_project,
+            test_env=request.data.get("test_env"),
+            is_notice=StatusEnum.FAIL.value,
+            user_id=request.user['id'],
+            _type=AutoTestTypeEnum.UI.value,
+        )
+        add_tasks.add_test_suite_details(case_id_list)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)

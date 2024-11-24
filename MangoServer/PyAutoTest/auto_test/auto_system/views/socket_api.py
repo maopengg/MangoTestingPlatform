@@ -20,8 +20,8 @@ class SocketApiViews(ViewSet):
     @error_response('system')
     def get_user_list(self, request: Request):
         data = SocketUser.get_all_user()
-        res = User.objects.filter(username__in=data).values_list('id', 'nickname', 'username', 'ip')
-        data = [{'id': _id, 'nickname': nickname, 'username': username, 'ip': ip} for _id, nickname, username, ip in
+        res = User.objects.filter(username__in=data).values_list('id', 'name', 'username', 'ip')
+        data = [{'id': _id, 'name': name, 'username': username, 'ip': ip} for _id, name, username, ip in
                 res]
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 

@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from mangokit import requests
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -13,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
@@ -90,7 +89,7 @@ class NoticeConfigViews(ViewSet):
                 return ResponseData.fail(RESPONSE_MSG_0119, )
             for i in json.loads(obj_.config):
                 try:
-                    user = User.objects.get(nickname=i)
+                    user = User.objects.get(name=i)
                 except User.DoesNotExist:
                     return ResponseData.fail(RESPONSE_MSG_0125)
                 if user.mailbox is None or user.mailbox == []:

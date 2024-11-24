@@ -10,12 +10,11 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_user.models import ProductModule
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from .project import ProjectSerializers
-from ..models import ProjectProduct
+from ..models import ProjectProduct, ProductModule
 
 
 class ProjectProductSerializers(serializers.ModelSerializer):

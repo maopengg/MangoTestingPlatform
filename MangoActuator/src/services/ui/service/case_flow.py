@@ -38,5 +38,5 @@ class CaseFlow:
             await obj.case_page_step()
         self.running_tasks -= 1
 
-    async def add_task(self, case_model: CaseModel):
-        await self.queue.put(case_model)
+    async def add_task(self, api_case_model: CaseModel):
+        await self.queue.put(api_case_model)

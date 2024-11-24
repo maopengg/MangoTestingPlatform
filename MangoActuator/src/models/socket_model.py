@@ -34,7 +34,7 @@ class LoginModel(BaseModel):
     password: str
     user_id: int | None = None
     token: str | None = None
-    nickname: str | None = None
+    name: str | None = None
 
 
 class ResponseModel(BaseModel):

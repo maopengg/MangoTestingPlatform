@@ -114,17 +114,16 @@ class AutoTypeEnum(BaseEnum):
         return {0: "前端&接口通用", 1: "前端自动化", 2: "接口自动化"}
 
 
-class ClientTypeEnum(BaseEnum):
-    """
-    三个端的类型
-    """
-    SERVER = 0
-    WEB = 1
-    ACTUATOR = 2
+class TaskEnum(BaseEnum):
+    """状态枚举"""
+    FAIL = 0
+    SUCCESS = 1
+    STAY_BEGIN = 2
+    PROCEED = 3
 
     @classmethod
     def obj(cls):
-        return {0: "服务端", 1: "执行端", 2: "控制端"}
+        return {0: "失败", 1: "通过", 2: "待开始", 3: "进行中"}
 
 
 class CacheKeyEnum(Enum):

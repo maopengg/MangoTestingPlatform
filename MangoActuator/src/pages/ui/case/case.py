@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-01 下午8:57
 # @Author : 毛鹏
-
+from src.enums.tools_enum import TaskEnum
 from src.models.user_model import UserModel
 from .case_dict import *
 from ...parent.table import *
@@ -40,6 +40,7 @@ class CasePage(TableParent):
             data['front_sql'] = []
         if data.get('posterior_sql') is None:
             data['posterior_sql'] = []
+        data['status'] = TaskEnum.STAY_BEGIN.value
         if is_post:
             response_model: ResponseModel = self.post(data)
         else:

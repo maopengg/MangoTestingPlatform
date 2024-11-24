@@ -151,7 +151,7 @@ class PublicAssertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, Wh
 if __name__ == '__main__':
     actual = {'data': None, 'errorCode': -1, 'errorMsg': '账号密码不匹配！'}
     expect = {
-        'data': {'id': 158877, 'icon': '', 'type': 0, 'admin': False, 'email': '', 'token': '', 'nickname': 'maopeng',
+        'data': {'id': 158877, 'icon': '', 'type': 0, 'admin': False, 'email': '', 'token': '', 'name': 'maopeng',
                  'password': '', 'username': 'maopeng', 'coinCount': 1899, 'collectIds': [], 'publicName': 'maopeng',
                  'chapterTops': []}, 'errorMsg': '', 'errorCode': 0}
     PublicAssertion.ass_response_whole(actual, expect)

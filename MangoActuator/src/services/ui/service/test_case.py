@@ -15,6 +15,7 @@ from src.enums.tools_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models import queue_notification
+from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, CaseResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
@@ -92,23 +93,37 @@ class TestCase(PageSteps):
         except Exception as error:
             traceback.print_exc()
             log.error(error)
+            test_suite_details_result_model = TestSuiteDetailsResultModel(
+                id=self.case_model.test_suite_details,
+                test_suite=self.case_result.test_suite_id,
+                status=self.case_result.status,
+                error_message=self.case_result.error_message,
+                result=self.case_result
+            )
             await WebSocketClient().async_send(
                 code=200 if self.case_result.status else 300,
                 msg='发生未知错误，请联系管理员检查测试用例数据',
                 is_notice=ClientTypeEnum.WEB,
                 func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result
+                func_args=test_suite_details_result_model
             )
             queue_notification.put(
                 {'type': self.case_result.status, 'value': '发生未知错误，请联系管理员检查测试用例数据'})
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
+            test_suite_details_result_model = TestSuiteDetailsResultModel(
+                id='',
+                test_suite='',
+                status='',
+                error_message='',
+                result=self.case_result
+            )
             await WebSocketClient().async_send(
                 code=200 if self.case_result.status else 300,
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB,
                 func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result
+                func_args=test_suite_details_result_model
             )
             queue_notification.put({'type': self.case_result.status, 'value': msg})
 

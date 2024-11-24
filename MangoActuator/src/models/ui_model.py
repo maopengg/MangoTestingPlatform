@@ -76,6 +76,7 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
+    test_suite_details: int
     test_suite_id: int
     id: int
     name: str

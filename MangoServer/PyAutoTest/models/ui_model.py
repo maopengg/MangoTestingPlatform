@@ -3,9 +3,8 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
-from pydantic import BaseModel
-
 from mangokit import MysqlConingModel
+from pydantic import BaseModel
 
 
 class EquipmentModel(BaseModel):
@@ -77,7 +76,8 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
-    test_suite_id: int
+    test_suite_details: int | None
+    test_suite_id: int | None
     id: int
     name: str
     project_product: int

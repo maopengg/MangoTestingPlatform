@@ -7,15 +7,13 @@ import json
 
 from django.db import connection
 
-from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
+from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
-from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiCase, UiCaseStepsDetailed, UiCaseResult
-from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultCRUD
-from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultCRUD
-from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultCRUD
+from PyAutoTest.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel
+from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
 from PyAutoTest.models.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
 
@@ -27,11 +25,26 @@ class TestReportWriting:
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         try:
             if data.page_step_id:
-                res = UiPageSteps.objects.get(id=data.page_step_id)
+                res = PageSteps.objects.get(id=data.page_step_id)
                 res.type = data.status
                 res.save()
-        except UiPageSteps.DoesNotExist as error:
+        except PageSteps.DoesNotExist as error:
             raise UiError(*ERROR_MSG_0030, error=error)
+
+    @classmethod
+    @orm_retry('update_case')
+    def update_case1(cls, data: TestSuiteDetailsResultModel):
+        connection.ensure_connection()
+        case = UiCase.objects.get(id=data.result.case_id)
+        case.status = data.result.status
+        case.test_suite_id = data.result.test_suite_id
+        case.save()
+        test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
+        test_suite_detail.result = data.result
+        test_suite_detail.status = data.status
+        test_suite_detail.save()  # 保存更改
+        for page_steps_result in data.result.page_steps_result_list:
+            cls.update_step(page_steps_result)
 
     @classmethod
     @orm_retry('update_case')
@@ -41,6 +54,7 @@ class TestReportWriting:
         case.status = data.status
         case.test_suite_id = data.test_suite_id
         case.save()
+
         # 保存用例结果
         for page_steps_result in data.page_steps_result_list:
             UiPageStepsResultCRUD.inside_post(page_steps_result.model_dump())

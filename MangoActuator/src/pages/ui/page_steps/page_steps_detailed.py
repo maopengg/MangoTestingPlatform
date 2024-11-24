@@ -104,6 +104,7 @@ class PageStepsDetailedPage(SubPage):
             data['step_sort'] = len(self.table_widget.table_widget.data)
             response_model: ResponseModel = self.post(data)
         else:
+            data['parent_id'] = self.data.get('id')
             response_model: ResponseModel = self.put(data)
         response_message(self, response_model)
 

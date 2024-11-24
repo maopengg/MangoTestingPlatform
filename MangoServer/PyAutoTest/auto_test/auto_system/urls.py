@@ -8,10 +8,10 @@ from django.urls import path
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
 from .views.cache_data import CacheDataCRUD, CacheDataViews
 from .views.enum_api import EnumOptionViews
-from .views.scheduled_tasks import ScheduledTasksCRUD, ScheduledTasksViews, ScheduledTasksNoPermissionViews
+from .views.scheduled_tasks import TasksCRUD, TasksViews, TasksNoPermissionViews
 from .views.socket_api import SocketApiViews
-from .views.tasks_run_case_list import TasksRunCaseListCRUD, TasksRunCaseListViews
-from .views.test_suite_report import TestSuiteReportCRUD
+from .views.tasks_run_case_list import TasksDetailsCRUD, TasksDetailsViews
+from .views.test_suite import TestSuiteCRUD
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
@@ -30,17 +30,17 @@ urlpatterns = [
     path('time', TimeTasksCRUD.as_view()),
     path('get/timing/list', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),
     #
-    path('tasks/run/case', TasksRunCaseListCRUD.as_view()),
-    path('tasks/type/case/name', TasksRunCaseListViews.as_view({'get': 'get_type_case_name'})),
-    path('tasks/batch/set/cases', TasksRunCaseListViews.as_view({'post': 'batch_set_cases'})),
-    path('tasks/case/sort', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_sort'})),
-    path('tasks/case/test/object', TasksRunCaseListViews.as_view({'put': 'put_tasks_case_test_object'})),
+    path('tasks/run/case', TasksDetailsCRUD.as_view()),
+    path('tasks/type/case/name', TasksDetailsViews.as_view({'get': 'get_type_case_name'})),
+    path('tasks/batch/set/cases', TasksDetailsViews.as_view({'post': 'batch_set_cases'})),
+    path('tasks/case/sort', TasksDetailsViews.as_view({'put': 'put_tasks_case_sort'})),
+    path('tasks/case/test/object', TasksDetailsViews.as_view({'put': 'put_tasks_case_test_object'})),
     #
-    path('scheduled/tasks', ScheduledTasksCRUD.as_view()),
-    path('scheduled/put/status', ScheduledTasksViews.as_view({'put': 'put_status'})),
-    path('scheduled/put/notice', ScheduledTasksViews.as_view({'put': 'put_is_notice'})),
-    path('scheduled/name', ScheduledTasksViews.as_view({'get': 'get_id_name'})),
-    path('trigger/timing', ScheduledTasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
+    path('scheduled/tasks', TasksCRUD.as_view()),
+    path('scheduled/put/status', TasksViews.as_view({'put': 'put_status'})),
+    path('scheduled/put/notice', TasksViews.as_view({'put': 'put_is_notice'})),
+    path('scheduled/name', TasksViews.as_view({'get': 'get_id_name'})),
+    path('trigger/timing', TasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
 
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
@@ -51,7 +51,7 @@ urlpatterns = [
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),
     path("socket/all/user/list", SocketApiViews.as_view({'get': 'get_all_user_list'})),
     #
-    path('test/suite/report', TestSuiteReportCRUD.as_view()),
+    path('test/suite/report', TestSuiteCRUD.as_view()),
 
     #
     path('case/sum', IndexViews.as_view({'get': 'case_sum'})),

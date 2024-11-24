@@ -8,10 +8,10 @@ import json
 from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangokit.exceptions.exceptions import ToolsError
 
-from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
+# from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
-from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
-from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
+from PyAutoTest.auto_test.auto_system.models import TestSuite
+# from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum, NoticeEnum, CacheDataKeyEnum, EnvironmentEnum
 
@@ -66,7 +66,7 @@ class NoticeMain:
     @classmethod
     def __wend_mail_send(cls, i, test_report: TestReportModel | None = None):
         try:
-            user_info = User.objects.filter(nickname__in=json.loads(i.config))
+            user_info = User.objects.filter(name__in=json.loads(i.config))
         except json.decoder.JSONDecodeError:
             raise SystemEError(*ERROR_MSG_0012)
         else:
@@ -89,7 +89,7 @@ class NoticeMain:
 
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:
-        test_suite = TestSuiteReport.objects.get(id=test_suite_id)
+        test_suite = TestSuite.objects.get(id=test_suite_id)
         if test_suite.type == AutoTestTypeEnum.UI.value:
             case_result = UiCaseResult.objects.filter(test_suite_id=test_suite_id)
         else:

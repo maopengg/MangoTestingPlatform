@@ -25,10 +25,10 @@ class ScheduledTaskPage(TableParent):
         self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):
-        if data.key == 'project_product':
+        if data.key == 'project':
             return data.select()
-
-        return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
+        else:
+            return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
 
     def run(self, row):
         response_message(self, HTTP.get_run_scheduled_tasks(row.get('id')))

@@ -5,13 +5,14 @@
 # @Author : 毛鹏
 import os
 import threading
-
+import traceback
 import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.tools.log_collector import log
+from mangokit import Mango
 
 
 class AutoSystemConfig(AppConfig):
@@ -24,6 +25,7 @@ class AutoSystemConfig(AppConfig):
             self.delayed_task()
             self.save_cache()
             self.populate_time_tasks()
+            self.run_tests()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -32,8 +34,8 @@ class AutoSystemConfig(AppConfig):
     @staticmethod
     def delayed_task():
         try:
-            from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import Tasks
-            Tasks.create_jobs()
+            from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import RunTasks
+            RunTasks.create_jobs()
         except OperationalError:
             pass
         except RuntimeError:
@@ -70,3 +72,14 @@ class AutoSystemConfig(AppConfig):
             TimeTasks.objects.create(name="每天12点", cron="0 12 * * *")
             TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")
             TimeTasks.objects.create(name="每周一8点", cron="0 8 * * 1")
+
+    def run_tests(self):
+        from PyAutoTest.auto_test.auto_system.service.consumer import consumer
+        try:
+            consumer()
+        except Exception as e:
+            traceback.print_exc()
+            log.system.error(e)
+            Mango.s(str(e))
+            task1 = threading.Thread(target=self.run_tests)
+            task1.start()

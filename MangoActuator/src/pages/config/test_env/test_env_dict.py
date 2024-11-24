@@ -63,7 +63,19 @@ form_data = [
         'placeholder': '请输入负责人名称',
         'key': 'executor_name',
         'type': 1,
-        'select': HTTP.get_nickname
+        'select': HTTP.get_name
+    },
+    {
+        'title': '查询权限',
+        'placeholder': '请输入查询权限',
+        'key': 'db_c_status',
+        'type': 3,
+    },
+    {
+        'title': '增删改权限',
+        'placeholder': '请输入增删改权限',
+        'key': 'db_rud_status',
+        'type': 3,
     },
 
 ]
