@@ -3,15 +3,13 @@
 # @Description: 
 # @Time   : 2023-12-12 18:20
 # @Author : 毛鹏
-import logging
 
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.models.socket_model.api_model import ApiInfoModel
-
-log = logging.getLogger('api')
+from PyAutoTest.models.api_model import ApiInfoModel
+from PyAutoTest.tools.log_collector import log
 
 
 class Recording:
@@ -34,7 +32,7 @@ class Recording:
             msg = f'接口URL:<{data.url}>已经存在，所以不需要进行录制到数据库中！'
         else:
             msg = f'项目：<{api_info_obj.project_product.project.name}>-产品：<{api_info_obj.project_product.name}>接口URL:<{data.url}>已经存在，所以不需要进行录制到数据库中！'
-            log.info(msg)
+            log.api.info(msg)
         ChatConsumer.active_send(SocketDataModel(
             code=200,
             msg=msg,

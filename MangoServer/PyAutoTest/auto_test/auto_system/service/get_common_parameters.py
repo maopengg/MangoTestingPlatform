@@ -5,12 +5,8 @@
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiPublic
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_ui.models import UiPublic
-from PyAutoTest.auto_test.auto_ui.views.ui_public import UiPublicSerializers
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.models.socket_model.api_model import ApiPublicModel, RequestModel
-from PyAutoTest.models.socket_model.ui_model import UiPublicModel
+from PyAutoTest.models.api_model import ApiPublicModel, RequestModel
 
 
 class GetCommonParameters:
@@ -33,4 +29,3 @@ class GetCommonParameters:
                                        body=case.body).model_dump_json()
             data.append(ApiPublicModel.from_orm(i))
         return data
-

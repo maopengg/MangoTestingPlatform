@@ -12,7 +12,7 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.models.api_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -91,15 +91,12 @@ class PageStepsDetailedPage(SubPage):
         response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:
-            if PageObject.page_steps is None:
-                PageObject.page_steps = PageSteps()
-                PageObject.page_steps.progress.connect(self.update_card)
             data = PageStepsModel(**response_model.data)
-            # if settings.IS_DEBUG:
-            #     with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
-            #         f.write(data.model_dump_json(indent=2))
+            if PageObject.test_page_steps is None:
+                PageObject.test_page_steps = TestPageSteps(data.project_product)
+                PageObject.test_page_steps.progress.connect(self.update_card)
             asyncio.run_coroutine_threadsafe(
-                PageObject.page_steps.page_steps_mian(data), self.parent.loop)
+                PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)
 
     def save_callback(self, data: dict, is_post: bool = False):
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
@@ -115,44 +112,27 @@ class PageStepsDetailedPage(SubPage):
         return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in select]
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
+        client_type = self.data.get('project_product').get('client_type')
         if data.subordinate == 'ope_key':
-            auto_type = self.data.get('project_product').get('auto_type')
-            if data.value == ElementOperationEnum.OPE.value:
-                if auto_type == DriveTypeEnum.WEB.value:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-                elif auto_type == DriveTypeEnum.ANDROID.value:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_android()]
-                else:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web()]
-                if data.subordinate_input_object:
-                    data.subordinate_input_object.set_select(self.select_data, True)
-                return self.select_data
-            elif data.value == ElementOperationEnum.ASS.value:
-                if auto_type == DriveTypeEnum.WEB.value:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_web_ass()]
-                elif auto_type == DriveTypeEnum.ANDROID.value:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_android_ass()]
-                else:
-                    self.select_data = [CascaderModel(**i) for i in GetClassMethod().get_public_ass()]
-                for i in GetClassMethod().get_public_ass():
-                    self.select_data.append(CascaderModel(**i))
-                if data.subordinate_input_object:
-                    data.subordinate_input_object.set_select(self.select_data, True)
-                return self.select_data
-            else:
-                if data.subordinate_input_object:
-                    data.subordinate_input_object.set_text('请忽略此选项')
+            self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
+            if data.subordinate_input_object:
+                data.subordinate_input_object.set_select(self.select_data, True)
+            return self.select_data
         elif data.subordinate == 'ope_value':
-            data.subordinate_input_object \
-                .set_value(json.dumps(self.find_parameter_by_value(self.select_data, data.value)))
+            ope_value: dict = GetClassMethod.find_parameter_by_value(self.select_data, data.value)
+            if ope_value == {'locating': ''} or ope_value == {}:
+                data.subordinate_input_object.setReadOnly(True)
+            else:
+                data.subordinate_input_object.setReadOnly(False)
+            if data.subordinate_input_object:
+                data.subordinate_input_object.set_value(json.dumps(ope_value))
 
-    @classmethod
-    def find_parameter_by_value(cls, data: list[CascaderModel], target_value):
-        for item in data:
+    def find_parameter_by_value(self, select_data, target_value):
+        for item in select_data:
             if item.value == target_value:
                 return item.parameter
             if item.children:
-                result = cls.find_parameter_by_value(item.children, target_value)
+                result = self.find_parameter_by_value(item.children, target_value)
                 if result is not None:
                     return result
         return None
@@ -164,24 +144,28 @@ class PageStepsDetailedPage(SubPage):
 
     def subordinate_callback(self, data: FormDataModel):
         if data.subordinate == 'ope_key':
-            auto_type = self.data.get('project_product').get('auto_type')
-            if data.value == ElementOperationEnum.OPE.value:
-                if auto_type == DriveTypeEnum.WEB.value:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
-                elif auto_type == DriveTypeEnum.ANDROID.value:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_android()]
-                else:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
-                return self.select_data
-            elif data.value == ElementOperationEnum.ASS.value:
-                if auto_type == DriveTypeEnum.WEB.value:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_web_ass()]
-                elif auto_type == DriveTypeEnum.ANDROID.value:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_android_ass()]
-                else:
-                    self.select_data = [CascaderModel(**q) for q in GetClassMethod().get_public_ass()]
-                for e in GetClassMethod().get_public_ass():
-                    self.select_data.append(CascaderModel(**e))
-                return self.select_data
+            client_type = self.data.get('project_product').get('client_type')
+            self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
+            return self.select_data
+
+    @classmethod
+    def ope_select_data(cls, ope_type: int, client_type):
+        if ope_type == ElementOperationEnum.OPE.value:
+            if client_type == DriveTypeEnum.WEB.value:
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
+            elif client_type == DriveTypeEnum.ANDROID.value:
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_android()]
             else:
-                return [CascaderModel(value='0', label='请忽略此选项')]
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
+        elif ope_type == ElementOperationEnum.ASS.value:
+            if client_type == DriveTypeEnum.WEB.value:
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web_ass()]
+            elif client_type == DriveTypeEnum.ANDROID.value:
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_android_ass()]
+            else:
+                select_data = [CascaderModel(**q) for q in GetClassMethod().get_public_ass()]
+            for e in GetClassMethod().get_public_ass():
+                select_data.append(CascaderModel(**e))
+        else:
+            return [CascaderModel(value='0', label='请忽略此选项')]
+        return select_data

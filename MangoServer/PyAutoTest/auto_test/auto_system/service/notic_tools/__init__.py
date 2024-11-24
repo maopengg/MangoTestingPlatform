@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from mangokit import EmailSend, WeChatSend, TestReportModel
+from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangokit.exceptions.exceptions import ToolsError
 
 from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
@@ -13,15 +13,10 @@ from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuiteReport
 from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.system_enum import CacheDataKeyEnum
-from PyAutoTest.enums.system_enum import EnvironmentEnum
-from PyAutoTest.enums.system_enum import NoticeEnum
+from PyAutoTest.enums.system_enum import AutoTestTypeEnum, NoticeEnum, CacheDataKeyEnum, EnvironmentEnum
+
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0012, ERROR_MSG_0031, ERROR_MSG_0048
-from PyAutoTest.exceptions.tools_exception import JsonSerializeError, CacheKetNullError, UserEmailIsNullError
-from PyAutoTest.models.tools_model import EmailNoticeModel, WeChatNoticeModel
+from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
 
 
@@ -73,7 +68,7 @@ class NoticeMain:
         try:
             user_info = User.objects.filter(nickname__in=json.loads(i.config))
         except json.decoder.JSONDecodeError:
-            raise JsonSerializeError(*ERROR_MSG_0012)
+            raise SystemEError(*ERROR_MSG_0012)
         else:
             send_list = []
             for i in user_info:
@@ -82,7 +77,7 @@ class NoticeMain:
                 except TypeError:
                     pass
             if not send_list:
-                raise UserEmailIsNullError(*ERROR_MSG_0048)
+                raise SystemEError(*ERROR_MSG_0048)
         send_user, email_host, stamp_key = cls.mail_config()
         email = EmailSend(EmailNoticeModel(
             send_user=send_user,
@@ -124,10 +119,10 @@ class NoticeMain:
             email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name).value
             stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name).value
         except CacheData.DoesNotExist:
-            raise CacheKetNullError(*ERROR_MSG_0031)
+            raise SystemEError(*ERROR_MSG_0031)
         else:
             if send_user is None or email_host is None or stamp_key is None:
-                raise CacheKetNullError(*ERROR_MSG_0031)
+                raise SystemEError(*ERROR_MSG_0031)
         return send_user, email_host, stamp_key
 
     @classmethod

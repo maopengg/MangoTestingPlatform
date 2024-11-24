@@ -48,8 +48,8 @@ form_data = [
         'title': '操作值',
         'placeholder': '请输入元素操作值',
         'key': 'ope_value',
+        'type': 5,
     },
-
 ]
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 70, 'option': ElementOperationEnum.get_option('value', 'label')},

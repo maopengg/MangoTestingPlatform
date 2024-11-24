@@ -14,7 +14,7 @@ from src.pages.parent.sub import SubPage
 from .test_report_detailed_dict import *
 from ...enums.system_enum import AutoTestTypeEnum
 from ...enums.ui_enum import ElementOperationEnum
-from ...models.network_model import ResponseModel
+from ...models.socket_model import ResponseModel
 
 
 class TestReportDetailedPage(SubPage):

@@ -7,7 +7,6 @@ import os
 import threading
 
 import time
-from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
@@ -22,7 +21,6 @@ class AutoSystemConfig(AppConfig):
     def ready(self):
         def run():
             time.sleep(5)
-            self.minute_task()
             self.delayed_task()
             self.save_cache()
             self.populate_time_tasks()
@@ -30,13 +28,6 @@ class AutoSystemConfig(AppConfig):
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
             task1.start()
-
-    @staticmethod
-    def minute_task():
-        from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.scan_table import mytask
-        sched = BackgroundScheduler()
-        sched.add_job(mytask, 'interval', seconds=60)
-        sched.start()
 
     @staticmethod
     def delayed_task():

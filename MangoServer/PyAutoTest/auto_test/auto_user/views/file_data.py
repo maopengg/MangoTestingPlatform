@@ -4,7 +4,6 @@
 # @Time   : 2024-05-17 12:32
 # @Author : 毛鹏
 import json
-import logging
 
 from rest_framework import serializers
 from rest_framework.request import Request
@@ -13,11 +12,9 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_user.models import FileData, ProjectProduct
 from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
+from PyAutoTest.tools.log_collector import log
+from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from PyAutoTest.tools.view.response_data import ResponseData
-from PyAutoTest.tools.view.response_msg import RESPONSE_MSG_0002, RESPONSE_MSG_0003, RESPONSE_MSG_0028
-
-log = logging.getLogger('user')
 
 
 class FileDataSerializers(serializers.ModelSerializer):
@@ -71,7 +68,7 @@ class FileDataCRUD(ModelCRUD):
             self.asynchronous_callback(request)
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
-            log.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
+            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
             return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
 
 

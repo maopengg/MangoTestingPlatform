@@ -12,8 +12,8 @@ from requests import Response
 from requests.exceptions import *
 
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
-from PyAutoTest.exceptions.api_exception import AgentError, UnknownError
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.exceptions import *
+from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.exceptions.error_msg import *
 
@@ -45,14 +45,14 @@ class BaseRequest:
             )
             self.response_time = time.time() - s
         except ProxyError:
-            raise AgentError(*ERROR_MSG_0001)
+            raise ApiError(*ERROR_MSG_0001)
         except SSLError:
-            raise AgentError(*ERROR_MSG_0001)
+            raise ApiError(*ERROR_MSG_0001)
         except Timeout:
-            raise UnknownError(*ERROR_MSG_0037)
+            raise ApiError(*ERROR_MSG_0037)
         except RequestException as error:
             log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.dict()}，报错内容：{error}')
-            raise UnknownError(*ERROR_MSG_0002)
+            raise ApiError(*ERROR_MSG_0002)
         return self.response
 
     def request_result_data(self) -> ResponseDataModel:

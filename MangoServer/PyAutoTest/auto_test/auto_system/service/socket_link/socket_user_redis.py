@@ -3,14 +3,11 @@
 # @Description: 
 # @Time   : 2023-05-13 22:39
 # @Author : 毛鹏
-import logging
 
 import _ctypes
 
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.tools.redis.redis_base import RedisBase
-
-log = logging.getLogger('system')
 
 
 class SocketUserRedis(RedisBase):

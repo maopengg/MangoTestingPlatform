@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import response_message
+from mango_ui import *
 
 from src.models.user_model import UserModel
 from src.network import HTTP
@@ -27,4 +27,29 @@ class ApiInfoPage(TableParent):
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, HTTP.get_api_run(row.get('id'), user_info.selected_environment))
+        response = HTTP.get_api_run(row.get('id'), user_info.selected_environment)
+        response_message(self, response)
+        mango_dialog = MangoDialog('测试结果', size=(600, 500))
+        scroll_area = MangoScrollArea()
+        form_layout = MangoFormLayout()
+        scroll_area.layout.addLayout(form_layout)
+        form_layout.addRow('请求URL', MangoLabel(f'{response.data.get("url")}'))
+        form_layout.addRow('请求方法', MangoLabel(f'{response.data.get("method")}'))
+        form_layout.addRow('请求头',
+                           MangoLabel(f'{response.data.get("headers") if response.data.get("headers") else ""}'))
+        form_layout.addRow('响应时间', MangoLabel(f'{response.data.get("response_time")}'))
+        form_layout.addRow('响应code', MangoLabel(f'{response.data.get("status_code")}'))
+        if response.data.get("params"):
+            form_layout.addRow('参数', MangoTextEdit('', response.data.get("params")))
+        if response.data.get("data"):
+            form_layout.addRow('表单', MangoTextEdit('', f'{response.data.get("data")}'))
+        if response.data.get("json_data"):
+            form_layout.addRow('JSON', MangoTextEdit('', f'{response.data.get("json_data")}'))
+        if response.data.get("file"):
+            form_layout.addRow('文件', MangoTextEdit('', f'{response.data.get("file")}'))
+        form_layout.addRow('响应体', MangoTextEdit(
+            '',
+            f'{response.data.get("response_json") if response.data.get("response_json") else response.data.get("response_text")}'))
+        mango_dialog.layout.addWidget(scroll_area)
+        mango_dialog.exec()
+        print(response.data)

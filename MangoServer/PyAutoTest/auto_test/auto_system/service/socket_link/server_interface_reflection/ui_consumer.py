@@ -4,7 +4,7 @@
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_ui.service.test_report_writing import TestReportWriting
-from PyAutoTest.models.socket_model.ui_model import PageStepsResultModel, CaseResultModel
+from PyAutoTest.models.ui_model import PageStepsResultModel, CaseResultModel
 from PyAutoTest.tools.decorator.convert_args import convert_args
 
 

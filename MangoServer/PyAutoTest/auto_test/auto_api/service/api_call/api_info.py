@@ -9,7 +9,7 @@ from PyAutoTest.auto_test.auto_api.service.base_tools.dependence import CaseMeth
 from PyAutoTest.auto_test.auto_user.tools.factory import func_test_object_value
 from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 
 
 class ApiInfoRun(CaseMethod):

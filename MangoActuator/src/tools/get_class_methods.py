@@ -5,7 +5,10 @@
 import inspect
 import json
 
+from mango_ui import CascaderModel
+
 from src.enums.system_enum import CacheDataKey2Enum
+from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from src.services.ui.bases.android import UiautomatorApplication, UiautomatorElement, UiautomatorEquipment, \
     UiautomatorPage
 from src.services.ui.bases.android.assertion import UiautomatorAssertion
@@ -18,79 +21,114 @@ from src.tools.assertion.sql_assertion import SqlAssertion
 
 class GetClassMethod:
     """获取对不同的类的操作方法"""
+    android_ope = [
+        UiautomatorApplication,
+        UiautomatorElement,
+        UiautomatorEquipment,
+        UiautomatorPage
+    ]
+    web_ope = [
+        PlaywrightElement,
+        PlaywrightDeviceInput,
+        PlaywrightBrowser,
+        PlaywrightPage,
+        PlaywrightCustomization]
+    web_ass = [PlaywrightAssertion]
+    android_ass = [UiautomatorAssertion]
+    sql_all = [SqlAssertion]
+    public_ass = [
+        WhatIsItAssertion,
+        ContainAssertion,
+        MatchingAssertion,
+        WhatIsEqualToAssertion
+    ]
 
-    def __init__(self):
-        self.android_ope = [
-            UiautomatorApplication,
-            UiautomatorElement,
-            UiautomatorEquipment,
-            UiautomatorPage
-        ]
-        self.web_ope = [
-            PlaywrightElement,
-            PlaywrightDeviceInput,
-            PlaywrightBrowser,
-            PlaywrightPage,
-            PlaywrightCustomization]
-        self.web_ass = [PlaywrightAssertion]
-        self.android_ass = [UiautomatorAssertion]
-        self.sql_all = [SqlAssertion]
-        self.public_ass = [
-            WhatIsItAssertion,
-            ContainAssertion,
-            MatchingAssertion,
-            WhatIsEqualToAssertion
-        ]
-
-    def main(self):
+    @classmethod
+    def main(cls):
         return [
-            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: self.json_(self.get_android())},
-            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: self.json_(self.get_web())},
-            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: self.json_(self.get_web_ass())},
-            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: self.json_(self.get_public_ass())},
-            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: self.json_(self.get_android_ass())},
-            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: self.json_(self.get_sql_ass())}
+            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: cls.json_(cls.get_android())},
+            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: cls.json_(cls.get_web())},
+            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: cls.json_(cls.get_web_ass())},
+            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.json_(cls.get_public_ass())},
+            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.json_(cls.get_android_ass())},
+            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.json_(cls.get_sql_ass())}
         ]
 
-    def option(self):
+    @classmethod
+    def find_parameter_by_value(cls, select_data, target_value):
+        for item in select_data:
+            if item.value == target_value:
+                return item.parameter
+            if item.children:
+                result = cls.find_parameter_by_value(item.children, target_value)
+                if result is not None:
+                    return result
+        return None
+
+    @classmethod
+    def ope_select_data(cls, ope_type: int, client_type) -> list[CascaderModel]:
+        if ope_type == ElementOperationEnum.OPE.value:
+            if client_type == DriveTypeEnum.WEB.value:
+                select_data = [CascaderModel(**q) for q in cls.get_web()]
+            elif client_type == DriveTypeEnum.ANDROID.value:
+                select_data = [CascaderModel(**q) for q in cls.get_android()]
+            else:
+                select_data = [CascaderModel(**q) for q in cls.get_web()]
+        elif ope_type == ElementOperationEnum.ASS.value:
+            if client_type == DriveTypeEnum.WEB.value:
+                select_data = [CascaderModel(**q) for q in cls.get_web_ass()]
+            elif client_type == DriveTypeEnum.ANDROID.value:
+                select_data = [CascaderModel(**q) for q in cls.get_android_ass()]
+            else:
+                select_data = [CascaderModel(**q) for q in cls.get_public_ass()]
+            for e in cls.get_public_ass():
+                select_data.append(CascaderModel(**e))
+        else:
+            return [CascaderModel(value='0', label='请忽略此选项')]
+        return select_data
+
+    @classmethod
+    def option(cls):
         return [
             {'value': '1',
              'label': CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value,
-             'children': self.get_android()
+             'children': cls.get_android()
              },
             {'value': '1',
              'label': CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value,
-             'children': self.get_web()
+             'children': cls.get_web()
              },
             {'value': '1',
              'label': CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value,
-             'children': self.get_web_ass()
+             'children': cls.get_web_ass()
              },
             {'value': '1',
              'label': CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value,
-             'children': self.get_public_ass()
+             'children': cls.get_public_ass()
              },
             {'value': '1',
              'label': CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value,
-             'children': self.get_android_ass()
+             'children': cls.get_android_ass()
              },
             {'value': '1',
              'label': CacheDataKey2Enum.SQL_ASSERTION_METHOD.value,
-             'children': self.get_sql_ass()
+             'children': cls.get_sql_ass()
              }
         ]
 
-    def json_(self, data):
+    @classmethod
+    def json_(cls, data):
         return json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
 
-    def get_class_methods(self, cls):
+    @classmethod
+    def get_class_methods(cls, self):
         methods = []
         # 获取类中的所有属性和方法
-        for attr in dir(cls):
-            obj = getattr(cls, attr)
+        for attr in dir(self):
+            obj = getattr(self, attr)
             # 判断对象是否为方法或函数，并且所属类是传入的类
             if (inspect.ismethod(obj) or inspect.isfunction(obj)) and obj.__qualname__.split('.')[
-                0] == cls.__name__:
+                0] == self.__name__:
                 if attr != '__init__':
                     # 获取方法的注释
                     doc = inspect.getdoc(obj)
@@ -110,55 +148,57 @@ class GetClassMethod:
                     methods.append(method_dict)
         return methods
 
-    def get_android(self):
+    @classmethod
+    def get_android(cls):
         data = []
-        for cls in self.android_ope:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.android_ope:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
         return data
 
-    def get_web(self):
+    @classmethod
+    def get_web(cls):
         data = []
-        for cls in self.web_ope:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.web_ope:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
 
         return data
 
-    def get_public_ass(self):
+    @classmethod
+    def get_public_ass(cls):
         data = []
-        for cls in self.public_ass:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.public_ass:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
         return data
 
-    def get_web_ass(self):
+    @classmethod
+    def get_web_ass(cls):
         data = []
-        for cls in self.web_ass:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.web_ass:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
         return data
 
-    def get_android_ass(self):
+    @classmethod
+    def get_android_ass(cls):
         data = []
-        for cls in self.android_ass:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.android_ass:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
         return data
 
-    def get_sql_ass(self):
+    @classmethod
+    def get_sql_ass(cls):
         data = []
-        for cls in self.sql_all:
-            data.append({'value': str(cls.__name__),
-                         'label': str(cls.__doc__),
-                         'children': self.get_class_methods(cls)})
+        for i in cls.sql_all:
+            data.append({'value': str(i.__name__),
+                         'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
         return data
-
-
-if __name__ == '__main__':
-    print(GetClassMethod().get_web())

@@ -10,7 +10,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_ui.service.ui_test_run import UiTestRun
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
@@ -69,10 +69,10 @@ class UiCaseViews(ViewSet):
         @param request:
         @return:
         """
-        UiTestRun(
+        SendTestData(
             request.user['id'],
             request.query_params.get("test_env")
-        ).case_batch([int(request.GET.get("case_id"))])
+        ).test_case_batch([int(request.GET.get("case_id"))])
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
@@ -84,10 +84,10 @@ class UiCaseViews(ViewSet):
         @return:
         """
         case_id_list = [int(id_str) for id_str in request.query_params.getlist('case_id_list[]')]
-        UiTestRun(
+        SendTestData(
             request.user['id'],
             request.GET.get("test_env")
-        ).case_batch(case_id_list=case_id_list)
+        ).test_case_batch(case_id_list=case_id_list)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)

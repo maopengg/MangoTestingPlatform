@@ -7,10 +7,8 @@ from pydantic import ValidationError
 
 from PyAutoTest.auto_test.auto_system.models import Database, TestObject
 from PyAutoTest.enums.tools_enum import AutoTypeEnum
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0021, ERROR_MSG_0022, ERROR_MSG_0046, ERROR_MSG_0049, \
-    ERROR_MSG_0056
-from PyAutoTest.exceptions.tools_exception import DoesNotExistError, MysqlConfigError, TestObjectNullError
-from PyAutoTest.models.tools_model import MysqlConingModel
+from PyAutoTest.exceptions import *
+from mangokit import MysqlConingModel
 
 
 def func_mysql_config(env: int) -> MysqlConingModel:
@@ -22,9 +20,9 @@ def func_mysql_config(env: int) -> MysqlConingModel:
     try:
         mysql = Database.objects.get(environment=env)
     except Database.DoesNotExist:
-        raise DoesNotExistError(*ERROR_MSG_0021)
+        raise SystemEError(*ERROR_MSG_0021)
     except Database.MultipleObjectsReturned:
-        raise MysqlConfigError(*ERROR_MSG_0056)
+        raise SystemEError(*ERROR_MSG_0056)
     try:
         return MysqlConingModel(
             host=mysql.host,
@@ -33,7 +31,7 @@ def func_mysql_config(env: int) -> MysqlConingModel:
             password=mysql.password,
             database=mysql.name)
     except ValidationError:
-        raise MysqlConfigError(*ERROR_MSG_0022)
+        raise SystemEError(*ERROR_MSG_0022)
 
 
 def func_test_object_value(env: int, project_product_id: int, auto_type: int) -> TestObject:
@@ -49,6 +47,6 @@ def func_test_object_value(env: int, project_product_id: int, auto_type: int) ->
                                       environment=env,
                                       auto_type__in=[auto_type, AutoTypeEnum.CURRENCY.value])
     except TestObject.DoesNotExist:
-        raise TestObjectNullError(*ERROR_MSG_0046)
+        raise SystemEError(*ERROR_MSG_0046)
     except TestObject.MultipleObjectsReturned:
-        raise TestObjectNullError(*ERROR_MSG_0049)
+        raise SystemEError(*ERROR_MSG_0049)

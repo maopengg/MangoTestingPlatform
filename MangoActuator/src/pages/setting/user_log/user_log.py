@@ -4,7 +4,7 @@
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
 from mango_ui import SearchDataModel, ComboBoxDataModel
-
+import copy
 from .user_log_dict import *
 from ...parent.table import TableParent
 
@@ -12,10 +12,11 @@ from ...parent.table import TableParent
 class UserLogPage(TableParent):
     def __init__(self, parent):
         self.search_data = []
-        for i in search_data:
+        for i in copy.deepcopy(search_data):
             if i.get('key') == 'user_id':
                 i['select'] = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in
                                i.get('select')().data]
+
             self.search_data.append(SearchDataModel(**i))
         super().__init__(parent, search_data=self.search_data, table_column=table_column, )
         self.page_size = 30

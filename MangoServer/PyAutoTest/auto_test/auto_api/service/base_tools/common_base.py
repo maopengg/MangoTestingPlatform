@@ -5,18 +5,17 @@
 # @Author : 毛鹏
 from typing import Optional
 from urllib.parse import urljoin
+
 from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiInfo
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
-from PyAutoTest.exceptions.api_exception import LoginError
-from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError, FileDoesNotEexistError
-from PyAutoTest.models.apimodel import RequestDataModel
+from PyAutoTest.exceptions import *
+from PyAutoTest.models.api_model import RequestDataModel
 from PyAutoTest.tools.base_request.request_tool import BaseRequest
-from PyAutoTest.tools.database.mysql_control import MysqlConnect
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0003, ERROR_MSG_0033, ERROR_MSG_0035, ERROR_MSG_0026
 from PyAutoTest.tools.obtain_test_data import ObtainTestData
+from mangokit import MysqlConnect
 
 
 class CommonBase(ObtainTestData):
@@ -64,7 +63,7 @@ class CommonBase(ObtainTestData):
         base_request.request(request_data_model)
         response = base_request.request_result_data()
         if response.response_json is None:
-            raise LoginError(*ERROR_MSG_0003)
+            raise ApiError(*ERROR_MSG_0003)
         value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))
         self.set_cache(key, value)
 
@@ -84,12 +83,6 @@ class CommonBase(ObtainTestData):
                         for value, key in zip(result, eval(api_public_obj.key)):
                             self.set_cache(key, result.get(value))
                     except SyntaxError:
-                        raise SyntaxErrorError(*ERROR_MSG_0035)
+                        raise ToolsError(*ERROR_MSG_0035)
                 if not result_list:
-                    raise MysqlQueryIsNullError(*ERROR_MSG_0033, value=(api_public_obj.value,))
-
-    @classmethod
-    def get_file(cls, **kwargs) -> None:
-        """传入文件名称，返回文件对象"""
-        file_name = kwargs.get('data')
-        raise FileDoesNotEexistError(*ERROR_MSG_0026, value=(file_name,))
+                    raise ToolsError(*ERROR_MSG_0033, value=(api_public_obj.value,))

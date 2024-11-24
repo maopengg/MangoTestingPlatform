@@ -4,6 +4,7 @@
 # @Time   : 2024-07-25 上午10:01
 # @Author : 毛鹏
 import logging
+from PyAutoTest.settings import DEBUG
 
 
 class System:
@@ -11,7 +12,8 @@ class System:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if DEBUG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -35,7 +37,8 @@ class Ui:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if DEBUG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -59,7 +62,8 @@ class Api:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if DEBUG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -83,7 +87,8 @@ class User:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if DEBUG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -107,7 +112,8 @@ class Perf:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if DEBUG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):

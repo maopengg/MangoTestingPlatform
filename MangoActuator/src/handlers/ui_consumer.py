@@ -8,8 +8,8 @@ from src.enums.tools_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, CaseModel, PageObject, EquipmentModel
 from src.network.web_socket.websocket_client import WebSocketClient
-from src.services.ui.service.case_main import CaseMain
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.service.case_flow import CaseFlow
+from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
 from src.tools.decorator.error_handle import async_error_handle
 
@@ -28,9 +28,11 @@ class UIConsumer:
         """
         try:
             async with cls.lock:
-                if PageObject.page_steps is None:
-                    PageObject.page_steps = PageSteps()
-                await PageObject.page_steps.page_steps_mian(data)
+                if PageObject.test_page_steps is None:
+                    PageObject.test_page_steps = TestPageSteps(data.project_product)
+                else:
+                    PageObject.test_page_steps.project_product_id = data.project_product
+                await PageObject.test_page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
                 code=error.code,
@@ -48,9 +50,9 @@ class UIConsumer:
         @return:
         """
         async with cls.lock:
-            if PageObject.page_steps is None:
-                PageObject.page_steps = PageSteps()
-            await PageObject.page_steps.new_web_obj(data)
+            if PageObject.test_page_steps is None:
+                PageObject.test_page_steps = TestPageSteps(None)
+            await PageObject.test_page_steps.new_web_obj(data)
 
     @classmethod
     @async_error_handle()
@@ -61,7 +63,9 @@ class UIConsumer:
         @param data:
         @return:
         """
-        if PageObject.case_run is None:
-            max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
-            PageObject.case_run = CaseMain(max_tasks) if max_tasks is not None else CaseMain()
-        await PageObject.case_run.queue.put(data)
+        max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
+        if PageObject.case_flow is None:
+            PageObject.case_flow = CaseFlow(max_tasks) if max_tasks is not None else CaseFlow()
+        else:
+            PageObject.case_flow.max_tasks = max_tasks
+        await PageObject.case_flow.add_task(data)

@@ -7,8 +7,7 @@ from typing import Optional
 
 from playwright.async_api import Locator
 
-from src.exceptions.error_msg import ERROR_MSG_0022
-from src.exceptions.ui_exception import ElementIsEmptyError
+from src.exceptions import UiError, ERROR_MSG_0022
 from src.services.ui.bases.base_data import BaseData
 
 
@@ -29,7 +28,7 @@ class PlaywrightCustomization(BaseData):
                 if await locator.count() > 0:
                     break
             if locator is None:
-                raise ElementIsEmptyError(*ERROR_MSG_0022)
+                raise UiError(*ERROR_MSG_0022)
             await locator.fill(str(data))
 
     async def w_click_right_coordinate(self, locating: Locator):

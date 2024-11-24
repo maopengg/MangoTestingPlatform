@@ -4,7 +4,6 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 import json
-import logging
 
 from django.db import connection
 
@@ -15,13 +14,10 @@ from PyAutoTest.auto_test.auto_ui.views.ui_case_result import UiCaseResultCRUD
 from PyAutoTest.auto_test.auto_ui.views.ui_ele_result import UiEleResultCRUD
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_result import UiPageStepsResultCRUD
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
-from PyAutoTest.exceptions.tools_exception import DoesNotExistError
+from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.models.socket_model.ui_model import CaseResultModel, PageStepsResultModel
+from PyAutoTest.models.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0030
-
-log = logging.getLogger('ui')
 
 
 class TestReportWriting:
@@ -35,7 +31,7 @@ class TestReportWriting:
                 res.type = data.status
                 res.save()
         except UiPageSteps.DoesNotExist as error:
-            raise DoesNotExistError(*ERROR_MSG_0030, error=error)
+            raise UiError(*ERROR_MSG_0030, error=error)
 
     @classmethod
     @orm_retry('update_case')

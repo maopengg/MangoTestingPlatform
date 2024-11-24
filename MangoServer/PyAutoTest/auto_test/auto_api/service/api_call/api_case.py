@@ -15,11 +15,8 @@ from PyAutoTest.auto_test.auto_user.models import TestObject
 from PyAutoTest.auto_test.auto_user.tools.factory import func_test_object_value
 from PyAutoTest.enums.api_enum import MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum, AutoTypeEnum
-from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.exceptions.api_exception import CaseIsEmptyError, UnknownError
-from PyAutoTest.exceptions.error_msg import *
-from PyAutoTest.exceptions.tools_exception import SyntaxErrorError, MysqlQueryIsNullError
-from PyAutoTest.models.apimodel import RequestDataModel, ResponseDataModel
+from PyAutoTest.exceptions import *
+from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 from PyAutoTest.models.socket_model import SocketDataModel
 
 
@@ -42,18 +39,16 @@ class ApiCaseRun(CaseMethod, TestResult):
         api_case_obj = ApiCase.objects.get(id=case_list[0])
         self.result_init(api_case_obj.project_product_id, case_list)
         for case_id in case_list:
-            try:
-                self.case(case_id)
-                case_status_list.append(self.case_status)
-                case_error_message_list.append(self.case_error_message)
-            except (UnknownError, CaseIsEmptyError):
-                pass
+            self.case(case_id)
+            case_status_list.append(self.case_status)
+            case_error_message_list.append(self.case_error_message)
+
         if StatusEnum.FAIL.value in case_status_list:
             self.update_test_suite(StatusEnum.FAIL.value, case_error_message_list)
         else:
             self.update_test_suite(StatusEnum.SUCCESS.value, case_error_message_list)
         if self.is_notice:
-            NoticeMain.notice_main(self.test_object.project_product.project_id, self.test_suite_id)
+            NoticeMain.notice_main(self.test_object.id, self.test_suite_id)
 
     def case(self, case_id: int, is_case_one: bool = False) -> dict:
         api_case: ApiCase = self.__case_init(case_id, is_case_one)
@@ -62,7 +57,7 @@ class ApiCaseRun(CaseMethod, TestResult):
                 if not self.case_step_api(api_info):
                     break
             self.__case_last(api_case)
-        except UnknownError as error:
+        except ApiError as error:
             self.add_api_case_result(case_id)
             self.update_test_suite(self.case_status, [error.msg])
             raise error
@@ -104,7 +99,7 @@ class ApiCaseRun(CaseMethod, TestResult):
         else:
             case_api_list = ApiCaseDetailed.objects.filter(case=case_id).order_by('case_sort')
         if not case_api_list:
-            raise CaseIsEmptyError(*ERROR_MSG_0008)
+            raise ApiError(*ERROR_MSG_0008)
         return case_api_list
 
     def __case_init(self, case_id: int, is_case_one: bool):
@@ -132,11 +127,11 @@ class ApiCaseRun(CaseMethod, TestResult):
                             for value, key in zip(result, key_list):
                                 self.set_cache(key, result.get(value))
                         except SyntaxError:
-                            raise SyntaxErrorError(*ERROR_MSG_0036)
+                            raise ApiError(*ERROR_MSG_0036)
                         except NameError:
-                            raise SyntaxErrorError(*ERROR_MSG_0036)
+                            raise ApiError(*ERROR_MSG_0036)
                     if not result_list:
-                        raise MysqlQueryIsNullError(*ERROR_MSG_0034, value=(sql,))
+                        raise ApiError(*ERROR_MSG_0034, value=(sql,))
         if api_case.front_headers:
             self.headers = api_case.front_headers
 
@@ -172,13 +167,6 @@ class ApiCaseRun(CaseMethod, TestResult):
             self.case_error_message = error.msg
             self.add_api_info_result(case_detailed, request_data_model, response)
             return False
-        # except Exception as error:
-        #     log.api.error(
-        #         f'执行接口断言时发生未知异常，请联系管理员！用例ID：{case_detailed.case_id}，错误类型：{type(error)}，错误详情：{error}')
-        #     self.case_status = StatusEnum.FAIL.value
-        #     self.case_error_message = ERROR_MSG_0040[1]
-        #     self.add_api_info_result(case_detailed, request_data_model, response)
-        #     raise UnknownError(*ERROR_MSG_0040)
         self.case_status = StatusEnum.SUCCESS.value
         self.add_api_info_result(case_detailed, request_data_model, response)
         return True

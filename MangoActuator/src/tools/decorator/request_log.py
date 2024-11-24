@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import requests
 
-from src.models.network_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.settings import settings
 from src.tools.log_collector import log
 

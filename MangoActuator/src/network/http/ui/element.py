@@ -44,14 +44,18 @@ class Element(HttpBase):
 
     @classmethod
     @request_log()
-    def test_element(cls, test_env, page_id, element_id):
+    def test_element(cls, test_env, page_id, element_id, project_product_id, _type, ope_key, ope_value):
         url = cls.url(f'/ui/element')
         json_data = {
+            'project_product_id': project_product_id,
             'test_env': test_env,
             'page_id': page_id,
             'id': element_id,
+            'type': _type,
+            'ope_key': ope_key,
+            'ope_value': ope_value,
         }
-        return cls.post(url=url, headers=cls.headers, json=json_data)
+        return cls.post(url=f'{url}/test', headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()

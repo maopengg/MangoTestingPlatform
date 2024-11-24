@@ -5,9 +5,13 @@ from mango_ui import AppConfig, MenusModel
 
 from src.tools import InitPath
 
-IS_DEBUG = False
+IS_DEBUG = True
+
 MEMORY_THRESHOLD = 100
+
 LOOP_MIX = 10
+
+FAILED_RETRY_TIME = 15
 
 IP = None
 PORT = None

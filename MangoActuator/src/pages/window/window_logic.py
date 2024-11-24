@@ -62,23 +62,27 @@ class WindowLogic(MangoMain1Window):
             'api_case_detailed': ApiCaseDetailedPage,
             'api_public': ApiPublicPage,
 
+            'test_report': TestReportPage,
+            'test_report_detailed': TestReportDetailedPage,
+
             'project': ProjectPage,
             'product': ProductPage,
             'module': ModulePage,
             'test_env': TestEnvPage,
             'env_config': EnvConfigPage,
             'test_file': TestFilePage,
+
             'user_administration': UserAdministrationPage,
-            'user': UserPage,
             'role': RolePage,
+            'user_log': UserLogPage,
+
             'time': TimePage,
             'scheduled_task': ScheduledTaskPage,
             'task_case': TaskCasePage,
-            'user_log': UserLogPage,
-            'test_report': TestReportPage,
-            'test_report_detailed': TestReportDetailedPage,
+
             'tools': SmallToolsPage,
             'settings': SettingPage,
+            'user': UserPage,
         }
         super().__init__(
             STYLE,

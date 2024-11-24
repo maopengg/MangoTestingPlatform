@@ -3,14 +3,13 @@
 # @Description: 
 # @Time   : 2024-03-14 10:03
 # @Author : 毛鹏
-import logging
 
 import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error
-from mangokit import Mango
 
-log = logging.getLogger('system')
+from PyAutoTest.tools.log_collector import log
+from mangokit import Mango
 
 
 def orm_retry(func_name: str, max_retries=5, delay=2):
@@ -23,7 +22,7 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
                     return func(*args, **kwargs)
                 except Error as error:
                     error = error
-                    log.error(f'重试失败: 函数：{func_name}, 错误提示：{error}')
+                    log.system.error(f'重试失败: 函数：{func_name}, 错误提示：{error}')
                     close_old_connections()
                     connection.ensure_connection()
                     try_count += 1

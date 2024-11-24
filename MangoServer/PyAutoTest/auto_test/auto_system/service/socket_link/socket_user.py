@@ -8,8 +8,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from PyAutoTest.enums.tools_enum import ClientNameEnum
-from PyAutoTest.exceptions.tools_exception import SocketClientNotPresentError
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0028
+from PyAutoTest.exceptions import *
 
 
 class SocketUserModel(BaseModel):
@@ -73,10 +72,10 @@ class SocketUser:
                 if i.client_obj:
                     return i.client_obj
                 else:
-                    raise SocketClientNotPresentError(*ERROR_MSG_0028,
-                                                      value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
-        raise SocketClientNotPresentError(*ERROR_MSG_0028,
-                                          value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
+                    raise SystemEError(*ERROR_MSG_0028,
+                                       value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
+        raise SystemEError(*ERROR_MSG_0028,
+                           value=(ClientNameEnum.DRIVER.value, ClientNameEnum.SERVER.value))
 
     @classmethod
     def get_all_user(cls):

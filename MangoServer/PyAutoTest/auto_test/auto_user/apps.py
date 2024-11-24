@@ -3,14 +3,11 @@
 # @Description:
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
-import logging
 import os
 import threading
 
 import time
 from django.apps import AppConfig
-
-log = logging.getLogger('system')
 
 
 class AutoUserConfig(AppConfig):

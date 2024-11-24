@@ -7,12 +7,12 @@
 import asyncio
 
 from src.models.ui_model import CaseModel
-from src.services.ui.service.case_steps import CaseSteps
+from src.services.ui.service.test_case import TestCase
 from src.tools.decorator.memory import async_memory
 from ..bases.driver_object import DriverObject
 
 
-class CaseMain:
+class CaseFlow:
 
     def __init__(self, max_tasks=2):
         super().__init__()
@@ -28,13 +28,15 @@ class CaseMain:
             if self.running_tasks < self.max_tasks and not self.queue.empty():
                 case_model = await self.queue.get()
                 self.running_tasks += 1
-                await self.loop.create_task(self.execute_task(case_model))
+                asyncio.create_task(self.execute_task(case_model))
             await asyncio.sleep(0.1)
 
     @async_memory
     async def execute_task(self, case_model: CaseModel):
-        async with CaseSteps(case_model, self.driver_object) as obj:
+        async with TestCase(case_model, self.driver_object) as obj:
             await obj.case_init()
             await obj.case_page_step()
+        self.running_tasks -= 1
 
-            self.running_tasks -= 1
+    async def add_task(self, case_model: CaseModel):
+        await self.queue.put(case_model)
