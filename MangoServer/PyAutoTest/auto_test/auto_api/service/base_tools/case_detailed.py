@@ -2,63 +2,41 @@
 # @Project: 芒果测试平台# @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
-import logging
+import asyncio
+import json
 
 import time
-from mangokit import ToolsError
 from retrying import retry
 
-from PyAutoTest.auto_test.auto_api.service.base_tools.common_base import CommonBase
+from PyAutoTest.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
 from PyAutoTest.exceptions import *
-from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
-from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
-from PyAutoTest.tools.base_request.request_tool import BaseRequest
+from PyAutoTest.models.api_model import ResponseDataModel, RequestDataModel
+from mangokit import ToolsError, ResponseModel
 
 
-class CaseMethod(CommonBase, PublicAssertion):
+class CaseDetailedInit(ApiCaseData):
     ass_result = []
 
-    def send_request(self, request_data_model: RequestDataModel, is_debug: bool = False) -> ResponseDataModel:
-        base_request = BaseRequest()
-        base_request.request(self.request_data_clean(request_data_model, is_debug))
-        return base_request.request_result_data()
+    def send_request(self, request_data_model: RequestDataModel) -> ResponseDataModel:
+        request_data_model = self.request_data_clean(request_data_model)
 
-    def request_data_clean(self, request_data_model: RequestDataModel, is_debug: bool):
-        for key, value in request_data_model:
-            if key == 'headers' and isinstance(value, str):
-                if is_debug:
-                    try:
-                        value = self.replace(value)
-                    except ApiError:
-                        pass
-                else:
-                    value = self.replace(value)
-                # if value == '${headers}':
-                #     value = None
-                if value and isinstance(value, str):
-                    value = self.loads(value) if value else value
-                setattr(request_data_model, key, value)
-            elif key == 'file':
-                if request_data_model.file:
-                    file = []
-                    for i in request_data_model.file:
-                        i: dict = i
-                        for k, v in i.items():
-                            file_name = self.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                            path = self.replace(v)
-                            file.append((k, (file_name, open(path, 'rb'))))
-                    request_data_model.file = file
-            else:
-                value = self.replace(value)
-                setattr(request_data_model, key, value)
-
-            if key == 'headers' and hasattr(self, 'headers') and self.headers:
-                new_dict = self.replace(self.headers, False)
-                if new_dict and isinstance(new_dict, str):
-                    new_dict = self.loads(new_dict) if new_dict else new_dict
-                request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
-
-        return request_data_model
+        response: ResponseModel = asyncio.run(self.http(request_data_model))
+        self.result_data.request = request_data_model
+        self.result_data.response = ResponseDataModel(
+            url=request_data_model.url,
+            method=request_data_model.method,
+            headers=request_data_model.headers,
+            params=request_data_model.params,
+            data=request_data_model.data,
+            json_data=request_data_model.json_data,
+            file=request_data_model.file,
+            status_code=response.status_code,
+            response_time=response.response_time,
+            response_headers=response.headers,
+            response_json=response.json_data if isinstance(request_data_model.json_data, dict | list) else None,
+            response_text=json.loads(response.json_data) if isinstance(request_data_model.json_data, str) else None,
+        )
+        return self.result_data.response
 
     def front_sql(self, case_detailed):
         if self.mysql_connect:
@@ -174,14 +152,3 @@ class CaseMethod(CommonBase, PublicAssertion):
             log.api.warning(error)
             self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
             raise ApiError(*ERROR_MSG_0004, value=(expect, actual))
-
-    @classmethod
-    def __merge_dicts(cls, base_dict, new_dict):
-        if base_dict:
-            result = base_dict.copy()
-            for key, value in new_dict.items():
-                if key not in result:
-                    result[key] = value
-            return result
-        else:
-            return new_dict

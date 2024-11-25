@@ -142,7 +142,7 @@ class TestCase(PageSteps):
                 test_suite=self.case_result.test_suite_id,
                 status=self.case_result.status,
                 error_message=self.case_result.error_message,
-                result=self.case_result
+                result_data=self.case_result
             )
         else:
             func_name = UiSocketEnum.TEST_CASE.value

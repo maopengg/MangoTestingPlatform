@@ -19,8 +19,8 @@ urlpatterns = [
     path("import/api", ApiInfoViews.as_view({'post': 'import_api'})),
     #
     path("case", ApiCaseCRUD.as_view()),
-    path("case/run", ApiCaseViews.as_view({'get': 'api_test_case'})),
-    path("case/batch/run", ApiCaseViews.as_view({'post': 'api_test_case_batch'})),
+    path("case/test", ApiCaseViews.as_view({'get': 'api_test_case'})),
+    path("case/batch", ApiCaseViews.as_view({'post': 'api_test_case_batch'})),
     path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),
     path("case/copy", ApiCaseViews.as_view({'post': 'copy_case'})),
     #

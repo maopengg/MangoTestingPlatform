@@ -8,14 +8,14 @@ from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.models.api_model import ApiInfoModel
+from PyAutoTest.models.api_model import RecordingApiModel
 from PyAutoTest.tools.log_collector import log
 
 
 class Recording:
 
     @classmethod
-    def write(cls, data: ApiInfoModel):
+    def write(cls, data: RecordingApiModel):
         from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
         username = data.username
         try:

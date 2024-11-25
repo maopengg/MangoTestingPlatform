@@ -47,4 +47,4 @@ class ApiCasePage(TableParent):
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, HTTP.get_api_case_run(row.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.get_api_test_case(row.get("id"), user_info.selected_environment, ))
