@@ -22,6 +22,7 @@ class BaseData(QObject):
     finished = Signal(object)
 
     def __init__(self,
+                 parent,
                  driver_object,
                  project_product_id,
                  equipment_config: None = None,
@@ -32,6 +33,8 @@ class BaseData(QObject):
                  page_step_id: int | None = None,
                  is_step: bool = False) -> None:
         super().__init__()
+        self.parent = parent
+
         self.project_product_id = project_product_id
         self.test_suite_id: Optional[int | None] = test_suite_id
         self.case_id: Optional[int | None] = case_id

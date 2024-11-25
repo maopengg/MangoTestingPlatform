@@ -76,8 +76,8 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
-    test_suite_details: int
-    test_suite_id: int
+    test_suite_details: int | None
+    test_suite_id: int | None
     id: int
     name: str
     project_product: int
@@ -87,7 +87,6 @@ class CaseModel(BaseModel):
     front_sql: list
     posterior_sql: list
     steps: list[PageStepsModel]
-
     public_data_list: list[UiPublicModel] = []
 
 
@@ -133,7 +132,7 @@ class PageStepsResultModel(BaseModel):
 
 
 class CaseResultModel(BaseModel):
-    test_suite_id: int
+    test_suite_id: int| None = None
     case_id: int
     environment_id: int | None = None
     case_name: str

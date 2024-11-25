@@ -53,8 +53,8 @@ class Case(HttpBase):
 
     @classmethod
     @request_log()
-    def ui_case_run(cls, case_id, test_env):
-        url = cls.url(f'/ui/case/run')
+    def ui_test_case(cls, case_id, test_env):
+        url = cls.url(f'/ui/case/test')
         _params = {
             'case_id': case_id,
             'test_env': test_env,
@@ -63,12 +63,13 @@ class Case(HttpBase):
 
     @classmethod
     @request_log()
-    def ui_batch_run(cls, case_id_list, ):
-        url = cls.url(f'/ui/case/run')
-        _params = {
-            'case_id_list[]': case_id_list,
+    def ui_test_case_batch(cls, case_id_list, test_env):
+        url = cls.url(f'/ui/case/batch')
+        json_data = {
+            'case_id_list': case_id_list,
+            'test_env': test_env,
         }
-        return cls.get(url=url, headers=cls.headers, params=_params)
+        return cls.post(url=url, headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()

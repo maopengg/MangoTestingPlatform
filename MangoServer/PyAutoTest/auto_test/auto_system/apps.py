@@ -6,6 +6,7 @@
 import os
 import threading
 import traceback
+
 import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
@@ -81,5 +82,6 @@ class AutoSystemConfig(AppConfig):
             traceback.print_exc()
             log.system.error(e)
             Mango.s(str(e))
+            time.sleep(5)
             task1 = threading.Thread(target=self.run_tests)
             task1.start()

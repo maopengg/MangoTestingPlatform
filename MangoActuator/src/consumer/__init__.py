@@ -8,32 +8,36 @@ import traceback
 
 from mangokit import singleton
 
-from src.handlers.api_consumer import APIConsumer
-from src.handlers.perf_consumer import PerfConsumer
-from src.handlers.tools_consumer import ToolsConsumer
-from src.handlers.ui_consumer import UIConsumer
+from src.consumer.api import API
+from src.consumer.perf import Perf
+from src.consumer.tools import Tools
+from src.consumer.ui import UI
 from src.models.socket_model import QueueModel
 from src.models.user_model import UserModel
 from src.tools.log_collector import log
 
 
 @singleton
-class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsConsumer):
+class SocketConsumer(UI, API, Perf, Tools):
+    queue = asyncio.Queue()
 
-    def __init__(self, loop=None, debug: bool = False):
-        self.queue = asyncio.Queue()
+    def __init__(self, parent, debug: bool = False):
+        self.parent = parent
         if not debug:
-            self.loop = loop
-            self.loop.create_task(self.consumer())
+            self.parent.loop.create_task(self.consumer())
         else:
             settings.IS_DEBUG = debug
             log.set_debug(settings.IS_DEBUG)
+
+    @classmethod
+    async def add_task(cls, task):
+        await cls.queue.put(task)
 
     async def consumer(self):
         while True:
             if not self.queue.empty():
                 data: QueueModel = await self.queue.get()
-                task = self.loop.create_task(getattr(self, data.func_name)(data.func_args))
+                task = self.parent.loop.create_task(getattr(self, data.func_name)(data.func_args))
                 task.add_done_callback(self.handle_task_result)
             await asyncio.sleep(0.2)
 
@@ -47,6 +51,7 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
 
     async def test(self):
         from src.tools import InitPath
+        from src.consumer.ui import UI
         with open(fr'{InitPath.logs_dir}\user_config.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             UserModel(**out)
@@ -60,10 +65,20 @@ class InterfaceMethodReflection(UIConsumer, APIConsumer, PerfConsumer, ToolsCons
             await asyncio.sleep(1)
 
 
+class Test:
+
+    def __init__(self):
+        from mangokit import Mango
+        self.loop = Mango.t()
+
+    def set_tips_info(self, value):
+        print(value)
+
+
 if __name__ == '__main__':
     from src.settings import settings
 
     settings.IP = '127.0.0.1'
     settings.PORT = 8000
-    r = InterfaceMethodReflection(debug=True)
+    r = SocketConsumer(Test())
     asyncio.run(r.test())

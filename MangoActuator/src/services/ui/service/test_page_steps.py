@@ -21,9 +21,11 @@ from src.services.ui.service.page_steps import PageSteps
 class TestPageSteps(PageSteps):
     """用例分发"""
 
-    def __init__(self, project_product):
+    def __init__(self, parent, project_product):
         self.driver_object = DriverObject()
+        self.parent = parent
         super().__init__(
+            self.parent,
             self.driver_object,
             project_product
         )

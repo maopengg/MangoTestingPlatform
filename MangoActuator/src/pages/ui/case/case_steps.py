@@ -272,11 +272,7 @@ class CaseStepsPage(SubPage):
 
     def run(self):
         user_info = UserModel()
-        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
-
-    def step_run(self):
-        user_info = UserModel()
-        response_message(self, HTTP.ui_case_run(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.ui_test_case(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
         response_message(self, HTTP.ui_case_steps_refresh(row.get("id")))

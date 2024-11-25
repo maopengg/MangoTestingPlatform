@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 import json
+import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
@@ -24,8 +25,8 @@ T = TypeVar('T')
 @singleton
 class WebSocketClient:
 
-    def __init__(self, loop=None):
-        self.loop: asyncio.windows_events.ProactorEventLoop = loop
+    def __init__(self, parent=None):
+        self.parent = parent
         self.websocket: Optional[WebSocketClientProtocol | None] = None
         self.is_recv = True
 
@@ -45,12 +46,9 @@ class WebSocketClient:
             if res.code == 200:
                 await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
                                       is_notice=ClientTypeEnum.WEB)
-                log.info("socket服务启动成功")
-                # SignalSend.notice_signal_a('在线')
-                # SignalSend.notice_signal_c("服务已连接！")
+                self.parent.set_tips_info("心跳已连接")
                 return True
             else:
-                # SignalSend.notice_signal_a('已离线')
                 return False
 
     async def client_run(self):
@@ -60,21 +58,23 @@ class WebSocketClient:
         """
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?{settings.USERNAME}"
         log.debug(str(f"websockets server url:{server_url}"))
+        retry = 1
         while self.is_recv:
             try:
                 async with websockets.connect(server_url, max_size=50000000) as self.websocket:
                     if await self.client_hands():
                         await self.client_recv()
                     await asyncio.sleep(2)
+                    retry = 1
             except (ConnectionRefusedError, OSError, websockets.ConnectionClosed):
-                # SignalSend.notice_signal_a('已离线')
-                log.info("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
-                # SignalSend.notice_signal_c("服务器已关闭，正在尝试重新链接，如长时间无响应请联系管理人员！")
+                self.parent.set_tips_info(
+                    f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
+                retry += 1
                 await asyncio.sleep(5)
             except Exception as error:
-                # SignalSend.notice_signal_a('已离线')
-                log.info(f"socket发生未知错误，请截图并联系管理员：{error}")
-                # SignalSend.notice_signal_c(f"socket发生未知错误，请截图并联系管理员：{error}")
+                traceback.print_exc()
+                log.error(error)
+                self.parent.set_tips_info(f"socket发生未知错误，请把日志发送给管理员！")
                 await asyncio.sleep(5)
                 raise error
 
@@ -83,13 +83,12 @@ class WebSocketClient:
         接受消息
         @return:
         """
-        from src.handlers import InterfaceMethodReflection
-        r = InterfaceMethodReflection()
+        from src.consumer import SocketConsumer
         while self.is_recv:
             recv_json = await self.websocket.recv()
             data = self.__output_method(recv_json)
             if data.data:
-                await r.queue.put(data.data)
+                await SocketConsumer().add_task(data.data)
             await asyncio.sleep(0.1)
 
     async def async_send(self,
@@ -127,7 +126,7 @@ class WebSocketClient:
         async def send_message():
             await self.async_send(msg, code, func_name, func_args, is_notice)
 
-        self.loop.create_task(send_message())
+        self.parent.loop.create_task(send_message())
 
     @staticmethod
     def __output_method(recv_json) -> SocketDataModel:

@@ -11,19 +11,19 @@ from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import Status3Enum, StatusEnum
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
-from .test_report_detailed_dict import *
+from .test_suite_detailed_dict import *
 from ...enums.system_enum import AutoTestTypeEnum
 from ...enums.ui_enum import ElementOperationEnum
 from ...models.socket_model import ResponseModel
 
 
-class TestReportDetailedPage(SubPage):
+class TestSuiteDetailedPage(SubPage):
 
     def __init__(self, parent):
         super().__init__(parent,
                          right_data=right_data,
                          field_list=field_list, )
-        self.superior_page = 'test_report'
+        self.superior_page = 'test_suite'
         self.id_key = 'test_suite'
 
         self.layout_h = MangoHBoxLayout()

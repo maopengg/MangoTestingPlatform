@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-01 下午8:57
 # @Author : 毛鹏
-from src.enums.tools_enum import TaskEnum
 from src.models.user_model import UserModel
 from .case_dict import *
 from ...parent.table import *
@@ -25,7 +24,15 @@ class CasePage(TableParent):
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, HTTP.ui_case_run(row.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.ui_test_case(row.get("id"), user_info.selected_environment, ))
+
+    def batch_run(self):
+        case_id_list = self.table_widget.table_widget.get_selected_items()
+        if not case_id_list:
+            error_message(self, '请按住shift然后使用鼠标在表格进行多选，然后再点击批量执行')
+            return
+        user_info = UserModel()
+        response_message(self, HTTP.ui_test_case_batch(case_id_list, user_info.selected_environment, ))
 
     def form_data_callback(self, obj: FormDataModel):
         if obj.key == 'case_people':

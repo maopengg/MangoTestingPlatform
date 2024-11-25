@@ -14,24 +14,25 @@ from src.tools.decorator.convert_args import convert_args
 from src.tools.decorator.error_handle import async_error_handle
 
 
-class UIConsumer:
+class UI:
     lock = asyncio.Lock()
 
-    @classmethod
+
     @async_error_handle()
     @convert_args(PageStepsModel)
-    async def u_page_step(cls, data: PageStepsModel):
+    async def u_page_step(self, data: PageStepsModel):
         """
         执行页面步骤
         @param data:
         @return:
         """
         try:
-            async with cls.lock:
+            async with self.lock:
                 if PageObject.test_page_steps is None:
-                    PageObject.test_page_steps = TestPageSteps(data.project_product)
+                    PageObject.test_page_steps = TestPageSteps(self.parent, data.project_product)
                 else:
                     PageObject.test_page_steps.project_product_id = data.project_product
+                self.parent.set_tips_info(f'开始执行页面步骤：{data.name}')
                 await PageObject.test_page_steps.page_steps_mian(data)
         except MangoActuatorError as error:
             await WebSocketClient().async_send(
@@ -40,24 +41,23 @@ class UIConsumer:
                 is_notice=ClientTypeEnum.WEB
             )
 
-    @classmethod
     @async_error_handle()
     @convert_args(EquipmentModel)
-    async def u_page_new_obj(cls, data: EquipmentModel):
+    async def u_page_new_obj(self, data: EquipmentModel):
         """
         实例化浏览器对象
         @param data:
         @return:
         """
-        async with cls.lock:
+        async with self.lock:
             if PageObject.test_page_steps is None:
-                PageObject.test_page_steps = TestPageSteps(None)
+                PageObject.test_page_steps = TestPageSteps(self.parent, None)
+            self.parent.set_tips_info(f'开始打开浏览器')
             await PageObject.test_page_steps.new_web_obj(data)
 
-    @classmethod
     @async_error_handle()
     @convert_args(CaseModel)
-    async def u_case(cls, data: CaseModel):
+    async def u_case(self, data: CaseModel):
         """
         执行测试用例
         @param data:
@@ -65,7 +65,7 @@ class UIConsumer:
         """
         max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
         if PageObject.case_flow is None:
-            PageObject.case_flow = CaseFlow(max_tasks) if max_tasks is not None else CaseFlow()
+            PageObject.case_flow = CaseFlow(self.parent, max_tasks) if max_tasks is not None else CaseFlow(self.parent)
         else:
             PageObject.case_flow.max_tasks = max_tasks
         await PageObject.case_flow.add_task(data)

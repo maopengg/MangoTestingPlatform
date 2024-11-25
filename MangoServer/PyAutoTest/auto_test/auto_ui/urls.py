@@ -44,8 +44,8 @@ urlpatterns = [
     #
     path("case", UiCaseCRUD.as_view()),
     path("case/copy/case", UiCaseViews.as_view({'post': 'cody_case'})),
-    path("case/run", UiCaseViews.as_view({'get': 'ui_test_case'})),
-    path("case/batch/run", UiCaseViews.as_view({'post': 'ui_batch_run'})),
+    path("case/test", UiCaseViews.as_view({'get': 'ui_test_case'})),
+    path("case/batch", UiCaseViews.as_view({'post': 'ui_test_case_batch'})),
     #
     path("case/steps/detailed", UiCaseStepsDetailedCRUD.as_view()),
     path("case/steps/refresh/cache/data", UiCaseStepsDetailedViews.as_view({'get': 'post_case_cache_data'})),

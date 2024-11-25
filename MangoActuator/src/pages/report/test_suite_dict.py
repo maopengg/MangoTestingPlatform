@@ -4,7 +4,7 @@
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
 from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import Status3Enum, Status1Enum
 
 search_data = [
     {
@@ -34,10 +34,18 @@ table_column = [
         'width': 100
     },
     {
-        'key': 'project_product',
-        'name': '项目/产品',
+        'key': 'project',
+        'name': '项目',
         'item': 'name',
         'width': 100
+    },
+    {
+        'key': 'type',
+        'name': '自动化类型',
+        'item': 'name',
+        'width': 100,
+        'option': AutoTestTypeEnum.get_option('value', 'label')
+
     },
     {
         'key': 'test_env',
@@ -46,22 +54,26 @@ table_column = [
         'option': EnvironmentEnum.get_option('value', 'label')
     },
     {
-        'key': 'create_time',
-        'name': '执行时间',
-        'width': 150
-    },
-    {
         'key': 'user',
         'name': '执行人',
         'width': 70
     },
     {
-        'key': 'run_status',
-        'name': '执行状态',
-        'width': 70,
-        'option': Status3Enum.get_option('value', 'label')
-
+        'key': 'create_time',
+        'name': '执行时间',
+        'width': 150
     },
+    {
+        'key': 'tasks',
+        'name': '任务名称',
+    },
+    # {
+    #     'key': 'run_status',
+    #     'name': '执行状态',
+    #     'width': 70,
+    #     'option': Status3Enum.get_option('value', 'label')
+    #
+    # },
     {
         'key': 'status',
         'name': '结果',
@@ -69,8 +81,10 @@ table_column = [
         'option': Status3Enum.get_option('value', 'label')
     },
     {
-        'key': 'error_message',
-        'name': '失败提示',
+        'key': 'is_notice',
+        'name': '是否通知',
+        'width': 70,
+        'option': Status1Enum.get_option('value', 'label')
     },
     {
         'key': 'ope',

@@ -41,6 +41,9 @@ def consumer():
                 except Exception as error:
                     test_suite_details.status = TaskEnum.FAIL.value
                     test_suite_details.error_message = f'发送未知异常，请联系管理员处理，异常内容：{error}'
+                else:
+                    test_suite_details.status = TaskEnum.PROCEED.value
+
             elif test_suite_details.type == AutoTestTypeEnum.API.value:
                 api_case_model = ApiCaseModel(
                     test_suite=test_suite_details.test_suite.id,
@@ -56,17 +59,25 @@ def consumer():
             test_suite_details.retry += 1
             test_suite_details.push_time = timezone.now()
             test_suite_details.save()
-        time.sleep(2)
-        if time.time() - reset_tims > 5 * 60:
+        if time.time() - reset_tims > 1 * 60:
             reset_tims = time.time()
             test_suite_details_list = TestSuiteDetails.objects.filter(
                 status=TaskEnum.PROCEED.value,
                 retry__lt=3 - 1
             )
             for test_suite_detail in test_suite_details_list:
-                # 检查推送时间是否超过当前时间的 30 分钟
                 if test_suite_detail.push_time and (
-                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=30)):
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=10)):
                     test_suite_detail.status = TaskEnum.STAY_BEGIN.value
                     test_suite_detail.save()
                     log.system.info(f'推送时间超过30分钟，状态已重置为：待执行，用例ID：{test_suite_detail.case_id}')
+            test_suite_details_list = TestSuiteDetails.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                retry=3
+            )
+            for test_suite_detail in test_suite_details_list:
+                if test_suite_detail.push_time and (
+                        timezone.now() - test_suite_detail.push_time > timedelta(minutes=10)):
+                    test_suite_detail.status = TaskEnum.FAIL.value
+                    test_suite_detail.save()
+                    log.system.info(f'连续3次都是待执行，状态直接设置为：失败，用例ID：{test_suite_detail.case_id}')

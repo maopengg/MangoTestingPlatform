@@ -11,16 +11,15 @@ from src.services.api.service.case_run import ApiCaseRun
 from src.tools.decorator.convert_args import convert_args
 
 
-class APIConsumer:
+class API:
     api = ApiCaseRun()
 
-    @classmethod
     @convert_args(RequestModel)
-    async def a_api_info(cls, data: RequestModel):
+    async def a_api_info(self, data: RequestModel):
         response: ClientResponse | None = None
         time = None
         session = aiohttp.ClientSession()
-        response, time = await cls.api.http_(session, data)
+        response, time = await self.api.http_(session, data)
         await session.close()
 
     @classmethod

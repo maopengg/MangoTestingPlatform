@@ -3,17 +3,11 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-import json
 
 from django.db import connection
 
-from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
-from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
 from PyAutoTest.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
-from PyAutoTest.enums.tools_enum import StatusEnum, ClientTypeEnum
 from PyAutoTest.exceptions import *
-from PyAutoTest.models.socket_model import SocketDataModel
-from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
 from PyAutoTest.models.ui_model import CaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
 
@@ -32,38 +26,15 @@ class TestReportWriting:
             raise UiError(*ERROR_MSG_0030, error=error)
 
     @classmethod
-    @orm_retry('update_case')
-    def update_case1(cls, data: TestSuiteDetailsResultModel):
-        connection.ensure_connection()
-        case = UiCase.objects.get(id=data.result.case_id)
-        case.status = data.result.status
-        case.test_suite_id = data.result.test_suite_id
-        case.save()
-        test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
-        test_suite_detail.result = data.result
-        test_suite_detail.status = data.status
-        test_suite_detail.save()  # 保存更改
-        for page_steps_result in data.result.page_steps_result_list:
-            cls.update_step(page_steps_result)
-
-    @classmethod
-    @orm_retry('update_case')
-    def update_case(cls, data: CaseResultModel):
+    @orm_retry('update_test_case')
+    def update_test_case(cls, data: CaseResultModel):
         connection.ensure_connection()
         case = UiCase.objects.get(id=data.case_id)
         case.status = data.status
-        case.test_suite_id = data.test_suite_id
+        case.result = data.model_dump_json()
         case.save()
-
-        # 保存用例结果
-        for page_steps_result in data.page_steps_result_list:
-            UiPageStepsResultCRUD.inside_post(page_steps_result.model_dump())
-            cls.update_step(page_steps_result)
-            for element_result in page_steps_result.element_result_list:
-                UiEleResultCRUD.inside_post(element_result.model_dump())
-
-        UiCaseResultCRUD.inside_post(data.model_dump())
-        cls.update_test_suite(data.test_suite_id, data.environment_id)
+        for i in data.page_steps_result_list:
+            cls.update_step(i)
 
     @classmethod
     @orm_retry('update_step')
@@ -73,44 +44,6 @@ class TestReportWriting:
         case_step_detailed.error_message = step_data.error_message
         case_step_detailed.save()
         #
-        page_step = UiPageSteps.objects.get(id=step_data.page_step_id)
+        page_step = PageSteps.objects.get(id=step_data.page_step_id)
         page_step.type = step_data.status
         page_step.save()
-
-    @classmethod
-    @orm_retry('update_test_suite')
-    def update_test_suite(cls, test_suite_id: int, test_object_id: int):
-        test_suite_obj = TestSuiteReport.objects.get(id=test_suite_id)
-        case_id_status = UiCaseResult \
-            .objects \
-            .filter(test_suite_id=test_suite_id) \
-            .values_list('case_id', 'status', 'error_message')
-        case_id_list = []
-        status_list = []
-        error_message_list = []
-        for case_id, status, error_message in case_id_status:
-            case_id_list.append(case_id)
-            status_list.append(status)
-            if error_message:
-                error_message_list.append(error_message)
-        if set(test_suite_obj.case_list) == set(case_id_list):
-            test_suite_obj.run_status = StatusEnum.SUCCESS.value
-            if StatusEnum.FAIL.value in status_list:
-                test_suite_obj.status = StatusEnum.FAIL.value
-                code = 300
-                msg = f'测试套：{test_suite_id}执行完成，测试结果全部成功，请前往测试报告查询！'
-            else:
-                code = 200
-                msg = f'测试套：{test_suite_id}执行完成，测试结果全部成功，请前往测试报告查询！'
-                test_suite_obj.status = StatusEnum.SUCCESS.value
-            test_suite_obj.error_message = json.dumps(error_message_list, ensure_ascii=False)
-            test_suite_obj.save()
-            if test_suite_obj.is_notice:
-                NoticeMain.notice_main(test_object_id, test_suite_id)
-            from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
-            ChatConsumer.active_send(SocketDataModel(
-                code=code,
-                msg=msg,
-                user=test_suite_obj.user.username,
-                is_notice=ClientTypeEnum.WEB.value,
-            ))

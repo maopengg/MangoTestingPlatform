@@ -9,8 +9,8 @@ from PyAutoTest.models.ui_model import CaseResultModel
 
 
 class TestSuiteDetailsResultModel(BaseModel):
-    id: int
-    test_suite: int
-    result: CaseResultModel
+    id: int | None = None
+    test_suite: int | None = None
     status: int
-    error_message: str
+    error_message: str | None = None
+    result_data: CaseResultModel

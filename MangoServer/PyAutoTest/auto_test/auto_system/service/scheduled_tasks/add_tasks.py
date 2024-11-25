@@ -4,7 +4,6 @@
 # @Time   : 2024-11-24 20:26
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteCRUD
 from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
@@ -25,6 +24,7 @@ class AddTasks:
         self.add_test_suite()
 
     def add_test_suite(self):
+        from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteCRUD
         TestSuiteCRUD.inside_post({
             'id': self.test_suite_id,
             'type': self._type,
@@ -52,5 +52,5 @@ class AddTasks:
                 'status': TaskEnum.STAY_BEGIN.value,
                 'error_message': None,
                 'result': None,
-                'retry': 0,
+                'retry': 0 if self.tasks_id else 2,
             })

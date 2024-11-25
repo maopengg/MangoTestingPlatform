@@ -10,21 +10,17 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
-from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteCRUD
-from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
-from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
-from PyAutoTest.enums.tools_enum import TaskEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from PyAutoTest.tools.view.snowflake import Snowflake
 
 
 class UiCaseSerializers(serializers.ModelSerializer):
@@ -77,14 +73,15 @@ class UiCaseViews(ViewSet):
         """
         case_model = SendTestData(
             request.user['id'],
-            request.query_params.get("test_env")
-        ).test_case(int(request.GET.get("case_id")))
+            request.query_params.get("test_env"),
+            is_send=True
+        ).test_case(int(request.query_params.get("case_id")))
         return ResponseData.success(RESPONSE_MSG_0074, data=case_model.model_dump(),
                                     value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['post'], detail=False)
     @error_response('ui')
-    def ui_batch_run(self, request: Request):
+    def ui_test_case_batch(self, request: Request):
         """
         批量执行多个用例组
         @param request:

@@ -51,6 +51,7 @@ class ApiCase(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     front_headers = models.TextField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'api_case'
@@ -102,48 +103,3 @@ class ApiPublic(models.Model):
     class Meta:
         db_table = 'api_public'
         ordering = ['-id']
-
-#
-# class ApiCaseResult(models.Model):
-#     """api用例测试结果"""
-#     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-#     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-#     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-#     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
-#     status = models.SmallIntegerField(verbose_name="断言结果", null=True)
-#     error_message = models.TextField(verbose_name="失败原因", max_length=1024, null=True)
-#
-#     class Meta:
-#         db_table = 'api_case_result'
-#
-#
-# class ApiInfoResult(models.Model):
-#     """用例接口测试结果"""
-#     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-#     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-#     test_suite_id = models.BigIntegerField(verbose_name="测试套件id", null=True)
-#     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-#     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
-#     api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.SET_NULL, null=True)
-#     case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.SET_NULL, null=True)
-#     # 请求
-#     url = models.TextField(verbose_name="请求url", null=True)
-#     headers = models.TextField(verbose_name="请求头", null=True)
-#     params = models.TextField(verbose_name="参数", null=True)
-#     data = models.TextField(verbose_name="data", null=True)
-#     json = models.TextField(verbose_name="json", null=True)
-#     file = models.TextField(verbose_name="file", null=True)
-#     # 响应
-#     response_code = models.CharField(verbose_name="响应code码", max_length=64, null=True)
-#     response_time = models.CharField(verbose_name="响应时间", max_length=64, null=True)
-#     response_headers = models.TextField(verbose_name="响应headers", null=True)
-#     response_text = models.TextField(verbose_name="响应文本", null=True)
-#     response_json = models.TextField(verbose_name="响应文本json对象", null=True)
-#     status = models.SmallIntegerField(verbose_name="断言结果", null=True)
-#     error_message = models.CharField(verbose_name="失败原因", max_length=1024, null=True)
-#     all_cache = models.TextField(verbose_name="执行到这个用例时的缓存数据", null=True)
-#     # 断言
-#     assertion = models.TextField(verbose_name="断言", null=True)
-#
-#     class Meta:
-#         db_table = 'api_info_result'

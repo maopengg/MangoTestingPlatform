@@ -27,8 +27,9 @@ from src.tools.log_collector import log
 
 class TestCase(PageSteps):
 
-    def __init__(self, case_model: CaseModel, driver_object):
+    def __init__(self, parent, case_model: CaseModel, driver_object):
         super().__init__(
+            parent,
             driver_object,
             project_product_id=case_model.project_product,
             test_suite_id=case_model.test_suite_id,
@@ -93,39 +94,11 @@ class TestCase(PageSteps):
         except Exception as error:
             traceback.print_exc()
             log.error(error)
-            test_suite_details_result_model = TestSuiteDetailsResultModel(
-                id=self.case_model.test_suite_details,
-                test_suite=self.case_result.test_suite_id,
-                status=self.case_result.status,
-                error_message=self.case_result.error_message,
-                result=self.case_result
-            )
-            await WebSocketClient().async_send(
-                code=200 if self.case_result.status else 300,
-                msg='发生未知错误，请联系管理员检查测试用例数据',
-                is_notice=ClientTypeEnum.WEB,
-                func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=test_suite_details_result_model
-            )
-            queue_notification.put(
-                {'type': self.case_result.status, 'value': '发生未知错误，请联系管理员检查测试用例数据'})
+            msg = '发生未知错误，请联系管理员检查测试用例数据'
+            await self.send_case_result(msg)
         else:
             msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
-            test_suite_details_result_model = TestSuiteDetailsResultModel(
-                id='',
-                test_suite='',
-                status='',
-                error_message='',
-                result=self.case_result
-            )
-            await WebSocketClient().async_send(
-                code=200 if self.case_result.status else 300,
-                msg=msg,
-                is_notice=ClientTypeEnum.WEB,
-                func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=test_suite_details_result_model
-            )
-            queue_notification.put({'type': self.case_result.status, 'value': msg})
+            await self.send_case_result(msg)
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         for i in front_custom:
@@ -160,3 +133,25 @@ class TestCase(PageSteps):
             return self.package_name
         if self.url and self.package_name:
             return json.dumps([self.url, self.package_name])
+
+    async def send_case_result(self, msg):
+        if self.case_model.test_suite_details:
+            func_name = UiSocketEnum.TEST_CASE_BATCH.value
+            func_args = TestSuiteDetailsResultModel(
+                id=self.case_model.test_suite_details,
+                test_suite=self.case_result.test_suite_id,
+                status=self.case_result.status,
+                error_message=self.case_result.error_message,
+                result=self.case_result
+            )
+        else:
+            func_name = UiSocketEnum.TEST_CASE.value
+            func_args = self.case_result
+        await WebSocketClient().async_send(
+            code=200 if self.case_result.status else 300,
+            msg=msg,
+            is_notice=ClientTypeEnum.WEB,
+            func_name=func_name,
+            func_args=func_args
+        )
+        queue_notification.put({'type': self.case_result.status, 'value': msg})

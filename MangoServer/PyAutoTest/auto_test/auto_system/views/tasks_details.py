@@ -13,7 +13,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksDetails
-from PyAutoTest.auto_test.auto_system.views.scheduled_tasks import TasksSerializers
+from PyAutoTest.auto_test.auto_system.views.tasks import TasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum

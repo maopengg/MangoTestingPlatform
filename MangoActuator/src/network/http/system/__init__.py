@@ -6,9 +6,10 @@
 from .database import Database
 from .home import Home
 from .notice import Notice
-from .scheduled_tasks import ScheduledTasks
-from .tasks_list import TasksList
-from .test_suite_report import TestSuiteReport
+from .tasks import ScheduledTasks
+from .tasks_details import TasksList
+from .test_suite import TestSuite
+from .test_suite_details import TestSuiteDetails
 from .time_tasks import TimeTasks
 from .cache_data import CacheData
 
@@ -18,7 +19,8 @@ class SystemApi(
     Notice,
     TasksList,
     ScheduledTasks,
-    TestSuiteReport,
+    TestSuite,
+    TestSuiteDetails,
     Home,
     TimeTasks,
     CacheData,

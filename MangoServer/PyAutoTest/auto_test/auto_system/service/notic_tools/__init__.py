@@ -23,8 +23,8 @@ from PyAutoTest.tools.log_collector import log
 class NoticeMain:
 
     @classmethod
-    def notice_main(cls, test_object_id: int, test_suite_id: int):
-        notice_obj = NoticeConfig.objects.filter(environment=test_object_id, status=StatusEnum.SUCCESS.value)
+    def notice_main(cls, test_env: int, test_suite_id: int):
+        notice_obj = NoticeConfig.objects.filter(environment=test_env, status=StatusEnum.SUCCESS.value)
         for i in notice_obj:
             if i.type == NoticeEnum.MAIL.value:
                 cls.__wend_mail_send(i, cls.test_report(test_suite_id))

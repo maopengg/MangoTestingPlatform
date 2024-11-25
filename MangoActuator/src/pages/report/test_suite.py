@@ -6,18 +6,18 @@
 from mango_ui import *
 
 from src.network import HTTP
-from .test_report_dict import *
+from .test_suite_dict import *
 from ..parent.table import TableParent
 
 
-class TestReportPage(TableParent):
+class TestSuitePage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data=search_data)
-        self.subpage_value = 'test_report_detailed'
-        self.get = HTTP.get_test_suite_report
-        self.post = HTTP.post_test_suite_report
-        self.put = HTTP.put_test_suite_report
-        self._delete = HTTP.delete_test_suite_report
+        self.subpage_value = 'test_suite_detailed'
+        self.get = HTTP.get_test_suite
+        self.post = HTTP.get_test_suite
+        self.put = HTTP.get_test_suite
+        self._delete = HTTP.get_test_suite
         self.layout_v = MangoVBoxLayout()
         self.layout.addLayout(self.layout_v)
         self.layout_h = MangoHBoxLayout()
@@ -39,12 +39,12 @@ class TestReportPage(TableParent):
 
     def show_data(self, is_refresh=False):
         response_model = HTTP.result_week()
-        self.line_plot_1.draw([
-            {'name': '成功', 'value': response_model.data.get('success')},
-            {'name': '失败', 'value': response_model.data.get('fail')}
-        ])
-        self.pie_plot_1.draw([
-            {'name': '失败数', 'value': response_model.data.get('failSun')},
-            {'name': '成功数', 'value': response_model.data.get('successSun')}
-        ])
+        # self.line_plot_1.draw([
+        #     {'name': '成功', 'value': response_model.data.get('success')},
+        #     {'name': '失败', 'value': response_model.data.get('fail')}
+        # ])
+        # self.pie_plot_1.draw([
+        #     {'name': '失败数', 'value': response_model.data.get('failSun')},
+        #     {'name': '成功数', 'value': response_model.data.get('successSun')}
+        # ])
         super().show_data(is_refresh)

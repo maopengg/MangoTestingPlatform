@@ -14,13 +14,13 @@ from ..bases.driver_object import DriverObject
 
 class CaseFlow:
 
-    def __init__(self, max_tasks=2):
+    def __init__(self, parent, max_tasks=2):
         super().__init__()
         self.queue = asyncio.Queue()
         self.max_tasks = max_tasks
         self.running_tasks = 0
-        self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self.process_tasks())
+        self.parent = parent
+        self.parent.loop.create_task(self.process_tasks())
         self.driver_object = DriverObject()
 
     async def process_tasks(self):
@@ -33,7 +33,8 @@ class CaseFlow:
 
     @async_memory
     async def execute_task(self, case_model: CaseModel):
-        async with TestCase(case_model, self.driver_object) as obj:
+        async with TestCase(self.parent, case_model, self.driver_object) as obj:
+            self.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
             await obj.case_init()
             await obj.case_page_step()
         self.running_tasks -= 1

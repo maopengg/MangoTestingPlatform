@@ -9,8 +9,8 @@ from src.models.ui_model import CaseResultModel
 
 
 class TestSuiteDetailsResultModel(BaseModel):
-    id: int
-    test_suite: int
+    id: int | None = None
+    test_suite: int | None = None
     status: int
-    error_message: str
-    result: CaseResultModel
+    error_message: str | None = None
+    result_data: CaseResultModel

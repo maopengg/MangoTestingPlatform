@@ -4,5 +4,5 @@
 # @Author : 毛鹏
 
 
-class ToolsConsumer:
+class Tools:
     pass
