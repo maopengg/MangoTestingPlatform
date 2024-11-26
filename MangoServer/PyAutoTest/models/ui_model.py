@@ -64,6 +64,7 @@ class PageStepsModel(BaseModel):
     id: int
     name: str
     project_product: int
+    project_product_name: int
     module_name: str
     type: int
     url: str
