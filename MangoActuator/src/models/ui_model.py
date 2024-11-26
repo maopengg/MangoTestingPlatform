@@ -63,7 +63,7 @@ class PageStepsModel(BaseModel):
     id: int
     name: str
     project_product: int
-    project_product_name: int
+    project_product_name: str
     module_name: str
     type: int
     url: str
@@ -122,8 +122,8 @@ class PageStepsResultModel(BaseModel):
     name: str
     type: int
     project_product_id: int
-    project_product_name: int
-    case_steps_detail_id: int | None = None
+    project_product_name: str
+    case_step_details_id: int | None = None
 
     cache_data: dict
     test_object: dict  # url或者软件包
@@ -131,20 +131,20 @@ class PageStepsResultModel(BaseModel):
 
     status: int
     error_message: str | None = None
-    element_result_list: list[ElementResultModel]
+    element_result_list: list[ElementResultModel] = []
 
 
 class UiCaseResultModel(BaseModel):
     id: int
     name: str
     project_product_id: int
-    project_product_name: int
+    project_product_name: str
     module_name: str
     test_env: int
     status: int
     error_message: str | None = None
     video_path: str | None = None
-    page_steps_result: list[PageStepsResultModel]
+    page_steps_result: list[PageStepsResultModel] = []
 
 
 class PageObject:

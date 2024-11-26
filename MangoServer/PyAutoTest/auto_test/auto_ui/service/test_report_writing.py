@@ -18,10 +18,9 @@ class TestReportWriting:
     @orm_retry('update_page_step_status')
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         try:
-            if data.page_step_id:
-                res = PageSteps.objects.get(id=data.page_step_id)
-                res.type = data.status
-                res.save()
+            res = PageSteps.objects.get(id=data.id)
+            res.status = data.status
+            res.save()
         except PageSteps.DoesNotExist as error:
             raise UiError(*ERROR_MSG_0030, error=error)
 
@@ -29,10 +28,10 @@ class TestReportWriting:
     @orm_retry('update_test_case')
     def update_test_case(cls, data: UiCaseResultModel):
         connection.ensure_connection()
-        case = UiCase.objects.get(id=data.case_id)
+        case = UiCase.objects.get(id=data.id)
         case.status = data.status
         case.save()
-        for i in data.page_steps_result_list:
+        for i in data.page_steps_result:
             cls.update_step(i)
 
     @classmethod
@@ -44,6 +43,6 @@ class TestReportWriting:
         case_step_detailed.result_data = step_data.model_dump_json()
         case_step_detailed.save()
         #
-        page_step = PageSteps.objects.get(id=step_data.page_step_id)
-        page_step.type = step_data.status
+        page_step = PageSteps.objects.get(id=step_data.id)
+        page_step.status = step_data.status
         page_step.save()

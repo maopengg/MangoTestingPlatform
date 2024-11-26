@@ -2,6 +2,8 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
+import traceback
+
 from mangokit import ToolsError as TError
 from playwright._impl._errors import TargetClosedError, Error
 
@@ -146,6 +148,7 @@ class ElementOperation(WebDevice, AndroidDriver):
                 else:
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
         except AttributeError:
+            traceback.print_exc()
             raise UiError(*ERROR_MSG_0027)
         except UiError as error:
             raise error
@@ -226,10 +229,10 @@ class ElementOperation(WebDevice, AndroidDriver):
         self.element_test_result.error_message = error.msg
         log.warning(
             f"""
-            元素操作失败----->\n
-            元 素 对 象：{self.element_model.model_dump() if self.element_model else self.element_model}\n
+            元素操作失败----->
+            元 素 对 象：{self.element_model.model_dump() if self.element_model else self.element_model}
             元素测试结果：{
-            self.element_test_result.model_dump() if self.element_test_result else self.element_test_result}\n
+            self.element_test_result.model_dump() if self.element_test_result else self.element_test_result}
             报 错 信 息：{error.msg}
             """
         )

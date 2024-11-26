@@ -27,6 +27,7 @@ class ProjectProduct(models.Model):
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="产品名称", max_length=64)
     client_type = models.SmallIntegerField(verbose_name="客户端类型")
+    auto_type = models.SmallIntegerField(verbose_name="自动化类型")
 
     class Meta:
         db_table = 'project_product'

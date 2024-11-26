@@ -66,16 +66,6 @@ class Status1Enum(BaseEnum):
         return {0: "否", 1: "是"}
 
 
-class Status4Enum(BaseEnum):
-    """状态枚举"""
-    SUCCESS = 1
-    FAIL = 0
-
-    @classmethod
-    def obj(cls):
-        return {0: "进行中", 1: "已完成"}
-
-
 class Status5Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
@@ -98,8 +88,12 @@ class ProductTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {
-            0: "WEB（API,UI通用）", 1: "PC桌面（API,UI通用）",
-            2: "APP（API专用）", 3: '安卓（UI专用）', 4: 'IOS（UI专用）', 5: '小程序（API专用）'
+            0: "WEB（API,UI通用）",
+            1: "PC桌面（API,UI通用）",
+            2: "API",
+            3: '安卓（UI专用）',
+            4: 'IOS（UI专用）',
+            5: '小程序（API专用）'
         }
 
 
