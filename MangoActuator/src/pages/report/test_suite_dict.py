@@ -4,7 +4,7 @@
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
 from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
-from src.enums.tools_enum import Status3Enum, Status1Enum
+from src.enums.tools_enum import Status1Enum, TaskEnum
 
 search_data = [
     {
@@ -17,7 +17,7 @@ search_data = [
         'placeholder': '请选择测试结果',
         'key': 'status',
         'type': 1,
-        'select': Status3Enum.get_select()
+        'select': TaskEnum.get_select()
     },
     {
         'title': '自动化类型',
@@ -78,7 +78,7 @@ table_column = [
         'key': 'status',
         'name': '结果',
         'width': 70,
-        'option': Status3Enum.get_option('value', 'label')
+        'option': TaskEnum.get_option('value', 'label')
     },
     {
         'key': 'is_notice',

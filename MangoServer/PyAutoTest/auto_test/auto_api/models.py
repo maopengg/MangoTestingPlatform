@@ -51,7 +51,6 @@ class ApiCase(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     front_headers = models.TextField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
-    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'api_case'
@@ -82,6 +81,7 @@ class ApiCaseDetailed(models.Model):
     posterior_response = models.JSONField(verbose_name="后置响应处理", null=True)
     posterior_sleep = models.CharField(verbose_name="步骤顺序", max_length=64, null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'api_case_detailed'

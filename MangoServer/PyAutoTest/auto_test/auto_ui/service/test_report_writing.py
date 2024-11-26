@@ -8,7 +8,7 @@ from django.db import connection
 
 from PyAutoTest.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
 from PyAutoTest.exceptions import *
-from PyAutoTest.models.ui_model import CaseResultModel, PageStepsResultModel
+from PyAutoTest.models.ui_model import UiCaseResultModel, PageStepsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
 
 
@@ -27,11 +27,10 @@ class TestReportWriting:
 
     @classmethod
     @orm_retry('update_test_case')
-    def update_test_case(cls, data: CaseResultModel):
+    def update_test_case(cls, data: UiCaseResultModel):
         connection.ensure_connection()
         case = UiCase.objects.get(id=data.case_id)
         case.status = data.status
-        case.result = data.model_dump_json()
         case.save()
         for i in data.page_steps_result_list:
             cls.update_step(i)
@@ -42,6 +41,7 @@ class TestReportWriting:
         case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
         case_step_detailed.status = step_data.status
         case_step_detailed.error_message = step_data.error_message
+        case_step_detailed.result_data = step_data.model_dump_json()
         case_step_detailed.save()
         #
         page_step = PageSteps.objects.get(id=step_data.page_step_id)

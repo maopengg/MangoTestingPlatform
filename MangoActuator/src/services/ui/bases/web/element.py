@@ -27,7 +27,7 @@ class PlaywrightElement(BaseData):
         """获取元素文本"""
         value = await locating.inner_text()
         if set_cache_key:
-            self.test_case.set_cache(key=set_cache_key, value=value)
+            self.test_data.set_cache(key=set_cache_key, value=value)
         return value
 
     @classmethod

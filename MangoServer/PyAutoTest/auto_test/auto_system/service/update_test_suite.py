@@ -11,6 +11,7 @@ from PyAutoTest.enums.tools_enum import TaskEnum, StatusEnum, ClientTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
+from PyAutoTest.tools.log_collector import log
 
 
 class UpdateTestSuite:
@@ -26,6 +27,7 @@ class UpdateTestSuite:
     @orm_retry('update_test_suite')
     def update_test_suite_details(cls, data: TestSuiteDetailsResultModel):
         connection.ensure_connection()
+        log.system.debug(f'开始更新测试套数据：{data.model_dump_json()}')
         test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
         test_suite_detail.result_data = data.result_data.model_dump()
         test_suite_detail.status = data.status
@@ -52,7 +54,7 @@ class UpdateTestSuite:
         from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,
-            msg=msg,
+            msg=msg if msg else f'测试套ID：{test_suite_id} 执行完成',
             user=test_suite.user.username,
             is_notice=ClientTypeEnum.WEB.value,
         ))

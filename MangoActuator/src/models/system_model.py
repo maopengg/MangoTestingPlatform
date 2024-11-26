@@ -5,12 +5,12 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from src.models.ui_model import CaseResultModel
+from src.models.ui_model import UiCaseResultModel
 
 
 class TestSuiteDetailsResultModel(BaseModel):
-    id: int | None = None
-    test_suite: int | None = None
+    id: int
+    test_suite: int
     status: int
     error_message: str | None = None
-    result_data: CaseResultModel
+    result_data: UiCaseResultModel

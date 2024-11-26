@@ -1,4 +1,3 @@
-import asyncio
 from threading import Thread
 
 import time
@@ -12,16 +11,24 @@ class AutoApiConfig(AppConfig):
     name = 'PyAutoTest.auto_test.auto_api'
 
     def ready(self):
-        task = Thread(target=self.start_consumer)
+        def run():
+            time.sleep(5)
+            self.test_case_consumption()
+
+        task = Thread(target=run)
         task.start()
 
-    def start_consumer(self):
-        time.sleep(5)
-        # 在主线程中获取事件循环并启动任务
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.test_case_consumption(loop))
+    def test_case_consumption(self):
+        CaseFlow().process_tasks()
 
-    async def test_case_consumption(self, loop):
-        CaseFlow.loop = loop
-        await CaseFlow.process_tasks()
+    #
+    # def start_consumer(self):
+    #     time.sleep(5)
+    #     # 在主线程中获取事件循环并启动任务
+    #     loop = asyncio.new_event_loop()
+    #     asyncio.set_event_loop(loop)
+    #     loop.run_until_complete(self.test_case_consumption(loop))
+    #
+    # async def test_case_consumption(self, loop):
+    #     CaseFlow.loop = loop
+    #     await CaseFlow.process_tasks()

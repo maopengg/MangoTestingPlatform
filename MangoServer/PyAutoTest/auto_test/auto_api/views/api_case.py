@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_api.service.api_call.api_case import ApiCaseRun
+from PyAutoTest.auto_test.auto_api.service.api_call.test_case import TestCase
 from PyAutoTest.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
 from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
@@ -69,8 +69,7 @@ class ApiCaseViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('api')
     def api_test_case(self, request: Request):
-        api_case_run = ApiCaseRun(
-            project_product_id=0,
+        api_case_run = TestCase(
             user_id=request.user.get('id'),
             test_env=request.query_params.get('test_env'),
         )

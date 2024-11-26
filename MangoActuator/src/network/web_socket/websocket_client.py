@@ -10,7 +10,7 @@ from typing import Union, Optional, TypeVar
 
 import websockets
 from mangokit import singleton
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.tools_enum import ClientTypeEnum, ClientNameEnum
@@ -66,7 +66,7 @@ class WebSocketClient:
                         await self.client_recv()
                     await asyncio.sleep(2)
                     retry = 1
-            except (ConnectionRefusedError, OSError, websockets.ConnectionClosed):
+            except (ConnectionRefusedError, OSError, WebSocketException, websockets.ConnectionClosed):
                 self.parent.set_tips_info(
                     f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                 retry += 1
@@ -112,7 +112,7 @@ class WebSocketClient:
                 await self.websocket.send(self.__serialize(send_data))
             else:
                 self.__serialize(send_data)
-        except ConnectionClosedError:
+        except WebSocketException:
             await self.client_run()
             await self.websocket.send(self.__serialize(send_data))
 

@@ -5,17 +5,13 @@
 # @Author : 毛鹏
 from urllib.parse import urlparse, urljoin
 
-from mangokit import RandomTimeData
-from playwright._impl._errors import TargetClosedError, Error
+from playwright._impl._errors import TargetClosedError
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
-from src.network import HTTP
 from src.services.ui.bases import ElementOperation
-from src.settings import settings
-from src.tools import InitPath
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
@@ -32,11 +28,15 @@ class PageSteps(ElementOperation):
         self.equipment_config = page_steps_model.equipment_config
 
         self.page_step_result_model = PageStepsResultModel(
-            test_suite_id=self.test_suite_id,
-            case_id=self.case_id,
-            case_step_details_id=self.case_step_details_id,
-            page_step_id=self.page_step_id,
-            page_step_name=page_steps_model.name,
+            id=self.page_steps_model.id,
+            name=self.page_steps_model.name,
+            type=self.page_steps_model.type,
+            project_product_id=self.page_steps_model.project_product,
+            project_product_name=self.page_steps_model.project_product_name,
+            case_step_details_id=self.page_steps_model.case_step_details_id,
+            cache_data={},
+            test_object={},
+            equipment={},
             status=StatusEnum.FAIL.value,
             element_result_list=[]
         )
@@ -51,26 +51,23 @@ class PageSteps(ElementOperation):
                         element_data = _element_data.page_step_details_data
                 if element_data is None:
                     raise UiError(*ERROR_MSG_0025)
-            # 执行用例
             try:
                 await self.element_setup(element_model, element_data, self.page_steps_model.type)
-                await self.element_main()
-                self.progress.emit(self.element_test_result)
-            except MangoActuatorError as error:
-                await self.__error(error)
-                return self.page_step_result_model
-            except TargetClosedError as error:
-                await self.setup()
-                self.element_test_result.element_data.error_message = error.message
-                self.page_step_result_model.error_message = error.message
-                self.page_step_result_model.element_result_list.append(self.element_test_result)
-                raise UiError(*ERROR_MSG_0010)
-            except Error as error:
+                element_result = await self.element_main()
+                self.page_step_result_model.status = StatusEnum.SUCCESS.value
+                self.end_set(element_result)
+            except UiError as error:
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.msg
+                self.end_set(self.element_test_result)
                 raise error
-            else:
-                self.page_step_result_model.element_result_list.append(self.element_test_result)
-        self.page_step_result_model.status = StatusEnum.SUCCESS.value
         return self.page_step_result_model
+
+    def end_set(self, element_result):
+        self.page_step_result_model.cache_data = self.test_data.get_all()
+        self.page_step_result_model.test_object = {'url': self.url, 'package_name': self.package_name}
+        self.page_step_result_model.equipment = {'name': self.driver_object.web.config}
+        self.page_step_result_model.element_result_list.append(element_result)
 
     @async_memory
     async def driver_init(self):
@@ -136,46 +133,3 @@ class PageSteps(ElementOperation):
 
     def __desktop_init(self, ):
         pass
-
-    async def __error(self, error: MangoActuatorError):
-        log.warning(
-            f"""
-            元素操作失败----->\n
-            元 素 对 象：{self.element_model.model_dump() if self.element_model else self.element_model}\n
-            元素测试结果：{
-            self.element_test_result.model_dump() if self.element_test_result else self.element_test_result}\n
-            报 错 信 息：{error.msg}
-            """
-        )
-        if self.element_test_result:
-            file_name = f'失败截图-{self.element_model.name}{RandomTimeData.get_time_for_min()}.jpg'
-            file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
-            self.element_test_result.element_data.picture_path = f'files/{file_name}'
-            self.page_step_result_model.element_result_list.append(self.element_test_result)
-            self.element_test_result.element_data.error_message = error.msg
-            await self.__error_screenshot(file_path, file_name)
-        self.page_step_result_model.status = StatusEnum.FAIL.value
-        self.page_step_result_model.error_message = error.msg
-
-    async def __error_screenshot(self, file_path, file_name):
-        # try:
-        match self.page_steps_model.type:
-            case DriveTypeEnum.WEB.value:
-                try:
-                    await self.w_screenshot(file_path)
-                except TargetClosedError:
-                    await self.setup()
-                    raise UiError(*ERROR_MSG_0010)
-                except AttributeError:
-                    await self.setup()
-                    raise UiError(*ERROR_MSG_0010)
-            case DriveTypeEnum.ANDROID.value:
-                self.a_screenshot(file_path)
-            case DriveTypeEnum.IOS.value:
-                pass
-            case DriveTypeEnum.DESKTOP.value:
-                pass
-            case _:
-                log.error('自动化类型不存在，请联系管理员检查！')
-        if not settings.IS_DEBUG:
-            HTTP.upload_file(self.project_product_id, file_path, file_name)

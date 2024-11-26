@@ -2,41 +2,26 @@
 # @Project: 芒果测试平台# @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
-import asyncio
 import json
 
 import time
-from retrying import retry
 
 from PyAutoTest.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import *
-from PyAutoTest.models.api_model import ResponseDataModel, RequestDataModel
-from mangokit import ToolsError, ResponseModel
+from PyAutoTest.models.api_model import ResponseDataModel, RequestDataModel, AssResultModel
+from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
+from mangokit import ToolsError
 
 
-class CaseDetailedInit(ApiCaseData):
-    ass_result = []
+class CaseDetailedInit(ApiCaseData, PublicAssertion):
+    ass_result: list[AssResultModel] = []
 
-    def send_request(self, request_data_model: RequestDataModel) -> ResponseDataModel:
+    def send_request(self, request_data_model: RequestDataModel) -> tuple[RequestDataModel, ResponseDataModel]:
         request_data_model = self.request_data_clean(request_data_model)
-
-        response: ResponseModel = asyncio.run(self.http(request_data_model))
-        self.result_data.request = request_data_model
-        self.result_data.response = ResponseDataModel(
-            url=request_data_model.url,
-            method=request_data_model.method,
-            headers=request_data_model.headers,
-            params=request_data_model.params,
-            data=request_data_model.data,
-            json_data=request_data_model.json_data,
-            file=request_data_model.file,
-            status_code=response.status_code,
-            response_time=response.response_time,
-            response_headers=response.headers,
-            response_json=response.json_data if isinstance(request_data_model.json_data, dict | list) else None,
-            response_text=json.loads(response.json_data) if isinstance(request_data_model.json_data, str) else None,
-        )
-        return self.result_data.response
+        response = self.http(request_data_model)
+        log.api.debug(f'响应请求：{response.model_dump_json()}')
+        return request_data_model, response
 
     def front_sql(self, case_detailed):
         if self.mysql_connect:
@@ -48,7 +33,7 @@ class CaseDetailedInit(ApiCaseData):
                             self.set_cache(key, value)
                             log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
-    def assertion(self, response: ResponseDataModel, case_detailed) -> None:
+    def assertion(self, response: ResponseDataModel, case_detailed) -> list[AssResultModel]:
         if response.response_json:
             response_data = response.response_json
         else:
@@ -59,12 +44,18 @@ class CaseDetailedInit(ApiCaseData):
             except ValueError:
                 raise ApiError(*ERROR_MSG_0039)
         self.ass_result = []
-        if case_detailed.ass_response_value:
-            self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
-        if case_detailed.ass_sql:
-            self.__assertion_sql(self.replace(case_detailed.ass_sql))
-        if case_detailed.ass_response_whole:
-            self.__assertion_response_whole(response_data, self.replace(case_detailed.ass_response_whole))
+        try:
+            if case_detailed.ass_response_value:
+                self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
+            if case_detailed.ass_sql:
+                self.__assertion_sql(self.replace(case_detailed.ass_sql))
+            if case_detailed.ass_response_whole:
+                self.__assertion_response_whole(response_data, self.replace(case_detailed.ass_response_whole))
+        except ApiError as error:
+            self.status = StatusEnum.FAIL
+            self.error_message = error.msg
+        finally:
+            return self.ass_result
 
     def posterior(self, response: ResponseDataModel, case_detailed):
         if case_detailed.posterior_response:
@@ -118,13 +109,12 @@ class CaseDetailedInit(ApiCaseData):
                     method = i.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.api.warning(error)
-            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
+            log.api.debug(error)
+            self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0005)
         except ToolsError as error:
             raise ApiError(error.code, error.msg)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=1000)
     def __assertion_sql(self, sql_list: list[dict]):
         _dict = {'actual': None}
         method = None
@@ -141,14 +131,16 @@ class CaseDetailedInit(ApiCaseData):
                     method = sql.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.api.warning(error)
-            self.ass_result.append({'断言类型': method, '预期值': _dict.get('expect'), '实际值': _dict.get('actual')})
+            log.api.debug(error)
+            self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0006)
 
-    def __assertion_response_whole(self, actual, expect):
+    def __assertion_response_whole(self, actual: dict, expect: dict):
         try:
             self.ass_response_whole(actual, expect)
         except AssertionError as error:
-            log.api.warning(error)
-            self.ass_result.append({'断言类型': '全匹配断言', '预期值': expect, '实际值': '查看响应结果和预期'})
+            log.api.debug(error)
+            self.ass_result.append(AssResultModel(type='全匹配断言',
+                                                  expect=json.dumps(expect, ensure_ascii=False),
+                                                  actual=json.dumps(expect, ensure_ascii=False)))
             raise ApiError(*ERROR_MSG_0004, value=(expect, actual))

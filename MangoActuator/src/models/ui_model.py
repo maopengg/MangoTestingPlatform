@@ -63,6 +63,7 @@ class PageStepsModel(BaseModel):
     id: int
     name: str
     project_product: int
+    project_product_name: int
     module_name: str
     type: int
     url: str
@@ -81,7 +82,9 @@ class CaseModel(BaseModel):
     id: int
     name: str
     project_product: int
+    project_product_name: str
     module_name: str
+    test_env: int
     case_people: str
     front_custom: list
     front_sql: list
@@ -90,7 +93,9 @@ class CaseModel(BaseModel):
     public_data_list: list[UiPublicModel] = []
 
 
-class ElementDataModel(BaseModel):
+class ElementResultModel(BaseModel):
+    id: int
+    name: str
     loc: str | None = None
     exp: int | None = None
     sleep: int | None = None
@@ -112,37 +117,34 @@ class ElementDataModel(BaseModel):
     picture_path: str | None = None
 
 
-class ElementResultModel(BaseModel):
-    page_step_id: int | None = None
-    test_suite_id: int | None = None
-    case_id: int | None = None
-    ele_name: str | None = None
-    element_data: ElementDataModel
-
-
 class PageStepsResultModel(BaseModel):
-    test_suite_id: int | None = None
-    case_id: int | None = None
-    case_step_details_id: int | None = None
-    page_step_id: int | None = None
-    page_step_name: str
+    id: int
+    name: str
+    type: int
+    project_product_id: int
+    project_product_name: int
+    case_steps_detail_id: int | None = None
+
+    cache_data: dict
+    test_object: dict  # url或者软件包
+    equipment: dict  # 设备名称或者浏览器类型
+
     status: int
     error_message: str | None = None
     element_result_list: list[ElementResultModel]
 
 
-class CaseResultModel(BaseModel):
-    test_suite_id: int| None = None
-    case_id: int
-    environment_id: int | None = None
-    case_name: str
+class UiCaseResultModel(BaseModel):
+    id: int
+    name: str
+    project_product_id: int
+    project_product_name: int
     module_name: str
-    case_people: str
-    test_obj: str | None = None
+    test_env: int
     status: int
     error_message: str | None = None
-    page_steps_result_list: list[PageStepsResultModel]
     video_path: str | None = None
+    page_steps_result: list[PageStepsResultModel]
 
 
 class PageObject:

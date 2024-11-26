@@ -95,7 +95,6 @@ class UiCase(models.Model):
     front_custom = models.JSONField(verbose_name="前置自定义", null=True)
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
-    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'ui_case'
@@ -115,6 +114,7 @@ class UiCaseStepsDetailed(models.Model):
     # 0失败，1成功
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     error_message = models.TextField(verbose_name="错误提示", null=True)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'ui_case_steps_detailed'

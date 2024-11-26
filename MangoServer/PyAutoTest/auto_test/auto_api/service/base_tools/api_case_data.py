@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.base_tools.case_base import CaseBase
-from exceptions import *
+from PyAutoTest.exceptions import *
 
 
 class ApiCaseData(CaseBase):

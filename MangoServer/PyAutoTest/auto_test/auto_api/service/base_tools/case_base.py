@@ -13,7 +13,7 @@ from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func
 from PyAutoTest.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.exceptions import *
-from PyAutoTest.models.api_model import RequestDataModel, ApiCaseResultModel
+from PyAutoTest.models.api_model import RequestDataModel
 from PyAutoTest.tools.obtain_test_data import ObtainTestData
 from mangokit import MysqlConnect
 
@@ -21,26 +21,21 @@ from mangokit import MysqlConnect
 class CaseBase(ObtainTestData, BaseRequest):
 
     def __init__(self,
-                 project_product_id: int,
                  user_id: int,
                  test_env: int,
                  tasks_id: int = None,
-                 is_notice: int = 0,
                  is_send: bool = False):
         ObtainTestData.__init__(self)
         BaseRequest.__init__(self)
-        self.project_product_id = project_product_id
         self.user_id = user_id
         self.test_env = test_env
         self.tasks_id = tasks_id
-        self.is_notice = is_notice
         self.is_send = is_send
+
+        self.project_product_id = None
 
         self.status = StatusEnum.FAIL
         self.error_message = None
-        self.result_data: ApiCaseResultModel = ApiCaseResultModel(
-
-        )
 
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
@@ -71,7 +66,7 @@ class CaseBase(ObtainTestData, BaseRequest):
             elif i.type == ApiPublicTypeEnum.HEADERS.value:
                 self.__headers(i)
 
-    def request_data_clean(self, request_data_model: RequestDataModel):
+    def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
         for key, value in request_data_model:
             if key == 'headers' and isinstance(value, str):
                 value = self.replace(value)

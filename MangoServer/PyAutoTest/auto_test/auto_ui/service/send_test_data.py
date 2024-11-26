@@ -44,6 +44,8 @@ class SendTestData:
             name=case.name,
             module_name=case.module.name,
             project_product=case.project_product.id,
+            project_product_name=case.project_product.name,
+            test_env=self.test_env,
             case_people=case.case_people.name,
             front_custom=case.front_custom,
             front_sql=case.front_sql,
@@ -138,8 +140,8 @@ class SendTestData:
                 exp=steps_element.exp,
                 sleep=steps_element.sleep,
                 sub=steps_element.sub,
-                ope_key=data['ope_key'],
-                ope_value=data['ope_value'],
+                ope_key=data.get('ope_key'),
+                ope_value=data.get('ope_value'),
                 is_iframe=steps_element.is_iframe,
             )
 

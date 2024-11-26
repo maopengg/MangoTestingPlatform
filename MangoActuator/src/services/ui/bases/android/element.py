@@ -58,7 +58,7 @@ class UiautomatorElement(BaseData):
         """获取元素文本"""
         value = locating.get_text()
         if set_cache_key:
-            self.test_case.set_cache(key=set_cache_key, value=value)
+            self.test_data.set_cache(key=set_cache_key, value=value)
         return value
 
     @classmethod
@@ -123,6 +123,6 @@ class UiautomatorElement(BaseData):
         """提取元素坐标"""
         x, y = locating.center()
         if x_key and y_key:
-            self.test_case.set_cache(key=x_key, value=x)
-            self.test_case.set_cache(key=y_key, value=y)
+            self.test_data.set_cache(key=x_key, value=x)
+            self.test_data.set_cache(key=y_key, value=y)
         return x, y

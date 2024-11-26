@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 
 class ApiCaseModel(BaseModel):
+    test_suite_details: int
     test_suite: int
     case_id: int
     test_env: int
@@ -27,13 +28,6 @@ class RequestDataModel(BaseModel):
 
 
 class ResponseDataModel(BaseModel):
-    url: str
-    method: str
-    headers: dict | list | None = None
-    params: dict | None = None
-    data: dict | None = None
-    json_data: dict | list | None = None
-    file: str | None = None
     status_code: int
     response_time: float
     response_headers: dict
@@ -59,6 +53,28 @@ class RecordingApiModel(BaseModel):
     status: int | None = None
 
 
+class AssResultModel(BaseModel):
+    type: str
+    expect: str | None
+    actual: str | None
+
+
+class ApiCaseStepsResultModel(BaseModel):
+    """接口结果"""
+    id: int
+    name: str
+    ass: list[AssResultModel]
+    request: RequestDataModel
+    response: ResponseDataModel
+    cache_data: dict
+
+
 class ApiCaseResultModel(BaseModel):
-    request: RequestDataModel | None = None
-    response: ResponseDataModel | None = None
+    """用例结果"""
+    id: int
+    name: str
+    test_env: int
+    user_id: int
+    status: int
+    error_message: str | None = None
+    steps: list[ApiCaseStepsResultModel] = []

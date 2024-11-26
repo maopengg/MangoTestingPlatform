@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from PyAutoTest.models.ui_model import CaseResultModel
+from PyAutoTest.models.api_model import ApiCaseResultModel
+from PyAutoTest.models.ui_model import UiCaseResultModel
 
 
 class TestSuiteDetailsResultModel(BaseModel):
@@ -13,4 +14,4 @@ class TestSuiteDetailsResultModel(BaseModel):
     test_suite: int | None = None
     status: int
     error_message: str | None = None
-    result_data: CaseResultModel
+    result_data: UiCaseResultModel | ApiCaseResultModel

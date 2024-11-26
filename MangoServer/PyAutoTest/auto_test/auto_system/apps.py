@@ -65,7 +65,7 @@ class AutoSystemConfig(AppConfig):
         from PyAutoTest.auto_test.auto_system.models import TimeTasks
         if not TimeTasks.objects.exists():
             TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
-            TimeTasks.objects.create(name="每30分钟", cron="*/5 * * * *")
+            TimeTasks.objects.create(name="每30分钟", cron="*/30 * * * *")
             TimeTasks.objects.create(name="每1小时", cron="0 * * * *")
             TimeTasks.objects.create(name="每2小时", cron="0 */2 * * *")
             TimeTasks.objects.create(name="每5小时", cron="0 */5 * * *")
