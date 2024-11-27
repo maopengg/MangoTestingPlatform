@@ -38,13 +38,13 @@ class TestSuitePage(TableParent):
         self.layout_v.addWidget(self.table_widget, 7)
 
     def show_data(self, is_refresh=False):
-        response_model = HTTP.result_week()
-        # self.line_plot_1.draw([
-        #     {'name': '成功', 'value': response_model.data.get('success')},
-        #     {'name': '失败', 'value': response_model.data.get('fail')}
-        # ])
-        # self.pie_plot_1.draw([
-        #     {'name': '失败数', 'value': response_model.data.get('failSun')},
-        #     {'name': '成功数', 'value': response_model.data.get('successSun')}
-        # ])
+        response_model = HTTP.get_test_suite_report()
+        self.line_plot_1.draw([
+            {'name': '成功', 'value': response_model.data.get('success')},
+            {'name': '失败', 'value': response_model.data.get('fail')}
+        ])
+        self.pie_plot_1.draw([
+            {'name': '失败数', 'value': response_model.data.get('failSun')},
+            {'name': '成功数', 'value': response_model.data.get('successSun')}
+        ])
         super().show_data(is_refresh)

@@ -9,7 +9,7 @@ import json
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum
-from src.models.api_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
 from src.services.ui.service.test_page_steps import TestPageSteps
@@ -49,32 +49,31 @@ class PageStepsDetailedPage(SubPage):
         self.select_data = None
 
     def update_card(self, ele_model: ElementResultModel):
-        WidgetTool.remove_layout(self.scroll_area.layout)
         layout = MangoGridLayout()
         card = MangoCard(layout)
         labels = [
-            f"元素名称: {ele_model.ele_name}",
-            f"元素数量: {ele_model.element_data.ele_quantity}",
-            f"测试结果: {'成功' if ele_model.element_data.status else '失败'}",
+            f"元素名称: {ele_model.name}",
+            f"元素数量: {ele_model.ele_quantity}",
+            f"测试结果: {'成功' if ele_model.status else '失败'}",
         ]
 
-        if ele_model.element_data.type == ElementOperationEnum.OPE.value:
-            labels.append(f"操作类型: {ele_model.element_data.ope_key}")
-        elif ele_model.element_data.type == ElementOperationEnum.ASS.value:
-            labels.append(f"断言类型: {ele_model.element_data.ope_key}")
-            labels.append(f"预期值: {ele_model.element_data.expect}")
-            labels.append(f"实际值: {ele_model.element_data.actual}")
-        elif ele_model.element_data.type == ElementOperationEnum.SQL.value:
-            labels.append(f"sql_key: {ele_model.element_data.key_list}")
-            labels.append(f"sql语句: {ele_model.element_data.sql}")
-        elif ele_model.element_data.type == ElementOperationEnum.CUSTOM.value:
-            labels.append(f"参数key: {ele_model.element_data.key}")
-            labels.append(f"参数value: {ele_model.element_data.value}")
+        if ele_model.type == ElementOperationEnum.OPE.value:
+            labels.append(f"操作类型: {ele_model.ope_key}")
+        elif ele_model.type == ElementOperationEnum.ASS.value:
+            labels.append(f"断言类型: {ele_model.ope_key}")
+            labels.append(f"预期值: {ele_model.expect}")
+            labels.append(f"实际值: {ele_model.actual}")
+        elif ele_model.type == ElementOperationEnum.SQL.value:
+            labels.append(f"sql_key: {ele_model.key_list}")
+            labels.append(f"sql语句: {ele_model.sql}")
+        elif ele_model.type == ElementOperationEnum.CUSTOM.value:
+            labels.append(f"参数key: {ele_model.key}")
+            labels.append(f"参数value: {ele_model.value}")
 
-        labels.append(f"元素表达式: {ele_model.element_data.loc}")
-        if ele_model.element_data.status == StatusEnum.FAIL.value:
-            labels.append(f"失败提示：{ele_model.element_data.error_message}")
-            labels.append(f"失败截图: {ele_model.element_data.picture_path}")
+        labels.append(f"元素表达式: {ele_model.loc}")
+        if ele_model.status == StatusEnum.FAIL.value:
+            labels.append(f"失败提示：{ele_model.error_message}")
+            labels.append(f"失败截图: {ele_model.picture_path}")
 
         # 添加3行3列的数据
         for row in range(3):
@@ -87,13 +86,14 @@ class PageStepsDetailedPage(SubPage):
         self.scroll_area.layout.addWidget(card)
 
     def debug(self):
+        WidgetTool.remove_layout(self.scroll_area.layout)
         user_info = UserModel()
         response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:
             data = PageStepsModel(**response_model.data)
             if PageObject.test_page_steps is None:
-                PageObject.test_page_steps = TestPageSteps(data.project_product)
+                PageObject.test_page_steps = TestPageSteps(self.parent, data.project_product)
                 PageObject.test_page_steps.progress.connect(self.update_card)
             asyncio.run_coroutine_threadsafe(
                 PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)

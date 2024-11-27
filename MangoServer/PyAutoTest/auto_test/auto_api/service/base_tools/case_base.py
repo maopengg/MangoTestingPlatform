@@ -34,7 +34,7 @@ class CaseBase(ObtainTestData, BaseRequest):
 
         self.project_product_id = None
 
-        self.status = StatusEnum.FAIL
+        self.status = StatusEnum.SUCCESS
         self.error_message = None
 
         self.test_object: Optional[None | TestObject] = None

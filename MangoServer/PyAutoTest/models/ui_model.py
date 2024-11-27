@@ -145,4 +145,4 @@ class UiCaseResultModel(BaseModel):
     status: int
     error_message: str | None = None
     video_path: str | None = None
-    page_steps_result: list[PageStepsResultModel]
+    steps: list[PageStepsResultModel]

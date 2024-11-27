@@ -14,7 +14,7 @@ class ApiCaseModel(BaseModel):
     case_id: int
     test_env: int
     user_id: int
-    tasks_id: int
+    tasks_id: int | None = None
 
 
 class RequestDataModel(BaseModel):
@@ -63,6 +63,8 @@ class ApiCaseStepsResultModel(BaseModel):
     """接口结果"""
     id: int
     name: str
+    status: int
+    error_message: str | None = None
     ass: list[AssResultModel]
     request: RequestDataModel
     response: ResponseDataModel

@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
 
-import asyncio
 import json
 import os
 import shutil
@@ -75,7 +74,7 @@ class TestCase(PageSteps):
                 await self.driver_init()
                 page_steps_result_model = await self.steps_main()
                 self.case_result \
-                    .page_steps_result \
+                    .steps \
                     .append(page_steps_result_model)
                 self.case_result.status = StatusEnum.SUCCESS.value
             except MangoActuatorError as error:
@@ -86,9 +85,8 @@ class TestCase(PageSteps):
             except Exception as error:
                 traceback.print_exc()
                 log.error(error)
-                self.case_result.status = StatusEnum.SUCCESS.value
-                await self.send_case_result(
-                    f'发生未知错误，请联系管理员检查测试用例数据，用例名称：{self.case_model.name}')
+                self.case_result.status = StatusEnum.FAIL.value
+                self.case_result = f'发生未知错误，请联系管理员检查测试用例数据，用例名称：{self.case_model.name}'
                 break
         try:
             await self.case_posterior(self.case_model.posterior_sql)
@@ -96,8 +94,7 @@ class TestCase(PageSteps):
             traceback.print_exc()
             log.error(error)
             self.case_result.status = StatusEnum.SUCCESS.value
-            await self.send_case_result(
-                f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}')
+            self.case_result = f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}'
         await self.send_case_result(
             self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
         )

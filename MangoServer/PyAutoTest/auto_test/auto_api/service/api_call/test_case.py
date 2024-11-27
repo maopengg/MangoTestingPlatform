@@ -61,7 +61,7 @@ class TestCase(CaseDetailedInit):
             self.init_case_posterior(api_case)
             self.api_case_result.status = self.status.value
             self.update_test_case(case_id, self.status)
-            if self.tasks_id and self.test_suite:
+            if self.test_suite:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                     id=self.test_suite_details,
                     test_suite=self.test_suite,
@@ -69,7 +69,7 @@ class TestCase(CaseDetailedInit):
                     error_message=self.error_message,
                     result_data=self.api_case_result
                 ))
-            return self.api_case_result.model_dump()
+                return self.api_case_result.model_dump()
         except Exception as error:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
@@ -118,7 +118,6 @@ class TestCase(CaseDetailedInit):
             json_data=data.json,
             file=data.file
         ))
-
         return request_data_model
 
     def case_steps_posterior(
@@ -131,6 +130,8 @@ class TestCase(CaseDetailedInit):
         api_case_steps_result = ApiCaseStepsResultModel(
             id=data.api_info.id,
             name=data.api_info.name,
+            status=self.status.value,
+            error_message=self.error_message,
             ass=ass,
             request=request,
             response=response,

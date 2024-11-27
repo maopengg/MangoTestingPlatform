@@ -1,8 +1,7 @@
-playwright==1.46.0
-uiautomator2==3.2.2
+playwright==1.47.0
+uiautomator2==3.2.5
 pywinauto==0.6.8
-uiautodev==0.4.0
-weditor==0.6.4
+uiautodev==0.5.0
 locust
 mangokit==1.1.37
 mangoui==3.0.10

@@ -37,7 +37,6 @@ class AddTasks:
         })
 
     def add_test_suite_details(self, case_id_list: list[id]):
-
         for case_id in case_id_list:
             if self._type == AutoTestTypeEnum.UI.value:
                 case = UiCase.objects.get(id=case_id)
@@ -49,6 +48,7 @@ class AddTasks:
                 'project_product': case.project_product.id,
                 'test_env': self.test_env,
                 'case_id': case_id,
+                'case_name': case.name,
                 'status': TaskEnum.STAY_BEGIN.value,
                 'error_message': None,
                 'result': None,

@@ -54,11 +54,4 @@ urlpatterns = [
     path("config", UiConfigCRUD.as_view()),
     path("config/put/status", UiConfigViews.as_view({'put': 'put_status'})),
     path("config/new/browser/obj", UiConfigViews.as_view({'get': 'new_browser_obj'})),
-    #
-    # path("case/result", UiCaseResultCRUD.as_view()),
-    # path("case/result/suite/get/case", UiCaseResultViews.as_view({'get': 'suite_get_case'})),
-    # path("result/week", UiCaseResultViews.as_view({'get': 'case_result_week_sum'})),
-    #
-    # path("ele/result", UiEleResultCRUD.as_view()),
-    # path("ele/result/ele", UiEleResultViews.as_view({'get': 'get_ele_result'})),
 ]

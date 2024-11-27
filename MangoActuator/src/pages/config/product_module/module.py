@@ -6,6 +6,7 @@
 
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
+from src.tools.methods import Methods
 from .module_dict import *
 
 
@@ -24,3 +25,7 @@ class ModulePage(SubPage):
         self.post = HTTP.post_module
         self.put = HTTP.put_module
         self._delete = HTTP.delete_module
+
+    def show_data(self, is_refresh=False):
+        super().show_data()
+        Methods.set_project()

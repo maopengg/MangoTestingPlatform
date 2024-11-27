@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import response_message, DialogCallbackModel, ComboBoxDataModel, FormDataModel
 
-from src.models.api_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .task_case_dict import *

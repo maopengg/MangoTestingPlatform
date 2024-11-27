@@ -9,7 +9,6 @@ import uuid
 from mango_ui import *
 
 from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
-from src.models.api_model import ResponseModel
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.tools.get_class_methods import GetClassMethod

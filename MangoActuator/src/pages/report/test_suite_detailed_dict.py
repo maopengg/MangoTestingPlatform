@@ -6,14 +6,13 @@
 from mango_ui import THEME
 
 right_data = [
+    {'name': '刷新', 'theme': THEME.group.info, 'action': 'show_data'},
     {'name': '返回', 'theme': THEME.group.warning, 'action': 'back'}
 ]
 field_list = [
     {'key': 'id', 'name': '测试套ID'},
-    {'key': 'project_product', 'name': '项目名称'},
+    {'key': 'project', 'name': '项目名称'},
     {'key': 'create_time', 'name': '执行时间'},
     {'key': 'status', 'name': '测试结果'},
     {'key': 'test_env', 'name': '测试环境'},
-    {'key': 'run_status', 'name': '执行状态'},
-    {'key': 'error_message', 'name': '失败消息'},
 ]

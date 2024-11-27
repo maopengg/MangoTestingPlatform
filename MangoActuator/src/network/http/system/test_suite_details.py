@@ -37,3 +37,7 @@ class TestSuiteDetails(HttpBase):
     @request_log()
     def delete_test_suite_details(cls, _id, ):
         return cls.delete(url=cls.url(TestSuiteDetails._url), headers=cls.headers, params={'id': _id, })
+    @classmethod
+    @request_log()
+    def get_test_suite_report(cls, ):
+        return cls.get(url=cls.url(f'{TestSuiteDetails._url}/report'), headers=cls.headers, )

@@ -31,6 +31,12 @@ class CaseFlow:
                     future = self.executor.submit(self.execute_task, case_model)
                     self.futures.append(future)
                 for future in as_completed(self.futures):
+                    try:
+                        result = future.result()
+                        print(result)
+                    except Exception as error:
+                        traceback.print_exc()
+                        log.system.error(f'API线程池发生异常：{error}')
                     self.futures.remove(future)
                 time.sleep(0.1)
         except Exception as error:
@@ -39,16 +45,20 @@ class CaseFlow:
 
     @classmethod
     def execute_task(cls, case_model: ApiCaseModel):
-        from PyAutoTest.auto_test.auto_api.service.api_call.test_case import TestCase
-        test_case = TestCase(
-            user_id=case_model.user_id,
-            test_env=case_model.test_env,
-            tasks_id=case_model.tasks_id,
-            test_suite=case_model.test_suite,
-            test_suite_details=case_model.test_suite_details,
-            is_send=False,
-        )
-        test_case.test_case(case_model.case_id)
+        try:
+            from PyAutoTest.auto_test.auto_api.service.api_call.test_case import TestCase
+            test_case = TestCase(
+                user_id=case_model.user_id,
+                test_env=case_model.test_env,
+                tasks_id=case_model.tasks_id,
+                test_suite=case_model.test_suite,
+                test_suite_details=case_model.test_suite_details,
+                is_send=False,
+            )
+            return test_case.test_case(case_model.case_id)
+        except Exception as error:
+            traceback.print_exc()
+            log.system.error(f'API线程池发生异常：{error}')
 
     @classmethod
     def add_task(cls, case_model: ApiCaseModel):

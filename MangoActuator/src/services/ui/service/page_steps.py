@@ -64,6 +64,7 @@ class PageSteps(ElementOperation):
         return self.page_step_result_model
 
     def end_set(self, element_result):
+        self.progress.emit(element_result)
         self.page_step_result_model.cache_data = self.test_data.get_all()
         self.page_step_result_model.test_object = {'url': self.url, 'package_name': self.package_name}
         self.page_step_result_model.equipment = {'name': self.driver_object.web.config}

@@ -44,7 +44,8 @@ search_data = [
     }
 ]
 right_data = [
-    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'}
+    {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
+    {'name': '批量执行', 'theme': THEME.group.success, 'action': 'batch_run'},
 
 ]
 form_data = [

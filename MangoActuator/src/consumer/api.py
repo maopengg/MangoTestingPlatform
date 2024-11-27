@@ -6,7 +6,7 @@
 import aiohttp
 from aiohttp.client_exceptions import ClientResponse
 
-from src.models.api_model import RequestModel
+from src.models.api_model import ResponseDataModel
 from src.services.api.service.case_run import ApiCaseRun
 from src.tools.decorator.convert_args import convert_args
 
@@ -14,8 +14,8 @@ from src.tools.decorator.convert_args import convert_args
 class API:
     api = ApiCaseRun()
 
-    @convert_args(RequestModel)
-    async def a_api_info(self, data: RequestModel):
+    @convert_args(ResponseDataModel)
+    async def a_api_info(self, data: ResponseDataModel):
         response: ClientResponse | None = None
         time = None
         session = aiohttp.ClientSession()
@@ -23,6 +23,6 @@ class API:
         await session.close()
 
     @classmethod
-    @convert_args(RequestModel)
-    async def a_api_case(cls, data: RequestModel):
+    @convert_args(ResponseDataModel)
+    async def a_api_case(cls, data: ResponseDataModel):
         pass

@@ -5,7 +5,7 @@ from mango_ui import AppConfig, MenusModel
 
 from src.tools import InitPath
 
-IS_DEBUG = True
+IS_DEBUG = False
 
 MEMORY_THRESHOLD = 100
 

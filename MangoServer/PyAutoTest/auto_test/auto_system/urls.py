@@ -12,7 +12,7 @@ from .views.socket_api import SocketApiViews
 from .views.tasks import TasksCRUD, TasksViews, TasksNoPermissionViews
 from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
 from .views.test_suite import TestSuiteCRUD
-from .views.test_suite_details import TestSuiteDetailsCRUD
+from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
@@ -55,6 +55,7 @@ urlpatterns = [
     path('test/suite', TestSuiteCRUD.as_view()),
     #
     path('test/suite/details', TestSuiteDetailsCRUD.as_view()),
+    path('test/suite/details/report', TestSuiteDetailsViews.as_view({'get': 'test_suite_details_report'})),
     #
     path('case/sum', IndexViews.as_view({'get': 'case_sum'})),
     path('case/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),

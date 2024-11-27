@@ -51,7 +51,7 @@ def consumer():
                     case_id=test_suite_details.case_id,
                     test_env=test_suite_details.test_env,
                     user_id=test_suite.user.id,
-                    tasks_id=test_suite.tasks.id,
+                    tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                 )
                 CaseFlow().add_task(api_case_model)
                 log.system.info(f"推送API任务成功，用例数据：{api_case_model.model_dump_json()}")

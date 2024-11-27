@@ -54,6 +54,7 @@ class Element(HttpBase):
             'type': _type,
             'ope_key': ope_key,
             'ope_value': ope_value,
+            'is_send': True
         }
         return cls.post(url=f'{url}/test', headers=cls.headers, json=json_data)
 

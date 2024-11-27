@@ -194,6 +194,7 @@ class TestSuiteDetails(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     case_id = models.SmallIntegerField(verbose_name="用例ID")
+    case_name = models.CharField(verbose_name="key", max_length=528, null=True)  # 制作展示用
     # 2待开始，3是进行中，0是失败，1是成功
     status = models.SmallIntegerField(verbose_name="测试结果")
     error_message = models.TextField(verbose_name="错误提示", null=True)

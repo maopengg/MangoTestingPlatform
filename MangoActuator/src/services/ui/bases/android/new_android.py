@@ -8,6 +8,7 @@ from typing import Optional
 
 import uiautomator2 as u2
 from adbutils import AdbTimeout
+from uiautomator2 import ConnectError
 
 from src.exceptions import *
 from src.models.ui_model import EquipmentModel
@@ -29,19 +30,22 @@ class NewAndroid:
     def new_android(self):
         if self.config is None:
             raise UiError(*ERROR_MSG_0042)
-        android = u2.connect(self.config.and_equipment)
-        self.info = android.info
-        self.example_dict.append({
-            'config': self.config,
-            'info': self.info,
-            'android': android
-        })
         try:
+
+            android = u2.connect(self.config.and_equipment)
+            self.info = android.info
             msg = f"设备启动成功！产品名称：{self.info.get('productName')}"
+            self.example_dict.append({
+                'config': self.config,
+                'info': self.info,
+                'android': android
+            })
+        except ConnectError:
+            raise UiError(*ERROR_MSG_0047, value=(self.config.and_equipment,))
         except RuntimeError:
-            raise UiError(*ERROR_MSG_0045, value=(self.config.equipment,))
+            raise UiError(*ERROR_MSG_0045, value=(self.config.and_equipment,))
         except (AdbTimeout, TimeoutError):
-            raise UiError(*ERROR_MSG_0047, value=(self.config.equipment,))
+            raise UiError(*ERROR_MSG_0047, value=(self.config.and_equipment,))
         else:
             android.implicitly_wait(10)
             return android
