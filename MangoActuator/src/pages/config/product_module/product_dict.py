@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.system_enum import AutoTestTypeEnum
-from src.enums.tools_enum import ProductTypeEnum
+from src.enums.tools_enum import AutoTypeEnum
+from src.enums.ui_enum import DriveTypeEnum
 from src.tools.methods import Methods
 
 search_data = [
@@ -51,9 +51,16 @@ form_data = [
     {
         'title': '自动化类型',
         'placeholder': '请选择自动化类型',
+        'key': 'auto_type',
+        'type': 1,
+        'select': AutoTypeEnum.get_select()
+    },
+    {
+        'title': '产品类型',
+        'placeholder': '请选择产品类型',
         'key': 'client_type',
         'type': 1,
-        'select': AutoTestTypeEnum.get_select()
+        'select': DriveTypeEnum.get_select()
     },
     {
         'title': '产品名称',
@@ -89,10 +96,16 @@ table_column = [
         'name': '产品名称',
     },
     {
-        'key': 'client_type',
+        'key': 'auto_type',
         'name': '自动化类型',
-        'width': 80,
-        'option': AutoTestTypeEnum.get_option('value', 'label')
+        'width': 200,
+        'option': AutoTypeEnum.get_option('value', 'label')
+    },
+    {
+        'key': 'client_type',
+        'name': '产品类型',
+        'width': 200,
+        'option': DriveTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',

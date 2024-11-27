@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.system_enum import EnvironmentEnum
-from src.enums.tools_enum import ProductTypeEnum, Status5Enum
+from src.enums.tools_enum import Status5Enum, AutoTypeEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 
@@ -56,7 +56,7 @@ form_data = [
         'placeholder': '请选择产品的端类型',
         'key': 'auto_type',
         'type': 1,
-        'select': ProductTypeEnum.get_select()
+        'select': AutoTypeEnum.get_select()
     },
     {
         'title': '负责人名称',
@@ -109,7 +109,7 @@ table_column = [
         'key': 'auto_type',
         'name': '自动化类型',
         'width': 150,
-        'option': ProductTypeEnum.get_option('value', 'label')
+        'option': AutoTypeEnum.get_option('value', 'label')
     },
     {
         'key': 'executor_name',

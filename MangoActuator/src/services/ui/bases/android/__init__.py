@@ -107,4 +107,4 @@ class AndroidDriver(UiautomatorEquipment,
                 loc = self.android(resourceId=self.element_model.loc)
             case _:
                 raise UiError(*ERROR_MSG_0020)
-        return len(loc), loc
+        return 0, loc

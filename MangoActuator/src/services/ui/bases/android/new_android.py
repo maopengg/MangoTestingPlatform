@@ -6,7 +6,7 @@
 
 from typing import Optional
 
-import uiautomator2 as us
+import uiautomator2 as u2
 from adbutils import AdbTimeout
 
 from src.exceptions import *
@@ -29,13 +29,13 @@ class NewAndroid:
     def new_android(self):
         if self.config is None:
             raise UiError(*ERROR_MSG_0042)
-        android = us.connect(self.config.and_equipment)
+        android = u2.connect(self.config.and_equipment)
+        self.info = android.info
         self.example_dict.append({
             'config': self.config,
             'info': self.info,
             'android': android
         })
-        self.info = android.info
         try:
             msg = f"设备启动成功！产品名称：{self.info.get('productName')}"
         except RuntimeError:
@@ -48,3 +48,9 @@ class NewAndroid:
 
     def close_android(self):
         pass
+
+
+if __name__ == '__main__':
+    android = NewAndroid(EquipmentModel(and_equipment='192.168.1.3:5555', type=0))
+    android.new_android()
+    print(android.info)

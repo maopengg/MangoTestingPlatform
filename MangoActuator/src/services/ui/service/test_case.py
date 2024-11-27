@@ -44,7 +44,6 @@ class TestCase(PageSteps):
             module_name=self.case_model.module_name,
             test_env=self.case_model.test_env,
             status=StatusEnum.SUCCESS.value,
-            page_steps_result_list=[]
         )
 
     async def __aenter__(self):
@@ -73,11 +72,10 @@ class TestCase(PageSteps):
         for steps in self.case_model.steps:
             try:
                 await self.steps_init(steps)
-                self.case_result.environment_id = self.environment_config.id
                 await self.driver_init()
                 page_steps_result_model = await self.steps_main()
                 self.case_result \
-                    .page_steps_result_list \
+                    .page_steps_result \
                     .append(page_steps_result_model)
                 self.case_result.status = StatusEnum.SUCCESS.value
             except MangoActuatorError as error:
