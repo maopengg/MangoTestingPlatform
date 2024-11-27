@@ -18,7 +18,6 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
     ass_result: list[AssResultModel] = []
 
     def send_request(self, request_data_model: RequestDataModel) -> tuple[RequestDataModel, ResponseDataModel]:
-        request_data_model = self.request_data_clean(request_data_model)
         response = self.http(request_data_model)
         log.api.debug(f'响应请求：{response.model_dump_json()}')
         return request_data_model, response

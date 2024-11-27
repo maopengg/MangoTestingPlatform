@@ -15,7 +15,6 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.api_model import RequestDataModel, ApiCaseResultModel, ResponseDataModel, ApiCaseStepsResultModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
-from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
 
 
 class TestCase(CaseDetailedInit):
@@ -30,6 +29,8 @@ class TestCase(CaseDetailedInit):
         super().__init__(user_id, test_env, tasks_id, is_send)
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
+
+        self.headers = {}
 
         self.api_case_result: Optional[ApiCaseResultModel | None] = None
 
@@ -90,6 +91,7 @@ class TestCase(CaseDetailedInit):
         try:
             for i in case_detailed_list:
                 request_data_model = self.case_steps_front(i)
+
                 request_data_model, response = self.send_request(request_data_model)
                 self.case_steps_posterior(i, request_data_model, response)
         except MangoServerError as error:
@@ -107,7 +109,7 @@ class TestCase(CaseDetailedInit):
         self.project_product_id = data.api_info.project_product.id
         self.init_test_object()
         self.front_sql(data)
-        return RequestDataModel(
+        request_data_model = self.request_data_clean(RequestDataModel(
             method=MethodEnum(data.api_info.method).name,
             url=urljoin(self.test_object.value, data.url),
             headers=data.header,
@@ -115,7 +117,9 @@ class TestCase(CaseDetailedInit):
             data=data.data,
             json_data=data.json,
             file=data.file
-        )
+        ))
+
+        return request_data_model
 
     def case_steps_posterior(
             self,
