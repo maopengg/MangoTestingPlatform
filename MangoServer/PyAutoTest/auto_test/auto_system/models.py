@@ -73,7 +73,7 @@ class NoticeConfig(models.Model):
     environment = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型")
     config = models.CharField(verbose_name="通知配置", max_length=1028)
-    status = models.SmallIntegerField(verbose_name="是否选中发送")
+    status = models.SmallIntegerField(verbose_name="是否选中发送", default=0)
 
     class Meta:
         db_table = 'notice_config'
@@ -90,7 +90,7 @@ class Database(models.Model):
     password = models.CharField(verbose_name="登录密码", max_length=64)
     host = models.CharField(verbose_name="数据库地址", max_length=64)
     port = models.IntegerField(verbose_name="端口")
-    status = models.SmallIntegerField(verbose_name="是否启用")
+    status = models.SmallIntegerField(verbose_name="是否启用", default=0)
 
     class Meta:
         db_table = 'data_base'

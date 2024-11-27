@@ -1,5 +1,6 @@
 import { deleted, get, post, put, Response } from '@/api/http'
 import * as url from './url'
+import { userName } from './url'
 
 export function getUserModuleName(projectProductId: number | string | null): Promise<Response> {
   return get({
@@ -60,9 +61,9 @@ export function getUserProjectAll(): Promise<Response> {
   })
 }
 
-export function getUserNickname() {
+export function getUserName() {
   return get({
-    url: url.userNickname,
+    url: url.userName,
     data: () => {
       return {}
     },

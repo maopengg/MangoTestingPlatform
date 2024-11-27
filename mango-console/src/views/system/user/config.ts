@@ -15,7 +15,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'nickname',
+    key: 'name',
     label: '昵称',
     type: 'input',
     placeholder: '请输入昵称',
@@ -38,7 +38,7 @@ export const conditionItems: Array<FormItem> = reactive([
 export const formItems: FormItem[] = reactive([
   {
     label: '昵称',
-    key: 'nickname',
+    key: 'name',
     value: '',
     placeholder: '请输入用户昵称',
     required: true,
@@ -118,8 +118,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '昵称',
-    key: 'nickname',
-    dataIndex: 'nickname',
+    key: 'name',
+    dataIndex: 'name',
     width: 150,
   },
   {

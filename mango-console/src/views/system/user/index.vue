@@ -56,7 +56,7 @@
             <template #extra>
               <a-space>
                 <div>
-                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+                  <!--                  <a-button type="primary" size="small" @click="onAddPage">新增</a-button>-->
                 </div>
               </a-space>
             </template>

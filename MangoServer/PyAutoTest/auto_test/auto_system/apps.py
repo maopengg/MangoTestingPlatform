@@ -78,6 +78,8 @@ class AutoSystemConfig(AppConfig):
         from PyAutoTest.auto_test.auto_system.service.consumer import consumer
         try:
             consumer()
+        except RuntimeError:
+            pass
         except Exception as e:
             traceback.print_exc()
             log.system.error(e)

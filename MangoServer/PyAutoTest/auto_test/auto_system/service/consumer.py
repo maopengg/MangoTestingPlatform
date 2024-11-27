@@ -7,7 +7,7 @@ from datetime import timedelta
 
 import time
 from django.utils import timezone
-
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
 from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails, TestSuite
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
@@ -38,7 +38,7 @@ def consumer():
                                 test_suite_details=test_suite_details.id)
                     log.system.info(
                         f'推送UI任务成功，用例数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-                except Exception as error:
+                except MangoServerError as error:
                     test_suite_details.status = TaskEnum.FAIL.value
                     test_suite_details.error_message = f'发送未知异常，请联系管理员处理，异常内容：{error}'
                 else:

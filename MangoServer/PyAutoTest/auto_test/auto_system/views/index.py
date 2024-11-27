@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.auto_test.auto_user.models import UserLogs
+from PyAutoTest.auto_test.auto_user.models import UserLogs, User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -149,17 +149,17 @@ class IndexViews(ViewSet):
     @error_response('system')
     def activity_level(self, request: Request):
         """
-        获取所有用例的总数
+
         @param request:
         @return:
         """
-        active_user_counts = UserLogs.objects.values('user_id', 'name').annotate(total_logins=Count('id')).order_by(
+        active_user_counts = UserLogs.objects.values('user').annotate(total_logins=Count('id')).order_by(
             '-total_logins')[:10]
         name_list = []
         total_logins_list = []
         for user_count in active_user_counts:
-            name_list.append(user_count['name'])
-            total_logins_list.append(user_count['total_logins'])
+            name_list.append(User.objects.get(id=user_count.get('user')).name)
+            total_logins_list.append(user_count.get('total_logins'))
         return ResponseData.success(RESPONSE_MSG_0092, {
             'name': name_list[::-1],
             'total_logins': total_logins_list[::-1],
