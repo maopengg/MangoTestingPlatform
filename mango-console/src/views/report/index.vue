@@ -99,12 +99,6 @@
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
                     {{ record.user?.nickname }}
                   </template>
-                  <template v-else-if="item.key === 'run_status'" #cell="{ record }">
-                    <a-tag color="red" size="small" v-if="record.run_status === 0">进行中</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.run_status === 1"
-                      >已完成</a-tag
-                    >
-                  </template>
                   <template v-else-if="item.key === 'status'" #cell="{ record }">
                     <a-tag color="red" size="small" v-if="record.status === 0">失败</a-tag>
                     <a-tag color="green" size="small" v-else-if="record.status === 1">通过</a-tag>

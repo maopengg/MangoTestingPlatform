@@ -120,12 +120,12 @@ export const tableColumns = useTableColumn([
     dataIndex: 'project',
   },
   {
-    title: '自动化类型',
+    title: '产品名称',
     key: 'name',
     dataIndex: 'name',
   },
   {
-    title: '客户端类型',
+    title: '自动化类型',
     key: 'auto_type',
     dataIndex: 'auto_type',
   },

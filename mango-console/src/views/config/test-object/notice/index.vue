@@ -76,7 +76,7 @@
                   <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
                 </template>
                 <template v-else-if="item.key === 'config'" #cell="{ record }">
-                    {{ record.config }}
+                  {{ record.config }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
@@ -169,8 +169,8 @@
     putSystemNotice,
     putSystemNoticePutStatus,
   } from '@/api/system'
-  import { getUserNickname } from '@/api/user'
-  import {useRoute} from "vue-router";
+  import { getUserName } from '@/api/user'
+  import { useRoute } from 'vue-router'
   const route = useRoute()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -188,7 +188,6 @@
     userList: [],
     formItems: [],
   })
-
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
@@ -325,7 +324,7 @@
     })
   }
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })
