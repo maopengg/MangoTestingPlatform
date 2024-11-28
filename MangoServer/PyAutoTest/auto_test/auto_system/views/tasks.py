@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import Tasks
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.run_tasks import RunTasks
+from PyAutoTest.auto_test.auto_system.service.tasks.run_tasks import RunTasks
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializersC
 from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers

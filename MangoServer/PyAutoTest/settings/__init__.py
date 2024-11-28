@@ -32,7 +32,7 @@ INIT_MANGO_TESTING_PLATFORM = False  # 可以初始化部分原始数据，快�
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'

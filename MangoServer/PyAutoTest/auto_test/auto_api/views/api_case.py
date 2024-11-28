@@ -13,7 +13,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_api.service.api_call.test_case import TestCase
 from PyAutoTest.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
+from PyAutoTest.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers

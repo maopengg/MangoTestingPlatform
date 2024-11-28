@@ -27,6 +27,7 @@ urlpatterns = [
     path("login", LoginViews.as_view({'post': 'login'})),  # 登录
     path("register", LoginViews.as_view({'post': 'register'})),  # 登录
     path("menu", LoginViews.as_view({'get': 'menu'})),
+    path("test", LoginViews.as_view({'get': 'test'})),
     #
     path('system/', include("PyAutoTest.auto_test.auto_system.urls")),
     path('api/', include("PyAutoTest.auto_test.auto_api.urls")),
