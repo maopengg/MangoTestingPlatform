@@ -70,7 +70,7 @@ class NoticeConfig(models.Model):
     """通知配置表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    environment = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型")
     config = models.CharField(verbose_name="通知配置", max_length=1028)
     status = models.SmallIntegerField(verbose_name="是否选中发送", default=0)
@@ -84,7 +84,7 @@ class Database(models.Model):
     """数据库表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    environment = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
+    test_object = models.ForeignKey(to=TestObject, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="数据库名称", max_length=64)
     user = models.CharField(verbose_name="登录用户名", max_length=64)
     password = models.CharField(verbose_name="登录密码", max_length=64)

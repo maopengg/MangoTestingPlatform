@@ -191,7 +191,7 @@
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
-    value['environment_id'] = route.query.id
+    value['test_object_id'] = route.query.id
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemNotice(value)
