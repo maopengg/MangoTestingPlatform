@@ -7,7 +7,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from PyAutoTest.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
-from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.add_tasks import AddTasks
+from PyAutoTest.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.decorator.retry import orm_retry

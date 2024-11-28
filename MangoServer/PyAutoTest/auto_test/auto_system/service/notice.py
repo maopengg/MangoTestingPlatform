@@ -1,23 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description:
-# @Time   : 2022-11-04 22:05
+# @Description: 
+# @Time   : 2024-11-28 17:58
 # @Author : 毛鹏
 import json
 
-from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
-from mangokit.exceptions.exceptions import ToolsError
-
-# from PyAutoTest.auto_test.auto_api.models import ApiCaseResult
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
 from PyAutoTest.auto_test.auto_system.models import TestSuite
-# from PyAutoTest.auto_test.auto_ui.models import UiCaseResult
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum, NoticeEnum, CacheDataKeyEnum, EnvironmentEnum
-
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
+from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
+from mangokit.exceptions.exceptions import ToolsError
 
 
 class NoticeMain:

@@ -6,7 +6,7 @@
 from django.db import connection
 
 from PyAutoTest.auto_test.auto_system.models import TestSuite, TestSuiteDetails
-from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
+from PyAutoTest.auto_test.auto_system.service.notice import NoticeMain
 from PyAutoTest.enums.tools_enum import TaskEnum, StatusEnum, ClientTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel

@@ -35,7 +35,7 @@ class AutoSystemConfig(AppConfig):
     @staticmethod
     def delayed_task():
         try:
-            from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import RunTasks
+            from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.run_tasks import RunTasks
             RunTasks.create_jobs()
         except OperationalError:
             pass

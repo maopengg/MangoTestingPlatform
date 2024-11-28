@@ -156,7 +156,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/timing",
-                    "menuUrl": "/timing/scheduled-tasks/index",
+                    "menuUrl": "/timing/tasks/index",
                     "menuName": "定时任务",
                 },
                 {
@@ -197,11 +197,6 @@ def ad_routes():
                     "menuName": "登录日志",
                     "badge": "13",
                 }
-                # {
-                #     "parentPath": "/system",
-                #     "menuUrl": "/system/menu",
-                #     "menuName": "菜单管理",
-                # },
             ],
         },
         {

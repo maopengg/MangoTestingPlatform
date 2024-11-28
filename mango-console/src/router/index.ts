@@ -115,7 +115,7 @@ export const extraRoutes = [
     children: [
       {
         path: 'case',
-        component: () => import('@/views/timing/scheduled-tasks/case/index.vue'),
+        component: () => import('@/views/timing/tasks/case/index.vue'),
         meta: {
           title: '添加用例',
         },

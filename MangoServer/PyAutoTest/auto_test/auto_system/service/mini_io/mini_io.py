@@ -11,8 +11,7 @@ from minio import Minio
 from minio.error import S3Error
 from urllib3.exceptions import MaxRetryError
 
-from PyAutoTest.exceptions.tools_exception import MiniIoConnError, MiniIoFileError
-from PyAutoTest.exceptions.error_msg import ERROR_MSG_0042, ERROR_MSG_0043, ERROR_MSG_0044, ERROR_MSG_0045
+from PyAutoTest.exceptions import *
 
 
 class MiniIo:
@@ -28,13 +27,13 @@ class MiniIo:
             )
 
         except S3Error:
-            raise MiniIoConnError(*ERROR_MSG_0042)
+            raise SystemEError(*ERROR_MSG_0042)
         except (MaxRetryError, ValueError):
-            raise MiniIoConnError(*ERROR_MSG_0043)
+            raise SystemEError(*ERROR_MSG_0043)
 
     def file_path_write(self, bucket_name: str, file_name: str, file_path: str) -> str:
         if not self.client.bucket_exists(bucket_name):
-            raise MiniIoConnError(*ERROR_MSG_0044)
+            raise SystemEError(*ERROR_MSG_0044)
         try:
             with open(file_path, "rb") as file_data:
                 bytes_length = os.path.getsize(file_path)
@@ -42,7 +41,7 @@ class MiniIo:
 
                 return self.client.presigned_get_object(bucket_name, file_name)
         except FileNotFoundError:
-            raise MiniIoFileError(*ERROR_MSG_0045)
+            raise SystemEError(*ERROR_MSG_0045)
 
     def file_object_write(self, bucket_name: str, file_name: str, file_object: InMemoryUploadedFile):
         file_data = BytesIO(file_object.read())
@@ -77,13 +76,13 @@ class MiniIo:
         # 新建文件桶
         self.client.make_bucket(bucket_name)
         if not self.client.bucket_exists(bucket_name):
-            raise MiniIoConnError(*ERROR_MSG_0044)
+            raise SystemEError(*ERROR_MSG_0044)
 
     def delete_bucket(self, bucket_name: str):
         # 删除文件桶
         self.client.remove_bucket(bucket_name)
         if self.client.bucket_exists(bucket_name):
-            raise MiniIoConnError(*ERROR_MSG_0044)
+            raise SystemEError(*ERROR_MSG_0044)
 
 
 if __name__ == '__main__':
