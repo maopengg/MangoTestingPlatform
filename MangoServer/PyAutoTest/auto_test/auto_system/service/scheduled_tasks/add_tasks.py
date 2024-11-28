@@ -12,10 +12,10 @@ from PyAutoTest.tools.view import Snowflake
 
 
 class AddTasks:
-    def __init__(self, project: int, test_env: int, is_notice: int, user_id: int, _type: AutoTestTypeEnum,
+    def __init__(self, project_product: int, test_env: int, is_notice: int, user_id: int, _type: AutoTestTypeEnum,
                  tasks_id: int | None = None):
         self.test_suite_id = Snowflake.generate_id()
-        self.project = project
+        self.project_product = project_product
         self.test_env = test_env
         self.is_notice = is_notice
         self.user_id = user_id
@@ -28,7 +28,7 @@ class AddTasks:
         TestSuiteCRUD.inside_post({
             'id': self.test_suite_id,
             'type': self._type,
-            'project': self.project,
+            'project_product': self.project_product,
             'test_env': self.test_env,
             'user': self.user_id,
             'status': TaskEnum.STAY_BEGIN.value,

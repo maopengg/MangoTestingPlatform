@@ -17,6 +17,7 @@ class Methods:
 
     @classmethod
     def get_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
+        """"""
         for e in cls.base_dict.project:
             for q in e.children:
                 if q.value == str(data.value):

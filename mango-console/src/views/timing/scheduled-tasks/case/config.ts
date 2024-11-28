@@ -8,8 +8,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '用例名称',
-    key: 'case',
-    dataIndex: 'case',
+    key: 'case_id',
+    dataIndex: 'case_id',
   },
   {
     title: '操作',
@@ -21,21 +21,6 @@ export const tableColumns = useTableColumn([
 ])
 
 export const formItems: FormItem[] = reactive([
-  {
-    label: '项目/产品',
-    key: 'project_product',
-    value: '',
-    placeholder: '请选择项目名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
   {
     label: '模块',
     key: 'module',
@@ -53,7 +38,7 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '用例名称',
-    key: 'case',
+    key: 'case_id',
     value: '',
     placeholder: '请选择用例名称',
     required: true,

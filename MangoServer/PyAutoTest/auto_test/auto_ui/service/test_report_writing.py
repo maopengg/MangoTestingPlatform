@@ -31,7 +31,7 @@ class TestReportWriting:
         case = UiCase.objects.get(id=data.id)
         case.status = data.status
         case.save()
-        for i in data.page_steps_result:
+        for i in data.steps:
             cls.update_step(i)
 
     @classmethod

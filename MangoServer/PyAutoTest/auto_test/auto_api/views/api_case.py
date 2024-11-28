@@ -19,6 +19,7 @@ from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProduc
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.models.api_model import ApiCaseResultModel
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -73,13 +74,14 @@ class ApiCaseViews(ViewSet):
             user_id=request.user.get('id'),
             test_env=request.query_params.get('test_env'),
         )
-        test_result: dict = api_case_run.test_case(
+        test_result: ApiCaseResultModel = api_case_run.test_case(
             request.query_params.get('case_id'),
             request.query_params.get('case_sort')
+
         )
-        # if StatusEnum.FAIL.value == test_result['status']:
-        #     return ResponseData.fail((300, test_result['error_message']), test_result)
-        return ResponseData.success(RESPONSE_MSG_0111, test_result)
+        if StatusEnum.SUCCESS.value != test_result.status:
+            return ResponseData.fail((300, test_result.error_message), test_result.model_dump())
+        return ResponseData.success(RESPONSE_MSG_0111, test_result.model_dump())
 
     @action(methods=['post'], detail=False)
     @error_response('api')
@@ -88,9 +90,9 @@ class ApiCaseViews(ViewSet):
         case_project = None
         for i in case_id_list:
             if case_project is None:
-                case_project = ApiCase.objects.get(id=i).project_product.project.id
+                case_project = ApiCase.objects.get(id=i).project_product.id
             else:
-                if case_project != ApiCase.objects.get(id=i).project_product.project.id:
+                if case_project != ApiCase.objects.get(id=i).project_product.id:
                     return ResponseData.fail(RESPONSE_MSG_0128, )
         add_tasks = AddTasks(
             project=case_project,

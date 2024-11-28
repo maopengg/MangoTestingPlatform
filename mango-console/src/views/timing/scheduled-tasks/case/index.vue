@@ -51,17 +51,8 @@
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
               </template>
-              <template v-else-if="item.key === 'task'" #cell="{ record }">
-                {{ record.task.name }}
-              </template>
-              <template v-else-if="item.key === 'case'" #cell="{ record }">
-                {{ record.case }}
-              </template>
-              <template v-else-if="item.key === 'test_object'" #cell="{ record }">
-                {{ record.test_object == null ? '跟随定时任务' : record.test_object?.name }}
-              </template>
+
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <!--                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>-->
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                   >删除
                 </a-button>
@@ -82,16 +73,6 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'cascader'">
-                <a-cascader
-                  v-model="item.value"
-                  @change="onProductModuleName(item.value)"
-                  :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  allow-search
-                  allow-clear
-                />
-              </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   v-model="item.value"
@@ -104,7 +85,7 @@
                   @change="tasksTypeCaseName(item.value)"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'case'">
+              <template v-else-if="item.type === 'select' && item.key === 'case_id'">
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
@@ -325,6 +306,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      onProductModuleName(route.query.project_product_id)
     })
   })
 </script>

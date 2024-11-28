@@ -30,11 +30,12 @@ right_data = [
 ]
 form_data = [
     {
-        'title': '项目',
+        'title': '项目/产品',
         'placeholder': '请选择项目产品',
-        'key': 'project',
-        'type': 1,
-        'select': Methods.get_project_model,
+        'key': 'project_product',
+        'type': 2,
+        'select': Methods.get_product_module_cascader_model,
+
     },
     {
         'title': '任务名称',
@@ -93,7 +94,7 @@ table_column = [
         'width': 7
     },
     {
-        'key': 'project',
+        'key': 'project_product',
         'name': '项目',
     },
     {

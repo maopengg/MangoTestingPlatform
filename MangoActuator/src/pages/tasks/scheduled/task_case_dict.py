@@ -26,11 +26,11 @@ field_list = [
 form_data = [
     {
         'title': '模块',
-        'placeholder': '请选择产品模块后选择用例',
+        'placeholder': '请选择模块',
         'key': 'module',
-        'type': 2,
+        'type': 1,
         'subordinate': 'case_id',
-        'select': Methods.product_module,
+        'select': Methods.get_product_module_label,
     },
     {
         'title': '用例名称',

@@ -53,7 +53,8 @@ export const webFormItems: FormItem[] = reactive([
     validator: function () {
       return true
     },
-  },{
+  },
+  {
     label: '浏览器路径',
     key: 'web_path',
     value: '',
@@ -163,7 +164,8 @@ export const tableColumns = useTableColumn([
     title: '浏览器路径',
     key: 'web_path',
     dataIndex: 'web_path',
-  },  {
+  },
+  {
     title: '无头模式',
     key: 'web_headers',
     dataIndex: 'web_headers',

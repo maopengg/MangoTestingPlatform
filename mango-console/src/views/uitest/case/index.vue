@@ -173,7 +173,8 @@
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -307,7 +308,7 @@
     getSystemScheduledName,
     postSystemTasksBatchSetCases,
   } from '@/api/system'
-  import { getUserNickname } from '@/api/user'
+  import { getUserName } from '@/api/user'
   import { useStatus } from '@/store/modules/status'
   import { useEnvironment } from '@/store/modules/get-environment'
   const productModule = useProductModule()
@@ -508,7 +509,7 @@
   }
 
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })

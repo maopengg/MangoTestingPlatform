@@ -127,7 +127,8 @@
                     <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                       <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                       <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                      <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <a-button type="text" size="mini" @click="onPageStep(record)"
@@ -187,21 +188,13 @@
                   </a-space>
                   <a-space style="width: 30%">
                     <span v-if="item.type === 0"
-                      >类型：操作->{{ getLabelByValue(data.ope, item.ope_type) }}</span
+                      >类型：操作->{{ getLabelByValue(data.ope, item.ope_key) }}</span
                     >
                     <span v-if="item.type === 1"
-                      >类型：断言->{{ getLabelByValue(data.ass, item.ass_type) }}</span
+                      >类型：断言->{{ getLabelByValue(data.ass, item.ope_key) }}</span
                     >
                     <span v-if="item.type === 2">类型：SQL</span>
                     <span v-if="item.type === 3">类型：自定义参数</span>
-                  </a-space>
-                  <a-space style="width: 30%">
-                    <a-button
-                      type="text"
-                      size="mini"
-                      @click="viewElementExpressions(item.page_step_details_id)"
-                      >查看元素表达式</a-button
-                    >
                   </a-space>
                 </div>
                 <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">

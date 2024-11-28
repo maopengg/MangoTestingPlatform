@@ -34,8 +34,8 @@ table_column = [
         'width': 100
     },
     {
-        'key': 'project',
-        'name': '项目',
+        'key': 'project_product',
+        'name': '项目/产品',
         'item': 'name',
         'width': 100
     },

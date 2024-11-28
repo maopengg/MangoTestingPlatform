@@ -25,7 +25,7 @@ class ScheduledTaskPage(TableParent):
         self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):
-        if data.key == 'project':
+        if data.key == 'project_product':
             return data.select()
         else:
             return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]

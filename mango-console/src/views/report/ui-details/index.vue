@@ -33,12 +33,7 @@
           </p>
           <p>失败消息：{{ pageData.record.error_message }}</p>
         </a-space>
-        <a-space
-          size="large"
-          v-for="item of reportDetailsData.summary"
-          :key="item.name"
-          style="width: 7%"
-        >
+        <a-space size="large" v-for="item of data.summary" :key="item.name" style="width: 7%">
           <a-statistic :title="item.name" :value="item.value" show-group-separator />
         </a-space>
       </div>
@@ -49,12 +44,7 @@
           <span class="span">测试套</span>
           <TableBody ref="tableBody">
             <template #header>
-              <a-tree
-                blockNode
-                ref="childRef"
-                :data="reportDetailsData.treeData"
-                @select="(key) => click(key[0])"
-              >
+              <a-tree blockNode ref="childRef" :data="data.treeData" @select="(key) => click(key)">
                 <template #icon="{ node }">
                   <template v-if="node.status === 1"> <icon-check /> </template>
                   <template v-else> <icon-close /> </template>
@@ -65,82 +55,89 @@
         </div>
         <div class="divider"></div>
         <div class="right-content">
-          <div>
-            <span class="span">{{ reportDetailsData.stepName }}</span>
-          </div>
-          <div v-if="reportDetailsData.stepName">
-            <a-collapse
-              :default-active-key="reportDetailsData.eleResultKey"
-              v-for="item of reportDetailsData.eleResult"
-              :bordered="false"
-              :key="item.id"
-              destroy-on-hide
-            >
-              <a-collapse-item :header="item.ele_name" :style="customStyle" :key="item.id">
-                <div>
-                  <a-space direction="vertical" style="width: 50%">
-                    <p
-                      >操作类型：{{item.element_data.type === 0 ?getLabelByValue(reportDetailsData.ope, item.element_data.ope_key) : getLabelByValue(reportDetailsData.ass, item.element_data.ope_key)
-
-                      }}</p
+          <a-collapse
+            :default-active-key="data.eleResultKey"
+            v-for="item of data.selectData.element_result_list"
+            :bordered="false"
+            :key="item.id"
+            destroy-on-hide
+          >
+            <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+              <div>
+                <a-space direction="vertical" style="width: 50%">
+                  <p
+                    >操作类型：{{
+                      item.type === 0
+                        ? getLabelByValue(data.ope, item.ope_key)
+                        : getLabelByValue(data.ass, item.ope_key)
+                    }}</p
+                  >
+                  <p
+                    >表达式类型：{{
+                      item.exp
+                        ? data.eleExp[item.exp].title
+                        : item.exp
+                    }}</p
+                  >
+                  <p
+                    >测试结果：{{
+                      item.status === 1
+                        ? '通过'
+                        : item.status === 0
+                        ? '失败'
+                        : '未测试'
+                    }}</p
+                  >
+                  <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                  <p v-if="item.status === 0"
+                    >错误提示：{{ item.error_message }}</p
+                  >
+                  <p v-if="item.expect">预期：{{ item.expect }}</p>
+                  <p v-if="item.status === 0"
+                    >视频路径：{{ item.video_path }}</p
+                  >
+                </a-space>
+                <a-space direction="vertical" style="width: 50%">
+                  <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                  <p>元素个数：{{ item.ele_quantity }}</p>
+                  <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                  <div v-if="item.status === 0">
+                    <a-image
+                      :src="baseURL + '/' + item.picture_path"
+                      title="失败截图"
+                      width="260"
+                      style="margin-right: 67px; vertical-align: top"
+                      :preview-visible="visible1"
+                      @preview-visible-change="
+                        () => {
+                          visible1 = false
+                        }
+                      "
                     >
-                    <p
-                      >表达式类型：{{
-                        item.element_data.exp ? reportDetailsData.eleExp[item.element_data.exp].title : item.element_data.exp
-                      }}</p
-                    >
-                    <p
-                      >测试结果：{{
-                        item.element_data.status === 1 ? '通过' : item.element_data.status === 0 ? '失败' : '未测试'
-                      }}</p
-                    >
-                    <p>等待时间：{{ item.element_data.sleep ? item.element_data.sleep : '-' }}</p>
-                    <p v-if="item.element_data.status === 0">错误提示：{{ item.element_data.error_message }}</p>
-                    <p v-if="item.element_data.expect">预期：{{ item.element_data.expect }}</p>
-                    <p v-if="item.element_data.status === 0">视频路径：{{ item.element_data.video_path }}</p>
-                  </a-space>
-                  <a-space direction="vertical" style="width: 50%">
-                    <p style="word-wrap: break-word">元素表达式：{{ item.element_data.loc }}</p>
-                    <p>元素个数：{{ item.element_data.ele_quantity }}</p>
-                    <p>元素下标：{{ item.element_data.sub ? item.element_data.sub : '-' }}</p>
-                    <div v-if="item.element_data.status === 0">
-                      <a-image
-                        :src="baseURL + '/' + item.element_data.picture_path"
-                        title="失败截图"
-                        width="260"
-                        style="margin-right: 67px; vertical-align: top"
-                        :preview-visible="visible1"
-                        @preview-visible-change="
-                          () => {
-                            visible1 = false
-                          }
-                        "
-                      >
-                        <template #extra>
-                          <div class="actions">
-                            <span
-                              class="action"
-                              @click="
-                                () => {
-                                  visible1 = true
-                                }
-                              "
-                              ><icon-eye
-                            /></span>
-                            <span class="action" @click="onDownLoad"><icon-download /></span>
-                            <a-tooltip content="失败截图">
-                              <span class="action"><icon-info-circle /></span>
-                            </a-tooltip>
-                          </div>
-                        </template>
-                      </a-image>
-                    </div>
-                    <p v-if="item.expect">实际：{{ item.element_data.actual }}</p>
-                  </a-space>
-                </div>
-              </a-collapse-item>
-            </a-collapse>
-          </div>
+                      <template #extra>
+                        <div class="actions">
+                          <span
+                            class="action"
+                            @click="
+                              () => {
+                                visible1 = true
+                              }
+                            "
+                            ><icon-eye
+                          /></span>
+                          <span class="action"><icon-download /></span>
+                          <a-tooltip content="失败截图">
+                            <span class="action"><icon-info-circle /></span>
+                          </a-tooltip>
+                        </div>
+                      </template>
+                    </a-image>
+                  </div>
+                  <p v-if="item.expect">实际：{{ item.actual }}</p>
+                </a-space>
+              </div>
+            </a-collapse-item>
+          </a-collapse>
         </div>
       </div>
     </a-card>
@@ -149,23 +146,17 @@
 <script lang="ts" setup>
   import { reactive, onMounted, nextTick, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
-  import { useRoute } from 'vue-router'
-  import {
-    getUiCaseResultSuiteGetCase,
-    getUiEleResultEle,
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
-  } from '@/api/uitest'
-  import { getSystemEnumExp } from '@/api/system'
+  import { getUiPageStepsDetailedAss, getUiPageStepsDetailedOpe } from '@/api/uitest'
+  import { getSystemEnumExp, getSystemTestSuiteDetails } from '@/api/system'
   import { baseURL } from '@/api/axios.config'
   const childRef: any = ref(null)
 
   const pageData: any = usePageData()
-  const route = useRoute()
 
-  const reportDetailsData: any = reactive({
+  const data: any = reactive({
     stepName: '',
     treeData: [],
+    selectData: {},
     summary: [],
     eleResult: [],
     eleResultKey: [],
@@ -181,38 +172,13 @@
   })
   const visible1 = ref(false)
 
-  function onDownLoad() {}
-  function click(key: string) {
-    childRef.value.expandNode(key, true) // 调用子组件的方法
-    let obj = JSON.parse(key)
-    reportDetailsData.treeData.forEach((item: any) => {
-      if (item.children.length !== 0) {
-        item.children.forEach((i: any) => {
-          if (i.key == key) {
-            reportDetailsData.stepName = i.title
-            return
-          }
-        })
-      }
-      if (item.key == key) {
-        reportDetailsData.stepName = item.title
-        return
-      }
-    })
-    if (obj.page_steps_result) {
-      getUiEleResultEle(obj.test_suite_id, obj.page_step_id, obj.case_id)
-        .then((res) => {
-          reportDetailsData.eleResult = res.data
-          res.data.forEach((item: any) => {
-            if (item.status === 0) {
-              reportDetailsData.eleResultKey.push(item.id)
-            }
-          })
-        })
-        .catch(console.log)
-    } else {
-      reportDetailsData.eleResult = []
+  function click(key: any) {
+    if (typeof key[0] === 'number') {
+      childRef.value.expandNode(key, true)
+      return
     }
+    data.selectData = key[0]
+    console.log(data.selectData)
   }
 
   function doResetSearch() {
@@ -220,10 +186,28 @@
   }
 
   function doRefresh() {
-    getUiCaseResultSuiteGetCase(route.query.id)
+    getSystemTestSuiteDetails(pageData.record.id)
       .then((res) => {
-        reportDetailsData.treeData = res.data.data
-        reportDetailsData.summary = res.data.summary
+        res.data.forEach((item: object) => {
+          const children = {
+            title: item.case_name,
+            key: item.case_id,
+            status: item.status,
+            children: [],
+          }
+          if (item.result_data) {
+            item.result_data.forEach((item1: object) => {
+              children['children'].push({
+                title: item1.name,
+                key: item1,
+                status: item1.status,
+                children: [],
+              })
+            })
+          }
+          data.treeData.push(children)
+        })
+        console.log(data.treeData)
       })
       .catch(console.log)
   }
@@ -241,7 +225,7 @@
   function getEleExp() {
     getSystemEnumExp()
       .then((res) => {
-        reportDetailsData.eleExp = res.data
+        data.eleExp = res.data
       })
       .catch(console.log)
   }
@@ -249,7 +233,7 @@
   function getUiRunSortAss() {
     getUiPageStepsDetailedAss(null)
       .then((res) => {
-        reportDetailsData.ass = res.data
+        data.ass = res.data
       })
       .catch(console.log)
   }
@@ -257,7 +241,7 @@
   function getUiRunSortOpe() {
     getUiPageStepsDetailedOpe(null)
       .then((res) => {
-        reportDetailsData.ope = res.data
+        data.ope = res.data
       })
       .catch(console.log)
   }

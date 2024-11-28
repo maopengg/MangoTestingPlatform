@@ -10,9 +10,9 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import Tasks
 from PyAutoTest.auto_test.auto_system.service.scheduled_tasks.tasks import RunTasks
-from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
-from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializersC
+from PyAutoTest.auto_test.auto_system.views.time_tasks import TimeTasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -32,7 +32,7 @@ class TasksSerializers(serializers.ModelSerializer):
 class TasksSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project = ProjectSerializers(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     test_obj = TestObjectSerializersC(read_only=True)
     timing_strategy = TimeTasksSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
@@ -44,7 +44,7 @@ class TasksSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'project',
+            'project_product',
             'test_obj',
             'timing_strategy',
             'case_people')

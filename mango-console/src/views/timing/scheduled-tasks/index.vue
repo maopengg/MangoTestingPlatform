@@ -81,11 +81,14 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                </template>
                 <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
                   {{ record.timing_strategy?.name }}
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
-                  {{ record.case_people?.nickname }}
+                  {{ record.case_people?.name }}
                 </template>
                 <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                   <a-tag color="orangered" size="small">
@@ -162,7 +165,15 @@
               <template v-else-if="item.type === 'input' && item.key === 'name'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-
+              <template v-else-if="item.type === 'cascader'">
+                <a-cascader
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  allow-search
+                  allow-clear
+                />
+              </template>
               <template v-else-if="item.type === 'select' && item.key === 'timing_strategy'">
                 <a-select
                   v-model="item.value"
@@ -252,8 +263,10 @@
     putSystemScheduledPutStatus,
     putSystemScheduledTasks,
   } from '@/api/system'
-  import { getUserNickname } from '@/api/user'
+  import { getUserName } from '@/api/user'
   import { useEnvironment } from '@/store/modules/get-environment'
+  import { useProject } from '@/store/modules/get-project'
+  const projectInfo = useProject()
 
   const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -358,7 +371,7 @@
       let value = getFormItems(formItems)
       if (data.isAdd) {
         value['status'] = 0
-        value['is_notice'] = 1
+        value['is_notice'] = 0
         postSystemScheduledTasks(value)
           .then((res) => {
             Message.success(res.msg)
@@ -378,7 +391,7 @@
   }
 
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })
@@ -445,6 +458,7 @@
         id: record.id,
         name: record.name,
         type: record.type,
+        project_product_id: record.project_product.id,
       },
     })
   }

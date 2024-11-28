@@ -16,7 +16,6 @@ export const conditionItems: Array<FormItem> = reactive([
   },
 ])
 export const formItems: FormItem[] = reactive([
-
   {
     label: '域名',
     key: 'host',

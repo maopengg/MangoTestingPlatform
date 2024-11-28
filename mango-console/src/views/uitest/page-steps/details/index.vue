@@ -148,10 +148,15 @@
             </template>
 
             <template v-else-if="item.type === 'radio' && item.key === 'type'">
-              <a-radio-group
-                @change="changeStatus"
+              <a-select
                 v-model="data.type"
+                :placeholder="item.placeholder"
                 :options="data.plainOptions"
+                :field-names="fieldNames"
+                @change="changeStatus"
+                value-key="key"
+                allow-clear
+                allow-search
               />
             </template>
             <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
@@ -530,7 +535,6 @@
       })
       .catch(console.log)
   }
-
   onMounted(() => {
     nextTick(async () => {
       await getUiRunSortAss()

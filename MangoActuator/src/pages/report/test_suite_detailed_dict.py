@@ -11,7 +11,7 @@ right_data = [
 ]
 field_list = [
     {'key': 'id', 'name': '测试套ID'},
-    {'key': 'project', 'name': '项目名称'},
+    {'key': 'project_product', 'name': '项目名称'},
     {'key': 'create_time', 'name': '执行时间'},
     {'key': 'status', 'name': '测试结果'},
     {'key': 'test_env', 'name': '测试环境'},

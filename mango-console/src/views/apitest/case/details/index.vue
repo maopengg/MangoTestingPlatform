@@ -142,7 +142,8 @@
                     <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
                       <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                       <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                      <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                      <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <a-button type="text" size="mini" @click="caseRun(record.case_sort)"
@@ -269,20 +270,20 @@
               <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                 <a-tab-pane key="20" title="基础信息">
                   <a-space direction="vertical">
-                    <span>URL：{{ data.result?.url }}</span>
-                    <span>响应code：{{ data.result?.response_code }}</span>
-                    <span>响应时间：{{ data.result?.response_time }}</span>
-                    <span>失败原因：{{ data.result?.error_message }}</span>
+                    <span>URL：{{ data.result_data?.request?.url }}</span>
+                    <span>响应code：{{ data.result_data?.response?.status_code }}</span>
+                    <span>响应时间：{{ data.result_data?.response?.response_time }}</span>
+                    <span>失败原因：{{ data.result_data?.error_message }}</span>
                   </a-space>
                 </a-tab-pane>
                 <a-tab-pane key="21" title="请求头">
-                  <pre>{{ strJson(data.result?.headers) }}</pre>
+                  <pre>{{ strJson(data.result_data?.request?.headers) }}</pre>
                 </a-tab-pane>
                 <a-tab-pane key="22" title="响应头">
-                  <pre>{{ strJson(data.result?.response_headers) }}</pre>
+                  <pre>{{ strJson(data.result_data?.response?.response_headers) }}</pre>
                 </a-tab-pane>
                 <a-tab-pane key="23" title="响应体">
-                  <pre>{{ strJson(data.result?.response_text) }}</pre>
+                  <pre>{{ strJson(data.result_data?.response?.response_text) }}</pre>
                 </a-tab-pane>
               </a-tabs>
             </a-tab-pane>
@@ -471,7 +472,7 @@
               </a-tabs>
             </a-tab-pane>
             <a-tab-pane key="5" title="缓存数据">
-              <pre>{{ strJson(data.result?.all_cache) }}</pre>
+              <pre>{{ strJson(data.result_data?.cache_data) }}</pre>
             </a-tab-pane>
           </a-tabs>
         </div>
@@ -529,7 +530,6 @@
   import { formItems, columns } from './config'
   import {
     getApiCaseDetailed,
-    getApiInfoCaseResult,
     putApiCase,
     putApiCaseDetailed,
     getApiCaseRun,
@@ -560,6 +560,7 @@
       json: null,
       file: null,
     },
+    result_data: {},
     results: null,
     selectDataObj: {},
     data: [],
@@ -600,24 +601,16 @@
     } else if (key === '1') {
       data.tabsKey = '10'
     } else if (key === '2') {
-      getResponseResults()
+      console.log(key)
       data.tabsKey = '23'
     } else if (key === '3') {
       data.tabsKey = '30'
     } else if (key === '4') {
       data.tabsKey = '40'
     } else if (key === '5') {
-      getResponseResults()
+      console.log(key)
       data.tabsKey = '50'
     }
-  }
-
-  function getResponseResults() {
-    getApiInfoCaseResult(data.selectDataObj.id)
-      .then((res) => {
-        data.result = res.data
-      })
-      .catch(console.log)
   }
 
   function switchSonType(key: any) {
@@ -826,6 +819,7 @@
 
   function select(record: any) {
     data.selectDataObj = record
+    data.result_data =record.result_data
     if (typeof record.ass_response_whole == 'object') {
       data.selectDataObj['ass_response_whole'] = formatJson(record.ass_response_whole)
     }

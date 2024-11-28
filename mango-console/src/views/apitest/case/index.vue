@@ -172,7 +172,8 @@
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                  <a-tag color="gray" size="small" v-else>未测试</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                  <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
                   <a-space>
@@ -296,7 +297,7 @@
     postApiCaseCody,
     putApiCase,
   } from '@/api/apitest'
-  import { getUserNickname } from '@/api/user'
+  import { getUserName } from '@/api/user'
   import {
     getSystemEnumCaseLevel,
     getSystemScheduledName,
@@ -445,7 +446,7 @@
   }
 
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })

@@ -91,12 +91,12 @@ class UiCaseViews(ViewSet):
         case_project = None
         for i in case_id_list:
             if case_project is None:
-                case_project = UiCase.objects.get(id=i).project_product.project.id
+                case_project = UiCase.objects.get(id=i).project_product.id
             else:
-                if case_project != UiCase.objects.get(id=i).project_product.project.id:
+                if case_project != UiCase.objects.get(id=i).project_product.id:
                     return ResponseData.fail(RESPONSE_MSG_0128, )
         add_tasks = AddTasks(
-            project=case_project,
+            project_product=case_project,
             test_env=request.data.get("test_env"),
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],

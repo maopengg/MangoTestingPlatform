@@ -97,7 +97,6 @@ table_column = [
         'item': 'name',
         'width': 100
     },
-
     {
         'key': 'module',
         'name': '模块',

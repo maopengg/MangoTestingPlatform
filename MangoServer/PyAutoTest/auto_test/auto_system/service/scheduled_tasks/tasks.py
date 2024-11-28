@@ -48,7 +48,7 @@ class RunTasks:
         if tasks.type == AutoTestTypeEnum.API.value:
             tasks_details = TasksDetails.objects.filter(task=tasks.id)
             add_tasks = AddTasks(
-                project=tasks.project.id,
+                project_product=tasks.project_product.id,
                 test_env=tasks.test_env,
                 is_notice=tasks.is_notice,
                 user_id=tasks.case_people.id,
@@ -59,7 +59,7 @@ class RunTasks:
         elif tasks.type == AutoTestTypeEnum.UI.value:
             tasks_details = TasksDetails.objects.filter(task=tasks.id)
             add_tasks = AddTasks(
-                project=tasks.project.id,
+                project_product=tasks.project_product.id,
                 test_env=tasks.test_env,
                 is_notice=tasks.is_notice,
                 user_id=tasks.case_people.id,

@@ -40,7 +40,7 @@ class TestCase(CaseDetailedInit):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def test_case(self, case_id: int, case_sort: int | None = None) -> dict:
+    def test_case(self, case_id: int, case_sort: int | None = None) -> ApiCaseResultModel:
         log.api.debug(f'开始执行用例ID：{case_id}')
         api_case = ApiCase.objects.get(id=case_id)
         self.api_case_result = ApiCaseResultModel(
@@ -60,6 +60,7 @@ class TestCase(CaseDetailedInit):
 
             self.init_case_posterior(api_case)
             self.api_case_result.status = self.status.value
+            self.api_case_result.error_message = self.error_message
             self.update_test_case(case_id, self.status)
             if self.test_suite:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
@@ -69,7 +70,7 @@ class TestCase(CaseDetailedInit):
                     error_message=self.error_message,
                     result_data=self.api_case_result
                 ))
-                return self.api_case_result.model_dump()
+            return self.api_case_result
         except Exception as error:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
@@ -94,6 +95,8 @@ class TestCase(CaseDetailedInit):
 
                 request_data_model, response = self.send_request(request_data_model)
                 self.case_steps_posterior(i, request_data_model, response)
+                if self.status == StatusEnum.FAIL:
+                    break
         except MangoServerError as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
@@ -102,8 +105,6 @@ class TestCase(CaseDetailedInit):
             self.status = StatusEnum.FAIL
             log.api.error(error)
             self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
-        else:
-            self.status = StatusEnum.SUCCESS
 
     def case_steps_front(self, data: ApiCaseDetailed) -> RequestDataModel:
         self.project_product_id = data.api_info.project_product.id

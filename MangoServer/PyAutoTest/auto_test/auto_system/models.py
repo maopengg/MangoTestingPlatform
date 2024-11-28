@@ -125,7 +125,7 @@ class TimeTasks(models.Model):
 class Tasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     name = models.CharField(verbose_name="任务名称", max_length=64)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
@@ -144,7 +144,7 @@ class TasksDetails(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_id = models.SmallIntegerField(verbose_name="api_case_id")
+    case_id = models.SmallIntegerField(verbose_name="用例ID")
 
     class Meta:
         db_table = 'tasks_details'
@@ -172,7 +172,7 @@ class TestSuite(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     # type=0是UI,=1是接口,=2是性能
     type = models.SmallIntegerField(verbose_name="类型")
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     user = models.ForeignKey(to=User, to_field="id", verbose_name='用例执行人', on_delete=models.SET_NULL, null=True)
     tasks = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)

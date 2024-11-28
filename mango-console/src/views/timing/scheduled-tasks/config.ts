@@ -36,6 +36,21 @@ export const conditionItems: Array<FormItem> = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
+    label: '项目/产品',
+    key: 'project_product',
+    value: '',
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'cascader',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '任务名称',
     key: 'name',
     value: '',
@@ -110,28 +125,17 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-  {
-    label: '执行器',
-    key: 'case_executor',
-    value: '',
-    placeholder: '请选择定执行器',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (this.value.length === 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      this.value = this.value.filter(
-        (item: any) => item !== null && item !== undefined && item !== ''
-      )
-      return true
-    },
-  },
+
 ])
 
 export const tableColumns = useTableColumn([
   table.indexColumn,
+  {
+    title: '项目/产品',
+    key: 'project_product',
+    dataIndex: 'project_product',
+    align: 'left',
+  },
   {
     title: '任务名称',
     key: 'name',
@@ -159,12 +163,6 @@ export const tableColumns = useTableColumn([
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
-    align: 'left',
-  },
-  {
-    title: '执行器',
-    key: 'case_executor',
-    dataIndex: 'case_executor',
     align: 'left',
   },
   {

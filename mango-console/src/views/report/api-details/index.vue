@@ -13,7 +13,6 @@
           <p>测试套ID：{{ pageData.record.id }}</p>
           <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
           <p>执行时间：{{ pageData.record.create_time }}</p>
-          <p>执行状态：{{ pageData.record.run_status === 1 ? '已完成' : '执行中' }}</p>
         </a-space>
         <a-space direction="vertical" style="width: 42%">
           <p>测试对象：{{ pageData.record.test_object?.name }}</p>
@@ -43,8 +42,12 @@
         <a-space direction="vertical" style="width: 40%">
           <a-tree blockNode ref="childRef" :data="data.treeData" @select="click">
             <template #icon="{ node }">
-              <template v-if="node.status === 1"> <icon-check /> </template>
-              <template v-else> <icon-close /> </template>
+              <template v-if="node.status === 1">
+                <icon-check />
+              </template>
+              <template v-else>
+                <icon-close />
+              </template>
             </template>
           </a-tree>
         </a-space>
@@ -52,53 +55,52 @@
           <a-tabs default-active-key="1">
             <a-tab-pane key="1" title="接口信息">
               <a-space direction="vertical">
-                <p>接口ID：{{ data.apiResult.api_info?.id }}</p>
-                <p>接口名称：{{ data.apiResult.api_info?.name }}</p>
-                <p>请求方法：{{ data.methodType[data.apiResult.api_info?.method] }}</p>
-                <p>请求端：{{ data.clientType[data.apiResult.api_info?.client] }}</p>
-                <p>请求url：{{ data.apiResult.url }}</p>
+                <p>接口ID：{{ data.selectData?.id }}</p>
+                <p>接口名称：{{ data.selectData?.name }}</p>
+                <p>请求方法：{{ data.selectData?.request?.method }}</p>
+                <p>请求url：{{ data.selectData?.request?.url }}</p>
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="2" title="请求头">
-              <pre>{{ strJson(data.apiResult.headers) }}</pre>
+              <pre>{{ strJson(data.selectData?.request?.headers) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="3" title="参数">
-              <pre>{{ strJson(data.apiResult.params) }}</pre>
+              <pre>{{ strJson(data.selectData?.request?.params) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="4" title="data">
-              <pre>{{ strJson(data.apiResult.data) }}</pre>
+              <pre>{{ strJson(data.selectData?.request?.data) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="5" title="json">
-              <pre>{{ strJson(data.apiResult.json) }}</pre>
+              <pre>{{ strJson(data.selectData?.request?.json) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="6" title="文件">
-              <pre>{{ strJson(data.apiResult.file) }}</pre>
+              <pre>{{ strJson(data.selectData?.request?.file) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="7" title="响应信息">
               <a-space direction="vertical">
-                <p>响应code码：{{ data.apiResult.response_code }}</p>
-                <p>响应时间：{{ data.apiResult.response_time }}</p>
-                <p :style="{ color: data.apiResult.status === 0 ? 'red' : 'inherit' }">
+                <p>响应code码：{{ data.selectData?.response?.status_code }}</p>
+                <p>响应时间：{{ data.selectData?.response?.response_time }}</p>
+                <p :style="{ color: data.selectData?.status === 0 ? 'red' : 'inherit' }">
                   测试结果：{{
-                    data.apiResult.status === 1 ? '通过' : data.apiResult.status === 0 ? '失败' : ''
+                    data.selectData?.status === 1 ? '通过' : data.selectData?.status === 0 ? '失败' : ''
                   }}
                 </p>
-                <p v-if="data.apiResult.status === 0"
-                  >错误提示语：{{ data.apiResult.error_message }}</p
+                <p v-if="data.selectData?.status === 0"
+                  >错误提示语：{{ data.selectData?.error_message }}</p
                 >
               </a-space>
             </a-tab-pane>
             <a-tab-pane key="8" title="响应头">
-              <pre>{{ strJson(data.apiResult.response_headers) }}</pre>
+              <pre>{{ strJson(data.selectData?.response?.response_headers) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="9" title="响应体">
-              <pre>{{ strJson(data.apiResult.response_text) }}</pre>
+              <pre>{{ strJson(data.selectData?.response?.response_text) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="10" title="缓存数据">
-              <pre>{{ strJson(data.apiResult.all_cache) }}</pre>
+              <pre>{{ strJson(data.selectData?.cache_data) }}</pre>
             </a-tab-pane>
             <a-tab-pane key="11" title="断言数据">
-              <pre>{{ strJson(data.apiResult.assertion) }}</pre>
+              <pre>{{ strJson(data.selectData?.ass) }}</pre>
             </a-tab-pane>
           </a-tabs>
         </a-space>
@@ -111,13 +113,15 @@
   import { usePageData } from '@/store/page-data'
   import { strJson } from '@/utils/tools'
   import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
-  import { getApiInfoResult, getApiResultSuiteCase } from '@/api/apitest'
+  import { getSystemTestSuiteDetails } from '@/api/system'
 
   const pageData: any = usePageData()
 
   const data: any = reactive({
     treeData: [],
     summary: [],
+    selectData: {},
+
     apiResult: {},
     clientType: [],
     methodType: [],
@@ -125,15 +129,11 @@
   const childRef: any = ref(null)
 
   function click(key: any) {
-    if (key[0][0] === '1') {
-      childRef.value.expandNode(key, true) // 调用子组件的方法
+    if (typeof key[0] === 'number') {
+      childRef.value.expandNode(key, true)
       return
     }
-    getApiInfoResult(key[0].substring(2))
-      .then((res) => {
-        data.apiResult = res.data[0]
-      })
-      .catch(console.log)
+    data.selectData = key[0]
   }
 
   function doResetSearch() {
@@ -141,13 +141,32 @@
   }
 
   function doRefresh() {
-    getApiResultSuiteCase(pageData.record.id)
+    getSystemTestSuiteDetails(pageData.record.id)
       .then((res) => {
-        data.treeData = res.data.data
-        data.summary = res.data.summary
+        res.data.forEach((item: object) => {
+          const children = {
+            title: item.case_name,
+            key: item.case_id,
+            status: item.status,
+            children: [],
+          }
+          if (item.result_data) {
+            item.result_data.forEach((item1: object) => {
+              children['children'].push({
+                title: item1.name,
+                key: item1,
+                status: item1.status,
+                children: [],
+              })
+            })
+          }
+          data.treeData.push(children)
+        })
+        console.log(data.treeData)
       })
       .catch(console.log)
   }
+
   function doMethodType() {
     getSystemEnumMethod()
       .then((res) => {
@@ -167,6 +186,7 @@
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
@@ -224,6 +244,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
   p {
     display: -webkit-box;
     -webkit-line-clamp: 3;

@@ -42,7 +42,7 @@ class TaskCasePage(SubPage):
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'module':
-            return data.select(self.data.get('project').get('id'))
+            return data.select(self.data.get('project_product').get('id'))
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         if data.subordinate == 'case_id':
