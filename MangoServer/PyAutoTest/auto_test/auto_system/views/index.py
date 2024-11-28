@@ -102,14 +102,9 @@ class IndexViews(ViewSet):
             """
         )
         result_dict = {
-            'api_count': [],
-            'ui_count': []
+            'api_count': [ row.total_count for row in api_result],
+            'ui_count': [row.total_count for row in ui_result]
         }
-        for row in api_result:
-            result_dict['api_count'].append(row.total_count)
-        for row in ui_result:
-            result_dict['ui_count'].append(row.total_count)
-
         return ResponseData.success(RESPONSE_MSG_0092, result_dict)
 
     @action(methods=['get'], detail=False)
