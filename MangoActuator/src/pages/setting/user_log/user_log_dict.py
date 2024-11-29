@@ -10,9 +10,9 @@ search_data = [
     {
         'title': '用户',
         'placeholder': '请选择用户',
-        'key': 'user_id',
+        'key': 'user',
         'type': 1,
-        'select': HTTP.get_nickname
+        'select': HTTP.get_name
     },
     {
         'title': '来源',
@@ -31,13 +31,9 @@ table_column = [
         'width': 50
     },
     {
-        'key': 'nickname',
-        'name': '昵称',
-    },
-    {
-        'key': 'username',
+        'key': 'user',
         'name': '账号',
-        'width': 200
+
     },
     {
         'key': 'source_type',

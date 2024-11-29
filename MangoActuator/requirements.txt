@@ -1,10 +1,11 @@
-playwright
-uiautomator2
+playwright==1.47.0
+uiautomator2==3.2.5
+uiautomation==2.0.20
 pywinauto==0.6.8
-uiautodev
+uiautodev==0.5.0
 locust
-mangokit==1.1.37
-mangoui==3.0.10
+mangokit==1.2.1
+mangoui==3.0.12
 websockets==10.4
 websocket-client==1.5.1
 

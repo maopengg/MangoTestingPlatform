@@ -76,7 +76,7 @@
                   <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
                 </template>
                 <template v-else-if="item.key === 'config'" #cell="{ record }">
-                    {{ record.config }}
+                  {{ record.config }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-switch
@@ -169,8 +169,8 @@
     putSystemNotice,
     putSystemNoticePutStatus,
   } from '@/api/system'
-  import { getUserNickname } from '@/api/user'
-  import {useRoute} from "vue-router";
+  import { getUserName } from '@/api/user'
+  import { useRoute } from 'vue-router'
   const route = useRoute()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -189,10 +189,9 @@
     formItems: [],
   })
 
-
   function doRefresh() {
     let value = getFormItems(conditionItems)
-    value['environment_id'] = route.query.id
+    value['test_object_id'] = route.query.id
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
     getSystemNotice(value)
@@ -278,7 +277,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
       if (data.isAdd) {
-        value['environment'] = route.query.id
+        value['test_object'] = route.query.id
         value['status'] = 0
         postSystemNotice(value)
           .then((res) => {
@@ -325,7 +324,7 @@
     })
   }
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })

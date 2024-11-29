@@ -3,5 +3,5 @@
 # @Description: 
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
-from .test_report import TestReportPage
-from .test_report_detailed import TestReportDetailedPage
+from .test_suite import TestSuitePage
+from .test_suite_detailed import TestSuiteDetailedPage

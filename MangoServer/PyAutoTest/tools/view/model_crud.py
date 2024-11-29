@@ -24,7 +24,7 @@ class ModelCRUD(GenericAPIView):
     # post专用
     serializer = None
     not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people', 'test_obj',
-                        'status']
+                        'status', 'user']
 
     @error_response('system')
     def get(self, request: Request):
@@ -37,7 +37,7 @@ class ModelCRUD(GenericAPIView):
         #
         project_id = request.headers.get('Project')
         if project_id and hasattr(self.model, 'project_product'):
-            from PyAutoTest.auto_test.auto_user.models import ProjectProduct
+            from PyAutoTest.auto_test.auto_system.models import ProjectProduct
             project_product = ProjectProduct.objects.filter(project_id=project_id)
             if project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
@@ -80,13 +80,15 @@ class ModelCRUD(GenericAPIView):
             data = request
             serializer = self.serializer(
                 instance=self.model.objects.get(pk=request.get('id')),
-                data=data
+                data=data,
+                partial=True
             )
         else:
             data = request.data
             serializer = self.serializer(
                 instance=self.model.objects.get(pk=request.data.get('id')),
-                data=data
+                data=data,
+                partial=True
             )
         if serializer.is_valid():
             serializer.save()
@@ -116,10 +118,10 @@ class ModelCRUD(GenericAPIView):
         反射的后置处理
         """
         if hasattr(self, 'callback'):
-            from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedCRUD
+            from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import PageStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
             from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailed
-            if isinstance(self, UiPageStepsDetailedCRUD):
+            if isinstance(self, PageStepsDetailedCRUD):
                 parent_id = request.data.get('page_step')
             elif isinstance(self, UiCaseStepsDetailedCRUD):
                 parent_id = request.data.get('case')
@@ -169,7 +171,7 @@ class ModelCRUD(GenericAPIView):
 
     @classmethod
     def inside_put(cls, _id: int, data: dict) -> dict:
-        serializer = cls.serializer(instance=cls.model.objects.get(pk=_id), data=data)
+        serializer = cls.serializer(instance=cls.model.objects.get(pk=_id), data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return serializer.data

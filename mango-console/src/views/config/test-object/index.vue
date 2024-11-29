@@ -98,7 +98,7 @@
                   >
                 </template>
                 <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
-                  {{ record.executor_name ? record.executor_name.nickname : '-' }}
+                  {{ record.executor_name ? record.executor_name.name : '-' }}
                 </template>
                 <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
                   <a-switch
@@ -123,7 +123,9 @@
                   <a-space>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                     <a-button type="text" size="mini" @click="clickNotice(record)">通知</a-button>
-                    <a-button type="text" size="mini" @click="clickDataBase(record)">数据库</a-button>
+                    <a-button type="text" size="mini" @click="clickDataBase(record)"
+                      >数据库</a-button
+                    >
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除</a-button
                     >
@@ -217,10 +219,10 @@
     putUserTestObject,
     putUserTestObjectPutStatus,
   } from '@/api/user'
-  import { getUserNickname } from '@/api/user'
-  import { getSystemEnumAutotest, getSystemEnumAutoType } from '@/api/system'
-  import {usePageData} from "@/store/page-data";
-  import {useRouter} from "vue-router";
+  import { getUserName } from '@/api/user'
+  import { getSystemEnumAutoType } from '@/api/system'
+  import { usePageData } from '@/store/page-data'
+  import { useRouter } from 'vue-router'
   const router = useRouter()
   const projectInfo = useProject()
   const uEnvironment = useEnvironment()
@@ -336,7 +338,7 @@
   }
 
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.nickname = res.data
       })

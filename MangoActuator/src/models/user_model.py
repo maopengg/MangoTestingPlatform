@@ -19,7 +19,7 @@ class UserModel(BaseModel):
     id: int
     create_time: datetime
     update_time: datetime
-    nickname: str
+    name: str
     username: str
     role: int | dict | None = None
     ip: str | None = None

@@ -7,9 +7,7 @@ from django.urls import path
 
 from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
-from PyAutoTest.auto_test.auto_api.views.api_case_result import ApiCaseResultCRUD, ApiCaseResultViews
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
-from PyAutoTest.auto_test.auto_api.views.api_info_result import ApiInfoResultCRUD, ApiInfoResultViews
 from PyAutoTest.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
 
 urlpatterns = [
@@ -21,8 +19,8 @@ urlpatterns = [
     path("import/api", ApiInfoViews.as_view({'post': 'import_api'})),
     #
     path("case", ApiCaseCRUD.as_view()),
-    path("case/run", ApiCaseViews.as_view({'get': 'api_case_run'})),
-    path("case/batch/run", ApiCaseViews.as_view({'post': 'api_case_batch_run'})),
+    path("case/test", ApiCaseViews.as_view({'get': 'api_test_case'})),
+    path("case/batch", ApiCaseViews.as_view({'post': 'api_test_case_batch'})),
     path("case/synchronous", ApiCaseViews.as_view({'get': 'api_synchronous_interface'})),
     path("case/copy", ApiCaseViews.as_view({'post': 'copy_case'})),
     #
@@ -34,11 +32,11 @@ urlpatterns = [
     path("public/put/status", ApiPublicViews.as_view({'put': 'put_status'})),
     path("public/set/cache", ApiPublicViews.as_view({'get': 'get_set_cache'})),
     #
-    path("result", ApiCaseResultCRUD.as_view()),
-    path("result/week", ApiCaseResultViews.as_view({'get': 'case_result_week_sum'})),
-    path("result/suite/case", ApiCaseResultViews.as_view({'get': 'suite_case_result'})),
+    # path("result", ApiCaseResultCRUD.as_view()),
+    # path("result/week", ApiCaseResultViews.as_view({'get': 'case_result_week_sum'})),
+    # path("result/suite/case", ApiCaseResultViews.as_view({'get': 'suite_case_result'})),
     #
-    path("info/result", ApiInfoResultCRUD.as_view()),
-    path("info/result/case", ApiInfoResultViews.as_view({'get': 'get_case_result'})),
+    # path("info/result", ApiInfoResultCRUD.as_view()),
+    # path("info/result/case", ApiInfoResultViews.as_view({'get': 'get_case_result'})),
 
 ]

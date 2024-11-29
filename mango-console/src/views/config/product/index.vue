@@ -74,34 +74,14 @@
                   {{ record.project.name }}
                 </template>
                 <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
-                    >前端自动化</a-tag
-                  >
-                  <a-tag color="cyan" size="small" v-else-if="record.auto_type === 1"
-                    >接口自动化</a-tag
-                  >
-                  <a-tag color="green" size="small" v-else-if="record.auto_type === 2"
-                    >性能自动化</a-tag
-                  >
+                  <a-tag color="orangered" size="small">{{
+                    data.AutoTestNameList[record.auto_type]?.title
+                  }}</a-tag>
                 </template>
                 <template v-else-if="item.key === 'client_type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.client_type === 0">WEB</a-tag>
-                  <a-tag color="green" size="small" v-else-if="record.client_type === 1"
-                    >PC桌面</a-tag
-                  >
-                  <template v-if="record.auto_type === 0">
-                    <a-tag color="orangered" size="small" v-if="record.client_type === 2"
-                      >安卓</a-tag
-                    >
-                    <a-tag color="cyan" size="small" v-else-if="record.client_type === 3"
-                      >IOS</a-tag
-                    > </template
-                  ><template v-if="record.auto_type === 1">
-                    <a-tag color="cyan" size="small" v-if="record.client_type === 2">APP</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.client_type === 3"
-                      >小程序</a-tag
-                    >
-                  </template>
+                  <a-tag color="orangered" size="small">{{
+                    data.typeList[record.client_type]?.title
+                  }}</a-tag>
                 </template>
 
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -150,7 +130,6 @@
                   :placeholder="item.placeholder"
                   :options="data.AutoTestNameList"
                   :field-names="fieldNames"
-                  @change="getTypeList(item.value, item)"
                   value-key="key"
                   allow-clear
                   allow-search
@@ -186,7 +165,7 @@
   import { fieldNames } from '@/setting'
   import { conditionItems, formItems, tableColumns } from './config'
   import { deleteUserProduct, getUserProduct, postUserProduct, putUserProduct } from '@/api/user'
-  import { getSystemEnumAutotest, getSystemEnumEnd, getSystemEnumPlatform } from '@/api/system'
+  import { getSystemEnumAutoType, getSystemEnumDrive } from '@/api/system'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -258,7 +237,6 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    getTypeList(item.auto_type, item)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -307,34 +285,24 @@
     }
   }
   function getAutoTestName() {
-    getSystemEnumAutotest()
+    getSystemEnumAutoType()
       .then((res) => {
         data.AutoTestNameList = res.data
       })
       .catch(console.log)
   }
-  function getTypeList(autoTestType: number, item: any) {
-    if (autoTestType === 0) {
-      getSystemEnumPlatform()
-        .then((res) => {
-          data.typeList = res.data
-        })
-        .catch(console.log)
-    } else if (autoTestType === 1) {
-      getSystemEnumEnd()
-        .then((res) => {
-          data.typeList = res.data
-        })
-        .catch(console.log)
-    } else {
-      Message.warning('不支持选择自动化类型为性能，请重新选择！')
-      item.value = ''
-    }
+  function getTypeList() {
+    getSystemEnumDrive()
+      .then((res) => {
+        data.typeList = res.data
+      })
+      .catch(console.log)
   }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getAutoTestName()
+      getTypeList()
     })
   })
 </script>

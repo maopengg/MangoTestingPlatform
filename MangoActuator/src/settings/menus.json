@@ -86,7 +86,7 @@
     },
     {
       "btn_icon": ":/icons/calendar_clock.svg",
-      "btn_id": "test_report",
+      "btn_id": "test_suite",
       "btn_text": "测试报告",
       "btn_tooltip": "测试报告",
       "show_top": true,

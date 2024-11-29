@@ -5,9 +5,7 @@
 # @Author : 毛鹏
 from .api_case import ApiCase
 from .api_case_detailed import ApiCaseDetailed
-from .api_case_result import ApiCaseResult
 from .api_info import ApiInfo
-from .api_info_result import ApiInfoResult
 from .api_pulic import ApiPublic
 
 
@@ -16,7 +14,5 @@ class ApiApi(
     ApiCase,
     ApiPublic,
     ApiCaseDetailed,
-    ApiCaseResult,
-    ApiInfoResult,
 ):
     pass

@@ -10,9 +10,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, UiPageStepsDetailed, UiCase
+from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed, UiCase
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
-from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import UiPageStepsSerializers
+from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view import *
@@ -32,7 +32,7 @@ class UiCaseStepsDetailedSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     case = UiCaseSerializers(read_only=True)
-    page_step = UiPageStepsSerializers(read_only=True)
+    page_step = PageStepsSerializers(read_only=True)
 
     class Meta:
         model = UiCaseStepsDetailed
@@ -91,7 +91,7 @@ class UiCaseStepsDetailedViews(ViewSet):
     @error_response('ui')
     def post_case_cache_data(self, request: Request):
         books = self.model.objects.get(id=request.query_params.get('id'))
-        ui_page_steps_detailed_obj = UiPageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
+        ui_page_steps_detailed_obj = PageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
             'step_sort')
         case_data_list = []
         for steps_detailed in ui_page_steps_detailed_obj:

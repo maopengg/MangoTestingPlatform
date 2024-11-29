@@ -9,9 +9,6 @@ from mangokit import DataProcessor
 
 class ObtainTestData(DataProcessor):
 
-    def __init__(self):
-        super().__init__()
-
     @classmethod
     def get_file(cls, **kwargs) -> None:
         """传入文件名称，返回文件对象"""

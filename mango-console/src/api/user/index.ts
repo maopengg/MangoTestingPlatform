@@ -60,9 +60,9 @@ export function getUserProjectAll(): Promise<Response> {
   })
 }
 
-export function getUserNickname() {
+export function getUserName() {
   return get({
-    url: url.userNickname,
+    url: url.userName,
     data: () => {
       return {}
     },

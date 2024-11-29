@@ -3,9 +3,8 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel, response_message
+from mango_ui import ComboBoxDataModel, FormDataModel, response_message, error_message
 
-from src.enums.tools_enum import StatusEnum
 from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel
 from .case_dict import *
@@ -33,7 +32,6 @@ class ApiCasePage(TableParent):
             return obj.select()
 
     def save_callback(self, data, is_post=False):
-        data['status'] = StatusEnum.FAIL.value
         if data.get('front_custom') is None:
             data['front_custom'] = []
         if data.get('front_sql') is None:
@@ -48,4 +46,12 @@ class ApiCasePage(TableParent):
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, HTTP.get_api_case_run(row.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.get_api_test_case(row.get("id"), user_info.selected_environment, ))
+
+    def batch_run(self):
+        case_id_list = self.table_widget.table_widget.get_selected_items()
+        if not case_id_list:
+            error_message(self, '请按住shift然后使用鼠标在表格进行多选，然后再点击批量执行')
+            return
+        user_info = UserModel()
+        response_message(self, HTTP.get_api_test_case_batch(case_id_list, user_info.selected_environment, ))

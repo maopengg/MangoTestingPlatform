@@ -27,8 +27,8 @@ class ScheduledTaskPage(TableParent):
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'project_product':
             return data.select()
-
-        return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
+        else:
+            return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
 
     def run(self, row):
         response_message(self, HTTP.get_run_scheduled_tasks(row.get('id')))

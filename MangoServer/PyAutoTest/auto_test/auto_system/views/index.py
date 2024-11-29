@@ -4,13 +4,15 @@
 # @Time   : 2024-01-12 14:53
 # @Author : 毛鹏
 from django.db.models import Count
+from django.db.utils import OperationalError
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiCaseResult
-from PyAutoTest.auto_test.auto_ui.models import UiCase, UiCaseResult
-from PyAutoTest.auto_test.auto_user.models import UserLogs
+from PyAutoTest.auto_test.auto_api.models import ApiCase
+from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
+from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.auto_test.auto_user.models import UserLogs, User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -28,86 +30,89 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        api_result = ApiCaseResult.objects.raw(
-            """
-                SELECT
-                    weeks.id,
-                    weeks.yearweek,
-                    COALESCE(api_counts.total_count, 0) AS total_count
-                FROM (
-                    SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+        try:
+            api_result = TestSuiteDetails.objects.raw(
+                """
+                    SELECT
+                        weeks.id,
+                        weeks.yearweek,
+                        COALESCE(api_counts.total_count, 0) AS total_count
                     FROM (
-                        SELECT 0 AS n UNION ALL
-                        SELECT 1 UNION ALL
-                        SELECT 2 UNION ALL
-                        SELECT 3 UNION ALL
-                        SELECT 4 UNION ALL
-                        SELECT 5 UNION ALL
-                        SELECT 6 UNION ALL
-                        SELECT 7 UNION ALL
-                        SELECT 8 UNION ALL
-                        SELECT 9 UNION ALL
-                        SELECT 10 UNION ALL
-                        SELECT 11
+                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                        FROM (
+                            SELECT 0 AS n UNION ALL
+                            SELECT 1 UNION ALL
+                            SELECT 2 UNION ALL
+                            SELECT 3 UNION ALL
+                            SELECT 4 UNION ALL
+                            SELECT 5 UNION ALL
+                            SELECT 6 UNION ALL
+                            SELECT 7 UNION ALL
+                            SELECT 8 UNION ALL
+                            SELECT 9 UNION ALL
+                            SELECT 10 UNION ALL
+                            SELECT 11
+                        ) weeks
                     ) weeks
-                ) weeks
-                LEFT JOIN (
-                    SELECT 
-                        MAX(api_case_result.id) as id,
-                        YEARWEEK(create_time) AS yearweek, 
-                        COUNT(YEARWEEK(create_time)) AS total_count
-                    FROM api_case_result
-                    WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                    GROUP BY YEARWEEK(create_time)
-                ) api_counts ON weeks.yearweek = api_counts.yearweek
-                ORDER BY weeks.yearweek;
-            """
-        )
-        ui_result = UiCaseResult.objects.raw(
-            """
-                SELECT
-                    weeks.id,
-                    weeks.yearweek,
-                    COALESCE(api_counts.total_count, 0) AS total_count
-                FROM (
-                    SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                    LEFT JOIN (
+                        SELECT 
+                            MAX(test_suite_details.id) as id,
+                            YEARWEEK(create_time) AS yearweek, 
+                            COUNT(YEARWEEK(create_time)) AS total_count
+                        FROM test_suite_details
+                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                        GROUP BY YEARWEEK(create_time)
+                    ) api_counts ON weeks.yearweek = api_counts.yearweek
+                    ORDER BY weeks.yearweek;
+                """
+            )
+            ui_result = TestSuiteDetails.objects.raw(
+                """
+                    SELECT
+                        weeks.id,
+                        weeks.yearweek,
+                        COALESCE(api_counts.total_count, 0) AS total_count
                     FROM (
-                        SELECT 0 AS n UNION ALL
-                        SELECT 1 UNION ALL
-                        SELECT 2 UNION ALL
-                        SELECT 3 UNION ALL
-                        SELECT 4 UNION ALL
-                        SELECT 5 UNION ALL
-                        SELECT 6 UNION ALL
-                        SELECT 7 UNION ALL
-                        SELECT 8 UNION ALL
-                        SELECT 9 UNION ALL
-                        SELECT 10 UNION ALL
-                        SELECT 11
+                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                        FROM (
+                            SELECT 0 AS n UNION ALL
+                            SELECT 1 UNION ALL
+                            SELECT 2 UNION ALL
+                            SELECT 3 UNION ALL
+                            SELECT 4 UNION ALL
+                            SELECT 5 UNION ALL
+                            SELECT 6 UNION ALL
+                            SELECT 7 UNION ALL
+                            SELECT 8 UNION ALL
+                            SELECT 9 UNION ALL
+                            SELECT 10 UNION ALL
+                            SELECT 11
+                        ) weeks
                     ) weeks
-                ) weeks
-                LEFT JOIN (
-                    SELECT 
-                        MAX(ui_case_result.id) as id,
-                        YEARWEEK(create_time) AS yearweek, 
-                        COUNT(YEARWEEK(create_time)) AS total_count
-                    FROM ui_case_result
-                    WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                    GROUP BY YEARWEEK(create_time)
-                ) api_counts ON weeks.yearweek = api_counts.yearweek
-                ORDER BY weeks.yearweek;
+                    LEFT JOIN (
+                        SELECT 
+                            MAX(test_suite_details.id) as id,
+                            YEARWEEK(create_time) AS yearweek, 
+                            COUNT(YEARWEEK(create_time)) AS total_count
+                        FROM test_suite_details
+                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                        GROUP BY YEARWEEK(create_time)
+                    ) api_counts ON weeks.yearweek = api_counts.yearweek
+                    ORDER BY weeks.yearweek;
+    
+                """
+            )
+        except OperationalError:
+            result_dict = {
+                'api_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            }
+            return ResponseData.fail(RESPONSE_MSG_0129, result_dict)
 
-            """
-        )
         result_dict = {
-            'api_count': [],
-            'ui_count': []
+            'api_count': [row.total_count for row in api_result],
+            'ui_count': [row.total_count for row in ui_result]
         }
-        for row in api_result:
-            result_dict['api_count'].append(row.total_count)
-        for row in ui_result:
-            result_dict['ui_count'].append(row.total_count)
-
         return ResponseData.success(RESPONSE_MSG_0092, result_dict)
 
     @action(methods=['get'], detail=False)
@@ -137,9 +142,9 @@ class IndexViews(ViewSet):
         """
         return ResponseData.success(RESPONSE_MSG_0094,
                                     [
-                                        {'value': UiCaseResult.objects.count(),
+                                        {'value': TestSuiteDetails.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
-                                        {'value': ApiCaseResult.objects.count(),
+                                        {'value': TestSuiteDetails.objects.count(),
                                          'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)}
                                     ])
 
@@ -147,18 +152,18 @@ class IndexViews(ViewSet):
     @error_response('system')
     def activity_level(self, request: Request):
         """
-        获取所有用例的总数
+
         @param request:
         @return:
         """
-        active_user_counts = UserLogs.objects.values('user_id', 'nickname').annotate(total_logins=Count('id')).order_by(
+        active_user_counts = UserLogs.objects.values('user').annotate(total_logins=Count('id')).order_by(
             '-total_logins')[:10]
-        nickname_list = []
+        name_list = []
         total_logins_list = []
         for user_count in active_user_counts:
-            nickname_list.append(user_count['nickname'])
-            total_logins_list.append(user_count['total_logins'])
+            name_list.append(User.objects.get(id=user_count.get('user')).name)
+            total_logins_list.append(user_count.get('total_logins'))
         return ResponseData.success(RESPONSE_MSG_0092, {
-            'nickname': nickname_list[::-1],
+            'name': name_list[::-1],
             'total_logins': total_logins_list[::-1],
         })

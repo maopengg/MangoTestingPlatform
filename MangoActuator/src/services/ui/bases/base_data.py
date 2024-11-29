@@ -22,6 +22,7 @@ class BaseData(QObject):
     finished = Signal(object)
 
     def __init__(self,
+                 parent,
                  driver_object,
                  project_product_id,
                  equipment_config: None = None,
@@ -32,6 +33,8 @@ class BaseData(QObject):
                  page_step_id: int | None = None,
                  is_step: bool = False) -> None:
         super().__init__()
+        self.parent = parent
+
         self.project_product_id = project_product_id
         self.test_suite_id: Optional[int | None] = test_suite_id
         self.case_id: Optional[int | None] = case_id
@@ -44,7 +47,7 @@ class BaseData(QObject):
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: DriverObject = driver_object
 
-        self.test_case = ObtainTestData()
+        self.test_data = ObtainTestData()
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
 
@@ -64,7 +67,7 @@ class BaseData(QObject):
         self.android = None
         self.mysql_connect = None
         self.mysql_config = None
-        self.test_case = ObtainTestData()
+        self.test_data = ObtainTestData()
 
     async def base_close(self):
         if self.context and isinstance(self.context, BrowserContext):
@@ -87,16 +90,16 @@ class BaseData(QObject):
     async def public_front(self, public_model: list[UiPublicModel]):
         for cache_data in public_model:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                self.test_case.set_cache(cache_data.key, cache_data.value)
+                self.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
                 if self.mysql_connect:
-                    sql = self.test_case.replace(cache_data.value)
+                    sql = self.test_data.replace(cache_data.value)
                     result_list: list[dict] = self.mysql_connect.condition_execute(sql)
                     if isinstance(result_list, list):
                         for result in result_list:
                             try:
                                 for value, key in zip(result, eval(cache_data.key)):
-                                    self.test_case.set_cache(key, result.get(value))
+                                    self.test_data.set_cache(key, result.get(value))
                             except SyntaxError:
                                 raise ToolsError(*ERROR_MSG_0038)
 

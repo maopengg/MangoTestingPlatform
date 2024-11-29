@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023/5/4 14:33
 # @Author : 毛鹏
 
-import asyncio
 import json
 import os
 import shutil
@@ -15,7 +14,8 @@ from src.enums.tools_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models import queue_notification
-from src.models.ui_model import CaseModel, CaseResultModel
+from src.models.system_model import TestSuiteDetailsResultModel
+from src.models.ui_model import CaseModel, UiCaseResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.page_steps import PageSteps
@@ -26,22 +26,23 @@ from src.tools.log_collector import log
 
 class TestCase(PageSteps):
 
-    def __init__(self, case_model: CaseModel, driver_object):
+    def __init__(self, parent, case_model: CaseModel, driver_object):
         super().__init__(
+            parent,
             driver_object,
             project_product_id=case_model.project_product,
             test_suite_id=case_model.test_suite_id,
             case_id=case_model.id,
         )
         self.case_model: CaseModel = case_model
-        self.case_result = CaseResultModel(
-            test_suite_id=self.test_suite_id,
-            case_id=self.case_id,
-            case_name=self.case_model.name,
+        self.case_result = UiCaseResultModel(
+            id=self.case_model.id,
+            name=self.case_model.name,
+            project_product_id=self.case_model.project_product,
+            project_product_name=self.case_model.project_product_name,
             module_name=self.case_model.module_name,
-            case_people=self.case_model.case_people,
+            test_env=self.case_model.test_env,
             status=StatusEnum.SUCCESS.value,
-            page_steps_result_list=[]
         )
 
     async def __aenter__(self):
@@ -61,69 +62,55 @@ class TestCase(PageSteps):
     async def case_page_step(self) -> None:
         try:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
-            for steps in self.case_model.steps:
-                try:
-                    await self.steps_init(steps)
-                    self.case_result.environment_id = self.environment_config.id
-                    await self.driver_init()
-                    page_steps_result_model = await self.steps_main()
-                    self.case_result \
-                        .page_steps_result_list \
-                        .append(page_steps_result_model)
-                    self.case_result.test_obj = self.url
-                except MangoActuatorError as error:
-                    self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
-                    self.case_result.status = StatusEnum.FAIL.value
-                    log.warning(error.msg)
-                    break
-                else:
-                    if page_steps_result_model.status:
-                        await asyncio.sleep(0.5)
-                    else:
-                        self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{page_steps_result_model.error_message}'
-                        self.case_result.status = StatusEnum.FAIL.value
-                        log.warning(page_steps_result_model.error_message)
-                        break
-            self.case_result.test_obj = self.get_test_obj()
-            await self.case_posterior(self.case_model.posterior_sql)
-        except MangoActuatorError as error:
-            self.case_result.error_message = f'用例<{self.case_model.name}> 失败原因：{error.msg}'
-            self.case_result.status = StatusEnum.FAIL.value
         except Exception as error:
             traceback.print_exc()
             log.error(error)
-            await WebSocketClient().async_send(
-                code=200 if self.case_result.status else 300,
-                msg='发生未知错误，请联系管理员检查测试用例数据',
-                is_notice=ClientTypeEnum.WEB,
-                func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result
-            )
-            queue_notification.put(
-                {'type': self.case_result.status, 'value': '发生未知错误，请联系管理员检查测试用例数据'})
-        else:
-            msg = self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
-            await WebSocketClient().async_send(
-                code=200 if self.case_result.status else 300,
-                msg=msg,
-                is_notice=ClientTypeEnum.WEB,
-                func_name=UiSocketEnum.CASE_RESULT.value,
-                func_args=self.case_result
-            )
-            queue_notification.put({'type': self.case_result.status, 'value': msg})
+            self.case_result.status = StatusEnum.SUCCESS.value
+            await self.send_case_result(
+                f'初始化用例前置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}')
+        for steps in self.case_model.steps:
+            try:
+                await self.steps_init(steps)
+                await self.driver_init()
+                page_steps_result_model = await self.steps_main()
+                self.case_result \
+                    .steps \
+                    .append(page_steps_result_model)
+                self.case_result.status = StatusEnum.SUCCESS.value
+            except MangoActuatorError as error:
+                self.case_result.error_message = error.msg
+                self.case_result.status = StatusEnum.FAIL.value
+                log.warning(error.msg)
+                break
+            except Exception as error:
+                traceback.print_exc()
+                log.error(error)
+                self.case_result.status = StatusEnum.FAIL.value
+                self.case_result = f'发生未知错误，请联系管理员检查测试用例数据，用例名称：{self.case_model.name}'
+                break
+        try:
+            await self.case_posterior(self.case_model.posterior_sql)
+        except Exception as error:
+            traceback.print_exc()
+            log.error(error)
+            self.case_result.status = StatusEnum.SUCCESS.value
+            self.case_result = f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}'
+        await self.send_case_result(
+            self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
+        )
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         for i in front_custom:
-            self.test_case.set_cache(i.get('key'), i.get('value'))
+            self.test_data.set_cache(i.get('key'), i.get('value'))
         for i in front_sql:
             if self.mysql_connect:
-                sql = self.test_case.replace(i.get('sql'))
+                sql = self.test_data.replace(i.get('sql'))
                 result_list: list[dict] = self.mysql_connect.condition_execute(sql)
                 if isinstance(result_list, list):
                     for result in result_list:
                         try:
                             for value, key in zip(result, eval(i.get('value'))):
-                                self.test_case.set_cache(key, result.get(value))
+                                self.test_data.set_cache(key, result.get(value))
                         except SyntaxError:
                             raise ToolsError(*ERROR_MSG_0039)
                     if not result_list:
@@ -145,3 +132,25 @@ class TestCase(PageSteps):
             return self.package_name
         if self.url and self.package_name:
             return json.dumps([self.url, self.package_name])
+
+    async def send_case_result(self, msg):
+        if self.case_model.test_suite_details and self.case_model.test_suite_id:
+            func_name = UiSocketEnum.TEST_CASE_BATCH.value
+            func_args = TestSuiteDetailsResultModel(
+                id=self.case_model.test_suite_details,
+                test_suite=self.case_model.test_suite_id,
+                status=self.case_result.status,
+                error_message=self.case_result.error_message,
+                result_data=self.case_result
+            )
+        else:
+            func_name = UiSocketEnum.TEST_CASE.value
+            func_args = self.case_result
+        await WebSocketClient().async_send(
+            code=200 if self.case_result.status else 300,
+            msg=msg,
+            is_notice=ClientTypeEnum.WEB,
+            func_name=func_name,
+            func_args=func_args
+        )
+        queue_notification.put({'type': self.case_result.status, 'value': msg})

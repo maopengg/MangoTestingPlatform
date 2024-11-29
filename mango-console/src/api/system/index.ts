@@ -174,11 +174,27 @@ export function getSystemEnumUiPublic() {
     },
   })
 }
-export function getSystemTestSuiteReport(data: object) {
+export function getSystemTestSuite(data: object) {
   return get({
-    url: url.systemTestSuiteReport,
+    url: 'system/test/suite',
     data: () => {
       return data
+    },
+  })
+}
+export function getSystemTestSuiteDetails(test_suite_id: number) {
+  return get({
+    url: 'system/test/suite/details',
+    data: () => {
+      return { test_suite_id: test_suite_id }
+    },
+  })
+}
+export function getSystemTestSuiteDetailsReport() {
+  return get({
+    url: 'system/test/suite/details/report',
+    data: () => {
+      return {}
     },
   })
 }

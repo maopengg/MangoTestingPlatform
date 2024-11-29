@@ -50,7 +50,7 @@ class EquipmentPage(TableParent):
     def show_data(self, is_refresh=False):
         self.clear_layout(self.v_layout)
 
-        response_list = self.get(1, 100, {'user_id': self.user_info.id})
+        response_list = self.get(1, 100, {'user': self.user_info.id})
         if not response_list.data:
             self.v_layout.addStretch()
             return
@@ -162,7 +162,7 @@ class EquipmentPage(TableParent):
         dialog.exec()
         if dialog.data:
             data = {
-                'user_id': self.user_info.id,
+                'user': self.user_info.id,
                 'type': DriveTypeEnum.WEB.value,
                 'status': StatusEnum.FAIL.value,
                 'config': dialog.data
@@ -177,7 +177,7 @@ class EquipmentPage(TableParent):
         dialog.exec()
         if dialog.data:
             data = {
-                'user_id': self.user_info.id,
+                'user': self.user_info.id,
                 'type': DriveTypeEnum.ANDROID.value,
                 'status': StatusEnum.FAIL.value,
                 'config': dialog.data

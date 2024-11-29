@@ -10,11 +10,9 @@ import traceback
 from PySide6.QtWidgets import QApplication
 from mangokit import Mango
 
-from src.handlers import InterfaceMethodReflection
 from src.pages.login.login_window import LoginLogic
 from src.tools import InitPath
 from src.tools.log_collector import log
-
 
 os.environ["QT_FONT_DPI"] = "96"
 
@@ -28,9 +26,7 @@ async def main():
         InitPath()
         await asyncio.sleep(0)
         app = QApplication([])
-        l = Mango.t()
-        InterfaceMethodReflection(l)
-        login_window = LoginLogic(l)
+        login_window = LoginLogic(Mango.t())
         login_window.show()
         app.exec()
     except Exception as error:

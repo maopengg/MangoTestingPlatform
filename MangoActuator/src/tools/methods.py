@@ -17,6 +17,7 @@ class Methods:
 
     @classmethod
     def get_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:
+        """"""
         for e in cls.base_dict.project:
             for q in e.children:
                 if q.value == str(data.value):
@@ -37,6 +38,12 @@ class Methods:
     @classmethod
     def get_product_module_cascader_model(cls) -> list[CascaderModel]:
         return cls.base_dict.project
+
+    @classmethod
+    def product_module(cls, project_id: int) -> list[CascaderModel]:
+        for i in cls.base_dict.project:
+            if i.value == str(project_id):
+                return i.children
 
     @classmethod
     def get_project_model(cls) -> list[ComboBoxDataModel]:

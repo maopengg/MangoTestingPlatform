@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 import json
 
-from mangokit import requests
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -13,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.auto_test.auto_user.views.project import ProjectSerializers
+from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
@@ -64,7 +63,7 @@ class NoticeConfigViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def test(self, request: Request):
-        from PyAutoTest.auto_test.auto_system.service.notic_tools import NoticeMain
+        from PyAutoTest.auto_test.auto_system.service.notice import NoticeMain
         _id = request.query_params.get('id')
         try:
             NoticeMain.test_notice_send(_id)
@@ -85,12 +84,18 @@ class NoticeConfigViews(ViewSet):
         if obj_.config is None or obj_.config == '':
             return ResponseData.fail(RESPONSE_MSG_0126)
         if request.data.get('status') == StatusEnum.SUCCESS.value:
-            obj = self.model.objects.filter(environment=request.data.get('environment')).values('status')
+            obj = self.model.objects.filter(test_object=request.data.get('test_object')).values('status')
             if any(item['status'] == 1 for item in obj):
                 return ResponseData.fail(RESPONSE_MSG_0119, )
-            for i in json.loads(obj_.config):
+            try:
+                config = json.loads(obj_.config)
+                if not isinstance(config, dict) and not isinstance(config, list):
+                    return ResponseData.fail(RESPONSE_MSG_0130, )
+            except TypeError:
+                return ResponseData.fail(RESPONSE_MSG_0130, )
+            for i in config:
                 try:
-                    user = User.objects.get(nickname=i)
+                    user = User.objects.get(name=i)
                 except User.DoesNotExist:
                     return ResponseData.fail(RESPONSE_MSG_0125)
                 if user.mailbox is None or user.mailbox == []:

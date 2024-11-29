@@ -67,7 +67,7 @@ class EnumOptionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def enum_drive(self, request: Request):
-        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option(k='value', v='label'))
+        return ResponseData.success(RESPONSE_MSG_0076, DriveTypeEnum.get_option())
 
     @action(methods=['get'], detail=False)
     @error_response('system')
@@ -92,7 +92,7 @@ class EnumOptionViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def enum_ui_element_operation(self, request):
-        return ResponseData.success(RESPONSE_MSG_0106, ElementOperationEnum.get_option(k='value', v='label'))
+        return ResponseData.success(RESPONSE_MSG_0106, ElementOperationEnum.get_option())
 
     @action(methods=['get'], detail=False)
     @error_response('system')

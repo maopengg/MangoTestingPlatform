@@ -9,11 +9,11 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiPageSteps, UiPageStepsDetailed
+from PyAutoTest.auto_test.auto_ui.models import PageSteps, PageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
-from PyAutoTest.auto_test.auto_ui.views.ui_page import UiPageSerializers
-from PyAutoTest.auto_test.auto_user.views.product_module import ProductModuleSerializers
-from PyAutoTest.auto_test.auto_user.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_ui.views.ui_page import PageSerializers
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
@@ -22,24 +22,24 @@ from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
 
 
-class UiPageStepsSerializers(serializers.ModelSerializer):
+class PageStepsSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = UiPageSteps
+        model = PageSteps
         fields = '__all__'
 
 
-class UiPageStepsSerializersC(serializers.ModelSerializer):
+class PageStepsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    page = UiPageSerializers(read_only=True)
+    page = PageSerializers(read_only=True)
     module = ProductModuleSerializers(read_only=True)
 
     class Meta:
-        model = UiPageSteps
+        model = PageSteps
         fields = '__all__'
 
     @staticmethod
@@ -51,16 +51,16 @@ class UiPageStepsSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class UiPageStepsCRUD(ModelCRUD):
-    model = UiPageSteps
-    queryset = UiPageSteps.objects.all()
-    serializer_class = UiPageStepsSerializersC
-    serializer = UiPageStepsSerializers
+class PageStepsCRUD(ModelCRUD):
+    model = PageSteps
+    queryset = PageSteps.objects.all()
+    serializer_class = PageStepsSerializersC
+    serializer = PageStepsSerializers
 
 
-class UiPageStepsViews(ViewSet):
-    model = UiPageSteps
-    serializer_class = UiPageStepsSerializers
+class PageStepsViews(ViewSet):
+    model = PageSteps
+    serializer_class = PageStepsSerializers
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
@@ -116,9 +116,9 @@ class UiPageStepsViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('ui')
     def copy_page_steps(self, request: Request):
-        from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import UiPageStepsDetailedSerializers
+        from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import PageStepsDetailedSerializers
         page_id = request.data.get('page_id')
-        page_obj = UiPageSteps.objects.get(id=page_id)
+        page_obj = PageSteps.objects.get(id=page_id)
         page_obj = model_to_dict(page_obj)
         page_id = page_obj['id']
         page_obj['name'] = '(副本)' + page_obj['name']
@@ -127,12 +127,12 @@ class UiPageStepsViews(ViewSet):
         serializer = self.serializer_class(data=page_obj)
         if serializer.is_valid():
             serializer.save()
-            ui_page_steps_detailed_obj = UiPageStepsDetailed.objects.filter(page_step=page_id)
+            ui_page_steps_detailed_obj = PageStepsDetailed.objects.filter(page_step=page_id)
             for i in ui_page_steps_detailed_obj:
                 page_steps_detailed = model_to_dict(i)
                 del page_steps_detailed['id']
                 page_steps_detailed['page_step'] = serializer.data['id']
-                ui_page_steps_serializer = UiPageStepsDetailedSerializers(data=page_steps_detailed)
+                ui_page_steps_serializer = PageStepsDetailedSerializers(data=page_steps_detailed)
                 if ui_page_steps_serializer.is_valid():
                     ui_page_steps_serializer.save()
                 else:

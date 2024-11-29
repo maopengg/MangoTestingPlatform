@@ -3,9 +3,9 @@
 # @Description: 
 # @Time   : 2024-10-16 17:35
 # @Author : 毛鹏
-from mango_ui import response_message, DialogCallbackModel, ComboBoxDataModel
+from mango_ui import response_message, DialogCallbackModel, ComboBoxDataModel, FormDataModel
 
-from src.models.api_model import ResponseModel
+from src.models.socket_model import ResponseModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .task_case_dict import *
@@ -40,18 +40,16 @@ class TaskCasePage(SubPage):
             response_message(self, response_model)
         return response_model
 
+    def form_data_callback(self, data: FormDataModel):
+        if data.key == 'module':
+            return data.select(self.data.get('project_product').get('id'))
+
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
-        if data.subordinate == 'module':
-            init_data = Methods.get_product_module(self, data)
-            if is_refresh:
-                data.subordinate_input_object.set_select(init_data, True)
-            else:
-                return init_data
-        else:
+        if data.subordinate == 'case_id':
             init_data = HTTP.get_tasks_type_case_name(self.data.get('type'), data.value)
             if is_refresh:
                 data.subordinate_input_object.set_select([
-                    ComboBoxDataModel(id=i.get('key'), name=i.get('title')) for i in init_data.data], True)
+                    ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in init_data.data], True)
             else:
                 return init_data
 

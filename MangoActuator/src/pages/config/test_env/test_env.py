@@ -22,6 +22,7 @@ class TestEnvPage(TableParent):
         self.post = HTTP.post_test_object
         self.put = HTTP.put_test_object
         self._delete = HTTP.delete_test_object
+        self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'project_product':

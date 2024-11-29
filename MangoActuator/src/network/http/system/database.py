@@ -40,7 +40,7 @@ class Database(HttpBase):
     @request_log()
     def put_database_status(cls, _id: int, environment: int, status: int):
         return cls.put(url=cls.url(f'{Database._url}/put/status'), headers=cls.headers,
-                       json={'id': _id, 'status': status, 'environment': environment})
+                       json={'id': _id, 'status': status, 'test_object': environment})
 
     @classmethod
     @request_log()

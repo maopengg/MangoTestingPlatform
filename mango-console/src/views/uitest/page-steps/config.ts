@@ -53,7 +53,7 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
-    key: 'type',
+    key: 'status',
     label: '状态',
     value: '',
     type: 'select',
@@ -162,8 +162,8 @@ export const tableColumns = useTableColumn([
   },
   {
     title: '状态',
-    key: 'type',
-    dataIndex: 'type',
+    key: 'status',
+    dataIndex: 'status',
     width: 70,
   },
   {

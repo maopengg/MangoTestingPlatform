@@ -7,6 +7,7 @@
 from rest_framework import serializers
 
 from PyAutoTest.auto_test.auto_user.models import UserLogs
+from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
@@ -20,6 +21,7 @@ class UserLogsSerializers(serializers.ModelSerializer):
 
 class UserLogsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    user = UserSerializers(read_only=True)
 
     class Meta:
         model = UserLogs
@@ -27,6 +29,9 @@ class UserLogsSerializersC(serializers.ModelSerializer):
 
     @staticmethod
     def setup_eager_loading(queryset):
+        queryset = queryset.select_related(
+            'user',
+        )
         return queryset
 
 

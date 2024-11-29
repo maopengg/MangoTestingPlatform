@@ -27,7 +27,7 @@ class UserPage(QWidget):
         card_layout1 = MangoFormLayout()
         card_widget = MangoCard(card_layout1, '基本信息')
         card_layout1.addRow('头像', MangoLabel('-'))
-        card_layout1.addRow('昵称', MangoLabel(self.user_info.nickname))
+        card_layout1.addRow('昵称', MangoLabel(self.user_info.name))
 
         card_layout2 = MangoFormLayout()
         card_widget2 = MangoCard(card_layout2, '账户信息')

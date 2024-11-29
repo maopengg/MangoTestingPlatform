@@ -6,13 +6,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '昵称',
-    key: 'nickname',
-    dataIndex: 'nickname',
-  },
-  {
-    title: '账号',
-    key: 'username',
-    dataIndex: 'username',
+    key: 'user',
+    dataIndex: 'user',
   },
   {
     title: '来源',
@@ -33,7 +28,7 @@ export const tableColumns = useTableColumn([
 
 export const conditionItems: Array<FormItem> = reactive([
   {
-    key: 'user_id',
+    key: 'user',
     label: '筛选用户',
     value: '',
     type: 'select',

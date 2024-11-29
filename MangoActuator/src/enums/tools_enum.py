@@ -66,16 +66,6 @@ class Status1Enum(BaseEnum):
         return {0: "否", 1: "是"}
 
 
-class Status4Enum(BaseEnum):
-    """状态枚举"""
-    SUCCESS = 1
-    FAIL = 0
-
-    @classmethod
-    def obj(cls):
-        return {0: "进行中", 1: "已完成"}
-
-
 class Status5Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
@@ -98,8 +88,12 @@ class ProductTypeEnum(BaseEnum):
     @classmethod
     def obj(cls):
         return {
-            0: "WEB（API,UI通用）", 1: "PC桌面（API,UI通用）",
-            2: "APP（API专用）", 3: '安卓（UI专用）', 4: 'IOS（UI专用）', 5: '小程序（API专用）'
+            0: "WEB（API,UI通用）",
+            1: "PC桌面（API,UI通用）",
+            2: "API",
+            3: '安卓（UI专用）',
+            4: 'IOS（UI专用）',
+            5: '小程序（API专用）'
         }
 
 
@@ -114,17 +108,16 @@ class AutoTypeEnum(BaseEnum):
         return {0: "前端&接口通用", 1: "前端自动化", 2: "接口自动化"}
 
 
-class ClientTypeEnum(BaseEnum):
-    """
-    三个端的类型
-    """
-    SERVER = 0
-    WEB = 1
-    ACTUATOR = 2
+class TaskEnum(BaseEnum):
+    """状态枚举"""
+    FAIL = 0
+    SUCCESS = 1
+    STAY_BEGIN = 2
+    PROCEED = 3
 
     @classmethod
     def obj(cls):
-        return {0: "服务端", 1: "执行端", 2: "控制端"}
+        return {0: "失败", 1: "通过", 2: "待开始", 3: "进行中"}
 
 
 class CacheKeyEnum(Enum):

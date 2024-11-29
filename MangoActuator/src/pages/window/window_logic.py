@@ -13,6 +13,7 @@ from mango_ui import warning_notification, error_notification, success_notificat
 from src.enums.system_enum import EnvironmentEnum
 from src.network import HTTP
 from src.network.web_socket.websocket_client import WebSocketClient
+from src.consumer import SocketConsumer
 from src.settings.settings import STYLE, MENUS
 from ..api import *
 from ..config import *
@@ -24,6 +25,7 @@ from ..tools import *
 from ..ui import *
 from ..user import *
 from ...models import queue_notification
+from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
 from ...tools.methods import Methods
 
@@ -62,8 +64,8 @@ class WindowLogic(MangoMain1Window):
             'api_case_detailed': ApiCaseDetailedPage,
             'api_public': ApiPublicPage,
 
-            'test_report': TestReportPage,
-            'test_report_detailed': TestReportDetailedPage,
+            'test_suite': TestSuitePage,
+            'test_suite_detailed': TestSuiteDetailedPage,
 
             'project': ProjectPage,
             'product': ProductPage,
@@ -94,25 +96,11 @@ class WindowLogic(MangoMain1Window):
             height_coefficient=0.815
         )
         self.loop = loop
-        self.user_info = UserModel()
-        self.project_list = [FormDataModel(
-            title='项目名称',
-            placeholder='请选择项目进行全局条件过滤',
-            key='selected_project',
-            type=1,
-            select=Methods.get_project_model(),
-            value=str(self.user_info.selected_project)
-        )]
-        self.env_list = [FormDataModel(
-            title='测试环境',
-            placeholder='请选择测试环境，用例执行与测试环境绑定',
-            key='selected_environment',
-            type=1,
-            select=EnvironmentEnum.get_select(),
-            value=str(self.user_info.selected_environment)
-        )]
+
+        self.consumer = SocketConsumer(self)
+
         self.socket: WebSocketClient = WebSocketClient()
-        self.socket.loop = self.loop
+        self.socket.parent = self
         asyncio.run_coroutine_threadsafe(self.socket.client_run(), self.loop)
 
         self.notification_thread = NotificationTask()
@@ -133,15 +121,43 @@ class WindowLogic(MangoMain1Window):
 
     def title_bar_clicked_func(self, data):
         if data == 'project':
-            dialog = DialogWidget('选择项目', self.project_list)
+            user_info = UserModel()
+            project_list = [FormDataModel(
+                title='项目名称',
+                placeholder='请选择项目进行全局条件过滤',
+                key='selected_project',
+                type=1,
+                select=Methods.get_project_model(),
+                value=str(user_info.selected_project)
+            )]
+
+            dialog = DialogWidget('选择项目', project_list)
             dialog.exec()
             if dialog.data:
-                HTTP.headers['Project'] = str(dialog.data.get('selected_project'))
-                response_message(self.central_widget,
-                                 HTTP.put_user_project(self.user_info.id, dialog.data.get('selected_project')))
+                response: ResponseModel = HTTP.put_user_project(user_info.id, dialog.data.get('selected_project'))
+                response_message(self.central_widget, response)
+                if response.code == 200:
+                    HTTP.headers['Project'] = str(dialog.data.get('selected_project'))
+                    user_info.selected_project = response.data.get('selected_project')
+
         elif data == 'test_env':
-            dialog = DialogWidget('选择测试环境', self.env_list)
+            user_info = UserModel()
+            env_list = [FormDataModel(
+                title='测试环境',
+                placeholder='请选择测试环境，用例执行与测试环境绑定',
+                key='selected_environment',
+                type=1,
+                select=EnvironmentEnum.get_select(),
+                value=str(user_info.selected_environment)
+            )]
+            dialog = DialogWidget('选择测试环境', env_list)
             dialog.exec()
             if dialog.data:
-                response_message(self.central_widget,
-                                 HTTP.put_environment(self.user_info.id, dialog.data.get('selected_environment')))
+                user_info.selected_environment = dialog.data.get('selected_environment')
+                response: ResponseModel = HTTP.put_environment(user_info.id, dialog.data.get('selected_environment'))
+                response_message(self.central_widget, response)
+                if response.code == 200:
+                    user_info.selected_project = response.data.get('selected_environment')
+
+    def set_tips_info(self, mag: str):
+        self.credits.update_label.emit(str(mag))

@@ -123,5 +123,5 @@ class User(HttpBase):
 
     @classmethod
     @request_log()
-    def get_nickname(cls, ):
-        return cls.get(url=cls.url(f'/user/nickname'), headers=cls.headers, )
+    def get_name(cls, ):
+        return cls.get(url=cls.url(f'/user/name'), headers=cls.headers, )

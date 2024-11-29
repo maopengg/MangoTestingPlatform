@@ -8,6 +8,7 @@ from mango_ui import THEME
 from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
 from src.enums.tools_enum import Status5Enum
 from src.network import HTTP
+from src.tools.methods import Methods
 
 search_data = [
     {
@@ -28,6 +29,14 @@ right_data = [
 
 ]
 form_data = [
+    {
+        'title': '项目/产品',
+        'placeholder': '请选择项目产品',
+        'key': 'project_product',
+        'type': 2,
+        'select': Methods.get_product_module_cascader_model,
+
+    },
     {
         'title': '任务名称',
         'placeholder': '请输入任务名称',
@@ -60,14 +69,7 @@ form_data = [
         'placeholder': '请选择定时任务负责人',
         'key': 'case_people',
         'type': 1,
-        'select': HTTP.get_nickname
-    },
-    {
-        'title': '执行器',
-        'placeholder': '请选择执行器来执行用例',
-        'key': 'case_executor',
-        'type': 4,
-        'select': HTTP.get_nickname
+        'select': HTTP.get_name
     },
     {
         'title': '状态',
@@ -90,6 +92,10 @@ table_column = [
         'key': 'id',
         'name': 'ID',
         'width': 7
+    },
+    {
+        'key': 'project_product',
+        'name': '项目',
     },
     {
         'key': 'name',
@@ -118,11 +124,6 @@ table_column = [
         'name': '负责人',
         'width': 70
 
-    },
-    {
-        'key': 'case_executor',
-        'name': '执行器',
-        'width': 150
     },
     {
         'key': 'status',

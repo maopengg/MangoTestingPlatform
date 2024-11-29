@@ -14,7 +14,7 @@ search_data = [
     {
         'title': '昵称',
         'placeholder': '请输入用户昵称',
-        'key': 'nickname',
+        'key': 'name',
     },
     {
         'title': '账号',
@@ -30,7 +30,7 @@ form_data = [
     {
         'title': '昵称',
         'placeholder': '请输入用户昵称',
-        'key': 'nickname',
+        'key': 'name',
     },
     {
         'title': '绑定角色',
@@ -52,7 +52,7 @@ table_column = [
         'width': 7
     },
     {
-        'key': 'nickname',
+        'key': 'name',
         'name': '昵称',
         'width': 100
     },

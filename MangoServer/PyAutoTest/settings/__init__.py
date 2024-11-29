@@ -8,6 +8,7 @@ from pathlib import Path
 
 from PyAutoTest.tools import nuw_dir
 from ..enums.system_enum import SystemEnvEnum
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -18,7 +19,8 @@ elif DJANGO_ENV == SystemEnvEnum.PROD.value:
 elif DJANGO_ENV == SystemEnvEnum.MASTER.value:
     from .master import *
 else:
-    raise Exception('你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
+    raise Exception(
+        '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 nuw_dir()
 
 # *********************** 是否初始化项目 *********************** #
@@ -30,7 +32,7 @@ INIT_MANGO_TESTING_PLATFORM = False  # 可以初始化部分原始数据，快�
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'
 
-DEBUG = True
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'

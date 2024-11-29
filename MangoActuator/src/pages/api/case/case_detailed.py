@@ -442,8 +442,6 @@ class ApiCaseDetailedPage(SubPage):
 
     def click_row(self, row):
         self.row = row
-        api_info_result: ResponseModel = HTTP.get_api_info_result_case(row.get('id'))
-        print()
         self.info_headers.set_value(WidgetTool.json_init_data(row.get('header')))
         self.info_params.set_value(WidgetTool.json_init_data(row.get('params')))
         self.info_data.set_value(WidgetTool.json_init_data(row.get('data')))
@@ -461,21 +459,21 @@ class ApiCaseDetailedPage(SubPage):
                 self.api_widget_front_sql_layout,
                 self.api_widget_front_sql_layout_list
             )
-        self.response_info_url.setText(f'URL:{api_info_result.data.get("url")}')
-        self.response_info_code.setText(f'CODE:{api_info_result.data.get("response_code")}')
-        self.response_info_time.setText(f'请求时间:{api_info_result.data.get("response_time")}')
-        if api_info_result.data.get("status") == StatusEnum.FAIL.value:
-            self.response_info_error_msg.setText(f'失败提示:{api_info_result.data.get("error_message")}')
-
-        self.response_headers.set_value(WidgetTool.json_init_data(api_info_result.data.get("headers")))
-        self.response_response_headers.set_value(
-            WidgetTool.json_init_data(api_info_result.data.get("response_headers")))
-        self.response_request_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("params")))
-        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("data")))
-        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("json")))
-        self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("file")))
-        self.response_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("response_text")))
-        self.cache_data.setText(WidgetTool.json_init_data(api_info_result.data.get("all_cache")))
+        # self.response_info_url.setText(f'URL:{api_info_result.data.get("url")}')
+        # self.response_info_code.setText(f'CODE:{api_info_result.data.get("response_code")}')
+        # self.response_info_time.setText(f'请求时间:{api_info_result.data.get("response_time")}')
+        # if api_info_result.data.get("status") == StatusEnum.FAIL.value:
+        #     self.response_info_error_msg.setText(f'失败提示:{api_info_result.data.get("error_message")}')
+        #
+        # self.response_headers.set_value(WidgetTool.json_init_data(api_info_result.data.get("headers")))
+        # self.response_response_headers.set_value(
+        #     WidgetTool.json_init_data(api_info_result.data.get("response_headers")))
+        # self.response_request_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("params")))
+        # self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("data")))
+        # self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("json")))
+        # self.response_request_body.append(WidgetTool.json_init_data(api_info_result.data.get("file")))
+        # self.response_body.set_value(WidgetTool.json_init_data(api_info_result.data.get("response_text")))
+        # self.cache_data.setText(WidgetTool.json_init_data(api_info_result.data.get("all_cache")))
         for i in row.get('ass_sql', []):
             self.set_form(
                 i,
@@ -664,7 +662,7 @@ class ApiCaseDetailedPage(SubPage):
 
     def run(self):
         user_info = UserModel()
-        response_message(self, HTTP.get_api_case_run(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.get_api_test_case(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
         response_message(self, HTTP.put_api_case_refresh(row.get("id")))

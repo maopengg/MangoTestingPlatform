@@ -45,26 +45,26 @@ export function deleteApiCase(id: number | string[] | number[]) {
   })
 }
 
-export function getApiCaseRun(caseId: any, testObj: any, caseSort: any) {
+export function getApiCaseRun(caseId: any, test_env: any, caseSort: any) {
   return get({
     url: url.apiCaseRun,
     data: () => {
       return {
         case_id: caseId,
-        test_obj_id: testObj,
+        test_env: test_env,
         case_sort: caseSort,
       }
     },
   })
 }
 
-export function postApiCaseBatchRun(caseIdList: string[], testObj: any) {
+export function postApiCaseBatchRun(caseIdList: string[], test_env: any) {
   return post({
     url: url.apiCaseBatchRun,
     data: () => {
       return {
         case_id_list: caseIdList,
-        test_obj_id: testObj,
+        test_env: test_env,
       }
     },
   })
@@ -76,16 +76,6 @@ export function postApiCaseCody(caseId: number) {
     data: () => {
       return {
         case_id: caseId,
-      }
-    },
-  })
-}
-export function getApiInfoCaseResult(id: any) {
-  return get({
-    url: url.apiInfoCaseResult,
-    data: () => {
-      return {
-        case_detailed_id: id,
       }
     },
   })
@@ -278,35 +268,6 @@ export function putApiPublicPutStatus(id: number, status: number) {
       return {
         id: id,
         status: status,
-      }
-    },
-  })
-}
-
-export function getApiResultWeek() {
-  return get({
-    url: url.apiResultWeek,
-    data: () => {
-      return {}
-    },
-  })
-}
-export function getApiResultSuiteCase(testSuiteId: any) {
-  return get({
-    url: url.apiResultSuiteCase,
-    data: () => {
-      return {
-        test_suite_id: testSuiteId,
-      }
-    },
-  })
-}
-export function getApiInfoResult(id: any) {
-  return get({
-    url: url.apiInfoResult,
-    data: () => {
-      return {
-        id: id,
       }
     },
   })

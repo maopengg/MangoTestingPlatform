@@ -19,7 +19,7 @@
                       @blur="doRefresh"
                     />
                   </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'user_id'">
+                  <template v-else-if="item.type === 'select' && item.key === 'user'">
                     <a-select
                       style="width: 150px"
                       v-model="item.value"
@@ -86,6 +86,9 @@
                 <template v-if="item.key === 'index'" #cell="{ record }">
                   {{ record.id }}
                 </template>
+                <template v-else-if="item.key === 'user'" #cell="{ record }">
+                  {{ record.user?.name }}
+                </template>
                 <template v-else-if="item.key === 'source_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.source_type === '1'">控制端</a-tag>
                   <a-tag color="red" size="small" v-else-if="record.source_type === '2'"
@@ -110,7 +113,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { conditionItems, tableColumns } from './config'
-  import { getUserLogs, getUserNickname } from '@/api/user'
+  import { getUserLogs, getUserName } from '@/api/user'
   import { getSystemEnumClient } from '@/api/system'
   const pagination = usePagination(doRefresh)
   const table = useTable()
@@ -139,7 +142,7 @@
   }
 
   function getNickName() {
-    getUserNickname()
+    getUserName()
       .then((res) => {
         data.userList = res.data
       })

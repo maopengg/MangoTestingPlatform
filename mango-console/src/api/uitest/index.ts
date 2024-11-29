@@ -460,15 +460,6 @@ export function getUiPublic(data: object) {
     },
   })
 }
-export function getUiCaseResultWeekSum() {
-  return get({
-    url: url.uiCaseResultWeekSum,
-    data: () => {
-      return {}
-    },
-  })
-}
-
 export function postUiPublic(data: object) {
   return post({
     url: url.uiPublic,
@@ -511,28 +502,6 @@ export function getUiPageAssMethod() {
     url: url.uiPageAssMethod,
     data: () => {
       return {}
-    },
-  })
-}
-export function getUiCaseResultSuiteGetCase(testSuiteId: any) {
-  return get({
-    url: url.uiCaseResultSuiteGetCase,
-    data: () => {
-      return {
-        test_suite_id: testSuiteId,
-      }
-    },
-  })
-}
-export function getUiEleResultEle(testSuiteId: any, pageStepId: number, caseId: number) {
-  return get({
-    url: url.uiEleResultEle,
-    data: () => {
-      return {
-        test_suite_id: testSuiteId,
-        page_step_id: pageStepId,
-        case_id: caseId,
-      }
     },
   })
 }

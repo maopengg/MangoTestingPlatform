@@ -1,59 +1,23 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget
-import sys
 
-
-class MangoWindow(QMainWindow):
+class A:
     def __init__(self):
-        super().__init__()
-        self.setWindowTitle("响应结果")
-        self.setGeometry(100, 100, 400, 300)  # 设置窗口大小
+        self.value = 'aaaa'
 
-        # 创建中心部件和布局
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-        self.layout = QVBoxLayout(central_widget)
+    def consumer(self, func, *args, **kwargs):
 
-    def add_label(self, text):
-        label = QLabel(text)
-        self.layout.addWidget(label)
-
-
-class UserModel:
-    selected_environment = "default_environment"
+        # 获取所有子类
+        subclasses = self.__class__.__subclasses__()
+        print(subclasses)
+        for subclass in subclasses:
+            subclass_instance = subclass()
+            method = getattr(subclass_instance, func, None)
+            if callable(method):
+                # 调用子类的方法
+                method(*args, **kwargs)
+                return
 
 
-class HTTP:
-    @staticmethod
-    def get_api_run(id, environment):
-        # 模拟 API 响应
-        return {
-            'data': f"响应数据 for ID: {id} in {environment}"
-        }
-
-
-def response_message(window, response):
-    # 处理响应并将其显示在窗口中
-    window.add_label(response['data'])
-
-
-class YourClass:
-    def run(self, row):
-        try:
-            user_info = UserModel()
-            response = HTTP.get_api_run(row.get('id'), user_info.selected_environment)
-            mango_window = MangoWindow()
-            response_message(mango_window, response)
-            mango_window.show()  # 显示窗口
-        except Exception as e:
-            print(f"Error: {e}")  # 打印错误信息
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-
-    row = {'id': 1}  # 示例输入
-    your_instance = YourClass()
-    your_instance.run(row)
-
-    # 启动事件循环
-    sys.exit(app.exec())
+if __name__ == '__main__':
+    a = A()
+    a.consumer('b', 'HHHH')  # 调用 B 类中的 b 方法并传入参数
+    a.consumer('c', 'YYYY')  # 调用 C 类中的 c 方法并传入参数

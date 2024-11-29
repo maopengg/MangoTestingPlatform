@@ -13,7 +13,7 @@ class UserLogPage(TableParent):
     def __init__(self, parent):
         self.search_data = []
         for i in copy.deepcopy(search_data):
-            if i.get('key') == 'user_id':
+            if i.get('key') == 'user':
                 i['select'] = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in
                                i.get('select')().data]
 

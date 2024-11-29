@@ -54,22 +54,22 @@ class ApiCase(HttpBase):
 
     @classmethod
     @request_log()
-    def get_api_case_run(cls, case_id, test_obj_id, case_sort: int | None = None):
+    def get_api_test_case(cls, case_id, test_env, case_sort: int | None = None):
         _params = {
             'case_id': case_id,
-            'test_obj_id': test_obj_id,
+            'test_env': test_env,
             'case_sort': case_sort,
         }
-        return cls.get(url=cls.url(f'{ApiCase._url}/run'), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(f'{ApiCase._url}/test'), headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
-    def get_api_case_batch_run(cls, case_id_list: list, test_obj_id):
+    def get_api_test_case_batch(cls, case_id_list: list, test_env):
         _json = {
-            'test_obj_id': test_obj_id,
+            'test_env': test_env,
             'case_id_list': case_id_list,
         }
-        return cls.post(url=cls.url(f'{ApiCase._url}/batch/run'), headers=cls.headers, json=_json)
+        return cls.post(url=cls.url(f'{ApiCase._url}/batch'), headers=cls.headers, json=_json)
 
     @classmethod
     @request_log()

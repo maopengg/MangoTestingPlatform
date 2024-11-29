@@ -97,20 +97,18 @@
                   </template>
 
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
-                    {{ record.user?.nickname }}
+                    {{ record.user?.name }}
                   </template>
-                  <template v-else-if="item.key === 'run_status'" #cell="{ record }">
-                    <a-tag color="red" size="small" v-if="record.run_status === 0">进行中</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.run_status === 1"
-                      >已完成</a-tag
-                    >
+                  <template v-else-if="item.key === 'type'" #cell="{ record }">
+                    <a-tag color="green" size="small" v-if="record.type === 0">前端</a-tag>
+                    <a-tag color="red" size="small" v-else-if="record.type === 1">接口</a-tag>
+                    <a-tag color="red" size="small" v-else-if="record.type === 2">性能</a-tag>
                   </template>
                   <template v-else-if="item.key === 'status'" #cell="{ record }">
-                    <a-tag color="red" size="small" v-if="record.status === 0">失败</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.status === 1">通过</a-tag>
-                    <a-tag color="green" size="small" v-else-if="record.status === null"
-                      >待测试完成</a-tag
-                    >
+                    <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                    <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                    <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                    <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <a-space>
@@ -139,8 +137,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
-  import { getSystemEnumAutotest, getSystemTestSuiteReport } from '@/api/system'
-  import { getUiCaseResultWeekSum } from '@/api/uitest'
+  import { getSystemEnumAutotest, getSystemTestSuiteDetailsReport, getSystemTestSuite } from "@/api/system";
   import { useEnvironment } from '@/store/modules/get-environment'
   import { useStatus } from '@/store/modules/status'
 
@@ -163,7 +160,7 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getSystemTestSuiteReport(value)
+    getSystemTestSuite(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -202,7 +199,7 @@
 
   function initBarEcharts() {
     myChart1.value = echarts.init(barChart.value!)
-    getUiCaseResultWeekSum()
+    getSystemTestSuiteDetailsReport()
       .then((res) => {
         myChart1.value.setOption({
           tooltip: {
@@ -259,7 +256,7 @@
 
   function initPieEcharts() {
     myChart2.value = echarts.init(pieChart.value!)
-    getUiCaseResultWeekSum()
+    getSystemTestSuiteDetailsReport()
       .then((res) => {
         myChart2.value.setOption({
           tooltip: {

@@ -38,7 +38,7 @@ class UiConfigSerializers(serializers.ModelSerializer):
 class UiConfigSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    user_id = UserSerializers(read_only=True)
+    user = UserSerializers(read_only=True)
 
     class Meta:
         model = UiConfig

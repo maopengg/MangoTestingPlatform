@@ -1,6 +1,5 @@
 import { FormItem } from '@/types/components'
 import { reactive } from 'vue'
-import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
 
@@ -23,7 +22,8 @@ export const conditionItems: Array<FormItem> = reactive([
     placeholder: '请选择测试结果',
     optionItems: [],
     reset: function () {},
-  },  {
+  },
+  {
     key: 'type',
     label: '自动化类型',
     value: '',
@@ -40,6 +40,12 @@ export const tableColumns = useTableColumn([
     key: 'project_product',
     dataIndex: 'project_product',
     width: 220,
+  },
+  {
+    title: '自动化类型',
+    key: 'type',
+    dataIndex: 'type',
+    width: 200,
   },
   {
     title: '执行环境',
@@ -60,24 +66,10 @@ export const tableColumns = useTableColumn([
     width: 100,
   },
   {
-    title: '执行状态',
-    key: 'run_status',
-    dataIndex: 'run_status',
-    width: 90,
-  },
-  {
     title: '结果',
     key: 'status',
     dataIndex: 'status',
     width: 70,
-  },
-  {
-    title: '失败原因',
-    key: 'error_message',
-    dataIndex: 'error_message',
-    align: 'left',
-    ellipsis: true,
-    tooltip: true,
   },
   {
     title: '操作',

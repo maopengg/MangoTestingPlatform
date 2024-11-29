@@ -7,7 +7,7 @@
 from aiohttp import ClientSession
 from aiohttp.client_reqrep import ClientResponse
 
-from src.models.api_model import RequestModel
+from src.models.api_model import ResponseDataModel
 from src.services.api.base_tools.http_request import HTTPRequest
 from src.tools.log_collector import log
 
@@ -18,7 +18,7 @@ class Dependence:
 
 class ApiCaseRun(HTTPRequest, Dependence):
 
-    async def http_(self, session: ClientSession, request: RequestModel) -> tuple[ClientResponse, float]:
+    async def http_(self, session: ClientSession, request: ResponseDataModel) -> tuple[ClientResponse, float]:
         pass
 
     async def get_header(self) -> str:

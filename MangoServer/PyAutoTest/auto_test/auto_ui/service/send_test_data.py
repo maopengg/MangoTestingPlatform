@@ -6,18 +6,14 @@
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
-from PyAutoTest.auto_test.auto_system.views.test_suite_report import TestSuiteReportCRUD
 from PyAutoTest.auto_test.auto_ui.models import *
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
 from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
-
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.ui_model import *
-from PyAutoTest.tools.view.snowflake import Snowflake
 
 
 class SendTestData:
@@ -25,63 +21,41 @@ class SendTestData:
     def __init__(self,
                  user_id: int,
                  test_env: int,
-                 case_executor: list | None = None,
                  tasks_id: int = None,
                  is_notice: int = 0,
-                 is_send: bool = True):
+                 is_send: bool = False):
         self.user_id = user_id
         self.test_env = test_env
-        self.case_executor = self.__get_case_executor(case_executor)
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.is_send = is_send
         self.username = User.objects.get(id=user_id).username
 
-    def test_case_batch(self, case_id_list: list) -> None:
-        test_suite_id = Snowflake.generate_id()
-        if self.case_executor:
-            max_len = max(len(case_id_list), len(self.case_executor))
-            for i in range(max_len):
-                case_id = case_id_list[i % len(case_id_list)]
-                username = self.case_executor[i % len(self.case_executor)]
-                case_model = self.test_case(case_id, test_suite_id)
-                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   data_model=case_model,
-                                   username=username)
-        else:
-            for case_id in case_id_list:
-                case_model = self.test_case(case_id, test_suite_id)
-                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   data_model=case_model)
-        TestSuiteReportCRUD.inside_post({
-            'id': test_suite_id,
-            'type': AutoTestTypeEnum.UI.value,
-            'test_env': self.test_env,
-            'error_message': None,
-            'run_status': StatusEnum.FAIL.value,
-            'status': None,
-            'case_list': case_id_list,
-            'is_notice': self.is_notice,
-            'user': self.user_id,
-            'project_product': UiCase.objects.get(id=case_id_list[0]).project_product_id,
-        })
-
-    def test_case(self, case_id: int, test_suite_id) -> CaseModel:
+    def test_case(self,
+                  case_id: int,
+                  test_suite: int | None = None,
+                  test_suite_details: int | None = None) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
-        return CaseModel(
-            test_suite_id=test_suite_id,
+        case_model = CaseModel(
+            test_suite_details=test_suite_details,
+            test_suite_id=test_suite,
             id=case.id,
             name=case.name,
             module_name=case.module.name,
             project_product=case.project_product.id,
-            case_people=case.case_people.nickname,
+            project_product_name=case.project_product.name,
+            test_env=self.test_env,
+            case_people=case.case_people.name,
             front_custom=case.front_custom,
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
             public_data_list=self.__public_data(case.project_product_id)
         )
+        self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                           data_model=case_model)
+        return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
         page_steps_model = self.steps_model(steps_id)
@@ -90,14 +64,15 @@ class SendTestData:
 
     def test_element(self, data: dict) -> None:
         try:
-            page = UiPage.objects.get(id=data['page_id'])
-        except UiPage.DoesNotExist as error:
+            page = Page.objects.get(id=data['page_id'])
+        except Page.DoesNotExist as error:
             raise UiError(*ERROR_MSG_0030, error=error)
-        element_obj = UiElement.objects.get(id=data['id'])
+        element_obj = PageElement.objects.get(id=data['id'])
         page_steps_model = PageStepsModel(
             id=page.id,
             name=page.name,
             project_product=page.project_product.id,
+            project_product_name=page.project_product.name,
             module_name=page.module.name,
             type=page.project_product.client_type,
             url=page.url,
@@ -111,11 +86,12 @@ class SendTestData:
     def steps_model(self,
                     page_steps_id: id,
                     case_step_details_id: int | None = None) -> PageStepsModel:
-        page_steps = UiPageSteps.objects.get(id=page_steps_id)
+        page_steps = PageSteps.objects.get(id=page_steps_id)
         page_steps_model = PageStepsModel(
             id=page_steps.id,
             name=page_steps.name,
             project_product=page_steps.project_product.id,
+            project_product_name=page_steps.project_product.name,
             module_name=page_steps.module.name,
             type=page_steps.project_product.client_type,
             url=page_steps.page.url,
@@ -129,7 +105,7 @@ class SendTestData:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
                 page_steps_model.case_data.append(StepsDataModel(**case_data))
 
-        page_steps_element: list[UiPageStepsDetailed] = UiPageStepsDetailed \
+        page_steps_element: list[PageStepsDetailed] = PageStepsDetailed \
             .objects.filter(page_step=page_steps.id).order_by('step_sort')
         for i in page_steps_element:
             page_steps_model.element_list.append(self.element_model(i))
@@ -137,7 +113,7 @@ class SendTestData:
 
     @classmethod
     def element_model(cls,
-                      steps_element: UiPageStepsDetailed | UiElement,
+                      steps_element: PageStepsDetailed | PageElement,
                       is_test_element: bool = False,
                       data: dict = None) -> ElementModel:
         if not is_test_element and data is None:
@@ -166,8 +142,8 @@ class SendTestData:
                 exp=steps_element.exp,
                 sleep=steps_element.sleep,
                 sub=steps_element.sub,
-                ope_key=data['ope_key'],
-                ope_value=data['ope_value'],
+                ope_key=data.get('ope_key'),
+                ope_value=data.get('ope_value'),
                 is_iframe=steps_element.is_iframe,
             )
 
@@ -187,9 +163,9 @@ class SendTestData:
         error = None
         if case_executor:
             case_executor = []
-            for nickname in case_executor:
+            for name in case_executor:
                 try:
-                    user_obj = User.objects.get(nickname=nickname)
+                    user_obj = User.objects.get(name=name)
                 except User.DoesNotExist:
                     raise UiError(*ERROR_MSG_0050)
                 try:

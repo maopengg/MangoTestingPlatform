@@ -9,7 +9,7 @@ from src.tools.methods import Methods
 
 table_column = [
     {'key': 'id', 'name': 'ID', 'width': 100},
-    {'key': 'case', 'name': '用例名称', },
+    {'key': 'case_id', 'name': '用例名称', },
     {'key': 'ope', 'name': '操作', 'width': 100}
 ]
 right_data = [
@@ -25,26 +25,17 @@ field_list = [
 ]
 form_data = [
     {
-        'title': '项目/产品',
-        'placeholder': '请选择项目产品',
-        'key': 'project_product',
-        'type': 2,
-        'subordinate': 'module',
-        'select': Methods.get_product_module_cascader_model,
-
-    },
-    {
         'title': '模块',
-        'placeholder': '请先选择项目/产品',
+        'placeholder': '请选择模块',
         'key': 'module',
         'type': 1,
-        'subordinate': 'case',
-
+        'subordinate': 'case_id',
+        'select': Methods.get_product_module_label,
     },
     {
         'title': '用例名称',
         'placeholder': '请输入用例名称',
-        'key': 'case',
+        'key': 'case_id',
         'type': 1,
     }
 ]

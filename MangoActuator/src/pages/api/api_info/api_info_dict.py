@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.api_enum import MethodEnum
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import Status3Enum, TaskEnum
 from src.tools.methods import Methods
 
 search_data = [
@@ -28,12 +28,18 @@ search_data = [
         'select': Methods.get_product_module_cascader_model,
         'subordinate': 'module'
     },
-
     {
         'title': '模块',
         'placeholder': '请选择模块',
         'key': 'module',
         'type': 1,
+    },
+    {
+        'title': '状态',
+        'placeholder': '请选择步骤状态',
+        'key': 'status',
+        'type': 1,
+        'select': TaskEnum.get_select()
     }
 ]
 right_data = [
@@ -112,7 +118,7 @@ table_column = [
         'key': 'status',
         'name': '状态',
         'width': 100,
-        'option': Status3Enum.get_option('value', 'label')
+        'option': TaskEnum.get_option('value', 'label')
     },
     {
         'key': 'ope',

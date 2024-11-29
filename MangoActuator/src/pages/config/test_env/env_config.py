@@ -18,7 +18,7 @@ class EnvConfigPage(SubPage):
     def __init__(self, parent):
         super().__init__(parent, right_data=right_data)
         self.superior_page = 'test_env'
-        self.id_key = 'environment'
+        self.id_key = 'test_object'
         self.h_layout = MangoGridLayout()
         self.layout.addLayout(self.h_layout)
         self.layout.addStretch()
@@ -214,7 +214,7 @@ class EnvConfigPage(SubPage):
         self.show_data()
 
     def put_database_status(self, state, row, toggle):
-        response: ResponseModel = HTTP.put_database_status(row.get('id'), row.get('environment'), state.get("value"))
+        response: ResponseModel = HTTP.put_database_status(row.get('id'), row.get('test_object'), state.get("value"))
         response_message(self, response)
         if response.code == 200:
             toggle.change_requested.emit(bool(state.get("value")))
@@ -222,7 +222,7 @@ class EnvConfigPage(SubPage):
             toggle.change_requested.emit(not bool(state.get("value")))
 
     def put_notice_status(self, state, row, toggle):
-        response = HTTP.put_notice_status(row.get('id'), row.get('environment'), state.get("value"))
+        response = HTTP.put_notice_status(row.get('id'), row.get('test_object'), state.get("value"))
         response_message(self, response)
 
         if response.code == 200:
