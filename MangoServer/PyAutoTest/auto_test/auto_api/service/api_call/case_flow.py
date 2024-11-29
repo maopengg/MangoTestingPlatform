@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from queue import Queue
 
 import time
@@ -35,8 +36,23 @@ class CaseFlow:
                         result = future.result()
                         print(result)
                     except Exception as error:
-                        traceback.print_exc()
-                        log.system.error(f'API线程池发生异常：{error}')
+                        log.system.error(error)
+                        trace = traceback.format_exc()
+                        content = f"""
+                              芒果测试平台管理员请注意查收:
+                                  触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                                  错误函数：run_tests
+                                  异常类型: {type(error)}
+                                  错误提示: {str(error)}
+                                  错误详情：{trace}
+
+                              **********************************
+                              详细情况可前往芒果测试平台查看，非相关负责人员可忽略此消息。谢谢！
+
+                                                                            -----------芒果测试平台
+                              """
+                        from mangokit import Mango
+                        Mango.s(content)
                     self.futures.remove(future)
                 time.sleep(0.1)
         except Exception as error:

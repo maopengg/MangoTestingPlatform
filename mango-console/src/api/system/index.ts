@@ -194,7 +194,7 @@ export function getSystemTestSuiteDetailsReport() {
   return get({
     url: 'system/test/suite/details/report',
     data: () => {
-      return {  }
+      return {}
     },
   })
 }

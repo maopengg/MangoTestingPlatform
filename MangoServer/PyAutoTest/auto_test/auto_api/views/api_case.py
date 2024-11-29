@@ -87,15 +87,17 @@ class ApiCaseViews(ViewSet):
     @error_response('api')
     def api_test_case_batch(self, request: Request):
         case_id_list = request.data.get('case_id_list')
+        case_project_product = None
         case_project = None
         for i in case_id_list:
             if case_project is None:
-                case_project = ApiCase.objects.get(id=i).project_product.id
+                case_project_product = ApiCase.objects.get(id=i).project_product.id
+                case_project = ApiCase.objects.get(id=i).project_product.project.id
             else:
-                if case_project != ApiCase.objects.get(id=i).project_product.id:
+                if case_project != ApiCase.objects.get(id=i).project_product.project.id:
                     return ResponseData.fail(RESPONSE_MSG_0128, )
         add_tasks = AddTasks(
-            project=case_project,
+            project_product=case_project_product,
             test_env=request.data.get('test_env'),
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],

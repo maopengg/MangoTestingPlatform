@@ -232,7 +232,7 @@
       modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
       if (data.isAdd) {
-        value['environment'] = route.query.id
+        value['test_object'] = route.query.id
         postSystemDatabase(value)
           .then((res) => {
             Message.success(res.msg)

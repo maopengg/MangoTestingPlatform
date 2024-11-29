@@ -6,6 +6,7 @@
 import os
 import threading
 import traceback
+from datetime import datetime
 
 import time
 from django.apps import AppConfig
@@ -80,10 +81,23 @@ class AutoSystemConfig(AppConfig):
             consumer()
         except RuntimeError:
             pass
-        except Exception as e:
-            traceback.print_exc()
-            log.system.error(e)
-            Mango.s(str(e))
-            time.sleep(5)
+        except Exception as error:
+            log.system.error(error)
+            trace = traceback.format_exc()
+            content = f"""
+               芒果测试平台管理员请注意查收:
+                   触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                   错误函数：run_tests
+                   异常类型: {type(error)}
+                   错误提示: {str(error)}
+                   错误详情：{trace}
+
+               **********************************
+               详细情况可前往芒果测试平台查看，非相关负责人员可忽略此消息。谢谢！
+
+                                                             -----------芒果测试平台
+               """
+            from mangokit import Mango
+            Mango.s(content)
             task1 = threading.Thread(target=self.run_tests)
             task1.start()

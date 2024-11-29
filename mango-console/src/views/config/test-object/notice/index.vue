@@ -277,7 +277,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
       if (data.isAdd) {
-        value['environment'] = route.query.id
+        value['test_object'] = route.query.id
         value['status'] = 0
         postSystemNotice(value)
           .then((res) => {

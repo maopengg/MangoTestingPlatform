@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData
+from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.models import TestSuite
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import AutoTestTypeEnum, NoticeEnum, CacheDataKeyEnum, EnvironmentEnum
@@ -14,7 +14,6 @@ from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
 from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangokit.exceptions.exceptions import ToolsError
-
 
 class NoticeMain:
 
@@ -86,10 +85,7 @@ class NoticeMain:
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
-        if test_suite.type == AutoTestTypeEnum.UI.value:
-            case_result = UiCaseResult.objects.filter(test_suite_id=test_suite_id)
-        else:
-            case_result = ApiCaseResult.objects.filter(test_suite_id=test_suite_id).order_by('create_time')
+        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=test_suite.type)
         case_sum = case_result.count()
         success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
         create_time = test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S")

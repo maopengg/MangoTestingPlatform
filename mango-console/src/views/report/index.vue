@@ -256,7 +256,7 @@
 
   function initPieEcharts() {
     myChart2.value = echarts.init(pieChart.value!)
-    getSystemTestSuite()
+    getSystemTestSuiteDetailsReport()
       .then((res) => {
         myChart2.value.setOption({
           tooltip: {
