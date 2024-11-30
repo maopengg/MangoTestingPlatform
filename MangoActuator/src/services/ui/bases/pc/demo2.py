@@ -22,7 +22,7 @@ def get_pid(processName):
                 return proc.pid
         except psutil.NoSuchProcess:
             pass
-    return -1;
+    return -1
 
 
 # def getControlCoords(control):
