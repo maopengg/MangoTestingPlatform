@@ -2,7 +2,7 @@ playwright==1.47.0
 uiautomator2==3.2.5
 pywinauto==0.6.8
 uiautodev==0.5.0
-locust
+locust~=2.27.0
 mangokit==1.2.1
 mangoui==3.0.12
 websockets==10.4
@@ -19,3 +19,9 @@ adbutils==2.7.0
 gevent==24.2.1
 deepdiff==8.0.1
 
+
+PySide6~=6.7.0
+requests~=2.32.3
+pydantic~=2.9.2
+aiohttp~=3.8.5
+uiautomation~=2.0.20

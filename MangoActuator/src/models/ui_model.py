@@ -17,6 +17,8 @@ class EquipmentModel(BaseModel):
     web_path: str | None = None
     web_headers: bool | None = None
     and_equipment: str | None = None
+    win_path: str | None = None
+    win_title: str | None = None
     host_list: list[dict] | None = None
     is_header_intercept: bool | None = None
 
