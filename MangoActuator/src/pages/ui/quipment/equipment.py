@@ -208,7 +208,6 @@ class EquipmentPage(TableParent):
                 'id': row['id'],
                 'config': dialog.data
             }
-            print(data)
             response_model = Mango.put_save_data(self, row, data)
             response_message(self, response_model)
         self.show_data()
@@ -224,5 +223,5 @@ class EquipmentPage(TableParent):
     def launch_browser(self, data):
         equipment_model = EquipmentModel(type=data.get('type'), **data.get('config'))
         if PageObject.test_page_steps is None:
-            PageObject.test_page_steps = TestPageSteps(None)
+            PageObject.test_page_steps = TestPageSteps(self.parent, None)
         self.parent.loop.create_task(PageObject.test_page_steps.new_web_obj(equipment_model))

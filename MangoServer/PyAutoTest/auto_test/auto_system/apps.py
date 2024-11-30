@@ -8,13 +8,13 @@ import threading
 import traceback
 from datetime import datetime
 
+import atexit
 import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
 
 from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.tools.log_collector import log
-from mangokit import Mango
 
 
 class AutoSystemConfig(AppConfig):
@@ -32,6 +32,7 @@ class AutoSystemConfig(AppConfig):
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
             task1.start()
+        atexit.register(self.shutdown)
 
     @staticmethod
     def delayed_task():
@@ -76,9 +77,11 @@ class AutoSystemConfig(AppConfig):
             TimeTasks.objects.create(name="每周一8点", cron="0 8 * * 1")
 
     def run_tests(self):
-        from PyAutoTest.auto_test.auto_system.service.consumer import consumer
+        from PyAutoTest.auto_test.auto_system.service.consumer import ConsumerThread
         try:
-            consumer()
+            self.consumer_thread = ConsumerThread()
+            self.consumer_thread_instance = threading.Thread(target=self.consumer_thread.consumer)
+            self.consumer_thread_instance.start()
         except RuntimeError:
             pass
         except Exception as error:
@@ -101,3 +104,7 @@ class AutoSystemConfig(AppConfig):
             Mango.s(content)
             task1 = threading.Thread(target=self.run_tests)
             task1.start()
+
+    def shutdown(self):
+        self.consumer_thread.stop()
+        self.consumer_thread_instance.join()

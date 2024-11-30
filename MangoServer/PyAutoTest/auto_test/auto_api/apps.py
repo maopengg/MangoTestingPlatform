@@ -1,3 +1,4 @@
+import atexit
 from threading import Thread
 
 import time
@@ -17,10 +18,17 @@ class AutoApiConfig(AppConfig):
 
         task = Thread(target=run)
         task.start()
+        atexit.register(self.shutdown)
 
     def test_case_consumption(self):
-        CaseFlow().process_tasks()
+        self.case_flow = CaseFlow()
+        self.consumer_thread_instance = Thread(target=self.case_flow.process_tasks)
+        self.consumer_thread_instance.start()
 
+    def shutdown(self):
+        print('Shutting down...')
+        self.case_flow.stop()
+        self.consumer_thread_instance.join()
     #
     # def start_consumer(self):
     #     time.sleep(5)
