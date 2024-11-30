@@ -44,17 +44,17 @@
                 </template>
                 <template v-else-if="item.key === 'web_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.config?.web_type === 0"
-                    >谷歌浏览器</a-tag
-                  >
+                    >谷歌浏览器
+                  </a-tag>
                   <a-tag color="red" size="small" v-else-if="record.config?.web_type === 1"
-                    >EDGE</a-tag
-                  >
+                    >EDGE
+                  </a-tag>
                   <a-tag color="red" size="small" v-else-if="record.config?.web_type === 2"
-                    >火狐</a-tag
-                  >
+                    >火狐
+                  </a-tag>
                   <a-tag color="red" size="small" v-else-if="record.config?.web_type === 3"
-                    >WEBKIT</a-tag
-                  >
+                    >WEBKIT
+                  </a-tag>
                 </template>
                 <template v-else-if="item.key === 'web_max'" #cell="{ record }">
                   <a-switch
@@ -149,17 +149,6 @@
               <template v-if="item.type === 'input'">
                 <a-input :placeholder="item.placeholder" v-model="item.value" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'user_id'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.userList"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
@@ -167,6 +156,7 @@
                   :options="data.driveType"
                   :field-names="fieldNames"
                   value-key="key"
+                  @change="changeStatus(item.value)"
                   allow-clear
                   allow-search
                 />
@@ -276,10 +266,9 @@
       if (
         !formItems.some(
           (item) =>
-            item.key === 'browser_type' ||
+            item.key === 'web_type' ||
             formItems.some(
-              (item) =>
-                item.key === 'browser_port' || formItems.some((item) => item.key === 'browser_path')
+              (item) => item.key === 'web_type' || formItems.some((item) => item.key === 'web_type')
             )
         )
       ) {
@@ -308,7 +297,6 @@
   }
 
   function onAddPage() {
-    changeStatus(0)
     modalDialogRef.value?.toggle()
     data.isAdd = true
     formItems.forEach((it: any) => {
@@ -391,7 +379,7 @@
       if (data.isAdd) {
         value['type'] = data.type
         value['status'] = 0
-        value['user_id'] = userStore.userId
+        value['user'] = userStore.userId
         postUiConfig(value)
           .then((res) => {
             Message.success(res.msg)
@@ -433,14 +421,6 @@
         }
       }, 300)
     })
-  }
-
-  function getNickName() {
-    getUserNickname()
-      .then((res) => {
-        data.userList = res.data
-      })
-      .catch(console.log)
   }
 
   function getUiConfigGetBrowserType() {
@@ -488,7 +468,6 @@
       doRefresh()
       getUiConfigGetBrowserType()
       getUiConfigGetDriveType()
-      getNickName()
       onEnumUiEquipment()
     })
   })
