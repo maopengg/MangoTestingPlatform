@@ -8,7 +8,7 @@ export const formItems: FormItem[] = reactive([
     label: '驱动类型',
     key: 'type',
     value: '',
-    type: 'radio',
+    type: 'select',
     required: true,
     placeholder: '请选择驱动类型',
     validator: function () {

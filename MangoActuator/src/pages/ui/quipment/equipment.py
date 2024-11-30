@@ -208,7 +208,6 @@ class EquipmentPage(TableParent):
                 'id': row['id'],
                 'config': dialog.data
             }
-            print(data)
             response_model = Mango.put_save_data(self, row, data)
             response_message(self, response_model)
         self.show_data()

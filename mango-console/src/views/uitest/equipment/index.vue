@@ -160,13 +160,6 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'radio' && item.key === 'type'">
-                <a-radio-group
-                  @change="changeStatus"
-                  v-model="data.type"
-                  :options="data.driveType"
-                />
-              </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
                   v-model="item.value"
