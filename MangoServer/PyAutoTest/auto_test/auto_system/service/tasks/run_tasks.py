@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
+import atexit
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -28,6 +30,7 @@ class RunTasks:
                     args=[timer.id]
                 )
         cls.scheduler.start()
+        atexit.register(cls.scheduler.shutdown)
 
     @classmethod
     @orm_retry('timing')

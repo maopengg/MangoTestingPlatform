@@ -23,6 +23,10 @@ class CaseFlow:
     def __init__(self):
         self.executor = ThreadPoolExecutor(max_workers=self.max_tasks)
         self.futures = []
+        self.running = True
+
+    def stop(self):
+        self.running = False  # 设置为 False 以停止线程
 
     def process_tasks(self):
         try:
