@@ -44,7 +44,7 @@
           <div class="title">注册用户</div>
           <div class="item-wrapper mt-6">
             <a-input
-              v-model="baseData.nickname"
+              v-model="baseData.name"
               placeholder="请输入用户昵称"
               allow-clear
               size="large"
@@ -140,7 +140,7 @@
   const route = useRoute()
   const userStore = useUserStore()
   const baseData: any = reactive({
-    nickname: '',
+    name: '',
     username: '',
     password: '',
     confirm_password: '',
@@ -165,7 +165,7 @@
               path: route.query.redirect ? (route.query.redirect as string) : '/index/home',
             })
             .then(() => {
-              Message.success('登录成功，欢迎：' + data.nickName)
+              Message.success('登录成功，欢迎：' + data.name)
               baseData.loading = false
             })
         })
@@ -184,7 +184,7 @@
   function onRegister() {
     if (
       baseData.username === '' ||
-      baseData.nickname === '' ||
+      baseData.name === '' ||
       baseData.password === '' ||
       baseData.confirm_password === ''
     ) {
@@ -199,7 +199,7 @@
       post({
         url: register,
         data: {
-          nickname: baseData.nickname,
+          name: baseData.name,
           username: baseData.username,
           password: md5(baseData.password),
         },
