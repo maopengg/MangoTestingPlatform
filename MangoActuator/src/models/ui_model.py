@@ -95,7 +95,7 @@ class CaseModel(BaseModel):
 
 class ElementResultModel(BaseModel):
     id: int
-    name: str
+    name: str | None = None
     loc: str | None = None
     exp: int | None = None
     sleep: int | None = None
