@@ -148,25 +148,3 @@ class PageStepsDetailedPage(SubPage):
             client_type = self.data.get('project_product').get('client_type')
             self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
             return self.select_data
-
-    @classmethod
-    def ope_select_data(cls, ope_type: int, client_type):
-        if ope_type == ElementOperationEnum.OPE.value:
-            if client_type == DriveTypeEnum.WEB.value:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
-            elif client_type == DriveTypeEnum.ANDROID.value:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_android()]
-            else:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web()]
-        elif ope_type == ElementOperationEnum.ASS.value:
-            if client_type == DriveTypeEnum.WEB.value:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_web_ass()]
-            elif client_type == DriveTypeEnum.ANDROID.value:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_android_ass()]
-            else:
-                select_data = [CascaderModel(**q) for q in GetClassMethod().get_public_ass()]
-            for e in GetClassMethod().get_public_ass():
-                select_data.append(CascaderModel(**e))
-        else:
-            return [CascaderModel(value='0', label='请忽略此选项')]
-        return select_data
