@@ -36,4 +36,4 @@ async def main():
 
 asyncio.run(main())
 
-# pyinstaller -F -w --onefile --add-data "src/settings/settings.json;src/settings" --add-data "src/settings/menus.json;src/settings"  --name=执行器 --icon=app_icon.ico main.py
+# pyinstaller .\执行器.spec
