@@ -80,7 +80,7 @@ class WebDevice(PlaywrightBrowser,
         except AssertionError as error:
             raise UiError(*ERROR_MSG_0017, error=error)
         except AttributeError as error:
-            raise UiError(*ERROR_MSG_0030, error=error)
+            raise UiError(*ERROR_MSG_0048, error=error)
         except ValueError as error:
             raise UiError(*ERROR_MSG_0018, error=error)
         except TargetClosedError:
