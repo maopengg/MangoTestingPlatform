@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-01-12 14:53
 # @Author : 毛鹏
+import django
 from django.db.models import Count
-from django.db.utils import OperationalError
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -102,7 +102,7 @@ class IndexViews(ViewSet):
     
                 """
             )
-        except OperationalError:
+        except django.db.utils.OperationalError:
             result_dict = {
                 'api_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

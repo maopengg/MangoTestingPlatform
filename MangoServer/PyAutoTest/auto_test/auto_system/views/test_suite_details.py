@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+import django
 from django.db import OperationalError
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -141,7 +142,7 @@ class TestSuiteDetailsViews(ViewSet):
     
                 """
             )
-        except OperationalError:
+        except django.db.utils.OperationalError:
             data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         else:
