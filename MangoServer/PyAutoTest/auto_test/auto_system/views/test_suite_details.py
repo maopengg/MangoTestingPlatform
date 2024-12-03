@@ -15,7 +15,7 @@ from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSeriali
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.view import ResponseData, RESPONSE_MSG_0096
+from PyAutoTest.tools.view import ResponseData, RESPONSE_MSG_0096, RESPONSE_MSG_0129
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
