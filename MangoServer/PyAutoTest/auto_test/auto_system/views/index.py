@@ -107,7 +107,7 @@ class IndexViews(ViewSet):
                 'api_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             }
-            return ResponseData.fail(RESPONSE_MSG_0129, result_dict)
+            return ResponseData.success(RESPONSE_MSG_0129, result_dict)
         else:
             result_dict = {
                 'api_count': [row.total_count for row in api_result],

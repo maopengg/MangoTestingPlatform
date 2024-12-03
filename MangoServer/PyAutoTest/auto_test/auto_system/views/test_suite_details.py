@@ -142,7 +142,7 @@ class TestSuiteDetailsViews(ViewSet):
                 """
             )
         except OperationalError:
-            data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         else:
             data['fail'] = [result.total_count for result in fail]
