@@ -14,6 +14,7 @@ from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.assertion import Assertion
+from src.tools.command.command import run_command
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 
@@ -35,6 +36,11 @@ class SettingPage(QWidget):
         self.sendRedisData = MangoPushButton('发送')
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
         card_layout1.addRow('发送缓存数据', self.sendRedisData, )
+        self.test = MangoPushButton('测试')
+        self.test.clicked.connect(self.test_but)
+        card_layout1.addRow('测试', self.test, )
+        self.mango_label = MangoLabel('')
+        card_layout1.addRow('显示', self.mango_label, )
 
         card_layout2 = MangoVBoxLayout()
         card_widget2 = MangoCard(card_layout2)
@@ -140,3 +146,10 @@ class SettingPage(QWidget):
             elif i.get('key') == 'API_TIMEOUT':
                 i['value'] = self.input_2_1.get_value() if self.input_2_1.get_value() != '' else None
         response_message(self, HTTP.put_cache_data(self.data))
+
+    def test_but(self):
+        # 示例：执行一个简单的命令
+        output, error = run_command("python D:\GitCode\PytestAutoTest-master\main.py")
+        print(output)
+        print(error)
+        self.mango_label.setText(output)
