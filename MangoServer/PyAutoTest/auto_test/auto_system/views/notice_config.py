@@ -91,7 +91,7 @@ class NoticeConfigViews(ViewSet):
                 config = json.loads(obj_.config)
                 if not isinstance(config, dict) and not isinstance(config, list):
                     return ResponseData.fail(RESPONSE_MSG_0130, )
-            except TypeError:
+            except (TypeError, json.decoder.JSONDecodeError):
                 return ResponseData.fail(RESPONSE_MSG_0130, )
             for i in config:
                 try:

@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-01-12 14:53
 # @Author : 毛鹏
+import django
 from django.db.models import Count
-from django.db.utils import OperationalError
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -102,18 +102,17 @@ class IndexViews(ViewSet):
     
                 """
             )
-        except OperationalError:
+            result_dict = {
+                'api_count': [row.total_count for row in api_result],
+                'ui_count': [row.total_count for row in ui_result]
+            }
+            return ResponseData.success(RESPONSE_MSG_0092, result_dict)
+        except django.db.utils.OperationalError:
             result_dict = {
                 'api_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             }
-            return ResponseData.fail(RESPONSE_MSG_0129, result_dict)
-
-        result_dict = {
-            'api_count': [row.total_count for row in api_result],
-            'ui_count': [row.total_count for row in ui_result]
-        }
-        return ResponseData.success(RESPONSE_MSG_0092, result_dict)
+            return ResponseData.success(RESPONSE_MSG_0129, result_dict)
 
     @action(methods=['get'], detail=False)
     @error_response('system')

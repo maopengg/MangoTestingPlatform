@@ -63,16 +63,21 @@ class WebDevice(PlaywrightBrowser,
             actual = None
             if is_method:
                 actual = '元素是什么'
+                log.debug(
+                    f'开始断言，方法：{self.element_model.ope_key}，断言值：{self.element_model.ope_value}')
                 await getattr(PlaywrightAssertion, self.element_model.ope_key)(**self.element_model.ope_value)
             elif is_method_public:
                 text_actual = await self.w_get_text(self.element_model.ope_value['actual'])
                 actual = text_actual
-                getattr(PublicAssertion, self.element_model.ope_key)(
-                    **{k: text_actual if k == 'actual' else v for k, v in self.element_model.ope_value.items()})
+                ope_value = {k: text_actual if k == 'actual' else v for k, v in self.element_model.ope_value.items()}
+                log.debug(f'开始断言，方法：{self.element_model.ope_key}，断言值：{ope_value}')
+                getattr(PublicAssertion, self.element_model.ope_key)(**ope_value)
             elif is_method_sql:
                 actual = 'sql匹配'
                 if self.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.mysql_connect
+                    log.debug(
+                        f'开始断言，方法：sql相等端游，实际值：{self.element_model.ope_value}')
                     await SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
                     raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
@@ -80,7 +85,7 @@ class WebDevice(PlaywrightBrowser,
         except AssertionError as error:
             raise UiError(*ERROR_MSG_0017, error=error)
         except AttributeError as error:
-            raise UiError(*ERROR_MSG_0030, error=error)
+            raise UiError(*ERROR_MSG_0048, error=error)
         except ValueError as error:
             raise UiError(*ERROR_MSG_0018, error=error)
         except TargetClosedError:
