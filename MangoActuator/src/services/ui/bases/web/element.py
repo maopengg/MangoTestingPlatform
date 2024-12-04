@@ -24,7 +24,7 @@ class PlaywrightElement(BaseData):
         await locating.dblclick()
 
     @classmethod
-    async def force_click(cls, locating: Locator):
+    async def w_force_click(cls, locating: Locator):
         """强制单击"""
         await locating.evaluate('element => element.click()')
 
