@@ -15,8 +15,18 @@ class PlaywrightElement(BaseData):
 
     @classmethod
     async def w_click(cls, locating: Locator):
-        """元素点击"""
+        """元素单击"""
         await locating.click()
+
+    @classmethod
+    async def w_dblclick(cls, locating: Locator):
+        """元素双击"""
+        await locating.dblclick()
+
+    @classmethod
+    async def w_force_click(cls, locating: Locator):
+        """强制单击"""
+        await locating.evaluate('element => element.click()')
 
     @classmethod
     async def w_input(cls, locating: Locator, input_value: str):
@@ -26,6 +36,7 @@ class PlaywrightElement(BaseData):
     async def w_get_text(self, locating: Locator, set_cache_key=None):
         """获取元素文本"""
         value = await locating.inner_text()
+        log.debug(f'获取元素的值：{value}，存储的key：{set_cache_key}')
         if set_cache_key:
             self.test_data.set_cache(key=set_cache_key, value=value)
             self.parent.set_tips_info(f'元素key设置成功，key：{set_cache_key}，value：{value}')

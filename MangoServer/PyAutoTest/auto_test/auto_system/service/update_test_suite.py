@@ -51,7 +51,7 @@ class UpdateTestSuite:
         connection.ensure_connection()
         test_suite = TestSuite.objects.get(id=test_suite_id)
         if test_suite.is_notice == StatusEnum.SUCCESS.value:
-            NoticeMain.notice_main(test_suite.test_env, test_suite_id)
+            NoticeMain.notice_main(test_suite.test_env, test_suite.project_product.id, test_suite_id)
         from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,

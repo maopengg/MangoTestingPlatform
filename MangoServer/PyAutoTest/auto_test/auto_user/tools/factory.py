@@ -11,14 +11,14 @@ from PyAutoTest.exceptions import *
 from mangokit import MysqlConingModel
 
 
-def func_mysql_config(environment_id: int) -> MysqlConingModel:
+def func_mysql_config(test_object_id: int) -> MysqlConingModel:
     """
     获取mysql的配置信息生成model
-    @param environment_id:
+    @param test_object_id:
     @return:
     """
     try:
-        mysql = Database.objects.get(environment=environment_id)
+        mysql = Database.objects.get(test_object=test_object_id)
     except Database.DoesNotExist:
         raise SystemEError(*ERROR_MSG_0021)
     except Database.MultipleObjectsReturned:

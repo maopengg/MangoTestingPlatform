@@ -367,13 +367,13 @@
       modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
       value['config'] = {
-        web_max: value['web_max'],
-        web_recording: value['web_recording'],
+        web_max: value['web_max'] === null ? 0 : value['web_headers'],
+        web_recording: value['web_recording'] === null ? 0 : value['web_headers'],
         web_parallel: value['web_parallel'],
         web_type: value['web_type'],
         web_h5: value['web_h5'],
         web_path: value['web_path'],
-        web_headers: value['web_headers'],
+        web_headers: value['web_headers'] === null ? 0 : value['web_headers'],
         and_equipment: value['and_equipment'],
       }
       if (data.isAdd) {

@@ -83,6 +83,8 @@ class GetClassMethod:
                 select_data = [CascaderModel(**q) for q in cls.get_public_ass()]
             for e in cls.get_public_ass():
                 select_data.append(CascaderModel(**e))
+            for e in GetClassMethod().get_sql_ass():
+                select_data.append(CascaderModel(**e))
         else:
             return [CascaderModel(value='0', label='请忽略此选项')]
         return select_data

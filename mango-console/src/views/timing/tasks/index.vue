@@ -82,7 +82,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
                   {{ record.timing_strategy?.name }}

@@ -93,6 +93,11 @@ class ElementOperation(WebDevice, AndroidDriver):
             raise error
 
     async def action_element(self):
+        async def set_ope_value(ope_value):
+            if 'locating' in ope_value:
+                del ope_value['locating']
+            self.element_test_result.ope_value = ope_value
+
         ope_value = self.element_model.ope_value
         try:
             if self.drive_type == DriveTypeEnum.WEB.value:
@@ -107,12 +112,22 @@ class ElementOperation(WebDevice, AndroidDriver):
                 log.error('不存在的设备类型')
                 raise Exception('不存在的设备类型')
         except UiError as error:
-            if 'locating' in ope_value:
-                del ope_value['locating']
-            self.element_test_result.ope_value = ope_value
+            if ope_value:
+                await set_ope_value(ope_value)
             raise error
+        else:
+            await set_ope_value(ope_value)
 
     async def assertion_element(self):
+        async def set_result(actual):
+            if 'actual' in self.element_model.ope_value:
+                del self.element_model.ope_value['actual']
+            ass_dict = {'actual': actual}
+            ass_dict.update(self.element_model.ope_value)
+            self.element_test_result.ope_value = ass_dict
+            self.element_test_result.expect = self.element_model.ope_value.get('expect')
+            self.element_test_result.actual = actual
+
         actual = self.element_model.ope_value
         try:
             if self.drive_type == DriveTypeEnum.WEB.value:
@@ -127,14 +142,11 @@ class ElementOperation(WebDevice, AndroidDriver):
                 log.error('不存在的设备类型')
                 raise Exception('不存在的设备类型')
         except UiError as error:
-            if 'actual' in self.element_model.ope_value:
-                del self.element_model.ope_value['actual']
-            ass_dict = {'actual': actual}
-            ass_dict.update(self.element_model.ope_value)
-            self.element_test_result.ope_value = ass_dict
-            self.element_test_result.expect = self.element_model.ope_value.get('expect')
-            self.element_test_result.actual = actual
+            if actual:
+                await set_result(actual)
             raise error
+        else:
+            await set_result(actual)
 
     async def __ope(self):
         try:
@@ -155,10 +167,6 @@ class ElementOperation(WebDevice, AndroidDriver):
         await self.action_element()
 
     async def __ass(self):
-        try:
-            func_doc = getattr(self, self.element_model.ope_key).__doc__
-        except AttributeError:
-            raise UiError(*ERROR_MSG_0048)
         for key, expect in self.element_model.ope_value.items():
             if key == 'actual' and self.element_model.loc:
                 self.element_model.ope_value[key] = await self.__find_element()
