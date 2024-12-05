@@ -15,13 +15,12 @@ from PyAutoTest.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
 from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum
-from PyAutoTest.enums.ui_enum import DriveTypeEnum
+from PyAutoTest.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-
 
 class PageStepsDetailedSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -89,15 +88,14 @@ class PageStepsDetailedCRUD(ModelCRUD):
             if i.ele_name:
                 data['run_flow'] += i.ele_name.name
             else:
-                data['run_flow'] += i.ope_type if i.ope_type else '无元素操作'
-        data['name'] = run[0].page_step.name
+                if i.type == ElementOperationEnum.CUSTOM.value:
+                    data['run_flow'] += '参数'
+                elif i.type == ElementOperationEnum.SQL.value:
+                    data['run_flow'] += 'SQL'
+                else:
+                    data['run_flow'] += i.ope_key if i.ope_key else '无元素操作'
         from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD
-        ui_case = PageStepsCRUD()
-        res = ui_case.serializer(instance=PageSteps.objects.get(pk=_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.ui.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+        PageStepsCRUD.inside_put(data['id'], data)
 
 
 class PageStepsDetailedView(ViewSet):
