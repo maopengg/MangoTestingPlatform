@@ -90,7 +90,7 @@
                     <span style="width: 110px; display: inline-block">{{ record.id }}</span>
                   </template>
                   <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                    {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                    {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                   </template>
                   <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                     {{ record.test_env ? uEnvironment.data[record.test_env]?.title : '' }}

@@ -103,7 +103,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>

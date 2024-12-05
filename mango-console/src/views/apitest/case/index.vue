@@ -153,11 +153,11 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'module'" #cell="{ record }">
-                  {{ record.module?.superior_module ? record.module?.superior_module + '/' : ''
-                  }}{{ record.module?.name }}
+                  {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
+                  }}{{ record?.module?.name }}
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
                   {{ record.case_people?.nickname }}
