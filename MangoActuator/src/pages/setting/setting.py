@@ -14,6 +14,7 @@ from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.assertion import Assertion
+from src.tools.command.command import run_command, CommandThread
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 
@@ -86,10 +87,20 @@ class SettingPage(QWidget):
         self.localhost = MangoLineEdit('请输入测试平台域名，测试通知会发送域名查看测试报告', )
         card_layout4_2.addRow('服务域名', self.localhost)
 
+        card_layout5 = MangoVBoxLayout()
+        card_widget5 = MangoCard(card_layout5, '测试卡片')
+        card_widget5.setMinimumHeight(100)
+        but_5_1 = MangoPushButton('测试按钮')
+        but_5_1.clicked.connect(self.test_but)
+        card_layout5.addWidget(but_5_1)
+        self.mango_scroll_area = MangoScrollArea()
+        card_layout5.addWidget(self.mango_scroll_area)
+
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)
         self.layout.addWidget(card_widget3)
         self.layout.addWidget(card_widget4)
+        self.layout.addWidget(card_widget5)
         self.layout.addStretch()
         self.setLayout(self.layout)
 
@@ -140,3 +151,25 @@ class SettingPage(QWidget):
             elif i.get('key') == 'API_TIMEOUT':
                 i['value'] = self.input_2_1.get_value() if self.input_2_1.get_value() != '' else None
         response_message(self, HTTP.put_cache_data(self.data))
+
+    # def test_but(self):
+    #     output, error = run_command("python D:\GitCode\PytestAutoTest\main.py")
+    #     print(output)
+    #     print(error)
+    #     mango_label = MangoLabel()
+    #     mango_label.setText(output if output else error)
+    #     self.mango_scroll_area.layout.addWidget(mango_label)
+
+    def test_but(self):
+        self.command_thread = CommandThread(self, 'python D:\GitCode\PytestAutoTest\main.py')
+        self.command_thread.output_signal.connect(self.handle_output)
+        self.command_thread.error_signal.connect(self.handle_error)
+        self.command_thread.start()
+
+    def handle_output(self, output):
+        mango_label = MangoLabel(output)
+        self.mango_scroll_area.layout.addWidget(mango_label)
+
+    def handle_error(self, error):
+        mango_label = MangoLabel(error)
+        self.mango_scroll_area.layout.addWidget(mango_label)
