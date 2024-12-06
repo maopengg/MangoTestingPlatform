@@ -74,6 +74,9 @@ class TestCase(CaseDetailedInit):
         except Exception as error:
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
+            self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
+            return self.api_case_result
+
 
     def case_detailed(self, case_id: int, case_sort: int | None):
         if case_sort:
