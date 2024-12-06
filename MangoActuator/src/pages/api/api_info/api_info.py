@@ -27,6 +27,9 @@ class ApiInfoPage(TableParent):
 
     def run(self, row):
         user_info = UserModel()
+        if user_info.selected_environment is None:
+            error_message(self, '请先在右上角选择测试环境后再开始测试！')
+            return
         response = HTTP.get_api_run(row.get('id'), user_info.selected_environment)
         response_message(self, response)
         mango_dialog = MangoDialog('测试结果', size=(600, 500))

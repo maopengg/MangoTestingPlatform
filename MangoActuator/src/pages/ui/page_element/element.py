@@ -6,7 +6,7 @@
 import json
 from copy import deepcopy
 
-from mango_ui import DialogCallbackModel, DialogWidget, FormDataModel, response_message
+from mango_ui import DialogCallbackModel, DialogWidget, FormDataModel, response_message, error_message
 
 from src.enums.ui_enum import ElementOperationEnum
 from src.models.user_model import UserModel
@@ -74,6 +74,10 @@ class ElementPage(SubPage):
                 data.subordinate_input_object.set_value(json.dumps(ope_value))
 
     def debug(self, row):
+        user_info = UserModel()
+        if user_info.selected_environment is None:
+            error_message(self, '请先在右上角选择测试环境后再开始测试！')
+            return
         form_data = [FormDataModel(**i) for i in deepcopy(self.debug_form_data)]
         if hasattr(self, 'dialog_widget_size'):
             dialog = DialogWidget('调试元素', form_data, self.dialog_widget_size)
@@ -82,7 +86,6 @@ class ElementPage(SubPage):
         dialog.clicked.connect(self.sub_options)
         dialog.exec()
         if dialog.data:
-            user_info = UserModel()
             response_model = HTTP.test_element(
                 test_env=user_info.selected_environment,
                 page_id=row['page']['id'],

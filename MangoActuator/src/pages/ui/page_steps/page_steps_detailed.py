@@ -88,6 +88,9 @@ class PageStepsDetailedPage(SubPage):
     def debug(self):
         WidgetTool.remove_layout(self.scroll_area.layout)
         user_info = UserModel()
+        if user_info.selected_environment is None:
+            error_message(self, '请先在右上角选择测试环境后再开始测试！')
+            return
         response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:

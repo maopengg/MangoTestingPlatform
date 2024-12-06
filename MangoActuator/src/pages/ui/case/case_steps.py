@@ -271,6 +271,9 @@ class CaseStepsPage(SubPage):
 
     def run(self):
         user_info = UserModel()
+        if user_info.selected_environment is None:
+            error_message(self, '请先在右上角选择测试环境后再开始测试！')
+            return
         response_message(self, HTTP.ui_test_case(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
