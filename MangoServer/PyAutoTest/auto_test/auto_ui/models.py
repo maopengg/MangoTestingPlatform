@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_user.models import User
 
 class Page(models.Model):
     """页面表"""
-    create_Time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)

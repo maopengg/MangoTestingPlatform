@@ -99,7 +99,7 @@ class UiCaseStepsDetailedViews(ViewSet):
                 name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
 
                 value_dict: dict = steps_detailed.ope_value
-                if 'locating' in value_dict:
+                if value_dict is not None and 'locating' in value_dict:
                     value_dict.pop('locating')
             elif steps_detailed.ope_key:
                 name = None

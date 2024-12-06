@@ -334,10 +334,13 @@ class ApiCaseDetailedPage(SubPage):
             method_label=None
     ):
         h_layout = MangoHBoxLayout()
-        if method_placeholder:
-            key = MangoLineEdit(key_placeholder, value=data.get('expect') if data else None)
+        if isinstance(data, dict):
+            if method_placeholder:
+                key = MangoLineEdit(key_placeholder, value=data.get('expect') if data else None)
+            else:
+                key = MangoLineEdit(key_placeholder, value=data.get('key') if data else None)
         else:
-            key = MangoLineEdit(key_placeholder, value=data.get('key') if data else None)
+            key = MangoLineEdit(key_placeholder, value=data if data else None)
         _key_label = MangoLabel(key_label)
         h_layout.addWidget(_key_label)
         h_layout.addWidget(key)
