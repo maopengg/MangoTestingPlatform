@@ -5,7 +5,7 @@
 import copy
 import os
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
 from src.tools import InitPath

@@ -53,12 +53,6 @@ class PageSteps(HttpBase):
 
     @classmethod
     @request_log()
-    def get_case_name(cls, ):
-        url = cls.url(f'/ui/case/name')
-        return cls.get(url=url, headers=cls.headers)
-
-    @classmethod
-    @request_log()
     def ui_steps_run(cls, test_env, page_step_id, is_send=1):
         url = cls.url(f'/ui/steps/run')
         _params = {

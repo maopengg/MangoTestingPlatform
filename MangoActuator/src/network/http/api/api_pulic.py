@@ -40,13 +40,7 @@ class ApiPublic(HttpBase):
     @request_log()
     def put_api_public_status(cls, _id, status):
         return cls.put(
-            url=cls.url(f'{ApiPublic._url}/put/status'),
+            url=cls.url(f'{ApiPublic._url}/status'),
             headers=cls.headers,
             json={'id': _id, 'status': status}
         )
-
-    @classmethod
-    @request_log()
-    def get_set_cache(cls):
-        _params = {}
-        return cls.get(url=cls.url(f'{ApiPublic._url}/set/cache'), headers=cls.headers, params=_params)

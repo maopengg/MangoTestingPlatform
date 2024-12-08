@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getUserModuleName } from '@/api/user'
+import { getUserModuleName } from '@/api/system/module'
 // 1.定义容器
 export const useProductModule = defineStore('product-module', {
   // 类似于data，用来存储全局状态，必须是箭头函数

@@ -29,7 +29,7 @@
 <script lang="ts" setup>
   import { onMounted, reactive } from 'vue'
   import { Message } from '@arco-design/web-vue'
-  import { getSystemCacheData, putSystemCacheData } from '@/api/system'
+  import { getSystemCacheData, putSystemCacheData } from '@/api/system/cache_data'
 
   const settingsData: any = reactive({
     editing: false,

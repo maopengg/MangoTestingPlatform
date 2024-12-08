@@ -2,6 +2,7 @@ from django.db import models
 
 from PyAutoTest.auto_test.auto_system.models import ProjectProduct, ProductModule
 from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.exceptions import ToolsError
 
 """
      1.python manage.py makemigrations
@@ -22,6 +23,13 @@ class Page(models.Model):
         db_table = 'page'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if PageSteps.objects.filter(page=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+        if PageElement.objects.filter(page=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的元素后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class PageElement(models.Model):
     """页面元素表"""
@@ -39,6 +47,11 @@ class PageElement(models.Model):
         db_table = 'page_element'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if PageStepsDetailed.objects.filter(ele_name=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class PageSteps(models.Model):
     """页面步骤表"""
@@ -55,6 +68,13 @@ class PageSteps(models.Model):
     class Meta:
         db_table = 'page_steps'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if PageStepsDetailed.objects.filter(page_step=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+        if UiCaseStepsDetailed.objects.filter(page_step=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的用例步骤详情后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class PageStepsDetailed(models.Model):
@@ -78,6 +98,9 @@ class PageStepsDetailed(models.Model):
         db_table = 'page_steps_detailed'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+
 
 class UiCase(models.Model):
     """用例表"""
@@ -99,6 +122,11 @@ class UiCase(models.Model):
     class Meta:
         db_table = 'ui_case'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if UiCaseStepsDetailed.objects.filter(case=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class UiCaseStepsDetailed(models.Model):

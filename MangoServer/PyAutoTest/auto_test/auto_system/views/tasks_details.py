@@ -16,7 +16,7 @@ from PyAutoTest.auto_test.auto_system.models import TasksDetails
 from PyAutoTest.auto_test.auto_system.views.tasks import TasksSerializers
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.enums.tools_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -120,20 +120,6 @@ class TasksDetailsViews(ViewSet):
                 else:
                     return ResponseData.fail(RESPONSE_MSG_0066)
         return ResponseData.success(RESPONSE_MSG_0067)
-
-    @action(methods=['put'], detail=False)
-    @error_response('system')
-    def put_tasks_case_sort(self, request: Request):
-        """
-        修改排序
-        @param request:
-        @return:
-        """
-        for i in request.data.get('sort_list'):
-            obj = self.model.objects.get(id=i['id'])
-            obj.sort = i['sort']
-            obj.save()
-        return ResponseData.success(RESPONSE_MSG_0107, )
 
     @action(methods=['put'], detail=False)
     @error_response('system')

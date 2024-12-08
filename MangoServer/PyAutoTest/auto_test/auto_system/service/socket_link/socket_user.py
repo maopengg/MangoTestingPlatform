@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from PyAutoTest.enums.tools_enum import ClientNameEnum
+from PyAutoTest.enums.system_enum import ClientNameEnum
 from PyAutoTest.exceptions import *
 
 

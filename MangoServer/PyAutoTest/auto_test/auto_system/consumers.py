@@ -11,8 +11,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
-from PyAutoTest.enums.system_enum import SocketEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum, ClientNameEnum
+from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.settings import DEBUG

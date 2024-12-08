@@ -11,8 +11,7 @@ from django.utils import timezone
 from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
 from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails, TestSuite
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import TaskEnum
+from PyAutoTest.enums.tools_enum import TaskEnum, AutoTestTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.api_model import ApiCaseModel
 from PyAutoTest.tools.log_collector import log

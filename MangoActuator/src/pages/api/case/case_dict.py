@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.system_enum import CaseLevelEnum
-from src.enums.tools_enum import Status3Enum, TaskEnum
+from src.enums.tools_enum import TaskEnum, CaseLevelEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 

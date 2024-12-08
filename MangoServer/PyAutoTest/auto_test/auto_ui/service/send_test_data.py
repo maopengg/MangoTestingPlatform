@@ -9,7 +9,8 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import Soc
 from PyAutoTest.auto_test.auto_ui.models import *
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel

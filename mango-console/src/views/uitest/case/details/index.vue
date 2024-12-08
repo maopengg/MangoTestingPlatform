@@ -277,25 +277,25 @@
   import { usePageData } from '@/store/page-data'
   import { columns, formItems } from './config'
   import {
-    getUiCaseRun,
-    getUiPageName,
-    getUiPageStepsDetailedOpe,
-    getUiStepsPageStepsName,
-    getUiStepsRun,
-    getUiPageStepsDetailedAss,
     putUiCasePutCaseSort,
     postUiCaseStepsDetailed,
     getUiCaseStepsDetailed,
     getUiCaseStepsRefreshCacheData,
     putUiCaseStepsDetailed,
-    getUiPageStepsDetailed,
-    putUiCase,
     deleteUiCaseStepsDetailed,
-  } from '@/api/uitest'
-  import { getUserProductAllModuleName } from '@/api/user'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  } from '@/api/uitest/case-steps-detailed'
+  import { getUserProductAllModuleName } from '@/api/system/product'
+  import { putUiCase } from '@/api/uitest/case'
+  import {
+    getUiPageStepsDetailedOpe,
+    getUiPageStepsDetailedAss,
+  } from '@/api/uitest/page-steps-detailed'
+  import { getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
+  import { getUiPageName } from '@/api/uitest/page'
+  import useUserStore from '@/store/modules/user'
+  const userStore = useUserStore()
+
   const pageData: any = usePageData()
-  const uEnvironment = useEnvironment()
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -478,11 +478,11 @@
       .catch(console.log)
   }
   function onCaseRun() {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiCaseRun(route.query.id, uEnvironment.selectValue)
+    getUiStepsTest(route.query.id, userStore.selected_environment)
       .then((res) => {
         Message.loading(res.msg)
       })
@@ -503,11 +503,11 @@
       .catch(console.log)
   }
   function onPageStep(record: any) {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsRun(record.page_step.id, uEnvironment.selectValue)
+    getUiStepsTest(record.page_step.id, userStore.selected_environment)
       .then((res) => {
         Message.loading(res.msg)
       })
@@ -523,13 +523,6 @@
     return list.find((item: any) => item.value === value)?.label
   }
 
-  function viewElementExpressions(id: number) {
-    getUiPageStepsDetailed(id)
-      .then((res) => {
-        data.elementLocator = res.data[0].ele_name.loc
-      })
-      .catch(console.log)
-  }
   function getUiRunSortOpe() {
     getUiPageStepsDetailedOpe(route.query.pageType)
       .then((res) => {

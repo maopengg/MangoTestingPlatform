@@ -13,7 +13,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_user.models import UserLogs, User
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.enums.tools_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *

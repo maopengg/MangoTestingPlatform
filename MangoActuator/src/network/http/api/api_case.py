@@ -73,16 +73,6 @@ class ApiCase(HttpBase):
 
     @classmethod
     @request_log()
-    def get_api_case_synchronous(cls, host: list, project_id):
-        _params = {
-            'host': host,
-            'project_id': project_id,
-        }
-        return (cls.get(url=cls.url(f'{ApiCase._url}/synchronous'), headers=cls.headers, params=_params)
-                @ classmethod)
-
-    @classmethod
-    @request_log()
     def get_api_case_copy(cls, case_id):
         _params = {
             'case_id': case_id,

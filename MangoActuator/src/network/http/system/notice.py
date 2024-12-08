@@ -39,7 +39,7 @@ class Notice(HttpBase):
     @classmethod
     @request_log()
     def put_notice_status(cls, _id: int, environment: int, status: int):
-        return cls.put(url=cls.url(f'{Notice._url}/put/status'), headers=cls.headers,
+        return cls.put(url=cls.url(f'{Notice._url}/status'), headers=cls.headers,
                        json={'id': _id, 'status': status, 'test_object': environment})
 
     @classmethod

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.network import HTTP
 
 search_data = [

@@ -15,8 +15,7 @@ from rest_framework.request import Request
 from PyAutoTest.exceptions import ToolsError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
-from PyAutoTest.tools.view import ResponseData, RESPONSE_MSG_0001, RESPONSE_MSG_0003, RESPONSE_MSG_0002, \
-    RESPONSE_MSG_0082, RESPONSE_MSG_0004, RESPONSE_MSG_0005, RESPONSE_MSG_0116, RESPONSE_MSG_0117
+from PyAutoTest.tools.view import *
 
 
 class ModelCRUD(GenericAPIView):
@@ -102,16 +101,17 @@ class ModelCRUD(GenericAPIView):
     def delete(self, request: Request):
         _id = request.query_params.get('id')
         id_list = [int(id_str) for id_str in request.query_params.getlist('id[]')]
-        # 批量删
-        if not _id and id_list:
-            for i in id_list:
-                self.model.objects.get(pk=i).delete()
+        try:
+            if not _id and id_list:
+                for i in id_list:
+                    self.model.objects.get(pk=i).delete()
+            else:
+                self.model.objects.get(id=_id).delete()
+                self.asynchronous_callback(request, request.query_params.get('parent_id'))
+        except ToolsError as error:
+            return ResponseData.fail((error.code, error.msg))
         else:
-            # 一条删
-            model = self.model.objects.get(id=_id)
-            model.delete()
-            self.asynchronous_callback(request, request.query_params.get('parent_id'))
-        return ResponseData.success(RESPONSE_MSG_0005)
+            return ResponseData.success(RESPONSE_MSG_0005)
 
     def asynchronous_callback(self, request: Request, _id: int = None):
         """

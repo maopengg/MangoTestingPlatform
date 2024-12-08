@@ -21,13 +21,11 @@
   import { useDebounceFn } from '@vueuse/core'
   import { useRoute, useRouter } from 'vue-router'
   import { useProductModule } from '@/store/modules/project_module'
-  import { getUserProjectEnvironment, putUserPutProject } from '@/api/user'
-  import { useStatus } from '@/store/modules/status'
+  import { putUserPutProject } from '@/api/user/user'
 
   const userStore = useUserStore()
   const project = useProject()
   const productModule = useProductModule()
-  const status = useStatus()
 
   const router = useRouter()
   const route = useRoute()
@@ -69,7 +67,6 @@
 
   onMounted(async () => {
     await project.getProject()
-    await status.refresh()
   })
 </script>
 

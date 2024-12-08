@@ -1,5 +1,7 @@
 from django.db import models
 
+from PyAutoTest.exceptions import ToolsError
+
 """
      1.python manage.py makemigrations
      2.python manage.py migrate
@@ -16,6 +18,11 @@ class Role(models.Model):
     class Meta:
         db_table = 'role'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if User.objects.filter(role=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的用户角色后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class User(models.Model):
@@ -36,6 +43,26 @@ class User(models.Model):
     class Meta:
         db_table = 'user'
         ordering = ['id']
+
+    def delete(self, *args, **kwargs):
+        from PyAutoTest.auto_test.auto_api.models import ApiCase
+        if ApiCase.objects.filter(case_people=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的API测试用例后再删除！")
+        from PyAutoTest.auto_test.auto_ui.models import UiCase, UiConfig
+        if UiCase.objects.filter(case_people=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI测试用例后再删除！")
+        from PyAutoTest.auto_test.auto_system.models import TestObject, Tasks, TestSuite
+        if TestObject.objects.filter(executor_name=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的测试对象后再删除！")
+        if Tasks.objects.filter(case_people=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        if TestSuite.objects.filter(user=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的测试套后再删除！")
+        if UiConfig.objects.filter(user=self).exists():
+            UiConfig.objects.filter(user=self).delete()
+        if UserLogs.objects.filter(user=self).exists():
+            UserLogs.objects.filter(user=self).delete()
+        super().delete(*args, **kwargs)
 
 
 class UserLogs(models.Model):

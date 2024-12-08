@@ -528,23 +528,21 @@
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
   import { formItems, columns } from './config'
+  import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
   import {
     getApiCaseDetailed,
-    putApiCase,
     putApiCaseDetailed,
-    getApiCaseRun,
-    getApiInfoName,
-    putApiPutCaseSort,
-    postApiCaseDetailed,
     deleteApiCaseDetailed,
+    postApiCaseDetailed,
+    putApiPutCaseSort,
     putApiPutRefreshApiInfo,
-  } from '@/api/apitest'
-  import { getUiPageStepsDetailedAss } from '@/api/uitest'
-  import { getSystemEnumMethod } from '@/api/system'
-  import { getUserProductAllModuleName } from '@/api/user'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  } from '@/api/apitest/case_detailed'
+  import { getApiInfoName } from '@/api/apitest/info'
+  import { getUiPageStepsDetailedAss } from '@/api/uitest/page-steps-detailed'
+  import { getUserProductAllModuleName } from '@/api/system/product'
+  import useUserStore from '@/store/modules/user'
 
-  const uEnvironment = useEnvironment()
+  const userStore = useUserStore()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const formModel = ref({})
@@ -692,16 +690,6 @@
       .catch(console.log)
   }
 
-  function doMethodType() {
-    getSystemEnumMethod()
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          data.methodType.push(item.title)
-        })
-      })
-      .catch(console.log)
-  }
-
   function doRefresh() {
     getApiCaseDetailed(route.query.case_id)
       .then((res) => {
@@ -715,7 +703,7 @@
 
   function caseRun(case_sort: number | null) {
     Message.loading('用例开始执行中~')
-    getApiCaseRun(route.query.case_id, uEnvironment.selectValue, case_sort)
+    getApiCaseRun(route.query.case_id, userStore.selected_environment, case_sort)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -819,7 +807,7 @@
 
   function select(record: any) {
     data.selectDataObj = record
-    data.result_data =record.result_data
+    data.result_data = record.result_data
     if (typeof record.ass_response_whole == 'object') {
       data.selectDataObj['ass_response_whole'] = formatJson(record.ass_response_whole)
     }
@@ -856,7 +844,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doMethodType()
       onProductModuleName()
       getUiRunSortAss()
     })

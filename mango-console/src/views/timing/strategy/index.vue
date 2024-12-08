@@ -119,7 +119,7 @@
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { tableColumns, formItems, conditionItems } from './config'
-  import { deleteSystemTime, getSystemTime, postSystemTime, putSystemTime } from '@/api/system'
+  import { deleteSystemTime, getSystemTime, postSystemTime, putSystemTime } from '@/api/system/time'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)

@@ -10,7 +10,7 @@ from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
     MangoMain1Window, DialogWidget, FormDataModel, response_message
 
-from src.enums.system_enum import EnvironmentEnum
+from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.consumer import SocketConsumer

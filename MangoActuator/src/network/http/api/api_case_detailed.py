@@ -42,7 +42,7 @@ class ApiCaseDetailed(HttpBase):
         _json = {
             'case_sort_list': case_sort_list
         }
-        return cls.put(url=cls.url(f'api/put/case/sort'), headers=cls.headers, json=_json)
+        return cls.put(url=cls.url(f'{ApiCaseDetailed._url}/sort'), headers=cls.headers, json=_json)
 
     @classmethod
     @request_log()
@@ -50,4 +50,4 @@ class ApiCaseDetailed(HttpBase):
         _json = {
             'id': _id
         }
-        return cls.put(url=cls.url(f'api/put/refresh/api/info'), headers=cls.headers, json=_json)
+        return cls.put(url=cls.url(f'{ApiCaseDetailed._url}/refresh'), headers=cls.headers, json=_json)

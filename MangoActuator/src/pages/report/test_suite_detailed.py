@@ -6,11 +6,10 @@
 
 from mango_ui import *
 
-from src.enums.tools_enum import Status3Enum, StatusEnum, TaskEnum
+from src.enums.tools_enum import Status3Enum, StatusEnum, TaskEnum, AutoTestTypeEnum
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from .test_suite_detailed_dict import *
-from ...enums.system_enum import AutoTestTypeEnum
 from ...enums.ui_enum import ElementOperationEnum
 from ...models.api_model import ApiCaseStepsResultModel
 from ...models.socket_model import ResponseModel

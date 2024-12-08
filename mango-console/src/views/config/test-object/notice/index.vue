@@ -124,7 +124,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.noticeType"
+                  :options="enumStore.notice"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -162,16 +162,17 @@
   import { conditionItems, formItems, tableColumns, mailboxForm, configForm } from './config'
   import {
     deleteSystemNotice,
-    getSystemEnumNotice,
     getSystemNotice,
     getSystemNoticeTest,
     postSystemNotice,
     putSystemNotice,
     putSystemNoticePutStatus,
-  } from '@/api/system'
-  import { getUserName } from '@/api/user'
+  } from '@/api/system/notice_config'
+  import { getUserName } from '@/api/user/user'
   import { useRoute } from 'vue-router'
+  import { useEnum } from '@/store/modules/get-enum'
   const route = useRoute()
+  const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -181,7 +182,6 @@
   const formModel = ref({})
 
   const data: any = reactive({
-    noticeType: [],
     isAdd: false,
     updateId: 0,
     actionTitle: '添加通知',
@@ -297,14 +297,6 @@
     }
   }
 
-  function enumNotice() {
-    getSystemEnumNotice()
-      .then((res) => {
-        data.noticeType = res.data
-      })
-      .catch(console.log)
-  }
-
   const onModifyStatus = async (newValue: boolean, id: number) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
@@ -341,7 +333,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      enumNotice()
       getNickName()
     })
   })

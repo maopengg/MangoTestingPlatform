@@ -7,7 +7,7 @@ from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class TasksList(HttpBase):
+class TasksDetails(HttpBase):
     _url = 'system/tasks/run/case'
 
     @classmethod
@@ -19,22 +19,22 @@ class TasksList(HttpBase):
         }
         if params:
             _params.update(params)
-        return cls.get(url=cls.url(TasksList._url), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(TasksDetails._url), headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_tasks_list(cls, json_data: dict):
-        return cls.post(url=cls.url(TasksList._url), headers=cls.headers, json=json_data)
+        return cls.post(url=cls.url(TasksDetails._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_tasks_list(cls, json_data: dict):
-        return cls.put(url=cls.url(TasksList._url), headers=cls.headers, json=json_data)
+        return cls.put(url=cls.url(TasksDetails._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def delete_tasks_list(cls, _id, ):
-        return cls.delete(url=cls.url(TasksList._url), headers=cls.headers, params={'id': _id, })
+        return cls.delete(url=cls.url(TasksDetails._url), headers=cls.headers, params={'id': _id, })
 
     @classmethod
     @request_log()
@@ -43,4 +43,4 @@ class TasksList(HttpBase):
             'type': type,
             'module_id': module_id
         }
-        return cls.get(url=cls.url('system/tasks/type/case/name'), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(f'{TasksDetails._url}/type/case/name'), headers=cls.headers, params=_params)

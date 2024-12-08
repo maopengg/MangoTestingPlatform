@@ -7,11 +7,11 @@ import json
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails, TestSuite, TestObject
 from PyAutoTest.auto_test.auto_user.models import User
-from PyAutoTest.enums.system_enum import NoticeEnum, CacheDataKeyEnum, EnvironmentEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.system_enum import CacheDataKeyEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, EnvironmentEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
-from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel
+from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel, NoticeEnum
 from mangokit.exceptions.exceptions import ToolsError
 
 

@@ -36,7 +36,6 @@
           :pagination="false"
           :rowKey="rowKey"
           @selection-change="onSelectionChange"
-          @change="handleChange"
         >
           <template #columns>
             <a-table-column
@@ -110,21 +109,16 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { formItems, tableColumns } from './config'
   import {
     deleteSystemTasksRunCase,
     getSystemTasksRunCase,
     getSystemTasksTypeCaseName,
     postSystemTasksRunCase,
-    putSystemTasksCaseSort,
     putSystemTasksCaseTestObject,
     putSystemTasksRunCase,
-  } from '@/api/system'
-  import { getUserModuleName } from '@/api/user'
-  import { useProject } from '@/store/modules/get-project'
-  const testObj = useTestObj()
-  const projectInfo = useProject()
+  } from '@/api/system/tasks_details'
+  import { getUserModuleName } from '@/api/system/module'
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
@@ -235,20 +229,7 @@
       }
     }
   }
-  const handleChange = (_data: any) => {
-    let data: any = []
-    _data.forEach((item: any, index: number) => {
-      data.push({
-        id: item.id,
-        sort: index,
-      })
-    })
-    putSystemTasksCaseSort(data)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
+
   function doResetSearch() {
     window.history.back()
   }

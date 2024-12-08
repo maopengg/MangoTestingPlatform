@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue'
-  import { getUiPageAssMethod } from '@/api/uitest'
+  import { getUiPageAssMethod } from '@/api/uitest/page-steps-detailed'
 
   const randomList = ref([])
   onMounted(() => {

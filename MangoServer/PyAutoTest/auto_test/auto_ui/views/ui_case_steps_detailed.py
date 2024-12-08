@@ -76,12 +76,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
         except AttributeError:
             log.ui.error(f'对UI用例进行排序时报错：{data}')
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
-        ui_case = UiCaseCRUD()
-        res = ui_case.serializer(instance=UiCase.objects.get(pk=_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.ui.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+        UiCaseCRUD.inside_put(_id, data)
 
 
 class UiCaseStepsDetailedViews(ViewSet):

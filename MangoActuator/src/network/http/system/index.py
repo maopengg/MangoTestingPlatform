@@ -9,21 +9,25 @@ from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class Home(HttpBase):
-    _url = '/system'
+class Index(HttpBase):
+    _url = '/system/index'
 
     @classmethod
     @request_log()
     def case_run_trends(cls):
-        return requests.get(cls.url(f'{Home._url}/case/result/week/sum'), cls.headers)
+        return requests.get(cls.url(f'{Index._url}/result/week/sum'), cls.headers)
 
     @classmethod
     @request_log()
     def case_run_sum(cls):
-        return requests.get(cls.url(f'{Home._url}/case/run/sum'), cls.headers)
+        return requests.get(cls.url(f'{Index._url}/run/sum'), cls.headers)
 
     @classmethod
     @request_log()
     def case_sum(cls):
-        return requests.get(cls.url(f'{Home._url}/case/sum'), cls.headers)
+        return requests.get(cls.url(f'{Index._url}/sum'), cls.headers)
 
+    @classmethod
+    @request_log()
+    def case_sum(cls):
+        return requests.get(cls.url(f'{Index._url}/activity/level'), cls.headers)

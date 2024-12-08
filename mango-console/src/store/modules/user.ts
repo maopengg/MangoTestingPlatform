@@ -17,6 +17,7 @@ const useUserStore = defineStore('user-info', {
       avatar: defaultAvatar,
       selected_project: null,
       selected_environment: null,
+      selected_environment_title: '选择测试环境',
     }
   },
   actions: {

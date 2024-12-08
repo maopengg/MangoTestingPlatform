@@ -1,8 +1,7 @@
 import { defineStore } from 'pinia'
-import { getUserProductName, getUserProjectAll, getUserProjectProductName } from '@/api/user'
-// 1.定义容器
+import { getUserProjectAll, getUserProjectProductName } from '@/api/system/project'
+import { getUserProductName } from '@/api/system/product'
 export const useProject = defineStore('get-project', {
-  // 类似于data，用来存储全局状态，必须是箭头函数
   state: () => {
     return {
       data: [],
@@ -13,9 +12,7 @@ export const useProject = defineStore('get-project', {
       projectProductList: [],
     }
   },
-  // 类似于computed，用来封装计算属性
   getters: {},
-  // 封装业务逻辑，修改state
   actions: {
     getProject() {
       getUserProjectAll()

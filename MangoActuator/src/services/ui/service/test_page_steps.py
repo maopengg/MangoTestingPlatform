@@ -7,7 +7,7 @@ from typing import Optional
 
 from mangokit import singleton
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, EquipmentModel

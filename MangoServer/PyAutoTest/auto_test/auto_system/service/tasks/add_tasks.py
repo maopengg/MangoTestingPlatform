@@ -6,8 +6,7 @@
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import TaskEnum
+from PyAutoTest.enums.tools_enum import TaskEnum, AutoTestTypeEnum
 from PyAutoTest.tools.view import Snowflake
 
 

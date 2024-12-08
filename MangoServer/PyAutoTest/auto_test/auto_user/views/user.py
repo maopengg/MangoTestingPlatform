@@ -14,7 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.service.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
-from PyAutoTest.enums.tools_enum import ClientTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD

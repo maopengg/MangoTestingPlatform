@@ -6,7 +6,7 @@
 import copy
 import json
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.models.user_model import UserModel
 from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log

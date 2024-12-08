@@ -151,7 +151,7 @@
               <a-select
                 v-model="data.type"
                 :placeholder="item.placeholder"
-                :options="data.plainOptions"
+                :options="enumStore.element_ope"
                 :field-names="fieldNames"
                 @change="changeStatus"
                 value-key="key"
@@ -199,17 +199,18 @@
     getUiPageStepsDetailed,
     getUiPageStepsDetailedAss,
     getUiPageStepsDetailedOpe,
-    getUiStepsRun,
-    getUiUiElementName,
     postUiPageStepsDetailed,
     putUiPagePutStepSort,
     putUiPageStepsDetailed,
-  } from '@/api/uitest'
-  import { getSystemEnumUiElementOperation } from '@/api/system'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  } from '@/api/uitest/page-steps-detailed'
+  import { getUiStepsTest } from '@/api/uitest/page-steps'
+  import { getUiUiElementName } from '@/api/uitest/element'
+  import useUserStore from '@/store/modules/user'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
 
   const pageData = usePageData()
-  const uEnvironment = useEnvironment()
+  const userStore = useUserStore()
 
   const route = useRoute()
   const formModel = ref({})
@@ -517,31 +518,23 @@
   }
 
   function onRunCase() {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsRun(route.query.id, uEnvironment.selectValue)
+    getUiStepsTest(route.query.id, userStore.selected_environment)
       .then((res) => {
         Message.loading(res.msg)
       })
       .catch(console.log)
   }
 
-  function enumUiElementOperation() {
-    getSystemEnumUiElementOperation()
-      .then((res) => {
-        data.plainOptions = res.data
-      })
-      .catch(console.log)
-  }
   onMounted(() => {
     nextTick(async () => {
       await getUiRunSortAss()
       await getUiRunSortOpe()
       await getEleName()
       getUiRunSort()
-      enumUiElementOperation()
     })
   })
 </script>

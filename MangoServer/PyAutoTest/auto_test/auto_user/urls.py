@@ -6,35 +6,13 @@
 
 from django.urls import path
 
-from PyAutoTest.auto_test.auto_system.views.file_data import FileDataCRUD
-from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
-from PyAutoTest.auto_test.auto_system.views.project import ProjectCRUD, ProjectViews
 # from .views.project_file import ProjectFileViews
-from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
+
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
-    #
-    path('file', FileDataCRUD.as_view()),
-    #
-    path('test/object', TestObjectCRUD.as_view()),
-    path('test/object/name', TestObjectViews.as_view({'get': 'get_test_object_name'})),
-    path('test/object/put/status', TestObjectViews.as_view({'put': 'put_status'})),
-    #
-    path("project", ProjectCRUD.as_view()),
-    path("project/all", ProjectViews.as_view({'get': 'get_all_items'})),
-    path("project/product/name", ProjectViews.as_view({'get': 'project_product_name'})),
-    path("project/environment/name", ProjectViews.as_view({'get': 'project_environment_name'})),
-    #
-    path("product", ProjectProductCRUD.as_view()),
-    path("product/name", ProjectProductViews.as_view({'get': 'get_product_name'})),
-    path("product/all/module/name", ProjectProductViews.as_view({'get': 'product_all_module_name'})),
-    #
-    path("module", ProductModuleCRUD.as_view()),
-    path("module/name", ProductModuleViews.as_view({'get': 'get_module_name'})),
     #
     path("role", RoleCRUD.as_view()),
     path("role/all", RoleViews.as_view({'get': 'get_all_role'})),
@@ -42,11 +20,11 @@ urlpatterns = [
     path("user/logs", UserLogsCRUD.as_view()),
     #
     path("info", UserCRUD.as_view()),
-    path("name", UserViews.as_view({'get': 'get_name'})),
-    path("project/put", UserViews.as_view({'put': 'put_project'})),
-    path("environment", UserViews.as_view({'put': 'put_environment'})),
-    path("password", UserViews.as_view({'put': 'put_password'})),
-    path("project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
+    path("info/name", UserViews.as_view({'get': 'get_name'})),
+    path("info/project/put", UserViews.as_view({'put': 'put_project'})),
+    path("info/environment", UserViews.as_view({'put': 'put_environment'})),
+    path("info/password", UserViews.as_view({'put': 'put_password'})),
+    # path("info/project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),
     #
     # path("files/test", ProjectFileViews.as_view({'get': 'test'})),
     # path("files/all/list", ProjectFileViews.as_view({'get': 'get_project_all_list'})),

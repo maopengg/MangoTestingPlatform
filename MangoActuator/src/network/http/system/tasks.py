@@ -7,8 +7,8 @@ from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class ScheduledTasks(HttpBase):
-    _url = 'system/scheduled/tasks'
+class Tasks(HttpBase):
+    _url = 'system/tasks'
 
     @classmethod
     @request_log()
@@ -19,24 +19,24 @@ class ScheduledTasks(HttpBase):
         }
         if params:
             _params.update(params)
-        return cls.get(url=cls.url(ScheduledTasks._url), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(Tasks._url), headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_scheduled_tasks(cls, json_data: dict):
-        return cls.post(url=cls.url(ScheduledTasks._url), headers=cls.headers, json=json_data)
+        return cls.post(url=cls.url(Tasks._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_scheduled_tasks(cls, json_data: dict):
-        return cls.put(url=cls.url(ScheduledTasks._url), headers=cls.headers, json=json_data)
+        return cls.put(url=cls.url(Tasks._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def delete_scheduled_tasks(cls, _id, ):
-        return cls.delete(url=cls.url(ScheduledTasks._url), headers=cls.headers, params={'id': _id, })
+        return cls.delete(url=cls.url(Tasks._url), headers=cls.headers, params={'id': _id, })
 
     @classmethod
     @request_log()
     def get_run_scheduled_tasks(cls, _id, ):
-        return cls.get(cls.url('/system/trigger/timing'), headers=cls.headers, params={'id': _id, })
+        return cls.get(cls.url(f'{Tasks._url}/trigger/timing'), headers=cls.headers, params={'id': _id, })

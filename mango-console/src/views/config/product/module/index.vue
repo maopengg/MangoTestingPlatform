@@ -57,7 +57,12 @@
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { columns, formItems } from './config'
-  import { deleteUserModule, getUserModule, postUserModule, putUserModule } from '@/api/user'
+  import {
+    deleteUserModule,
+    getUserModule,
+    postUserModule,
+    putUserModule,
+  } from '@/api/system/module'
 
   const route = useRoute()
   const formModel = ref({})

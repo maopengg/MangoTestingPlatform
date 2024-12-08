@@ -59,14 +59,13 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, nextTick } from 'vue'
   import { tableColumns } from './config'
-  import { deleteUserFile, getUserFile, postUserFile } from '@/api/user'
-  import { baseURL } from '@/api/axios.config'
+  import { deleteUserFile, getUserFile, postUserFile } from '@/api/system/file_data'
   import { useProject } from '@/store/modules/get-project'
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
-  const projectInfo = useProject()
+  const projectInfo: any = useProject()
 
   function doRefresh() {
     getUserFile()

@@ -4,7 +4,7 @@
 # @Author : 毛鹏
 import asyncio
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, CaseModel, PageObject, EquipmentModel
 from src.network.web_socket.websocket_client import WebSocketClient
@@ -16,7 +16,6 @@ from src.tools.decorator.error_handle import async_error_handle
 
 class UI:
     lock = asyncio.Lock()
-
 
     @async_error_handle()
     @convert_args(PageStepsModel)

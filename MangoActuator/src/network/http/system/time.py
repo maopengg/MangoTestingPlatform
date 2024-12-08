@@ -7,7 +7,7 @@ from src.network.http.http_base import HttpBase
 from src.tools.decorator.request_log import request_log
 
 
-class TimeTasks(HttpBase):
+class Time(HttpBase):
     _url = '/system/time'
 
     @classmethod
@@ -19,24 +19,24 @@ class TimeTasks(HttpBase):
         }
         if params:
             _params.update(params)
-        return cls.get(url=cls.url(TimeTasks._url), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(Time._url), headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
     def post_time_tasks(cls, json_data: dict):
-        return cls.post(url=cls.url(TimeTasks._url), headers=cls.headers, json=json_data)
+        return cls.post(url=cls.url(Time._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def put_time_tasks(cls, json_data: dict):
-        return cls.put(url=cls.url(TimeTasks._url), headers=cls.headers, json=json_data)
+        return cls.put(url=cls.url(Time._url), headers=cls.headers, json=json_data)
 
     @classmethod
     @request_log()
     def delete_time_tasks(cls, _id, ):
-        return cls.delete(url=cls.url(TimeTasks._url), headers=cls.headers, params={'id': _id, })
+        return cls.delete(url=cls.url(Time._url), headers=cls.headers, params={'id': _id, })
 
     @classmethod
     @request_log()
     def system_time_name(cls):
-        return cls.get(url=cls.url('/system/get/timing/list'), headers=cls.headers)
+        return cls.get(url=cls.url(f'{Time._url}/name'), headers=cls.headers)

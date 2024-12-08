@@ -45,7 +45,7 @@ class ApiInfo(HttpBase):
         }
         if _id_list:
             _params['id'] = _id_list
-        return cls.get(url=cls.url(f'{ApiInfo._url}/run'), headers=cls.headers, params=_params)
+        return cls.get(url=cls.url(f'{ApiInfo._url}/test'), headers=cls.headers, params=_params)
 
     @classmethod
     @request_log()
@@ -62,7 +62,7 @@ class ApiInfo(HttpBase):
             'id_list': id_list,
             'type': type,
         }
-        return cls.put(url=cls.url('api/put/api/info/type'), headers=cls.headers, json=_json)
+        return cls.put(url=cls.url(f'{ApiInfo._url}/type'), headers=cls.headers, json=_json)
 
     @classmethod
     @request_log()
@@ -70,9 +70,9 @@ class ApiInfo(HttpBase):
         _json = {
             'id': _id,
         }
-        return cls.post(url=cls.url('api/copy/info'), headers=cls.headers, json=_json)
+        return cls.post(url=cls.url(f'{ApiInfo._url}/copy'), headers=cls.headers, json=_json)
 
     @classmethod
     @request_log()
     def post_import_api_info(cls, _json: dict):
-        return cls.post(url=cls.url('api/import/api'), headers=cls.headers, json=_json)
+        return cls.post(url=cls.url(f'{ApiInfo._url}/import/api'), headers=cls.headers, json=_json)

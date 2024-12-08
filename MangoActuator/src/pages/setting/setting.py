@@ -7,14 +7,13 @@ import json
 
 from mango_ui import *
 
-from src.enums.system_enum import CacheDataKey2Enum
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import CacheDataKey2Enum, ClientTypeEnum
 from src.models import queue_notification
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.assertion import Assertion
-from src.tools.command.command import run_command, CommandThread
+from src.tools.command.command import CommandThread
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 

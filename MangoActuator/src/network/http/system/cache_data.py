@@ -35,8 +35,3 @@ class CacheData(HttpBase):
     @request_log()
     def delete_cache_data(cls, _id, ):
         return cls.delete(url=cls.url(CacheData._url), headers=cls.headers, params={'id': _id})
-
-    @classmethod
-    @request_log()
-    def put_cache_data_value(cls, key: int):
-        return cls.get(url=cls.url(f'system/cache/value'), headers=cls.headers, params={'key': key})

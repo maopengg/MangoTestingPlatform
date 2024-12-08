@@ -2,11 +2,11 @@
   <div class="vaw-avatar-container">
     <a-dropdown trigger="hover" size="large" @select="handleSelect">
       <div class="action-wrapper">
-        <span class="nick-name"> {{ uEnvironment.selectTitle }} </span>
+        <span class="nick-name"> {{ userStore.selected_environment_title }} </span>
         <icon-caret-down class="tip" />
       </div>
       <template #content>
-        <a-doption v-for="item of uEnvironment.data" :key="item.key" :value="item.key">
+        <a-doption v-for="item of enumStore.environment_type" :key="item.key" :value="item.key">
           {{ item.title }}
         </a-doption>
       </template>
@@ -18,11 +18,11 @@
   import { onMounted, watchEffect } from 'vue'
   import useUserStore from '@/store/modules/user'
 
-  import { putUserEnvironment } from '@/api/user'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  import { putUserEnvironment } from '@/api/user/user'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
 
   const userStore = useUserStore()
-  const uEnvironment = useEnvironment()
   function handleSelect(key: any) {
     putUserEnvironment(userStore.userId, key)
       .then((res) => {
@@ -32,23 +32,24 @@
       .catch(console.log)
   }
   function setTitle(key: any) {
-    uEnvironment.selectValue = key
+    userStore.selected_environment = key
     if (key === null) {
-      uEnvironment.selectTitle = '请选择测试环境'
+      userStore.selected_environment_title = '请选择测试环境'
       return
     }
-    uEnvironment.data.forEach((item: any) => {
+    if (!enumStore.environment_type) {
+      enumStore.getEnum()
+    }
+    enumStore.environment_type.forEach((item: any) => {
       if (item.key === key) {
-        uEnvironment.selectTitle = item.title
+        userStore.selected_environment_title = item.title
       }
     })
   }
   watchEffect(() => {
     setTitle(userStore.selected_environment)
   })
-  onMounted(() => {
-    uEnvironment.getEnvironment()
-  })
+  onMounted(() => {})
 </script>
 
 <style lang="less" scoped>

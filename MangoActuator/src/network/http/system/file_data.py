@@ -8,7 +8,7 @@ from src.tools.decorator.request_log import request_log
 
 
 class FileData(HttpBase):
-    _url = 'user/file'
+    _url = 'system/file'
 
     @classmethod
     @request_log()

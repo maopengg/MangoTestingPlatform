@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_ui.models import PageElement
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_page import PageSerializers
-from PyAutoTest.enums.tools_enum import ClientNameEnum
+from PyAutoTest.enums.system_enum import ClientNameEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD

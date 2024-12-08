@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.system_enum import EnvironmentEnum, AutoTestTypeEnum
-from src.enums.tools_enum import Status5Enum
+from src.enums.tools_enum import Status5Enum, EnvironmentEnum, AutoTestTypeEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 
