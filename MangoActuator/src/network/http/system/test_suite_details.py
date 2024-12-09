@@ -4,14 +4,12 @@
 # @Time   : 2024-09-24 10:01
 # @Author : 毛鹏
 from src.network.http.http_base import HttpBase
-from src.tools.decorator.request_log import request_log
 
 
 class TestSuiteDetails(HttpBase):
     _url = 'system/test/suite/details'
 
     @classmethod
-    @request_log()
     def get_test_suite_details(cls, page, page_size, params=None):
         if params is None:
             params = {'type': 0}
@@ -21,23 +19,20 @@ class TestSuiteDetails(HttpBase):
         }
         if params:
             _params.update(params)
-        return cls.get(url=cls.url(TestSuiteDetails._url), headers=cls.headers, params=_params)
+        return cls.get(TestSuiteDetails._url, params=_params)
 
     @classmethod
-    @request_log()
     def post_test_suite_details(cls, json_data: dict):
-        return cls.post(url=cls.url(TestSuiteDetails._url), headers=cls.headers, json=json_data)
+        return cls.post(TestSuiteDetails._url, json=json_data)
 
     @classmethod
-    @request_log()
     def put_test_suite_details(cls, json_data: dict):
-        return cls.put(url=cls.url(TestSuiteDetails._url), headers=cls.headers, json=json_data)
+        return cls.put(TestSuiteDetails._url, json=json_data)
 
     @classmethod
-    @request_log()
     def delete_test_suite_details(cls, _id, ):
-        return cls.delete(url=cls.url(TestSuiteDetails._url), headers=cls.headers, params={'id': _id, })
+        return cls.delete(TestSuiteDetails._url, params={'id': _id, })
+
     @classmethod
-    @request_log()
     def get_test_suite_report(cls, ):
-        return cls.get(url=cls.url(f'{TestSuiteDetails._url}/report'), headers=cls.headers, )
+        return cls.get(f'{TestSuiteDetails._url}/report', )

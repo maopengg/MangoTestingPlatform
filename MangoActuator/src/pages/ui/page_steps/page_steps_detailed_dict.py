@@ -42,7 +42,7 @@ form_data = [
         'key': 'ele_name',
         'type': 1,
         'required': False,
-        'select': HTTP.get_element_name
+        'select': HTTP.ui.element.get_element_name
     },
     {
         'title': '操作值',

@@ -15,7 +15,7 @@ class RolePage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_role
-        self.post = HTTP.post_role
-        self.put = HTTP.put_role
-        self._delete = HTTP.delete_role
+        self.get = HTTP.user.role.get_role
+        self.post = HTTP.user.role.post_role
+        self.put = HTTP.user.role.put_role
+        self._delete = HTTP.user.role.delete_role

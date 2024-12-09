@@ -4,14 +4,12 @@
 # @Time   : 2024-09-24 10:01
 # @Author : 毛鹏
 from src.network.http.http_base import HttpBase
-from src.tools.decorator.request_log import request_log
 
 
 class FileData(HttpBase):
     _url = 'system/file'
 
     @classmethod
-    @request_log()
     def get_file(cls, page, page_size, params: dict = None):
         _params = {
             'page': page,
@@ -20,19 +18,16 @@ class FileData(HttpBase):
         }
         if params:
             _params.update(params)
-        return cls.get(url=cls.url(FileData._url), headers=cls.headers, params=_params)
+        return cls.get(FileData._url, params=_params)
 
     @classmethod
-    @request_log()
     def post_file(cls, data: dict, files):
-        return cls.post(url=cls.url(FileData._url), headers=cls.headers, data=data, files=files)
+        return cls.post(FileData._url, data=data, files=files)
 
     @classmethod
-    @request_log()
     def delete_file(cls, _id):
-        return cls.delete(url=cls.url(FileData._url), headers=cls.headers, params={'id': _id})
+        return cls.delete(FileData._url, params={'id': _id})
 
     @classmethod
-    @request_log()
     def download(cls, name: str):
-        return cls.get(url=cls.url(name), headers=cls.headers)
+        return cls.get(name)

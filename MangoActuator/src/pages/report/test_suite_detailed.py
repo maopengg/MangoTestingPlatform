@@ -14,6 +14,7 @@ from ...enums.ui_enum import ElementOperationEnum
 from ...models.api_model import ApiCaseStepsResultModel
 from ...models.socket_model import ResponseModel
 from ...models.ui_model import PageStepsResultModel
+from ...tools.components.message import response_message
 
 
 class TestSuiteDetailedPage(SubPage):
@@ -40,7 +41,7 @@ class TestSuiteDetailedPage(SubPage):
     def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
-        response_model: ResponseModel = HTTP.get_test_suite_details(
+        response_model: ResponseModel = HTTP.system.test_suite_details.get_test_suite_details(
             page=1,
             page_size=10000,
             params={f'{self.id_key}_id': self.data.get('id')}

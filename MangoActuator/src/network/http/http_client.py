@@ -9,23 +9,13 @@ from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
 from src.tools import InitPath
-from src.tools.decorator.request_log import request_log
 from src.tools.log_collector import log
 
 
 class HttpClientApi(HttpBase):
-
     @classmethod
-    def project_info(cls):
-        url = cls.url('/user/project/product/name?client_type=1')
-        response = cls.get(url=url, headers=cls.headers)
-        return response.json()
-
-    @classmethod
-    @request_log()
     def download_file(cls, file_name):
-        url = cls.url(f'files/{file_name}')
-        response = cls.get(url, headers=cls.headers)
+        response = cls.get(f'files/{file_name}')
         file_path = InitPath.upload_files
         try:
             with open(fr'{file_path}\{file_name}', 'wb') as f:
@@ -35,7 +25,6 @@ class HttpClientApi(HttpBase):
 
     @classmethod
     def upload_file(cls, project_product_id: int, file_path: str, file_name: str):
-        url = cls.url('/user/file')
         file_size = os.path.getsize(file_path)
         data = {
             'type': ClientTypeEnum.ACTUATOR.value,
@@ -47,9 +36,25 @@ class HttpClientApi(HttpBase):
             ('file', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
         ]
         headers = copy.copy(cls.headers)
-        response = cls.post(url, headers=headers, data=data, files=files)
+        response = cls.post('/user/file', headers=headers, data=data, files=files)
         if response.status_code == 200:
             return True
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
             return False
+
+    @classmethod
+    def login(cls, username: str = None, password=None):
+        response = cls.post('/login', data={
+            'username': username,
+            'password': password,
+            'type': ClientTypeEnum.ACTUATOR.value
+        })
+        log.info(response.data)
+        if response.data:
+            cls.headers['Authorization'] = response.data.get('token')
+        return response
+
+    @classmethod
+    def user_register(cls, json_data: dict):
+        return cls.post('/register', json=json_data)

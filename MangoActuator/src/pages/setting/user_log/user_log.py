@@ -20,7 +20,7 @@ class UserLogPage(TableParent):
             self.search_data.append(SearchDataModel(**i))
         super().__init__(parent, search_data=self.search_data, table_column=table_column, )
         self.page_size = 30
-        self.get = HTTP.get_user_log
-        self.post = HTTP.post_user_log
-        self.put = HTTP.put_user_log
-        self._delete = HTTP.delete_user_log
+        self.get = HTTP.user.user_logs.get_user_log
+        self.post = HTTP.user.user_logs.post_user_log
+        self.put = HTTP.user.user_logs.put_user_log
+        self._delete = HTTP.user.user_logs.delete_user_log

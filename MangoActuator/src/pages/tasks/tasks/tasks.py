@@ -3,13 +3,14 @@
 # @Description: 
 # @Time   : 2024-10-15 14:54
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel, response_message
+from mango_ui import ComboBoxDataModel, FormDataModel
 
 from src.pages.parent.table import TableParent
-from .scheduled_task_dict import *
+from src.tools.components.message import response_message
+from .tasks_dict import *
 
 
-class ScheduledTaskPage(TableParent):
+class TasksPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent,
                          form_data=form_data,
@@ -17,11 +18,11 @@ class ScheduledTaskPage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_scheduled_tasks
-        self.post = HTTP.post_scheduled_tasks
-        self.put = HTTP.put_scheduled_tasks
-        self._delete = HTTP.delete_scheduled_tasks
-        self.subpage_value = 'task_case'
+        self.get = HTTP.system.tasks.get_tasks
+        self.post = HTTP.system.tasks.post_tasks
+        self.put = HTTP.system.tasks.put_tasks
+        self._delete = HTTP.system.tasks.delete_tasks
+        self.subpage_value = 'tasks_details'
         self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):
@@ -31,4 +32,4 @@ class ScheduledTaskPage(TableParent):
             return [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in data.select().data]
 
     def run(self, row):
-        response_message(self, HTTP.get_run_scheduled_tasks(row.get('id')))
+        response_message(self, HTTP.system.tasks.trigger_timing(row.get('id')))

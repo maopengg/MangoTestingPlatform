@@ -12,7 +12,7 @@ search_data = [
         'placeholder': '请选择用户',
         'key': 'user',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
     {
         'title': '来源',

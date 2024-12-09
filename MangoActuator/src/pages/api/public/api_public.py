@@ -16,7 +16,7 @@ class ApiPublicPage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_api_public
-        self.post = HTTP.post_api_public
-        self.put = HTTP.put_api_public
-        self._delete = HTTP.delete_api_public
+        self.get = HTTP.api.public.get_api_public
+        self.post = HTTP.api.public.post_api_public
+        self.put = HTTP.api.public.put_api_public
+        self._delete = HTTP.api.public.delete_api_public

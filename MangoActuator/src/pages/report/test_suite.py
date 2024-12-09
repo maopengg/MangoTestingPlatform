@@ -14,10 +14,10 @@ class TestSuitePage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, search_data=search_data)
         self.subpage_value = 'test_suite_detailed'
-        self.get = HTTP.get_test_suite
-        self.post = HTTP.get_test_suite
-        self.put = HTTP.get_test_suite
-        self._delete = HTTP.get_test_suite
+        self.get = HTTP.system.test_suite.get_test_suite
+        self.post = HTTP.system.test_suite.get_test_suite
+        self.put = HTTP.system.test_suite.get_test_suite
+        self._delete = HTTP.system.test_suite.get_test_suite
         self.layout_v = MangoVBoxLayout()
         self.layout.addLayout(self.layout_v)
         self.layout_h = MangoHBoxLayout()
@@ -38,7 +38,7 @@ class TestSuitePage(TableParent):
         self.layout_v.addWidget(self.table_widget, 7)
 
     def show_data(self, is_refresh=False):
-        response_model = HTTP.get_test_suite_report()
+        response_model = HTTP.system.test_suite.get_test_suite_report()
         self.line_plot_1.draw([
             {'name': '成功', 'value': response_model.data.get('success')},
             {'name': '失败', 'value': response_model.data.get('fail')}

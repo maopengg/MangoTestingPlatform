@@ -18,10 +18,10 @@ class TestEnvPage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'env_config'
-        self.get = HTTP.get_test_object
-        self.post = HTTP.post_test_object
-        self.put = HTTP.put_test_object
-        self._delete = HTTP.delete_test_object
+        self.get = HTTP.system.test_object.get_test_object
+        self.post = HTTP.system.test_object.post_test_object
+        self.put = HTTP.system.test_object.put_test_object
+        self._delete = HTTP.system.test_object.delete_test_object
         self.dialog_widget_size = (400, 350)
 
     def form_data_callback(self, data: FormDataModel):

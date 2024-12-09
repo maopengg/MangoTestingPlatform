@@ -1,4 +1,4 @@
-from mango_ui import show_failed_message, FormDataModel, DialogWidget, response_message
+from mango_ui import show_failed_message, FormDataModel, DialogWidget
 from mango_ui.init import *
 from mangokit import SQLiteConnect, Mango, EncryptionTool
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
@@ -11,6 +11,7 @@ from src.tools import InitPath
 from src.tools.methods import Methods
 from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from .login_dict import form_data
+from ...tools.components.message import response_message
 
 
 class LoginLogic(LoginWindow):
@@ -46,8 +47,9 @@ class LoginLogic(LoginWindow):
             show_failed_message('请先输入IP或端口后再进行登录')
         if not settings.USERNAME or not settings.PASSWORD:
             show_failed_message('请先输入账号或密码后再进行登录')
+        HTTP.api.info.set_host(settings.IP, settings.PORT)
         try:
-            res = HTTP.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
+            res = HTTP.not_auth.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
             if res.code == 200:
                 Methods.set_project()
                 self.main_window = MainWindow(self.loop)

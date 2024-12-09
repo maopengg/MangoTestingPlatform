@@ -46,7 +46,7 @@ form_data = [
         'placeholder': '请选择定时策略',
         'key': 'timing_strategy',
         'type': 1,
-        'select': HTTP.system_time_name
+        'select': HTTP.system.time.system_time_name
     },
     {
         'title': '自动化类型',
@@ -68,7 +68,7 @@ form_data = [
         'placeholder': '请选择定时任务负责人',
         'key': 'case_people',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
     {
         'title': '状态',

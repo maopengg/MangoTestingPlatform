@@ -52,7 +52,8 @@ class Methods:
     @classmethod
     def set_project(cls):
         def run():
-            cls.base_dict.project = [cls.convert_to_cascader_model(i) for i in HTTP.project_info()['data']]
+            cls.base_dict.project = [cls.convert_to_cascader_model(i) for i in
+                                     HTTP.system.project.project_product_name('1').data]
 
         thread = threading.Thread(target=run)
         thread.start()

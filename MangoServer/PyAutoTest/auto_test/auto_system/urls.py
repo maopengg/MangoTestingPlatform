@@ -39,7 +39,7 @@ urlpatterns = [
     #
     path('tasks', TasksCRUD.as_view()),
     path('tasks/status', TasksViews.as_view({'put': 'put_status'})),
-    path('tasks/notice', TasksViews.as_view({'put': 'put_is_notice'})),
+    path('tasks/notice', TasksViews.as_view({'put': 'put_notice'})),
     path('tasks/name', TasksViews.as_view({'get': 'get_id_name'})),
     path('tasks/trigger/timing', TasksNoPermissionViews.as_view({'get': 'trigger_timing'})),
     #

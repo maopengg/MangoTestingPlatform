@@ -13,6 +13,7 @@ from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
 from src.services.ui.service.test_page_steps import TestPageSteps
+from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
@@ -27,10 +28,10 @@ class PageStepsDetailedPage(SubPage):
                          right_data=right_data)
         self.id_key = 'page_step'
         self.superior_page = 'page_steps'
-        self.get = HTTP.get_page_steps_detailed
-        self.post = HTTP.post_page_steps_detailed
-        self.put = HTTP.put_page_steps_detailed
-        self._delete = HTTP.delete_page_steps_detailed
+        self.get = HTTP.ui.page_steps_detailed.get_page_steps_detailed
+        self.post = HTTP.ui.page_steps_detailed.post_page_steps_detailed
+        self.put = HTTP.ui.page_steps_detailed.put_page_steps_detailed
+        self._delete = HTTP.ui.page_steps_detailed.delete_page_steps_detailed
         self.h_layout = MangoHBoxLayout()
         self.table_column = [TableColumnModel(**i) for i in table_column]
         self.table_menu = [TableMenuItemModel(**i) for i in table_menu]
@@ -91,7 +92,7 @@ class PageStepsDetailedPage(SubPage):
         if user_info.selected_environment is None:
             error_message(self, '请先在右上角选择测试环境后再开始测试！')
             return
-        response_model: ResponseModel = HTTP.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
+        response_model: ResponseModel = HTTP.ui.page_steps.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:
             data = PageStepsModel(**response_model.data)
@@ -99,7 +100,7 @@ class PageStepsDetailedPage(SubPage):
                 PageObject.test_page_steps = TestPageSteps(self.parent, data.project_product)
                 PageObject.test_page_steps.progress.connect(self.update_card)
             asyncio.run_coroutine_threadsafe(
-                PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)
+                PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)  # type: ignore
 
     def save_callback(self, data: dict, is_post: bool = False):
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
@@ -142,7 +143,7 @@ class PageStepsDetailedPage(SubPage):
         return None
 
     def update_data(self, data):
-        response_message(self, HTTP.put_step_sort(
+        response_message(self, HTTP.ui.page_steps_detailed.put_step_sort(
             [{'id': i.get('id'), 'step_sort': index} for index, i in
              enumerate(data)]))
 

@@ -14,6 +14,7 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.assertion import Assertion
 from src.tools.command.command import CommandThread
+from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 
@@ -104,7 +105,7 @@ class SettingPage(QWidget):
         self.setLayout(self.layout)
 
     def show_data(self):
-        response_data = HTTP.get_cache_data()
+        response_data = HTTP.system.cache_data.get_cache_data()
         self.data = response_data.data
         for i in response_data.data:
             if i.get('key') == 'DOMAIN_NAME':
@@ -149,7 +150,7 @@ class SettingPage(QWidget):
                     if self.mail_send_stamp_key.get_value() != '' else None
             elif i.get('key') == 'API_TIMEOUT':
                 i['value'] = self.input_2_1.get_value() if self.input_2_1.get_value() != '' else None
-        response_message(self, HTTP.put_cache_data(self.data))
+        response_message(self, HTTP.system.cache_data.put_cache_data(self.data))
 
     # def test_but(self):
     #     output, error = run_command("python D:\GitCode\PytestAutoTest\main.py")

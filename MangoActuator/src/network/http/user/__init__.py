@@ -8,9 +8,7 @@ from .user import User
 from .user_log import UserLog
 
 
-class UserApi(
-    User,
-    UserLog,
-    Role,
-):
-    pass
+class UserApi:
+    role = Role
+    info = User
+    user_logs = UserLog

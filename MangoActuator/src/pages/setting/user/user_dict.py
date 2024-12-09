@@ -37,7 +37,7 @@ form_data = [
         'placeholder': '请选择用户角色',
         'key': 'role',
         'type': 1,
-        'select': HTTP.get_role_name
+        'select': HTTP.user.role.get_role_name
     },
     {
         'title': 'mailbox',

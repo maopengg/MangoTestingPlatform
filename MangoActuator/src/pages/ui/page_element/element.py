@@ -6,12 +6,13 @@
 import json
 from copy import deepcopy
 
-from mango_ui import DialogCallbackModel, DialogWidget, FormDataModel, response_message, error_message
+from mango_ui import DialogCallbackModel, DialogWidget, FormDataModel, error_message
 
 from src.enums.ui_enum import ElementOperationEnum
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
+from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from .element_dict import *
 
@@ -51,10 +52,10 @@ class ElementPage(SubPage):
                          form_data=form_data)
         self.superior_page = 'page'
         self.id_key = 'page'
-        self.get = HTTP.get_page_element
-        self.post = HTTP.post_page_element
-        self.put = HTTP.put_page_element
-        self._delete = HTTP.delete_page_element
+        self.get = HTTP.ui.element.get_page_element
+        self.post = HTTP.ui.element.post_page_element
+        self.put = HTTP.ui.element.put_page_element
+        self._delete = HTTP.ui.element.delete_page_element
         self.select_data = None
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
@@ -86,7 +87,7 @@ class ElementPage(SubPage):
         dialog.clicked.connect(self.sub_options)
         dialog.exec()
         if dialog.data:
-            response_model = HTTP.test_element(
+            response_model = HTTP.ui.element.test_element(
                 test_env=user_info.selected_environment,
                 page_id=row['page']['id'],
                 element_id=row['id'],

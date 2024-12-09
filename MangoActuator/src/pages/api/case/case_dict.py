@@ -80,7 +80,7 @@ form_data = [
         'placeholder': '请设置用例负责人',
         'key': 'case_people',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
 
 ]

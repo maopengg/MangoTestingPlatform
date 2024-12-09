@@ -70,7 +70,7 @@ class ProjectViews(ViewSet):
             }
             product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
             for product_id, product_name in product_list:
-                if request.query_params.get('client_type'):
+                if request.query_params.get('client_type') == '1':
                     v = ProductModule.objects.values_list('id', 'name').filter(project_product=product_id)
                     project['children'].append({
                         'value': product_id,

@@ -12,6 +12,7 @@ from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
+from src.tools.components.message import response_message
 from .case_detailed_dict import *
 
 
@@ -25,10 +26,10 @@ class ApiCaseDetailedPage(SubPage):
         self.superior_page = 'api_case'
         self.id_key = 'case'
         self.row = {}
-        self.get = HTTP.get_api_case_detailed
-        self.post = HTTP.post_api_case_detailed
-        self.put = HTTP.put_api_case_detailed
-        self._delete = HTTP.delete_api_case_detailed
+        self.get = HTTP.api.case_detailed.get_api_case_detailed
+        self.post = HTTP.api.case_detailed.post_api_case_detailed
+        self.put = HTTP.api.case_detailed.put_api_case_detailed
+        self._delete = HTTP.api.case_detailed.delete_api_case_detailed
         self.h_layout = MangoHBoxLayout()
         self.layout.addLayout(self.h_layout)
         self.h_layout.setContentsMargins(0, 0, 0, 0)
@@ -373,13 +374,13 @@ class ApiCaseDetailedPage(SubPage):
         layout_list.append(layout_dict)
 
     def save_front_headers(self):
-        response_message(self, HTTP.put_api_case({
+        response_message(self, HTTP.api.case_detailed.put_api_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             'front_headers': self.front_headers.get_value()}))
 
     def save_case(self, key, layout_list):
-        response_message(self, HTTP.put_api_case({
+        response_message(self, HTTP.api.case_detailed.put_api_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             key: [{
@@ -394,7 +395,7 @@ class ApiCaseDetailedPage(SubPage):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         init_data = None
         if data.subordinate == 'api_info':
-            response_model: ResponseModel = HTTP.get_api_name(data.value)
+            response_model: ResponseModel = HTTP.api.case_detailed.get_api_name(data.value)
             if response_model.data:
                 init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
             else:
@@ -416,7 +417,7 @@ class ApiCaseDetailedPage(SubPage):
         response_message(self, response)
 
     def refresh(self, row):
-        response_message(self, HTTP.put_api_case_refresh(row.get('id')))
+        response_message(self, HTTP.api.case_detailed.put_api_case_refresh(row.get('id')))
 
     def save_but(self, enum_name: str, is_add: bool = False, layout_list: list | None = None):
         layout_h = MangoHBoxLayout()
@@ -668,13 +669,13 @@ class ApiCaseDetailedPage(SubPage):
         if user_info.selected_environment is None:
             error_message(self, '请先在右上角选择测试环境后再开始测试！')
             return
-        response_message(self, HTTP.get_api_test_case(self.data.get("id"), user_info.selected_environment, ))
+        response_message(self, HTTP.api.case.get_api_test_case(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
-        response_message(self, HTTP.put_api_case_refresh(row.get("id")))
+        response_message(self, HTTP.api.case_detailed.put_api_case_refresh(row.get("id")))
         self.show_data()
 
     def update_data(self, data):
         response_message(self,
-                         HTTP.put_api_case_sort(
+                         HTTP.api.case_detailed.put_api_case_sort(
                              [{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))

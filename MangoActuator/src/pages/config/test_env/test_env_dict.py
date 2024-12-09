@@ -62,7 +62,7 @@ form_data = [
         'placeholder': '请输入负责人名称',
         'key': 'executor_name',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
     {
         'title': '查询权限',

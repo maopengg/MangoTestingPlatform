@@ -20,16 +20,16 @@ urlpatterns = [
     path("page/name", PageViews.as_view({'get': 'page_name'})),
     path("page/copy", PageViews.as_view({'post': 'page_copy'})),
     #
+    path("element", PageElementCRUD.as_view()),
+    path("element/name", PageElementViews.as_view({'get': 'get_element_name'})),
+    path("element/iframe", PageElementViews.as_view({'put': 'put_is_iframe'})),
+    path("element/test", PageElementViews.as_view({'post': 'test_element'})),
+    #
     path("page/steps/detailed", PageStepsDetailedCRUD.as_view()),
     path("page/steps/detailed/ope", PageStepsDetailedView.as_view({'get': 'get_ope_type'})),
     path("page/steps/detailed/ass", PageStepsDetailedView.as_view({'get': 'get_ass_type'})),
     path("page/steps/detailed/ass/method", PageStepsDetailedView.as_view({'get': 'get_ass_method'})),
     path("page/steps/detailed/sort", PageStepsDetailedView.as_view({'put': 'put_step_sort'})),
-    #
-    path("element", PageElementCRUD.as_view()),
-    path("element/name", PageElementViews.as_view({'get': 'get_element_name'})),
-    path("element/iframe", PageElementViews.as_view({'put': 'put_is_iframe'})),
-    path("element/test", PageElementViews.as_view({'post': 'test_element'})),
     #
     path("page/steps", PageStepsCRUD.as_view()),
     path("page/steps/test", PageStepsViews.as_view({'get': 'ui_steps_run'})),
@@ -38,7 +38,6 @@ urlpatterns = [
     #
     path("public", UiPublicCRUD.as_view()),
     path("public/status", UiPublicViews.as_view({'put': 'put_status'})),
-
     #
     path("case", UiCaseCRUD.as_view()),
     path("case/copy", UiCaseViews.as_view({'post': 'cody_case'})),
