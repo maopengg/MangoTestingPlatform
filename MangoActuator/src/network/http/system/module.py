@@ -7,7 +7,7 @@ from src.network.http.http_base import HttpBase
 
 
 class Module(HttpBase):
-    _url = '/user/module'
+    _url = '/system/module'
 
     @classmethod
     def get_module(cls, page, page_size, params: dict = None):

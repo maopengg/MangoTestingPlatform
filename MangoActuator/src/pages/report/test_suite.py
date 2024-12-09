@@ -38,7 +38,7 @@ class TestSuitePage(TableParent):
         self.layout_v.addWidget(self.table_widget, 7)
 
     def show_data(self, is_refresh=False):
-        response_model = HTTP.system.test_suite.get_test_suite_report()
+        response_model = HTTP.system.test_suite_details.get_test_suite_report()
         self.line_plot_1.draw([
             {'name': '成功', 'value': response_model.data.get('success')},
             {'name': '失败', 'value': response_model.data.get('fail')}

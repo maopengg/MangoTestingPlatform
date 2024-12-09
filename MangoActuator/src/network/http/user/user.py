@@ -45,14 +45,14 @@ class User(HttpBase):
     @classmethod
     def get_userinfo(cls, _id: int):
         response = cls.get(f'/user/info?id={_id}')
-        if response.json().get('data'):
-            user_info: dict = response.json()['data'][0]
-            cls.headers['Project'] = str(user_info.get('selected_project')) if user_info.get(
-                'selected_project') else None
-            if user_info.get('config') is None:
-                user_info['config'] = {}
-                cls.put_user_info(copy.deepcopy(user_info))
-            return UserModel(**user_info)
+        if response.data:
+            user_model = UserModel(**response.data[0])
+            if user_model.selected_project:
+                cls.headers['Project'] = str(user_model.selected_project)
+            if user_model.config is None:
+                user_model.config = {}
+                cls.put_user_info(response.data[0])
+        return response
 
     @classmethod
     def put_user_project(cls, _id, selected_project):

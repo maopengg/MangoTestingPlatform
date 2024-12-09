@@ -11,7 +11,6 @@ class Case(HttpBase):
 
     @classmethod
     def get_case(cls, page, page_size, params: dict = None):
-        url = cls.url(f'/ui/case')
         _params = {
             'page': page,
             'pageSize': page_size

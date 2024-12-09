@@ -374,13 +374,13 @@ class ApiCaseDetailedPage(SubPage):
         layout_list.append(layout_dict)
 
     def save_front_headers(self):
-        response_message(self, HTTP.api.case_detailed.put_api_case({
+        response_message(self, HTTP.api.case.put_api_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             'front_headers': self.front_headers.get_value()}))
 
     def save_case(self, key, layout_list):
-        response_message(self, HTTP.api.case_detailed.put_api_case({
+        response_message(self, HTTP.api.case.put_api_case({
             'id': self.data.get('id'),
             'name': self.data.get('name'),
             key: [{

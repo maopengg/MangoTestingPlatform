@@ -7,7 +7,7 @@ from src.network.http.http_base import HttpBase
 
 
 class TestObject(HttpBase):
-    _url = 'user/test/object'
+    _url = 'system/test/object'
 
     @classmethod
     def get_test_object(cls, page, page_size, params: dict = None):

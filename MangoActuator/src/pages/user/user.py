@@ -16,7 +16,8 @@ class UserPage(QWidget):
         self.setLayout(self.layout)
 
     def show_data(self):
-        self.user_info = HTTP.user.info.get_userinfo(UserModel().id)
+        HTTP.user.info.get_userinfo(UserModel().id)
+        self.user_info = UserModel()
         card_layout1 = MangoFormLayout()
         card_widget = MangoCard(card_layout1, '基本信息')
         card_layout1.addRow('头像', MangoLabel('-'))

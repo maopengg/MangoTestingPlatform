@@ -59,7 +59,7 @@ class HomePage(QWidget):
         pixmap = QPixmap(":/picture/author.png")  # 替换为你的图片路径
         label.setPixmap(pixmap)
         label.setScaledContents(True)  # 允许缩放
-        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)   # type: ignore
+        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # type: ignore
         self.mango_dialog.layout.addWidget(label)
 
     def show_data(self, ):
@@ -78,7 +78,7 @@ class HomePage(QWidget):
         data.append({'name': 'API', 'value': response.get('ui_count')})
         data.append({'name': 'UI', 'value': response.get('api_count')})
         self.line_plot.draw(data)
-        response_model: ResponseModel = HTTP.system.index.get_scheduled_tasks(self.page, self.page_size)
+        response_model: ResponseModel = HTTP.system.tasks.get_tasks(self.page, self.page_size)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
 
         QTimer.singleShot(500, self.open_dialog)

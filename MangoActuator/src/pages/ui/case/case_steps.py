@@ -279,7 +279,7 @@ class CaseStepsPage(SubPage):
         response_message(self, HTTP.ui.case.ui_test_case(self.data.get("id"), user_info.selected_environment, ))
 
     def refresh_case(self, row):
-        response_message(self, HTTP.ui.case_steps_detailed.ui_case_steps_refresh(row.get("id")))
+        response_message(self, HTTP.ui.case_steps_detailed.post_case_cache_data(row.get("id")))
         self.show_data()
 
     def form_data_callback(self, data: FormDataModel):
@@ -344,4 +344,5 @@ class CaseStepsPage(SubPage):
 
     def update_data(self, data):
         response_message(self,
-                         HTTP.ui.case_steps_detailed.put_case_sort([{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))
+                         HTTP.ui.case_steps_detailed.put_case_sort(
+                             [{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))

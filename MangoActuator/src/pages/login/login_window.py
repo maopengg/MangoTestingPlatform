@@ -49,8 +49,9 @@ class LoginLogic(LoginWindow):
             show_failed_message('请先输入账号或密码后再进行登录')
         HTTP.api.info.set_host(settings.IP, settings.PORT)
         try:
-            res = HTTP.not_auth.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
-            if res.code == 200:
+            response = HTTP.not_auth.login(settings.USERNAME,
+                                           EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
+            if response.code == 200:
                 Methods.set_project()
                 self.main_window = MainWindow(self.loop)
                 self.close()
@@ -60,6 +61,7 @@ class LoginLogic(LoginWindow):
                     self.conn.execute(sql_statement_3)
                     self.conn.execute(sql_statement_2,
                                       (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
+                HTTP.user.info.get_userinfo(response.data.get('userId'))
             else:
                 show_failed_message('账号或密码错误')
 

@@ -7,7 +7,7 @@ from src.network.http.http_base import HttpBase
 
 
 class Product(HttpBase):
-    _url = '/user/product'
+    _url = '/system/product'
 
     @classmethod
     def get_product(cls, page, page_size, params: dict = None):
