@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import DialogCallbackModel, ComboBoxDataModel, FormDataModel
 
+from src.enums.tools_enum import AutoTestTypeEnum
 from src.models.socket_model import ResponseModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
@@ -21,7 +22,7 @@ class TasksDetailsPage(SubPage):
                          table_menu=table_menu,
                          field_list=field_list,
                          form_data=form_data)
-        self.superior_page = 'scheduled_task'
+        self.superior_page = 'tasks'
         self.id_key = 'task'
         self.get = HTTP.system.tasks_details.get_tasks_list
         self.post = HTTP.system.tasks_details.post_tasks_list
@@ -31,6 +32,7 @@ class TasksDetailsPage(SubPage):
     def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
+        self.set_from()
         response_model: ResponseModel = self.get(
             self.page,
             self.page_size,
@@ -40,6 +42,12 @@ class TasksDetailsPage(SubPage):
         if response_model.code != 200:
             response_message(self, response_model)
         return response_model
+
+    def set_from(self):
+        if self.data.get('type') == AutoTestTypeEnum.MangoPytest.value:
+            self.form_data = [FormDataModel(**i) for i in cmd_form_data]
+        else:
+            self.form_data = [FormDataModel(**i) for i in form_data]
 
     def form_data_callback(self, data: FormDataModel):
         if data.key == 'module':
@@ -55,5 +63,4 @@ class TasksDetailsPage(SubPage):
                 return init_data
 
     def save_callback(self, data: dict, is_post: bool = False):
-        data['sort'] = len(self.table_widget.table_widget.data)
         response_message(self, self.post(data))

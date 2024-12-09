@@ -23,13 +23,7 @@ class CommandThread(QThread):
         self.command = command
 
     def run(self):
-        result = subprocess.run(
-            self.command,
-            shell=True,
-            capture_output=True,
-            text=True
-        )
-        output, error = result.stdout, result.stderr
+        output, error = run_command(self.command)
         if output:
             self.output_signal.emit(output)
         if error:

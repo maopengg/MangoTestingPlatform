@@ -10,6 +10,7 @@ from src.tools.methods import Methods
 table_column = [
     {'key': 'id', 'name': 'ID', 'width': 100},
     {'key': 'case_id', 'name': '用例名称', },
+    {'key': 'command', 'name': '命令', },
     {'key': 'ope', 'name': '操作', 'width': 100}
 ]
 right_data = [
@@ -37,5 +38,12 @@ form_data = [
         'placeholder': '请输入用例名称',
         'key': 'case_id',
         'type': 1,
+    }
+]
+cmd_form_data = [
+    {
+        'title': 'cmd命令',
+        'placeholder': '请输入单个的cmd命令',
+        'key': 'command',
     }
 ]

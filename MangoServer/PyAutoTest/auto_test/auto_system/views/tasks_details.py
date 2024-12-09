@@ -74,19 +74,17 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
-        serializer = self.serializer(data=request.data)
         try:
-            existing_object = self.model.objects.get(task=request.data['task'], case_id=request.data['case_id'])
-            if existing_object:
-                return ResponseData.fail(RESPONSE_MSG_0112)
-        except self.model.DoesNotExist:
-            if serializer.is_valid():
-                serializer.save()
-                self.asynchronous_callback(request)
-                return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+            if request.data.get('case_id'):
+                existing_object = self.model.objects.get(task=request.data['task'], case_id=request.data['case_id'])
+                if existing_object:
+                    return ResponseData.fail(RESPONSE_MSG_0112)
             else:
-                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
-                return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
+                data = self.inside_post(request.data)
+                return ResponseData.success(RESPONSE_MSG_0002, data)
+        except self.model.DoesNotExist:
+            data = self.inside_post(request.data)
+            return ResponseData.success(RESPONSE_MSG_0002, data)
 
 
 class TasksDetailsViews(ViewSet):

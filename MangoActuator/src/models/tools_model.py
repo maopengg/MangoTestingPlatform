@@ -11,3 +11,7 @@ from pydantic import BaseModel
 class BaseDictModel(BaseModel):
     project: list[CascaderModel] | None = None
     ui_option: list
+
+
+class CmdModel(BaseModel):
+    cmd: str
