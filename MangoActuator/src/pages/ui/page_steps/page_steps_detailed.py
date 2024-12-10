@@ -8,7 +8,6 @@ import json
 
 from mango_ui import *
 
-from src.enums.ui_enum import DriveTypeEnum
 from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
@@ -92,7 +91,8 @@ class PageStepsDetailedPage(SubPage):
         if user_info.selected_environment is None:
             error_message(self, '请先在右上角选择测试环境后再开始测试！')
             return
-        response_model: ResponseModel = HTTP.ui.page_steps.ui_steps_run(user_info.selected_environment, self.data.get("id"), 0)
+        response_model: ResponseModel = HTTP.ui.page_steps.ui_steps_run(user_info.selected_environment,
+                                                                        self.data.get("id"), 0)
         response_message(self, response_model)
         if response_model.code == 200:
             data = PageStepsModel(**response_model.data)

@@ -12,7 +12,6 @@ from PyAutoTest.enums.tools_enum import StatusEnum, EnvironmentEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
 from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel, NoticeEnum
-from mangokit.exceptions.exceptions import ToolsError
 
 
 class NoticeMain:

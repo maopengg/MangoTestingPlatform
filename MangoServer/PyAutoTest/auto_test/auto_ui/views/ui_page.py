@@ -9,9 +9,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import Page, PageElement
 from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_ui.models import Page, PageElement
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData

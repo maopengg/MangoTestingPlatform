@@ -92,7 +92,7 @@ class ImportApi:
         return host, path, query_params
 
     @classmethod
-    def from_data(cls, data:str=None):
+    def from_data(cls, data: str = None):
         data = '''
         ------WebKitFormBoundaryL30SdvU0YozVLK4A
         Content-Disposition: form-data; name="username"
@@ -124,6 +124,7 @@ class ImportApi:
             fields[name] = value
 
         print(fields)
+
 
 if __name__ == '__main__':
     d = """curl 'https://sara-test.growknows.cn/dev-api/business/template-tenant/activate' \

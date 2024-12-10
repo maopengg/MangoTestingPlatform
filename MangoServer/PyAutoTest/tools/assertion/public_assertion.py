@@ -146,4 +146,3 @@ class PublicAssertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, Wh
 
         diff = DeepDiff(filtered_actual, expect, ignore_order=True)
         assert not diff, f"字典不匹配: {diff}"
-

@@ -13,14 +13,14 @@ from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
 from .views.test_suite import TestSuiteCRUD
 from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
+from ..auto_system.views.file_data import FileDataCRUD
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
-from ..auto_system.views.system_api import SystemViews
-from ..auto_system.views.file_data import FileDataCRUD
-from ..auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
-from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 from ..auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
 from ..auto_system.views.project import ProjectCRUD, ProjectViews
+from ..auto_system.views.project_product import ProjectProductCRUD, ProjectProductViews
+from ..auto_system.views.system_api import SystemViews
+from ..auto_system.views.test_object import TestObjectCRUD, TestObjectViews
 
 urlpatterns = [
     #

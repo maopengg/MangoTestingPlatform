@@ -215,7 +215,8 @@ class EnvConfigPage(SubPage):
         self.show_data()
 
     def put_database_status(self, state, row, toggle):
-        response: ResponseModel = HTTP.system.database.put_database_status(row.get('id'), row.get('test_object'), state.get("value"))
+        response: ResponseModel = HTTP.system.database.put_database_status(row.get('id'), row.get('test_object'),
+                                                                           state.get("value"))
         response_message(self, response)
         if response.code == 200:
             toggle.change_requested.emit(bool(state.get("value")))

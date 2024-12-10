@@ -9,8 +9,8 @@ from datetime import datetime
 from rest_framework.request import Request
 
 from PyAutoTest.exceptions import MangoServerError
-from PyAutoTest.tools.log_collector import log
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0000
+from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.response_data import ResponseData
 
 log_dict = {

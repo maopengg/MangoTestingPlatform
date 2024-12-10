@@ -17,4 +17,3 @@ class HTTP:
     user = UserApi
     system = SystemApi
     not_auth = HttpClientApi
-

@@ -8,11 +8,11 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
 from PyAutoTest.enums.tools_enum import StatusEnum, EnvironmentEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from PyAutoTest.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
 
 
 class ProjectSerializers(serializers.ModelSerializer):

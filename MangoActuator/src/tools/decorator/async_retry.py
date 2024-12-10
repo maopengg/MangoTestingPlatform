@@ -10,8 +10,9 @@ import time
 from mangokit.exceptions import MangoKitError
 
 from src.exceptions import UiError, ToolsError
-
 from src.settings.settings import FAILED_RETRY_TIME
+
+
 # 定义装饰器，用于重试异步函数
 def async_retry(func):
     @functools.wraps(func)

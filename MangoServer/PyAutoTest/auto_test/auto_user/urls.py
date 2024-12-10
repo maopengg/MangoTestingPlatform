@@ -6,11 +6,11 @@
 
 from django.urls import path
 
-# from .views.project_file import ProjectFileViews
-
 from .views.role import RoleCRUD, RoleViews
 from .views.user import UserCRUD, UserViews
 from .views.user_logs import UserLogsCRUD
+
+# from .views.project_file import ProjectFileViews
 
 urlpatterns = [
     #

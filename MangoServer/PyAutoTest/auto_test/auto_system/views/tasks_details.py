@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
-import json
 
 from django.forms.models import model_to_dict
 from rest_framework import serializers
@@ -14,11 +13,10 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksDetails
 from PyAutoTest.auto_test.auto_system.views.tasks import TasksSerializers
-from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
+from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.tools_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *

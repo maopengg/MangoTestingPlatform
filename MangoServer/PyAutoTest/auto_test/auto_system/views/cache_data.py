@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 from django.core.exceptions import FieldError
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 

@@ -16,8 +16,8 @@ from PyAutoTest.auto_test.auto_ui.models import UiConfig
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
-from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.enums.system_enum import ClientTypeEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
 from PyAutoTest.models.ui_model import EquipmentModel

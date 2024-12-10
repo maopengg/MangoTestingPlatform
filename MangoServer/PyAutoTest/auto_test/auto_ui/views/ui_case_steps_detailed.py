@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed, UiCase
+from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.enums.ui_enum import ElementOperationEnum

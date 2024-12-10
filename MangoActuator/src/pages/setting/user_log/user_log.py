@@ -3,8 +3,10 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import SearchDataModel, ComboBoxDataModel
 import copy
+
+from mango_ui import SearchDataModel, ComboBoxDataModel
+
 from .user_log_dict import *
 from ...parent.table import TableParent
 

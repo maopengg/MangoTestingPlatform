@@ -4,7 +4,7 @@
 # @Author : 毛鹏
 import traceback
 
-from mangokit import ToolsError as TError
+from mangokit import MangoKitError
 from playwright._impl._errors import TargetClosedError, Error
 
 from src.enums.tools_enum import StatusEnum
@@ -36,7 +36,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             for key, value in self.element_model:
                 value = self.test_data.replace(value)
                 setattr(self.element_model, key, value)
-        except TError as error:
+        except MangoKitError as error:
             raise UiError(error.code, error.msg)
         self.element_test_result = ElementResultModel(
             id=self.element_model.id,
@@ -271,4 +271,4 @@ class ElementOperation(WebDevice, AndroidDriver):
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
         if not settings.IS_DEBUG:
-            HTTP.upload_file(self.project_product_id, file_path, file_name)
+            HTTP.not_auth.upload_file(self.project_product_id, file_path, file_name)

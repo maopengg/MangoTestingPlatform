@@ -17,7 +17,7 @@ class TimePage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_time_tasks
-        self.post = HTTP.post_time_tasks
-        self.put = HTTP.put_time_tasks
-        self._delete = HTTP.delete_time_tasks
+        self.get = HTTP.system.time.get_time_tasks
+        self.post = HTTP.system.time.post_time_tasks
+        self.put = HTTP.system.time.put_time_tasks
+        self._delete = HTTP.system.time.delete_time_tasks

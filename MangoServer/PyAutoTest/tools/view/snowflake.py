@@ -31,7 +31,7 @@ class Snowflake:
         cls.last_timestamp = timestamp
 
         unique_id = ((timestamp - 1288834974657) << 22) | (cls.datacenter_id << 17) | (
-                    cls.worker_id << 12) | cls.sequence
+                cls.worker_id << 12) | cls.sequence
         return unique_id
 
     @classmethod
