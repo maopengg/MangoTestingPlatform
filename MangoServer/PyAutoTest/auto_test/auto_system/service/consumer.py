@@ -79,18 +79,13 @@ class ConsumerThread:
             )
             log.system.info(
                 f'推送UI任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            test_suite_details.status = TaskEnum.PROCEED.value
-            test_suite.save()
+            self.update_status_proceed(test_suite, test_suite_details)
             self.current_index = (self.current_index + 1) % len(user_list)
 
         except MangoServerError as error:
             log.system.warning(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
-            test_suite_details.status = TaskEnum.FAIL.value
-            test_suite_details.error_message = f'发送未知异常，请联系管理员处理，异常内容：{error}'
-            test_suite.save()
-            from mangokit import Mango
-            Mango.s(f"""异常类型: {type(error)}错误提示: {str(error)}错误详情：{traceback.format_exc()}""")
+            self.error(test_suite, test_suite_details, error, traceback.format_exc())
 
     def api(self, test_suite, test_suite_details):
         try:
@@ -105,16 +100,11 @@ class ConsumerThread:
             CaseFlow().add_task(api_case_model)
             log.system.info(
                 f'推送API任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            test_suite_details.status = TaskEnum.PROCEED.value
-            test_suite.save()
+            self.update_status_proceed(test_suite, test_suite_details)
         except MangoServerError as error:
             log.system.warning(f'API测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
-            test_suite_details.status = TaskEnum.FAIL.value
-            test_suite_details.error_message = f'发送未知异常，请联系管理员处理，异常内容：{error}'
-            test_suite.save()
-            from mangokit import Mango
-            Mango.s(f"""异常类型: {type(error)}错误提示: {str(error)}错误详情：{traceback.format_exc()}""")
+            self.error(test_suite, test_suite_details, error, traceback.format_exc())
 
     def mango_pytest(self, test_suite, test_suite_details):
         try:
@@ -126,19 +116,17 @@ class ConsumerThread:
                 is_notice=test_suite.is_notice,
                 is_send=True
             )
-            send_case.test_case()
+            send_case.test_case(
+                test_suite=test_suite_details.test_suite.id,
+                test_suite_details=test_suite_details.id
+            )
             log.system.info(
                 f'推送UI任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            test_suite_details.status = TaskEnum.PROCEED.value
-            test_suite.save()
+            self.update_status_proceed(test_suite, test_suite_details)
         except MangoServerError as error:
             log.system.warning(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
-            test_suite_details.status = TaskEnum.FAIL.value
-            test_suite_details.error_message = f'发送未知异常，请联系管理员处理，异常内容：{error}'
-            test_suite.save()
-            from mangokit import Mango
-            Mango.s(f"""异常类型: {type(error)}错误提示: {str(error)}错误详情：{traceback.format_exc()}""")
+            self.error(test_suite, test_suite_details, error, traceback.format_exc())
 
     def clean_proceed(self):
         test_suite_details_list = TestSuiteDetails \
@@ -161,3 +149,18 @@ class ConsumerThread:
                 test_suite_detail.status = TaskEnum.FAIL.value
                 test_suite_detail.save()
                 log.system.info(f'连续3次都是待执行，状态直接设置为：失败，用例ID：{test_suite_detail.case_id}')
+
+    def update_status_proceed(self, test_suite, test_suite_details):
+        test_suite.status = TaskEnum.PROCEED.value
+        test_suite.save()
+        test_suite_details.status = TaskEnum.PROCEED.value
+        test_suite_details.save()
+
+    def error(self, test_suite, test_suite_details, error, trace):
+        test_suite.status = TaskEnum.FAIL.value
+        test_suite.save()
+        test_suite_details.status = TaskEnum.FAIL.value
+        test_suite_details.error_message = f'发生未知异常，请联系管理员处理，类型：{AutoTestTypeEnum.get_value(test_suite.type)}，异常内容：{error}'
+        test_suite.save()
+        from mangokit import Mango
+        Mango.s(f"""异常类型: {type(error)}错误提示: {str(error)}错误详情：{trace}""")

@@ -75,9 +75,9 @@ class RunTasks:
                 test_env=tasks.test_env,
                 is_notice=tasks.is_notice,
                 user_id=tasks.case_people.id,
-                _type=AutoTestTypeEnum.UI.value,
+                _type=AutoTestTypeEnum.MangoPytest.value,
                 tasks_id=tasks.id,
             )
-            add_tasks.add_test_suite_details([tasks.case_id for tasks in tasks_details])
+            add_tasks.add_test_suite_details([tasks.command for tasks in tasks_details])
         else:
             log.system.error('开始执行性能自动化任务')

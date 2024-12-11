@@ -216,7 +216,7 @@ class TasksDetails(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)
     case_id = models.SmallIntegerField(verbose_name="用例ID", null=True)
-    command = models.JSONField(verbose_name="用例缓存数据", null=True)
+    command = models.TextField(verbose_name="命令", null=True)
 
     class Meta:
         db_table = 'tasks_details'

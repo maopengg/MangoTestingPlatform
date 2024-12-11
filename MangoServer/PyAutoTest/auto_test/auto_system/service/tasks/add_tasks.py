@@ -36,20 +36,26 @@ class AddTasks:
         })
 
     def add_test_suite_details(self, case_id_list: list[id]):
-        for case_id in case_id_list:
-            if self._type == AutoTestTypeEnum.UI.value:
-                case = UiCase.objects.get(id=case_id)
-            else:
-                case = ApiCase.objects.get(id=case_id)
+        def set_task(case_id, case_name, project_product, ):
             TestSuiteDetailsCRUD.inside_post({
                 'test_suite': self.test_suite_id,
                 'type': self._type,
-                'project_product': case.project_product.id,
+                'project_product': project_product,
                 'test_env': self.test_env,
                 'case_id': case_id,
-                'case_name': case.name,
+                'case_name': case_name,
                 'status': TaskEnum.STAY_BEGIN.value,
                 'error_message': None,
                 'result': None,
                 'retry': 0 if self.tasks_id else 2,
             })
+        if self._type == AutoTestTypeEnum.UI.value:
+            for _id in case_id_list:
+                case = UiCase.objects.get(id=_id)
+                set_task(case.id, case.name, case.project_product.id)
+        elif self._type == AutoTestTypeEnum.API.value:
+            for _id in case_id_list:
+                case = ApiCase.objects.get(id=_id)
+                set_task(case.id, case.name, case.project_product.id)
+        else:
+            set_task(0, None, self.project_product)
