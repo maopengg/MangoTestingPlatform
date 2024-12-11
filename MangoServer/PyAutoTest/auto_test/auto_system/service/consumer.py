@@ -68,7 +68,7 @@ class ConsumerThread:
                 user_id=user.user_id,
                 username=user.username,
                 test_env=test_suite_details.test_env,
-                tasks_id=test_suite.id,
+                tasks_id=test_suite.tasks.id,
                 is_notice=test_suite.is_notice,
                 is_send=True
             )
@@ -112,7 +112,7 @@ class ConsumerThread:
                 user_id=test_suite.user.id,
                 username=test_suite.user.username,
                 test_env=test_suite_details.test_env,
-                tasks_id=test_suite.id,
+                tasks_id=test_suite.tasks.id,
                 is_notice=test_suite.is_notice,
                 is_send=True
             )
