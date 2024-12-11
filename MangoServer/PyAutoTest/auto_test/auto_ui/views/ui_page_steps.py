@@ -77,6 +77,7 @@ class PageStepsViews(ViewSet):
         try:
             case_json = SendTestData(
                 request.user['id'],
+                request.user['username'],
                 request.GET.get("te"),
                 is_send=is_send) \
                 .test_steps(int(request.GET.get("page_step_id")))

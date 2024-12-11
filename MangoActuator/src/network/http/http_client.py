@@ -36,7 +36,7 @@ class HttpClientApi(HttpBase):
             ('file', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
         ]
         headers = copy.copy(cls.headers)
-        response = cls.post('/user/file', headers=headers, data=data, files=files)
+        response = cls.post('/system/file', headers=headers, data=data, files=files)
         if response.status_code == 200:
             return True
         else:

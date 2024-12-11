@@ -77,6 +77,7 @@ class PageElementViews(ViewSet):
         try:
             SendTestData(
                 request.user.get('id'),
+                request.user.get('username'),
                 request.data.get("test_env"),
                 is_send=request.data.get('is_send')
             ).test_element(request.data)

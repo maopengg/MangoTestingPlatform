@@ -21,16 +21,17 @@ class SendTestData:
 
     def __init__(self,
                  user_id: int,
+                 username: str,
                  test_env: int,
                  tasks_id: int = None,
                  is_notice: int = 0,
                  is_send: bool = False):
         self.user_id = user_id
+        self.username = username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.is_send = is_send
-        self.username = User.objects.get(id=user_id).username
 
     def test_case(self,
                   case_id: int,
@@ -148,13 +149,13 @@ class SendTestData:
                 is_iframe=steps_element.is_iframe,
             )
 
-    def __socket_send(self, data_model, func_name: str, username: str = None) -> None:
+    def __socket_send(self, data_model, func_name: str) -> None:
         if self.is_send:
             data = QueueModel(func_name=func_name, func_args=data_model)
             ChatConsumer.active_send(SocketDataModel(
                 code=200,
                 msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                user=username if username else self.username,
+                user=self.username,
                 is_notice=ClientTypeEnum.ACTUATOR.value,
                 data=data,
             ))

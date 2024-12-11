@@ -73,6 +73,7 @@ class UiCaseViews(ViewSet):
         """
         case_model = SendTestData(
             request.user['id'],
+            request.user['username'],
             request.query_params.get("test_env"),
             is_send=True
         ).test_case(int(request.query_params.get("case_id")))

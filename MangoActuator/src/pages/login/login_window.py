@@ -80,7 +80,7 @@ class LoginLogic(LoginWindow):
         if not settings.PORT:
             show_failed_message('请先输入端口再使用注册功能！')
             return
-
+        HTTP.api.info.set_host(settings.IP, settings.PORT)
         form_data = Mango.add_from_data(self)
         dialog = DialogWidget('新增用户', form_data)
         dialog.exec()
@@ -89,7 +89,7 @@ class LoginLogic(LoginWindow):
             if dialog.data['password'] == dialog.data['confirm_password']:
                 dialog.data['password'] = EncryptionTool.md5_32_small(**{'data': dialog.data['password']})
                 try:
-                    response_model = HTTP.user_register(dialog.data)
+                    response_model = HTTP.not_auth.user_register(dialog.data)
                     if response_model:
                         response_message(self, response_model)
                 except (JSONDecodeError, InvalidURL):
