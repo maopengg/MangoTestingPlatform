@@ -25,7 +25,7 @@ export const conditionItems: Array<FormItem> = reactive([
     },
   },
   {
-    key: 'test_obj',
+    key: 'test_env',
     label: '测试环境',
     value: '',
     type: 'cascader',
@@ -125,7 +125,6 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-
 ])
 
 export const tableColumns = useTableColumn([

@@ -90,7 +90,7 @@
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="data.eleExp"
+              :options="enumStore.element_exp"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -187,18 +187,21 @@
   import {
     deleteUiElement,
     getUiElement,
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
     postUiElement,
     putUiElement,
     putUiUiElementPutIsIframe,
     putUiUiElementTest,
-  } from '@/api/uitest'
-  import { getSystemEnumExp } from '@/api/system'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  } from '@/api/uitest/element'
+  import {
+    getUiPageStepsDetailedOpe,
+    getUiPageStepsDetailedAss,
+  } from '@/api/uitest/page-steps-detailed'
   import { assForm, eleForm } from '@/views/uitest/page/elements/config'
+  import useUserStore from '@/store/modules/user'
+  import { useEnum } from '@/store/modules/get-enum'
+  const userStore = useUserStore()
+  const enumStore = useEnum()
 
-  const uEnvironment = useEnvironment()
   const pageData: any = usePageData()
 
   const route = useRoute()
@@ -306,16 +309,6 @@
         data.totalSize = res.totalSize
       })
       .catch(console.log)
-  }
-
-  function getEleExp() {
-    getSystemEnumExp()
-      .then((res) => {
-        data.eleExp = res.data
-      })
-      .catch((error) => {
-        console.error(error)
-      })
   }
 
   const onModifyStatus = async (newValue: boolean, id: number) => {
@@ -440,7 +433,7 @@
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
       let value = getFormItems(formItems1)
-      value['test_env'] = uEnvironment.selectValue
+      value['test_env'] = userStore.selected_environment
       value['id'] = data.id
       value['page_id'] = pageData.record.id
       value['project_product_id'] = pageData.record.project_product.id
@@ -480,7 +473,7 @@
 
   function onDebug(record: any) {
     changeStatus(0)
-    if (uEnvironment.selectValue === null) {
+    if (userStore.selected_environment === null) {
       Message.error('请先选择测试环境')
       return
     }
@@ -502,7 +495,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getEleExp()
       getUiRunSortOpe()
       getUiRunSortAss()
     })

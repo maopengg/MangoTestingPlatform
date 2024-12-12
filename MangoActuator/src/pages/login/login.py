@@ -19,7 +19,7 @@ class LoginWindow(QWidget):
         self.bg.setStyleSheet(f"background: {THEME.background_color};")
         self.layout = MangoVBoxLayout(self.bg)
 
-        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_2 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)  # type: ignore
         self.layout.addItem(self.verticalSpacer_2)
 
         self.horizontalLayout_5 = MangoHBoxLayout()

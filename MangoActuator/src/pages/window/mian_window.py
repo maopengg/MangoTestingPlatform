@@ -31,7 +31,7 @@ class MainWindow(WindowLogic):
         self.tray_icon.show()
 
     def open_window(self, reason):
-        if reason == QSystemTrayIcon.Trigger:
+        if reason == QSystemTrayIcon.Trigger:  # type: ignore
             self.show()
             self.raise_()
             self.activateWindow()

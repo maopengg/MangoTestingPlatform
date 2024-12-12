@@ -6,7 +6,7 @@
 import json
 
 from PyAutoTest.auto_test.auto_system.models import CacheData
-from PyAutoTest.enums.system_enum import CacheValueTypeEnum
+from PyAutoTest.enums.tools_enum import CacheValueTypeEnum
 from PyAutoTest.exceptions import *
 
 

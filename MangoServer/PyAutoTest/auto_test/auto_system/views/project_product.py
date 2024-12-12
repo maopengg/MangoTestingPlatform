@@ -3,7 +3,6 @@
 # @Description: 项目表
 # @Time   : 2023-03-03 12:21
 # @Author : 毛鹏
-import logging
 
 from rest_framework import serializers
 from rest_framework.decorators import action

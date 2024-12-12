@@ -10,8 +10,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import Database
-from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_ui.models import UiPublic
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.enums.ui_enum import UiPublicTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response

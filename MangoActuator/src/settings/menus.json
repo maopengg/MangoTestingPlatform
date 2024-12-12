@@ -163,14 +163,14 @@
     },
     {
       "btn_icon": ":/icons/schedule.svg",
-      "btn_id": "tasks",
+      "btn_id": "task",
       "btn_text": "定时任务",
       "btn_tooltip": "定时任务",
       "show_top": true,
       "is_active": false,
       "submenus": [
         {
-          "btn_id": "scheduled_task",
+          "btn_id": "tasks",
           "btn_text": "定时任务",
           "btn_tooltip": "定时任务",
           "show_top": true,

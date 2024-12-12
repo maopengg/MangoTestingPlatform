@@ -84,7 +84,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
@@ -116,7 +116,7 @@
                 </template>
                 <template v-else-if="item.key === 'environment'" #cell="{ record }">
                   <a-tag color="orangered" size="small">
-                    {{ uEnvironment.data[record.environment].title }}
+                    {{ enumStore.environment_type[record.environment].title }}
                   </a-tag>
                 </template>
                 <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -164,7 +164,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="uEnvironment.data"
+                  :options="enumStore.environment_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -175,7 +175,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.autoTypeList"
+                  :options="enumStore.auto_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -207,10 +207,8 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useProject } from '@/store/modules/get-project'
-  import { useEnvironment } from '@/store/modules/get-environment'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { conditionItems, formItems, tableColumns } from './config'
   import {
     deleteUserTestObject,
@@ -218,27 +216,26 @@
     postUserTestObject,
     putUserTestObject,
     putUserTestObjectPutStatus,
-  } from '@/api/user'
-  import { getUserName } from '@/api/user'
-  import { getSystemEnumAutoType } from '@/api/system'
+  } from '@/api/system/test_object'
+  import { getUserName } from '@/api/user/user'
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
+  import { useEnum } from '@/store/modules/get-enum'
   const router = useRouter()
   const projectInfo = useProject()
-  const uEnvironment = useEnvironment()
+  const enumStore = useEnum()
+
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const testObj = useTestObj()
   const data = reactive({
     nickname: [],
     isAdd: false,
     updateId: 0,
     actionTitle: '添加测试对象',
-    autoTypeList: [],
   })
 
   function onResetSearch() {
@@ -309,7 +306,6 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            testObj.getEnvironment()
           })
           .catch(console.log)
       } else {
@@ -318,7 +314,6 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            testObj.getEnvironment()
           })
           .catch(console.log)
       }
@@ -389,19 +384,10 @@
       },
     })
   }
-  function getAutoType() {
-    getSystemEnumAutoType()
-      .then((res) => {
-        data.autoTypeList = res.data
-      })
-      .catch(console.log)
-  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getNickName()
-      getAutoType()
-      uEnvironment.getEnvironment()
     })
   })
 </script>

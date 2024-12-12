@@ -21,7 +21,7 @@
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue'
   import { Notification } from '@arco-design/web-vue'
-  import { getSystemRandomData, getSystemRandomList } from '@/api/system'
+  import { getSystemRandomData, getSystemRandomList } from '@/api/system/system'
 
   const randomList = ref([])
   onMounted(() => {

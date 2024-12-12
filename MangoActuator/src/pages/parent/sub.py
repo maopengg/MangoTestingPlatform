@@ -8,6 +8,7 @@ from typing import Optional
 from mango_ui import *
 
 from src.pages.parent.parent import Parent
+from src.tools.components.message import response_message
 from src.tools.methods import Methods
 
 
@@ -48,7 +49,7 @@ class SubPage(Parent):
     def show_data(self, is_refresh=False):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
-        response_model = self.get(
+        response_model = self.get(  # type: ignore
             self.page,
             self.page_size,
             {f'{self.id_key}_id': self.data.get('id')}
@@ -106,4 +107,4 @@ class SubPage(Parent):
         pass
 
     def back(self):
-        self.parent.set_page(self.superior_page)
+        self.parent.set_page(self.superior_page)  # type: ignore

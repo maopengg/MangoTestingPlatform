@@ -18,10 +18,10 @@ class ProductPage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'module'
-        self.get = HTTP.get_product
-        self.post = HTTP.post_product
-        self.put = HTTP.put_product
-        self._delete = HTTP.delete_product
+        self.get = HTTP.system.product.get_product
+        self.post = HTTP.system.product.post_product
+        self.put = HTTP.system.product.put_product
+        self._delete = HTTP.system.product.delete_product
 
     def show_data(self, is_refresh=False):
         super().show_data()

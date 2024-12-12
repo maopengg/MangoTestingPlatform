@@ -10,9 +10,10 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed, UiCase
+from PyAutoTest.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
+from PyAutoTest.enums.ui_enum import ElementOperationEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view import *
@@ -75,12 +76,7 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
         except AttributeError:
             log.ui.error(f'对UI用例进行排序时报错：{data}')
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
-        ui_case = UiCaseCRUD()
-        res = ui_case.serializer(instance=UiCase.objects.get(pk=_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.ui.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+        UiCaseCRUD.inside_put(_id, data)
 
 
 class UiCaseStepsDetailedViews(ViewSet):
@@ -95,32 +91,38 @@ class UiCaseStepsDetailedViews(ViewSet):
             'step_sort')
         case_data_list = []
         for steps_detailed in ui_page_steps_detailed_obj:
-            if steps_detailed.ope_key:
-                name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
-
-                value_dict: dict = steps_detailed.ope_value
-                if 'locating' in value_dict:
-                    value_dict.pop('locating')
-            elif steps_detailed.ope_key:
-                name = None
-                value_dict: dict = steps_detailed.ope_key
-                if 'value' in value_dict:
-                    value_dict.pop('value')
-            elif steps_detailed.sql:
-                name = None
-                value_dict = {'sql': steps_detailed.sql, 'key_list': steps_detailed.key_list}
-            elif steps_detailed.key and steps_detailed.value:
-                name = None
-                value_dict = {'key': steps_detailed.key, 'value': steps_detailed.value}
-            else:
-                return ResponseData.fail(RESPONSE_MSG_0048)
-            case_data_list.append({
+            case_data = {
                 'page_step_details_id': steps_detailed.id,
-                'page_step_details_name': name,
-                'page_step_details_data': value_dict,
                 'type': steps_detailed.type,
                 'ope_key': steps_detailed.ope_key,
-            })
+            }
+            if steps_detailed.type == ElementOperationEnum.OPE.value:
+                page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
+                if steps_detailed.ope_value:
+                    page_step_details_data: dict = steps_detailed.ope_value
+                    if 'locating' in page_step_details_data:
+                        page_step_details_data.pop('locating')
+                else:
+                    page_step_details_data = None
+            elif steps_detailed.type == ElementOperationEnum.ASS.value:
+                page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
+                if steps_detailed.ope_value:
+                    page_step_details_data: dict = steps_detailed.ope_value
+                    if 'value' in page_step_details_data:
+                        page_step_details_data.pop('value')
+                else:
+                    page_step_details_data = None
+            elif steps_detailed.type == ElementOperationEnum.SQL.value:
+                page_step_details_name = None
+                page_step_details_data = {'sql': steps_detailed.sql, 'key_list': steps_detailed.key_list}
+            elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
+                page_step_details_name = None
+                page_step_details_data = {'key': steps_detailed.key, 'value': steps_detailed.value}
+            else:
+                return ResponseData.fail(RESPONSE_MSG_0048)
+            case_data['page_step_details_name'] = page_step_details_name
+            case_data['page_step_details_data'] = page_step_details_data
+            case_data_list.append(case_data)
         books.case_data = case_data_list
         books.save()
         return ResponseData.success(RESPONSE_MSG_0050)

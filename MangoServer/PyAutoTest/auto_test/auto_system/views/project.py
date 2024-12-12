@@ -8,12 +8,11 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.enums.system_enum import EnvironmentEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
+from PyAutoTest.enums.tools_enum import StatusEnum, EnvironmentEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
-from PyAutoTest.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
 
 
 class ProjectSerializers(serializers.ModelSerializer):
@@ -71,7 +70,7 @@ class ProjectViews(ViewSet):
             }
             product_list = ProjectProduct.objects.values_list('id', 'name').filter(project=_id)
             for product_id, product_name in product_list:
-                if request.query_params.get('client_type'):
+                if request.query_params.get('client_type') == '1':
                     v = ProductModule.objects.values_list('id', 'name').filter(project_product=product_id)
                     project['children'].append({
                         'value': product_id,

@@ -15,8 +15,8 @@ from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProduc
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
+from PyAutoTest.enums.system_enum import ClientNameEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -73,6 +73,7 @@ class UiCaseViews(ViewSet):
         """
         case_model = SendTestData(
             request.user['id'],
+            request.user['username'],
             request.query_params.get("test_env"),
             is_send=True
         ).test_case(int(request.query_params.get("case_id")))

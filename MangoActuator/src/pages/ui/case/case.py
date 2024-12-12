@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-01 下午8:57
 # @Author : 毛鹏
+from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel
 from .case_dict import *
 from ...parent.table import *
@@ -17,14 +18,17 @@ class CasePage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'case_steps'
-        self.get = HTTP.get_case
-        self.post = HTTP.post_case
-        self.put = HTTP.put_case
-        self._delete = HTTP.delete_case
+        self.get = HTTP.ui.case.get_case
+        self.post = HTTP.ui.case.post_case
+        self.put = HTTP.ui.case.put_case
+        self._delete = HTTP.ui.case.delete_case
 
     def run(self, row):
         user_info = UserModel()
-        response_message(self, HTTP.ui_test_case(row.get("id"), user_info.selected_environment, ))
+        if user_info.selected_environment is None:
+            error_message(self, '请先在右上角选择测试环境后再开始测试！')
+            return
+        response_message(self, HTTP.ui.case.ui_test_case(row.get("id"), user_info.selected_environment, ))
 
     def batch_run(self):
         case_id_list = self.table_widget.table_widget.get_selected_items()
@@ -32,7 +36,7 @@ class CasePage(TableParent):
             error_message(self, '请按住shift然后使用鼠标在表格进行多选，然后再点击批量执行')
             return
         user_info = UserModel()
-        response_message(self, HTTP.ui_test_case_batch(case_id_list, user_info.selected_environment, ))
+        response_message(self, HTTP.ui.case.ui_test_case_batch(case_id_list, user_info.selected_environment, ))
 
     def form_data_callback(self, obj: FormDataModel):
         if obj.key == 'case_people':

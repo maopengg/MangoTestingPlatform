@@ -1,6 +1,7 @@
 from django.db import models
 
 from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.exceptions import ToolsError
 
 """
      1.python manage.py makemigrations
@@ -19,6 +20,13 @@ class Project(models.Model):
         db_table = 'project'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if ProjectProduct.objects.filter(project=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的产品后再删除！")
+        if FileData.objects.filter(project=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的测试文件后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class ProjectProduct(models.Model):
     """项目产品表"""
@@ -33,6 +41,35 @@ class ProjectProduct(models.Model):
         db_table = 'project_product'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if ProductModule.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的产品模块后再删除！")
+        if TestObject.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的测试对象后再删除！")
+        from PyAutoTest.auto_test.auto_api.models import ApiPublic, ApiCase, ApiInfo
+        if ApiInfo.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的接口信息后再删除！")
+        if ApiCase.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的API用例后再删除！")
+        if ApiPublic.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的API全局参数后再删除！")
+        from PyAutoTest.auto_test.auto_ui.models import UiPublic, UiCase, PageSteps, Page
+        if Page.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI页面后再删除！")
+        if PageSteps.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+        if UiCase.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI用例后再删除！")
+        if UiPublic.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI全局参数后再删除！")
+        if Tasks.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        if TestSuiteDetails.objects.filter(project_product=self).exists():
+            TestSuiteDetails.objects.filter(project_product=self).delete()
+        if TestSuite.objects.filter(project_product=self).exists():
+            TestSuite.objects.filter(project_product=self).delete()
+        super().delete(*args, **kwargs)
+
 
 class ProductModule(models.Model):
     """ 产品模块表 """
@@ -46,6 +83,21 @@ class ProductModule(models.Model):
     class Meta:
         db_table = 'product_module'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        from PyAutoTest.auto_test.auto_api.models import ApiCase, ApiInfo
+        if ApiInfo.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的接口信息后再删除！")
+        if ApiCase.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的API用例后再删除！")
+        from PyAutoTest.auto_test.auto_ui.models import UiCase, PageSteps, Page
+        if UiCase.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI用例后再删除！")
+        if Page.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的UI页面后再删除！")
+        if PageSteps.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class TestObject(models.Model):
@@ -64,6 +116,13 @@ class TestObject(models.Model):
     class Meta:
         db_table = 'test_object'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if NoticeConfig.objects.filter(test_object=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的通知配置后再删除！")
+        if Database.objects.filter(test_object=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的数据库配置后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class NoticeConfig(models.Model):
@@ -121,6 +180,11 @@ class TimeTasks(models.Model):
         db_table = 'time_tasks'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if Tasks.objects.filter(timing_strategy=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class Tasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -139,12 +203,20 @@ class Tasks(models.Model):
         db_table = 'tasks'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if TasksDetails.objects.filter(task=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的任务明细后再删除！")
+        # if TestSuite.objects.filter(tasks=self).exists():
+        #     TestSuite.objects.filter(tasks=self).delete()
+        super().delete(*args, **kwargs)
+
 
 class TasksDetails(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     task = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_id = models.SmallIntegerField(verbose_name="用例ID")
+    case_id = models.SmallIntegerField(verbose_name="用例ID", null=True)
+    command = models.TextField(verbose_name="命令", null=True)
 
     class Meta:
         db_table = 'tasks_details'
@@ -183,6 +255,11 @@ class TestSuite(models.Model):
     class Meta:
         db_table = 'test_suite'
         ordering = ['-create_time']
+
+    def delete(self, *args, **kwargs):
+        if TestSuiteDetails.objects.filter(test_suite=self).exists():
+            TestSuiteDetails.objects.filter(test_suite=self).delete()
+        super().delete(*args, **kwargs)
 
 
 class TestSuiteDetails(models.Model):

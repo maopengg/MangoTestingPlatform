@@ -15,8 +15,18 @@ class PlaywrightElement(BaseData):
 
     @classmethod
     async def w_click(cls, locating: Locator):
-        """元素点击"""
+        """元素单击"""
         await locating.click()
+
+    @classmethod
+    async def w_dblclick(cls, locating: Locator):
+        """元素双击"""
+        await locating.dblclick()
+
+    @classmethod
+    async def w_force_click(cls, locating: Locator):
+        """强制单击"""
+        await locating.evaluate('element => element.click()')
 
     @classmethod
     async def w_input(cls, locating: Locator, input_value: str):

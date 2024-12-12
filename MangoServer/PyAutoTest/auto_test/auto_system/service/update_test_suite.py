@@ -7,7 +7,8 @@ from django.db import connection
 
 from PyAutoTest.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.service.notice import NoticeMain
-from PyAutoTest.enums.tools_enum import TaskEnum, StatusEnum, ClientTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum
+from PyAutoTest.enums.tools_enum import TaskEnum, StatusEnum
 from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
 from PyAutoTest.tools.decorator.retry import orm_retry
@@ -51,7 +52,7 @@ class UpdateTestSuite:
         connection.ensure_connection()
         test_suite = TestSuite.objects.get(id=test_suite_id)
         if test_suite.is_notice == StatusEnum.SUCCESS.value:
-            NoticeMain.notice_main(test_suite.test_env, test_suite_id)
+            NoticeMain.notice_main(test_suite.test_env, test_suite.project_product.id, test_suite_id)
         from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,

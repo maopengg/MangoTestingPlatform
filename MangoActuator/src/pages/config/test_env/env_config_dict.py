@@ -3,9 +3,8 @@
 # @Description: 
 # @Time   : 2024-09-24 16:55
 # @Author : 毛鹏
-from mango_ui import THEME
-
-from src.enums.system_enum import NoticeEnum
+from mango_ui import THEME, ComboBoxDataModel
+from mangokit import NoticeEnum
 
 right_data = [
     {'name': '新增数据库', 'theme': THEME.group.info, 'action': 'add_database'},
@@ -46,7 +45,7 @@ notice_form_data = [
         'placeholder': '请选择通知类型',
         'key': 'type',
         'type': 1,
-        'select': NoticeEnum.get_select(),
+        'select': [ComboBoxDataModel(id=str(_id), name=name) for _id, name in NoticeEnum.obj().items()],
     },
     {
         'title': '通知配置',

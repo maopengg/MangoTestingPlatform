@@ -50,7 +50,7 @@
                       style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="status.data"
+                      :options="enumStore.task_status"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -125,11 +125,11 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'module'" #cell="{ record }">
-                  {{ record.module?.superior_module ? record.module?.superior_module + '/' : ''
-                  }}{{ record.module?.name }}
+                  {{ record?.module?.superior_module ? record.module?.superior_module + '/' : ''
+                  }}{{ record?.module?.name }}
                 </template>
                 <template v-else-if="item.key === 'client'" #cell="{ record }">
                   <a-tag
@@ -262,7 +262,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.apiMethodType"
+                  :options="enumStore.method"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -306,18 +306,18 @@
     postApiInfo,
     putApiInfo,
     putApiPutApiInfoType,
-  } from '@/api/apitest'
-  import { getUiConfigNewBrowserObj } from '@/api/uitest'
-  import { getSystemEnumMethod } from '@/api/system'
-  import { useStatus } from '@/store/modules/status'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  } from '@/api/apitest/info'
+  import { getUiConfigNewBrowserObj } from '@/api/uitest/config'
+  import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
 
   const router = useRouter()
+  const enumStore = useEnum()
 
   const productModule = useProductModule()
-  const status = useStatus()
   const projectInfo = useProject()
-  const uEnvironment = useEnvironment()
+  const userStore = useUserStore()
+
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -333,7 +333,6 @@
     apiType: '1',
     caseResult: {},
     apiPublicEnd: [],
-    apiMethodType: [],
     formItem: [],
   })
   const visible = ref(false)
@@ -421,7 +420,7 @@
   }
 
   function onBatchUpload() {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境并进行录制')
       return
     }
@@ -545,12 +544,12 @@
 
   // 获取所有项目
   function onRunCase(record: any) {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
     Message.loading('接口开始执行中~')
-    getApiCaseInfoRun(record.id, uEnvironment.selectValue)
+    getApiCaseInfoRun(record.id, userStore.selected_environment)
       .then((res) => {
         data.caseResult = res.data
         visible.value = true
@@ -560,7 +559,7 @@
   }
 
   function onConcurrency() {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择测试环境')
       return
     }
@@ -569,19 +568,11 @@
       return
     }
     Message.loading('开始批量执行中~')
-    getApiCaseInfoRun(selectedRowKeys.value, uEnvironment.selectValue)
+    getApiCaseInfoRun(selectedRowKeys.value, userStore.selected_environment)
       .then((res) => {
         data.caseResult = res.data
         Message.success('批量执行全部完成啦~')
         doRefresh()
-      })
-      .catch(console.log)
-  }
-
-  function doMethod() {
-    getSystemEnumMethod()
-      .then((res) => {
-        data.apiMethodType = res.data
       })
       .catch(console.log)
   }
@@ -618,7 +609,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doMethod()
       productModule.getProjectModule(null)
     })
   })

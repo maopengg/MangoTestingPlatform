@@ -59,6 +59,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请选择客户端',
     validator: function () {
+      // @ts-ignore
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
@@ -74,6 +75,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请选择对应类型，注意不同类型的加载顺序',
     validator: function () {
+      // @ts-ignore
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false

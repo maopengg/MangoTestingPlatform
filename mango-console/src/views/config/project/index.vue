@@ -126,7 +126,7 @@
     getUserDepartmentList,
     postUserDepartmentList,
     putUserDepartmentList,
-  } from '@/api/user'
+  } from '@/api/system/project'
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)

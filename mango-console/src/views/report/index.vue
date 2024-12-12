@@ -24,7 +24,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="status.data"
+                      :options="enumStore.status"
                       @change="doRefresh"
                       :field-names="fieldNames"
                       value-key="key"
@@ -37,7 +37,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.type"
+                      :options="enumStore.auto_test_type"
                       @change="doRefresh"
                       :field-names="fieldNames"
                       value-key="key"
@@ -90,10 +90,12 @@
                     <span style="width: 110px; display: inline-block">{{ record.id }}</span>
                   </template>
                   <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                    {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                    {{
+                      record?.project_product?.project?.name + '/' + record?.project_product?.name
+                    }}
                   </template>
                   <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                    {{ record.test_env ? uEnvironment.data[record.test_env]?.title : '' }}
+                    {{ record.test_env ? enumStore.environment_type[record.test_env]?.title : '' }}
                   </template>
 
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
@@ -137,12 +139,11 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
-  import { getSystemEnumAutotest, getSystemTestSuiteDetailsReport, getSystemTestSuite } from "@/api/system";
-  import { useEnvironment } from '@/store/modules/get-environment'
-  import { useStatus } from '@/store/modules/status'
+  import { getSystemTestSuite } from '@/api/system/test_suite'
+  import { getSystemTestSuiteDetailsReport } from '@/api/system/test_sute_details'
+  import { useEnum } from '@/store/modules/get-enum'
 
-  const uEnvironment = useEnvironment()
-  const status = useStatus()
+  const enumStore = useEnum()
 
   const pagination = usePagination(doRefresh)
   pagination.pageSize = 10
@@ -150,13 +151,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
-  const data = reactive({
-    type: [],
-  })
   function doRefresh() {
-    if (uEnvironment.data.length === 0) {
-      uEnvironment.getEnvironment()
-    }
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -315,20 +310,11 @@
       .catch(console.log)
   }
 
-  function getAutoTestName() {
-    getSystemEnumAutotest()
-      .then((res) => {
-        data.type = res.data
-      })
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       initPieEcharts()
       initBarEcharts()
-      getAutoTestName()
     })
   })
 </script>

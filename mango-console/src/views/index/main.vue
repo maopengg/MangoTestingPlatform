@@ -61,7 +61,9 @@
                       <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                         <a-tag color="orangered" size="small">
                           {{
-                            record.test_env !== null ? uEnvironment.data[record.test_env].title : ''
+                            record.test_env !== null
+                              ? enumStore.environment_type[record.test_env].title
+                              : ''
                           }}</a-tag
                         >
                       </template>
@@ -114,22 +116,21 @@
   } from '@/hooks/table'
   import { useRouter } from 'vue-router'
   import { useProductModule } from '@/store/modules/project_module'
-  import { getSystemScheduledTasks } from '@/api/system'
+  import { getSystemTasks } from '@/api/system/tasks'
   import { useProject } from '@/store/modules/get-project'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  import { useEnum } from '@/store/modules/get-enum'
 
   const appStore = useAppConfigStore()
   const mainHeight = computed(() => {
     return appStore.mainHeight + 'px'
   })
-  const uEnvironment = useEnvironment()
   const projectInfo = useProject()
   const productModule = useProductModule()
+  const enumStore = useEnum()
   const reportSum = ref()
   const caseSum = ref()
   const hotProductChart = ref()
   const fullYearSalesChart = ref()
-  const orderChart = ref()
   const onResize = () => {
     setTimeout(() => {
       unref(caseSum).updateChart()
@@ -137,7 +138,6 @@
       // unref(weekSalesChart).updateChart()
       unref(hotProductChart).updateChart()
       unref(fullYearSalesChart).updateChart()
-      unref(orderChart).updateChart()
     }, 500)
   }
   const collapse = computed(() => {
@@ -194,7 +194,7 @@
   }
 
   function doRefresh() {
-    getSystemScheduledTasks({
+    getSystemTasks({
       pageSize: pagination.pageSize,
       page: pagination.page,
     })
@@ -211,6 +211,7 @@
       productModule.getProjectModule()
       projectInfo.getProject()
       projectInfo.projectProductName()
+      await enumStore.getEnum()
     })
   })
 </script>

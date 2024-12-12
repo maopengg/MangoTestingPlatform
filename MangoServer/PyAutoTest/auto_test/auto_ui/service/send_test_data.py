@@ -9,7 +9,8 @@ from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import Soc
 from PyAutoTest.auto_test.auto_ui.models import *
 from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from PyAutoTest.enums.socket_api_enum import UiSocketEnum
-from PyAutoTest.enums.tools_enum import ClientTypeEnum, StatusEnum, ClientNameEnum, AutoTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum, ClientNameEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
@@ -20,16 +21,17 @@ class SendTestData:
 
     def __init__(self,
                  user_id: int,
+                 username: str,
                  test_env: int,
                  tasks_id: int = None,
                  is_notice: int = 0,
                  is_send: bool = False):
         self.user_id = user_id
+        self.username = username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_notice = is_notice
         self.is_send = is_send
-        self.username = User.objects.get(id=user_id).username
 
     def test_case(self,
                   case_id: int,
@@ -147,13 +149,13 @@ class SendTestData:
                 is_iframe=steps_element.is_iframe,
             )
 
-    def __socket_send(self, data_model, func_name: str, username: str = None) -> None:
+    def __socket_send(self, data_model, func_name: str) -> None:
         if self.is_send:
             data = QueueModel(func_name=func_name, func_args=data_model)
             ChatConsumer.active_send(SocketDataModel(
                 code=200,
                 msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                user=username if username else self.username,
+                user=self.username,
                 is_notice=ClientTypeEnum.ACTUATOR.value,
                 data=data,
             ))

@@ -78,7 +78,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, nextTick } from 'vue'
   import { tableColumns } from './config'
-  import { deleteSystemSocketUserList, getSystemSocketUserList } from '@/api/system'
+  import { getSystemSocketUserList } from '@/api/system/socket_api'
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
@@ -99,22 +99,22 @@
     Message.warning('开发中.....')
   }
 
-  function onDelete(data: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '是否要下线此执行器？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteSystemSocketUserList(data.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      },
-    })
-  }
+  // function onDelete(data: any) {
+  //   Modal.confirm({
+  //     title: '提示',
+  //     content: '是否要下线此执行器？',
+  //     cancelText: '取消',
+  //     okText: '删除',
+  //     onOk: () => {
+  //       deleteSystemSocketUserList(data.id)
+  //         .then((res) => {
+  //           Message.success(res.msg)
+  //           doRefresh()
+  //         })
+  //         .catch(console.log)
+  //     },
+  //   })
+  // }
 
   onMounted(() => {
     nextTick(async () => {

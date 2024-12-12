@@ -20,12 +20,12 @@ class TestFilePage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_file
-        self.post = HTTP.post_file
-        self._delete = HTTP.delete_file
+        self.get = HTTP.system.file_data.get_file
+        self.post = HTTP.system.file_data.post_file
+        self._delete = HTTP.system.file_data.delete_file
 
     def download(self, row):
-        response = HTTP.download(row.get('file'))
+        response = HTTP.not_auth.download_file(row.get('file'))
         if response and response.content:
             # 获取文件名（可以从响应中获取，或使用默认名）
             default_file_name = row.get('name', 'downloaded_file')  # 从 row 中获取文件名
@@ -52,7 +52,7 @@ class TestFilePage(TableParent):
                 'type': 0,
                 'price': file_size,
                 'name': file_name_only,
-                'project': HTTP.headers.get('Project')
+                'project': HTTP.api.case.headers.get('Project')
             }, files=files)
             success_message(self, response.msg)
         self.show_data()

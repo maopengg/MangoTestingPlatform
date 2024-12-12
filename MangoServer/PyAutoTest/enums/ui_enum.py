@@ -68,8 +68,6 @@ class ElementExpEnum(BaseEnum):
         }
 
 
-
-
 class ElementOperationEnum(BaseEnum):
     """元素操作类型枚举"""
     OPE = 0

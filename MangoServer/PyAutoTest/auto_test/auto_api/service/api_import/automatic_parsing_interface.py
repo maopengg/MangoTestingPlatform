@@ -5,11 +5,11 @@
 # @Author : 毛鹏
 
 import jsonpath
-from mangokit import requests
 
 from PyAutoTest.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.tools.view.model_crud import ModelCRUD
+from mangokit import requests
 
 
 class ApiParameter:

@@ -8,7 +8,7 @@ from typing import Union, Optional, TypeVar
 from mangokit import singleton
 from pydantic import BaseModel
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 
 T = TypeVar('T')
 

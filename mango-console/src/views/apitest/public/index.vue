@@ -37,7 +37,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.apiPublicEnd"
+                      :options="enumStore.client"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -103,7 +103,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
@@ -181,7 +181,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.publicEnum"
+                  :options="enumStore.api_public_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -211,8 +211,9 @@
     postApiPublic,
     putApiPublic,
     putApiPublicPutStatus,
-  } from '@/api/apitest'
-  import { getSystemEnumApiPublic, getSystemEnumEnd } from '@/api/system'
+  } from '@/api/apitest/public'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
 
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -225,8 +226,6 @@
     actionTitle: '添加接口',
     isAdd: false,
     updateId: 0,
-    publicEnum: [],
-    apiPublicEnd: [],
     moduleList: [],
   })
 
@@ -238,22 +237,6 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-
-  function doPublic() {
-    getSystemEnumApiPublic()
-      .then((res) => {
-        data.publicEnum = res.data
-      })
-      .catch(console.log)
-  }
-
-  function doEnd() {
-    getSystemEnumEnd()
-      .then((res) => {
-        data.apiPublicEnd = res.data
       })
       .catch(console.log)
   }
@@ -376,8 +359,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doPublic()
-      doEnd()
     })
   })
 </script>

@@ -27,8 +27,7 @@ def process_urls(string):
         if parsed_url.hostname and re.match(r'^\d{1,3}(\.\d{1,3}){3}$', parsed_url.hostname):
             # 是 IP 地址，去掉端口
             cleaned_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
-            return  cleaned_url
+            return cleaned_url
         else:
             # 不是 IP 地址加端口，加入到列表中
             return string
-

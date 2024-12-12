@@ -82,7 +82,11 @@
                 <p>响应时间：{{ data.selectData?.response?.response_time }}</p>
                 <p :style="{ color: data.selectData?.status === 0 ? 'red' : 'inherit' }">
                   测试结果：{{
-                    data.selectData?.status === 1 ? '通过' : data.selectData?.status === 0 ? '失败' : ''
+                    data.selectData?.status === 1
+                      ? '通过'
+                      : data.selectData?.status === 0
+                      ? '失败'
+                      : ''
                   }}
                 </p>
                 <p v-if="data.selectData?.status === 0"
@@ -112,8 +116,9 @@
   import { reactive, onMounted, nextTick, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
   import { strJson } from '@/utils/tools'
-  import { getSystemEnumEnd, getSystemEnumMethod } from '@/api/system'
-  import { getSystemTestSuiteDetails } from '@/api/system'
+  import { getSystemTestSuiteDetails } from '@/api/system/test_sute_details'
+  // import { useEnum } from '@/store/modules/get-enum'
+  // const enumStore = useEnum()
 
   const pageData: any = usePageData()
 
@@ -123,8 +128,6 @@
     selectData: {},
 
     apiResult: {},
-    clientType: [],
-    methodType: [],
   })
   const childRef: any = ref(null)
 
@@ -143,15 +146,15 @@
   function doRefresh() {
     getSystemTestSuiteDetails(pageData.record.id)
       .then((res) => {
-        res.data.forEach((item: object) => {
-          const children = {
+        res.data.forEach((item: any) => {
+          const children: any = {
             title: item.case_name,
             key: item.case_id,
             status: item.status,
             children: [],
           }
           if (item.result_data) {
-            item.result_data.forEach((item1: object) => {
+            item.result_data.forEach((item1: any) => {
               children['children'].push({
                 title: item1.name,
                 key: item1,
@@ -167,31 +170,9 @@
       .catch(console.log)
   }
 
-  function doMethodType() {
-    getSystemEnumMethod()
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          data.methodType.push(item.title)
-        })
-      })
-      .catch(console.log)
-  }
-
-  function doClientType() {
-    getSystemEnumEnd()
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          data.clientType.push(item.title)
-        })
-      })
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doMethodType()
-      doClientType()
     })
   })
 </script>

@@ -75,12 +75,12 @@
                 </template>
                 <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small">{{
-                    data.AutoTestNameList[record.auto_type]?.title
+                    enumStore.auto_type[record.auto_type]?.title
                   }}</a-tag>
                 </template>
                 <template v-else-if="item.key === 'client_type'" #cell="{ record }">
                   <a-tag color="orangered" size="small">{{
-                    data.typeList[record.client_type]?.title
+                    enumStore.drive_type[record.client_type]?.title
                   }}</a-tag>
                 </template>
 
@@ -128,7 +128,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.AutoTestNameList"
+                  :options="enumStore.auto_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -139,7 +139,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.typeList"
+                  :options="enumStore.device"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -164,8 +164,14 @@
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
   import { conditionItems, formItems, tableColumns } from './config'
-  import { deleteUserProduct, getUserProduct, postUserProduct, putUserProduct } from '@/api/user'
-  import { getSystemEnumAutoType, getSystemEnumDrive } from '@/api/system'
+  import {
+    deleteUserProduct,
+    getUserProduct,
+    postUserProduct,
+    putUserProduct,
+  } from '@/api/system/product'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -180,8 +186,6 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加项目',
-    typeList: [],
-    AutoTestNameList: [],
   })
 
   function onResetSearch() {
@@ -284,25 +288,9 @@
       }
     }
   }
-  function getAutoTestName() {
-    getSystemEnumAutoType()
-      .then((res) => {
-        data.AutoTestNameList = res.data
-      })
-      .catch(console.log)
-  }
-  function getTypeList() {
-    getSystemEnumDrive()
-      .then((res) => {
-        data.typeList = res.data
-      })
-      .catch(console.log)
-  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getAutoTestName()
-      getTypeList()
     })
   })
 </script>

@@ -26,3 +26,5 @@ PyQt_Fluent_Widgets.egg-info/
 PyQt6_Fluent_Widgets.egg-info/
 cache/*
 tests/test.json
+/report/*
+/reports/*

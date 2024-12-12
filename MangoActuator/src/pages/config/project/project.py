@@ -18,10 +18,10 @@ class ProjectPage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data
                          )
-        self.get = HTTP.get_project
-        self.post = HTTP.post_project
-        self.put = HTTP.put_project
-        self._delete = HTTP.delete_project
+        self.get = HTTP.system.project.get_project
+        self.post = HTTP.system.project.post_project
+        self.put = HTTP.system.project.put_project
+        self._delete = HTTP.system.project.delete_project
 
     def show_data(self, is_refresh=False):
         super().show_data()

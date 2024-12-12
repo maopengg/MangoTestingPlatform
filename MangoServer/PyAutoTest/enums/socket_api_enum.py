@@ -15,6 +15,7 @@ class UiSocketEnum(Enum):
     PAGE_STEPS = 'u_page_step'
     CASE_BATCH = 'u_case'
     NEW_PAGE_OBJ = 'u_page_new_obj'
+    MangoPytest = 't_mango_pytest'
 
 
 class ToolsSocketEnum(Enum):

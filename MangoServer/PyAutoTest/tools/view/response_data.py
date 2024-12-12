@@ -47,7 +47,7 @@ class ResponseData:
              exception=False,
              content_type=None,
              value: tuple | None = None,
-                renderer_context=None) -> Response:
+             renderer_context=None) -> Response:
         data = {
             'code': msg[0],
             'msg': msg[1].format(*value) if value else msg[1],

@@ -3,26 +3,34 @@
 # @Description: 
 # @Time   : 2024-09-13 11:13
 # @Author : 毛鹏
+from .cache_data import CacheData
 from .database import Database
-from .home import Home
+from .file_data import FileData
+from .index import Index
+from .module import Module
 from .notice import Notice
-from .tasks import ScheduledTasks
-from .tasks_details import TasksList
+from .product import Product
+from .project import Project
+from .tasks import Tasks
+from .tasks_details import TasksDetails
+from .test_object import TestObject
 from .test_suite import TestSuite
 from .test_suite_details import TestSuiteDetails
-from .time_tasks import TimeTasks
-from .cache_data import CacheData
+from .time import Time
 
 
-class SystemApi(
-    Database,
-    Notice,
-    TasksList,
-    ScheduledTasks,
-    TestSuite,
-    TestSuiteDetails,
-    Home,
-    TimeTasks,
-    CacheData,
-):
-    pass
+class SystemApi:
+    test_object = TestObject
+    database = Database
+    notice = Notice
+    tasks = Tasks
+    tasks_details = TasksDetails
+    test_suite = TestSuite
+    test_suite_details = TestSuiteDetails
+    index = Index
+    time = Time
+    cache_data = CacheData
+    file_data = FileData
+    project = Project
+    product = Product
+    module = Module

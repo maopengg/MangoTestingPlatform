@@ -1,6 +1,6 @@
-import atexit
 from threading import Thread
 
+import atexit
 import time
 from django.apps import AppConfig
 

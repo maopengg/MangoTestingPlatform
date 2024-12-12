@@ -74,28 +74,18 @@
                   >
                   <p
                     >表达式类型：{{
-                      item.exp
-                        ? data.eleExp[item.exp].title
-                        : item.exp
+                      item.exp ? enumStore.element_exp[item.exp].title : item.exp
                     }}</p
                   >
                   <p
                     >测试结果：{{
-                      item.status === 1
-                        ? '通过'
-                        : item.status === 0
-                        ? '失败'
-                        : '未测试'
+                      item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
                     }}</p
                   >
                   <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                  <p v-if="item.status === 0"
-                    >错误提示：{{ item.error_message }}</p
-                  >
+                  <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
                   <p v-if="item.expect">预期：{{ item.expect }}</p>
-                  <p v-if="item.status === 0"
-                    >视频路径：{{ item.video_path }}</p
-                  >
+                  <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
                 </a-space>
                 <a-space direction="vertical" style="width: 50%">
                   <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
@@ -146,10 +136,15 @@
 <script lang="ts" setup>
   import { reactive, onMounted, nextTick, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
-  import { getUiPageStepsDetailedAss, getUiPageStepsDetailedOpe } from '@/api/uitest'
-  import { getSystemEnumExp, getSystemTestSuiteDetails } from '@/api/system'
+  import {
+    getUiPageStepsDetailedAss,
+    getUiPageStepsDetailedOpe,
+  } from '@/api/uitest/page-steps-detailed'
+  import { getSystemTestSuiteDetails } from '@/api/system/test_sute_details'
   import { baseURL } from '@/api/axios.config'
+  import { useEnum } from '@/store/modules/get-enum'
   const childRef: any = ref(null)
+  const enumStore = useEnum()
 
   const pageData: any = usePageData()
 
@@ -178,7 +173,6 @@
       return
     }
     data.selectData = key[0]
-    console.log(data.selectData)
   }
 
   function doResetSearch() {
@@ -188,15 +182,15 @@
   function doRefresh() {
     getSystemTestSuiteDetails(pageData.record.id)
       .then((res) => {
-        res.data.forEach((item: object) => {
-          const children = {
+        res.data.forEach((item: any) => {
+          const children: any = {
             title: item.case_name,
             key: item.case_id,
             status: item.status,
             children: [],
           }
           if (item.result_data) {
-            item.result_data.forEach((item1: object) => {
+            item.result_data.forEach((item1: any) => {
               children['children'].push({
                 title: item1.name,
                 key: item1,
@@ -207,7 +201,6 @@
           }
           data.treeData.push(children)
         })
-        console.log(data.treeData)
       })
       .catch(console.log)
   }
@@ -220,14 +213,6 @@
       }
     }
     return list.find((item: any) => item.value === value)?.label
-  }
-
-  function getEleExp() {
-    getSystemEnumExp()
-      .then((res) => {
-        data.eleExp = res.data
-      })
-      .catch(console.log)
   }
 
   function getUiRunSortAss() {
@@ -249,7 +234,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getEleExp()
       getUiRunSortOpe()
       getUiRunSortAss()
     })

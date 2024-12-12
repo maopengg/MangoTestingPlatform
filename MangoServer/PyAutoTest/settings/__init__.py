@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 from PyAutoTest.tools import nuw_dir
-from ..enums.system_enum import SystemEnvEnum
+from ..enums.tools_enum import SystemEnvEnum
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

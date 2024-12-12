@@ -17,7 +17,7 @@ class PagePage(TableParent):
                          table_menu=table_menu,
                          right_data=right_data)
         self.subpage_value = 'page_element'
-        self.get = HTTP.get_page
-        self.post = HTTP.post_page
-        self.put = HTTP.put_page
-        self._delete = HTTP.delete_page
+        self.get = HTTP.ui.page.get_page
+        self.post = HTTP.ui.page.post_page
+        self.put = HTTP.ui.page.put_page
+        self._delete = HTTP.ui.page.delete_page

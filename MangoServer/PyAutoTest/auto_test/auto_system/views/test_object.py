@@ -9,8 +9,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestObject
-from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_user.tools.factory import func_mysql_config
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
@@ -57,26 +57,6 @@ class TestObjectCRUD(ModelCRUD):
 class TestObjectViews(ViewSet):
     model = TestObject
     serializer_class = TestObjectSerializers
-
-    @action(methods=['get'], detail=False)
-    @error_response('user')
-    def get_test_object_name(self, request: Request):
-        """
-         获取平台枚举
-         :param request:
-         :return:
-         """
-        project_product_id = request.query_params.get('project_product_id')
-        if project_product_id:
-            res = TestObject.objects \
-                .values_list('id', 'name') \
-                .filter(project_product=project_product_id)
-        else:
-            res = TestObject.objects \
-                .values_list('id', 'name') \
-                .all()
-        data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success(RESPONSE_MSG_0095, data)
 
     @action(methods=['put'], detail=False)
     @error_response('user')

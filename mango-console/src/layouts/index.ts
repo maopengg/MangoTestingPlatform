@@ -20,7 +20,7 @@ function getComponentName(key: string) {
     .find(
       (it) =>
         it !== 'index.vue' &&
-        it !== 'index.ts' &&
+        it !== 'user.ts' &&
         it !== 'index.js' &&
         it !== 'index.jsx' &&
         it !== 'index.tsx'

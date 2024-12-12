@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
-import json
 
 from django.forms.models import model_to_dict
 from rest_framework import serializers
@@ -14,11 +13,10 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_api.models import ApiCase
 from PyAutoTest.auto_test.auto_system.models import TasksDetails
 from PyAutoTest.auto_test.auto_system.views.tasks import TasksSerializers
-from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
+from PyAutoTest.auto_test.auto_ui.models import UiCase
+from PyAutoTest.enums.tools_enum import AutoTestTypeEnum
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
@@ -74,19 +72,17 @@ class TasksDetailsCRUD(ModelCRUD):
 
     @error_response('system')
     def post(self, request: Request):
-        serializer = self.serializer(data=request.data)
         try:
-            existing_object = self.model.objects.get(task=request.data['task'], case_id=request.data['case_id'])
-            if existing_object:
-                return ResponseData.fail(RESPONSE_MSG_0112)
-        except self.model.DoesNotExist:
-            if serializer.is_valid():
-                serializer.save()
-                self.asynchronous_callback(request)
-                return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+            if request.data.get('case_id'):
+                existing_object = self.model.objects.get(task=request.data['task'], case_id=request.data['case_id'])
+                if existing_object:
+                    return ResponseData.fail(RESPONSE_MSG_0112)
             else:
-                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
-                return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
+                data = self.inside_post(request.data)
+                return ResponseData.success(RESPONSE_MSG_0002, data)
+        except self.model.DoesNotExist:
+            data = self.inside_post(request.data)
+            return ResponseData.success(RESPONSE_MSG_0002, data)
 
 
 class TasksDetailsViews(ViewSet):
@@ -120,20 +116,6 @@ class TasksDetailsViews(ViewSet):
                 else:
                     return ResponseData.fail(RESPONSE_MSG_0066)
         return ResponseData.success(RESPONSE_MSG_0067)
-
-    @action(methods=['put'], detail=False)
-    @error_response('system')
-    def put_tasks_case_sort(self, request: Request):
-        """
-        修改排序
-        @param request:
-        @return:
-        """
-        for i in request.data.get('sort_list'):
-            obj = self.model.objects.get(id=i['id'])
-            obj.sort = i['sort']
-            obj.save()
-        return ResponseData.success(RESPONSE_MSG_0107, )
 
     @action(methods=['put'], detail=False)
     @error_response('system')

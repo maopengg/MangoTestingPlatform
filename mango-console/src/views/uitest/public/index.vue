@@ -73,7 +73,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
                   <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
@@ -136,7 +136,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.publicEnum"
+                  :options="enumStore.ui_public"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -160,14 +160,16 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { getSystemEnumUiPublic } from '@/api/system'
   import {
     deleteUiPublic,
     getUiPublic,
     postUiPublic,
     putUiPublic,
     putUiPublicPutStatus,
-  } from '@/api/uitest'
+  } from '@/api/uitest/public'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
+
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -180,7 +182,6 @@
     actionTitle: '新增参数',
     updateId: 0,
     isAdd: true,
-    publicEnum: [],
   })
   function switchType(key: any) {
     data.type = key
@@ -293,18 +294,10 @@
       }
     }
   }
-  function doPublic() {
-    getSystemEnumUiPublic()
-      .then((res) => {
-        data.publicEnum = res.data
-      })
-      .catch(console.log)
-  }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doPublic()
     })
   })
 </script>

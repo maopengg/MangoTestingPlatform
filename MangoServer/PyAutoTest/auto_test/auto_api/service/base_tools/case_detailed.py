@@ -11,7 +11,6 @@ from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.api_model import ResponseDataModel, RequestDataModel, AssResultModel
 from PyAutoTest.tools.assertion.public_assertion import PublicAssertion
-from mangokit import ToolsError
 
 
 class CaseDetailedInit(ApiCaseData, PublicAssertion):

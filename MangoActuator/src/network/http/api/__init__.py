@@ -9,10 +9,8 @@ from .api_info import ApiInfo
 from .api_pulic import ApiPublic
 
 
-class ApiApi(
-    ApiInfo,
-    ApiCase,
-    ApiPublic,
-    ApiCaseDetailed,
-):
-    pass
+class ApiApi:
+    info = ApiInfo
+    case = ApiCase
+    public = ApiPublic
+    case_detailed = ApiCaseDetailed

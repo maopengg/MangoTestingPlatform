@@ -16,7 +16,7 @@ class PublicPage(TableParent):
                          table_column=table_column,
                          table_menu=table_menu,
                          right_data=right_data)
-        self.get = HTTP.get_public
-        self.post = HTTP.post_public
-        self.put = HTTP.put_public
-        self._delete = HTTP.delete_public
+        self.get = HTTP.ui.public.get_public
+        self.post = HTTP.ui.public.post_public
+        self.put = HTTP.ui.public.put_public
+        self._delete = HTTP.ui.public.delete_public

@@ -23,7 +23,8 @@
                     <a-cascader
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="testObj.data"
+                      :options="enumStore.environment_type"
+                      :field-names="fieldNames"
                       value-key="key"
                       allow-clear
                       allow-search
@@ -82,7 +83,7 @@
                   {{ record.id }}
                 </template>
                 <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record.project_product?.project?.name + '/' + record.project_product?.name }}
+                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
                 </template>
                 <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
                   {{ record.timing_strategy?.name }}
@@ -93,7 +94,9 @@
                 <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                   <a-tag color="orangered" size="small">
                     {{
-                      record.test_env !== null ? uEnvironment.data[record.test_env].title : ''
+                      record.test_env !== null
+                        ? enumStore.environment_type[record.test_env].title
+                        : ''
                     }}</a-tag
                   >
                 </template>
@@ -190,7 +193,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="uEnvironment.data"
+                  :options="enumStore.environment_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -212,7 +215,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.type"
+                  :options="enumStore.auto_test_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -250,32 +253,29 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useRouter } from 'vue-router'
-  import { useTestObj } from '@/store/modules/get-test-obj'
   import { formItems, tableColumns, conditionItems } from './config'
   import {
-    deleteSystemScheduledTasks,
-    getSystemEnumAutotest,
-    getSystemScheduledTasks,
-    getSystemTimingList,
+    deleteSystemTasks,
+    getSystemTasks,
+    postSystemTasks,
     getSystemTriggerTiming,
-    postSystemScheduledTasks,
     putSystemScheduledPutNotice,
     putSystemScheduledPutStatus,
-    putSystemScheduledTasks,
-  } from '@/api/system'
-  import { getUserName } from '@/api/user'
-  import { useEnvironment } from '@/store/modules/get-environment'
+    putSystemTasks,
+  } from '@/api/system/tasks'
+  import { getSystemTimingList } from '@/api/system/time'
+  import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
+  import { useEnum } from '@/store/modules/get-enum'
   const projectInfo = useProject()
+  const enumStore = useEnum()
 
-  const testObj = useTestObj()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
-  const uEnvironment = useEnvironment()
 
   const data = reactive({
     isAdd: false,
@@ -283,7 +283,6 @@
     actionTitle: '添加定时任务',
     userList: [],
     timingList: [],
-    type: [],
   })
 
   const formModel = ref({})
@@ -292,7 +291,7 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getSystemScheduledTasks(value)
+    getSystemTasks(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -326,7 +325,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteSystemScheduledTasks(data.id)
+        deleteSystemTasks(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -372,7 +371,7 @@
       if (data.isAdd) {
         value['status'] = 0
         value['is_notice'] = 0
-        postSystemScheduledTasks(value)
+        postSystemTasks(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -380,7 +379,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putSystemScheduledTasks(value)
+        putSystemTasks(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -405,15 +404,6 @@
       })
       .catch(console.log)
   }
-
-  function getAutoTestName() {
-    getSystemEnumAutotest()
-      .then((res) => {
-        data.type = res.data
-      })
-      .catch(console.log)
-  }
-
   const onModifyStatus = async (newValue: boolean, id: number) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
@@ -465,10 +455,8 @@
 
   onMounted(() => {
     nextTick(async () => {
-      uEnvironment.getEnvironment()
       getTiming()
       getNickName()
-      getAutoTestName()
       doRefresh()
     })
   })
