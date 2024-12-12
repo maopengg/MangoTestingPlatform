@@ -5,8 +5,9 @@
 # @Author : 毛鹏
 from functools import wraps
 
-from mangokit import requests
 from django.core.cache import cache
+
+from mangokit import requests
 
 
 # 创建缓存

@@ -5,8 +5,7 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.system_enum import EnvironmentEnum
-from src.enums.tools_enum import Status5Enum, AutoTypeEnum
+from src.enums.tools_enum import Status5Enum, AutoTypeEnum, EnvironmentEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 
@@ -63,7 +62,7 @@ form_data = [
         'placeholder': '请输入负责人名称',
         'key': 'executor_name',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
     {
         'title': '查询权限',

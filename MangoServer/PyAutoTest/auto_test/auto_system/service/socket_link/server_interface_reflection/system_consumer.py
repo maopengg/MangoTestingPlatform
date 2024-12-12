@@ -6,7 +6,7 @@
 
 from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.auto_test.auto_system.views.cache_data import CacheDataCRUD
-from PyAutoTest.enums.system_enum import CacheValueTypeEnum
+from PyAutoTest.enums.tools_enum import CacheValueTypeEnum
 
 
 class SystemConsumer:

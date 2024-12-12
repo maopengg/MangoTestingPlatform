@@ -105,10 +105,13 @@ class NewBrowser:
         return await self.browser.new_context(**args_dict)
 
     async def new_page(self, context: BrowserContext) -> Page:
-        page = await context.new_page()
-        if self.config.is_header_intercept:
-            await page.route("**/*", self.__intercept_request)  # 应用拦截函数到页面的所有请求
-        return page
+        try:
+            page = await context.new_page()
+            if self.config.is_header_intercept:
+                await page.route("**/*", self.__intercept_request)  # 应用拦截函数到页面的所有请求
+            return page
+        except Error:
+            raise UiError(*ERROR_MSG_0009, value=(self.config.web_path,))
 
     async def close(self):
         if self.config:

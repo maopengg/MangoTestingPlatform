@@ -6,7 +6,7 @@
 from mango_ui import THEME
 
 from src.enums.api_enum import MethodEnum
-from src.enums.tools_enum import Status3Enum, TaskEnum
+from src.enums.tools_enum import TaskEnum
 from src.tools.methods import Methods
 
 search_data = [

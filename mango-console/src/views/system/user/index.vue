@@ -153,13 +153,8 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { conditionItems, formItems, tableColumns } from './config'
-  import {
-    deleteUserInfo,
-    getUserAllRole,
-    getUserInfo,
-    postUserInfo,
-    putUserInfo,
-  } from '@/api/user'
+  import { deleteUserInfo, getUserInfo, postUserInfo, putUserInfo } from '@/api/user/user'
+  import { getUserAllRole } from '@/api/user/role'
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -200,18 +195,18 @@
     })
   }
 
-  function onAddPage() {
-    userData.actionTitle = '添加用户'
-    userData.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        it.value = ''
-      }
-    })
-  }
+  // function onAddPage() {
+  //   userData.actionTitle = '添加用户'
+  //   userData.isAdd = true
+  //   modalDialogRef.value?.toggle()
+  //   formItems.forEach((it) => {
+  //     if (it.reset) {
+  //       it.reset()
+  //     } else {
+  //       it.value = ''
+  //     }
+  //   })
+  // }
 
   function onDelete(data: any) {
     Modal.confirm({

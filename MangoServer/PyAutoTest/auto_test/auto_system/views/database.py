@@ -3,8 +3,6 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
-from mangokit import MysqlConnect, MysqlConingModel
-from mangokit.exceptions import ToolsError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -17,6 +15,7 @@ from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from mangokit import MysqlConnect, MysqlConingModel, MangoKitError
 
 
 class DatabaseSerializers(serializers.ModelSerializer):
@@ -88,7 +87,7 @@ class DatabaseViews(ViewSet):
                 password=obj.password,
                 database=obj.name
             ))
-        except ToolsError:
+        except MangoKitError:
             return ResponseData.fail(RESPONSE_MSG_0123, )
 
         if mysql_conn.connection.open:

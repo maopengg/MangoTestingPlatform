@@ -72,11 +72,11 @@ class ApiInfoViews(ViewSet):
             api_info_res_list = []
             for api_info_id in api_info_list:
                 api_info_res: ResponseDataModel = TestApiInfo(
-                    request.user['id'],test_env, ).api_info_run(api_info_id)
+                    request.user['id'], test_env, ).api_info_run(api_info_id)
                 api_info_res_list.append(api_info_res.model_dump_json())
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res_list)
         else:
-            api_info_res: ResponseDataModel = TestApiInfo(request.user['id'],test_env, ).api_info_run(api_info_id)
+            api_info_res: ResponseDataModel = TestApiInfo(request.user['id'], test_env, ).api_info_run(api_info_id)
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res.model_dump())
 
     @action(methods=['get'], detail=False)

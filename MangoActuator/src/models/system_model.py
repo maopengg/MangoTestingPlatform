@@ -14,3 +14,12 @@ class TestSuiteDetailsResultModel(BaseModel):
     status: int
     error_message: str | None = None
     result_data: UiCaseResultModel
+
+
+class CmdTestModel(BaseModel):
+    test_suite_details: int
+    test_suite_id: int
+    project_product: int
+    project_product_name: str
+    test_env: int
+    cmd: list

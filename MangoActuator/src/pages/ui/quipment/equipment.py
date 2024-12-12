@@ -10,10 +10,12 @@ from mangokit import Mango
 
 from src.enums.tools_enum import Status5Enum
 from src.enums.ui_enum import DriveTypeEnum
+from src.models.socket_model import ResponseModel
 from src.models.ui_model import EquipmentModel, PageObject
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.services.ui.service.test_page_steps import TestPageSteps
+from src.tools.components.message import response_message
 from src.tools.methods import Methods
 from .equipment_dict import *
 from ...parent.table import TableParent
@@ -22,10 +24,10 @@ from ...parent.table import TableParent
 class EquipmentPage(TableParent):
     def __init__(self, parent):
         super().__init__(parent, right_data=right_data)
-        self.get = HTTP.get_config
-        self.post = HTTP.post_config
-        self.put = HTTP.put_config
-        self._delete = HTTP.delete_config
+        self.get = HTTP.ui.config.get_config
+        self.post = HTTP.ui.config.post_config
+        self.put = HTTP.ui.config.put_config
+        self._delete = HTTP.ui.config.delete_config
         self.v_layout = MangoVBoxLayout()
         self.layout.addLayout(self.v_layout)
         self.v_layout.setContentsMargins(0, 0, 0, 0)
@@ -59,9 +61,9 @@ class EquipmentPage(TableParent):
                 layout_h = MangoHBoxLayout()
                 self.v_layout.addLayout(layout_h)
             if i.get('type') == DriveTypeEnum.WEB.value:
-                self.set_web(i, layout_h, 'WEB配置')
+                self.set_web(i, layout_h, 'WEB配置')  # type: ignore
             elif i.get('type') == DriveTypeEnum.ANDROID.value:
-                self.set_android(i, layout_h, '安卓配置')
+                self.set_android(i, layout_h, '安卓配置')  # type: ignore
         self.v_layout.addStretch()
 
     def set_web(self, data: dict, layout: MangoVBoxLayout, title: str):
@@ -69,7 +71,7 @@ class EquipmentPage(TableParent):
         if data.get('config') is None:
             v_layout.addWidget(MangoLabel('请删除这个脏数据'))
             but_2 = MangoPushButton('删除')
-            but_2.clicked.connect(lambda checked, row=data: self.delete(row))  # 连接删除按钮
+            but_2.clicked.connect(lambda checked, row=data: self.delete(row))  # type: ignore
             but_2.set_stylesheet(28, 40)
             v_layout.addWidget(but_2)
             layout.addLayout(v_layout)
@@ -81,7 +83,7 @@ class EquipmentPage(TableParent):
             h_layout_1.addStretch()
 
             toggle = MangoToggle(bool(data.get('status')), False)
-            toggle.click.connect(lambda state, row=data, toggle_obj=toggle: self.put_status(
+            toggle.click.connect(lambda state, row=data, toggle_obj=toggle: self.put_status(  # type: ignore
                 state, row, toggle
             ))
             toggle.change_requested.emit(bool(data.get('status')))
@@ -213,7 +215,7 @@ class EquipmentPage(TableParent):
         self.show_data()
 
     def put_status(self, state, row, toggle):
-        response: ResponseModel = HTTP.put_ui_config_status(row.get('id'), state.get("value"))
+        response: ResponseModel = HTTP.ui.config.put_ui_config_status(row.get('id'), state.get("value"))
         response_message(self, response)
         if response.code == 200:
             toggle.change_requested.emit(bool(state.get("value")))
@@ -224,4 +226,4 @@ class EquipmentPage(TableParent):
         equipment_model = EquipmentModel(type=data.get('type'), **data.get('config'))
         if PageObject.test_page_steps is None:
             PageObject.test_page_steps = TestPageSteps(self.parent, None)
-        self.parent.loop.create_task(PageObject.test_page_steps.new_web_obj(equipment_model))
+        self.parent.loop.create_task(PageObject.test_page_steps.new_web_obj(equipment_model))  # type: ignore

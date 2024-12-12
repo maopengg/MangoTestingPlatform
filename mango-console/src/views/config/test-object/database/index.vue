@@ -143,7 +143,7 @@
     getSystemDatabase,
     postSystemDatabase,
     putSystemDatabase,
-  } from '@/api/system'
+  } from '@/api/system/database'
   import { useRoute } from 'vue-router'
 
   const route = useRoute()

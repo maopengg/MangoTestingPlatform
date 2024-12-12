@@ -21,10 +21,10 @@ class ModulePage(SubPage):
                          form_data=form_data)
         self.superior_page = 'product'
         self.id_key = 'project_product'
-        self.get = HTTP.get_module
-        self.post = HTTP.post_module
-        self.put = HTTP.put_module
-        self._delete = HTTP.delete_module
+        self.get = HTTP.system.module.get_module
+        self.post = HTTP.system.module.post_module
+        self.put = HTTP.system.module.put_module
+        self._delete = HTTP.system.module.delete_module
 
     def show_data(self, is_refresh=False):
         super().show_data()

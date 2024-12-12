@@ -133,17 +133,28 @@ class MatchingAssertion:
         assert_that(actual).does_not_match(expect)
 
 
+def filter_dict(actual: dict, expect: dict) -> dict:
+    filtered = {}
+    for key in expect.keys():
+        if key in actual:
+            if isinstance(expect[key], dict):
+                filtered[key] = filter_dict(actual[key], expect[key])
+            elif isinstance(expect[key], list) and isinstance(actual[key], list):
+                filtered[key] = []
+                for item in actual[key]:
+                    if isinstance(item, dict):
+                        filtered_item = filter_dict(item, expect[key][0])
+                        filtered[key].append(filtered_item)
+                    else:
+                        filtered[key].append(item)
+            else:
+                filtered[key] = actual[key]
+    return filtered
+
+
 class PublicAssertion(WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEqualToAssertion):
     @classmethod
     def ass_response_whole(cls, actual: dict, expect: dict):
-        filtered_actual = {key: actual[key] for key in expect if key in actual}
-        for key in expect.keys():
-            if isinstance(expect[key], dict):
-                if actual.get(key) is not None:
-                    filtered_actual[key] = {k: actual[key][k] for k in expect[key] if k in actual[key]}
-                else:
-                    filtered_actual[key] = {}
-
+        filtered_actual = filter_dict(actual, expect)
         diff = DeepDiff(filtered_actual, expect, ignore_order=True)
         assert not diff, f"字典不匹配: {diff}"
-

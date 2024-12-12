@@ -63,7 +63,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="status.data"
+                      :options="enumStore.task_status"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -96,9 +96,6 @@
               <a-space>
                 <div>
                   <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
-                </div>
-                <div>
-                  <a-button status="warning" size="small" @click="setCase">修改状态</a-button>
                 </div>
                 <div>
                   <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
@@ -244,26 +241,25 @@
   import { usePageData } from '@/store/page-data'
   import {
     deleteUiSteps,
-    deleteUiStepsPutType,
-    getUiPageName,
     getUiPageStepsCopy,
     getUiSteps,
-    getUiStepsRun,
+    getUiStepsTest,
     postUiSteps,
     putUiSteps,
-  } from '@/api/uitest'
+  } from '@/api/uitest/page-steps'
+  import { getUiPageName } from '@/api/uitest/page'
   import { conditionItems, tableColumns, formItems } from './config'
-  import { useStatus } from '@/store/modules/status'
-  import { useEnvironment } from '@/store/modules/get-environment'
+  import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
   const productModule = useProductModule()
   const projectInfo = useProject()
-  const status = useStatus()
+  const enumStore = useEnum()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
-  const uEnvironment = useEnvironment()
+  const userStore = useUserStore()
 
   const formModel = ref({})
   const data = reactive({
@@ -271,7 +267,6 @@
     updateId: 0,
     actionTitle: '添加测试对象',
     pageName: [],
-    systemStatus: [],
   })
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
@@ -366,28 +361,6 @@
     })
   }
 
-  function setCase() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要修改状态的步骤')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要翻转这些用例的状态吗？',
-      cancelText: '取消',
-      okText: '确定',
-      onOk: () => {
-        deleteUiStepsPutType(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
-            selectedRowKeys.value = []
-            doRefresh()
-          })
-          .catch(console.log)
-      },
-    })
-  }
-
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
@@ -412,11 +385,11 @@
   }
 
   function onRunCase(record: any) {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsRun(record.id, uEnvironment.selectValue)
+    getUiStepsTest(record.id, userStore.selected_environment)
       .then((res) => {
         Message.loading(res.msg)
       })

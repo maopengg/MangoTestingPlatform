@@ -11,9 +11,9 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import NoticeConfig
-from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.enums.system_enum import NoticeEnum
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response

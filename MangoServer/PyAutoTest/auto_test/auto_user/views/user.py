@@ -14,7 +14,7 @@ from rest_framework.viewsets import ViewSet
 from PyAutoTest.auto_test.auto_system.service.menu import ad_routes
 from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.auto_test.auto_user.views.role import RoleSerializers
-from PyAutoTest.enums.tools_enum import ClientTypeEnum
+from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.middleware.utlis.jwt_auth import create_token
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -197,10 +197,6 @@ class LoginViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
-        from PyAutoTest.tools.log_collector import log
-        log.system.debug('DEBUG')
-        log.system.info('DEBUG')
-        log.system.warning('DEBUG')
-        log.system.critical('DEBUG')
-        log.system.error('DEBUG')
+        from mangokit import Mango
+        Mango.s('服务端发送测试~')
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())

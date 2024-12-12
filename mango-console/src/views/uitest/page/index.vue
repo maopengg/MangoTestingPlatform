@@ -207,7 +207,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { getUiPage, deleteUiPage, postUiPage, putUiPage, postUiPageCopy } from '@/api/uitest'
+  import { getUiPage, deleteUiPage, postUiPage, putUiPage, postUiPageCopy } from '@/api/uitest/page'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'

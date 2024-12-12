@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiIn
 from PyAutoTest.auto_test.auto_api.service.base_tools.case_detailed import CaseDetailedInit
 from PyAutoTest.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from PyAutoTest.enums.api_enum import MethodEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.api_model import RequestDataModel, ApiCaseResultModel, ResponseDataModel, ApiCaseStepsResultModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
@@ -43,6 +43,8 @@ class TestCase(CaseDetailedInit):
     def test_case(self, case_id: int, case_sort: int | None = None) -> ApiCaseResultModel:
         log.api.debug(f'开始执行用例ID：{case_id}')
         api_case = ApiCase.objects.get(id=case_id)
+        api_case.status = TaskEnum.PROCEED.value
+        api_case.save()
         self.api_case_result = ApiCaseResultModel(
             id=case_id,
             name=api_case.name,
@@ -70,8 +72,12 @@ class TestCase(CaseDetailedInit):
                     error_message=self.error_message,
                     result_data=self.api_case_result
                 ))
+            api_case.status = self.status.value
+            api_case.save()
             return self.api_case_result
         except Exception as error:
+            api_case.status = TaskEnum.FAIL.value
+            api_case.save()
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
@@ -95,7 +101,6 @@ class TestCase(CaseDetailedInit):
         try:
             for i in case_detailed_list:
                 request_data_model = self.case_steps_front(i)
-
                 request_data_model, response = self.send_request(request_data_model)
                 self.case_steps_posterior(i, request_data_model, response)
                 if self.status == StatusEnum.FAIL:
@@ -110,6 +115,8 @@ class TestCase(CaseDetailedInit):
             self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
 
     def case_steps_front(self, data: ApiCaseDetailed) -> RequestDataModel:
+        data.status = TaskEnum.PROCEED.value
+        data.save()
         self.project_product_id = data.api_info.project_product.id
         self.init_test_object()
         self.front_sql(data)
@@ -141,6 +148,8 @@ class TestCase(CaseDetailedInit):
             response=response,
             cache_data=self.get_all()
         )
+        data.status = self.status.value
+        data.save()
         self.api_case_result.steps.append(api_case_steps_result)
         self.update_api_info(data.api_info.id, self.status)
         self.update_case_detailed(data.id, self.status, api_case_steps_result)

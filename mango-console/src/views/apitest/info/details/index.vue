@@ -18,7 +18,7 @@
         <a-space direction="vertical" style="width: 25%">
           <span>接口名称：{{ pageData.record.name }}</span>
           <span>接口URL：{{ pageData.record.url }}</span>
-          <span>接口方法：{{ data.apiMethodType[pageData.record.method] }}</span>
+          <span>接口方法：{{ enumStore.method[pageData.record.method].title }}</span>
         </a-space>
       </div>
     </a-card>
@@ -77,15 +77,14 @@
   import { nextTick, onMounted, reactive } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
-  import { getSystemEnumApiParameterType, getSystemEnumMethod } from '@/api/system'
-  import { putApiInfo } from '@/api/apitest'
+  import { putApiInfo } from '@/api/apitest/info'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
 
   const pageData: any = usePageData()
   const data: any = reactive({
     id: 0,
     pageType: '0',
-    apiParameterType: [],
-    apiMethodType: [],
     header: formatJson(pageData.record.header),
     params: formatJson(pageData.record.params),
     json: formatJson(pageData.record.json),
@@ -119,24 +118,6 @@
     return JSON.stringify(items, null, 2)
   }
 
-  function enumApiParameterType() {
-    getSystemEnumApiParameterType()
-      .then((res) => {
-        data.apiParameterType = res.data
-      })
-      .catch(console.log)
-  }
-
-  function doMethod() {
-    getSystemEnumMethod()
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          data.apiMethodType.push(item.title)
-        })
-      })
-      .catch(console.log)
-  }
-
   function upDate(key: string, value1: string) {
     let value = pageData.record
     try {
@@ -167,8 +148,6 @@
   onMounted(() => {
     nextTick(async () => {
       switchPageType()
-      await doMethod()
-      enumApiParameterType()
     })
   })
 </script>

@@ -1,7 +1,7 @@
 <script lang="tsx">
   import { getNowDate } from '@/utils'
   import { defineComponent, onUnmounted, ref, onMounted } from 'vue'
-  import { getSystemSocketAllUserSum } from '@/api/system'
+  import { getSystemSocketAllUserSum } from '@/api/system/socket_api'
 
   export default defineComponent({
     setup() {

@@ -8,6 +8,7 @@ from typing import Optional
 from PySide6.QtCore import QObject, Signal
 from mangokit import MysqlConnect, MysqlConingModel
 from playwright.async_api import Page, BrowserContext
+from uiautomation import WindowControl
 from uiautomator2 import Device
 
 from src.enums.tools_enum import StatusEnum
@@ -57,6 +58,8 @@ class BaseData(QObject):
 
         self.package_name: Optional[str | None] = None
         self.android: Optional[Device | None] = None
+
+        self.windows: Optional[None | WindowControl] = None
 
     async def setup(self) -> None:
         self.url = None

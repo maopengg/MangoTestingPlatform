@@ -81,7 +81,7 @@
   import { Message } from '@arco-design/web-vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { websocket } from '@/utils/socket'
-  import { getUserInfo, postUserPassword } from '@/api/user'
+  import { getUserInfo, postUserPassword } from '@/api/user/user'
   const userStore = useUserStore()
   const touched = ref(false)
   const uploaded = ref(false)

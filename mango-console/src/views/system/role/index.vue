@@ -91,7 +91,7 @@
     getUserRoleList,
     postUserRoleList,
     putUserRoleList,
-  } from '@/api/user'
+  } from '@/api/user/role'
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()

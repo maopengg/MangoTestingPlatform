@@ -2,6 +2,7 @@ from django.db import models
 
 from PyAutoTest.auto_test.auto_system.models import ProjectProduct, ProductModule
 from PyAutoTest.auto_test.auto_user.models import User
+from PyAutoTest.exceptions import ToolsError
 
 """
      1.python manage.py makemigrations
@@ -34,6 +35,11 @@ class ApiInfo(models.Model):
         db_table = 'api_info'
         ordering = ['-id']
 
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailed.objects.filter(api_info=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的用例步骤详情后再删除！")
+        super().delete(*args, **kwargs)
+
 
 class ApiCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -55,6 +61,11 @@ class ApiCase(models.Model):
     class Meta:
         db_table = 'api_case'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailed.objects.filter(case=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的用例步骤详情后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class ApiCaseDetailed(models.Model):

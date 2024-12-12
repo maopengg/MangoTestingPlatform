@@ -7,8 +7,8 @@
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.views.api_info import ApiInfoCRUD
 from PyAutoTest.enums.tools_enum import ClientTypeEnum
-from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.models.api_model import RecordingApiModel
+from PyAutoTest.models.socket_model import SocketDataModel
 from PyAutoTest.tools.log_collector import log
 
 

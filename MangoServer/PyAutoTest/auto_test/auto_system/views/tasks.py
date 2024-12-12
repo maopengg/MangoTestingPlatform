@@ -77,7 +77,7 @@ class TasksViews(ViewSet):
 
     @action(methods=['put'], detail=False)
     @error_response('system')
-    def put_is_notice(self, request: Request):
+    def put_notice(self, request: Request):
         """
         修改启停用
         :param request:

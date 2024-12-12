@@ -11,16 +11,16 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
-from PyAutoTest.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
+from PyAutoTest.auto_test.auto_ui.models import PageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+
 
 class PageStepsDetailedSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)

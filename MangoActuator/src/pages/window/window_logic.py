@@ -8,12 +8,12 @@ import asyncio
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
-    MangoMain1Window, DialogWidget, FormDataModel, response_message
+    MangoMain1Window, DialogWidget, FormDataModel
 
-from src.enums.system_enum import EnvironmentEnum
+from src.consumer import SocketConsumer
+from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
 from src.network.web_socket.websocket_client import WebSocketClient
-from src.consumer import SocketConsumer
 from src.settings.settings import STYLE, MENUS
 from ..api import *
 from ..config import *
@@ -27,6 +27,7 @@ from ..user import *
 from ...models import queue_notification
 from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
+from ...tools.components.message import response_message
 from ...tools.methods import Methods
 
 
@@ -79,8 +80,8 @@ class WindowLogic(MangoMain1Window):
             'user_log': UserLogPage,
 
             'time': TimePage,
-            'scheduled_task': ScheduledTaskPage,
-            'task_case': TaskCasePage,
+            'tasks': TasksPage,
+            'tasks_details': TasksDetailsPage,
 
             'tools': SmallToolsPage,
             'settings': SettingPage,
@@ -134,10 +135,11 @@ class WindowLogic(MangoMain1Window):
             dialog = DialogWidget('选择项目', project_list)
             dialog.exec()
             if dialog.data:
-                response: ResponseModel = HTTP.put_user_project(user_info.id, dialog.data.get('selected_project'))
+                response: ResponseModel = HTTP.user.info.put_user_project(user_info.id,
+                                                                          dialog.data.get('selected_project'))
                 response_message(self.central_widget, response)
                 if response.code == 200:
-                    HTTP.headers['Project'] = str(dialog.data.get('selected_project'))
+                    HTTP.api.info.headers['Project'] = str(dialog.data.get('selected_project'))
                     user_info.selected_project = response.data.get('selected_project')
 
         elif data == 'test_env':
@@ -154,7 +156,8 @@ class WindowLogic(MangoMain1Window):
             dialog.exec()
             if dialog.data:
                 user_info.selected_environment = dialog.data.get('selected_environment')
-                response: ResponseModel = HTTP.put_environment(user_info.id, dialog.data.get('selected_environment'))
+                response: ResponseModel = HTTP.user.info.put_environment(user_info.id,
+                                                                         dialog.data.get('selected_environment'))
                 response_message(self.central_widget, response)
                 if response.code == 200:
                     user_info.selected_project = response.data.get('selected_environment')

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.network import HTTP
 
 search_data = [
@@ -12,7 +12,7 @@ search_data = [
         'placeholder': '请选择用户',
         'key': 'user',
         'type': 1,
-        'select': HTTP.get_name
+        'select': HTTP.user.info.get_name
     },
     {
         'title': '来源',

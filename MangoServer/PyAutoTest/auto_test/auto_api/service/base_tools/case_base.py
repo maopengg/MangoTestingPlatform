@@ -15,7 +15,7 @@ from PyAutoTest.enums.tools_enum import StatusEnum, AutoTypeEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.api_model import RequestDataModel
 from PyAutoTest.tools.obtain_test_data import ObtainTestData
-from mangokit import MysqlConnect
+from mangokit import MysqlConnect, MangoKitError
 
 
 class CaseBase(ObtainTestData, BaseRequest):
@@ -67,34 +67,36 @@ class CaseBase(ObtainTestData, BaseRequest):
                 self.__headers(i)
 
     def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
-        for key, value in request_data_model:
-            if key == 'headers' and isinstance(value, str):
-                value = self.replace(value)
-                # if value == '${headers}':
-                #     value = None
-                if value and isinstance(value, str):
-                    value = self.loads(value) if value else value
-                setattr(request_data_model, key, value)
-            elif key == 'file':
-                if request_data_model.file:
-                    file = []
-                    for i in request_data_model.file:
-                        i: dict = i
-                        for k, v in i.items():
-                            file_name = self.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                            path = self.replace(v)
-                            file.append((k, (file_name, open(path, 'rb'))))
-                    request_data_model.file = file
-            else:
-                value = self.replace(value)
-                setattr(request_data_model, key, value)
+        try:
+            for key, value in request_data_model:
+                if key == 'headers' and isinstance(value, str):
+                    value = self.replace(value)
+                    # if value == '${headers}':
+                    #     value = None
+                    if value and isinstance(value, str):
+                        value = self.loads(value) if value else value
+                    setattr(request_data_model, key, value)
+                elif key == 'file':
+                    if request_data_model.file:
+                        file = []
+                        for i in request_data_model.file:
+                            i: dict = i
+                            for k, v in i.items():
+                                file_name = self.identify_parentheses(v)[0].replace('(', '').replace(')', '')
+                                path = self.replace(v)
+                                file.append((k, (file_name, open(path, 'rb'))))
+                        request_data_model.file = file
+                else:
+                    value = self.replace(value)
+                    setattr(request_data_model, key, value)
 
-            if key == 'headers' and hasattr(self, 'headers') and self.headers:
-                new_dict = self.replace(self.headers)
-                if new_dict and isinstance(new_dict, str):
-                    new_dict = self.loads(new_dict) if new_dict else new_dict
-                request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
-
+                if key == 'headers' and hasattr(self, 'headers') and self.headers:
+                    new_dict = self.replace(self.headers)
+                    if new_dict and isinstance(new_dict, str):
+                        new_dict = self.loads(new_dict) if new_dict else new_dict
+                    request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
+        except MangoKitError as error:
+            raise ApiError(error.code, error.msg)
         return request_data_model
 
     async def __login(self, api_public_obj: ApiPublic):

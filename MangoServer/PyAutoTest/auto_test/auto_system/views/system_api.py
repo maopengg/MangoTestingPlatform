@@ -9,21 +9,44 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from PyAutoTest.auto_test.auto_system.service.tasks.run_tasks import Tasks
+from PyAutoTest.enums.api_enum import *
+from PyAutoTest.enums.system_enum import *
+from PyAutoTest.enums.tools_enum import *
+from PyAutoTest.enums.ui_enum import *
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.redis.redis import Cache
 from PyAutoTest.tools.view import *
+from mangokit import NoticeEnum
 from mangokit import ObtainRandomData
 
 
 class SystemViews(ViewSet):
-
     @action(methods=['get'], detail=False)
     @error_response('system')
-    def test_func(self, request: Request):
-        Tasks.timing(request.query_params.get('id'))
-        return ResponseData.success(RESPONSE_MSG_0061, )
+    def enum_api(self, request: Request):
+        enum_dict = {
+            'cline_type': ClientTypeEnum.get_option(),
+            'method': MethodEnum.get_option(),
+            'api_public_type': ApiPublicTypeEnum.get_option(),
+            'client': ClientEnum.get_option(),
+            'notice': NoticeEnum.get_option(),
+            'status': StatusEnum.get_option(),
+            'drive_type': DriveTypeEnum.get_option(),
+            'browser_type': BrowserTypeEnum.get_option(),
+            'element_exp': ElementExpEnum.get_option(),
+            'auto_test_type': AutoTestTypeEnum.get_option(),
+            'case_level': CaseLevelEnum.get_option(),
+            'ui_public': UiPublicTypeEnum.get_option(),
+            'element_ope': ElementOperationEnum.get_option(),
+            'api_parameter_type': ApiParameterTypeEnum.get_option(),
+            'device': DeviceEnum.obj(),
+            'product_type': ProductTypeEnum.get_option(),
+            'auto_type': AutoTypeEnum.get_option(),
+            'task_status': TaskEnum.get_option(),
+            'environment_type': EnvironmentEnum.get_option(),
+        }
+        return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 
     @action(methods=['get'], detail=False)
     @error_response('system')

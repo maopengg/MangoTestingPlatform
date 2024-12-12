@@ -4,14 +4,12 @@
 # @Time   : 2023/3/24 17:33
 # @Author : 毛鹏
 import atexit
-
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from PyAutoTest.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from PyAutoTest.auto_test.auto_system.service.tasks.add_tasks import AddTasks
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTestTypeEnum
 from PyAutoTest.tools.decorator.retry import orm_retry
 from PyAutoTest.tools.log_collector import log
 
@@ -70,6 +68,16 @@ class RunTasks:
                 tasks_id=tasks.id,
             )
             add_tasks.add_test_suite_details([tasks.case_id for tasks in tasks_details])
-
+        elif tasks.type == AutoTestTypeEnum.MangoPytest.value:
+            tasks_details = TasksDetails.objects.filter(task=tasks.id)
+            add_tasks = AddTasks(
+                project_product=tasks.project_product.id,
+                test_env=tasks.test_env,
+                is_notice=tasks.is_notice,
+                user_id=tasks.case_people.id,
+                _type=AutoTestTypeEnum.MangoPytest.value,
+                tasks_id=tasks.id,
+            )
+            add_tasks.add_test_suite_details([tasks.command for tasks in tasks_details])
         else:
             log.system.error('开始执行性能自动化任务')

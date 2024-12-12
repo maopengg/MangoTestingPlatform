@@ -63,7 +63,7 @@
                       style="width: 140px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="status.data"
+                      :options="enumStore.task_status"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -165,7 +165,7 @@
                 <template v-else-if="item.key === 'level'" #cell="{ record }">
                   <a-tag color="orange" size="small">
                     {{
-                      record.level !== null ? data.enumCaseLevel[record.level].title : '-'
+                      record.level !== null ? enumStore.case_level[record.level].title : '-'
                     }}</a-tag
                   >
                 </template>
@@ -261,7 +261,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.enumCaseLevel"
+                  :options="enumStore.case_level"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -288,26 +288,24 @@
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
   import { tableColumns, formItems, conditionItems } from './config'
+
+  import { getUserName } from '@/api/user/user'
+  import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
   import {
-    deleteApiCase,
     getApiCase,
-    getApiCaseRun,
+    deleteApiCase,
     postApiCase,
-    postApiCaseBatchRun,
     postApiCaseCody,
+    getApiCaseRun,
+    postApiCaseBatchRun,
     putApiCase,
-  } from '@/api/apitest'
-  import { getUserName } from '@/api/user'
-  import {
-    getSystemEnumCaseLevel,
-    getSystemScheduledName,
-    postSystemTasksBatchSetCases,
-  } from '@/api/system'
-  import { useStatus } from '@/store/modules/status'
-  import { useEnvironment } from '@/store/modules/get-environment'
+    postApiImportUrl,
+  } from '@/api/apitest/case'
+  import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
+  import { getSystemTasksName } from '@/api/system/tasks'
 
   const productModule = useProductModule()
-  const status = useStatus()
 
   const router = useRouter()
   const projectInfo = useProject()
@@ -317,7 +315,8 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const uEnvironment = useEnvironment()
+  const enumStore = useEnum()
+  const userStore = useUserStore()
 
   const data = reactive({
     actionTitle: '添加接口',
@@ -325,7 +324,6 @@
     updateId: 0,
     userList: [],
     scheduledName: [],
-    enumCaseLevel: [],
     value: null,
     visible: false,
   })
@@ -454,12 +452,12 @@
   }
 
   function caseRun(record: any) {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
     Message.loading('正在执行用例请稍后~')
-    getApiCaseRun(record.id, uEnvironment.selectValue, null)
+    getApiCaseRun(record.id, userStore.selected_environment, null)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -467,7 +465,7 @@
     doRefresh()
   }
   function onCaseBatchRun() {
-    if (uEnvironment.selectValue == null) {
+    if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
@@ -476,7 +474,7 @@
       return
     }
     Message.loading('正在执行用例请稍后~')
-    postApiCaseBatchRun(selectedRowKeys.value, uEnvironment.selectValue)
+    postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
@@ -523,7 +521,7 @@
     data.visible = false
   }
   function scheduledName() {
-    getSystemScheduledName(1)
+    getSystemTasksName(1)
       .then((res) => {
         data.scheduledName = res.data
       })
@@ -538,18 +536,10 @@
     })
   }
 
-  function enumCaseLevel() {
-    getSystemEnumCaseLevel()
-      .then((res) => {
-        data.enumCaseLevel = res.data
-      })
-      .catch(console.log)
-  }
   onMounted(() => {
     nextTick(async () => {
       getNickName()
       scheduledName()
-      await enumCaseLevel()
       await doRefresh()
       productModule.getProjectModule(null)
     })

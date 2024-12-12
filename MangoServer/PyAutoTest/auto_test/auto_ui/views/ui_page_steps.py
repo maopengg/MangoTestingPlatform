@@ -9,12 +9,13 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_ui.models import PageSteps, PageStepsDetailed
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_page import PageSerializers
-from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
-from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from PyAutoTest.enums.tools_enum import StatusEnum, ClientNameEnum
+from PyAutoTest.enums.system_enum import ClientNameEnum
+from PyAutoTest.enums.tools_enum import StatusEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
@@ -76,33 +77,13 @@ class PageStepsViews(ViewSet):
         try:
             case_json = SendTestData(
                 request.user['id'],
+                request.user['username'],
                 request.GET.get("te"),
                 is_send=is_send) \
                 .test_steps(int(request.GET.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))
-
-    @action(methods=['put'], detail=False)
-    @error_response('ui')
-    def put_type(self, request: Request):
-        for i in request.data.get('id'):
-            case = self.model.objects.get(id=i)
-            case.type = 0 if case.type == 1 else 1 if not case.type else 1
-            case.save()
-        return ResponseData.success(RESPONSE_MSG_0085, )
-
-    @action(methods=['get'], detail=False)
-    @error_response('ui')
-    def get_case_name(self, request: Request):
-        """
-         获取所有用例id和名称
-         :param request:
-         :return:
-         """
-        res = self.model.objects.values_list('id', 'name')
-        data = [{'key': _id, 'title': name} for _id, name in res]
-        return ResponseData.success(RESPONSE_MSG_0086, data)
 
     @action(methods=['GET'], detail=False)
     @error_response('ui')

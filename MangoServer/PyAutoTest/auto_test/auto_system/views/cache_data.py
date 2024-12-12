@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 from django.core.exceptions import FieldError
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
@@ -83,12 +82,3 @@ class CacheDataCRUD(ModelCRUD):
 class CacheDataViews(ViewSet):
     model = CacheData
     serializer_class = CacheDataSerializers
-
-    @action(methods=['get'], detail=False)
-    @error_response('system')
-    def get_cache_value(self, request: Request):
-        try:
-            cache = CacheData.objects.get(key=request.query_params.get('key'))
-        except CacheData.DoesNotExist:
-            return ResponseData.success(RESPONSE_MSG_0001, data={'value': "1"})
-        return ResponseData.success(RESPONSE_MSG_0001, data={'value': cache.value})

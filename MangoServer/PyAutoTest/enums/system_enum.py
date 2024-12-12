@@ -6,69 +6,32 @@
 from PyAutoTest.enums import BaseEnum
 
 
-class NoticeEnum(BaseEnum):
-    """通知枚举"""
-    MAIL = 0
-    WECOM = 1
-    NAILING = 2
+class ClientTypeEnum(BaseEnum):
+    """
+    三个端的类型
+    """
+    SERVER = 0
+    WEB = 1
+    ACTUATOR = 2
 
     @classmethod
     def obj(cls):
-        return {0: "邮箱", 1: "企微", 2: "钉钉-未测试"}
+        return {0: "服务端", 1: "控制端", 2: "执行端"}
 
 
-class EnvironmentEnum(BaseEnum):
-    """测试环境枚举"""
-    TEST = 0
-    PRE = 1
-    PRO = 2
-    DEV = 3
-    UAT = 4
-    SIM = 5
-
-    @classmethod
-    def obj(cls):
-        return {0: "测试环境", 1: "预发环境", 2: "生产环境", 3: "开发环境", 4: "验收环境", 5: "仿真环境"}
-
-
-class AutoTestTypeEnum(BaseEnum):
-    """自动测试类型"""
-    UI = 0
-    API = 1
-    PERF = 2
+class ClientNameEnum(BaseEnum):
+    """
+    端名称
+    """
+    DRIVER = 'Mango Actuator'
+    SERVER = 'Mango Server'
+    WEB = 'mango-console'
+    PLATFORM_CHINESE = '芒果测试平台'
+    PLATFORM_ENGLISH = 'MangoTestPlatform'
 
     @classmethod
     def obj(cls):
-        return {0: "前端", 1: "接口", 2: "性能"}
-
-
-class CaseLevelEnum(BaseEnum):
-    """测试用例级别"""
-    P0 = 0
-    P1 = 1
-    P2 = 2
-    P3 = 3
-
-    @classmethod
-    def obj(cls):
-        return {0: "高", 1: "中", 2: "低", 3: "极低"}
-
-
-class CacheValueTypeEnum(BaseEnum):
-    """缓存数据类型"""
-    STR = 0
-    INT = 1
-    FLOAT = 2
-    BOOL = 3
-    NONE = 4
-    LIST = 5
-    DICT = 6
-    TUPLE = 7
-    JSON = 8
-
-    @classmethod
-    def obj(cls):
-        return {0: "字符串", 1: "整数", 2: "小数", 3: "布尔", 4: "null", 5: "列表", 6: "字典", 7: "元组", 8: "JSON"}
+        return {'DRIVER': "Mango Actuator", 'SERVER': "Mango Server", 'WEB': "mango-console"}
 
 
 class SocketEnum(BaseEnum):
@@ -115,9 +78,3 @@ class CacheDataKey2Enum(BaseEnum):
     @classmethod
     def obj(cls):
         return {'DOMAIN_NAME': "本系统的URL地址"}
-
-
-class SystemEnvEnum(BaseEnum):
-    MASTER = 'master'
-    PROD = 'prod'
-    DEV = 'dev'

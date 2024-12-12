@@ -37,7 +37,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="data.enumClientTypeList"
+                      :options="enumStore.cline_type"
                       :field-names="fieldNames"
                       value-key="key"
                       allow-clear
@@ -113,14 +113,16 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { conditionItems, tableColumns } from './config'
-  import { getUserLogs, getUserName } from '@/api/user'
-  import { getSystemEnumClient } from '@/api/system'
+  import { getUserName } from '@/api/user/user'
+  import { getUserLogs } from '@/api/user/user-logs'
+  import { useEnum } from '@/store/modules/get-enum'
+  const enumStore = useEnum()
+
   const pagination = usePagination(doRefresh)
   const table = useTable()
   const rowKey = useRowKey('id')
   const data = reactive({
     userList: [],
-    enumClientTypeList: [],
   })
 
   function doRefresh() {
@@ -149,19 +151,10 @@
       .catch(console.log)
   }
 
-  function enumClientType() {
-    getSystemEnumClient()
-      .then((res) => {
-        data.enumClientTypeList = res.data
-      })
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getNickName()
-      enumClientType()
     })
   })
 </script>

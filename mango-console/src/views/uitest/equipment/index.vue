@@ -153,7 +153,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.driveType"
+                  :options="enumStore.drive_type"
                   :field-names="fieldNames"
                   value-key="key"
                   @change="changeStatus(item.value)"
@@ -165,7 +165,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.browserType"
+                  :options="enumStore.browser_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -176,7 +176,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.device"
+                  :options="enumStore.device"
                   value-key="key"
                   allow-clear
                   allow-search
@@ -227,7 +227,6 @@
   import { getFormItems } from '@/utils/datacleaning'
   import useUserStore from '@/store/modules/user'
   import { tableColumns, formItems, webFormItems, androidFormItems } from './config'
-  import { getSystemEnumBrowser, getSystemEnumDrive, getSystemEnumUiDevice } from '@/api/system'
   import {
     deleteUiConfig,
     getUiConfig,
@@ -235,14 +234,12 @@
     postUiConfig,
     putUiConfig,
     putUiConfigPutStatus,
-  } from '@/api/uitest'
+  } from '@/api/uitest/config'
+  import { useEnum } from '@/store/modules/get-enum'
 
   const userStore = useUserStore()
   const data = reactive({
     userList: [],
-    browserType: [],
-    driveType: [],
-    device: [],
     loading: false,
     actionTitle: '添加配置',
     updateId: 0,
@@ -255,6 +252,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
+  const enumStore = useEnum()
 
   function changeStatus(event: number) {
     for (let i = formItems.length - 1; i >= 0; i--) {
@@ -423,22 +421,6 @@
     })
   }
 
-  function getUiConfigGetBrowserType() {
-    getSystemEnumBrowser()
-      .then((res) => {
-        data.browserType = res.data
-      })
-      .catch(console.log)
-  }
-
-  function getUiConfigGetDriveType() {
-    getSystemEnumDrive()
-      .then((res) => {
-        data.driveType = res.data
-      })
-      .catch(console.log)
-  }
-
   function onTakeOver(id: number) {
     Message.success('功能实现中' + id)
   }
@@ -450,15 +432,7 @@
   function onDebugWEB(id: number) {
     getUiConfigNewBrowserObj(id, 0)
       .then((res) => {
-        data.driveType = res.data
-      })
-      .catch(console.log)
-  }
-
-  function onEnumUiEquipment() {
-    getSystemEnumUiDevice()
-      .then((res) => {
-        data.device = res.data
+        Message.loading(res.msg)
       })
       .catch(console.log)
   }
@@ -466,9 +440,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getUiConfigGetBrowserType()
-      getUiConfigGetDriveType()
-      onEnumUiEquipment()
     })
   })
 </script>

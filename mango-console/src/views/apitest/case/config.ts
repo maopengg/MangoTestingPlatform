@@ -116,6 +116,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请设置用例级别',
     validator: function () {
+      // @ts-ignore
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false

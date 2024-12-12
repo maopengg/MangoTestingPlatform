@@ -7,10 +7,9 @@ from urllib.parse import urljoin
 from PyAutoTest.auto_test.auto_api.models import ApiInfo
 from PyAutoTest.auto_test.auto_api.service.base_tools.case_base import CaseBase
 from PyAutoTest.enums.api_enum import MethodEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum
 from PyAutoTest.models.api_model import RequestDataModel, ResponseDataModel
 from PyAutoTest.tools.log_collector import log
-
 
 class TestApiInfo(CaseBase):
 
@@ -19,6 +18,8 @@ class TestApiInfo(CaseBase):
 
     def api_info_run(self, api_info_id: int) -> ResponseDataModel:
         self.api_info = ApiInfo.objects.get(id=api_info_id)
+        self.api_info.status = TaskEnum.PROCEED.value
+        self.api_info.save()
         self.project_product_id = self.api_info.project_product.id
         self.init_test_object()
         self.init_public()
@@ -32,7 +33,9 @@ class TestApiInfo(CaseBase):
             file=self.api_info.file))
         log.api.debug(f'接口调试请求数据：{request_data.model_dump_json()}')
         response: ResponseDataModel = self.http(request_data)
-        if response.status_code != 500:
+        if response.status_code == 300 or response.status_code == 200:
             self.api_info.status = StatusEnum.SUCCESS.value
-            self.api_info.save()
+        else:
+            self.api_info.status = StatusEnum.FAIL.value
+        self.api_info.save()
         return response

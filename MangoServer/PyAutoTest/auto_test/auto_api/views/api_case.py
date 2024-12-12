@@ -17,8 +17,7 @@ from PyAutoTest.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from PyAutoTest.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.system_enum import AutoTestTypeEnum
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, AutoTestTypeEnum
 from PyAutoTest.models.api_model import ApiCaseResultModel
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
