@@ -197,10 +197,6 @@ class LoginViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
-        from PyAutoTest.tools.log_collector import log
-        log.system.debug('DEBUG')
-        log.system.info('DEBUG')
-        log.system.warning('DEBUG')
-        log.system.critical('DEBUG')
-        log.system.error('DEBUG')
+        from mangokit import Mango
+        Mango.s('服务端发送测试~')
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
