@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023/3/23 11:25
 # @Author : 毛鹏
+import json
 
 from PyAutoTest.auto_test.auto_system.models import CacheData
 from PyAutoTest.auto_test.auto_system.views.cache_data import CacheDataCRUD
@@ -22,7 +23,7 @@ class SystemConsumer:
                     CacheDataCRUD.inside_post({
                         'describe': key,
                         'key': key,
-                        'value': value,
+                        'value': json.dumps(value, ensure_ascii=False),
                         'value_type': CacheValueTypeEnum.DICT.value,
                     })
                 except CacheData.MultipleObjectsReturned:
@@ -32,13 +33,13 @@ class SystemConsumer:
                     CacheDataCRUD.inside_post({
                         'describe': key,
                         'key': key,
-                        'value': value,
+                        'value': json.dumps(value, ensure_ascii=False),
                         'value_type': CacheValueTypeEnum.DICT.value,
                     })
                 else:
                     CacheDataCRUD.inside_put(cache_data.id, {
                         'describe': key,
                         'key': key,
-                        'value': value,
+                        'value': json.dumps(value, ensure_ascii=False),
                         'value_type': CacheValueTypeEnum.DICT.value,
                     })

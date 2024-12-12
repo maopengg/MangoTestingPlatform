@@ -1,0 +1,1376 @@
+[
+  {
+    "uiautomator_operation_method": [
+      {
+        "value": "UiautomatorApplication",
+        "label": "应用操作",
+        "children": [
+          {
+            "value": "a_app_stop_all",
+            "label": "停止所有app",
+            "parameter": {}
+          },
+          {
+            "value": "a_app_stop_appoint",
+            "label": "停止除指定app外所有app",
+            "parameter": {
+              "package_name_list": ""
+            }
+          },
+          {
+            "value": "a_clear_app",
+            "label": "清除app数据",
+            "parameter": {
+              "package_name": ""
+            }
+          },
+          {
+            "value": "a_close_app",
+            "label": "关闭应用",
+            "parameter": {
+              "package_name": ""
+            }
+          },
+          {
+            "value": "a_start_app",
+            "label": "启动应用",
+            "parameter": {
+              "package_name": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "UiautomatorElement",
+        "label": "元素操作",
+        "children": [
+          {
+            "value": "a_clear_text",
+            "label": "清空输入框",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_click",
+            "label": "元素单击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_click_coord",
+            "label": "坐标单击",
+            "parameter": {
+              "x": "",
+              "y": ""
+            }
+          },
+          {
+            "value": "a_double_click",
+            "label": "元素双击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_double_click_coord",
+            "label": "坐标双击",
+            "parameter": {
+              "x": "",
+              "y": ""
+            }
+          },
+          {
+            "value": "a_drag_to_coord",
+            "label": "拖动元素到坐标上",
+            "parameter": {
+              "locating": "",
+              "x": "",
+              "y": ""
+            }
+          },
+          {
+            "value": "a_drag_to_ele",
+            "label": "拖动A元素到达B元素上",
+            "parameter": {
+              "locating": "",
+              "locating2": ""
+            }
+          },
+          {
+            "value": "a_element_screenshot",
+            "label": "元素截图",
+            "parameter": {
+              "locating": "",
+              "path": ""
+            }
+          },
+          {
+            "value": "a_get_center",
+            "label": "提取元素坐标",
+            "parameter": {
+              "locating": "",
+              "x_key": "",
+              "y_key": ""
+            }
+          },
+          {
+            "value": "a_get_text",
+            "label": "获取元素文本",
+            "parameter": {
+              "locating": "",
+              "set_cache_key": ""
+            }
+          },
+          {
+            "value": "a_input",
+            "label": "单击输入",
+            "parameter": {
+              "locating": "",
+              "text": ""
+            }
+          },
+          {
+            "value": "a_long_click",
+            "label": "长按元素",
+            "parameter": {
+              "locating": "",
+              "time_": ""
+            }
+          },
+          {
+            "value": "a_pinch_in",
+            "label": "元素缩小",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_pinch_out",
+            "label": "元素放大",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_set_text",
+            "label": "设置文本",
+            "parameter": {
+              "locating": "",
+              "text": ""
+            }
+          },
+          {
+            "value": "a_swipe_ele",
+            "label": "元素内向下滑动",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_swipe_left",
+            "label": "元素内向左滑动",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_swipe_right",
+            "label": "元素内向右滑动",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_swipe_up",
+            "label": "元素内向上滑动",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "a_wait",
+            "label": "等待元素出现",
+            "parameter": {
+              "locating": "",
+              "time_": ""
+            }
+          },
+          {
+            "value": "a_wait_gone",
+            "label": "等待元素消失",
+            "parameter": {
+              "locating": "",
+              "time_": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "UiautomatorEquipment",
+        "label": "设备操作",
+        "children": [
+          {
+            "value": "a_get_window_size",
+            "label": "提取屏幕尺寸",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_back",
+            "label": "按back键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_camera",
+            "label": "按camera键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_center",
+            "label": "按center键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_delete",
+            "label": "按delete键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_down",
+            "label": "按down键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_enter",
+            "label": "按enter键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_home",
+            "label": "按home键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_left",
+            "label": "按left键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_menu",
+            "label": "按menu键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_power",
+            "label": "按power键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_recent",
+            "label": "按recent键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_right",
+            "label": "按right键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_search",
+            "label": "按search键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_up",
+            "label": "按up键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_volume_down",
+            "label": "按volume_down键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_volume_mute",
+            "label": "按volume_mute键",
+            "parameter": {}
+          },
+          {
+            "value": "a_press_volume_up",
+            "label": "按volume_up键",
+            "parameter": {}
+          },
+          {
+            "value": "a_pull",
+            "label": "提取文件-未测试",
+            "parameter": {
+              "feli_path": "",
+              "catalogue": ""
+            }
+          },
+          {
+            "value": "a_push",
+            "label": "推送一个文件-未测试",
+            "parameter": {
+              "feli_path": "",
+              "catalogue": ""
+            }
+          },
+          {
+            "value": "a_screen_off",
+            "label": "关闭屏幕",
+            "parameter": {}
+          },
+          {
+            "value": "a_screen_on",
+            "label": "打开屏幕",
+            "parameter": {}
+          },
+          {
+            "value": "a_sleep",
+            "label": "强制等待",
+            "parameter": {
+              "time_": ""
+            }
+          },
+          {
+            "value": "a_swipe_left",
+            "label": "获取屏幕开关状态",
+            "parameter": {}
+          },
+          {
+            "value": "a_unlock",
+            "label": "解锁屏幕",
+            "parameter": {}
+          }
+        ]
+      },
+      {
+        "value": "UiautomatorPage",
+        "label": "页面操作",
+        "children": [
+          {
+            "value": "a_drag",
+            "label": "坐标拖动",
+            "parameter": {
+              "sx": "",
+              "sy": "",
+              "ex": "",
+              "ey": ""
+            }
+          },
+          {
+            "value": "a_dump_hierarchy",
+            "label": "获取转储的内容",
+            "parameter": {}
+          },
+          {
+            "value": "a_freeze_rotation",
+            "label": "冻结旋转",
+            "parameter": {}
+          },
+          {
+            "value": "a_freeze_rotation_false",
+            "label": "取消冻结旋转",
+            "parameter": {}
+          },
+          {
+            "value": "a_long_click",
+            "label": "长按屏幕3秒",
+            "parameter": {
+              "x": "",
+              "y": "",
+              "time_": ""
+            }
+          },
+          {
+            "value": "a_open_notification",
+            "label": "打开通知",
+            "parameter": {}
+          },
+          {
+            "value": "a_open_quick_settings",
+            "label": "打开快速设置",
+            "parameter": {}
+          },
+          {
+            "value": "a_screenshot",
+            "label": "屏幕截图",
+            "parameter": {
+              "filepath": ""
+            }
+          },
+          {
+            "value": "a_set_orientation_left",
+            "label": "设置为natural",
+            "parameter": {}
+          },
+          {
+            "value": "a_set_orientation_natural",
+            "label": "设置为natural",
+            "parameter": {}
+          },
+          {
+            "value": "a_set_orientation_right",
+            "label": "设置为right",
+            "parameter": {}
+          },
+          {
+            "value": "a_set_orientation_upsidedown",
+            "label": "设置为upsidedown",
+            "parameter": {}
+          },
+          {
+            "value": "a_swipe",
+            "label": "坐标滑动",
+            "parameter": {
+              "sx": "",
+              "sy": "",
+              "ex": "",
+              "ey": ""
+            }
+          },
+          {
+            "value": "a_swipe_down",
+            "label": "下滑",
+            "parameter": {}
+          },
+          {
+            "value": "a_swipe_left",
+            "label": "左滑",
+            "parameter": {}
+          },
+          {
+            "value": "a_swipe_right",
+            "label": "右滑",
+            "parameter": {}
+          },
+          {
+            "value": "a_swipe_up",
+            "label": "上滑",
+            "parameter": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "playwright_operation_method": [
+      {
+        "value": "PlaywrightElement",
+        "label": "元素操作",
+        "children": [
+          {
+            "value": "w_click",
+            "label": "元素单击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_click_upload_files",
+            "label": "点击并选择文件上传",
+            "parameter": {
+              "locating": "",
+              "file_path": ""
+            }
+          },
+          {
+            "value": "w_dblclick",
+            "label": "元素双击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_download",
+            "label": "下载文件",
+            "parameter": {
+              "locating": "",
+              "save_path": ""
+            }
+          },
+          {
+            "value": "w_drag_down_pixel",
+            "label": "往下拖动N个像素",
+            "parameter": {
+              "locating": "",
+              "n": ""
+            }
+          },
+          {
+            "value": "w_drag_left_pixel",
+            "label": "往左拖动N个像素",
+            "parameter": {
+              "locating": "",
+              "n": ""
+            }
+          },
+          {
+            "value": "w_drag_right_pixel",
+            "label": "往右拖动N个像素",
+            "parameter": {
+              "locating": "",
+              "n": ""
+            }
+          },
+          {
+            "value": "w_drag_to",
+            "label": "拖动A元素到达B",
+            "parameter": {
+              "locating1": "",
+              "locating2": ""
+            }
+          },
+          {
+            "value": "w_drag_up_pixel",
+            "label": "往上拖动N个像素",
+            "parameter": {
+              "locating": "",
+              "n": ""
+            }
+          },
+          {
+            "value": "w_force_click",
+            "label": "强制单击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_get_text",
+            "label": "获取元素文本",
+            "parameter": {
+              "locating": "",
+              "set_cache_key": ""
+            }
+          },
+          {
+            "value": "w_input",
+            "label": "元素输入",
+            "parameter": {
+              "locating": "",
+              "input_value": ""
+            }
+          },
+          {
+            "value": "w_time_click",
+            "label": "循环点击N秒",
+            "parameter": {
+              "locating": "",
+              "n": ""
+            }
+          },
+          {
+            "value": "w_upload_files",
+            "label": "拖拽文件上传",
+            "parameter": {
+              "locating": "",
+              "file_path": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "PlaywrightDeviceInput",
+        "label": "输入设备操作",
+        "children": [
+          {
+            "value": "w_hover",
+            "label": "鼠标悬停",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_keyboard_delete_text",
+            "label": "删除光标左侧的字符",
+            "parameter": {
+              "count": ""
+            }
+          },
+          {
+            "value": "w_keyboard_insert_text",
+            "label": "直接输入文字",
+            "parameter": {
+              "text": ""
+            }
+          },
+          {
+            "value": "w_keyboard_type_text",
+            "label": "模拟输入文字",
+            "parameter": {
+              "text": ""
+            }
+          },
+          {
+            "value": "w_keys",
+            "label": "模拟按下指定的键",
+            "parameter": {
+              "keyboard": ""
+            }
+          },
+          {
+            "value": "w_mouse_center",
+            "label": "移动鼠标到浏览器中间",
+            "parameter": {}
+          },
+          {
+            "value": "w_mouse_click",
+            "label": "鼠标点击坐标",
+            "parameter": {
+              "x": "",
+              "y": ""
+            }
+          },
+          {
+            "value": "w_wheel",
+            "label": "鼠标上下滚动像素，负数代表向上",
+            "parameter": {
+              "y": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "PlaywrightBrowser",
+        "label": "浏览器操作",
+        "children": [
+          {
+            "value": "w_alert",
+            "label": "设置弹窗不予处理",
+            "parameter": {}
+          },
+          {
+            "value": "w_ele_screenshot",
+            "label": "元素截图",
+            "parameter": {
+              "locating": "",
+              "path": ""
+            }
+          },
+          {
+            "value": "w_get_cookie",
+            "label": "测试-获取storage_state保存到logs目录",
+            "parameter": {}
+          },
+          {
+            "value": "w_goto",
+            "label": "打开URL",
+            "parameter": {
+              "url": ""
+            }
+          },
+          {
+            "value": "w_screenshot",
+            "label": "整个页面截图",
+            "parameter": {
+              "path": "",
+              "full_page": ""
+            }
+          },
+          {
+            "value": "w_set_cookie",
+            "label": "设置storage_state（cookie）",
+            "parameter": {
+              "storage_state": ""
+            }
+          },
+          {
+            "value": "w_wait_for_timeout",
+            "label": "强制等待",
+            "parameter": {
+              "_time": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "PlaywrightPage",
+        "label": "页面操作",
+        "children": [
+          {
+            "value": "open_new_tab_and_switch",
+            "label": "点击并打开新页签",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_close_current_tab",
+            "label": "关闭当前页签",
+            "parameter": {}
+          },
+          {
+            "value": "w_switch_tabs",
+            "label": "切换页签",
+            "parameter": {
+              "individual": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "PlaywrightCustomization",
+        "label": "定制开发",
+        "children": [
+          {
+            "value": "w_click_right_coordinate",
+            "label": "CDP定开-总和坐标点击",
+            "parameter": {
+              "locating": ""
+            }
+          },
+          {
+            "value": "w_list_input",
+            "label": "DESK定开-列表输入",
+            "parameter": {
+              "locating": "",
+              "input_list_value": "",
+              "element_loc": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "playwright_assertion_method": [
+      {
+        "value": "PlaywrightAssertion",
+        "label": "元素断言",
+        "children": [
+          {
+            "value": "w_not_to_be_editable",
+            "label": "元素已启用",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_empty",
+            "label": "元素不为空",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_enabled",
+            "label": "元素不启用",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_focused",
+            "label": "元素不聚焦",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_hidden",
+            "label": "元素不可隐藏",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_in_viewport",
+            "label": "元素不在视窗中",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_be_visible",
+            "label": "元素不可见",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_not_to_contain_text",
+            "label": "元素不包含文本",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "w_not_to_have_class",
+            "label": "元素没有阶级",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "w_to_be_checked",
+            "label": "复选框已选中",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_be_disabled",
+            "label": "元素已禁用",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_be_empty",
+            "label": "元素为空",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_be_visible",
+            "label": "元素可见",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_element_count",
+            "label": "元素是否存在，存在传1，不存在传0",
+            "parameter": {
+              "actual": "",
+              "count": ""
+            }
+          },
+          {
+            "value": "w_to_element_exists",
+            "label": "元素是存在",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_element_not_exists",
+            "label": "元素不存在",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "w_to_have_count",
+            "label": "元素计数",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "public_assertion_method": [
+      {
+        "value": "WhatIsItAssertion",
+        "label": "是什么",
+        "children": [
+          {
+            "value": "p_is_alpha",
+            "label": "是字母",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_digit",
+            "label": "是数字",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_empty",
+            "label": "是空字符串",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_false",
+            "label": "是false",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_none",
+            "label": "是null",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_not_empty",
+            "label": "不是空符串",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_not_none",
+            "label": "不是null",
+            "parameter": {
+              "actual": ""
+            }
+          },
+          {
+            "value": "p_is_true",
+            "label": "是true",
+            "parameter": {
+              "actual": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "ContainAssertion",
+        "label": "包含什么",
+        "children": [
+          {
+            "value": "p_contains",
+            "label": "包含expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_contains_ignoring_case",
+            "label": "包含忽略大小写expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_contains_only",
+            "label": "仅包含expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_does_not_contain",
+            "label": "不包含expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_is_equal_to_ignoring_case",
+            "label": "忽略大小写等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "MatchingAssertion",
+        "label": "匹配什么",
+        "children": [
+          {
+            "value": "p_does_not_match",
+            "label": "正则不匹配expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_ends_with",
+            "label": "以expect结尾",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_is_in",
+            "label": "在expect里面",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_is_not_in",
+            "label": "不在expect里面",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_matches",
+            "label": "正则匹配等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_starts_with",
+            "label": "以expect开头",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          }
+        ]
+      },
+      {
+        "value": "WhatIsEqualToAssertion",
+        "label": "等于什么",
+        "children": [
+          {
+            "value": "p_is_equal_to",
+            "label": "等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_is_length",
+            "label": "长度等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_is_not_equal_to",
+            "label": "不等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "p_sum_equal_expect",
+            "label": "长度等于expect",
+            "parameter": {
+              "actual": "",
+              "expect": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uiautomator_assertion_method": [
+      {
+        "value": "UiautomatorAssertion",
+        "label": "元素断言",
+        "children": [
+          {
+            "value": "a_assert_ele_attribute",
+            "label": "断言元素属性",
+            "parameter": {
+              "locating": "",
+              "attribute": "",
+              "assertion": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "a_assert_ele_center",
+            "label": "断言元素位置",
+            "parameter": {
+              "locating": "",
+              "assertion": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "a_assert_ele_exists",
+            "label": "断言元素存在",
+            "parameter": {
+              "locating": "",
+              "assertion": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "a_assert_ele_text",
+            "label": "断言元素文本",
+            "parameter": {
+              "locating": "",
+              "assertion": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "a_assert_ele_x",
+            "label": "断言元素X坐标",
+            "parameter": {
+              "locating": "",
+              "assertion": "",
+              "expect": ""
+            }
+          },
+          {
+            "value": "a_assert_ele_y",
+            "label": "断言元素Y坐标",
+            "parameter": {
+              "locating": "",
+              "assertion": "",
+              "expect": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sql_assertion_method": [
+      {
+        "value": "SqlAssertion",
+        "label": "sql断言",
+        "children": [
+          {
+            "value": "sql_is_equal",
+            "label": "值相等",
+            "parameter": {
+              "sql": "",
+              "expect": ""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "assertion_method": [
+      {
+        "title": "是什么",
+        "func_list": [
+          {
+            "label": "p_is_alpha",
+            "value": "是字母"
+          },
+          {
+            "label": "p_is_digit",
+            "value": "是数字"
+          },
+          {
+            "label": "p_is_empty",
+            "value": "是空字符串"
+          },
+          {
+            "label": "p_is_false",
+            "value": "是false"
+          },
+          {
+            "label": "p_is_none",
+            "value": "是null"
+          },
+          {
+            "label": "p_is_not_empty",
+            "value": "不是空符串"
+          },
+          {
+            "label": "p_is_not_none",
+            "value": "不是null"
+          },
+          {
+            "label": "p_is_true",
+            "value": "是true"
+          }
+        ]
+      },
+      {
+        "title": "包含什么",
+        "func_list": [
+          {
+            "label": "p_contains",
+            "value": "包含expect"
+          },
+          {
+            "label": "p_contains_ignoring_case",
+            "value": "包含忽略大小写expect"
+          },
+          {
+            "label": "p_contains_only",
+            "value": "仅包含expect"
+          },
+          {
+            "label": "p_does_not_contain",
+            "value": "不包含expect"
+          },
+          {
+            "label": "p_is_equal_to_ignoring_case",
+            "value": "忽略大小写等于expect"
+          }
+        ]
+      },
+      {
+        "title": "匹配什么",
+        "func_list": [
+          {
+            "label": "p_does_not_match",
+            "value": "正则不匹配expect"
+          },
+          {
+            "label": "p_ends_with",
+            "value": "以expect结尾"
+          },
+          {
+            "label": "p_is_in",
+            "value": "在expect里面"
+          },
+          {
+            "label": "p_is_not_in",
+            "value": "不在expect里面"
+          },
+          {
+            "label": "p_matches",
+            "value": "正则匹配等于expect"
+          },
+          {
+            "label": "p_starts_with",
+            "value": "以expect开头"
+          }
+        ]
+      },
+      {
+        "title": "等于什么",
+        "func_list": [
+          {
+            "label": "p_is_equal_to",
+            "value": "等于expect"
+          },
+          {
+            "label": "p_is_length",
+            "value": "长度等于expect"
+          },
+          {
+            "label": "p_is_not_equal_to",
+            "value": "不等于expect"
+          },
+          {
+            "label": "p_sum_equal_expect",
+            "value": "长度等于expect"
+          }
+        ]
+      },
+      {
+        "title": "WEB元素断言",
+        "func_list": [
+          {
+            "label": "w_not_to_be_editable",
+            "value": "元素已启用"
+          },
+          {
+            "label": "w_not_to_be_empty",
+            "value": "元素不为空"
+          },
+          {
+            "label": "w_not_to_be_enabled",
+            "value": "元素不启用"
+          },
+          {
+            "label": "w_not_to_be_focused",
+            "value": "元素不聚焦"
+          },
+          {
+            "label": "w_not_to_be_hidden",
+            "value": "元素不可隐藏"
+          },
+          {
+            "label": "w_not_to_be_in_viewport",
+            "value": "元素不在视窗中"
+          },
+          {
+            "label": "w_not_to_be_visible",
+            "value": "元素不可见"
+          },
+          {
+            "label": "w_not_to_contain_text",
+            "value": "元素不包含文本"
+          },
+          {
+            "label": "w_not_to_have_class",
+            "value": "元素没有阶级"
+          },
+          {
+            "label": "w_to_be_checked",
+            "value": "复选框已选中"
+          },
+          {
+            "label": "w_to_be_disabled",
+            "value": "元素已禁用"
+          },
+          {
+            "label": "w_to_be_empty",
+            "value": "元素为空"
+          },
+          {
+            "label": "w_to_be_visible",
+            "value": "元素可见"
+          },
+          {
+            "label": "w_to_element_count",
+            "value": "元素是否存在，存在传1，不存在传0"
+          },
+          {
+            "label": "w_to_element_exists",
+            "value": "元素是存在"
+          },
+          {
+            "label": "w_to_element_not_exists",
+            "value": "元素不存在"
+          },
+          {
+            "label": "w_to_have_count",
+            "value": "元素计数"
+          }
+        ]
+      },
+      {
+        "title": "安卓元素断言",
+        "func_list": [
+          {
+            "label": "a_assert_ele_attribute",
+            "value": "断言元素属性"
+          },
+          {
+            "label": "a_assert_ele_center",
+            "value": "断言元素位置"
+          },
+          {
+            "label": "a_assert_ele_exists",
+            "value": "断言元素存在"
+          },
+          {
+            "label": "a_assert_ele_text",
+            "value": "断言元素文本"
+          },
+          {
+            "label": "a_assert_ele_x",
+            "value": "断言元素X坐标"
+          },
+          {
+            "label": "a_assert_ele_y",
+            "value": "断言元素Y坐标"
+          }
+        ]
+      }
+    ]
+  }
+]

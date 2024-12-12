@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023-05-11 22:17
 # @Author : 毛鹏
 import inspect
-import json
 
 from mango_ui import CascaderModel
 
@@ -15,7 +14,7 @@ from src.services.ui.bases.android.assertion import UiautomatorAssertion
 from src.services.ui.bases.web import PlaywrightElement, PlaywrightPage, PlaywrightDeviceInput, \
     PlaywrightBrowser, PlaywrightCustomization
 from src.tools.assertion import PlaywrightAssertion, WhatIsItAssertion, ContainAssertion, MatchingAssertion, \
-    WhatIsEqualToAssertion
+    WhatIsEqualToAssertion, Assertion
 from src.tools.assertion.sql_assertion import SqlAssertion
 
 
@@ -46,12 +45,13 @@ class GetClassMethod:
     @classmethod
     def main(cls):
         return [
-            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: cls.json_(cls.get_android())},
-            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: cls.json_(cls.get_web())},
-            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: cls.json_(cls.get_web_ass())},
-            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.json_(cls.get_public_ass())},
-            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.json_(cls.get_android_ass())},
-            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.json_(cls.get_sql_ass())}
+            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: cls.get_android()},
+            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: cls.get_web()},
+            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: cls.get_web_ass()},
+            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.get_public_ass()},
+            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.get_android_ass()},
+            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.get_sql_ass()},
+            {CacheDataKey2Enum.ASSERTION_METHOD.value: Assertion.get_methods()}
         ]
 
     @classmethod
@@ -117,10 +117,6 @@ class GetClassMethod:
              'children': cls.get_sql_ass()
              }
         ]
-
-    @classmethod
-    def json_(cls, data):
-        return json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
 
     @classmethod
     def get_class_methods(cls, self):
@@ -204,3 +200,7 @@ class GetClassMethod:
                          'label': str(i.__doc__),
                          'children': cls.get_class_methods(i)})
         return data
+
+
+if __name__ == '__main__':
+    print(GetClassMethod().main())
