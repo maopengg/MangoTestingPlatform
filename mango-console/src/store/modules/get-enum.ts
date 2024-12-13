@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { getSystemEnum } from '@/api/system/system'
-type StateValueType = null | { key: number; value: string }[] | string[]
+type StateValueType = null | { key: number; title: string }[] | string[]
 export const useEnum = defineStore('get-enum', {
   state: (): {
     cline_type: StateValueType

@@ -17,7 +17,7 @@
         </a-space>
         <a-space direction="vertical" style="width: 50%">
           <span>用例名称：{{ pageData.record.name }}</span>
-          <span>用例负责人：{{ pageData.record.case_people?.nickname }}</span>
+          <span>用例负责人：{{ pageData.record.case_people?.name }}</span>
           <span>执行顺序：{{ pageData.record.case_flow }}</span>
         </a-space>
       </div>

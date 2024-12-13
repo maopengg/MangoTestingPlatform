@@ -20,9 +20,11 @@
 
   import { putUserEnvironment } from '@/api/user/user'
   import { useEnum } from '@/store/modules/get-enum'
+
   const enumStore = useEnum()
 
   const userStore = useUserStore()
+
   function handleSelect(key: any) {
     putUserEnvironment(userStore.userId, key)
       .then((res) => {
@@ -31,22 +33,24 @@
       })
       .catch(console.log)
   }
+
   function setTitle(key: any) {
     userStore.selected_environment = key
     if (key === null) {
       userStore.selected_environment_title = '请选择测试环境'
       return
     }
-    if (!enumStore.environment_type) {
-      enumStore.getEnum()
+    if (enumStore.environment_type) {
+      enumStore.environment_type.forEach((item: any) => {
+        if (item.key === key) {
+          userStore.selected_environment_title = item.title
+        }
+      })
     }
-    enumStore.environment_type.forEach((item: any) => {
-      if (item.key === key) {
-        userStore.selected_environment_title = item.title
-      }
-    })
   }
+
   watchEffect(() => {
+    enumStore.getEnum()
     setTitle(userStore.selected_environment)
   })
   onMounted(() => {})

@@ -9,13 +9,13 @@
         >
           <div class="info-wrapper">
             <div class="avatar-wrapper">
-              <div
-                class="avatar"
-                :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }"
-                @mouseenter="avatarTouchStart"
-              >
-                <img :src="userStore.avatar" />
-              </div>
+<!--              <div-->
+<!--                class="avatar"-->
+<!--                :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }"-->
+<!--                @mouseenter="avatarTouchStart"-->
+<!--              >-->
+<!--                <img :src="userStore.avatar" />-->
+<!--              </div>-->
               <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
                 <icon-camera style="color: #fff; font-size: 30px" />
               </div>
@@ -25,7 +25,7 @@
             </div>
             <div class="text-wrapper">
               <div class="label">昵称：</div>
-              <div class="value">{{ personalCenterData.data.nickname }}</div>
+              <div class="value">{{ personalCenterData.data.name }}</div>
             </div>
             <div class="text-wrapper">
               <div class="label">账号：</div>

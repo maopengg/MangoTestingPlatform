@@ -21,7 +21,7 @@ urlpatterns = [
     #
     path("info", UserCRUD.as_view()),
     path("info/name", UserViews.as_view({'get': 'get_name'})),
-    path("info/project/put", UserViews.as_view({'put': 'put_project'})),
+    path("info/project", UserViews.as_view({'put': 'put_project'})),
     path("info/environment", UserViews.as_view({'put': 'put_environment'})),
     path("info/password", UserViews.as_view({'put': 'put_password'})),
     # path("info/project/environment", UserViews.as_view({'get': 'get_user_project_environment'})),

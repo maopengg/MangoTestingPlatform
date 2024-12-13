@@ -38,7 +38,7 @@
           },
           yAxis: {
             type: 'category',
-            data: data.nickname,
+            data: data.name,
             axisLine: {
               show: false,
             },

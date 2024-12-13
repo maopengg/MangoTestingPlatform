@@ -168,7 +168,7 @@
                   >
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
-                  {{ record.case_people.nickname }}
+                  {{ record.case_people.name }}
                 </template>
                 <template v-else-if="item.key === 'status'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -262,7 +262,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="data.enumCaseLevel"
+                  :options="enumStore.case_level"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
@@ -325,7 +325,6 @@
     moduleList: productModule.data,
     systemStatus: [],
     scheduledName: [],
-    enumCaseLevel: [],
     value: null,
     visible: false,
   })

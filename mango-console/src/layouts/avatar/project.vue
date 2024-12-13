@@ -66,7 +66,7 @@
   })
 
   onMounted(async () => {
-    await project.getProject()
+    project.getProject()
   })
 </script>
 

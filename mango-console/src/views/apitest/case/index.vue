@@ -160,7 +160,7 @@
                   }}{{ record?.module?.name }}
                 </template>
                 <template v-else-if="item.key === 'case_people'" #cell="{ record }">
-                  {{ record.case_people?.nickname }}
+                  {{ record.case_people?.name }}
                 </template>
                 <template v-else-if="item.key === 'level'" #cell="{ record }">
                   <a-tag color="orange" size="small">
@@ -300,7 +300,6 @@
     getApiCaseRun,
     postApiCaseBatchRun,
     putApiCase,
-    postApiImportUrl,
   } from '@/api/apitest/case'
   import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
   import { getSystemTasksName } from '@/api/system/tasks'

@@ -211,7 +211,6 @@
       productModule.getProjectModule()
       projectInfo.getProject()
       projectInfo.projectProductName()
-      await enumStore.getEnum()
     })
   })
 </script>

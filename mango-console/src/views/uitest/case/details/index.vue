@@ -15,7 +15,7 @@
           <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
           <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
           <span>所属模块：{{ pageData.record.module?.name }}</span>
-          <span>用例负责人：{{ pageData.record.case_people?.nickname }}</span>
+          <span>用例负责人：{{ pageData.record.case_people?.name }}</span>
         </a-space>
         <a-space direction="vertical" style="width: 25%">
           <span>用例ID：{{ pageData.record.id }}</span>
