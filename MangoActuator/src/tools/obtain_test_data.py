@@ -22,7 +22,7 @@ class ObtainTestData(DataProcessor):
     def get_file(cls, **kwargs) -> str:
         """传入文件名称，返回文件"""
         file_name = kwargs.get('data')
-        HTTP.download_file(file_name)
+        HTTP.not_auth.download_file(file_name)
         file_path = os.path.join(InitPath.upload_files, file_name)
         if os.path.exists(file_path):
             return file_path
