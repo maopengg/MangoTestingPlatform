@@ -36,9 +36,10 @@ class SocketApiViews(ViewSet):
     def get_all_user_list(self, request: Request):
         data = []
         for i in SocketUser.get_all_user_list():
-            data.append(
-                {'user_key': i.user_key,
-                 'web_obj': id(i.web_obj) if i.web_obj else None,
-                 'client_obj': id(i.client_obj) if i.client_obj else None}
-            )
+            data.append({
+                'user_id': i.user_id,
+                'username': i.username,
+                'web_obj': id(i.web_obj) if i.web_obj else None,
+                'client_obj': id(i.client_obj) if i.client_obj else None
+            })
         return ResponseData.success(RESPONSE_MSG_0102, data, )
