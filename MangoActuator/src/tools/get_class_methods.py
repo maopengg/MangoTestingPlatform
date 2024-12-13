@@ -3,6 +3,7 @@
 # @Description: # @Time   : 2023-05-11 22:17
 # @Author : 毛鹏
 import inspect
+import json
 
 from mango_ui import CascaderModel
 
@@ -14,7 +15,7 @@ from src.services.ui.bases.android.assertion import UiautomatorAssertion
 from src.services.ui.bases.web import PlaywrightElement, PlaywrightPage, PlaywrightDeviceInput, \
     PlaywrightBrowser, PlaywrightCustomization
 from src.tools.assertion import PlaywrightAssertion, WhatIsItAssertion, ContainAssertion, MatchingAssertion, \
-    WhatIsEqualToAssertion, Assertion
+    WhatIsEqualToAssertion
 from src.tools.assertion.sql_assertion import SqlAssertion
 
 
@@ -51,7 +52,6 @@ class GetClassMethod:
             {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.get_public_ass()},
             {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.get_android_ass()},
             {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.get_sql_ass()},
-            {CacheDataKey2Enum.ASSERTION_METHOD.value: Assertion.get_methods()}
         ]
 
     @classmethod
@@ -201,6 +201,24 @@ class GetClassMethod:
                          'children': cls.get_class_methods(i)})
         return data
 
+    @classmethod
+    def get_web_select(cls):
+        data = []
+        for i in cls.web_ope:
+            data.append({'操作名称': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
+
+        return data
+
+    @classmethod
+    def get_android_select(cls):
+        data = []
+        for i in cls.android_ope:
+            data.append({'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
+        return data
+
 
 if __name__ == '__main__':
-    print(GetClassMethod().main())
+    print(json.dumps({'安卓 操作方法': GetClassMethod.get_android_select(),
+                      'WEB 操作方法': GetClassMethod.get_web_select()}, ensure_ascii=False))

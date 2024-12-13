@@ -6,11 +6,12 @@
 
 from mango_ui import *
 
-from src.enums.system_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum, CacheDataKey2Enum
 from src.models import queue_notification
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
+from src.tools.assertion import Assertion
 from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
@@ -124,6 +125,7 @@ class SettingPage(QWidget):
     def click_send_redis_data(self):
         r = GetClassMethod()
         send_list: list = r.main()
+        send_list.append({CacheDataKey2Enum.ASSERTION_METHOD.value: Assertion.get_methods()})
         from src.network.web_socket.websocket_client import WebSocketClient
         WebSocketClient().sync_send(
             '设置缓存数据成功',

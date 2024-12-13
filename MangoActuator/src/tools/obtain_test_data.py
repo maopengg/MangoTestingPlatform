@@ -3,9 +3,10 @@
 # @Description: 
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
+import json
 import os
 
-from mangokit import DataProcessor
+from mangokit import DataProcessor, ObtainRandomData
 
 from src.exceptions import ToolsError, ERROR_MSG_0026
 from src.network import HTTP
@@ -30,4 +31,4 @@ class ObtainTestData(DataProcessor):
 
 
 if __name__ == '__main__':
-    pass
+    print(json.dumps(ObtainRandomData.get_methods(), ensure_ascii=False))
