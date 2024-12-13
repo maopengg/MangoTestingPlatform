@@ -3,43 +3,21 @@
 # @Description: 
 # @Time   : 2024-11-25 11:52
 # @Author : 毛鹏
-from queue import Queue
+import json
 
-import time
+# 读取 JSON 文件
+with open('ope_json.json', 'r', encoding='utf-8') as file:
+    data = json.load(file)
 
-receive_queue = Queue()
-send_queue = Queue()
-
-
-def receive_messages():
-    """
-    接收消息和客户端操作
-    :return:
-    """
-    while True:
-        if send_queue.empty():
-            send_data = send_queue.get()
-            send_msg = send_data.get('send_massage')
-            # 发送请求数据
-        else:
-            # 进行客户端操作
-            # 进行后端请求操作
-            # 操作完成把响应的request_id和其他信息写入队列
-            receive_queue.put({'request_id': 123, 'send_user': '发送用户', })
-        time.sleep(3)
-
-
-def send_messages():
-    while True:
-        if receive_queue.empty():
-            receive_data = receive_queue.get()
-            request_id = receive_data.get('request_id')
-            while True:
-                # 通过request_id获取发送数据
-                if True:
-                    # 如果获取到数据
-                    # 处理获取的数据，发到send_queue
-                    send_queue.put({'request_id': 123, 'send_user': '发送用户', 'send_massage': '发送消息'})
-                    continue
-                time.sleep(3)
-        time.sleep(3)
+# 打开 ele-ope.md 文件以追加内容
+with open('ele-ope.md', 'a', encoding='utf-8') as md_file:
+    for section in data:
+        for key, operations in section.items():
+            md_file.write(f"## {key}\n")
+            for operation in operations:
+                md_file.write(f"- **{operation['label']}** (`{operation['value']}`)\n")
+                if operation.get('parameter'):
+                    md_file.write("  - **参数**:\n")
+                    for param, value in operation['parameter'].items():
+                        md_file.write(f"    - `{param}`: {value}\n")
+                md_file.write("\n")

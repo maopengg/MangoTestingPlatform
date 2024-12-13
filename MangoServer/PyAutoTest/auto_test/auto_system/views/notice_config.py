@@ -19,6 +19,7 @@ from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from mangokit import NoticeEnum
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):
@@ -84,22 +85,23 @@ class NoticeConfigViews(ViewSet):
         if obj_.config is None or obj_.config == '':
             return ResponseData.fail(RESPONSE_MSG_0126)
         if request.data.get('status') == StatusEnum.SUCCESS.value:
+            if obj_.type == NoticeEnum.MAIL.value:
+                try:
+                    config = json.loads(obj_.config)
+                    if not isinstance(config, dict) and not isinstance(config, list):
+                        return ResponseData.fail(RESPONSE_MSG_0130, )
+                except (TypeError, json.decoder.JSONDecodeError):
+                    return ResponseData.fail(RESPONSE_MSG_0130, )
+                for i in config:
+                    try:
+                        user = User.objects.get(name=i)
+                    except User.DoesNotExist:
+                        return ResponseData.fail(RESPONSE_MSG_0125)
+                    if user.mailbox is None or user.mailbox == []:
+                        return ResponseData.fail(RESPONSE_MSG_0125, )
             obj = self.model.objects.filter(test_object=request.data.get('test_object')).values('status')
             if any(item['status'] == 1 for item in obj):
                 return ResponseData.fail(RESPONSE_MSG_0119, )
-            try:
-                config = json.loads(obj_.config)
-                if not isinstance(config, dict) and not isinstance(config, list):
-                    return ResponseData.fail(RESPONSE_MSG_0130, )
-            except (TypeError, json.decoder.JSONDecodeError):
-                return ResponseData.fail(RESPONSE_MSG_0130, )
-            for i in config:
-                try:
-                    user = User.objects.get(name=i)
-                except User.DoesNotExist:
-                    return ResponseData.fail(RESPONSE_MSG_0125)
-                if user.mailbox is None or user.mailbox == []:
-                    return ResponseData.fail(RESPONSE_MSG_0125, )
         obj_.status = request.data.get('status')
         obj_.save()
         return ResponseData.success(RESPONSE_MSG_0047, )

@@ -139,7 +139,7 @@
                 <a-select
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="enumStore.device"
+                  :options="enumStore.drive_type"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear

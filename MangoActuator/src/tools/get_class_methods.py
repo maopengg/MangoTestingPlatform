@@ -46,12 +46,12 @@ class GetClassMethod:
     @classmethod
     def main(cls):
         return [
-            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: cls.json_(cls.get_android())},
-            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: cls.json_(cls.get_web())},
-            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: cls.json_(cls.get_web_ass())},
-            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.json_(cls.get_public_ass())},
-            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.json_(cls.get_android_ass())},
-            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.json_(cls.get_sql_ass())}
+            {CacheDataKey2Enum.UIAUTOMATOR_OPERATION_METHOD.value: cls.get_android()},
+            {CacheDataKey2Enum.PLAYWRIGHT_OPERATION_METHOD.value: cls.get_web()},
+            {CacheDataKey2Enum.PLAYWRIGHT_ASSERTION_METHOD.value: cls.get_web_ass()},
+            {CacheDataKey2Enum.PUBLIC_ASSERTION_METHOD.value: cls.get_public_ass()},
+            {CacheDataKey2Enum.UIAUTOMATOR_ASSERTION_METHOD.value: cls.get_android_ass()},
+            {CacheDataKey2Enum.SQL_ASSERTION_METHOD.value: cls.get_sql_ass()},
         ]
 
     @classmethod
@@ -117,10 +117,6 @@ class GetClassMethod:
              'children': cls.get_sql_ass()
              }
         ]
-
-    @classmethod
-    def json_(cls, data):
-        return json.dumps(data, ensure_ascii=False).encode('utf-8').decode()
 
     @classmethod
     def get_class_methods(cls, self):
@@ -204,3 +200,25 @@ class GetClassMethod:
                          'label': str(i.__doc__),
                          'children': cls.get_class_methods(i)})
         return data
+
+    @classmethod
+    def get_web_select(cls):
+        data = []
+        for i in cls.web_ope:
+            data.append({'操作名称': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
+
+        return data
+
+    @classmethod
+    def get_android_select(cls):
+        data = []
+        for i in cls.android_ope:
+            data.append({'label': str(i.__doc__),
+                         'children': cls.get_class_methods(i)})
+        return data
+
+
+if __name__ == '__main__':
+    print(json.dumps({'安卓 操作方法': GetClassMethod.get_android_select(),
+                      'WEB 操作方法': GetClassMethod.get_web_select()}, ensure_ascii=False))
