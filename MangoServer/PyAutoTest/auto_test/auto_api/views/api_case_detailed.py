@@ -107,12 +107,8 @@ class ApiCaseDetailedCRUD(ModelCRUD):
                 data['case_flow'] += i.api_info.name
         data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
-        api_case = ApiCaseCRUD()
-        res = api_case.serializer(instance=ApiCase.objects.get(id=_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.api.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+        ApiCaseCRUD.inside_put(ApiCase.objects.get(id=_id).id, data)
+
 
 
 class ApiCaseDetailedViews(ViewSet):
