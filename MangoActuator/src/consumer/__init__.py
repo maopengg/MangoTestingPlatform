@@ -60,7 +60,7 @@ class SocketConsumer(UI, API, Perf, Tools):
             if out.get('func_name'):
                 await getattr(self, out['func_name'])(out['func_args'])
             else:
-                await self.u_page_step(out)
+                await self.u_case(out)
         while True:
             await asyncio.sleep(1)
 
@@ -77,8 +77,9 @@ class Test:
 
 if __name__ == '__main__':
     from src.settings import settings
-
+    from src.network.http import HTTP
     settings.IP = '127.0.0.1'
     settings.PORT = 8000
+    HTTP.api.public.set_host(settings.IP, settings.PORT)
     r = SocketConsumer(Test())
     asyncio.run(r.test())
