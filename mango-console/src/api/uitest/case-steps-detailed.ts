@@ -41,7 +41,7 @@ export function deleteUiCaseStepsDetailed(id: number | string[] | number[], pare
 
 export function getUiCaseStepsRefreshCacheData(id: number) {
   return get({
-    url: 'case/steps/detailed/refresh',
+    url: '/ui/case/steps/detailed/refresh',
     data: () => {
       return {
         id: id,
@@ -51,7 +51,7 @@ export function getUiCaseStepsRefreshCacheData(id: number) {
 }
 export function putUiCasePutCaseSort(caseSortList: any) {
   return put({
-    url: '/case/steps/detailed/sort',
+    url: '/ui/case/steps/detailed/sort',
     data: () => {
       return {
         case_sort_list: caseSortList,
