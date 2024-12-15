@@ -395,7 +395,7 @@ class ApiCaseDetailedPage(SubPage):
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         init_data = None
         if data.subordinate == 'api_info':
-            response_model: ResponseModel = HTTP.api.case_detailed.get_api_name(data.value)
+            response_model: ResponseModel = HTTP.api.info.get_api_name(data.value)
             if response_model.data:
                 init_data = [ComboBoxDataModel(id=str(i.get('key')), name=i.get('title')) for i in response_model.data]
             else:
@@ -413,7 +413,7 @@ class ApiCaseDetailedPage(SubPage):
         data['posterior_response'] = []
         data['posterior_sql'] = []
         data['case'] = self.data.get("id")
-        response = self.post(data)
+        response = self.post(self.data.get("id"), data)
         response_message(self, response)
 
     def refresh(self, row):
@@ -584,7 +584,7 @@ class ApiCaseDetailedPage(SubPage):
                     "value": i.get('value').get_value()
                 })
             api_case_detailed_data['posterior_response'] = posterior_response_list
-        response_message(self, self.put(api_case_detailed_data))
+        response_message(self, self.put(self.data.get("id"), api_case_detailed_data))
 
     def add_case_info(self, menu_name: str):
         if menu_name == 'front_sql':
@@ -661,8 +661,7 @@ class ApiCaseDetailedPage(SubPage):
                     for k, v in page_step_details_data.items():
                         if k == key:
                             page_step_details_data[key] = value
-        response_message(self, self.put(
-            {'id': row.get('id'), 'parent_id': row.get('case').get('id'), 'case_data': row.get('case_data')}))
+        response_message(self, self.put(self.data.get("id"), {'id': row.get('id'), 'case_data': row.get('case_data')}))
 
     def run(self):
         user_info = UserModel()
@@ -679,3 +678,6 @@ class ApiCaseDetailedPage(SubPage):
         response_message(self,
                          HTTP.api.case_detailed.put_api_case_sort(
                              [{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))
+
+    def delete_callback(self, row):
+        return {'_id': row.get('id'), 'parent_id': self.data.get('id')}

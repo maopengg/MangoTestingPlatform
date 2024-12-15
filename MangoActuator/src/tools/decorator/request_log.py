@@ -12,7 +12,7 @@ from src.settings import settings
 from src.tools.log_collector import log
 
 
-def request_log():
+def request_log(is_serialize=True):
     def decorator(func):
 
         def wrapper(*args, **kwargs) -> ResponseModel:
@@ -22,7 +22,10 @@ def request_log():
             if settings.IS_DEBUG:
                 log.debug(f'HTTP接收的数据：{response.text}')
             try:
-                return ResponseModel(**response.json())
+                if not is_serialize:
+                    return response
+                else:
+                    return ResponseModel(**response.json())
             except requests.exceptions.JSONDecodeError:
                 return ResponseModel(code=300, msg='响应的数据费json，请检查后端服务是否可以正常运行~')
             except Exception as error:

@@ -9,16 +9,13 @@ from PyAutoTest.tools.log_collector import log
 
 class MangoServerError(Exception):
 
-    def __init__(self, code: int, msg: str, value: tuple = None, error: str = None, is_log=True):
+    def __init__(self, code: int, msg: str, value: tuple = None, error: str = None):
         self.code = code
         if value:
             self.msg = msg.format(*value)
         else:
             self.msg = msg
-        if error and is_log:
-            log.system.error(f'报错提示：{msg}， 报错内容：{error}')
-        else:
-            log.system.error(f'报错提示：{msg}')
+        log.system.error(f'报错提示：{msg}， 报错内容：{error}')
 
 
 class UiError(MangoServerError):

@@ -46,6 +46,9 @@ class Parent(QWidget):
             self.show_data()
 
     def delete(self, row):
-        response_model = self._delete(row.get('id'))  # type: ignore
+        if hasattr(self, 'delete_callback'):
+            response_model = self._delete(**self.delete_callback(row))  # type: ignore
+        else:
+            response_model = self._delete(row.get('id'))  # type: ignore
         response_message(self, response_model)
         self.show_data()

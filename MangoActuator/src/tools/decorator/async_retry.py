@@ -5,15 +5,16 @@
 # @Author : 毛鹏
 import asyncio
 import functools
+import traceback
 
 import time
 from mangokit.exceptions import MangoKitError
 
-from src.exceptions import UiError, ToolsError
-from src.settings.settings import FAILED_RETRY_TIME
+from src.exceptions import MangoActuatorError
+from src.settings.settings import FAILED_RETRY_TIME, RETRY_WAITING_TIME
+from src.tools.log_collector import log
 
 
-# 定义装饰器，用于重试异步函数
 def async_retry(func):
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
@@ -25,10 +26,15 @@ def async_retry(func):
                     return result
                 else:
                     break
-            except (UiError, ToolsError, MangoKitError) as e:
+            except (MangoActuatorError, MangoKitError) as error:
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
-                    raise e
-                await asyncio.sleep(0.1)
+                    raise error
+            except Exception as error:
+                traceback.format_exc()
+                log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
+                if (time.time() - start_time) > FAILED_RETRY_TIME:
+                    raise error
+            await asyncio.sleep(RETRY_WAITING_TIME)
 
     return wrapper
 
@@ -44,9 +50,14 @@ def sync_retry(func):
                     return result
                 else:
                     break
-            except (UiError, ToolsError, MangoKitError) as e:
+            except (MangoActuatorError, MangoKitError) as error:
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
-                    raise e
-                time.sleep(0.1)
+                    raise error
+            except Exception as error:
+                traceback.format_exc()
+                log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
+                if (time.time() - start_time) > FAILED_RETRY_TIME:
+                    raise error
+            time.sleep(RETRY_WAITING_TIME)
 
     return wrapper

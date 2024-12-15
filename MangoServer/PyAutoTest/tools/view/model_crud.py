@@ -67,7 +67,7 @@ class ModelCRUD(GenericAPIView):
         serializer = self.serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            self.asynchronous_callback(request)
+            self.asynchronous_callback(request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
         else:
             log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
@@ -91,7 +91,7 @@ class ModelCRUD(GenericAPIView):
             )
         if serializer.is_valid():
             serializer.save()
-            self.asynchronous_callback(request, request.data.get('parent_id'))
+            self.asynchronous_callback(request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0082, serializer.data)
         else:
             log.system.error(f'执行修改时报错，请检查！数据：{data}, 报错信息：{str(serializer.errors)}')
@@ -107,33 +107,17 @@ class ModelCRUD(GenericAPIView):
                     self.model.objects.get(pk=i).delete()
             else:
                 self.model.objects.get(id=_id).delete()
-                self.asynchronous_callback(request, request.query_params.get('parent_id'))
+                self.asynchronous_callback(request.query_params.get('parent_id'))
         except ToolsError as error:
             return ResponseData.fail((error.code, error.msg))
         else:
             return ResponseData.success(RESPONSE_MSG_0005)
 
-    def asynchronous_callback(self, request: Request, _id: int = None):
+    def asynchronous_callback(self, parent_id: int = None):
         """
         反射的后置处理
         """
         if hasattr(self, 'callback'):
-            from PyAutoTest.auto_test.auto_ui.views.ui_page_steps_detailed import PageStepsDetailedCRUD
-            from PyAutoTest.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD
-            from PyAutoTest.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailed
-            if isinstance(self, PageStepsDetailedCRUD):
-                parent_id = request.data.get('page_step')
-            elif isinstance(self, UiCaseStepsDetailedCRUD):
-                parent_id = request.data.get('case')
-            elif isinstance(self, ApiCaseDetailedCRUD):
-                if request.method == 'PUT':
-                    parent_id = ApiCaseDetailed.objects.get(id=request.data.get('id')).case_id
-                else:
-                    parent_id = request.data.get('case')
-            else:
-                parent_id = request.data.get('id')
-            if parent_id is None:
-                parent_id = _id
             th = Thread(target=self.callback, args=(parent_id,))
             th.start()
 

@@ -64,7 +64,7 @@ class UI:
         """
         max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
         if PageObject.case_flow is None:
-            PageObject.case_flow = CaseFlow(self.parent, max_tasks) if max_tasks is not None else CaseFlow(self.parent)
+            PageObject.case_flow = CaseFlow(self.parent, max_tasks) if max_tasks else CaseFlow(self.parent)
         else:
             PageObject.case_flow.max_tasks = max_tasks
         await PageObject.case_flow.add_task(data)
