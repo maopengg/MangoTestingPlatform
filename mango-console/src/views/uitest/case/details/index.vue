@@ -408,7 +408,7 @@
       value['case_cache_data'] = []
       value['case_cache_ass'] = []
       value['case_sort'] = data.data.length
-      postUiCaseStepsDetailed(value)
+      postUiCaseStepsDetailed(value, route.query.id)
         .then((res) => {
           Message.success(res.msg)
           getUiCaseStepsRefreshCacheData(res.data.id)
@@ -492,11 +492,13 @@
     data.selectData = record
   }
   function onUpdate() {
-    putUiCaseStepsDetailed({
-      parent_id: route.query.id,
-      id: data.selectData.id,
-      case_data: data.selectData.case_data,
-    })
+    putUiCaseStepsDetailed(
+      {
+        id: data.selectData.id,
+        case_data: data.selectData.case_data,
+      },
+      route.query.id
+    )
       .then((res) => {
         Message.success(res.msg)
       })

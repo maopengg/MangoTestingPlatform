@@ -667,7 +667,7 @@
       data.selectDataObj[key] = item
     }
     const { case: b, api_info: c, ...newSelectDataObj } = data.selectDataObj
-    putApiCaseDetailed(newSelectDataObj)
+    putApiCaseDetailed(newSelectDataObj, route.query.case_id)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -754,7 +754,7 @@
       value['ass_response_value'] = []
       value['posterior_sql'] = []
       value['posterior_response'] = []
-      postApiCaseDetailed(value)
+      postApiCaseDetailed(value, route.query.case_id)
         .then((res) => {
           Message.success(res.msg)
           doRefresh()

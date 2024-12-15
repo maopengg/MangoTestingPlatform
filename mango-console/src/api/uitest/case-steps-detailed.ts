@@ -11,7 +11,9 @@ export function getUiCaseStepsDetailed(caseId: any) {
   })
 }
 
-export function postUiCaseStepsDetailed(data: object) {
+export function postUiCaseStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return post({
     url: '/ui/case/steps/detailed',
     data: () => {
@@ -19,7 +21,9 @@ export function postUiCaseStepsDetailed(data: object) {
     },
   })
 }
-export function putUiCaseStepsDetailed(data: object) {
+export function putUiCaseStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return put({
     url: '/ui/case/steps/detailed',
     data: () => {

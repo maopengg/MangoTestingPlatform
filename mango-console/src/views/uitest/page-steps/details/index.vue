@@ -375,7 +375,7 @@
       value['type'] = data.type
       if (data.isAdd) {
         value['step_sort'] = data.dataList.length
-        postUiPageStepsDetailed(value)
+        postUiPageStepsDetailed(value, route.query.id)
           .then((res) => {
             Message.success(res.msg)
             getUiRunSort()
@@ -383,7 +383,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putUiPageStepsDetailed(value)
+        putUiPageStepsDetailed(value, route.query.id)
           .then((res) => {
             Message.success(res.msg)
             getUiRunSort()
