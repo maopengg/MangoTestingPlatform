@@ -104,7 +104,7 @@ export const webFormItems: FormItem[] = reactive([
 export const androidFormItems: FormItem[] = reactive([
   {
     label: '安卓设备号',
-    key: 'equipment',
+    key: 'and_equipment',
     value: '',
     placeholder: '请输入安卓设备号或IP+端口',
     required: true,

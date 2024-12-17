@@ -39,8 +39,9 @@
                   {{ record.user.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.type === 0">WEB</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.type === 1">安卓</a-tag>
+                  <a-tag color="orange" size="small">{{
+                    enumStore.drive_type[record.type].title
+                  }}</a-tag>
                 </template>
                 <template v-else-if="item.key === 'web_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.config?.web_type === 0"
@@ -244,7 +245,6 @@
     actionTitle: '添加配置',
     updateId: 0,
     isAdd: true,
-    type: 0,
   })
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -356,11 +356,6 @@
   }
 
   function onDataForm() {
-    if (data.type === 3 || data.type === 2) {
-      Message.error('暂不支持PC客户端和IOS的配置')
-
-      return
-    }
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
@@ -375,7 +370,7 @@
         and_equipment: value['and_equipment'],
       }
       if (data.isAdd) {
-        value['type'] = data.type
+        value['type'] = value.type
         value['status'] = 0
         value['user'] = userStore.userId
         postUiConfig(value)
