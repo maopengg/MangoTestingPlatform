@@ -30,6 +30,9 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                     elif request.method == 'POST':
                         if request.path not in [
                             '/ui/config',
+                            '/api/case/batch',
+                            '/ui/case/batch',
+                            '/ui/element/test',
                         ]:
                             return JsonResponse({
                                 "code": 300,
