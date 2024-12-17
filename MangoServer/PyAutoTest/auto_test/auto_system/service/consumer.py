@@ -28,7 +28,6 @@ class ConsumerThread:
         self.consumer_sleep = 1  # 每次循环等待1秒
         self.retry_frequency = 3  # 重试次数
         self.current_index = 0
-        self.environment_error = 0  # 检查是否有设备配置失败的
         self.environment_error_mix = 20  # 寻找用户测试的时候，最大次数
 
     def stop(self):
@@ -44,7 +43,7 @@ class ConsumerThread:
             if test_suite_details:
                 test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
                 if test_suite_details.type == AutoTestTypeEnum.UI.value:
-                    self.ui(test_suite, test_suite_details)
+                    self.ui(0, test_suite, test_suite_details)
                 elif test_suite_details.type == AutoTestTypeEnum.API.value:
                     self.api(test_suite, test_suite_details)
                 elif test_suite_details.type == AutoTestTypeEnum.MangoPytest.value:
@@ -59,7 +58,7 @@ class ConsumerThread:
                 self.clean_proceed_set_fail()
             time.sleep(self.consumer_sleep)
 
-    def ui(self, test_suite, test_suite_details):
+    def ui(self, environment_error, test_suite, test_suite_details):
         try:
             user_list = SocketUser.user
             if not user_list:
@@ -76,9 +75,9 @@ class ConsumerThread:
             )
             self.current_index = (self.current_index + 1) % len(user_list)
             inspect = send_case.inspect_environment_config(test_suite_details.case_id)
-            self.environment_error += 1
+            environment_error += 1
             if not inspect:
-                if self.environment_error > self.environment_error_mix:
+                if environment_error > self.environment_error_mix:
                     test_suite.status = TaskEnum.FAIL.value
                     test_suite.save()
                     test_suite_details.status = TaskEnum.FAIL.value
@@ -86,9 +85,8 @@ class ConsumerThread:
                     test_suite.save()
                 else:
                     time.sleep(2)
-                    return self.ui(test_suite, test_suite_details)
+                    return self.ui(environment_error, test_suite, test_suite_details)
             else:
-                self.environment_error = 0
                 send_case.test_case(
                     case_id=test_suite_details.case_id,
                     test_suite=test_suite_details.test_suite.id,
