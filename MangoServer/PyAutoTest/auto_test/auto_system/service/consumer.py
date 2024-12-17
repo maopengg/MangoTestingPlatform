@@ -28,7 +28,7 @@ class ConsumerThread:
         self.consumer_sleep = 1  # 每次循环等待1秒
         self.retry_frequency = 3  # 重试次数
         self.current_index = 0
-        self.environment_error_mix = 20  # 寻找用户测试的时候，最大次数
+        self.environment_error_mix = 10  # 寻找用户测试的时候，最大次数,会*3
 
     def stop(self):
         self.running = False
