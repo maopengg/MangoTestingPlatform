@@ -36,7 +36,7 @@ export function deleteUserModule(id: number | string[] | number[]) {
     },
   })
 }
-export function getUserModuleName(projectProductId: number | string | null): Promise<Response> {
+export function getUserModuleName(projectProductId: any): Promise<Response> {
   return get({
     url: '/system/module/name',
     data: () => {
