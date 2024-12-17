@@ -37,7 +37,7 @@ class ConsumerThread:
         while self.running:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
-                retry__lte=self.retry_frequency
+                retry__lt=self.retry_frequency
             ).first()
             if test_suite_details:
                 test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
@@ -129,6 +129,9 @@ class ConsumerThread:
             self.error(test_suite, test_suite_details, error, traceback.format_exc())
 
     def clean_proceed(self):
+        """
+        把进行中的，修改为待开始
+        """
         test_suite_details_list = TestSuiteDetails \
             .objects \
             .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency)
@@ -140,15 +143,18 @@ class ConsumerThread:
                 log.system.info(f'推送时间超过30分钟，状态已重置为：待执行，用例ID：{test_suite_detail.case_id}')
 
     def clean_proceed_set_fail(self):
+        """
+        把重试次数满的，修改为0，只有未知错误才会设置为失败
+        """
         test_suite_details_list = TestSuiteDetails \
             .objects \
-            .filter(status=TaskEnum.PROCEED.value, retry=self.retry_frequency)
+            .filter(status=TaskEnum.STAY_BEGIN.value, retry=self.retry_frequency)
         for test_suite_detail in test_suite_details_list:
             if test_suite_detail \
                     .push_time and (timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
-                test_suite_detail.status = TaskEnum.FAIL.value
+                test_suite_detail.retry = 0
                 test_suite_detail.save()
-                log.system.info(f'连续3次都是待执行，状态直接设置为：失败，用例ID：{test_suite_detail.case_id}')
+                log.system.info(f'连续3次都是待执行，重新把重试次数设置为0，用例ID：{test_suite_detail.case_id}')
 
     def update_status_proceed(self, test_suite, test_suite_details):
         test_suite.status = TaskEnum.PROCEED.value

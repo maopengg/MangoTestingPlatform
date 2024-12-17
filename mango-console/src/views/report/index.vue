@@ -95,16 +95,14 @@
                     }}
                   </template>
                   <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                    {{ record.test_env ? enumStore.environment_type[record.test_env]?.title : '' }}
+                    {{enumStore.environment_type[record.test_env]?.title}}
                   </template>
 
                   <template v-else-if="item.key === 'user'" #cell="{ record }">
                     {{ record.user?.name }}
                   </template>
                   <template v-else-if="item.key === 'type'" #cell="{ record }">
-                    <a-tag color="green" size="small" v-if="record.type === 0">前端</a-tag>
-                    <a-tag color="red" size="small" v-else-if="record.type === 1">接口</a-tag>
-                    <a-tag color="red" size="small" v-else-if="record.type === 2">性能</a-tag>
+                    {{enumStore.auto_test_type[record.type].title}}
                   </template>
                   <template v-else-if="item.key === 'status'" #cell="{ record }">
                     <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
@@ -132,7 +130,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { onMounted, nextTick, ref, reactive } from 'vue'
+  import { onMounted, nextTick, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import * as echarts from 'echarts'
