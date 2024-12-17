@@ -40,8 +40,8 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                         if request.path not in [
                             '/user/info/project',
                             '/user/info/environment',
-                            '/ui/config'
-                            '/ui/config/status'
+                            '/ui/config',
+                            '/ui/config/status',
                         ]:
                             return JsonResponse({
                                 "code": 300,
