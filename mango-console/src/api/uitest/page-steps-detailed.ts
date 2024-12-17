@@ -11,7 +11,9 @@ export function getUiPageStepsDetailed(id: any) {
   })
 }
 
-export function postUiPageStepsDetailed(data: object) {
+export function postUiPageStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return post({
     url: '/ui/page/steps/detailed',
     data: () => {
@@ -19,7 +21,9 @@ export function postUiPageStepsDetailed(data: object) {
     },
   })
 }
-export function putUiPageStepsDetailed(data: object) {
+export function putUiPageStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return put({
     url: '/ui/page/steps/detailed',
     data: () => {

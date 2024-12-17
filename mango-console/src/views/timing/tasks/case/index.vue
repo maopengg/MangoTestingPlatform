@@ -6,21 +6,6 @@
           <a-affix :offsetTop="80">
             <a-space>
               <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
-              <a-button status="warning" size="small" @click="handleClick">批量设置环境</a-button>
-              <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
-                <template #title> 设为定时任务 </template>
-                <div>
-                  <a-select
-                    v-model="data.value"
-                    placeholder="请选择定时任务进行绑定"
-                    :options="testObj.data"
-                    :field-names="fieldNames"
-                    value-key="key"
-                    allow-clear
-                    allow-search
-                  />
-                </div>
-              </a-modal>
               <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
               <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
             </a-space>
@@ -66,7 +51,7 @@
             <a-form-item
               :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
               :label="item.label"
-              v-for="item of formItems"
+              v-for="item of data.formItems"
               :key="item.key"
             >
               <template v-if="item.type === 'input'">
@@ -109,13 +94,12 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { formItems, tableColumns } from './config'
+  import { formItems, formItemsCmd, tableColumns } from './config'
   import {
     deleteSystemTasksRunCase,
     getSystemTasksRunCase,
     getSystemTasksTypeCaseName,
     postSystemTasksRunCase,
-    putSystemTasksCaseTestObject,
     putSystemTasksRunCase,
   } from '@/api/system/tasks_details'
   import { getUserModuleName } from '@/api/system/module'
@@ -127,15 +111,15 @@
   pagination.pageSize = 1000
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
-  const data = reactive({
+  const data: any = reactive({
     isAdd: false,
-    visible: false,
     value: null,
     updateId: 0,
     actionTitle: '添加定时任务',
     caseList: [],
     data: [],
     moduleList: [],
+    formItems: [],
   })
 
   function onDeleteItems() {
@@ -164,7 +148,7 @@
     data.actionTitle = '添加用例'
     data.isAdd = true
     modalDialogRef.value?.toggle()
-    formItems.forEach((it) => {
+    data.formItems.forEach((it: any) => {
       if (it.reset) {
         it.reset()
       } else {
@@ -196,7 +180,7 @@
     data.updateId = record.id
     modalDialogRef.value?.toggle()
     nextTick(() => {
-      formItems.forEach((it) => {
+      data.formItems.forEach((it: any) => {
         const propName = record[it.key]
         if (propName) {
           it.value = record.case
@@ -206,9 +190,9 @@
   }
 
   function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+    if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
+      let value = getFormItems(data.formItems)
       if (data.isAdd) {
         value['task'] = route.query.id
         value['sort'] = data.data.length
@@ -235,6 +219,7 @@
   }
 
   function doRefresh() {
+    data.formItems = Number(route.query.type) === 3 ? formItemsCmd : formItems
     getSystemTasksRunCase({
       task_id: route.query.id,
       type: route.query.type,
@@ -256,17 +241,7 @@
       })
       .catch(console.log)
   }
-  const handleCancel = () => {
-    data.visible = false
-  }
-  const handleClick = () => {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要绑定测试的用例环境')
-      return
-    }
-    data.visible = true
-  }
-  function onProductModuleName(projectProductId: number) {
+  function onProductModuleName(projectProductId: any) {
     getUserModuleName(projectProductId)
       .then((res) => {
         data.moduleList = res.data
@@ -274,15 +249,6 @@
       .catch((error) => {
         console.error(error)
       })
-  }
-  const handleOk = () => {
-    putSystemTasksCaseTestObject(selectedRowKeys.value, data.value)
-      .then((res) => {
-        Message.success(res.msg)
-        data.visible = false
-        doRefresh()
-      })
-      .catch(console.log)
   }
   onMounted(() => {
     nextTick(async () => {

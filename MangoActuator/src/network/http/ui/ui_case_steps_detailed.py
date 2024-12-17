@@ -20,17 +20,21 @@ class CaseStepsDetailed(HttpBase):
         return cls.get(CaseStepsDetailed._url, params=_params)
 
     @classmethod
-    def post_case_steps_detailed(cls, json_data: dict):
+    def post_case_steps_detailed(cls, parent_id, json_data: dict):
+        json_data['parent_id'] = parent_id
         return cls.post(CaseStepsDetailed._url, json=json_data)
 
     @classmethod
-    def put_case_steps_detailed(cls, json_data: dict):
+    def put_case_steps_detailed(cls, parent_id, json_data: dict):
+        json_data['parent_id'] = parent_id
+
         return cls.put(CaseStepsDetailed._url, json=json_data)
 
     @classmethod
-    def delete_case_steps_detailed(cls, _id, ):
+    def delete_case_steps_detailed(cls, _id, parent_id):
         return cls.delete(CaseStepsDetailed._url, params={
             'id': _id,
+            'parent_id': parent_id
         })
 
     @classmethod

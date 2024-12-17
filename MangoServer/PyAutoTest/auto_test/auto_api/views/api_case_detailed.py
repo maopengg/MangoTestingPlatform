@@ -87,7 +87,7 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         serializer = self.serializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            self.asynchronous_callback(request)
+            self.asynchronous_callback(request.data.get('parent_id'))
             return ResponseData.success(RESPONSE_MSG_0011, serializer.data)
         else:
             log.api.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
@@ -99,20 +99,14 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         @param _id: 用例ID
         @return:
         """
-        data = {'id': _id, 'case_flow': '', 'name': ''}
+        data = {'id': _id, 'case_flow': ''}
         run = self.model.objects.filter(case=_id).order_by('case_sort')
         for i in run:
             data['case_flow'] += '->'
             if i.api_info:
                 data['case_flow'] += i.api_info.name
-        data['name'] = run[0].case.name
         from PyAutoTest.auto_test.auto_api.views.api_case import ApiCaseCRUD
-        api_case = ApiCaseCRUD()
-        res = api_case.serializer(instance=ApiCase.objects.get(id=_id), data=data)
-        if res.is_valid():
-            res.save()
-        else:
-            log.api.error(f'保存用例执行顺序报错！，报错结果：{str(res.errors)}')
+        ApiCaseCRUD.inside_put(ApiCase.objects.get(id=_id).id, data)
 
 
 class ApiCaseDetailedViews(ViewSet):

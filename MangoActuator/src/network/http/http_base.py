@@ -29,6 +29,10 @@ class HttpBase:
             HOST = host
 
     @classmethod
+    def get_host(cls):
+        return HOST
+
+    @classmethod
     @request_log()
     def get(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
         return requests.get(urljoin(HOST, url), headers if headers else cls.headers, **kwargs)

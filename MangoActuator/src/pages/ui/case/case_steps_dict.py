@@ -5,12 +5,12 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import TaskEnum
 from src.tools.methods import Methods
 
 table_column = [
     {'key': 'page_step', 'name': '步骤名称', 'width': 150, },
-    {'key': 'status', 'name': '测试结果', 'width': 70, 'option': Status3Enum.get_option('value', 'label')},
+    {'key': 'status', 'name': '测试结果', 'width': 70, 'option': TaskEnum.get_option('value', 'label')},
     {'key': 'error_message', 'name': '错误提示', },
     {'key': 'ope', 'name': '操作', 'width': 120},
 

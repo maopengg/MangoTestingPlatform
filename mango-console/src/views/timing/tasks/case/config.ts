@@ -12,6 +12,11 @@ export const tableColumns = useTableColumn([
     dataIndex: 'case_id',
   },
   {
+    title: 'cmd命令',
+    key: 'command',
+    dataIndex: 'command',
+  },
+  {
     title: '操作',
     key: 'actions',
     dataIndex: 'actions',
@@ -45,6 +50,23 @@ export const formItems: FormItem[] = reactive([
     type: 'select',
     validator: function () {
       if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
+export const formItemsCmd: FormItem[] = reactive([
+  {
+    label: 'cmd命令',
+    key: 'command',
+    value: '',
+    placeholder: '请输入cmd命令',
+    required: true,
+    type: 'input',
+    validator: function () {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }

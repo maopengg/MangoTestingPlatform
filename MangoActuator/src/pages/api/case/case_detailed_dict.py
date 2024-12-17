@@ -5,13 +5,13 @@
 # @Author : 毛鹏
 from mango_ui import THEME
 
-from src.enums.tools_enum import Status3Enum
+from src.enums.tools_enum import TaskEnum
 from src.tools.methods import Methods
 
 table_column = [
     {'key': 'api_info', 'name': '接口名称'},
     # {'key': 'method', 'name': '请求方法', 'width': 70, 'option': MethodEnum.get_option('value', 'label')},
-    {'key': 'status', 'name': '测试结果', 'width': 100, 'option': Status3Enum.get_option('value', 'label')},
+    {'key': 'status', 'name': '测试结果', 'width': 100, 'option': TaskEnum.get_option('value', 'label')},
     {'key': 'ope', 'name': '操作', 'width': 120},
 ]
 right_data = [

@@ -13,36 +13,32 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_option(cls, k='key', v='title') -> list:
-        return [{k: str(key), v: value} for key, value in cls.obj().items()]
+        return [{k: str(key), v: value} for key, value in cls.obj().items()]  # type: ignore
 
     @classmethod
     def get_obj(cls) -> dict:
-        return cls.obj()
+        return cls.obj()  # type: ignore
 
     @classmethod
     def get_value_list(cls) -> list:
-        return [value for key, value in cls.obj().items()]
+        return [value for key, value in cls.obj().items()]  # type: ignore
 
     @classmethod
     def get_key_list(cls) -> list:
-        return [key for key, value in cls.obj().items()]
+        return [key for key, value in cls.obj().items()]  # type: ignore
 
     @classmethod
     def get_value(cls, key: int):
-        return cls.obj().get(int(key))
+        return cls.obj().get(int(key))  # type: ignore
 
     @classmethod
     def get_key(cls, value):
-        all_values = cls.obj().values()
-
-        # 判断目标值是否存在于字典的值列表中
+        all_values = cls.obj().values()  # type: ignore
         if value in all_values:
-            # 如果存在，则使用keys()函数获取该值对应的键列表
-            keys_with_target_value = [k for k, v in cls.obj().items() if v == value]
-
+            keys_with_target_value = [k for k, v in cls.obj().items() if v == value]  # type: ignore
             for key in keys_with_target_value:
                 return key
 
     @classmethod
     def get_select(cls):
-        return [ComboBoxDataModel(id=str(_id), name=name) for _id, name in cls.obj().items()]
+        return [ComboBoxDataModel(id=str(_id), name=name) for _id, name in cls.obj().items()]  # type: ignore

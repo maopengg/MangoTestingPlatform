@@ -4,6 +4,9 @@
 # @Author : 毛鹏
 import copy
 import os
+from urllib.parse import urljoin
+
+from mangokit import requests
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
@@ -15,7 +18,7 @@ from src.tools.log_collector import log
 class HttpClientApi(HttpBase):
     @classmethod
     def download_file(cls, file_name):
-        response = cls.get(f'files/{file_name}')
+        response = requests.get(urljoin(cls.get_host(), f'files/{file_name}'), cls.headers)
         file_path = InitPath.upload_files
         try:
             with open(fr'{file_path}\{file_name}', 'wb') as f:
@@ -37,7 +40,7 @@ class HttpClientApi(HttpBase):
         ]
         headers = copy.copy(cls.headers)
         response = cls.post('/system/file', headers=headers, data=data, files=files)
-        if response.status_code == 200:
+        if response.code == 200:
             return True
         else:
             log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')

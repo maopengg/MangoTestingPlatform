@@ -65,16 +65,12 @@ class UiCaseStepsDetailedCRUD(ModelCRUD):
                                                           many=True).data, )
 
     def callback(self, _id):
-        data = {'id': _id, 'case_flow': '', 'name': ''}
+        data = {'id': _id, 'case_flow': ''}
         run = self.model.objects.filter(case=_id).order_by('case_sort')
         for i in run:
             data['case_flow'] += '->'
             if i.page_step:
                 data['case_flow'] += i.page_step.name
-        try:
-            data['name'] = run[0].case.name
-        except AttributeError:
-            log.ui.error(f'对UI用例进行排序时报错：{data}')
         from PyAutoTest.auto_test.auto_ui.views.ui_case import UiCaseCRUD
         UiCaseCRUD.inside_put(_id, data)
 

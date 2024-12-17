@@ -71,7 +71,7 @@ class PageStepsViews(ViewSet):
         @param request:
         @return:
         """
-        is_send = request.GET.get("is_send", True)
+        is_send = request.query_params.get("is_send", True)
         if is_send:
             is_send = bool(int(is_send))
         try:
@@ -80,7 +80,7 @@ class PageStepsViews(ViewSet):
                 request.user['username'],
                 request.GET.get("te"),
                 is_send=is_send) \
-                .test_steps(int(request.GET.get("page_step_id")))
+                .test_steps(int(request.query_params.get("page_step_id")))
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))
         return ResponseData.success(RESPONSE_MSG_0074, case_json.model_dump(), value=(ClientNameEnum.DRIVER.value,))

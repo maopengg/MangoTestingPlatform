@@ -11,7 +11,9 @@ export function getApiCaseDetailed(caseId: any) {
   })
 }
 
-export function postApiCaseDetailed(data: object) {
+export function postApiCaseDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return post({
     url: '/api/case/detailed',
     data: () => {
@@ -20,7 +22,9 @@ export function postApiCaseDetailed(data: object) {
   })
 }
 
-export function putApiCaseDetailed(data: object) {
+export function putApiCaseDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return put({
     url: '/api/case/detailed',
     data: () => {
@@ -29,7 +33,7 @@ export function putApiCaseDetailed(data: object) {
   })
 }
 
-export function deleteApiCaseDetailed(id: number | string[] | number[], parentId: any = null) {
+export function deleteApiCaseDetailed(id: number | string[] | number[], parentId: any) {
   const data: any = {
     id: id,
   }

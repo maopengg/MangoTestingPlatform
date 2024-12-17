@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import traceback
 
-from src.enums.tools_enum import ClientTypeEnum
+from src.enums.system_enum import ClientTypeEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.tools.log_collector import log
 

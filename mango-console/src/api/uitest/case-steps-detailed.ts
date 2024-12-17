@@ -11,7 +11,9 @@ export function getUiCaseStepsDetailed(caseId: any) {
   })
 }
 
-export function postUiCaseStepsDetailed(data: object) {
+export function postUiCaseStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return post({
     url: '/ui/case/steps/detailed',
     data: () => {
@@ -19,7 +21,9 @@ export function postUiCaseStepsDetailed(data: object) {
     },
   })
 }
-export function putUiCaseStepsDetailed(data: object) {
+export function putUiCaseStepsDetailed(data: object, parent_id: any) {
+  // @ts-ignore
+  data['parent_id'] = parent_id
   return put({
     url: '/ui/case/steps/detailed',
     data: () => {
@@ -41,7 +45,7 @@ export function deleteUiCaseStepsDetailed(id: number | string[] | number[], pare
 
 export function getUiCaseStepsRefreshCacheData(id: number) {
   return get({
-    url: 'case/steps/detailed/refresh',
+    url: '/ui/case/steps/detailed/refresh',
     data: () => {
       return {
         id: id,
@@ -51,7 +55,7 @@ export function getUiCaseStepsRefreshCacheData(id: number) {
 }
 export function putUiCasePutCaseSort(caseSortList: any) {
   return put({
-    url: '/case/steps/detailed/sort',
+    url: '/ui/case/steps/detailed/sort',
     data: () => {
       return {
         case_sort_list: caseSortList,

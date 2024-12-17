@@ -8,6 +8,7 @@ import json
 
 from mango_ui import *
 
+from src.enums.tools_enum import TaskEnum
 from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
 from src.models.user_model import UserModel
@@ -106,10 +107,9 @@ class PageStepsDetailedPage(SubPage):
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None
         if is_post:
             data['step_sort'] = len(self.table_widget.table_widget.data)
-            response_model: ResponseModel = self.post(data)
+            response_model: ResponseModel = self.post(self.data.get('id'), data)
         else:
-            data['parent_id'] = self.data.get('id')
-            response_model: ResponseModel = self.put(data)
+            response_model: ResponseModel = self.put(self.data.get('id'), data)
         response_message(self, response_model)
 
     def form_data_callback(self, obj: FormDataModel):
@@ -152,3 +152,6 @@ class PageStepsDetailedPage(SubPage):
             client_type = self.data.get('project_product').get('client_type')
             self.select_data = GetClassMethod.ope_select_data(int(data.value), client_type)
             return self.select_data
+
+    def delete_callback(self, row):
+        return {'_id': row.get('id'), 'parent_id': self.data.get('id')}

@@ -20,17 +20,20 @@ class PageStepsDetailed(HttpBase):
         return cls.get(PageStepsDetailed._url, params=_params)
 
     @classmethod
-    def post_page_steps_detailed(cls, json_data: dict):
+    def post_page_steps_detailed(cls, parent_id, json_data: dict):
+        json_data['parent_id'] = parent_id
         return cls.post(PageStepsDetailed._url, json=json_data)
 
     @classmethod
-    def put_page_steps_detailed(cls, json_data: dict):
+    def put_page_steps_detailed(cls, parent_id, json_data: dict):
+        json_data['parent_id'] = parent_id
         return cls.put(PageStepsDetailed._url, json=json_data)
 
     @classmethod
-    def delete_page_steps_detailed(cls, _id, ):
+    def delete_page_steps_detailed(cls, _id, parent_id, ):
         return cls.delete(PageStepsDetailed._url, params={
             'id': _id,
+            'parent_id': parent_id,
         })
 
     @classmethod

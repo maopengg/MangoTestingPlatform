@@ -81,7 +81,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
         @param _id: 步骤id
         @return:
         """
-        data = {'id': _id, 'run_flow': '', 'name': ''}
+        data = {'id': _id, 'run_flow': ''}
         run = self.model.objects.filter(page_step=_id).order_by('step_sort')
         for i in run:
             data['run_flow'] += '->'

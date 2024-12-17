@@ -268,8 +268,8 @@ class CaseStepsPage(SubPage):
                     for k, v in page_step_details_data.items():
                         if k == key:
                             page_step_details_data[key] = value
-        response_message(self, self.put(
-            {'id': row.get('id'), 'parent_id': row.get('case').get('id'), 'case_data': row.get('case_data')}))
+        response_message(self,
+                         self.put(row.get('case').get('id'), {'id': row.get('id'), 'case_data': row.get('case_data')}))
 
     def run(self):
         user_info = UserModel()
@@ -338,7 +338,7 @@ class CaseStepsPage(SubPage):
         data['case_cache_ass'] = []
         data['case_cache_data'] = []
         data['case'] = self.data.get("id")
-        response = self.post(data)
+        response = self.post(self.data.get("id"), data)
         response_message(self, response)
         self.refresh_case(response.data)
 
@@ -346,3 +346,6 @@ class CaseStepsPage(SubPage):
         response_message(self,
                          HTTP.ui.case_steps_detailed.put_case_sort(
                              [{'id': i.get('id'), 'case_sort': index} for index, i in enumerate(data)]))
+
+    def delete_callback(self, row):
+        return {'_id': row.get('id'), 'parent_id': self.data.get('id')}
