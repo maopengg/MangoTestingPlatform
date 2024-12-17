@@ -105,7 +105,7 @@ export const formItems: FormItem[] = reactive([
 export const assForm = reactive([
   {
     label: '断言类型',
-    key: 'ass_type',
+    key: 'ope_key',
     value: '',
     type: 'cascader',
     required: true,
@@ -118,7 +118,7 @@ export const assForm = reactive([
 export const eleForm = reactive([
   {
     label: '元素操作',
-    key: 'ope_type',
+    key: 'ope_key',
     value: '',
     type: 'cascader',
     required: true,

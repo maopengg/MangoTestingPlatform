@@ -113,7 +113,7 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'ope_type'">
+          <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
@@ -138,16 +138,7 @@
               allow-clear
             />
           </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'ass_value'">
-            <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
-              v-model="item.value"
-              allow-clear
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'ass_type'">
+          <template v-else-if="item.type === 'cascader' && item.label === '断言类型'">
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
@@ -374,10 +365,10 @@
       Object.keys(parameter).forEach((key) => {
         parameter[key] = ''
       })
-      if (!formItems1.some((item) => item.key === 'ass_value')) {
+      if (!formItems1.some((item) => item.key === 'ope_value')) {
         formItems1.push({
           label: '断言值',
-          key: 'ass_value',
+          key: 'ope_value',
           value: JSON.stringify(parameter),
           type: 'textarea',
           required: true,

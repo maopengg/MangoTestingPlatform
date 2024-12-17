@@ -11,7 +11,8 @@ from PyAutoTest.enums.system_enum import CacheDataKeyEnum
 from PyAutoTest.enums.tools_enum import StatusEnum, EnvironmentEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.tools.log_collector import log
-from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel, NoticeEnum
+from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel, NoticeEnum, \
+    MangoKitError
 
 
 class NoticeMain:
@@ -20,13 +21,17 @@ class NoticeMain:
     def notice_main(cls, test_env: int, project_product: int, test_suite_id: int):
         test_object = TestObject.objects.get(environment=test_env, project_product=project_product)
         notice_obj = NoticeConfig.objects.filter(test_object=test_object.id, status=StatusEnum.SUCCESS.value)
+
         for i in notice_obj:
-            if i.type == NoticeEnum.MAIL.value:
-                cls.__wend_mail_send(i, cls.test_report(test_suite_id))
-            elif i.type == NoticeEnum.WECOM.value:
-                cls.__we_chat_send(i, cls.test_report(test_suite_id))
-            else:
-                log.system.error('暂不支持钉钉打卡')
+            try:
+                if i.type == NoticeEnum.MAIL.value:
+                    cls.__wend_mail_send(i, cls.test_report(test_suite_id))
+                elif i.type == NoticeEnum.WECOM.value:
+                    cls.__we_chat_send(i, cls.test_report(test_suite_id))
+                else:
+                    log.system.error('暂不支持钉钉打卡')
+            except MangoKitError as error:
+                raise ToolsError(error.code, error.msg)
 
     @classmethod
     def test_notice_send(cls, _id):
