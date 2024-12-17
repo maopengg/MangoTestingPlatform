@@ -28,6 +28,8 @@ class ConsumerThread:
         self.consumer_sleep = 1  # 每次循环等待1秒
         self.retry_frequency = 3  # 重试次数
         self.current_index = 0
+        self.environment_error = 0  # 检查是否有设备配置失败的
+        self.environment_error_mix = 20  # 寻找用户测试的时候，最大次数
 
     def stop(self):
         self.running = False
@@ -74,9 +76,19 @@ class ConsumerThread:
             )
             self.current_index = (self.current_index + 1) % len(user_list)
             inspect = send_case.inspect_environment_config(test_suite_details.case_id)
+            self.environment_error += 1
             if not inspect:
-                return self.ui(test_suite, test_suite_details)
+                if self.environment_error > self.environment_error_mix:
+                    test_suite.status = TaskEnum.FAIL.value
+                    test_suite.save()
+                    test_suite_details.status = TaskEnum.FAIL.value
+                    test_suite_details.error_message = f'你配置了不同UI自动化类型，但是你没有准备好UI设备配置，请先前往界面自动化->设备配置中添加配置！'
+                    test_suite.save()
+                else:
+                    time.sleep(2)
+                    return self.ui(test_suite, test_suite_details)
             else:
+                self.environment_error = 0
                 send_case.test_case(
                     case_id=test_suite_details.case_id,
                     test_suite=test_suite_details.test_suite.id,
