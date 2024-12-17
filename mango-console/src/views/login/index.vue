@@ -211,8 +211,7 @@
             baseData.loading = false
           }
         })
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        .catch((error) => {
+        .catch(() => {
           baseData.loading = false
         })
     }
@@ -306,21 +305,6 @@
         .login {
           width: 100%;
         }
-      }
-    }
-  }
-
-  @media screen and(max-width: 966px) {
-    .left {
-      display: none;
-    }
-
-    .right {
-      background-image: url('../../assets/img_login_mobile_bg_01.jpg');
-      background-size: cover;
-
-      .form-wrapper {
-        width: 80% !important;
       }
     }
   }

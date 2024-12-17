@@ -68,7 +68,7 @@ class ConsumerThread:
                 user_id=user.user_id,
                 username=user.username,
                 test_env=test_suite_details.test_env,
-                tasks_id=test_suite.tasks.id,
+                tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                 is_notice=test_suite.is_notice,
                 is_send=True
             )

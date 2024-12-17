@@ -2,11 +2,11 @@
   <div class="vaw-avatar-container">
     <a-dropdown trigger="hover" size="large" @select="handleSelect">
       <div class="action-wrapper">
-<!--        <div class="avatar">-->
-<!--          <a-avatar :size="30">-->
-<!--            <img :src="userStore.avatar" />-->
-<!--          </a-avatar>-->
-<!--        </div>-->
+        <!--        <div class="avatar">-->
+        <!--          <a-avatar :size="30">-->
+        <!--            <img :src="userStore.avatar" />-->
+        <!--          </a-avatar>-->
+        <!--        </div>-->
         <span class="nick-name">
           {{ userStore.nickName }}
         </span>
