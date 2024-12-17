@@ -438,6 +438,7 @@
       value['page_id'] = pageData.record.id
       value['project_product_id'] = pageData.record.project_product.id
       value['type'] = data.type
+      value['is_send'] = true
       putUiUiElementTest(value)
         .then((res) => {
           Message.success(res.msg)
