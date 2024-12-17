@@ -46,7 +46,7 @@ export function postUiCaseCopy(caseId: number) {
   })
 }
 export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvironment: any) {
-  return get({
+  return post({
     url: 'ui/case/batch',
     data: () => {
       return {

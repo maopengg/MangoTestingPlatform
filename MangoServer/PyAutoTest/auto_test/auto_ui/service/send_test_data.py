@@ -205,7 +205,7 @@ class SendTestData:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)
         mysql_config = None
         if StatusEnum.SUCCESS.value in [test_object.db_c_status, test_object.db_rud_status]:
-            mysql_config = func_mysql_config(self.test_env)
+            mysql_config = func_mysql_config(test_object.id)
         return EnvironmentConfigModel(
             id=test_object.id,
             test_object_value=test_object.value,

@@ -49,6 +49,11 @@
                   <template v-if="node.status === 1"> <icon-check /> </template>
                   <template v-else> <icon-close /> </template>
                 </template>
+                <template #title="{ title }">
+                  <div>
+                    <span>{{ getNodeTitle(title) }}</span>
+                  </div>
+                </template>
               </a-tree>
             </template>
           </TableBody>
@@ -184,9 +189,10 @@
       .then((res) => {
         res.data.forEach((item: any) => {
           const children: any = {
-            title: item.case_name,
+            title: item.case_id + '-' + item.case_name,
             key: item.case_id,
             status: item.status,
+            error_msg: item.error_message,
             children: [],
           }
           if (item.result_data) {
@@ -230,7 +236,14 @@
       })
       .catch(console.log)
   }
-
+  function getNodeTitle(title: string) {
+    for (const item of data.treeData) {
+      if (item.title == title && item.error_msg) {
+        return title + '-' + item.error_msg
+      }
+    }
+    return title
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

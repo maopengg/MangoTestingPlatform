@@ -165,7 +165,6 @@
           }
           data.treeData.push(children)
         })
-        console.log(data.treeData)
       })
       .catch(console.log)
   }
