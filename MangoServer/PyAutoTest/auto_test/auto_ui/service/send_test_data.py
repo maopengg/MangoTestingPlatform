@@ -181,6 +181,16 @@ class SendTestData:
             else:
                 raise error
 
+    def inspect_environment_config(self, case_id: int) -> bool:
+        objects_filter = UiCaseStepsDetailed.objects.filter(case=case_id).order_by('case_sort')
+        for i in objects_filter:
+            try:
+                page_steps = PageSteps.objects.get(id=i.page_step.id)
+                self.__equipment_config(page_steps.project_product.client_type)
+            except UiError:
+                return False
+        return True
+
     def __equipment_config(self, _type: int) -> EquipmentModel:
         try:
             if _type == DriveTypeEnum.WEB.value:
