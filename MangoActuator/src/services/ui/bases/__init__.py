@@ -274,5 +274,4 @@ class ElementOperation(WebDevice, AndroidDriver):
                 pass
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
-        if not settings.IS_DEBUG:
-            HTTP.not_auth.upload_file(self.project_product_id, file_path, file_name)
+        HTTP.not_auth.upload_file(self.project_product_id, file_path, file_name)

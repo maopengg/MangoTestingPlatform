@@ -39,9 +39,9 @@
                   {{ record.user.name }}
                 </template>
                 <template v-else-if="item.key === 'type'" #cell="{ record }">
-                  <a-tag color="orange" size="small">{{
-                    enumStore.drive_type[record.type].title
-                  }}</a-tag>
+                  <a-tag color="orange" size="small"
+                    >{{ enumStore.drive_type[record.type].title }}
+                  </a-tag>
                 </template>
                 <template v-else-if="item.key === 'web_type'" #cell="{ record }">
                   <a-tag color="green" size="small" v-if="record.config?.web_type === 0"
@@ -333,13 +333,14 @@
       formItems.forEach((it) => {
         if (it.key === 'user_id') {
           it.value = item[it.key].id
+        } else if (it.key === 'type') {
+          it.value = item[it.key]
         } else if (it.key === 'web_max') {
           it.value = item.config[it.key]
         } else if (it.key === 'web_recording') {
           it.value = item.config[it.key]
         } else if (it.key === 'web_parallel') {
           it.value = item.config[it.key]
-          console.log(it.key, item.config[it.key])
         } else if (it.key === 'web_type') {
           it.value = item.config[it.key]
         } else if (it.key === 'web_h5') {
@@ -359,29 +360,31 @@
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       const value = getFormItems(formItems)
-      value['config'] = {
-        web_max: value['web_max'] === null ? 0 : value['web_headers'],
-        web_recording: value['web_recording'] === null ? 0 : value['web_headers'],
-        web_parallel: value['web_parallel'],
-        web_type: value['web_type'],
-        web_h5: value['web_h5'],
-        web_path: value['web_path'],
-        web_headers: value['web_headers'] === null ? 0 : value['web_headers'],
-        and_equipment: value['and_equipment'],
+      const data1: any = {
+        type: value.type,
+        config: {
+          web_max: value['web_max'] === null ? 0 : value['web_headers'],
+          web_recording: value['web_recording'] === null ? 0 : value['web_headers'],
+          web_parallel: value['web_parallel'],
+          web_type: value['web_type'],
+          web_h5: value['web_h5'],
+          web_path: value['web_path'],
+          web_headers: value['web_headers'] === null ? 0 : value['web_headers'],
+          and_equipment: value['and_equipment'],
+        },
       }
       if (data.isAdd) {
-        value['type'] = value.type
-        value['status'] = 0
-        value['user'] = userStore.userId
-        postUiConfig(value)
+        data1['status'] = 0
+        data1['user'] = userStore.userId
+        postUiConfig(data1)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
           })
           .catch(console.log)
       } else {
-        value['id'] = data.updateId
-        putUiConfig(value)
+        data1['id'] = data.updateId
+        putUiConfig(data1)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
