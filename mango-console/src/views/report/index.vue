@@ -24,7 +24,7 @@
                       style="width: 150px"
                       v-model="item.value"
                       :placeholder="item.placeholder"
-                      :options="enumStore.status"
+                      :options="enumStore.task_status"
                       @change="doRefresh"
                       :field-names="fieldNames"
                       value-key="key"
