@@ -2,6 +2,7 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-04-26 22:22
 # @Author : 毛鹏
+import os.path
 
 import time
 from playwright.async_api import Locator, Error
@@ -67,7 +68,7 @@ class PlaywrightElement(BaseData):
         async with self.page.expect_download() as download_info:
             await locating.click()
         download = await download_info.value
-        await download.save_as(save_path)
+        await download.save_as(os.path.join(save_path, download.suggested_filename))
 
     @classmethod
     async def w_drag_to(cls, locating1: Locator, locating2: Locator):
