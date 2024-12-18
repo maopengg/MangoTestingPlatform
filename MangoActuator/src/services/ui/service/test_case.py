@@ -15,7 +15,7 @@ from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
-from src.models.ui_model import CaseModel, UiCaseResultModel
+from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.page_steps import PageSteps
@@ -65,9 +65,10 @@ class TestCase(PageSteps):
         except Exception as error:
             traceback.print_exc()
             log.error(error)
-            self.case_result.status = StatusEnum.SUCCESS.value
+            self.case_result.status = StatusEnum.FAIL.value
             await self.send_case_result(
                 f'初始化用例前置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}')
+            return
         for steps in self.case_model.steps:
             try:
                 await self.steps_init(steps)
@@ -76,25 +77,22 @@ class TestCase(PageSteps):
                 self.case_result \
                     .steps \
                     .append(page_steps_result_model)
-                self.case_result.status = StatusEnum.SUCCESS.value
             except MangoActuatorError as error:
-                self.case_result.error_message = error.msg
-                self.case_result.status = StatusEnum.FAIL.value
                 log.warning(error.msg)
+                self.set_page_steps(self.page_step_result_model, error.msg)
                 break
             except Exception as error:
+                self.set_page_steps(self.page_step_result_model, f'发生未知错误，请联系管理员检查测试用例数据{error}')
                 traceback.print_exc()
                 log.error(error)
-                self.case_result.status = StatusEnum.FAIL.value
-                self.case_result = f'发生未知错误，请联系管理员检查测试用例数据，用例名称：{self.case_model.name}'
                 break
         try:
             await self.case_posterior(self.case_model.posterior_sql)
         except Exception as error:
             traceback.print_exc()
             log.error(error)
-            self.case_result.status = StatusEnum.SUCCESS.value
-            self.case_result = f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}'
+            self.case_result.status = StatusEnum.FAIL.value
+            self.case_result.error_message = f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}'
         await self.send_case_result(
             self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
         )
@@ -154,3 +152,10 @@ class TestCase(PageSteps):
             func_args=func_args
         )
         queue_notification.put({'type': self.case_result.status, 'value': msg})
+
+    def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg: str):
+        self.case_result.error_message = msg
+        self.case_result.status = StatusEnum.FAIL.value
+        self.case_result \
+            .steps \
+            .append(page_steps_result_model)

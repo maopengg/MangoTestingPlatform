@@ -55,15 +55,20 @@ class PageSteps(ElementOperation):
                 await self.element_setup(element_model, element_data, self.page_steps_model.type)
                 element_result = await self.element_main()
                 self.page_step_result_model.status = StatusEnum.SUCCESS.value
-                self.end_set(element_result)
+                self.set_element_test_result(element_result)
             except UiError as error:
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = error.msg
-                self.end_set(self.element_test_result)
+                self.set_element_test_result(self.element_test_result)
+                raise error
+            except Exception as error:
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = self.element_test_result.error_message
+                self.set_element_test_result(self.element_test_result)
                 raise error
         return self.page_step_result_model
 
-    def end_set(self, element_result):
+    def set_element_test_result(self, element_result):
         self.progress.emit(element_result)
         self.page_step_result_model.cache_data = self.test_data.get_all()
         self.page_step_result_model.test_object = {'url': self.url, 'package_name': self.package_name}

@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
+from pydantic import ValidationError
+
 from PyAutoTest.auto_test.auto_system.consumers import ChatConsumer
 from PyAutoTest.auto_test.auto_system.models import TestObject
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
@@ -105,8 +107,10 @@ class SendTestData:
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
-                page_steps_model.case_data.append(StepsDataModel(**case_data))
-
+                try:
+                    page_steps_model.case_data.append(StepsDataModel(**case_data))
+                except ValidationError:
+                    raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_element: list[PageStepsDetailed] = PageStepsDetailed \
             .objects.filter(page_step=page_steps.id).order_by('step_sort')
         for i in page_steps_element:

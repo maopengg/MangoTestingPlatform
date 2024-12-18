@@ -89,7 +89,11 @@ class ElementOperation(WebDevice, AndroidDriver):
         except Error as error:
             log.warning(f'浏览器对象关闭异常：{error}')
             self.element_test_result.status = StatusEnum.FAIL.value
-            self.element_test_result.error_message = f'发送未捕获的异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
+            self.element_test_result.error_message = f'未捕获的异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
+            raise error
+        except Exception as error:
+            self.element_test_result.status = StatusEnum.FAIL.value
+            self.element_test_result.error_message = f'未知异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
             raise error
 
     async def action_element(self):

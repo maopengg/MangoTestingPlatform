@@ -141,13 +141,16 @@ class IndexViews(ViewSet):
         @param request:
         @return:
         """
-        return ResponseData.success(RESPONSE_MSG_0094,
-                                    [
-                                        {'value': TestSuiteDetails.objects.count(),
-                                         'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
-                                        {'value': TestSuiteDetails.objects.count(),
-                                         'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)}
-                                    ])
+        return ResponseData.success(RESPONSE_MSG_0094, [
+            {
+                'value': TestSuiteDetails.objects.filter(type=AutoTestTypeEnum.UI.value).count(),
+                'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)
+            },
+            {
+                'value': TestSuiteDetails.objects.filter(type=AutoTestTypeEnum.API.value).count(),
+                'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)
+            }
+        ])
 
     @action(methods=['get'], detail=False)
     @error_response('system')

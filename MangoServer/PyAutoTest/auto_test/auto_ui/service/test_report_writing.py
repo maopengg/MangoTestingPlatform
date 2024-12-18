@@ -40,7 +40,7 @@ class TestReportWriting:
         case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
         case_step_detailed.status = step_data.status
         case_step_detailed.error_message = step_data.error_message
-        case_step_detailed.result_data = step_data.model_dump_json()
+        case_step_detailed.result_data = step_data.model_dump()
         case_step_detailed.save()
         #
         page_step = PageSteps.objects.get(id=step_data.id)
