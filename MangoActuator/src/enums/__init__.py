@@ -33,11 +33,9 @@ class BaseEnum(Enum):
 
     @classmethod
     def get_key(cls, value):
-        all_values = cls.obj().values()  # type: ignore
-        if value in all_values:
-            keys_with_target_value = [k for k, v in cls.obj().items() if v == value]  # type: ignore
-            for key in keys_with_target_value:
-                return key
+        for k, v in cls.obj().items():  # type: ignore
+            if v == value:
+                return k
 
     @classmethod
     def get_select(cls):
