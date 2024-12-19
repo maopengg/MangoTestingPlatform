@@ -142,6 +142,8 @@ class WebDevice(PlaywrightBrowser,
                         return eval(f"page.{loc}")
                     except SyntaxError:
                         raise UiError(*ERROR_MSG_0022)
+                    except NameError as error:
+                        raise UiError(*ERROR_MSG_0060, error=error)
             case ElementExpEnum.XPATH.value:
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:

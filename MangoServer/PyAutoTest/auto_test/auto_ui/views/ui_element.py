@@ -74,15 +74,12 @@ class PageElementViews(ViewSet):
         """
         获取所有的页面名称
         """
-        try:
-            SendTestData(
-                request.user.get('id'),
-                request.user.get('username'),
-                request.data.get("test_env"),
-                is_send=request.data.get('is_send')
-            ).test_element(request.data)
-        except MangoServerError as error:
-            return ResponseData.fail((error.code, error.msg))
+        SendTestData(
+            request.user.get('id'),
+            request.user.get('username'),
+            request.data.get("test_env"),
+            is_send=request.data.get('is_send')
+        ).test_element(request.data)
         return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)

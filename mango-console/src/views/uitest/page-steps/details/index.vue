@@ -27,60 +27,87 @@
         </a-space>
       </div>
     </a-card>
-
-    <a-card>
-      <a-table
-        :columns="columns"
-        :data="data.dataList"
-        @change="handleChange"
-        :draggable="{ type: 'handle', width: 40 }"
-        :pagination="false"
-        :bordered="false"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of columns"
-            :key="item.key"
-            :align="item.align"
-            :title="item.title"
-            :width="item.width"
-            :data-index="item.dataIndex"
-            :fixed="item.fixed"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
+    <div class="container">
+      <div class="left">
+        <a-card>
+          <a-table
+            :columns="columns"
+            :data="data.dataList"
+            @change="handleChange"
+            :draggable="{ type: 'handle', width: 40 }"
+            :pagination="false"
+            :bordered="false"
           >
-            <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-              {{ record.page_step?.name }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
-              {{ record.ele_name?.name }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
-              {{ record.ope_key == null ? '-' : getLabelByValue(record.type, record.ope_key) }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-              {{ record.ope_value }}
-            </template>
+            <template #columns>
+              <a-table-column
+                v-for="item of columns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.dataIndex"
+                :fixed="item.fixed"
+                :ellipsis="item.ellipsis"
+                :tooltip="item.tooltip"
+              >
+                <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
+                  {{ record.page_step?.name }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
+                  {{ record.ele_name ? record.ele_name.name : '-' }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
+                  {{
+                    record.ope_key
+                      ? getLabelByValue(record.type, record.ope_key)
+                      : record.key
+                      ? record.key
+                      : record.key_list
+                  }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
+                  {{
+                    record.ope_value ? record.ope_value : record.value ? record.value : record.sql
+                  }}
+                </template>
 
-            <template v-else-if="item.dataIndex === 'key_list'" #cell="{ record }">
-              {{ record.key_list }}
+                <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
+                  <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
+                  <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
+                  <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    >删除
+                  </a-button>
+                </template>
+              </a-table-column>
             </template>
-            <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
-              <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
-              <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
-              <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
-            </template>
-            <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除
-              </a-button>
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </a-card>
+          </a-table>
+        </a-card>
+      </div>
+      <div class="right">
+        <a-card title="最近一次步骤执行过程">
+          <a-space direction="vertical" style="width: 25%">
+            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
+            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
+            <span>所属模块：{{ pageData.record.module?.name }}</span>
+            <span>所属页面：{{ pageData.record.page?.name }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 25%">
+            <span>步骤ID：{{ pageData.record.id }}</span>
+            <span>步骤名称：{{ pageData.record.name }}</span>
+            <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 50%">
+            <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
+          </a-space>
+        </a-card>
+      </div>
+    </div>
     <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
       <template #content>
         <a-form :model="formModel">
@@ -202,11 +229,13 @@
     postUiPageStepsDetailed,
     putUiPagePutStepSort,
     putUiPageStepsDetailed,
+    getUiPageStepsDetailedTest,
   } from '@/api/uitest/page-steps-detailed'
   import { getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+
   const enumStore = useEnum()
 
   const pageData = usePageData()
@@ -529,6 +558,18 @@
       .catch(console.log)
   }
 
+  function onTest(record: any) {
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    getUiPageStepsDetailedTest(record.id, userStore.selected_environment)
+      .then((res) => {
+        Message.loading(res.msg)
+      })
+      .catch(console.log)
+  }
+
   onMounted(() => {
     nextTick(async () => {
       await getUiRunSortAss()
@@ -538,3 +579,20 @@
     })
   })
 </script>
+<style>
+  .container {
+    display: grid;
+    grid-template-columns: 60% 40%; /* 左侧 60%，右侧 40% */
+    width: 100%;
+    border-radius: 10px; /* 整个容器的圆角 */
+    overflow: hidden; /* 确保子元素的圆角效果 */
+  }
+  .left {
+    border-top-left-radius: 10px; /* 左上角圆角 */
+    border-bottom-left-radius: 10px; /* 左下角圆角 */
+  }
+  .right {
+    border-top-right-radius: 10px; /* 右上角圆角 */
+    border-bottom-right-radius: 10px; /* 右下角圆角 */
+  }
+</style>

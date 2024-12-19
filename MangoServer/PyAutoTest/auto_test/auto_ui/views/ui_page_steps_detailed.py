@@ -12,10 +12,12 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from PyAutoTest.auto_test.auto_ui.models import PageStepsDetailed
+from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
-from PyAutoTest.enums.system_enum import CacheDataKey2Enum
+from PyAutoTest.enums.system_enum import CacheDataKey2Enum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
+from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
@@ -101,6 +103,18 @@ class PageStepsDetailedCRUD(ModelCRUD):
 class PageStepsDetailedView(ViewSet):
     model = PageStepsDetailed
     serializer_class = PageStepsDetailedSerializers
+
+    @action(methods=['get'], detail=False)
+    @error_response('ui')
+    def get_test_page_steps_detailed(self, request: Request):
+        page_steps_detailed_id = request.query_params.get('page_steps_detailed_id')
+        SendTestData(
+            request.user.get('id'),
+            request.user.get('username'),
+            request.query_params.get("test_env"),
+            is_send=request.query_params.get('is_send')
+        ).test_page_steps(page_steps_detailed_id)
+        return ResponseData.success(RESPONSE_MSG_0131, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['get'], detail=False)
     @error_response('ui')

@@ -30,9 +30,9 @@ def async_retry(func):
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
                     raise error
             except Exception as error:
-                traceback.format_exc()
-                log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
+                    traceback.format_exc()
+                    log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
                     raise error
             await asyncio.sleep(RETRY_WAITING_TIME)
 
@@ -54,9 +54,9 @@ def sync_retry(func):
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
                     raise error
             except Exception as error:
-                traceback.format_exc()
-                log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
                 if (time.time() - start_time) > FAILED_RETRY_TIME:
+                    traceback.format_exc()
+                    log.error(f'未知异常：{str(error)}，{traceback.format_exc()}')
                     raise error
             time.sleep(RETRY_WAITING_TIME)
 
