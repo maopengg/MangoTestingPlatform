@@ -7,6 +7,7 @@ from django.db import connection
 
 from PyAutoTest.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.service.notice import NoticeMain
+from PyAutoTest.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 from PyAutoTest.enums.system_enum import ClientTypeEnum
 from PyAutoTest.enums.tools_enum import TaskEnum, StatusEnum
 from PyAutoTest.models.socket_model import SocketDataModel
@@ -38,6 +39,7 @@ class UpdateTestSuite:
         test_suite_detail_list = TestSuiteDetails.objects.filter(test_suite=data.test_suite,
                                                                  status__in=[TaskEnum.STAY_BEGIN.value,
                                                                              TaskEnum.PROCEED.value])
+        TestReportWriting.update_test_case(data.result_data)
         if not test_suite_detail_list.exists():
             test_suite = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
             if not test_suite.exists():

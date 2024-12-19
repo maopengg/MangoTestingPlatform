@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-card title="页面步骤详情">
+    <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden">
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
@@ -13,7 +13,6 @@
       <div class="container">
         <a-space direction="vertical" style="width: 25%">
           <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-          <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
           <span>所属模块：{{ pageData.record.module?.name }}</span>
           <span>所属页面：{{ pageData.record.page?.name }}</span>
         </a-space>
@@ -29,7 +28,7 @@
     </a-card>
     <div class="container">
       <div class="left">
-        <a-card>
+        <a-card style="border-radius: 10px; overflow: hidden">
           <a-table
             :columns="columns"
             :data="data.dataList"
@@ -90,21 +89,80 @@
         </a-card>
       </div>
       <div class="right">
-        <a-card title="最近一次步骤执行过程">
-          <a-space direction="vertical" style="width: 25%">
-            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-            <span>所属模块：{{ pageData.record.module?.name }}</span>
-            <span>所属页面：{{ pageData.record.page?.name }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 25%">
-            <span>步骤ID：{{ pageData.record.id }}</span>
-            <span>步骤名称：{{ pageData.record.name }}</span>
-            <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 50%">
-            <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
-          </a-space>
+        <a-card title="最近一次步骤执行过程" style="overflow: hidden">
+          <a-collapse
+            :default-active-key="data.eleResultKey"
+            v-for="item of pageData.record.result_data?.element_result_list"
+            :bordered="false"
+            :key="item.id"
+            destroy-on-hide
+          >
+            <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+              <div>
+                <a-space direction="vertical" style="width: 50%">
+                  <p
+                    >操作类型：{{
+                      item.type === 0
+                        ? getLabelByValue(data.ope, item.ope_key)
+                        : getLabelByValue(data.ass, item.ope_key)
+                    }}</p
+                  >
+                  <p
+                    >表达式类型：{{
+                      item.exp ? enumStore.element_exp[item.exp].title : item.exp
+                    }}</p
+                  >
+                  <p
+                    >测试结果：{{
+                      item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                    }}</p
+                  >
+                  <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                  <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+                  <p v-if="item.expect">预期：{{ item.expect }}</p>
+                  <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                </a-space>
+                <a-space direction="vertical" style="width: 50%">
+                  <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                  <p>元素个数：{{ item.ele_quantity }}</p>
+                  <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                  <div v-if="item.status === 0">
+                    <a-image
+                      :src="baseURL + '/' + item.picture_path"
+                      title="失败截图"
+                      width="260"
+                      style="margin-right: 67px; vertical-align: top"
+                      :preview-visible="visible1"
+                      @preview-visible-change="
+                        () => {
+                          visible1 = false
+                        }
+                      "
+                    >
+                      <template #extra>
+                        <div class="actions">
+                          <span
+                            class="action"
+                            @click="
+                              () => {
+                                visible1 = true
+                              }
+                            "
+                            ><icon-eye
+                          /></span>
+                          <span class="action"><icon-download /></span>
+                          <a-tooltip content="失败截图">
+                            <span class="action"><icon-info-circle /></span>
+                          </a-tooltip>
+                        </div>
+                      </template>
+                    </a-image>
+                  </div>
+                  <p v-if="item.expect">实际：{{ item.actual }}</p>
+                </a-space>
+              </div>
+            </a-collapse-item>
+          </a-collapse>
         </a-card>
       </div>
     </div>
@@ -235,6 +293,7 @@
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+  import { baseURL } from '@/api/axios.config'
 
   const enumStore = useEnum()
 
@@ -255,7 +314,14 @@
     type: 0,
     plainOptions: [],
   })
+  const visible1 = ref(false)
 
+  const customStyle = reactive({
+    borderRadius: '6px',
+    marginBottom: '2px',
+    border: 'none',
+    overflow: 'hidden',
+  })
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems.length - 1; i >= 0; i--) {
@@ -582,17 +648,7 @@
 <style>
   .container {
     display: grid;
-    grid-template-columns: 60% 40%; /* 左侧 60%，右侧 40% */
-    width: 100%;
-    border-radius: 10px; /* 整个容器的圆角 */
-    overflow: hidden; /* 确保子元素的圆角效果 */
-  }
-  .left {
-    border-top-left-radius: 10px; /* 左上角圆角 */
-    border-bottom-left-radius: 10px; /* 左下角圆角 */
-  }
-  .right {
-    border-top-right-radius: 10px; /* 右上角圆角 */
-    border-bottom-right-radius: 10px; /* 右下角圆角 */
+    grid-template-columns: 60% 40%; /* 左侧60%，右侧40% */
+    gap: 10px; /* 添加间距 */
   }
 </style>
