@@ -82,6 +82,7 @@ class BaseData(QObject):
                 pass
         if self.mysql_connect:
             self.mysql_connect.close()
+        await self.setup()
 
     def set_mysql(self, run_config: EnvironmentConfigModel):
         self.mysql_config = run_config.mysql_config

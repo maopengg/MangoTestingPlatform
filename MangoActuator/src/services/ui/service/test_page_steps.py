@@ -3,11 +3,11 @@
 # @Description: # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 import asyncio
-import traceback
 from typing import Optional
 
 from mangokit import singleton
 
+from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
@@ -16,7 +16,7 @@ from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.page_steps import PageSteps
-from src.tools.log_collector import log
+from src.tools.decorator.error_handle import async_error_handle
 
 
 @singleton
@@ -43,6 +43,7 @@ class TestPageSteps(PageSteps):
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
+    @async_error_handle()
     async def page_steps_mian(self, data: PageStepsModel) -> None:
         await self.page_init(data)
         try:
@@ -53,21 +54,22 @@ class TestPageSteps(PageSteps):
             await self.send_steps_result(
                 200 if self.page_step_result_model.status else 300,
                 f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}',
-                self.page_step_result_model.status
+                TipsTypeEnum.SUCCESS.value if self.page_step_result_model.status else TipsTypeEnum.ERROR.value
             )
             self.finished.emit(True)
         except MangoActuatorError as error:
-            await self.setup()
+            await self.base_close()
             await self.send_steps_result(error.code, error.msg, 0)
         except Exception as error:
-            traceback.print_exc()
-            log.error(error)
+            await self.base_close()
             await self.send_steps_result(
                 300,
                 f'执行步骤<{self.page_steps_model.name}>发生未知错误，请联系管理员，报错内容：{error}',
-                self.page_step_result_model.status
+                TipsTypeEnum.SUCCESS.value if self.page_step_result_model.status else TipsTypeEnum.ERROR.value
             )
+            raise error
 
+    @async_error_handle()
     async def new_web_obj(self, data: EquipmentModel):
         try:
             if self.page is None and self.context is None:
@@ -79,22 +81,36 @@ class TestPageSteps(PageSteps):
                 self.page = None
                 self.context = None
                 await self.web_init(data)
-            await self.send_steps_result(200, msg, 1)
-
+            await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS.value, False)
         except MangoActuatorError as error:
-            await self.send_steps_result(error.code, error.msg, 0)
+            await self.base_close()
+            await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR.value, False)
         except Exception as error:
-            traceback.print_exc()
-            log.error(error)
-            msg = f'实例化浏览器发生未知错误，请联系管理员，报错内容：{error}'
-            await self.send_steps_result(300, msg, 0)
+            await self.base_close()
+            await self.send_steps_result(
+                300,
+                f'实例化浏览器发生未知错误，请联系管理员，报错内容：{error}',
+                TipsTypeEnum.ERROR.value,
+                False
+            )
+            raise error
 
-    async def send_steps_result(self, code, msg, _type):
-        await WebSocketClient().async_send(
-            code=code,
-            msg=msg,
-            is_notice=ClientTypeEnum.WEB,
-            func_name=UiSocketEnum.PAGE_STEPS.value,
-            func_args=self.page_step_result_model
-        )
-        queue_notification.put({'type': _type, 'value': msg})
+    async def send_steps_result(self, code, msg, _type, is_send: bool = True):
+        if is_send:
+            await WebSocketClient().async_send(
+                code=code,
+                msg=msg,
+                is_notice=ClientTypeEnum.WEB,
+                func_name=UiSocketEnum.PAGE_STEPS.value,
+                func_args=self.page_step_result_model
+            )
+        else:
+            await WebSocketClient().async_send(
+                code=code,
+                msg=msg,
+                is_notice=ClientTypeEnum.WEB,
+            )
+        queue_notification.put({
+            'type': _type,
+            'value': msg
+        })

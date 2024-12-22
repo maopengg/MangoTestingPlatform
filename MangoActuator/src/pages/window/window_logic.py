@@ -24,6 +24,7 @@ from ..tasks import *
 from ..tools import *
 from ..ui import *
 from ..user import *
+from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
 from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
@@ -111,13 +112,13 @@ class WindowLogic(MangoMain1Window):
         self.clicked.connect(self.title_bar_clicked_func)
 
     def handle_notification(self, notification_type, message):
-        if notification_type == 0:
+        if notification_type == TipsTypeEnum.ERROR.value:
             error_notification(self.content_area_frame, message)
-        elif notification_type == 1:
+        elif notification_type == TipsTypeEnum.SUCCESS.value:
             success_notification(self.content_area_frame, message)
-        elif notification_type == 2:
+        elif notification_type == TipsTypeEnum.INFO.value:
             info_notification(self.content_area_frame, message)
-        elif notification_type == 3:
+        elif notification_type == TipsTypeEnum.WARNING.value:
             warning_notification(self.content_area_frame, message)
 
     def title_bar_clicked_func(self, data):

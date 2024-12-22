@@ -6,10 +6,10 @@
 import json
 import os
 import shutil
-import traceback
 
 from mangokit import RandomTimeData
 
+from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
@@ -20,6 +20,7 @@ from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.page_steps import PageSteps
 from src.tools import InitPath
+from src.tools.decorator.error_handle import async_error_handle
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
@@ -58,44 +59,34 @@ class TestCase(PageSteps):
     async def case_init(self):
         await self.public_front(self.case_model.public_data_list)
 
+    @async_error_handle()
     @async_memory
     async def case_page_step(self) -> None:
         try:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
         except Exception as error:
-            traceback.print_exc()
-            log.error(error)
             self.case_result.status = StatusEnum.FAIL.value
-            await self.send_case_result(
-                f'初始化用例前置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}')
-            return
-        for steps in self.case_model.steps:
-            try:
+            await self.send_case_result(f'初始化用例前置数据发生未知异常，请联系管理员来解决!')
+            raise error
+        try:
+            for steps in self.case_model.steps:
                 await self.steps_init(steps)
                 await self.driver_init()
                 page_steps_result_model = await self.steps_main()
                 self.case_result \
                     .steps \
                     .append(page_steps_result_model)
-            except MangoActuatorError as error:
-                log.warning(error.msg)
-                self.set_page_steps(self.page_step_result_model, error.msg)
-                break
-            except Exception as error:
-                self.set_page_steps(self.page_step_result_model, f'发生未知错误，请联系管理员检查测试用例数据{error}')
-                traceback.print_exc()
-                log.error(error)
-                break
-        try:
             await self.case_posterior(self.case_model.posterior_sql)
+            await self.send_case_result(f'用例<{self.case_model.name}>测试完成')
+        except MangoActuatorError as error:
+            log.warning(error.msg)
+            self.set_page_steps(self.page_step_result_model, error.msg)
+            await self.send_case_result(error.msg)
         except Exception as error:
-            traceback.print_exc()
-            log.error(error)
-            self.case_result.status = StatusEnum.FAIL.value
-            self.case_result.error_message = f'初始化用例后置数据发生未知异常，请联系管理员来解决，用例名称：{self.case_model.name}'
-        await self.send_case_result(
-            self.case_result.error_message if self.case_result.error_message else f'用例<{self.case_model.name}>测试完成'
-        )
+            self.set_page_steps(self.page_step_result_model,
+                                f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
+            await self.send_case_result(self.case_result.error_message)
+            raise error
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         for i in front_custom:
@@ -151,7 +142,10 @@ class TestCase(PageSteps):
             func_name=func_name,
             func_args=func_args
         )
-        queue_notification.put({'type': self.case_result.status, 'value': msg})
+        queue_notification.put({
+            'type': TipsTypeEnum.SUCCESS.value if self.case_result.status else TipsTypeEnum.ERROR.value,
+            'value': msg
+        })
 
     def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg: str):
         self.case_result.error_message = msg

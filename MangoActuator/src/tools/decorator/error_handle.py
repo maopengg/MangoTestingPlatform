@@ -42,6 +42,7 @@ def async_error_handle(is_error=False):
                 return await func(*args, **kwargs)
             except Exception as error:
                 trace = traceback.format_exc()
+                log.error(trace)
                 error_send(func, args, kwargs, error, trace)
                 await WebSocketClient().async_send(
                     code=300,
