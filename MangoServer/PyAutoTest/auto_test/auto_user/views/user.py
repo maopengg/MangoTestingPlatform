@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
+import time
 from datetime import datetime
 
 from django.forms import model_to_dict
@@ -197,6 +198,5 @@ class LoginViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
-        from mangokit import Mango
-        Mango.s('服务端发送测试~')
+        time.sleep(5)
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
