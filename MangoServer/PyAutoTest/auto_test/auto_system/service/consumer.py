@@ -64,7 +64,11 @@ class ConsumerThread:
             if not user_list:
                 log.system.warning('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
                 return
-            user = user_list[self.current_index]
+            try:
+                self.current_index = (self.current_index + 1) % len(user_list)
+                user = user_list[self.current_index]
+            except IndexError:
+                return self.ui(environment_error, test_suite, test_suite_details)
             send_case = SendTestData(
                 user_id=user.user_id,
                 username=user.username,
@@ -73,7 +77,6 @@ class ConsumerThread:
                 is_notice=test_suite.is_notice,
                 is_send=True
             )
-            self.current_index = (self.current_index + 1) % len(user_list)
             inspect = send_case.inspect_environment_config(test_suite_details.case_id)
             environment_error += 1
             if not inspect:
