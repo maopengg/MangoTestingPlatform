@@ -11,7 +11,6 @@
         :show-page-size="pagination.showSizePicker"
         :total="pagination?.pageCount"
         show-total
-        show-jumper
         @page-size-change="onPageSizeChange"
         @change="onChange"
         size="small"

@@ -1,5 +1,5 @@
 <template>
-  <div id="richTextEditor" :style="{ height: height + 'px' }"></div>
+  <div id="richTextEditor" :style="{ height: height + 'px' }"> </div>
 </template>
 
 <script lang="ts">

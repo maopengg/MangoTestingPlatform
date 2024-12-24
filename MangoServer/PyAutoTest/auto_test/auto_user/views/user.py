@@ -192,7 +192,7 @@ class LoginViews(ViewSet):
             user_obj.save()
             return ResponseData.success(RESPONSE_MSG_0114, data)
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['POST'], detail=False)
     def menu(self, request: Request):
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
 

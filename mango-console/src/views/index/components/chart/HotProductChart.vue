@@ -84,7 +84,10 @@
         setTimeout(() => {
           loading.value = false
           setTimeout(() => {
-            nextTick(() => useEcharts(hotProdChart.value as HTMLDivElement).setOption(option))
+            nextTick(() =>{
+              if (hotProdChart.value){
+              useEcharts(hotProdChart.value as HTMLDivElement).setOption(option)}
+            })
           }, 100)
         }, 1000)
       }

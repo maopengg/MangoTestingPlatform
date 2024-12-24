@@ -105,7 +105,9 @@
         setTimeout(() => {
           loading.value = false
           nextTick(() => {
-            useEcharts(channelsChart.value as HTMLDivElement).setOption(option)
+            if (channelsChart.value) {
+              useEcharts(channelsChart.value as HTMLDivElement).setOption(option);
+            }
           })
         }, 1000)
       }

@@ -1,5 +1,5 @@
 import '../styles/transition.css'
-import { App, inject } from 'vue'
+import { App } from 'vue'
 import { TinyEmitter } from 'tiny-emitter'
 
 import { toHump } from '../utils'
@@ -20,7 +20,7 @@ function getComponentName(key: string) {
     .find(
       (it) =>
         it !== 'index.vue' &&
-        it !== 'user.ts' &&
+        it !== 'index.ts' &&
         it !== 'index.js' &&
         it !== 'index.jsx' &&
         it !== 'index.tsx'
@@ -31,10 +31,13 @@ function getComponentName(key: string) {
 }
 
 export function registerComponents(app: App) {
-  const components = import.meta.globEager('./**/**.{vue,tsx}')
+  const components = import.meta.glob('./**/**.{vue,tsx}', { eager: true })
   Object.keys({ ...components }).forEach((it: string) => {
     const component = components[it]
-    app.component(component.default.name || toHump(getComponentName(it)), component.default)
+    app.component(
+      (component as any).default.name || toHump(getComponentName(it)),
+      (component as any).default
+    )
   })
 }
 

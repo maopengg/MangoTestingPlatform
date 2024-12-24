@@ -6,7 +6,7 @@
     <div class="title">
       <div>{{ statusTip }}</div>
       <div class="margin-top-lg">
-        <a-button type="primary" size="small" @click="backHome"> 返回首页</a-button>
+        <a-button type="primary" size="small" @click="backHome"> 返回首页 </a-button>
       </div>
     </div>
   </div>
@@ -17,7 +17,6 @@
   import image_403 from '@/assets/img_403.png'
   import image_500 from '@/assets/img_500.png'
   import { defineComponent } from 'vue'
-
   export default defineComponent({
     name: 'ExceptionStatus',
     props: {
@@ -65,16 +64,13 @@
   .exception-container {
     text-align: center;
     height: 100%;
-
     .img-wrapper {
       width: 80%;
       margin: 0 auto;
-
       & > img {
         width: 100%;
       }
     }
-
     .title {
       margin-top: -50px;
     }

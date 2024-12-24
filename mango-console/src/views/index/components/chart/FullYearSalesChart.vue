@@ -119,7 +119,10 @@
         setTimeout(() => {
           loading.value = false
           setTimeout(() => {
-            nextTick(() => useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option))
+            nextTick(() => {
+              if (fullYearSalesChart.value){
+              useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)}
+            })
           }, 100)
         }, 1000)
       }

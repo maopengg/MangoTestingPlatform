@@ -1,3 +1,64 @@
+## 2024-1-30(v: 3.0.6)
+
+- 新增：新增 跨域 配置代码
+
+## 2024-1-30(v: 3.0.5)
+
+- 升级：升级 `arco-design` 版本到 `v2.54.3`
+- 升级：升级 `tailwindcss` 版本到 `v3.4.1`
+- 修复：修复 <a-switch> 组件显示不出来的bug
+- 升级：适配 `vite5`，替换 `globEager` 为 `glob`
+
+
+## 2023-3-22(v: 3.0.2)
+
+- 升级：升级 `arco-design` 版本到 `v2.44.2`
+
+## 2023-3-14(v: 3.0.1)
+
+- 修复：修复在获取菜单数据为空的时候造成系统死循环的异常
+
+  涉及文件：
+   
+   - src/store/help/index.ts
+
+- 修复：修复在`hmr`下 `transition` 动画执行会丢失进入页面的bug
+
+  涉及文件：
+   - src/layouts/Main.vue
+
+- 优化：升级 `import.meta.globEager` 到 `import.meta.glob`
+
+  涉及文件：
+   - src/layouts/index.ts
+   - src/components/index.ts
+
+## 2023-3-10(v: 3.0.0)
+
+  - 升级：全新升级登录页面和首页面UI
+
+  - 修复：全新设计并修复 SortableTable.vue 组件报错问题。 涉及文件如下：
+      - src/components/SortableTable.vue
+      - src/types/components.ts
+      - package.json （新增第三方依赖：sortablejs 声明依赖：@types/sortablejs）
+
+  - 修复：添加 @typescript-eslint/parser eslint 依赖，修复在某些情况下报错信息： Parsing error: Cannot find module '@typescript-eslint/parser'
+
+
+## 2023-2-20(v: 2.1.0)
+
+- 优化：优化`路由` 以 `fullPath` 字段为主键，以支持相同路由，query参数不一致时导致路由参数缺失 
+  
+  涉及文件如下：
+    - src/layouts/actions/index.vue
+    - src/layouts/tabbar/index.vue
+    - src/router/guard/visited.ts
+    - src/store/help/index.ts
+    - src/store/modules/visited-routes.ts
+
+
+- 升级：升级 `arco-design` 版本到 `v2.43.1`
+
 ## 2022-12-14(v: 2.0.8)
 
 - 优化：优化 `主体滑动` 样式
@@ -121,13 +182,13 @@
 
 - 重要升级：菜单可以从本地路由中过滤
 
-  - 之前的菜单都是根据接口数据从本地 `views` 中动态加载，但在某些场景下或者某些人的开发习惯，可能需要根据本地定义中的路由表（如：`src/router/user.ts` 中的 `asyncRoutes`）中动态加载。如果接口中的菜单配置项和本地路由表中的配置项重复，优先使用本地路由表中的配置项。
+  - 之前的菜单都是根据接口数据从本地 `views` 中动态加载，但在某些场景下或者某些人的开发习惯，可能需要根据本地定义中的路由表（如：`src/router/index.ts` 中的 `asyncRoutes`）中动态加载。如果接口中的菜单配置项和本地路由表中的配置项重复，优先使用本地路由表中的配置项。
   - 在根据权限获取到菜单列表的时候，就可以根据以下三种方式加载路由：
     - 完全从 本地 `views` 中动态加载
     - 完全从 本地 `路由表` 中动态加载
     - 本地 `views` 和 本地 `路由表` 两种方式的结合。注：本地 `路由表`方式的 `优先级要高于` 本地 `views`的方式。（本项目默认的使用方式）
 
-- 优化：把 `src/router/user.ts`中的路由分类
+- 优化：把 `src/router/index.ts`中的路由分类
 
   - `constantRoutes` 存放一些系统页面，如`login`、`redirect`、`404`、`403`、`500`等
   - `asyncRoutes` 存放一些需要根据权限加载的路由

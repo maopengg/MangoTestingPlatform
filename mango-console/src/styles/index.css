@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 :root {
   --menu-width: 210px;
 }
@@ -50,11 +51,11 @@ object {
 .card-border-radius {
   border-radius: var(--border-radius-large) !important;
 }
-.card-border-radius:hover {
+.card-border-radius:hover{
   box-shadow: 0px 0px 10px #ddd;
 }
 
-.arco-pagination-item-active {
+.arco-pagination-item-active{
   color: var(--color-white) !important;
 }
 
@@ -62,11 +63,13 @@ object {
   color: var(--color-white) !important;
 }
 
-.arco-btn-disabled {
+.arco-btn-disabled{
   background-color: rgba(var(--primary-1), 0.6) !important;
 }
 
-/*.arco-card {*/
-/*  border-radius: 10px; !* 设置全局卡片的圆角 *!*/
-/*  overflow: hidden; !* 确保内容不超出圆角 *!*/
-/*}*/
+.arco-switch {
+  background-color: var(--color-fill-4);
+}
+.arco-switch-checked{
+  background-color: rgb(var(--primary-6));
+}

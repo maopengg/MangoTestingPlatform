@@ -1,7 +1,5 @@
 <template>
-  <a-card class="footer-container card-border-radius" :bordered="false">
-    Copyright © {{ projectName }} 2024</a-card
-  >
+  <a-card class="footer-container" :bordered="false"> Copyright © {{ projectName }} 2023 </a-card>
 </template>
 
 <script lang="ts">

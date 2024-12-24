@@ -27,10 +27,13 @@
     </section>
     <component
       :is="appStore.isFixedNavBar ? 'Scrollbar' : 'div'"
-      class="main-base-style scrollbar"
+      class="main-base-style"
       :class="[appStore.theme === 'light' ? 'main-base-light-theme' : 'main-base-dark-theme']"
     >
-      <section class="main-section">
+      <section
+        class="main-section"
+        :class="[appStore.flexMainHeight ? 'flex-height' : 'min-height']"
+      >
         <Main />
       </section>
       <section class="footer-wrapper">
@@ -43,7 +46,7 @@
 </template>
 
 <script lang="ts">
-  import { computed, defineComponent } from 'vue'
+  import { computed, defineComponent, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useTitle } from '@vueuse/core'
   import { projectName } from '@/setting'
@@ -63,6 +66,10 @@
       const route = useRoute()
       router.afterEach(() => {
         useTitle(projectName + ' | ' + (route.meta.title as string))
+      })
+      onMounted(() => {
+        const mainEl = document.querySelector('.main-section') as HTMLDivElement
+        appStore.setMainHeight(mainEl.clientHeight || mainEl.offsetHeight)
       })
       return {
         appStore,
@@ -90,6 +97,9 @@
   }
   .nav-bar-open-status__ttb {
     width: 100%;
+  }
+  :deep(.main-base-style .scrollbar__view) {
+    height: 100%;
   }
 
   .main-layout {
@@ -124,14 +134,20 @@
       padding: 5px;
     }
     .main-base-light-theme {
-      background-color: #f0f2f5;
+      // background-color: #f0f2f5;
+      background-image: linear-gradient(#f0f2f5, rgba(var(--primary-1), 0.1), #f0f2f5);
     }
     .main-base-dark-theme {
       background-color: #333333;
     }
     .main-section {
-      min-height: calc(100% - @footerHeight - 10px);
       overflow-x: hidden;
+    }
+    .flex-height {
+      height: calc(100% - @footerHeight - 10px);
+    }
+    .min-height {
+      min-height: calc(100% - @footerHeight - 10px);
     }
     .fixed-nav-bar {
       position: fixed;

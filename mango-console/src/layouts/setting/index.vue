@@ -77,7 +77,7 @@
       <a-divider dashed>按钮显示</a-divider>
       <div class="setting-item-wrapper">
         <span>固定顶部导航</span>
-        <a-switch v-model="appStore.isFixedNavBar" :disabled="appStore.layoutMode === 'ltr'" />
+        <a-switch v-model="appStore.isFixedNavBar" :disabled="appStore.layoutMode === 'ttb'" />
       </div>
       <div class="setting-item-wrapper">
         <span>搜索</span>
@@ -107,7 +107,7 @@
   import { useMenuWidth } from '@/hooks/useMenuWidth'
   import LeftBg from '@/assets/bg_img.webp'
   import useAppConfigStore from '@/store/modules/app-config'
-  import { PageAnim, ThemeMode } from '@/store/types'
+  import { ThemeMode } from '@/store/types'
   export default defineComponent({
     name: 'Setting',
     setup() {
