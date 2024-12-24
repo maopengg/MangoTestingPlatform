@@ -12,6 +12,7 @@ from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0000
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.response_data import ResponseData
+from mangokit import MangoKitError
 
 log_dict = {
     'ui': log.ui,
@@ -33,7 +34,8 @@ def error_response(app: str):
                 return func(self, request, *args, **kwargs)
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg))
-
+            except MangoKitError as error:
+                return ResponseData.fail((error.code, error.msg))
             except Exception as error:
                 try:
                     username = request.user.get('username')
