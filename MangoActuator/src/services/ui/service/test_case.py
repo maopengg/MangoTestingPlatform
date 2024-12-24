@@ -11,7 +11,7 @@ from mangokit import RandomTimeData
 
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.tools_enum import StatusEnum
+from src.enums.tools_enum import StatusEnum, AutoTestTypeEnum
 from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
@@ -127,6 +127,7 @@ class TestCase(PageSteps):
             func_name = UiSocketEnum.TEST_CASE_BATCH.value
             func_args = TestSuiteDetailsResultModel(
                 id=self.case_model.test_suite_details,
+                type=AutoTestTypeEnum.UI,
                 test_suite=self.case_model.test_suite_id,
                 status=self.case_result.status,
                 error_message=self.case_result.error_message,

@@ -3,10 +3,9 @@
 # @Description: 
 # @Time   : 2024-11-23 22:49
 # @Author : 毛鹏
-import traceback
-from datetime import timedelta
-
 import time
+import traceback
+from datetime import timedelta, datetime
 from django.utils import timezone
 
 from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
@@ -36,27 +35,46 @@ class ConsumerThread:
     def consumer(self):
         reset_tims = time.time()
         while self.running:
-            test_suite_details = TestSuiteDetails.objects.filter(
-                status=TaskEnum.STAY_BEGIN.value,
-                retry__lt=self.retry_frequency
-            ).first()
-            if test_suite_details:
-                test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                if test_suite_details.type == AutoTestTypeEnum.UI.value:
-                    self.ui(0, test_suite, test_suite_details)
-                elif test_suite_details.type == AutoTestTypeEnum.API.value:
-                    self.api(test_suite, test_suite_details)
-                elif test_suite_details.type == AutoTestTypeEnum.MangoPytest.value:
-                    self.mango_pytest(test_suite, test_suite_details)
-                test_suite_details.retry += 1
-                test_suite_details.push_time = timezone.now()
-                test_suite_details.save()
+            try:
+                test_suite_details = TestSuiteDetails.objects.filter(
+                    status=TaskEnum.STAY_BEGIN.value,
+                    retry__lt=self.retry_frequency
+                ).first()
+                if test_suite_details:
+                    test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
+                    if test_suite_details.type == AutoTestTypeEnum.UI.value:
+                        self.ui(0, test_suite, test_suite_details)
+                    elif test_suite_details.type == AutoTestTypeEnum.API.value:
+                        self.api(test_suite, test_suite_details)
+                    elif test_suite_details.type == AutoTestTypeEnum.MangoPytest.value:
+                        self.mango_pytest(test_suite, test_suite_details)
+                    test_suite_details.retry += 1
+                    test_suite_details.push_time = timezone.now()
+                    test_suite_details.save()
 
-            if time.time() - reset_tims > self.clean_time * 60:
-                reset_tims = time.time()
-                self.clean_proceed()
-                self.clean_proceed_set_fail()
-            time.sleep(self.consumer_sleep)
+                if time.time() - reset_tims > self.clean_time * 60:
+                    reset_tims = time.time()
+                    self.clean_proceed()
+                    self.clean_proceed_set_fail()
+                time.sleep(self.consumer_sleep)
+            except Exception as error:
+                log.system.error(error)
+                trace = traceback.format_exc()
+                content = f"""
+                   芒果测试平台管理员请注意查收:
+                       触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                       错误函数：run_tests
+                       异常类型: {type(error)}
+                       错误提示: {str(error)}
+                       错误详情：{trace}
+    
+                   **********************************
+                   详细情况可前往芒果测试平台查看，非相关负责人员可忽略此消息。谢谢！
+    
+                                                                 -----------芒果测试平台
+                   """
+                from mangokit import Mango
+                Mango.s(content)
 
     def ui(self, environment_error, test_suite, test_suite_details):
         try:
