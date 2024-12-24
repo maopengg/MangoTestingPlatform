@@ -5,8 +5,7 @@
 import traceback
 
 from mangokit import MangoKitError
-from playwright._impl._errors import TargetClosedError, Error
-
+from playwright._impl._errors import TargetClosedError, Error, TimeoutError
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from src.exceptions import *
@@ -91,6 +90,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             self.element_test_result.status = StatusEnum.FAIL.value
             self.element_test_result.error_message = f'未捕获的异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
             raise error
+
         except Exception as error:
             self.element_test_result.status = StatusEnum.FAIL.value
             self.element_test_result.error_message = f'未知异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
@@ -260,7 +260,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             case DriveTypeEnum.WEB.value:
                 try:
                     await self.w_screenshot(file_path)
-                except TargetClosedError:
+                except (TargetClosedError, TimeoutError):
                     await self.setup()
                     raise UiError(*ERROR_MSG_0010)
                 except AttributeError:

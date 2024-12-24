@@ -20,9 +20,11 @@ class TestReportWriting:
         try:
             res = PageSteps.objects.get(id=data.id)
             res.status = data.status
+            res.result_data = data.model_dump()
             res.save()
-        except PageSteps.DoesNotExist as error:
-            raise UiError(*ERROR_MSG_0030, error=error)
+        except PageSteps.DoesNotExist:
+            log.ui.error(
+                '忽略这个报错，如果是在步骤详情中没有查到，可以忽略这个错误，步骤详情中的调试不会修改整个步骤状态')
 
     @classmethod
     @orm_retry('update_test_case')
@@ -45,4 +47,5 @@ class TestReportWriting:
         #
         page_step = PageSteps.objects.get(id=step_data.id)
         page_step.status = step_data.status
+        page_step.result_data = step_data.model_dump()
         page_step.save()

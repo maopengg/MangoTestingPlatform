@@ -119,7 +119,10 @@ class WebDevice(PlaywrightBrowser,
             # 这里需要进行调整
             if not ele_list and self.element_model.type == ElementOperationEnum.OPE.value:
                 raise UiError(*ERROR_MSG_0029, value=(self.element_model.name, locator_str))
-            return ele_quantity, ele_list[self.element_model.sub - 1] if self.element_model.sub else ele_list[0]
+            try:
+                return ele_quantity, ele_list[self.element_model.sub - 1] if self.element_model.sub else ele_list[0]
+            except IndexError:
+                raise UiError(*ERROR_MSG_0033, value=(ele_quantity,))
         else:
             locator: Locator = await self.__find_ele(self.page, locator_str)
             try:
@@ -142,6 +145,8 @@ class WebDevice(PlaywrightBrowser,
                         return eval(f"page.{loc}")
                     except SyntaxError:
                         raise UiError(*ERROR_MSG_0022)
+                    except NameError as error:
+                        raise UiError(*ERROR_MSG_0060, error=error)
             case ElementExpEnum.XPATH.value:
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:

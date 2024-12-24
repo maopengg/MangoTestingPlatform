@@ -7,6 +7,7 @@ from typing import Optional
 
 from mangokit import singleton
 
+from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
 from src.models import queue_notification
@@ -15,6 +16,7 @@ from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.page_steps import PageSteps
+from src.tools.decorator.error_handle import async_error_handle
 
 
 @singleton
@@ -41,6 +43,7 @@ class TestPageSteps(PageSteps):
         self.is_step = True
         await self.public_front(self.page_step_model.public_data_list)
 
+    @async_error_handle()
     async def page_steps_mian(self, data: PageStepsModel) -> None:
         await self.page_init(data)
         try:
@@ -48,54 +51,66 @@ class TestPageSteps(PageSteps):
                 await self.steps_init(self.page_step_model)
                 await self.driver_init()
                 await self.steps_main()
-        except MangoActuatorError as error:
-            if error.code == 310:
-                if self.context:
-                    await self.context.close()
-                if self.page:
-                    await self.page.close()
-                self.context = None
-                self.page = None
-            await WebSocketClient().async_send(
-                code=error.code,
-                msg=error.msg,
-                is_notice=ClientTypeEnum.WEB
+            await self.send_steps_result(
+                200 if self.page_step_result_model.status else 300,
+                f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}',
+                TipsTypeEnum.SUCCESS.value if self.page_step_result_model.status else TipsTypeEnum.ERROR.value
             )
-            queue_notification.put({'type': 0, 'value': error.msg})
-        else:
-            msg = f'步骤<{self.page_step_model.name}>测试完成' if self.page_step_result_model.status else f'步骤<{self.page_step_model.name}>测试失败，错误提示：{self.page_step_result_model.error_message}'
+            self.finished.emit(True)
+        except MangoActuatorError as error:
+            await self.base_close()
+            await self.send_steps_result(error.code, error.msg, 0)
+        except Exception as error:
+            await self.base_close()
+            await self.send_steps_result(
+                300,
+                f'执行步骤<{self.page_steps_model.name}>发生未知错误，请联系管理员，报错内容：{error}',
+                TipsTypeEnum.SUCCESS.value if self.page_step_result_model.status else TipsTypeEnum.ERROR.value
+            )
+            raise error
+
+    @async_error_handle()
+    async def new_web_obj(self, data: EquipmentModel):
+        try:
+            if self.page is None and self.context is None:
+                await self.web_init(data)
+                msg = 'WEB对象实例化成功，请手动输入对应选择的测试项目和部署环境的url进行访问开始录制！'
+            else:
+                msg = 'WEB对象已实例化'
+            if self.page.is_closed():
+                self.page = None
+                self.context = None
+                await self.web_init(data)
+            await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS.value, False)
+        except MangoActuatorError as error:
+            await self.base_close()
+            await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR.value, False)
+        except Exception as error:
+            await self.base_close()
+            await self.send_steps_result(
+                300,
+                f'实例化浏览器发生未知错误，请联系管理员，报错内容：{error}',
+                TipsTypeEnum.ERROR.value,
+                False
+            )
+            raise error
+
+    async def send_steps_result(self, code, msg, _type, is_send: bool = True):
+        if is_send:
             await WebSocketClient().async_send(
-                code=200 if self.page_step_result_model.status else 300,
+                code=code,
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB,
                 func_name=UiSocketEnum.PAGE_STEPS.value,
                 func_args=self.page_step_result_model
             )
-            queue_notification.put({'type': self.page_step_result_model.status, 'value': msg})
-        self.finished.emit(True)
-
-    async def new_web_obj(self, data: EquipmentModel):
-        msg = 'WEB对象已实例化'
-        try:
-            if self.page is None and self.context is None:
-                await self.web_init(data)
-                msg = 'WEB对象实例化成功，请手动输入对应选择的测试项目和部署环境的url进行访问开始录制！'
-            # 检查页面是否已关闭
-            if self.page.is_closed():
-                self.page = None
-                self.context = None
-                await self.web_init(data)
-        except MangoActuatorError as error:
-            await WebSocketClient().async_send(
-                msg=error.msg,
-                code=error.code,
-                is_notice=ClientTypeEnum.WEB
-            )
-            queue_notification.put({'type': 0, 'value': msg})
-
         else:
             await WebSocketClient().async_send(
+                code=code,
                 msg=msg,
-                is_notice=ClientTypeEnum.WEB
+                is_notice=ClientTypeEnum.WEB,
             )
-            queue_notification.put({'type': 1, 'value': msg})
+        queue_notification.put({
+            'type': _type,
+            'value': msg
+        })

@@ -11,13 +11,11 @@ from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_flow import CaseFlow
 from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
-from src.tools.decorator.error_handle import async_error_handle
 
 
 class UI:
     lock = asyncio.Lock()
 
-    @async_error_handle()
     @convert_args(PageStepsModel)
     async def u_page_step(self, data: PageStepsModel):
         """
@@ -40,7 +38,6 @@ class UI:
                 is_notice=ClientTypeEnum.WEB
             )
 
-    @async_error_handle()
     @convert_args(EquipmentModel)
     async def u_page_new_obj(self, data: EquipmentModel):
         """
@@ -54,7 +51,6 @@ class UI:
             self.parent.set_tips_info(f'开始打开浏览器')
             await PageObject.test_page_steps.new_web_obj(data)
 
-    @async_error_handle()
     @convert_args(CaseModel)
     async def u_case(self, data: CaseModel):
         """

@@ -66,6 +66,24 @@ class SendTestData:
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
         return page_steps_model
 
+    def test_page_steps(self, page_steps_detailed_id: id) -> PageStepsModel:
+        page_steps_detailed = PageStepsDetailed.objects.get(id=page_steps_detailed_id)
+        page_steps_model = PageStepsModel(
+            id=page_steps_detailed.id,
+            name=page_steps_detailed.page_step.name,
+            project_product=page_steps_detailed.page_step.project_product.id,
+            project_product_name=page_steps_detailed.page_step.project_product.name,
+            module_name=page_steps_detailed.page_step.module.name,
+            type=page_steps_detailed.page_step.project_product.client_type,
+            url=page_steps_detailed.ele_name.page.url,
+            element_list=[self.element_model(page_steps_detailed, )],
+            equipment_config=self.__equipment_config(page_steps_detailed.page_step.project_product.client_type),
+            environment_config=self.__environment_config(page_steps_detailed.page_step.project_product.id),
+            public_data_list=self.__public_data(page_steps_detailed.page_step.project_product.id),
+        )
+        self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
+        return page_steps_model
+
     def test_element(self, data: dict) -> None:
         try:
             page = Page.objects.get(id=data['page_id'])
@@ -103,7 +121,6 @@ class SendTestData:
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
             case_step_details_id=case_step_details_id,
-
         )
         if case_step_details_id:
             for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:

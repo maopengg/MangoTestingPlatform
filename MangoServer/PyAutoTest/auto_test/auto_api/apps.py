@@ -1,8 +1,7 @@
-from threading import Thread
-
 import atexit
 import time
 from django.apps import AppConfig
+from threading import Thread
 
 from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
 
@@ -22,21 +21,10 @@ class AutoApiConfig(AppConfig):
 
     def test_case_consumption(self):
         self.case_flow = CaseFlow()
-        self.consumer_thread_instance = Thread(target=self.case_flow.process_tasks)
-        self.consumer_thread_instance.start()
+        self.api_task = Thread(target=self.case_flow.process_tasks)
+        self.api_task.daemon = True
+        self.api_task.start()
 
     def shutdown(self):
-        print('Shutting down...')
         self.case_flow.stop()
-        self.consumer_thread_instance.join()
-    #
-    # def start_consumer(self):
-    #     time.sleep(5)
-    #     # 在主线程中获取事件循环并启动任务
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     loop.run_until_complete(self.test_case_consumption(loop))
-    #
-    # async def test_case_consumption(self, loop):
-    #     CaseFlow.loop = loop
-    #     await CaseFlow.process_tasks()
+        self.api_task.join()

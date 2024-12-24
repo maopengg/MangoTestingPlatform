@@ -171,48 +171,127 @@
           </a-tabs>
         </div>
         <div style="width: 50%; margin-left: 10px">
-          <a-list :bordered="false">
-            <template #header> {{ data.selectData?.page_step?.name }} </template>
-            <a-list-item
-              v-for="item of data.selectData?.case_data"
-              :key="item.page_step_details_id"
-              style="padding: 4px 20px"
-            >
-              <div style="display: flex; flex-direction: column">
-                <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
-                  <a-space style="width: 40%">
-                    <span v-if="item.page_step_details_name">元素名称：</span>
-                    <span v-if="item.page_step_details_name">{{
-                      item.page_step_details_name
-                    }}</span>
-                  </a-space>
-                  <a-space style="width: 30%">
-                    <span v-if="item.type === 0"
-                      >类型：操作->{{ getLabelByValue(data.ope, item.ope_key) }}</span
-                    >
-                    <span v-if="item.type === 1"
-                      >类型：断言->{{ getLabelByValue(data.ass, item.ope_key) }}</span
-                    >
-                    <span v-if="item.type === 2">类型：SQL</span>
-                    <span v-if="item.type === 3">类型：自定义参数</span>
-                  </a-space>
-                </div>
-                <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
-                  <template v-for="key in Object.keys(item.page_step_details_data)" :key="key">
-                    <div style="display: flex">
-                      <span style="width: 13%">{{ key + '：' }}</span>
-                      <a-textarea
-                        v-model="item.page_step_details_data[key]"
-                        @blur="onUpdate"
-                        :auto-size="{ minRows: 1, maxRows: 5 }"
-                        style="width: 90%"
-                      />
+          <a-tabs default-active-key="1">
+            <a-tab-pane key="1" title="步骤数据">
+              <a-list :bordered="false">
+                <template #header> {{ data.selectData?.page_step?.name }} </template>
+                <a-list-item
+                  v-for="item of data.selectData?.case_data"
+                  :key="item.page_step_details_id"
+                  style="padding: 4px 20px"
+                >
+                  <div style="display: flex; flex-direction: column">
+                    <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
+                      <a-space style="width: 40%">
+                        <span v-if="item.page_step_details_name">元素名称：</span>
+                        <span v-if="item.page_step_details_name">{{
+                          item.page_step_details_name
+                        }}</span>
+                      </a-space>
+                      <a-space style="width: 30%">
+                        <span v-if="item.type === 0"
+                          >类型：操作->{{ getLabelByValue(data.ope, item.ope_key) }}</span
+                        >
+                        <span v-if="item.type === 1"
+                          >类型：断言->{{ getLabelByValue(data.ass, item.ope_key) }}</span
+                        >
+                        <span v-if="item.type === 2">类型：SQL</span>
+                        <span v-if="item.type === 3">类型：自定义参数</span>
+                      </a-space>
                     </div>
-                  </template>
-                </a-space>
-              </div>
-            </a-list-item>
-          </a-list>
+                    <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
+                      <template v-for="key in Object.keys(item.page_step_details_data)" :key="key">
+                        <div style="display: flex">
+                          <span style="width: 13%">{{ key + '：' }}</span>
+                          <a-textarea
+                            v-model="item.page_step_details_data[key]"
+                            @blur="onUpdate"
+                            :auto-size="{ minRows: 1, maxRows: 5 }"
+                            style="width: 90%"
+                          />
+                        </div>
+                      </template>
+                    </a-space>
+                  </div>
+                </a-list-item>
+              </a-list>
+            </a-tab-pane>
+            <a-tab-pane key="2" title="测试结果">
+              <a-collapse
+                :default-active-key="data.eleResultKey"
+                v-for="item of data.selectData.result_data?.element_result_list"
+                :bordered="false"
+                :key="item.id"
+                destroy-on-hide
+              >
+                <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+                  <div>
+                    <a-space direction="vertical" style="width: 50%">
+                      <p
+                        >操作类型：{{
+                          item.type === 0
+                            ? getLabelByValue(data.ope, item.ope_key)
+                            : getLabelByValue(data.ass, item.ope_key)
+                        }}</p
+                      >
+                      <p
+                        >表达式类型：{{
+                          item.exp ? enumStore.element_exp[item.exp].title : item.exp
+                        }}</p
+                      >
+                      <p
+                        >测试结果：{{
+                          item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                        }}</p
+                      >
+                      <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                      <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+                      <p v-if="item.expect">预期：{{ item.expect }}</p>
+                      <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                    </a-space>
+                    <a-space direction="vertical" style="width: 50%">
+                      <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                      <p>元素个数：{{ item.ele_quantity }}</p>
+                      <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                      <div v-if="item.status === 0">
+                        <a-image
+                          :src="baseURL + '/' + item.picture_path"
+                          title="失败截图"
+                          width="260"
+                          style="margin-right: 67px; vertical-align: top"
+                          :preview-visible="visible1"
+                          @preview-visible-change="
+                            () => {
+                              visible1 = false
+                            }
+                          "
+                        >
+                          <template #extra>
+                            <div class="actions">
+                              <span
+                                class="action"
+                                @click="
+                                  () => {
+                                    visible1 = true
+                                  }
+                                "
+                                ><icon-eye
+                              /></span>
+                              <span class="action"><icon-download /></span>
+                              <a-tooltip content="失败截图">
+                                <span class="action"><icon-info-circle /></span>
+                              </a-tooltip>
+                            </div>
+                          </template>
+                        </a-image>
+                      </div>
+                      <p v-if="item.expect">实际：{{ item.actual }}</p>
+                    </a-space>
+                  </div>
+                </a-collapse-item>
+              </a-collapse>
+            </a-tab-pane>
+          </a-tabs>
         </div>
       </div>
     </a-card>
@@ -293,7 +372,10 @@
   import { getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
   import useUserStore from '@/store/modules/user'
+  import { baseURL } from '@/api/axios.config'
+  import { useEnum } from '@/store/modules/get-enum'
   const userStore = useUserStore()
+  const enumStore = useEnum()
 
   const pageData: any = usePageData()
   const route = useRoute()
@@ -313,6 +395,14 @@
     ass: [],
     uiType: '2',
     uiSonType: '11',
+  })
+  const visible1 = ref(false)
+
+  const customStyle = reactive({
+    borderRadius: '6px',
+    marginBottom: '2px',
+    border: 'none',
+    overflow: 'hidden',
   })
   function switchType(key: any) {
     if (key === '1') {

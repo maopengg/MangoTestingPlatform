@@ -3,9 +3,8 @@
 # @Description: # @Time   : 2022-12-04 17:14
 # @Author : 毛鹏
 
-from typing import Any
-
 from pydantic import BaseModel
+from typing import Any
 
 
 class ApiCaseModel(BaseModel):
@@ -62,6 +61,7 @@ class AssResultModel(BaseModel):
 class ApiCaseStepsResultModel(BaseModel):
     """接口结果"""
     id: int
+    api_info_id: int
     name: str
     status: int
     error_message: str | None = None

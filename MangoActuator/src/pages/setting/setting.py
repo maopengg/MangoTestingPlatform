@@ -16,6 +16,7 @@ from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
+from src.enums.gui_enum import TipsTypeEnum
 
 
 class SettingPage(QWidget):
@@ -133,7 +134,7 @@ class SettingPage(QWidget):
             is_notice=ClientTypeEnum.WEB,
             func_args=send_list
         )
-        queue_notification.put({'type': 1, 'value': '设置缓存数据成功'})
+        queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
 
     def save(self):
         for i in self.data:

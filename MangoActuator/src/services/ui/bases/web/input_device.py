@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023-04-29 12:11
 # @Author : 毛鹏
 import asyncio
-
 from playwright.async_api import Locator
 
 from src.services.ui.bases.base_data import BaseData
@@ -54,5 +53,5 @@ class PlaywrightDeviceInput(BaseData):
 
     async def w_keyboard_delete_text(self, count: int):
         """删除光标左侧的字符"""
-        for _ in range(count):
+        for _ in range(0, int(count) + 1):
             await self.page.keyboard.press("Backspace")

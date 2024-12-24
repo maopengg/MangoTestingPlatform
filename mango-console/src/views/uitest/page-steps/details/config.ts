@@ -21,37 +21,12 @@ export const columns = reactive([
     width: 90,
   },
   {
-    title: '操作类型',
+    title: '操作类型/key/sql_key_list',
     dataIndex: 'ope_key',
-    width: 150,
   },
   {
-    title: '操作值',
+    title: '操作值/value/sql',
     dataIndex: 'ope_value',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: 'key_list',
-    dataIndex: 'key_list',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: 'sql',
-    dataIndex: 'sql',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: 'key',
-    dataIndex: 'key',
-    ellipsis: true,
-    tooltip: true,
-  },
-  {
-    title: 'value',
-    dataIndex: 'value',
     ellipsis: true,
     tooltip: true,
   },
@@ -59,7 +34,7 @@ export const columns = reactive([
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 130,
+    width: 180,
   },
 ])
 

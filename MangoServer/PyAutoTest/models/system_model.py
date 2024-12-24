@@ -7,11 +7,12 @@ from pydantic import BaseModel
 
 from PyAutoTest.models.api_model import ApiCaseResultModel
 from PyAutoTest.models.ui_model import UiCaseResultModel
-
+from PyAutoTest.enums.tools_enum import AutoTestTypeEnum
 
 class TestSuiteDetailsResultModel(BaseModel):
-    id: int | None = None
-    test_suite: int | None = None
+    id: int
+    type: AutoTestTypeEnum
+    test_suite: int
     status: int
     error_message: str | None = None
     result_data: UiCaseResultModel | ApiCaseResultModel

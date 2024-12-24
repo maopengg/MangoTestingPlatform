@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-card title="页面步骤详情">
+    <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden">
       <template #extra>
         <a-affix :offsetTop="80">
           <a-space>
@@ -13,7 +13,6 @@
       <div class="container">
         <a-space direction="vertical" style="width: 25%">
           <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-          <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
           <span>所属模块：{{ pageData.record.module?.name }}</span>
           <span>所属页面：{{ pageData.record.page?.name }}</span>
         </a-space>
@@ -27,60 +26,146 @@
         </a-space>
       </div>
     </a-card>
-
-    <a-card>
-      <a-table
-        :columns="columns"
-        :data="data.dataList"
-        @change="handleChange"
-        :draggable="{ type: 'handle', width: 40 }"
-        :pagination="false"
-        :bordered="false"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of columns"
-            :key="item.key"
-            :align="item.align"
-            :title="item.title"
-            :width="item.width"
-            :data-index="item.dataIndex"
-            :fixed="item.fixed"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
+    <div class="container">
+      <div class="left">
+        <a-card style="border-radius: 10px; overflow: hidden">
+          <a-table
+            :columns="columns"
+            :data="data.dataList"
+            @change="handleChange"
+            :draggable="{ type: 'handle', width: 40 }"
+            :pagination="false"
+            :bordered="false"
           >
-            <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-              {{ record.page_step?.name }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
-              {{ record.ele_name?.name }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
-              {{ record.ope_key == null ? '-' : getLabelByValue(record.type, record.ope_key) }}
-            </template>
-            <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-              {{ record.ope_value }}
-            </template>
+            <template #columns>
+              <a-table-column
+                v-for="item of columns"
+                :key="item.key"
+                :align="item.align"
+                :title="item.title"
+                :width="item.width"
+                :data-index="item.dataIndex"
+                :fixed="item.fixed"
+                :ellipsis="item.ellipsis"
+                :tooltip="item.tooltip"
+              >
+                <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
+                  {{ record.page_step?.name }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
+                  {{ record.ele_name ? record.ele_name.name : '-' }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
+                  {{
+                    record.ope_key
+                      ? getLabelByValue(record.type, record.ope_key)
+                      : record.key
+                      ? record.key
+                      : record.key_list
+                  }}
+                </template>
+                <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
+                  {{
+                    record.ope_value ? record.ope_value : record.value ? record.value : record.sql
+                  }}
+                </template>
 
-            <template v-else-if="item.dataIndex === 'key_list'" #cell="{ record }">
-              {{ record.key_list }}
+                <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
+                  <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
+                  <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
+                  <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
+                  <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
+                </template>
+                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                  <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
+                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    >删除
+                  </a-button>
+                </template>
+              </a-table-column>
             </template>
-            <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
-              <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
-              <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
-              <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
-            </template>
-            <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除
-              </a-button>
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </a-card>
+          </a-table>
+        </a-card>
+      </div>
+      <div class="right">
+        <a-card title="最近一次步骤执行过程" style="overflow: hidden">
+          <a-collapse
+            :default-active-key="data.eleResultKey"
+            v-for="item of pageData.record.result_data?.element_result_list"
+            :bordered="false"
+            :key="item.id"
+            destroy-on-hide
+          >
+            <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+              <div>
+                <a-space direction="vertical" style="width: 50%">
+                  <p
+                    >操作类型：{{
+                      item.type === 0
+                        ? getLabelByValue(data.ope, item.ope_key)
+                        : getLabelByValue(data.ass, item.ope_key)
+                    }}</p
+                  >
+                  <p
+                    >表达式类型：{{
+                      item.exp ? enumStore.element_exp[item.exp].title : item.exp
+                    }}</p
+                  >
+                  <p
+                    >测试结果：{{
+                      item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                    }}</p
+                  >
+                  <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                  <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+                  <p v-if="item.expect">预期：{{ item.expect }}</p>
+                  <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                </a-space>
+                <a-space direction="vertical" style="width: 50%">
+                  <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                  <p>元素个数：{{ item.ele_quantity }}</p>
+                  <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                  <div v-if="item.status === 0">
+                    <a-image
+                      :src="baseURL + '/' + item.picture_path"
+                      title="失败截图"
+                      width="260"
+                      style="margin-right: 67px; vertical-align: top"
+                      :preview-visible="visible1"
+                      @preview-visible-change="
+                        () => {
+                          visible1 = false
+                        }
+                      "
+                    >
+                      <template #extra>
+                        <div class="actions">
+                          <span
+                            class="action"
+                            @click="
+                              () => {
+                                visible1 = true
+                              }
+                            "
+                            ><icon-eye
+                          /></span>
+                          <span class="action"><icon-download /></span>
+                          <a-tooltip content="失败截图">
+                            <span class="action"><icon-info-circle /></span>
+                          </a-tooltip>
+                        </div>
+                      </template>
+                    </a-image>
+                  </div>
+                  <p v-if="item.expect">实际：{{ item.actual }}</p>
+                </a-space>
+              </div>
+            </a-collapse-item>
+          </a-collapse>
+        </a-card>
+      </div>
+    </div>
     <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
       <template #content>
         <a-form :model="formModel">
@@ -202,11 +287,14 @@
     postUiPageStepsDetailed,
     putUiPagePutStepSort,
     putUiPageStepsDetailed,
+    getUiPageStepsDetailedTest,
   } from '@/api/uitest/page-steps-detailed'
   import { getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+  import { baseURL } from '@/api/axios.config'
+
   const enumStore = useEnum()
 
   const pageData = usePageData()
@@ -226,7 +314,14 @@
     type: 0,
     plainOptions: [],
   })
+  const visible1 = ref(false)
 
+  const customStyle = reactive({
+    borderRadius: '6px',
+    marginBottom: '2px',
+    border: 'none',
+    overflow: 'hidden',
+  })
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems.length - 1; i >= 0; i--) {
@@ -529,6 +624,18 @@
       .catch(console.log)
   }
 
+  function onTest(record: any) {
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    getUiPageStepsDetailedTest(record.id, userStore.selected_environment)
+      .then((res) => {
+        Message.loading(res.msg)
+      })
+      .catch(console.log)
+  }
+
   onMounted(() => {
     nextTick(async () => {
       await getUiRunSortAss()
@@ -538,3 +645,10 @@
     })
   })
 </script>
+<style>
+  .container {
+    display: grid;
+    grid-template-columns: 60% 40%; /* 左侧60%，右侧40% */
+    gap: 10px; /* 添加间距 */
+  }
+</style>

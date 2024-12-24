@@ -26,6 +26,7 @@ urlpatterns = [
     path("element/test", PageElementViews.as_view({'post': 'test_element'})),
     #
     path("page/steps/detailed", PageStepsDetailedCRUD.as_view()),
+    path("page/steps/detailed/test", PageStepsDetailedView.as_view({'get': 'get_test_page_steps_detailed'})),
     path("page/steps/detailed/ope", PageStepsDetailedView.as_view({'get': 'get_ope_type'})),
     path("page/steps/detailed/ass", PageStepsDetailedView.as_view({'get': 'get_ass_type'})),
     path("page/steps/detailed/ass/method", PageStepsDetailedView.as_view({'get': 'get_ass_method'})),

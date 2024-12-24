@@ -11,7 +11,7 @@ from PyAutoTest.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiIn
 from PyAutoTest.auto_test.auto_api.service.base_tools.case_detailed import CaseDetailedInit
 from PyAutoTest.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from PyAutoTest.enums.api_enum import MethodEnum
-from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum
+from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum, AutoTestTypeEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.api_model import RequestDataModel, ApiCaseResultModel, ResponseDataModel, ApiCaseStepsResultModel
 from PyAutoTest.models.system_model import TestSuiteDetailsResultModel
@@ -67,6 +67,7 @@ class TestCase(CaseDetailedInit):
             if self.test_suite:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                     id=self.test_suite_details,
+                    type=AutoTestTypeEnum.API,
                     test_suite=self.test_suite,
                     status=self.status.value,
                     error_message=self.error_message,
@@ -139,7 +140,8 @@ class TestCase(CaseDetailedInit):
         ass = self.assertion(response, data)
         self.posterior(response, data)
         api_case_steps_result = ApiCaseStepsResultModel(
-            id=data.api_info.id,
+            id=data.id,
+            api_info_id=data.api_info.id,
             name=data.api_info.name,
             status=self.status.value,
             error_message=self.error_message,
