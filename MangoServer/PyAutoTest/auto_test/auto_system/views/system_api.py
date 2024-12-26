@@ -4,7 +4,6 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 import re
-
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
@@ -19,6 +18,7 @@ from PyAutoTest.tools.redis.redis import Cache
 from PyAutoTest.tools.view import *
 from mangokit import NoticeEnum
 from mangokit import ObtainRandomData
+from mangokit.tools.method import class_methods
 
 
 class SystemViews(ViewSet):
@@ -56,7 +56,7 @@ class SystemViews(ViewSet):
         @param request:
         @return:
         """
-        return ResponseData.success(RESPONSE_MSG_0061, ObtainRandomData.get_methods())
+        return ResponseData.success(RESPONSE_MSG_0061, [i.model_dump() for i in class_methods(ObtainRandomData)])
 
     @action(methods=['get'], detail=False)
     @error_response('system')

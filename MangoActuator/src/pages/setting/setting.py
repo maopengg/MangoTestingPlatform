@@ -17,7 +17,7 @@ from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 from src.enums.gui_enum import TipsTypeEnum
-
+from mangokit.tools.method import class_methods
 
 class SettingPage(QWidget):
     def __init__(self, parent):
@@ -126,7 +126,7 @@ class SettingPage(QWidget):
     def click_send_redis_data(self):
         r = GetClassMethod()
         send_list: list = r.main()
-        send_list.append({CacheDataKey2Enum.ASSERTION_METHOD.value: Assertion.get_methods()})
+        send_list.append({CacheDataKey2Enum.ASSERTION_METHOD.value: [i.model_dump() for i in class_methods(Assertion)]})
         from src.network.web_socket.websocket_client import WebSocketClient
         WebSocketClient().sync_send(
             '设置缓存数据成功',

@@ -17,7 +17,6 @@ from PyAutoTest.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from PyAutoTest.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from PyAutoTest.enums.system_enum import CacheDataKey2Enum, ClientNameEnum
 from PyAutoTest.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
-from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
