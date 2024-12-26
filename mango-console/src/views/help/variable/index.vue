@@ -11,9 +11,9 @@
       :body-style="{ padding: '10px' }"
       :bordered="false"
       v-for="item of randomList"
-      :key="item.title"
+      :key="item.label"
     >
-      <a-descriptions :column="3" :title="item.title" :data="item.func_list" :bordered="true" />
+      <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
     </a-card>
   </a-card>
 </template>
