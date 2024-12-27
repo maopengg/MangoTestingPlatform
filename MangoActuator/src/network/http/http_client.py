@@ -43,7 +43,7 @@ class HttpClientApi(HttpBase):
         if response.code == 200:
             return True
         else:
-            log.error(f'上传文件报错，请管理员检查，响应结果：{response.text}')
+            log.error(f'上传文件报错，请管理员检查，响应结果：{response.model_dump()}')
             return False
 
     @classmethod
