@@ -64,7 +64,7 @@ class DatabaseViews(ViewSet):
         :return:
         """
         if request.data.get('status') == StatusEnum.SUCCESS.value:
-            obj = self.model.objects.filter(environment=request.data.get('environment')).values('status')
+            obj = self.model.objects.filter(test_object=request.data.get('environment')).values('status')
             if any(item['status'] == 1 for item in obj):
                 # if self.model.objects \
                 #         .filter(project_id=obj.project_id, type=obj.type, status=StatusEnum.SUCCESS.value) \
