@@ -1,30 +1,9 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
-
-# Other files and folders
-.settings/
-
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Created by .gitignore support plugin (hsz.mobi)
 .idea/
 *.pyc
 *.log
 .logs/*
 logs/*
-cache_flie/*
-dist/*
-MangoActuator.spec
-build/*
-
+files/*
+cache/
 build/
-dist/
-PyQt_Fluent_Widgets.egg-info/
-PyQt6_Fluent_Widgets.egg-info/
-cache/*
-tests/test.json
-/report/*
-/reports/*
