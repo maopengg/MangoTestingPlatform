@@ -2,8 +2,8 @@
 .idea/
 *.pyc
 *.log
-.logs/*
-logs/*
-files/*
-cache/
 build/
+dist/
+logs/
+cache/
+venv/
