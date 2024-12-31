@@ -13,7 +13,7 @@ mysql_port = 3306
 mysql_db_name = 'mango_server'
 mysql_user = 'root'
 mysql_password = 'mP123456&'
-mysql_ip = '127.0.0.1'
+mysql_ip = 'db'
 
 # 个人配置，开源用户忽略这部分代码
 file_name = 'PyAutoTest/settings/database.json'
