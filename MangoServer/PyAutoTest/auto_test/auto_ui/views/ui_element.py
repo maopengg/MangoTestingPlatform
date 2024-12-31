@@ -18,7 +18,7 @@ from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
-from enums.ui_enum import ElementExpEnum
+from PyAutoTest.enums.ui_enum import ElementExpEnum
 
 
 class PageElementSerializers(serializers.ModelSerializer):
