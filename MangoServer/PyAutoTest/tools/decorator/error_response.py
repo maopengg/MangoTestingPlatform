@@ -61,7 +61,7 @@ def error_response(app: str):
                   """
                 from mangokit import Mango
                 Mango.s(content)
-                return ResponseData.fail(ERROR_MSG_0000)
+                return ResponseData.fail(ERROR_MSG_0000, data=str(error))
 
         return wrapper
 

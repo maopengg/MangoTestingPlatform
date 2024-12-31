@@ -24,6 +24,7 @@ urlpatterns = [
     path("element/name", PageElementViews.as_view({'get': 'get_element_name'})),
     path("element/iframe", PageElementViews.as_view({'put': 'put_is_iframe'})),
     path("element/test", PageElementViews.as_view({'post': 'test_element'})),
+    path("element/upload", PageElementViews.as_view({'post': 'post_upload_element'})),
     #
     path("page/steps/detailed", PageStepsDetailedCRUD.as_view()),
     path("page/steps/detailed/test", PageStepsDetailedView.as_view({'get': 'get_test_page_steps_detailed'})),

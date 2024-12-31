@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
+import pandas as pd
 from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -13,11 +14,11 @@ from PyAutoTest.auto_test.auto_ui.models import PageElement
 from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.auto_test.auto_ui.views.ui_page import PageSerializers
 from PyAutoTest.enums.system_enum import ClientNameEnum
-from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 from PyAutoTest.tools.view.response_data import ResponseData
 from PyAutoTest.tools.view.response_msg import *
+from enums.ui_enum import ElementExpEnum
 
 
 class PageElementSerializers(serializers.ModelSerializer):
@@ -81,6 +82,28 @@ class PageElementViews(ViewSet):
             is_send=request.data.get('is_send')
         ).test_element(request.data)
         return ResponseData.success(RESPONSE_MSG_0081, value=(ClientNameEnum.DRIVER.value,))
+
+    @action(methods=['POST'], detail=False)
+    @error_response('ui')
+    def post_upload_element(self, request):
+        uploaded_file = request.FILES['file']
+        df = pd.read_excel(uploaded_file, keep_default_na=False)
+        df['表达式类型'] = df['表达式类型'].map(ElementExpEnum.reversal_obj())
+        df = df.rename(columns={
+            '元素名称': 'name',
+            '表达式类型': 'exp',
+            '定位表达式': 'loc',
+            '等待时间（秒）': 'sleep',
+            '元素下班（1开始）': 'sub',
+        })
+        for index, row in df.iterrows():
+            record = row.to_dict()
+            record['page'] = request.data.get("page_id")
+            record['is_iframe'] = 0
+            record['sleep'] = None if record['sleep'] == '' else record['sleep']
+            record['sub'] = None if record['sub'] == '' else record['sub']
+            PageElementCRUD.inside_post(record)
+        return ResponseData.success(RESPONSE_MSG_0083)
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
