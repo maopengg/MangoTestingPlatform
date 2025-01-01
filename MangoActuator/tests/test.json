@@ -1,0 +1,569 @@
+{
+  "func_name": "u_case",
+  "func_args": {
+    "test_suite_id": 121253159269,
+    "id": 146,
+    "project_product": 2,
+    "module_name": "知识库",
+    "name": "知识库同步设置-向量库校验-key错误",
+    "case_people": "芒果味",
+    "front_custom": [],
+    "front_sql": [],
+    "posterior_sql": [],
+    "steps": [
+      {
+        "id": 29,
+        "name": "登录步骤",
+        "case_step_details_id": 538,
+        "project_product": 2,
+        "type": 0,
+        "url": "/",
+        "case_data": [
+          {
+            "type": 0,
+            "page_step_details_id": 102,
+            "page_step_details_data": {
+              "input_value": "${A企业账号}"
+            },
+            "page_step_details_name": "企业账号输入框"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 103,
+            "page_step_details_data": {
+              "input_value": "${A账号}"
+            },
+            "page_step_details_name": "登录账号输入框"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 104,
+            "page_step_details_data": {
+              "input_value": "${A密码}"
+            },
+            "page_step_details_name": "密码输入框"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 105,
+            "page_step_details_data": {
+              "input_value": "${登录验证码}"
+            },
+            "page_step_details_name": "验证码输入框"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 106,
+            "page_step_details_data": {},
+            "page_step_details_name": "登录按钮"
+          }
+        ],
+        "element_list": [
+          {
+            "id": 102,
+            "type": 0,
+            "name": "请输入企业账号",
+            "loc": "请输入企业账号",
+            "exp": 4,
+            "sleep": 1,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "${A企业账号}"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 103,
+            "type": 0,
+            "name": "登录账号输入框",
+            "loc": "请输入登录账号",
+            "exp": 4,
+            "sleep": 1,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "${A账号}"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 104,
+            "type": 0,
+            "name": "密码输入框",
+            "loc": "请输入密码",
+            "exp": 4,
+            "sleep": 1,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "${A密码}"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 105,
+            "type": 0,
+            "name": "验证码输入框",
+            "loc": "请输入验证码",
+            "exp": 4,
+            "sleep": 1,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "${登录验证码}"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 106,
+            "type": 0,
+            "name": "登录按钮",
+            "loc": "登 录",
+            "exp": 3,
+            "sleep": 1,
+            "sub": null,
+            "ope_type": "w_click",
+            "ope_value": {
+              "locating": ""
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          }
+        ],
+        "equipment_config": {
+          "browser_type": 0,
+          "browser_port": null,
+          "browser_path": null,
+          "is_headless": 0,
+          "is_header_intercept": false,
+          "host": "https://app-test.growknows.cn/",
+          "project_product": null,
+          "device": null
+        },
+        "environment_config": {
+          "test_object_value": "https://app-test.growknows.cn/",
+          "db_c_status": true,
+          "db_rud_status": true,
+          "mysql_config": {
+            "host": "39.103.149.169",
+            "port": 403,
+            "user": "root",
+            "password": "xy-cloud",
+            "database": "xy-cloud"
+          }
+        },
+        "public_data_list": []
+      },
+      {
+        "id": 45,
+        "name": "切换到知识库",
+        "case_step_details_id": 539,
+        "project_product": 2,
+        "type": 0,
+        "url": "#/market",
+        "case_data": [
+          {
+            "type": 0,
+            "page_step_details_id": 176,
+            "page_step_details_data": {},
+            "page_step_details_name": "数据管理"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 180,
+            "page_step_details_data": {},
+            "page_step_details_name": "w_mouse_center"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 177,
+            "page_step_details_data": {},
+            "page_step_details_name": "知识库"
+          }
+        ],
+        "element_list": [
+          {
+            "id": 176,
+            "type": 0,
+            "name": "数据管理",
+            "loc": "//li[@role=\"menuitem\"]//span[text()='数据管理']",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_click",
+            "ope_value": {
+              "locating": ""
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 180,
+            "type": 0,
+            "name": null,
+            "loc": null,
+            "exp": null,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_mouse_center",
+            "ope_value": {},
+            "is_iframe": null,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 177,
+            "type": 0,
+            "name": "知识库",
+            "loc": "//span[@class='title' and text()='知识库']",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_click",
+            "ope_value": {
+              "locating": ""
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          }
+        ],
+        "equipment_config": {
+          "browser_type": 0,
+          "browser_port": null,
+          "browser_path": null,
+          "is_headless": 0,
+          "is_header_intercept": false,
+          "host": "https://app-test.growknows.cn/",
+          "project_product": null,
+          "device": null
+        },
+        "environment_config": {
+          "test_object_value": "https://app-test.growknows.cn/",
+          "db_c_status": true,
+          "db_rud_status": true,
+          "mysql_config": {
+            "host": "39.103.149.169",
+            "port": 403,
+            "user": "root",
+            "password": "xy-cloud",
+            "database": "xy-cloud"
+          }
+        },
+        "public_data_list": []
+      },
+      {
+        "id": 189,
+        "name": "重名校验-同步设置-向量库检查",
+        "case_step_details_id": 544,
+        "project_product": 2,
+        "type": 0,
+        "url": "/#/knowledge-base/manage/basic",
+        "case_data": [
+          {
+            "type": 0,
+            "page_step_details_id": 1084,
+            "page_step_details_data": {},
+            "page_step_details_name": "知识库-重名校验-同步设置"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 1089,
+            "page_step_details_data": {
+              "input_value": "default"
+            },
+            "page_step_details_name": "同步设置-存储目录"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 1090,
+            "page_step_details_data": {
+              "input_value": "aigc_collection"
+            },
+            "page_step_details_name": "同步设置-集合"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 1085,
+            "page_step_details_data": {
+              "input_value": "12412"
+            },
+            "page_step_details_name": "openai_api_key"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 1086,
+            "page_step_details_data": {},
+            "page_step_details_name": "确定保存同步设置"
+          },
+          {
+            "type": 0,
+            "page_step_details_id": 1088,
+            "page_step_details_data": {
+              "_time": "1"
+            },
+            "page_step_details_name": "w_wait_for_timeout"
+          },
+          {
+            "type": 1,
+            "page_step_details_id": 1087,
+            "page_step_details_data": {},
+            "page_step_details_name": "重名元素校验"
+          }
+        ],
+        "element_list": [
+          {
+            "id": 1084,
+            "type": 0,
+            "name": "知识库-重名校验-同步设置",
+            "loc": "//span[text()=' 重名校验']/../../../div[3]",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_click",
+            "ope_value": {
+              "locating": ""
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1089,
+            "type": 0,
+            "name": "同步设置-存储目录",
+            "loc": "//input[@id='form_item_directory']",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "default"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1090,
+            "type": 0,
+            "name": "同步设置-集合",
+            "loc": "//input[@id='form_item_collection']",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "aigc_collection"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1085,
+            "type": 0,
+            "name": "openai_api_key",
+            "loc": "//input[@id=\"form_item_openai_api_key\"]",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_input",
+            "ope_value": {
+              "locating": "",
+              "input_value": "sk-H6rGMGXSD45kqbM2gXSxTKPx0sHCSjBly7q9m4C1oQldVUCM"
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1086,
+            "type": 0,
+            "name": "确定保存同步设置",
+            "loc": "确 定",
+            "exp": 3,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_click",
+            "ope_value": {
+              "locating": ""
+            },
+            "is_iframe": 0,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1088,
+            "type": 0,
+            "name": null,
+            "loc": null,
+            "exp": null,
+            "sleep": null,
+            "sub": null,
+            "ope_type": "w_wait_for_timeout",
+            "ope_value": {
+              "_time": "1"
+            },
+            "is_iframe": null,
+            "ass_type": null,
+            "ass_value": null,
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          },
+          {
+            "id": 1087,
+            "type": 1,
+            "name": "重名元素校验",
+            "loc": "//span[@class='ant-notification-notice-message-single-line-auto-margin']",
+            "exp": 0,
+            "sleep": null,
+            "sub": null,
+            "ope_type": null,
+            "ope_value": null,
+            "is_iframe": 0,
+            "ass_type": "w_to_element_exists",
+            "ass_value": {
+              "value": ""
+            },
+            "key_list": null,
+            "sql": null,
+            "key": null,
+            "value": null
+          }
+        ],
+        "equipment_config": {
+          "browser_type": 0,
+          "browser_port": null,
+          "browser_path": null,
+          "is_headless": 0,
+          "is_header_intercept": false,
+          "host": "https://app-test.growknows.cn/",
+          "project_product": null,
+          "device": null
+        },
+        "environment_config": {
+          "test_object_value": "https://app-test.growknows.cn/",
+          "db_c_status": true,
+          "db_rud_status": true,
+          "mysql_config": {
+            "host": "39.103.149.169",
+            "port": 403,
+            "user": "root",
+            "password": "xy-cloud",
+            "database": "xy-cloud"
+          }
+        },
+        "public_data_list": []
+      }
+    ],
+    "public_data_list": [
+      {
+        "type": 0,
+        "key": "登录验证码",
+        "value": "AIgc2023aiGC"
+      },
+      {
+        "type": 0,
+        "key": "A账号",
+        "value": "test005@yali005.com"
+      },
+      {
+        "type": 0,
+        "key": "A密码",
+        "value": "123456"
+      },
+      {
+        "type": 0,
+        "key": "A企业账号",
+        "value": "yali005"
+      },
+      {
+        "type": 0,
+        "key": "B账号",
+        "value": "test006@yali005.com"
+      },
+      {
+        "type": 0,
+        "key": "B密码",
+        "value": "123456"
+      },
+      {
+        "type": 0,
+        "key": "openai_api_key",
+        "value": "sk-H6rGMGXSD45kqbM2gXSxTKPx0sHCSjBly7q9m4C1oQldVUCM"
+      }
+    ]
+  }
+}
