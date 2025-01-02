@@ -112,6 +112,9 @@
                   </template>
                   <template v-else-if="item.key === 'actions'" #cell="{ record }">
                     <a-space>
+                      <a-button type="text" size="mini" @click="onRetry(record)">重试</a-button>
+                    </a-space>
+                    <a-space>
                       <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
                     </a-space>
                   </template>
@@ -186,7 +189,9 @@
       })
     }
   }
-
+  function onRetry(record: any) {
+      console.log(record);
+  }
   const barChart = ref<HTMLElement>()
   const myChart1 = ref<any>()
 

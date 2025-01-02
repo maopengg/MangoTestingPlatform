@@ -13,7 +13,7 @@
           <p>测试套ID：{{ pageData.record.id }}</p>
           <p>所属项目：{{ pageData.record.project_product?.project?.name }}</p>
           <p>执行时间：{{ pageData.record.create_time }}</p>
-          <p>当前状态：{{ pageData.record.run_status === 1 ? '已完成' : '执行中' }}</p>
+          <p>当前状态：{{ enumStore.task_status[pageData.record.status].title }}</p>
         </a-space>
         <a-space direction="vertical" style="width: 42%">
         </a-space>
