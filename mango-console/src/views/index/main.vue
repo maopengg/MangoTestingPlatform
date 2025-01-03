@@ -29,7 +29,7 @@
           <a-card>
             <div style="flex: 1; overflow: auto">
               <a-space direction="vertical" fill>
-                <Title title="正在准备执行的自动化任务" />
+                <Title title="正在准备执行的自动化任务" style="height: 65px" />
                 <a-table
                   :bordered="true"
                   :loading="table.tableLoading.value"
@@ -68,7 +68,9 @@
                         >
                       </template>
                       <template v-else-if="item.key === 'type'" #cell="{ record }">
-                        <a-tag color="green" size="small">{{enumStore.auto_test_type[record.type].title}}</a-tag>
+                        <a-tag color="green" size="small">{{
+                          enumStore.auto_test_type[record.type].title
+                        }}</a-tag>
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
