@@ -4,7 +4,6 @@ import useUserStore from './user'
 import router from '@/router'
 import { baseAddress, getMenuListByRoleId } from '@/api/url'
 import { post } from '@/api/http'
-import { defaultRoutes } from '@/router/routes/default-routes'
 import { findRootPathRoute, generatorRoutes, mapTwoLevelRouter } from '../help'
 import { constantRoutes } from '@/router/routes/constants'
 
@@ -40,17 +39,13 @@ const usePermissionStore = defineStore('permission-route', {
   actions: {
     async getRoutes(data: { userId: number; roleId: number }) {
       try {
-        if (getMenuListByRoleId) {
-          const res = await post({
-            url: baseAddress + getMenuListByRoleId,
-            // 在实际的开发中，这个地方可以换成 token，让后端解析用户信息获取 userId 和 roleId，前端可以不用传 userId 和 roleId。
-            // 这样可以增加安全性
-            data,
-          })
-          return generatorRoutes(res.data)
-        } else {
-          return generatorRoutes(defaultRoutes)
-        }
+        const res = await post({
+          url: baseAddress + getMenuListByRoleId,
+          // 在实际的开发中，这个地方可以换成 token，让后端解析用户信息获取 userId 和 roleId，前端可以不用传 userId 和 roleId。
+          // 这样可以增加安全性
+          data,
+        })
+        return generatorRoutes(res.data)
       } catch (error) {
         console.log(
           '路由加载失败了，请清空一下Cookie和localStorage，重新登录；如果已经采用真实接口的，请确保菜单接口地址真实可用并且返回的数据格式和mock中的一样'

@@ -1,243 +1,34 @@
 <template>
-  <div>
-    <div class="main-container">
-      <TableBody ref="tableBody">
-        <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="测试用例"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
-            <template #search-content>
-              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
-                <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'project_product'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="projectInfo.projectProductList"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh(item.value, true)"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'module'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="productModule.data"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'case_people'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="data.userList"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'status'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="enumStore.task_status"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
-                  <template v-if="item.type === 'date'">
-                    <a-date-picker v-model="item.value" />
-                  </template>
-                  <template v-if="item.type === 'time'">
-                    <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-                  </template>
-                  <template v-if="item.type === 'check-group'">
-                    <a-checkbox-group v-model="item.value">
-                      <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
-                        {{ item.label }}
-                      </a-checkbox>
-                    </a-checkbox-group>
-                  </template>
-                </a-form-item>
-              </a-form>
-            </template>
-          </TableHeader>
-        </template>
-
-        <template #default>
-          <a-tabs>
-            <template #extra>
-              <a-space>
-                <div>
-                  <a-button status="success" size="small" @click="onConcurrency('批量执行')"
-                    >批量执行</a-button
-                  >
-                </div>
-                <div>
-                  <a-button status="warning" size="small" @click="handleClick"
-                    >设为定时任务</a-button
-                  >
-                  <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
-                    <template #title> 设为定时任务 </template>
-                    <div>
-                      <a-select
-                        v-model="data.value"
-                        placeholder="请选择定时任务进行绑定"
-                        :options="data.scheduledName"
-                        :field-names="fieldNames"
-                        value-key="key"
-                        allow-clear
-                        allow-search
-                      />
-                    </div>
-                  </a-modal>
-                </div>
-                <div>
-                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
-                </div>
-                <div>
-                  <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
-                </div>
-              </a-space>
-            </template>
-          </a-tabs>
-
-          <a-table
-            :bordered="false"
-            :row-selection="{ selectedRowKeys, showCheckedAll }"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :rowKey="rowKey"
-            @selection-change="onSelectionChange"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of tableColumns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.key"
-                :fixed="item.fixed"
-                :ellipsis="item.ellipsis"
-                :tooltip="item.tooltip"
-              >
-                <template v-if="item.key === 'index'" #cell="{ record }">
-                  {{ record.id }}
-                </template>
-                <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                  {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
-                </template>
-                <template v-else-if="item.key === 'module'" #cell="{ record }">
-                  {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
-                  }}{{ record?.module?.name }}
-                </template>
-                <template v-else-if="item.key === 'level'" #cell="{ record }">
-                  <a-tag color="orange" size="small">
-                    {{
-                      record.level !== null ? enumStore.case_level[record.level].title : '-'
-                    }}</a-tag
-                  >
-                </template>
-                <template v-else-if="item.key === 'case_people'" #cell="{ record }">
-                  {{ record.case_people.name }}
-                </template>
-                <template v-else-if="item.key === 'status'" #cell="{ record }">
-                  <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
-                  <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
-                </template>
-                <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space>
-                    <a-button type="text" size="mini" @click="onCaseRun(record.id)">执行</a-button>
-                    <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
-                    <a-dropdown trigger="hover">
-                      <a-button type="text" size="mini">···</a-button>
-                      <template #content>
-                        <a-doption>
-                          <a-button type="text" size="mini" @click="onUpdate(record)"
-                            >编辑</a-button
-                          >
-                        </a-doption>
-                        <a-doption>
-                          <a-button type="text" size="mini" @click="caseCody(record)"
-                            >复制</a-button
-                          >
-                        </a-doption>
-                        <a-doption>
-                          <a-button
-                            status="danger"
-                            type="text"
-                            size="mini"
-                            @click="onDelete(record)"
-                            >删除</a-button
-                          >
-                        </a-doption>
-                      </template>
-                    </a-dropdown>
-                  </a-space>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
-        </template>
-        <template #footer>
-          <TableFooter :pagination="pagination" />
-        </template>
-      </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems"
-              :key="item.key"
-            >
+  <TableBody ref="tableBody">
+    <template #header>
+      <TableHeader
+        :show-filter="true"
+        title="测试用例"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'cascader'">
-                <a-cascader
+              <template v-else-if="item.type === 'select' && item.key === 'project_product'">
+                <a-select
+                  style="width: 150px"
                   v-model="item.value"
-                  @change="onModuleSelect(item.value)"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProduct"
-                  allow-search
+                  :options="projectInfo.projectProductList"
+                  :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
+                  allow-search
+                  @change="doRefresh(item.value, true)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
+                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="productModule.data"
@@ -245,10 +36,12 @@
                   value-key="key"
                   allow-clear
                   allow-search
+                  @change="doRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
+                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
                   :options="data.userList"
@@ -256,25 +49,212 @@
                   value-key="key"
                   allow-clear
                   allow-search
+                  @change="doRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'level'">
+              <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
+                  style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="enumStore.case_level"
+                  :options="enumStore.task_status"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
                   allow-search
+                  @change="doRefresh"
                 />
+              </template>
+              <template v-if="item.type === 'date'">
+                <a-date-picker v-model="item.value" />
+              </template>
+              <template v-if="item.type === 'time'">
+                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+              </template>
+              <template v-if="item.type === 'check-group'">
+                <a-checkbox-group v-model="item.value">
+                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                    {{ item.label }}
+                  </a-checkbox>
+                </a-checkbox-group>
               </template>
             </a-form-item>
           </a-form>
         </template>
-      </ModalDialog>
-    </div>
-  </div>
+      </TableHeader>
+    </template>
+
+    <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-button status="success" size="small" @click="onConcurrency('批量执行')"
+                >批量执行</a-button
+              >
+            </div>
+            <div>
+              <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
+              <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
+                <template #title> 设为定时任务 </template>
+                <div>
+                  <a-select
+                    v-model="data.value"
+                    placeholder="请选择定时任务进行绑定"
+                    :options="data.scheduledName"
+                    :field-names="fieldNames"
+                    value-key="key"
+                    allow-clear
+                    allow-search
+                  />
+                </div>
+              </a-modal>
+            </div>
+            <div>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+            </div>
+            <div>
+              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+            </div>
+          </a-space>
+        </template>
+      </a-tabs>
+
+      <a-table
+        :bordered="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
+        :loading="table.tableLoading.value"
+        :data="table.dataList"
+        :columns="tableColumns"
+        :pagination="false"
+        :rowKey="rowKey"
+        @selection-change="onSelectionChange"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of tableColumns"
+            :key="item.key"
+            :align="item.align"
+            :title="item.title"
+            :width="item.width"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+            </template>
+            <template v-else-if="item.key === 'module'" #cell="{ record }">
+              {{ record?.module?.superior_module ? record?.module?.superior_module + '/' : ''
+              }}{{ record?.module?.name }}
+            </template>
+            <template v-else-if="item.key === 'level'" #cell="{ record }">
+              <a-tag color="orange" size="small">
+                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}</a-tag
+              >
+            </template>
+            <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+              {{ record.case_people.name }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+              <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+              <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+              <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <a-space>
+                <a-button type="text" size="mini" @click="onCaseRun(record.id)">执行</a-button>
+                <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
+                <a-dropdown trigger="hover">
+                  <a-button type="text" size="mini">···</a-button>
+                  <template #content>
+                    <a-doption>
+                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button type="text" size="mini" @click="caseCody(record)">复制</a-button>
+                    </a-doption>
+                    <a-doption>
+                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        >删除</a-button
+                      >
+                    </a-doption>
+                  </template>
+                </a-dropdown>
+              </a-space>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
+    </template>
+  </TableBody>
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+          <template v-else-if="item.type === 'cascader'">
+            <a-cascader
+              v-model="item.value"
+              @change="onModuleSelect(item.value)"
+              :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="productModule.data"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'case_people'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="data.userList"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'level'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.case_level"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
 <script lang="ts" setup>

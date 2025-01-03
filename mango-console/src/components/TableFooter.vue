@@ -52,7 +52,7 @@
       },
       position: {
         type: String as PropType<'start' | 'center' | 'end'>,
-        default: 'center',
+        default: 'end',
       },
     },
     setup(props) {
