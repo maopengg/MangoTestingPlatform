@@ -15,7 +15,7 @@ table_column = [
     {'key': 'is_iframe', 'name': 'iframe', 'width': 70, 'option': Status1Enum.get_option('value', 'label')},
     {'key': 'sleep', 'name': '等待时间(秒)', 'width': 100},
     {'key': 'sub', 'name': '下标(1开始)', 'width': 100},
-    {'key': 'ope', 'name': '操作', 'width': 120},
+    {'key': 'ope', 'name': '操作', 'type': 1, 'width': 120},
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},

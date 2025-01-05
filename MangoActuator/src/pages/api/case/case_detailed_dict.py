@@ -12,7 +12,7 @@ table_column = [
     {'key': 'api_info', 'name': '接口名称'},
     # {'key': 'method', 'name': '请求方法', 'width': 70, 'option': MethodEnum.get_option('value', 'label')},
     {'key': 'status', 'name': '测试结果', 'width': 100, 'option': TaskEnum.get_option('value', 'label')},
-    {'key': 'ope', 'name': '操作', 'width': 120},
+    {'key': 'ope', 'name': '操作', 'type': 1, 'width': 120},
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},
