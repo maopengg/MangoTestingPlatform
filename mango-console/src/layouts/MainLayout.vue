@@ -135,7 +135,7 @@
     }
     .main-base-light-theme {
       // background-color: #f0f2f5;
-      background-image: linear-gradient(#f0f2f5, rgba(var(--primary-1), 0.1), #f0f2f5);
+      background-image: linear-gradient(#ffffff, rgba(var(--primary-1), 0.01), #ffffff);
     }
     .main-base-dark-theme {
       background-color: #333333;
