@@ -40,17 +40,22 @@ class ModelCRUD(GenericAPIView):
             project_product = ProjectProduct.objects.filter(project_id=project_id)
             if project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
+
         if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']
             books = self.model.objects.filter(**query_dict)
-            data_list, count = self.paging_list(request.query_params.get("pageSize"),
-                                                request.query_params.get("page"),
-                                                books,
-                                                self.get_serializer_class())
-            return ResponseData.success(RESPONSE_MSG_0001,
-                                        data_list,
-                                        count)
+            data_list, count = self.paging_list(
+                request.query_params.get("pageSize"),
+                request.query_params.get("page"),
+                books,
+                self.get_serializer_class()
+            )
+            return ResponseData.success(
+                RESPONSE_MSG_0001,
+                data_list,
+                count
+            )
         else:
             books = self.model.objects.filter(**query_dict)
             serializer = self.get_serializer_class()
@@ -58,9 +63,11 @@ class ModelCRUD(GenericAPIView):
                 books = serializer.setup_eager_loading(books)
             except FieldError:
                 pass
-            return ResponseData.success(RESPONSE_MSG_0001,
-                                        serializer(instance=books, many=True).data,
-                                        books.count())
+            return ResponseData.success(
+                RESPONSE_MSG_0001,
+                serializer(instance=books, many=True).data,
+                books.count()
+            )
 
     @error_response('system')
     def post(self, request: Request):
@@ -150,7 +157,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.system.error(f'执行保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
+            log.system.error(f'执行内部保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
             raise ToolsError(*RESPONSE_MSG_0116, value=(serializer.errors,))
 
     @classmethod
@@ -160,7 +167,7 @@ class ModelCRUD(GenericAPIView):
             serializer.save()
             return serializer.data
         else:
-            log.system.error(f'执行修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
+            log.system.error(f'执行内部修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
             raise ToolsError(*RESPONSE_MSG_0117, value=(serializer.errors,))
 
     @classmethod
