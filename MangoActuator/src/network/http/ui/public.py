@@ -35,7 +35,7 @@ class Public(HttpBase):
 
     @classmethod
     def put_status(cls, _id, status):
-        return cls.put(f'{Public._url}/status', json_data={
+        return cls.put(f'{Public._url}/status', json={
             'id': _id,
             'status': status,
         })

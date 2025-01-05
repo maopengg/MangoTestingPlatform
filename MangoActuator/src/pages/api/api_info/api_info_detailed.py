@@ -62,7 +62,7 @@ class ApiInfoDetailedPage(SubPage):
         self.mango_tabs.addTab(self.widget_5, '文件')
         self.layout.addWidget(self.mango_tabs)
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         self._headers.set_value(self.get_json(self.data.get('header')))

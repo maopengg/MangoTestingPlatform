@@ -29,7 +29,7 @@ class EnvConfigPage(SubPage):
         self.database_form_data = [FormDataModel(**i) for i in database_form_data]
         self.notice_form_data = [FormDataModel(**i) for i in notice_form_data]
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         while self.h_layout.count():
             child = self.h_layout.takeAt(0)
             if child.widget():

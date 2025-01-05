@@ -23,6 +23,6 @@ class ProjectPage(TableParent):
         self.put = HTTP.system.project.put_project
         self._delete = HTTP.system.project.delete_project
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         super().show_data()
         Methods.set_project()

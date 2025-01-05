@@ -34,8 +34,8 @@ class Case(HttpBase):
         })
 
     @classmethod
-    def cody_case(cls, _id, ):
-        return cls.post(f'{Case._url}/copy', json_data={
+    def copy_case(cls, _id, ):
+        return cls.post(f'{Case._url}/copy', json={
             'case_id': _id,
         })
 

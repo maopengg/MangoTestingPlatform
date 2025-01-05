@@ -119,8 +119,8 @@ class CaseStepsPage(SubPage):
         self.scroll_area = MangoScrollArea()
         self.h_layout.addWidget(self.scroll_area, 1)
 
-    def show_data(self, is_refresh=False):
-        response_model = super().show_data(is_refresh)
+    def show_data(self):
+        response_model = super().show_data()
         for i in self.data.get('front_custom', []):
             self.front_custom(i)
         for i in self.data.get('front_sql', []):

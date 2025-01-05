@@ -49,7 +49,7 @@ class ApiCase(HttpBase):
         })
 
     @classmethod
-    def get_api_case_copy(cls, case_id):
-        return cls.get(f'{ApiCase._url}/copy', params={
+    def case_copy(cls, case_id):
+        return cls.post(f'{ApiCase._url}/copy', json={
             'case_id': case_id,
         })

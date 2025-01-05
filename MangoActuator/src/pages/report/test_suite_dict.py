@@ -88,11 +88,15 @@ table_column = [
     {
         'key': 'ope',
         'name': '操作',
-        'width': 50
+        'width': 120
     },
 
 ]
 table_menu = [
+    {
+        'name': '重试任务',
+        'action': 'retry'
+    },
     {
         'name': '详情',
         'action': 'subpage'
