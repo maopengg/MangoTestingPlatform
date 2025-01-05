@@ -87,7 +87,8 @@ def ad_routes():
                     "parentPath": "/report",
                     "menuUrl": "/report/index",
                     "menuName": "测试报告",
-                }, ]
+                },
+            ]
         },
 
         # {

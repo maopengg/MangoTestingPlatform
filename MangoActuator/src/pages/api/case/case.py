@@ -25,6 +25,7 @@ class ApiCasePage(TableParent):
         self.post = HTTP.api.case.post_api_case
         self.put = HTTP.api.case.put_api_case
         self._delete = HTTP.api.case.delete_api_case
+        self.post_copy = HTTP.api.case.case_copy
 
     def form_data_callback(self, obj: FormDataModel):
         if obj.key == 'case_people':

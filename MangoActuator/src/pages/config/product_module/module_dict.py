@@ -12,7 +12,7 @@ table_column = [
     {'key': 'name', 'name': '模块名称', },
     {'key': 'superior_module_1', 'name': '一级模块模块名称', 'width': 150},
     {'key': 'superior_module_2', 'name': '二级模块模块名称', 'width': 150},
-    {'key': 'ope', 'name': '操作', 'width': 120},
+    {'key': 'ope', 'name': '操作', 'type': 1, 'width': 120},
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},

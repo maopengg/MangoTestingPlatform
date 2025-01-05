@@ -3,9 +3,13 @@
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
 
+from PySide6.QtCore import *
+from PySide6.QtGui import *
+from PySide6.QtWidgets import *
+from PySide6.QtSvgWidgets import *
 from mango_ui import show_info_message
-from mango_ui.init import *
-
+from mango_ui.resources.app_rc import *
+from mango_ui.settings.settings import THEME
 from src.pages.window.window_logic import WindowLogic
 
 

@@ -49,7 +49,7 @@ class EquipmentPage(TableParent):
                 self.clear_layout(item.layout())
                 item.layout().deleteLater()
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         self.clear_layout(self.v_layout)
 
         response_list = self.get(1, 100, {'user': self.user_info.id})

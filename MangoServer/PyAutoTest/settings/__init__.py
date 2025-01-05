@@ -23,7 +23,6 @@ else:
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 nuw_dir()
 
-
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'
 
@@ -90,13 +89,13 @@ if not IS_SQLITE:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': mysql_db_name,
-            'USER': mysql_user,
-            'PASSWORD': mysql_password,
-            'HOST': mysql_ip,
-            'PORT': mysql_port,
+            'NAME': MYSQL_DB_NAME,
+            'USER': MYSQL_USER,
+            'PASSWORD': MYSQL_PASSWORD,
+            'HOST': MYSQL_IP,
+            'PORT': MYSQL_PORT,
             'TEST': {
-                'NAME': mysql_db_name,
+                'NAME': MYSQL_DB_NAME,
                 'CHARSET': 'utf8mb4',
                 'COLLATION': 'utf8mb4_general_ci'
             },
@@ -114,18 +113,10 @@ else:
     }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
 
 LANGUAGE_CODE = 'en-us'
@@ -257,7 +248,7 @@ APPEND_SLASH = False
 # ************************ 允许跨域设置 ************************  跨域增加忽略
 CORS_ALLOW_CREDENTIALS = True  # 指明在跨域访问中，后端是否支持对cookie的操作
 CORS_ORIGIN_ALLOW_ALL = True  # 设置支持所有域名访问,如果为False,需要指定域名
-CORS_ALLOW_HEADERS = ('*')
+CORS_ALLOW_HEADERS = ('*',)
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:5173',
 )  # 白名单，"*"支持所有域名进行访问，也可写成("域名1","域名")

@@ -3,9 +3,12 @@
 # @Description: 
 # @Time   : 2024-11-23 22:49
 # @Author : 毛鹏
-import time
 import traceback
 from datetime import timedelta, datetime
+
+import time
+from django.db import connection, close_old_connections
+from django.db.utils import Error
 from django.utils import timezone
 
 from PyAutoTest.auto_test.auto_api.service.api_call.case_flow import CaseFlow
@@ -57,6 +60,9 @@ class ConsumerThread:
                     self.clean_proceed()
                     self.clean_proceed_set_fail()
                 time.sleep(self.consumer_sleep)
+            except Error:
+                close_old_connections()
+                connection.ensure_connection()
             except Exception as error:
                 log.system.error(error)
                 trace = traceback.format_exc()

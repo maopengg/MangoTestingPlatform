@@ -11,7 +11,7 @@ table_column = [
     {'key': 'id', 'name': 'ID', 'width': 100},
     {'key': 'case_id', 'name': '用例名称', },
     {'key': 'command', 'name': '命令', },
-    {'key': 'ope', 'name': '操作', 'width': 100}
+    {'key': 'ope', 'name': '操作', 'type': 1, 'width': 100}
 ]
 right_data = [
     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},

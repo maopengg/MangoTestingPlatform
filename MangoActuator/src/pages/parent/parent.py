@@ -12,7 +12,7 @@ from src.tools.methods import Methods
 
 
 class Parent(QWidget):
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         pass
 
     def add(self, title='新建'):

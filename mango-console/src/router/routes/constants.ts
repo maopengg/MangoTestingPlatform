@@ -65,24 +65,6 @@ export const constantRoutes = [
       hidden: true,
     },
   },
-  {
-    path: '/personal',
-    name: 'personal',
-    component: LAYOUT,
-    meta: {
-      title: '个人中心',
-      hidden: true,
-    },
-    children: [
-      {
-        path: 'info',
-        component: () => import('@/views/personal/index.vue'),
-        meta: {
-          title: '个人中心',
-        },
-      },
-    ],
-  },
 ]
 
 /**

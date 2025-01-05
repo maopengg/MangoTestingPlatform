@@ -29,7 +29,7 @@ class TasksDetailsPage(SubPage):
         self.put = HTTP.system.tasks_details.put_tasks_list
         self._delete = HTTP.system.tasks_details.delete_tasks_list
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         self.set_from()

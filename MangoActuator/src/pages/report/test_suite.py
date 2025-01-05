@@ -8,6 +8,7 @@ from mango_ui import *
 from src.network import HTTP
 from .test_suite_dict import *
 from ..parent.table import TableParent
+from ...tools.components.message import response_message
 
 
 class TestSuitePage(TableParent):
@@ -37,7 +38,7 @@ class TestSuitePage(TableParent):
         self.table_widget.clicked.connect(self.callback)
         self.layout_v.addWidget(self.table_widget, 7)
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         response_model = HTTP.system.test_suite_details.get_test_suite_report()
         self.line_plot_1.draw([
             {'name': '成功', 'value': response_model.data.get('success')},
@@ -47,4 +48,8 @@ class TestSuitePage(TableParent):
             {'name': '失败数', 'value': response_model.data.get('failSun')},
             {'name': '成功数', 'value': response_model.data.get('successSun')}
         ])
-        super().show_data(is_refresh)
+        super().show_data()
+
+    def retry(self, row):
+        response_message(self, HTTP.system.test_suite_details.get_all_retry(row.get('id')))
+        self.show_data()

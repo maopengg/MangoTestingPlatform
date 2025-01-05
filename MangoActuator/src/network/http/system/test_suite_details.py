@@ -36,3 +36,11 @@ class TestSuiteDetails(HttpBase):
     @classmethod
     def get_test_suite_report(cls, ):
         return cls.get(f'{TestSuiteDetails._url}/report', )
+
+    @classmethod
+    def get_all_retry(cls, test_suite_id):
+        return cls.get(f'{TestSuiteDetails._url}/all/retry', params={'test_suite_id': test_suite_id})
+
+    @classmethod
+    def get_retry(cls, _id):
+        return cls.get(f'{TestSuiteDetails._url}/retry', params={'id': _id})

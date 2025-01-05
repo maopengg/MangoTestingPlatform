@@ -21,3 +21,4 @@ class PagePage(TableParent):
         self.post = HTTP.ui.page.post_page
         self.put = HTTP.ui.page.put_page
         self._delete = HTTP.ui.page.delete_page
+        self.post_copy = HTTP.ui.page.page_copy

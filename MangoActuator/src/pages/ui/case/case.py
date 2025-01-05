@@ -22,6 +22,7 @@ class CasePage(TableParent):
         self.post = HTTP.ui.case.post_case
         self.put = HTTP.ui.case.put_case
         self._delete = HTTP.ui.case.delete_case
+        self.post_copy = HTTP.ui.case.copy_case
 
     def run(self, row):
         user_info = UserModel()

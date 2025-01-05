@@ -1,115 +1,107 @@
 <template>
-  <div>
-    <div class="main-container">
-      <TableBody ref="tableBody">
-        <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="项目管理"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
-            <template #search-content>
-              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
-                <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="project.data"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                      @change="doRefresh"
-                    />
-                  </template>
-                </a-form-item>
-              </a-form>
-            </template>
-          </TableHeader>
-        </template>
-
-        <template #default>
-          <a-tabs>
-            <template #extra>
-              <a-space>
-                <div>
-                  <a-button type="primary" size="small" @click="onAdd">新增</a-button>
-                </div>
-              </a-space>
-            </template>
-          </a-tabs>
-          <a-table
-            :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :rowKey="rowKey"
-            @selection-change="onSelectionChange"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of tableColumns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.key"
-                :fixed="item.fixed"
-              >
-                <template v-if="item.key === 'index'" #cell="{ record }">
-                  {{ record.id }}
-                </template>
-                <template v-else-if="item.key === 'status'" #cell="{ record }">
-                  <a-switch
-                    :default-checked="record.status === 1"
-                    :beforeChange="(newValue) => onModifyStatus(newValue, record.id, record.name)"
-                  />
-                </template>
-                <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <a-space>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除</a-button
-                    >
-                  </a-space>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
-        </template>
-        <template #footer>
-          <TableFooter :pagination="pagination" />
-        </template>
-      </TableBody>
-      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems"
-              :key="item.key"
-            >
+  <TableBody ref="tableBody">
+    <template #header>
+      <TableHeader
+        :show-filter="true"
+        title="项目管理"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'select'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="project.data"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
               </template>
             </a-form-item>
           </a-form>
         </template>
-      </ModalDialog>
-    </div>
-  </div>
+      </TableHeader>
+    </template>
+
+    <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+            </div>
+          </a-space>
+        </template>
+      </a-tabs>
+      <a-table
+        :bordered="false"
+        :loading="table.tableLoading.value"
+        :data="table.dataList"
+        :columns="tableColumns"
+        :pagination="false"
+        :rowKey="rowKey"
+        @selection-change="onSelectionChange"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of tableColumns"
+            :key="item.key"
+            :align="item.align"
+            :title="item.title"
+            :width="item.width"
+            :data-index="item.key"
+            :fixed="item.fixed"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-switch
+                :default-checked="record.status === 1"
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, record.name)"
+              />
+            </template>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <a-space>
+                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                  >删除</a-button
+                >
+              </a-space>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
+    </template>
+  </TableBody>
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
 <script lang="ts" setup>

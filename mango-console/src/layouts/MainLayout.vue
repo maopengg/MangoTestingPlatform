@@ -6,9 +6,9 @@
       appStore.isFixedNavBar ? 'main-layout_fixed-nav-bar' : 'main-layout',
       !appStore.isFixedNavBar
         ? 'main-layout_padding-top__0'
-        : isShowTabbar
-        ? 'main-layout_padding-top__all'
-        : 'main-layout_padding-top__logo',
+        : // : isShowTabbar
+          // ? 'main-layout_padding-top__all'
+          'main-layout_padding-top__logo',
     ]"
   >
     <section
@@ -23,7 +23,7 @@
       ]"
     >
       <NavBar v-if="showNavBar" />
-      <TabBar v-show="isShowTabbar" />
+      <!--      <TabBar v-show="isShowTabbar" />-->
     </section>
     <component
       :is="appStore.isFixedNavBar ? 'Scrollbar' : 'div'"
@@ -46,7 +46,7 @@
 </template>
 
 <script lang="ts">
-  import { computed, defineComponent, onMounted } from 'vue'
+  import { defineComponent, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { useTitle } from '@vueuse/core'
   import { projectName } from '@/setting'
@@ -61,7 +61,7 @@
     },
     setup() {
       const appStore = useAppConfigStore()
-      const isShowTabbar = computed(() => true)
+      // const isShowTabbar = computed(() => true)
       const router = useRouter()
       const route = useRoute()
       router.afterEach(() => {
@@ -73,7 +73,7 @@
       })
       return {
         appStore,
-        isShowTabbar,
+        // isShowTabbar,
       }
     },
   })
@@ -135,7 +135,7 @@
     }
     .main-base-light-theme {
       // background-color: #f0f2f5;
-      background-image: linear-gradient(#f0f2f5, rgba(var(--primary-1), 0.1), #f0f2f5);
+      background-image: linear-gradient(#ffffff, rgba(var(--primary-1), 0.01), #ffffff);
     }
     .main-base-dark-theme {
       background-color: #333333;

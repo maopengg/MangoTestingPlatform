@@ -25,6 +25,7 @@ class ApiInfoPage(TableParent):
         self.post = HTTP.api.info.post_api_info
         self.put = HTTP.api.info.put_api_info
         self._delete = HTTP.api.info.delete_api_info
+        self.post_copy = HTTP.api.info.post_copy_api_info
 
     def run(self, row):
         user_info = UserModel()

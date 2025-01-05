@@ -23,6 +23,6 @@ class ProductPage(TableParent):
         self.put = HTTP.system.product.put_product
         self._delete = HTTP.system.product.delete_product
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         super().show_data()
         Methods.set_project()

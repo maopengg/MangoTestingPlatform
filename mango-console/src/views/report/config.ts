@@ -45,25 +45,21 @@ export const tableColumns = useTableColumn([
     title: '自动化类型',
     key: 'type',
     dataIndex: 'type',
-    width: 200,
   },
   {
     title: '执行环境',
     key: 'test_env',
     dataIndex: 'test_env',
-    width: 200,
   },
   {
     title: '执行时间',
     key: 'create_time',
     dataIndex: 'create_time',
-    width: 200,
   },
   {
     title: '执行人',
     key: 'user',
     dataIndex: 'user',
-    width: 100,
   },
   {
     title: '结果',
@@ -76,6 +72,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 150,
+    width: 170,
   },
 ])

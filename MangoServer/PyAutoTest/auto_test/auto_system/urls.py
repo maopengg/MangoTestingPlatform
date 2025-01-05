@@ -60,6 +60,8 @@ urlpatterns = [
     #
     path('test/suite/details', TestSuiteDetailsCRUD.as_view()),
     path('test/suite/details/report', TestSuiteDetailsViews.as_view({'get': 'test_suite_details_report'})),
+    path('test/suite/details/all/retry', TestSuiteDetailsViews.as_view({'get': 'get_all_retry'})),
+    path('test/suite/details/retry', TestSuiteDetailsViews.as_view({'get': 'get_retry'})),
     #
     path('index/sum', IndexViews.as_view({'get': 'case_sum'})),
     path('index/result/week/sum', IndexViews.as_view({'get': 'case_result_week_sum'})),

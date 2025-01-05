@@ -23,6 +23,7 @@ class PageStepsPage(TableParent):
         self.post = HTTP.ui.page_steps.post_page_steps
         self.put = HTTP.ui.page_steps.put_page_steps
         self._delete = HTTP.ui.page_steps.delete_page_steps
+        self.post_copy = HTTP.ui.page_steps.copy_page_steps
 
     def sub_options(self, data: DialogCallbackModel, is_refresh=True):
         init_data = None

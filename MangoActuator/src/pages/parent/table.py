@@ -3,12 +3,27 @@
 # @Description: 
 # @Time   : 2024-09-18 15:07
 # @Author : 毛鹏
-
+from PySide6.QtCore import QThread
 from mango_ui import *
 
 from src.pages.parent.parent import Parent
 from src.tools.components.message import response_message
 from src.tools.methods import Methods
+
+
+class RequestThread(QThread):
+    response_signal = Signal(object)
+
+    def __init__(self, parent, page, page_size, params):
+        super().__init__(parent)
+        self.parent = parent
+        self.page = page
+        self.page_size = page_size
+        self.params = params
+
+    def run(self):
+        response_model = self.parent.get(self.page, self.page_size, self.params)
+        self.response_signal.emit(response_model)
 
 
 class TableParent(Parent):
@@ -46,17 +61,18 @@ class TableParent(Parent):
             self.table_widget.clicked.connect(self.callback)
             self.layout.addWidget(self.table_widget)
 
-    def show_data(self, is_refresh=False):
-        response_model = self.get(self.page, self.page_size, self.params)  # type: ignore
-        self.table_widget.set_data(response_model.data, response_model.totalSize)
-        if is_refresh:
-            response_message(self, response_model)
+    def show_data(self):
+        thread = RequestThread(self, self.page, self.page_size, self.params)
+        thread.response_signal.connect(
+            lambda response_model: self.table_widget.set_data(response_model.data, response_model.totalSize))
+        thread.start()
 
     def subpage(self, row):
         self.parent.set_page(self.subpage_value, row)  # type: ignore
 
     def copy(self, row):
-        print('点击了复制', row)
+        response_message(self, self.post_copy(row.get('id')))  # type: ignore
+        self.show_data()
 
     def callback(self, data):
         action = data.get('action')
@@ -86,6 +102,7 @@ class TableParent(Parent):
     def search(self, data):
         if isinstance(data, dict):
             self.params = data
-            self.show_data(True)
+            self.show_data()
+            success_message(self, '搜索结果展示完成~')
         else:
             self.sub_options(data)

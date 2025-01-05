@@ -4,7 +4,6 @@
 # @Time   : 2024-11-24 20:26
 # @Author : 毛鹏
 from PyAutoTest.auto_test.auto_api.models import ApiCase
-from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
 from PyAutoTest.auto_test.auto_ui.models import UiCase
 from PyAutoTest.enums.tools_enum import TaskEnum, AutoTestTypeEnum
 from PyAutoTest.tools.view import Snowflake
@@ -37,6 +36,7 @@ class AddTasks:
 
     def add_test_suite_details(self, case_id_list: list[id]):
         def set_task(case_id, case_name, project_product, ):
+            from PyAutoTest.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
                 'test_suite': self.test_suite_id,
                 'type': self._type,
@@ -49,6 +49,7 @@ class AddTasks:
                 'result': None,
                 'retry': 0 if self.tasks_id else 2,
             })
+
         if self._type == AutoTestTypeEnum.UI.value:
             for _id in case_id_list:
                 case = UiCase.objects.get(id=_id)

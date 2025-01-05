@@ -38,7 +38,7 @@ class TestSuiteDetailedPage(SubPage):
         self.layout_v_2.addWidget(self.scroll_area)
         self.layout_h.addLayout(self.layout_v_2, 6)
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         response_model: ResponseModel = HTTP.system.test_suite_details.get_test_suite_details(

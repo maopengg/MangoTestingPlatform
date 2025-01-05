@@ -46,7 +46,7 @@ class SubPage(Parent):
             self.table_widget.clicked.connect(self.callback)
             self.layout.addWidget(self.table_widget)
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         if self.field_list:
             self.title_info.init(self.data, self.field_list)
         response_model = self.get(  # type: ignore

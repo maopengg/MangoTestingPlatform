@@ -268,8 +268,8 @@ class ApiCaseDetailedPage(SubPage):
 
         self.h_layout.addWidget(self.scroll_area, 6)
 
-    def show_data(self, is_refresh=False):
-        response_model = super().show_data(is_refresh)
+    def show_data(self):
+        response_model = super().show_data()
         if response_model.data:
             self.click_row(response_model.data[0])
         for i in self.data.get('front_custom', []):

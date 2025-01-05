@@ -6,26 +6,26 @@ import { constantRoutes, defaultPathRoute } from './routes/constants'
 const Layout = () => import('@/layouts/Layout.vue')
 
 export const extraRoutes = [
-  {
-    path: '/index',
-    name: 'home',
-    component: Layout,
-    redirect: { path: 'report-details' },
-    meta: {
-      title: '首页',
-      isSingle: true,
-    },
-    children: [
-      {
-        path: 'home',
-        name: 'Details',
-        component: () => import('@/views/index/main.vue'),
-        meta: {
-          title: '首页',
-        },
-      },
-    ],
-  },
+  // {
+  //   path: '/index',
+  //   name: 'home',
+  //   component: Layout,
+  //   redirect: { path: 'report-details' },
+  //   meta: {
+  //     title: '首页',
+  //     isSingle: true,
+  //   },
+  //   children: [
+  //     {
+  //       path: 'home',
+  //       name: 'Details',
+  //       component: () => import('@/views/index/main.vue'),
+  //       meta: {
+  //         title: '首页',
+  //       },
+  //     },
+  //   ],
+  // },
   {
     path: '/uitest',
     name: 'uiTest',

@@ -1,76 +1,72 @@
 <template>
-  <div>
-    <div class="main-container">
-      <TableBody ref="tableBody" title="执行器列表">
-        <template #header></template>
+  <TableBody ref="tableBody" title="执行器列表">
+    <template #header></template>
 
-        <template #default>
-          <a-tabs>
-            <template #extra>
-              <a-space>
-                <div> </div>
-              </a-space>
-            </template>
-          </a-tabs>
-          <a-table
-            :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :rowKey="rowKey"
-            @selection-change="onSelectionChange"
+    <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div> </div>
+          </a-space>
+        </template>
+      </a-tabs>
+      <a-table
+        :bordered="false"
+        :loading="table.tableLoading.value"
+        :data="table.dataList"
+        :columns="tableColumns"
+        :pagination="false"
+        :rowKey="rowKey"
+        @selection-change="onSelectionChange"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of tableColumns"
+            :key="item.key"
+            :align="item.align"
+            :title="item.title"
+            :width="item.width"
+            :data-index="item.key"
+            :fixed="item.fixed"
           >
-            <template #columns>
-              <a-table-column
-                v-for="item of tableColumns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.key"
-                :fixed="item.fixed"
-              >
-                <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
-                  {{ record.id }}
-                </template>
-                <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                  <template v-if="record.username === 'admin'">
-                    <a-space>
-                      <a-button type="text" size="mini" @click="onReceive(record)">领取</a-button>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        size="mini"
-                        @click="onDelete(record)"
-                        disabled
-                        >下线
-                      </a-button>
-                    </a-space>
-                  </template>
-                  <template v-if="record.username !== 'admin'">
-                    <a-space>
-                      <a-button
-                        status="danger"
-                        type="text"
-                        size="mini"
-                        @click="onDelete(record)"
-                        disabled
-                        >下线
-                      </a-button>
-                    </a-space>
-                  </template>
-                </template>
-              </a-table-column>
+            <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
+              {{ record.id }}
             </template>
-          </a-table>
+            <template v-else-if="item.key === 'actions'" #cell="{ record }">
+              <template v-if="record.username === 'admin'">
+                <a-space>
+                  <a-button type="text" size="mini" @click="onReceive(record)">领取</a-button>
+                  <a-button
+                    status="danger"
+                    type="text"
+                    size="mini"
+                    @click="onDelete(record)"
+                    disabled
+                    >下线
+                  </a-button>
+                </a-space>
+              </template>
+              <template v-if="record.username !== 'admin'">
+                <a-space>
+                  <a-button
+                    status="danger"
+                    type="text"
+                    size="mini"
+                    @click="onDelete(record)"
+                    disabled
+                    >下线
+                  </a-button>
+                </a-space>
+              </template>
+            </template>
+          </a-table-column>
         </template>
-        <template #footer>
-          <TableFooter :pagination="pagination" />
-        </template>
-      </TableBody>
-    </div>
-  </div>
+      </a-table>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>

@@ -1,131 +1,126 @@
 <template>
-  <div>
-    <div class="main-container">
-      <TableBody ref="tableBody">
-        <template #header>
-          <TableHeader
-            :show-filter="true"
-            title="测试报告"
-            @search="doRefresh"
-            @reset-search="onResetSearch"
-          >
-            <template #search-content>
-              <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
-                <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
-                  <template v-if="item.type === 'input'">
-                    <a-input
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      @blur="doRefresh"
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'status'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="enumStore.task_status"
-                      @change="doRefresh"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                    />
-                  </template>
-                  <template v-else-if="item.type === 'select' && item.key === 'type'">
-                    <a-select
-                      style="width: 150px"
-                      v-model="item.value"
-                      :placeholder="item.placeholder"
-                      :options="enumStore.auto_test_type"
-                      @change="doRefresh"
-                      :field-names="fieldNames"
-                      value-key="key"
-                      allow-clear
-                      allow-search
-                    />
-                  </template>
-                </a-form-item>
-              </a-form>
-            </template>
-          </TableHeader>
-        </template>
-
-        <template #default>
-          <a-space direction="vertical" fill>
-            <div style="margin-bottom: 10px">
-              <a-card style="float: left; width: 30%" :bordered="false">
-                <Title title="接口数&用例数" />
-                <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
-              </a-card>
-
-              <a-card style="float: right; width: 70%" :bordered="false">
-                <Title title="近三个季度执行用例趋势图" />
-                <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
-              </a-card>
-            </div>
-            <a-table
-              :bordered="false"
-              :row-selection="{ selectedRowKeys, showCheckedAll }"
-              :loading="table.tableLoading.value"
-              :data="table.dataList"
-              :columns="tableColumns"
-              :pagination="false"
-              :rowKey="rowKey"
-              @selection-change="onSelectionChange"
-            >
-              <template #columns>
-                <a-table-column
-                  v-for="item of tableColumns"
-                  :key="item.key"
-                  :align="item.align"
-                  :title="item.title"
-                  :width="item.width"
-                  :data-index="item.key"
-                  :fixed="item.fixed"
-                  :ellipsis="item.ellipsis"
-                  :tooltip="item.tooltip"
-                >
-                  <template v-if="item.key === 'index'" #cell="{ record }">
-                    <span style="width: 110px; display: inline-block">{{ record.id }}</span>
-                  </template>
-                  <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-                    {{
-                      record?.project_product?.project?.name + '/' + record?.project_product?.name
-                    }}
-                  </template>
-                  <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                    {{enumStore.environment_type[record.test_env]?.title}}
-                  </template>
-
-                  <template v-else-if="item.key === 'user'" #cell="{ record }">
-                    {{ record.user?.name }}
-                  </template>
-                  <template v-else-if="item.key === 'type'" #cell="{ record }">
-                    {{enumStore.auto_test_type[record.type].title}}
-                  </template>
-                  <template v-else-if="item.key === 'status'" #cell="{ record }">
-                    <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                    <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                    <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
-                    <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
-                  </template>
-                  <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                    <a-space>
-                      <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
-                    </a-space>
-                  </template>
-                </a-table-column>
+  <TableBody ref="tableBody">
+    <template #header>
+      <TableHeader
+        :show-filter="true"
+        title="测试报告"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+              <template v-if="item.type === 'input'">
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-            </a-table>
-          </a-space>
+              <template v-else-if="item.type === 'select' && item.key === 'status'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.task_status"
+                  @change="doRefresh"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.auto_test_type"
+                  @change="doRefresh"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                />
+              </template>
+            </a-form-item>
+          </a-form>
         </template>
-        <template #footer>
-          <TableFooter :pagination="pagination" />
-        </template>
-      </TableBody>
-    </div>
-  </div>
+      </TableHeader>
+    </template>
+
+    <template #default>
+      <a-space direction="vertical" fill>
+        <div style="margin-bottom: 10px">
+          <a-card style="float: left; width: 30%" :bordered="false">
+            <Title title="接口数&用例数" />
+            <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
+          </a-card>
+
+          <a-card style="float: right; width: 70%" :bordered="false">
+            <Title title="近三个季度执行用例趋势图" />
+            <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
+          </a-card>
+        </div>
+        <a-table
+          :scrollbar="true"
+          :bordered="false"
+          :row-selection="{ selectedRowKeys, showCheckedAll }"
+          :loading="table.tableLoading.value"
+          :data="table.dataList"
+          :columns="tableColumns"
+          :pagination="false"
+          :rowKey="rowKey"
+          @selection-change="onSelectionChange"
+          :scroll="{ x: 1100, y: tableScrollHeight() }"
+        >
+          <template #columns>
+            <a-table-column
+              v-for="item of tableColumns"
+              :key="item.key"
+              :align="item.align"
+              :title="item.title"
+              :width="item.width"
+              :data-index="item.key"
+              :fixed="item.fixed"
+              :ellipsis="item.ellipsis"
+              :tooltip="item.tooltip"
+            >
+              <template v-if="item.key === 'index'" #cell="{ record }">
+                <span style="width: 110px; display: inline-block">{{ record.id }}</span>
+              </template>
+              <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+                {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
+              </template>
+              <template v-else-if="item.key === 'test_env'" #cell="{ record }">
+                {{ enumStore.environment_type[record.test_env]?.title }}
+              </template>
+
+              <template v-else-if="item.key === 'user'" #cell="{ record }">
+                {{ record.user?.name }}
+              </template>
+              <template v-else-if="item.key === 'type'" #cell="{ record }">
+                {{ enumStore.auto_test_type[record.type].title }}
+              </template>
+              <template v-else-if="item.key === 'status'" #cell="{ record }">
+                <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
+                <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
+                <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
+                <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
+              </template>
+              <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                <a-space>
+                  <a-button type="text" size="mini" @click="onRetry(record)">重试</a-button>
+                </a-space>
+                <a-space>
+                  <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
+                </a-space>
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+      </a-space>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>
@@ -138,8 +133,12 @@
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
   import { getSystemTestSuite } from '@/api/system/test_suite'
-  import { getSystemTestSuiteDetailsReport } from '@/api/system/test_sute_details'
+  import {
+    getSystemTestSuiteDetailsAllRetry,
+    getSystemTestSuiteDetailsReport,
+  } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
+  import { Message } from '@arco-design/web-vue'
 
   const enumStore = useEnum()
 
@@ -160,7 +159,11 @@
       })
       .catch(console.log)
   }
-
+  function tableScrollHeight() {
+    const headerHeight = 460
+    const footerHeight = 45
+    return `calc(94vh - ${headerHeight}px - ${footerHeight}px)`
+  }
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -186,7 +189,13 @@
       })
     }
   }
-
+  function onRetry(record: any) {
+    getSystemTestSuiteDetailsAllRetry(record.id)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
   const barChart = ref<HTMLElement>()
   const myChart1 = ref<any>()
 

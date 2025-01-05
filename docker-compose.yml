@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0.40-debian
+    environment:
+      MYSQL_ROOT_PASSWORD: mP123456&  # 设置 MySQL root 密码
+      MYSQL_DATABASE: mango_server       # 创建数据库
+      MYSQL_USER: user                   # 创建用户
+      MYSQL_PASSWORD: mP123456&          # 设置用户密码
+    ports:
+      - "3306:3306"                      # 映射端口
+
+  service:
+    build:
+      context: ./MangoServer             # Django 项目目录
+      dockerfile: Dockerfile              # Dockerfile 文件名
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DJANGO_SETTINGS_MODULE=PyAutoTest.settings
+
+  frontend:
+    build:
+      context: ./mango-console           # Vue 3 项目目录
+      dockerfile: Dockerfile              # Dockerfile 文件名
+    ports:
+      - "8080:8080"                       # 映射前端服务端口
+    environment:
+      - NODE_ENV=production               # 设置环境变量

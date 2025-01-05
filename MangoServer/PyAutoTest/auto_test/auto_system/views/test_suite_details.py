@@ -7,15 +7,15 @@ import django
 from django.db import OperationalError
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
-from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.enums.tools_enum import StatusEnum
+from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteSerializers
+from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum
 from PyAutoTest.tools.decorator.error_response import error_response
-from PyAutoTest.tools.view import ResponseData, RESPONSE_MSG_0096, RESPONSE_MSG_0129
+from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
@@ -32,8 +32,7 @@ class TestSuiteDetailsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    test_object = TestObjectSerializers(read_only=True)
-    user = UserSerializers(read_only=True)
+    test_suite = TestSuiteSerializers(read_only=True)
 
     class Meta:
         model = TestSuiteDetails
@@ -58,6 +57,25 @@ class TestSuiteDetailsCRUD(ModelCRUD):
 class TestSuiteDetailsViews(ViewSet):
     model = TestSuiteDetails
     serializer_class = TestSuiteDetailsSerializers
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_all_retry(self, request: Request):
+        test_suite_details = self.model.objects.filter(test_suite_id=request.query_params.get('test_suite_id'))
+        for i in test_suite_details:
+            i.retry = 0
+            i.status = TaskEnum.STAY_BEGIN.value
+            i.save()
+        return ResponseData.success(RESPONSE_MSG_0132)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_retry(self, request: Request):
+        test_suite_details = self.model.objects.get(id=request.query_params.get('id'))
+        test_suite_details.retry = test_suite_details.retry - 1
+        test_suite_details.status = TaskEnum.STAY_BEGIN.value
+        test_suite_details.save()
+        return ResponseData.success(RESPONSE_MSG_0133)
 
     @action(methods=['get'], detail=False)
     @error_response('user')

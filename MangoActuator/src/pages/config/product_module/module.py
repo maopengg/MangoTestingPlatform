@@ -26,6 +26,6 @@ class ModulePage(SubPage):
         self.put = HTTP.system.module.put_module
         self._delete = HTTP.system.module.delete_module
 
-    def show_data(self, is_refresh=False):
+    def show_data(self):
         super().show_data()
         Methods.set_project()
