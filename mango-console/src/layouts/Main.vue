@@ -27,6 +27,6 @@
 
 <style>
   .h-full-vh {
-    height: 86vh;
+    height: calc(94vh - 45px);
   }
 </style>

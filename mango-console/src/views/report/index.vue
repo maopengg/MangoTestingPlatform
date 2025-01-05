@@ -68,7 +68,7 @@
           :pagination="false"
           :rowKey="rowKey"
           @selection-change="onSelectionChange"
-          :scroll="{ x: 1100, y: 220 }"
+          :scroll="{ x: 1100, y: tableScrollHeight() }"
         >
           <template #columns>
             <a-table-column
@@ -133,8 +133,12 @@
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
   import { getSystemTestSuite } from '@/api/system/test_suite'
-  import { getSystemTestSuiteDetailsReport } from '@/api/system/test_sute_details'
+  import {
+    getSystemTestSuiteDetailsAllRetry,
+    getSystemTestSuiteDetailsReport,
+  } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
+  import { Message } from '@arco-design/web-vue'
 
   const enumStore = useEnum()
 
@@ -155,7 +159,11 @@
       })
       .catch(console.log)
   }
-
+  function tableScrollHeight() {
+    const headerHeight = 460
+    const footerHeight = 45
+    return `calc(94vh - ${headerHeight}px - ${footerHeight}px)`
+  }
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -182,7 +190,11 @@
     }
   }
   function onRetry(record: any) {
-    console.log(record)
+    getSystemTestSuiteDetailsAllRetry(record.id)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
   const barChart = ref<HTMLElement>()
   const myChart1 = ref<any>()
