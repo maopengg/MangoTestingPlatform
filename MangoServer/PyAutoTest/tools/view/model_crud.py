@@ -22,8 +22,8 @@ class ModelCRUD(GenericAPIView):
     model = None
     # post专用
     serializer = None
-    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people', 'test_obj',
-                        'status', 'user']
+    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people',
+                        'test_object', 'status', 'user']
 
     @error_response('system')
     def get(self, request: Request):

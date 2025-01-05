@@ -12,8 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestSuiteDetails
 from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from PyAutoTest.auto_test.auto_system.views.test_object import TestObjectSerializers
-from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
+from PyAutoTest.auto_test.auto_system.views.test_suite import TestSuiteSerializers
 from PyAutoTest.enums.tools_enum import StatusEnum, TaskEnum
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view import *
@@ -33,8 +32,7 @@ class TestSuiteDetailsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
-    test_object = TestObjectSerializers(read_only=True)
-    user = UserSerializers(read_only=True)
+    test_suite = TestSuiteSerializers(read_only=True)
 
     class Meta:
         model = TestSuiteDetails
@@ -44,8 +42,7 @@ class TestSuiteDetailsSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'project_product',
-            'test_object',
-            'user'
+            'test_suite',
         )
         return queryset
 

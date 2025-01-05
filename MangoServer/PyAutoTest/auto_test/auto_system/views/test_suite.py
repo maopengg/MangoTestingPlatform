@@ -5,14 +5,12 @@
 # @Author : 毛鹏
 
 from rest_framework import serializers
-from rest_framework.decorators import action
 from rest_framework.viewsets import ViewSet
 
 from PyAutoTest.auto_test.auto_system.models import TestSuite
-from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from PyAutoTest.auto_test.auto_system.views.project_product import ProjectProductSerializers
 from PyAutoTest.auto_test.auto_system.views.tasks import TasksSerializers
 from PyAutoTest.auto_test.auto_user.views.user import UserSerializers
-from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.view.model_crud import ModelCRUD
 
 
@@ -29,7 +27,7 @@ class TestSuiteSerializers(serializers.ModelSerializer):
 class TestSuiteSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializersC(read_only=True)
+    project_product = ProjectProductSerializers(read_only=True)
     tasks = TasksSerializers(read_only=True)
     user = UserSerializers(read_only=True)
 
