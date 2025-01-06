@@ -10,6 +10,7 @@ from mango_ui import *
 from src.models.socket_model import ResponseModel
 from src.network import HTTP
 from src.pages.home.home_dict import table_column
+from src.settings.settings import IS_WINDOW
 
 
 class HomePage(QWidget):
@@ -54,13 +55,14 @@ class HomePage(QWidget):
         self.table_widget = TableList(self.table_column)
         self.table_widget.pagination.click.connect(self.pagination_clicked)
         self.layout_v_2_2.addWidget(self.table_widget)
-        self.mango_dialog = MangoDialog('添加作者微信进芒果测试平台交流群', (260, 340))
-        label = MangoLabel()
-        pixmap = QPixmap(":/picture/author.png")  # 替换为你的图片路径
-        label.setPixmap(pixmap)
-        label.setScaledContents(True)  # 允许缩放
-        label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # type: ignore
-        self.mango_dialog.layout.addWidget(label)
+        if IS_WINDOW:
+            self.mango_dialog = MangoDialog('添加作者微信进芒果测试平台交流群', (260, 340))
+            label = MangoLabel()
+            pixmap = QPixmap(":/picture/author.png")  # 替换为你的图片路径
+            label.setPixmap(pixmap)
+            label.setScaledContents(True)  # 允许缩放
+            label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # type: ignore
+            self.mango_dialog.layout.addWidget(label)
 
     def show_data(self, ):
         pie_plot_1_data = HTTP.system.index.case_sum().data
@@ -80,8 +82,8 @@ class HomePage(QWidget):
         self.line_plot.draw(data)
         response_model: ResponseModel = HTTP.system.tasks.get_tasks(self.page, self.page_size)
         self.table_widget.set_data(response_model.data, response_model.totalSize)
-
-        QTimer.singleShot(500, self.open_dialog)
+        if IS_WINDOW:
+            QTimer.singleShot(500, self.open_dialog)
 
     def open_dialog(self):
         self.mango_dialog.exec()
