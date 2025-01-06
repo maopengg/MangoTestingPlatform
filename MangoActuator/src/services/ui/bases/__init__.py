@@ -130,7 +130,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             ass_dict.update(self.element_model.ope_value)
             self.element_test_result.ope_value = ass_dict
             self.element_test_result.expect = self.element_model.ope_value.get('expect')
-            self.element_test_result.actual = actual
+            self.element_test_result.actual = str(actual)
 
         actual = self.element_model.ope_value
         try:
