@@ -11,6 +11,7 @@ from channels.generic.websocket import WebsocketConsumer
 
 from PyAutoTest.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
 from PyAutoTest.auto_test.auto_system.service.socket_link.socket_user import SocketUser
+from PyAutoTest.auto_test.auto_user.models import User
 from PyAutoTest.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from PyAutoTest.exceptions import *
 from PyAutoTest.models.socket_model import SocketDataModel, QueueModel
@@ -33,26 +34,31 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         self.user = self.scope.get('query_string').decode()
-        self.accept()
-        if self.scope.get('path') == SocketEnum.WEB_PATH.value:
-            SocketUser.set_user_web_obj(self.user, self)
-            self.inside_send(f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
-        elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
-            if self.user == SocketEnum.ADMIN.value:
-                self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
-            else:
-                self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
-                try:
-                    self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
-                                     is_notice=ClientTypeEnum.WEB.value)
-
-                except SystemEError:
-                    self.inside_send(
-                        f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
-            SocketUser.set_user_client_obj(self.user, self)
-
+        try:
+            User.objects.get(username=self.user)
+            self.accept()
+        except User.DoesNotExist:
+            self.close()
         else:
-            log.system.error('请使用正确的链接域名访问！')
+            if self.scope.get('path') == SocketEnum.WEB_PATH.value:
+                SocketUser.set_user_web_obj(self.user, self)
+                self.inside_send(f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
+            elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
+                if self.user == SocketEnum.ADMIN.value:
+                    self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
+                else:
+                    self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
+                    try:
+                        self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
+                                         is_notice=ClientTypeEnum.WEB.value)
+
+                    except SystemEError:
+                        self.inside_send(
+                            f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
+                SocketUser.set_user_client_obj(self.user, self)
+
+            else:
+                log.system.error('请使用正确的链接域名访问！')
 
     def websocket_receive(self, message):
         """
