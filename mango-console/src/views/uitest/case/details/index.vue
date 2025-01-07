@@ -364,7 +364,7 @@
     deleteUiCaseStepsDetailed,
   } from '@/api/uitest/case-steps-detailed'
   import { getUserProductAllModuleName } from '@/api/system/product'
-  import { putUiCase } from '@/api/uitest/case'
+  import { putUiCase, getUiCaseRun } from '@/api/uitest/case'
   import {
     getUiPageStepsDetailedOpe,
     getUiPageStepsDetailedAss,
@@ -572,7 +572,7 @@
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsTest(route.query.id, userStore.selected_environment)
+    getUiCaseRun(route.query.id, userStore.selected_environment)
       .then((res) => {
         Message.loading(res.msg)
       })
