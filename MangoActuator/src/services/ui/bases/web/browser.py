@@ -11,7 +11,7 @@ from playwright.async_api import Locator
 
 from src.exceptions import UiError, ERROR_MSG_0013, ERROR_MSG_0049, ERROR_MSG_0058
 from src.services.ui.bases.base_data import BaseData
-from src.tools import InitPath
+from src.tools import project_dir
 
 
 class PlaywrightBrowser(BaseData):
@@ -67,5 +67,5 @@ class PlaywrightBrowser(BaseData):
 
     async def w_get_cookie(self):
         """测试-获取storage_state保存到logs目录"""
-        with open(f'{InitPath.logs_dir}/storage_state.json', 'w') as file:
+        with open(f'{project_dir.download()}/storage_state.json', 'w') as file:
             file.write(json.dumps(await self.context.storage_state()))

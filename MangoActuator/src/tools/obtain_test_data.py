@@ -10,7 +10,7 @@ from mangokit import DataProcessor, ObtainRandomData
 
 from src.exceptions import ToolsError, ERROR_MSG_0026
 from src.network import HTTP
-from src.tools import InitPath
+from src.tools import project_dir
 
 
 class ObtainTestData(DataProcessor):
@@ -23,7 +23,7 @@ class ObtainTestData(DataProcessor):
         """传入文件名称，返回文件"""
         file_name = kwargs.get('data')
         HTTP.not_auth.download_file(file_name)
-        file_path = os.path.join(InitPath.upload_files, file_name)
+        file_path = os.path.join(project_dir.upload(), file_name)
         if os.path.exists(file_path):
             return file_path
         else:

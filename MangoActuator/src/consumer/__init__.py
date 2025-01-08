@@ -50,12 +50,12 @@ class SocketConsumer(UI, API, Perf, Tools):
             log.error(f"反射任务执行出现异常：{e}")
 
     async def test(self):
-        from src.tools import InitPath
+        from src.tools import project_dir
         from src.consumer.ui import UI
-        with open(fr'{InitPath.logs_dir}\user_config.json', 'r', encoding='utf-8') as f:
+        with open(fr'{project_dir.root_path()}tests\user_config.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             UserModel(**out)
-        with open(fr'{InitPath.logs_dir}\test.json', 'r', encoding='utf-8') as f:
+        with open(fr'{project_dir.root_path()}\test.json', 'r', encoding='utf-8') as f:
             out = json.load(f)
             if out.get('func_name'):
                 await getattr(self, out['func_name'])(out['func_args'])

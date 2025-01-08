@@ -2,56 +2,69 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-03-05 20:39
 # @Author : 毛鹏
+
 import os
 
 import sys
 
 
-class InitPath:
-    file = ['log', 'screenshot', 'upload_files', 'videos']
-    current_directory = os.path.abspath(__file__)
-    project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
-    current_dir2 = os.path.dirname(sys.executable)
-    if 'python.exe' not in sys.executable:
-        project_root_directory = current_dir2
-    logs_dir = os.path.join(project_root_directory, "logs")
-    if not os.path.exists(logs_dir):
-        os.makedirs(logs_dir)
-    cache = os.path.join(project_root_directory, "cache")
-    if not os.path.exists(cache):
-        os.makedirs(cache)
-    for i in file:
-        subdirectory = os.path.join(logs_dir, i)
-        if not os.path.exists(subdirectory):
-            os.makedirs(subdirectory)
+class ProjectDir:
 
-    log_dir = os.path.join(logs_dir, "log")
-    failure_screenshot_file = os.path.join(logs_dir, "screenshot")
-    upload_files = os.path.join(logs_dir, 'upload_files')
-    videos = os.path.join(logs_dir, 'videos')
+    def __init__(self):
+        self.folder_list = ['logs', 'cache', 'screenshot', 'upload', 'videos', 'download']
+        self._root_path = self.init_project_path()
+        self.init_folder()
 
-    @classmethod
-    def cache_path(cls):
-        return os.path.join(cls.cache, 'cache.db')
+    @staticmethod
+    def init_project_path():
+        current_directory = os.path.abspath(__file__)
+        project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
+        current_dir2 = os.path.dirname(sys.executable)
+        if 'python.exe' not in sys.executable:
+            project_root_directory = current_dir2
+        return project_root_directory
 
-    @classmethod
-    def get_root_path(cls):
+    def init_folder(self):
+        for i in self.folder_list:
+            subdirectory = os.path.join(self._root_path, i)
+            if not os.path.exists(subdirectory):
+                os.makedirs(subdirectory)
+
+    def root_path(self):
         if getattr(sys, 'frozen', False):
-            # 如果是打包后的应用
             return sys._MEIPASS
         else:
-            # 如果是源码运行
-            return InitPath.project_root_directory
+            return self._root_path
+
+    def cache_file(self):
+        return os.path.join(self.cache(), 'cache.db')
+
+    def cache(self):
+        return os.path.join(self.root_path(), 'cache')
+
+    def logs(self, folder_name='logs'):
+        return os.path.join(self.root_path(), folder_name)
+
+    def screenshot(self, folder_name='screenshot'):
+        return os.path.join(self.root_path(), folder_name)
+
+    def upload(self, folder_name='upload'):
+        return os.path.join(self.root_path(), folder_name)
+
+    def download(self, folder_name='download'):
+        return os.path.join(self.root_path(), folder_name)
+
+    def videos(self, folder_name='videos'):
+        return os.path.join(self.root_path(), folder_name)
 
 
+project_dir = ProjectDir()
 if __name__ == '__main__':
-    print(InitPath.project_root_directory)
-    print(InitPath.get_root_path())
-    print(InitPath.current_dir2)
-    print(InitPath.logs_dir)
-    print(InitPath.cache)
-    print(InitPath.log_dir)
-    print(InitPath.failure_screenshot_file)
-    print(InitPath.upload_files)
-    print(InitPath.videos)
-    print(InitPath.cache_path())
+    print(project_dir.root_path())
+    print(project_dir.logs())
+    print(project_dir.cache())
+    print(project_dir.screenshot())
+    print(project_dir.upload())
+    print(project_dir.videos())
+    print(project_dir.cache_file())
+    print(project_dir.cache())

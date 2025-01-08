@@ -7,7 +7,7 @@ import sqlite3
 
 from mangokit import SQLiteConnect
 
-from src.tools import InitPath
+from src.tools import project_dir
 
 sql_statement_1 = 'SELECT * FROM user_info;'
 sql_statement_2 = f'INSERT INTO "user_info" ("username", "password", "ip", "port") VALUES (?, ?, ?, ?);'
@@ -23,7 +23,7 @@ CREATE TABLE "user_info" (
 );
 '''
 
-db_handler = SQLiteConnect(InitPath.cache_path())
+db_handler = SQLiteConnect(project_dir.cache_file())
 for i in [create_table_query2]:
     try:
         db_handler.execute(i)
@@ -31,5 +31,5 @@ for i in [create_table_query2]:
         pass
 
 if __name__ == '__main__':
-    db_handler = SQLiteConnect(InitPath.cache_path())
+    db_handler = SQLiteConnect(project_dir.cache_file())
     print(db_handler.execute(sql_statement_1))

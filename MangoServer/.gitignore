@@ -3,7 +3,7 @@
 *.pyc
 *.log
 .logs/*
-logs/*
-files/*
+logs/
+files/
 db.sqlite3
 PyAutoTest/settings/database.json

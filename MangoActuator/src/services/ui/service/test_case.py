@@ -19,7 +19,7 @@ from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultMod
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.page_steps import PageSteps
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
@@ -53,7 +53,7 @@ class TestCase(PageSteps):
         await self.base_close()
         if self.driver_object.web.config and self.driver_object.web.config.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_time_for_min()}.webm'
-            shutil.move(self.case_result.video_path, os.path.join(f'{InitPath.videos}/', video_path))
+            shutil.move(self.case_result.video_path, os.path.join(f'{project_dir.videos()}/', video_path))
             self.case_result.video_path = video_path
 
     async def case_init(self):

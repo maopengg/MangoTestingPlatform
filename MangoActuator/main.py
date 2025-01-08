@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QApplication
 from mangokit import Mango
 
 from src.pages.login.login_window import LoginLogic
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.log_collector import log
 
 os.environ["QT_FONT_DPI"] = "96"
@@ -23,7 +23,7 @@ os.environ["QT_FONT_DPI"] = "96"
 
 async def main():
     try:
-        InitPath()
+        project_dir.cache_file()
         await asyncio.sleep(0)
         app = QApplication([])
         login_window = LoginLogic(Mango.t())

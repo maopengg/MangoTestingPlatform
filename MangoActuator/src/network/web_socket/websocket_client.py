@@ -16,7 +16,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.settings import settings
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.log_collector import log
 
 T = TypeVar('T')
@@ -140,7 +140,7 @@ class WebSocketClient:
             if out['data']:
                 log.debug(f"SOCKET接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
                 if settings.IS_DEBUG:
-                    with open(fr'{InitPath.logs_dir}\test.json', 'w', encoding='utf-8') as f:
+                    with open(fr'{project_dir.root_path()}\tests\test.json', 'w', encoding='utf-8') as f:
                         f.write(json.dumps(out['data'], ensure_ascii=False))
             return SocketDataModel(**out)
         except json.decoder.JSONDecodeError:
