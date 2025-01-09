@@ -41,6 +41,7 @@ def error_response(app: str):
                     username = request.user.get('username')
                 except AttributeError:
                     username = None
+                traceback.format_exc()
                 trace = traceback.format_exc()
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
                 content = f"""
