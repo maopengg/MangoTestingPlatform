@@ -14,7 +14,7 @@ from src.network import HTTP
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
 from src.settings import settings
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
@@ -250,7 +250,7 @@ class ElementOperation(WebDevice, AndroidDriver):
         )
         if self.element_test_result:
             file_name = f'失败截图-{self.element_model.name}{self.test_data.get_time_for_min()}.jpg'
-            file_path = rf"{InitPath.failure_screenshot_file}/{file_name}"
+            file_path = rf"{project_dir.screenshot()}/{file_name}"
             self.element_test_result.picture_path = f'files/{file_name}'
             await self.__error_screenshot(file_path, file_name)
 

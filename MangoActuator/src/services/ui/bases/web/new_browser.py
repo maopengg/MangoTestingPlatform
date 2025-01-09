@@ -29,7 +29,7 @@ from src.models.ui_model import EquipmentModel
 from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 
 """
@@ -97,7 +97,7 @@ class NewBrowser:
         }
 
         if self.config.web_recording:
-            args_dict['record_video_dir'] = f'{InitPath.videos}'
+            args_dict['record_video_dir'] = f'{project_dir.videos()}'
 
         if self.config.web_h5:
             del args_dict['no_viewport']

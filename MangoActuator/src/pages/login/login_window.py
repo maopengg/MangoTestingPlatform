@@ -12,7 +12,7 @@ from src.network import HTTP
 from src.pages.login.login import LoginWindow
 from src.pages.window.mian_window import MainWindow
 from src.settings import settings
-from src.tools import InitPath
+from src.tools import project_dir
 from src.tools.methods import Methods
 from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from .login_dict import form_data
@@ -30,7 +30,7 @@ class LoginLogic(LoginWindow):
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         self.main_window = None
-        self.conn = SQLiteConnect(InitPath.cache_path())
+        self.conn = SQLiteConnect(project_dir.cache_file())
         user_info = self.conn.execute(sql_statement_1)
         if user_info:
             self.ip_edit.setText(user_info[0].get("ip"))

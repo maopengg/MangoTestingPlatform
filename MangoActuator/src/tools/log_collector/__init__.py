@@ -6,6 +6,6 @@
 from mangokit import set_log
 
 from src.settings.settings import IS_DEBUG
-from src.tools import InitPath
+from src.tools import project_dir
 
-log = set_log(InitPath.log_dir, IS_DEBUG)
+log = set_log(project_dir.logs(), IS_DEBUG)

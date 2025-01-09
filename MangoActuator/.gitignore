@@ -7,4 +7,9 @@ dist/
 logs/
 cache/
 venv/
+screenshot/
+upload/
+videos/
+download/
+tests/*.json
 report/
