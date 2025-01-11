@@ -1,5 +1,5 @@
 # Dockerfile for Vue 3 with Nginx
-FROM node:18 as build-stage
+FROM node:16.13.1 as build-stage
 
 # 设置工作目录
 WORKDIR /app
@@ -14,10 +14,10 @@ RUN npm install
 COPY . .
 
 # 构建项目
-RUN npm run build
+RUN npm run build:prod
 
 # 使用 Nginx 作为生产服务器
-FROM nginx:alpine as production-stage
+FROM nginx:stable-alpine3.20-perl as production-stage
 
 # 复制构建好的文件到 Nginx 的默认静态文件目录
 COPY --from=build-stage /app/dist /usr/share/nginx/html

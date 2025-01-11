@@ -1,32 +1,73 @@
-version: '3.8'
+version: '4.6.0'
 
 services:
   db:
     image: mysql:8.0.40-debian
     environment:
-      MYSQL_ROOT_PASSWORD: mP123456&  # 设置 MySQL root 密码
-      MYSQL_DATABASE: mango_server       # 创建数据库
-      MYSQL_USER: user                   # 创建用户
-      MYSQL_PASSWORD: mP123456&          # 设置用户密码
+      MYSQL_ROOT_PASSWORD: mP123456&
+      MYSQL_DATABASE: mango_server
+      MYSQL_USER: user
+      MYSQL_PASSWORD: mP123456&
     ports:
-      - "3306:3306"                      # 映射端口
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmP123456&" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+      - app_network
 
-  service:
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z.fips
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: mP123456
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    networks:
+        - app_network
+
+
+  mango_server:
     build:
-      context: ./MangoServer             # Django 项目目录
-      dockerfile: Dockerfile              # Dockerfile 文件名
+      context: ./MangoServer
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       - DJANGO_SETTINGS_MODULE=PyAutoTest.settings
+    networks:
+      - app_network
 
-  frontend:
+  mango-console:
     build:
-      context: ./mango-console           # Vue 3 项目目录
-      dockerfile: Dockerfile              # Dockerfile 文件名
+      context: ./mango-console
+      dockerfile: Dockerfile
     ports:
-      - "8080:8080"                       # 映射前端服务端口
+      - "8001:80"
     environment:
-      - NODE_ENV=production               # 设置环境变量
+      - NODE_ENV=production
+    networks:
+      - app_network
+
+volumes:
+  minio_data:
+
+networks:
+  app_network:
+    driver: bridge
