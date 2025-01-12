@@ -1,5 +1,4 @@
 import json
-import os
 
 from mango_ui import AppConfig, MenusModel
 
@@ -28,8 +27,8 @@ PORT = None
 USERNAME = None
 PASSWORD = None
 
-with open(os.path.join(project_dir.root_path(), 'src', 'settings', 'settings.json'), "r", encoding='utf-8') as f:
+with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
     STYLE = AppConfig(**json.loads(f.read()))
 
-with open(os.path.join(project_dir.root_path(), 'src', 'settings', 'menus.json'), "r", encoding='utf-8') as f:
+with open(project_dir.resource_path('src/settings/menus.json'), "r", encoding='utf-8') as f:
     MENUS = MenusModel(**json.loads(f.read()))
