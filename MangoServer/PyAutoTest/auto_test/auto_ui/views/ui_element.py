@@ -3,7 +3,7 @@
 # @Description:
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
-# import pandas as pd
+import pandas as pd
 from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
