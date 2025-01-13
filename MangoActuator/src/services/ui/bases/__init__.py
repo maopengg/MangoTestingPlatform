@@ -157,6 +157,8 @@ class ElementOperation(WebDevice, AndroidDriver):
             func_doc = getattr(self, self.element_model.ope_key).__doc__
         except AttributeError:
             raise UiError(*ERROR_MSG_0048)
+        except TypeError:
+            raise UiError(*ERROR_MSG_0051)
         try:
             for key, value in self.element_model.ope_value.items():
                 if key == 'locating':
