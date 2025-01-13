@@ -30,9 +30,16 @@ class ProjectDir:
             if not os.path.exists(subdirectory):
                 os.makedirs(subdirectory)
 
+    def resource_path(self, relative_path):
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            base_path = self.root_path()
+        return os.path.join(base_path, relative_path)
+
     def root_path(self):
         if getattr(sys, 'frozen', False):
-            return sys._MEIPASS
+            return os.path.dirname(sys.executable)
         else:
             return self._root_path
 
