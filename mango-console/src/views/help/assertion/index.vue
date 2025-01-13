@@ -8,9 +8,9 @@
         :body-style="{ padding: '10px' }"
         :bordered="false"
         v-for="item of randomList"
-        :key="item.label"
+        :key="item.title"
       >
-        <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
+        <a-descriptions :column="3" :title="item.title" :data="item.func_list" :bordered="true" />
       </a-card>
     </a-space>
   </a-card>
