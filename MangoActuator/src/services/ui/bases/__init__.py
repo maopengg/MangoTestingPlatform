@@ -159,6 +159,8 @@ class ElementOperation(WebDevice, AndroidDriver):
             raise UiError(*ERROR_MSG_0048)
         except TypeError:
             raise UiError(*ERROR_MSG_0051)
+        if self.element_model.ope_value is None:
+            raise UiError(*ERROR_MSG_0054)
         try:
             for key, value in self.element_model.ope_value.items():
                 if key == 'locating':
@@ -173,6 +175,8 @@ class ElementOperation(WebDevice, AndroidDriver):
         await self.action_element()
 
     async def __ass(self):
+        if self.element_model.ope_value is None:
+            raise UiError(*ERROR_MSG_0053)
         for key, expect in self.element_model.ope_value.items():
             if key == 'actual' and self.element_model.loc:
                 self.element_model.ope_value[key] = await self.__find_element()

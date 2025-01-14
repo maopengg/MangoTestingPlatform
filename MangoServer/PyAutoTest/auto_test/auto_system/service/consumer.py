@@ -4,7 +4,7 @@
 # @Time   : 2024-11-23 22:49
 # @Author : 毛鹏
 import traceback
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 import time
 from django.db import connection, close_old_connections
@@ -20,6 +20,7 @@ from PyAutoTest.enums.tools_enum import TaskEnum, AutoTestTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.api_model import ApiCaseModel
 from PyAutoTest.tools.log_collector import log
+from mangokit import Mango
 
 
 class ConsumerThread:
@@ -66,21 +67,7 @@ class ConsumerThread:
             except Exception as error:
                 log.system.error(error)
                 trace = traceback.format_exc()
-                content = f"""
-                   芒果测试平台管理员请注意查收:
-                       触发时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-                       错误函数：run_tests
-                       异常类型: {type(error)}
-                       错误提示: {str(error)}
-                       错误详情：{trace}
-    
-                   **********************************
-                   详细情况可前往芒果测试平台查看，非相关负责人员可忽略此消息。谢谢！
-    
-                                                                 -----------芒果测试平台
-                   """
-                from mangokit import Mango
-                Mango.s(content)
+                Mango.s(self.consumer, error, trace, )
 
     def ui(self, environment_error, test_suite, test_suite_details):
         try:
@@ -210,4 +197,5 @@ class ConsumerThread:
         test_suite_details.error_message = f'发生未知异常，请联系管理员处理，类型：{AutoTestTypeEnum.get_value(test_suite.type)}，异常内容：{error}'
         test_suite.save()
         from mangokit import Mango
-        Mango.s(f"""异常类型: {type(error)}错误提示: {str(error)}错误详情：{trace}""")
+        log.api.error(f'API执行报错：{trace}')
+        Mango.s(self.error, error, trace)
