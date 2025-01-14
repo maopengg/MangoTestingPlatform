@@ -13,7 +13,7 @@ from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
 from .views.test_suite import TestSuiteCRUD
 from .views.test_suite_details import TestSuiteDetailsCRUD, TestSuiteDetailsViews
 from ..auto_system.views.database import DatabaseCRUD, DatabaseViews
-from ..auto_system.views.file_data import FileDataCRUD
+from ..auto_system.views.file_data import FileDataCRUD, FileDataViews
 from ..auto_system.views.index import IndexViews
 from ..auto_system.views.notice_config import NoticeConfigCRUD, NoticeConfigViews
 from ..auto_system.views.product_module import ProductModuleViews, ProductModuleCRUD
@@ -33,6 +33,7 @@ urlpatterns = [
     path('database/status', DatabaseViews.as_view({'put': 'put_status'})),
     #
     path('file', FileDataCRUD.as_view()),
+    path('file/upload', FileDataViews.as_view({'post': 'post_upload'})),
     #
     path('time', TimeTasksCRUD.as_view()),
     path('time/name', TimeTasksViews.as_view({'get': 'get_time_obj_name'})),

@@ -61,7 +61,7 @@ class IndexViews(ViewSet):
                             COUNT(YEARWEEK(create_time)) AS total_count
                         FROM test_suite_details
                         WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
-                            AND type = 1
+                        AND type = 1
                         GROUP BY YEARWEEK(create_time)
                     ) api_counts ON weeks.yearweek = api_counts.yearweek
                     ORDER BY weeks.yearweek;

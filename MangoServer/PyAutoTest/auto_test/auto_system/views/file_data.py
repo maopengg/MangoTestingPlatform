@@ -6,6 +6,7 @@
 import json
 
 from rest_framework import serializers
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
@@ -13,8 +14,9 @@ from PyAutoTest.auto_test.auto_system.models import FileData, ProjectProduct
 from PyAutoTest.auto_test.auto_system.views.project import ProjectSerializers
 from PyAutoTest.tools.decorator.error_response import error_response
 from PyAutoTest.tools.log_collector import log
-from PyAutoTest.tools.view import *
 from PyAutoTest.tools.view.model_crud import ModelCRUD
+from PyAutoTest.tools.view.response_data import ResponseData
+from PyAutoTest.tools.view.response_msg import *
 
 
 class FileDataSerializers(serializers.ModelSerializer):
@@ -75,3 +77,29 @@ class FileDataCRUD(ModelCRUD):
 class FileDataViews(ViewSet):
     model = FileData
     serializer_class = FileDataSerializers
+
+    @error_response('system')
+    @action(methods=['POST'], detail=False)
+    def post_upload(self, request: Request):
+        """
+        上传文件
+        @param request:
+        @return:
+        """
+        # 获取上传的文件
+        uploaded_file = request.FILES.get('file')
+        print(uploaded_file)
+        project_id = request.data.get('project_id')
+        file_type = request.data.get('type')
+        file_name = request.data.get('name')
+        file_price = request.data.get('price')
+
+        file_data = FileData(
+            project_id=project_id,
+            type=file_type,
+            name=file_name,
+            price=file_price,
+            file=uploaded_file
+        )
+        file_data.save()
+        return ResponseData.success(RESPONSE_MSG_0031, self.serializer_class(file_data).data)
