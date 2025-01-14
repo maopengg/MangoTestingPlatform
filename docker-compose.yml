@@ -10,6 +10,8 @@ services:
       MYSQL_PASSWORD: mP123456&
     ports:
       - "3306:3306"
+    volumes:
+      - ./mango/mysql:/var/lib/mysql
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmP123456&" ]
       interval: 5s
@@ -27,7 +29,7 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: mP123456
     volumes:
-      - minio_data:/data
+      - ./mango/minio:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
@@ -64,9 +66,6 @@ services:
       - NODE_ENV=production
     networks:
       - app_network
-
-volumes:
-  minio_data:
 
 networks:
   app_network:
