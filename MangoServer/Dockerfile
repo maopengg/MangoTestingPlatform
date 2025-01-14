@@ -14,7 +14,7 @@ RUN apk add --no-cache gcc musl-dev python3-dev linux-headers
 COPY requirements.txt .
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip install --no-cache-dir --user -r requirements.txt -i http://mirrors.aliyun.com/pypi/simple/
 
 # 复制项目文件
 COPY . .
