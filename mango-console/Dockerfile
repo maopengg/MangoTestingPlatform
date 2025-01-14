@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm config set registry https://registry.npmmirror.com/
 RUN npm install
 COPY . .
-RUN npm run build:master
+RUN npm run build:prod
 
 FROM nginx:stable-alpine3.20-perl as production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
