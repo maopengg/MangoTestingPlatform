@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
-    'storages',
+    # 'storages',
 ]
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
