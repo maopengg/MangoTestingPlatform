@@ -63,10 +63,11 @@ class NewBrowser:
             page = await self.new_page(context)
             return context, page
         except Exception as error:
+            self.browser = None
             trace = traceback.format_exc()
             log.error(f'创建浏览器时报错：{trace}')
             Mango.s(self.new_web_page, error, trace, config=self.config.model_dump_json())
-            if count >= 1:
+            if count >= 3:
                 raise UiError(*ERROR_MSG_0057)
             else:
                 await self.new_web_page(count=count + 1)
