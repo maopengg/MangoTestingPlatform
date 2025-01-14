@@ -13,4 +13,4 @@ COPY --from=builder /root/.local/lib/python3.10/site-packages /usr/local/lib/pyt
 COPY --from=builder /app /app
 EXPOSE 8000
 ENV DJANGO_SETTINGS_MODULE=PyAutoTest.settings
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--env=prod"]
