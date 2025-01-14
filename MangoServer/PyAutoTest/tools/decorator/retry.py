@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-03-14 10:03
 # @Author : 毛鹏
+import traceback
 
 import time
 from django.db import connection, close_old_connections
@@ -17,11 +18,13 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
         def wrapper(*args, **kwargs):
             try_count = 0
             error = None
+            trace = None
             while try_count < max_retries:
                 try:
                     return func(*args, **kwargs)
                 except Error as error:
                     error = error
+                    trace = traceback.print_exc()
                     log.system.error(f'重试失败: 函数：{func_name}, 错误提示：{error}')
                     close_old_connections()
                     connection.ensure_connection()
@@ -29,8 +32,7 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
                     time.sleep(delay)  # 等待一段时间后重试
             else:
                 if error is not None:
-                    Mango.s(
-                        f'重试失败超过最大限制，函数：{func_name}，错误类型：{type(error)} 错误提示：{error}，失败数据：{args, kwargs}')
+                    Mango.s(func, error, trace, args, kwargs)
 
         return wrapper
 

@@ -12,9 +12,11 @@ import asyncio
 import ctypes
 import os
 import string
+import traceback
 from typing import Optional
 from urllib import parse
 
+from mangokit import Mango
 from playwright._impl._errors import Error
 from playwright.async_api import async_playwright, Page, BrowserContext, Browser, Playwright
 from playwright.async_api._generated import Request
@@ -48,7 +50,7 @@ class NewBrowser:
         self.browser: Optional[None | Browser] = None
         self.playwright: Optional[None | Playwright] = None
 
-    async def new_web_page(self) -> tuple[BrowserContext, Page]:
+    async def new_web_page(self, count=0) -> tuple[BrowserContext, Page]:
         if self.config is None:
             raise UiError(*ERROR_MSG_0042)
         if self.browser is None:
@@ -56,9 +58,19 @@ class NewBrowser:
                 if self.browser is None:
                     self.browser = await self.new_browser()
                     await asyncio.sleep(1)
-        context = await self.new_context()
-        page = await self.new_page(context)
-        return context, page
+        try:
+            context = await self.new_context()
+            page = await self.new_page(context)
+            return context, page
+        except Exception as error:
+            self.browser = None
+            trace = traceback.format_exc()
+            log.error(f'创建浏览器时报错：{trace}')
+            Mango.s(self.new_web_page, error, trace, config=self.config.model_dump_json())
+            if count >= 3:
+                raise UiError(*ERROR_MSG_0057)
+            else:
+                await self.new_web_page(count=count + 1)
 
     async def new_browser(self) -> Browser:
         self.playwright = await async_playwright().start()
