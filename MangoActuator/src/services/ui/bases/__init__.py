@@ -6,6 +6,7 @@ import traceback
 
 from mangokit import MangoKitError
 from playwright._impl._errors import TargetClosedError, Error, TimeoutError
+
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementOperationEnum, DriveTypeEnum
 from src.exceptions import *
@@ -13,7 +14,6 @@ from src.models.ui_model import ElementResultModel, ElementModel
 from src.network import HTTP
 from src.services.ui.bases.android import AndroidDriver
 from src.services.ui.bases.web import WebDevice
-from src.settings import settings
 from src.tools import project_dir
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
@@ -280,4 +280,4 @@ class ElementOperation(WebDevice, AndroidDriver):
                 pass
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
-        HTTP.not_auth.upload_file(self.project_product_id, file_path, file_name)
+        HTTP.not_auth.upload_file(file_path, file_name)

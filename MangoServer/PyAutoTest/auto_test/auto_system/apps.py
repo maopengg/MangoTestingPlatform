@@ -81,5 +81,8 @@ class AutoSystemConfig(AppConfig):
         self.system_task.start()
 
     def shutdown(self):
-        self.consumer_thread.stop()
-        self.system_task.join()
+        try:
+            self.consumer_thread.stop()
+            self.system_task.join()
+        except AttributeError:
+            pass

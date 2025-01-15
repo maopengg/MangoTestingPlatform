@@ -17,11 +17,18 @@ MYSQL_IP = 'db'
 MYSQL_PORT = 3306
 
 # ************************ DEBUG配置 ************************ #
-DEBUG = True
+DEBUG = False
 
 # ************************ REDIS配置 ************************ #
 
 REDIS = False
+# ************************ Minio配置 ************************ #
+MINIO_STORAGE_ENDPOINT = 'localhost:9000'
+MINIO_STORAGE_ACCESS_KEY = 'HpApeT5FMen6nKyjCyep'
+MINIO_STORAGE_SECRET_KEY = 'uPh0fLlWnRFHnPOEgsGFhFm0tx8wvcFfb0Os2xPt'
+MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
+MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango'  # 桶名称
+MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = False

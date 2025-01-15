@@ -7,7 +7,6 @@
         </div>
         <a-upload @before-upload="beforeUpload" :show-file-list="false" />
       </a-space>
-      <span> 注意：上传文件时必须要选择项目后才能进行上传 </span>
 
       <a-tabs />
       <a-table
@@ -31,9 +30,6 @@
           >
             <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
               {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'project'" #cell="{ record }">
-              {{ record.project?.name }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button

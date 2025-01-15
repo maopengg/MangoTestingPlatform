@@ -21,6 +21,15 @@ elif DJANGO_ENV == SystemEnvEnum.MASTER.value:
 else:
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
+if DEBUG:
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MINIO_STORAGE_ENDPOINT = None
+    MINIO_STORAGE_ACCESS_KEY = None
+    MINIO_STORAGE_SECRET_KEY = None
+else:
+    DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
+
+
 nuw_dir()
 
 USE_TZ = False
@@ -45,9 +54,8 @@ INSTALLED_APPS = [
     'rest_framework',  # 前后端分离
     'corsheaders',  # 跨域
     'channels',  # 验证
-    # 'storages',
+    'minio_storage',
 ]
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

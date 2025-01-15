@@ -18,14 +18,13 @@ def ensure_path_sep(path: str) -> str:
 
 
 def nuw_dir():
-    files = ensure_path_sep('/files')
-    if not os.path.exists(files):
-        os.makedirs(files)
-    file = ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user']
+    for i in ['/logs', '/test_file', '/failed_screenshot', '/upload_template']:
+        file = ensure_path_sep(i)
+        if not os.path.exists(file):
+            os.makedirs(file)
+
     logs_dir = ensure_path_sep('/logs')
-    if not os.path.exists(logs_dir):
-        os.makedirs(logs_dir)
-    for i in file:
+    for i in ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user']:
         subdirectory = os.path.join(logs_dir, i)
         if not os.path.exists(subdirectory):
             os.makedirs(subdirectory)

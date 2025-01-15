@@ -46,7 +46,7 @@ class TestFilePage(TableParent):
             file_size = os.path.getsize(file_name)
             file_name_only = os.path.basename(file_name)
             files = [
-                ('file', (file_name_only, open(file_name, 'rb'), 'application/octet-stream'))  # 根据文件类型设置 MIME 类型
+                ('test_file', (file_name_only, open(file_name, 'rb'), 'application/octet-stream'))  # 根据文件类型设置 MIME 类型
             ]
             response = self.post({
                 'type': 0,

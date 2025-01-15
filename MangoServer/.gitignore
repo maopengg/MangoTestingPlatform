@@ -4,6 +4,6 @@
 *.log
 .logs/*
 logs/
-files/
-db.sqlite3
+test_file/
+failed_screenshot/
 PyAutoTest/settings/database.json
