@@ -40,7 +40,7 @@
   import useUserStore from '@/store/modules/user'
   import { useRouter } from 'vue-router'
   import { websocket } from '@/utils/socket'
-  import {baseURL, minioURL, webSocketURL} from '@/api/axios.config'
+  import { minioURL, webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
 
   const userStore = useUserStore()
