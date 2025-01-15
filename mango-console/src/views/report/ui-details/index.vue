@@ -15,8 +15,7 @@
           <p>执行时间：{{ pageData.record.create_time }}</p>
           <p>当前状态：{{ enumStore.task_status[pageData.record.status].title }}</p>
         </a-space>
-        <a-space direction="vertical" style="width: 42%">
-        </a-space>
+        <a-space direction="vertical" style="width: 42%" />
         <a-space size="large" v-for="item of data.summary" :key="item.name" style="width: 7%">
           <a-statistic :title="item.name" :value="item.value" show-group-separator />
         </a-space>
@@ -30,8 +29,12 @@
             <template #header>
               <a-tree blockNode ref="childRef" :data="data.treeData" @select="(key) => click(key)">
                 <template #icon="{ node }">
-                  <template v-if="node.status === 1"> <icon-check /> </template>
-                  <template v-else> <icon-close /> </template>
+                  <template v-if="node.status === 1">
+                    <icon-check />
+                  </template>
+                  <template v-else>
+                    <icon-close />
+                  </template>
                 </template>
                 <template #title="{ title }">
                   <div>
@@ -82,7 +85,7 @@
                   <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
                   <div v-if="item.status === 0">
                     <a-image
-                      :src="baseURL + '/' + item.picture_path"
+                      :src="minioURL + '/failed_screenshot/' + item.picture_path"
                       title="失败截图"
                       width="260"
                       style="margin-right: 67px; vertical-align: top"
@@ -123,15 +126,16 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { reactive, onMounted, nextTick, ref } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
   import {
     getUiPageStepsDetailedAss,
     getUiPageStepsDetailedOpe,
   } from '@/api/uitest/page-steps-detailed'
   import { getSystemTestSuiteDetails } from '@/api/system/test_sute_details'
-  import { baseURL } from '@/api/axios.config'
+  import { minioURL } from '@/api/axios.config'
   import { useEnum } from '@/store/modules/get-enum'
+
   const childRef: any = ref(null)
   const enumStore = useEnum()
 
@@ -220,6 +224,7 @@
       })
       .catch(console.log)
   }
+
   function getNodeTitle(title: string) {
     for (const item of data.treeData) {
       if (item.title == title && item.error_msg) {
@@ -228,6 +233,7 @@
     }
     return title
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
@@ -285,6 +291,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
   p {
     display: -webkit-box;
     -webkit-line-clamp: 3;

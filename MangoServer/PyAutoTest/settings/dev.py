@@ -13,7 +13,7 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '127.0.0.1'
+MYSQL_IP = 'db'
 
 # ************************ DEBUG配置 ************************ #
 DEBUG = False
@@ -22,26 +22,15 @@ DEBUG = False
 
 REDIS = False
 # ************************ Minio配置 ************************ #
-IS_MINIO = True
-MINIO_IP = '127.0.0.1'
-MINIO_PORT = 9000
-
+MINIO_STORAGE_ENDPOINT = 'minio:9000'
+MINIO_STORAGE_ACCESS_KEY = 'MCIK0dsiAFwgjthxlTdA'
+MINIO_STORAGE_SECRET_KEY = '0rx2pFV3bc5q7q0hj7c66bRlcVhozKbv5E05Tqkx'
+MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
+MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
+MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True
-
-# settings.py
-
-# 使用 django-storages 的 S3 后端
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-# MinIO 配置
-AWS_ACCESS_KEY_ID = 'kGio1ain4dleEQwymPl5'  # MinIO 的 Access Key
-AWS_SECRET_ACCESS_KEY = 'lc5YVRRl3ShbPKzDgCPGQnJjxKpKnmEuW2tz9scq'  # MinIO 的 Secret Key
-AWS_STORAGE_BUCKET_NAME = 'mango'  # MinIO 存储桶名称
-AWS_S3_ENDPOINT_URL = 'http://127.0.0.1:9000'  # MinIO 服务器的地址
-AWS_S3_USE_SSL = False  # 如果 MinIO 使用 HTTP 而不是 HTTPS，设置为 False
-AWS_S3_FILE_OVERWRITE = True  # 如果不想覆盖同名文件，设置为 False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
 # file_name = 'PyAutoTest/settings/database.json'
