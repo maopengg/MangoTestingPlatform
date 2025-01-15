@@ -40,7 +40,6 @@ class ModelCRUD(GenericAPIView):
             project_product = ProjectProduct.objects.filter(project_id=project_id)
             if project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
-
         if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']

@@ -166,6 +166,13 @@ class FileData(models.Model):
     class Meta:
         db_table = 'file_data'
 
+    def delete(self, *args, **kwargs):
+        if self.test_file:
+            self.test_file.delete()
+        if self.failed_screenshot:
+            self.failed_screenshot.delete()
+        super().delete(*args, **kwargs)
+
 
 class TimeTasks(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)

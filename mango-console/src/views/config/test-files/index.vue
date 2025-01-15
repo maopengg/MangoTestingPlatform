@@ -104,21 +104,15 @@
   }
 
   const beforeUpload = (file: any) => {
-    if (!projectInfo.selectValue) {
-      Message.error('请先选择项目，再进行上传文件')
-      return
-    }
     return new Promise((resolve, reject) => {
       Modal.confirm({
         title: '上传文件',
         content: `确认上传：${file.name}`,
         onOk: () => {
           const formData = new FormData()
-          formData.append('file', file)
+          formData.append('test_file', file)
           formData.append('type', '0')
-          formData.append('price', file.size)
           formData.append('name', file.name)
-          formData.append('project', projectInfo.selectValue)
           postUserFile(formData)
             .then((res) => {
               Message.success(res.msg)
