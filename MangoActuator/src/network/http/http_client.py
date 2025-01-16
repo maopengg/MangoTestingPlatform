@@ -3,31 +3,27 @@
 # @Description: # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
-import os
-from urllib.parse import urljoin
 
 from mangokit import requests
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
+from src.settings.settings import file_path
 from src.tools import project_dir
 from src.tools.log_collector import log
-from src.settings.settings import IS_MINIO
+
 
 class HttpClientApi(HttpBase):
     @classmethod
     def download_file(cls, file_name):
-        if IS_MINIO:
-            pass
-        else:
-            response = requests.get(urljoin(cls.get_host(), f'test_file/{file_name}'), cls.headers)
-            file_path = project_dir.upload()
-            try:
-                with open(fr'{file_path}\{file_name}', 'wb') as f:
-                    f.write(response.content)
-            except FileNotFoundError:
-                raise ToolsError(*ERROR_MSG_0007)
+        response = requests.get(f'{file_path()}/test_file/{file_name}', cls.headers)
+        file_path = project_dir.upload()
+        try:
+            with open(fr'{file_path}\{file_name}', 'wb') as f:
+                f.write(response.content)
+        except FileNotFoundError:
+            raise ToolsError(*ERROR_MSG_0007)
 
     @classmethod
     def upload_file(cls, file_path: str, file_name: str):
