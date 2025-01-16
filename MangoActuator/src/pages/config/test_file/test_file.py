@@ -9,7 +9,7 @@ from mango_ui import *
 from mangokit import requests
 
 from src.network import HTTP
-from src.settings.settings import file_path
+from src.settings.settings import FILE_PATH
 from .test_file_dict import *
 from ...parent.table import TableParent
 
@@ -26,7 +26,7 @@ class TestFilePage(TableParent):
         self._delete = HTTP.system.file_data.delete_file
 
     def download(self, row):
-        response = requests.get(f'{file_path()}/test_file/{row.get("name")}')
+        response = requests.get(f'{FILE_PATH()}/test_file/{row.get("name")}')
         if response.status_code == 200:
             file_name, _ = QFileDialog.getSaveFileName(self, "保存文件", row.get('name'))
             if file_name:

@@ -29,8 +29,8 @@ RETRY_WAITING_TIME = 0.2  # 每隔多少秒重新一次
 # **************************************** 文件资源路径 **************************************** #
 # 如果是后端开启了minio则配置minio的地址，请携带桶名称作为路径，默认桶名称是：mango-file
 # 如果没有开启minio的示例：
-def file_path():
+def FILE_PATH():
     return f"http://{IP}:{PORT}"
 # 开启minio的示例：
-# def file_path():
+# def FILE_PATH():
 #     return 'http://127.0.0.1:9000/mango-file'
