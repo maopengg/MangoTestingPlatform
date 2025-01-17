@@ -12,6 +12,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        run: |
+          echo "Server Host: ${{ secrets.SERVER_HOST }}"
+          echo "Server Username: ${{ secrets.SERVER_USERNAME }}"
+          echo "SSH Private Key: ${{ secrets.SSH_PRIVATE_KEY }}"
 
       - name: SSH into server and deploy
         uses: appleboy/ssh-action@v0.1.10
