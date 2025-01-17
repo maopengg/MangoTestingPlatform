@@ -1,0 +1,28 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: SSH into server and deploy
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SERVER_HOST }}  # 服务器地址
+          username: ${{ secrets.SERVER_USERNAME }}  # 服务器用户名
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # SSH 私钥
+          script: |
+            cd /code/MangoTestingPlatform
+            git pull
+            docker-compose down
+            docker-compose build
+            docker-compose up -d
+            docker ps
