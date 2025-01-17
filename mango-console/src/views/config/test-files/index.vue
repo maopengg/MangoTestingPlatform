@@ -7,7 +7,6 @@
         </div>
         <a-upload @before-upload="beforeUpload" :show-file-list="false" />
       </a-space>
-      <span> 注意：上传文件时必须要选择项目后才能进行上传 </span>
 
       <a-tabs />
       <a-table
@@ -31,9 +30,6 @@
           >
             <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
               {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'project'" #cell="{ record }">
-              {{ record.project?.name }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button
@@ -108,21 +104,15 @@
   }
 
   const beforeUpload = (file: any) => {
-    if (!projectInfo.selectValue) {
-      Message.error('请先选择项目，再进行上传文件')
-      return
-    }
     return new Promise((resolve, reject) => {
       Modal.confirm({
         title: '上传文件',
         content: `确认上传：${file.name}`,
         onOk: () => {
           const formData = new FormData()
-          formData.append('file', file)
+          formData.append('test_file', file)
           formData.append('type', '0')
-          formData.append('price', file.size)
           formData.append('name', file.name)
-          formData.append('project', projectInfo.selectValue)
           postUserFile(formData)
             .then((res) => {
               Message.success(res.msg)

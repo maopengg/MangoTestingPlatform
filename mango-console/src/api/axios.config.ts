@@ -2,6 +2,7 @@ import Axios, { AxiosResponse } from 'axios'
 import qs from 'qs'
 
 export const baseURL = import.meta.env.VITE_APP_BASE_URL
+export const minioURL = import.meta.env.VITE_APP_MINIO_URL
 export const webSocketURL = import.meta.env.VITE_APP_SOCKET_URL
 
 export const CONTENT_TYPE = 'Content-Type'

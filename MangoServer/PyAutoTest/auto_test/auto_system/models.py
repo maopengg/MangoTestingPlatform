@@ -23,8 +23,6 @@ class Project(models.Model):
     def delete(self, *args, **kwargs):
         if ProjectProduct.objects.filter(project=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的产品后再删除！")
-        if FileData.objects.filter(project=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的测试文件后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -156,20 +154,24 @@ class Database(models.Model):
         ordering = ['-id']
 
 
-
-
 class FileData(models.Model):
     """ 文件表 """
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project = models.ForeignKey(to=Project, to_field="id", on_delete=models.SET_NULL, null=True)
     type = models.SmallIntegerField(verbose_name="类型")
-    name = models.CharField(verbose_name="文件名称", max_length=64)
-    price = models.DecimalField(verbose_name="文件大小", max_digits=10, decimal_places=2)
-    file = models.FileField(verbose_name='文件', upload_to='files/')
+    name = models.CharField(verbose_name="文件名称", max_length=255, unique=True)
+    test_file = models.FileField(verbose_name='文件', upload_to='test_file/', null=True)
+    failed_screenshot = models.ImageField(verbose_name='失败截图', upload_to='failed_screenshot/', null=True)
 
     class Meta:
         db_table = 'file_data'
+
+    def delete(self, *args, **kwargs):
+        if self.test_file:
+            self.test_file.delete()
+        if self.failed_screenshot:
+            self.failed_screenshot.delete()
+        super().delete(*args, **kwargs)
 
 
 class TimeTasks(models.Model):

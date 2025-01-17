@@ -128,7 +128,7 @@
                   <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
                   <div v-if="item.status === 0">
                     <a-image
-                      :src="baseURL + '/' + item.picture_path"
+                      :src="minioURL + '/failed_screenshot/' + item.picture_path"
                       title="失败截图"
                       width="260"
                       style="margin-right: 67px; vertical-align: top"
@@ -293,7 +293,7 @@
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { baseURL } from '@/api/axios.config'
+  import { minioURL } from '@/api/axios.config'
 
   const enumStore = useEnum()
 

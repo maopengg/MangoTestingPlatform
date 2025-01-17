@@ -26,8 +26,8 @@
     <a-modal v-model:visible="visible" @ok="handleOk" @cancel="handleCancel">
       <template #title> 扫描二维码加群 </template>
       <a-space>
-        <img alt="作者微信" :src="baseURL + '/files/author.jpg'" />
-        <img alt="交流群" :src="baseURL + '/files/group.jpg'" />
+        <img alt="作者微信" :src="minioURL + '/test_file/author.jpg'" />
+        <img alt="交流群" :src="minioURL + '/test_file/group.jpg'" />
       </a-space>
     </a-modal>
   </template>
@@ -40,7 +40,7 @@
   import useUserStore from '@/store/modules/user'
   import { useRouter } from 'vue-router'
   import { websocket } from '@/utils/socket'
-  import { baseURL, webSocketURL } from '@/api/axios.config'
+  import { minioURL, webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
 
   const userStore = useUserStore()

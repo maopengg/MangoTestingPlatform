@@ -5,10 +5,11 @@
 # @Author : 毛鹏
 import os
 
-from PySide6.QtWidgets import QFileDialog
 from mango_ui import *
+from mangokit import requests
 
 from src.network import HTTP
+from src.settings.settings import FILE_PATH
 from .test_file_dict import *
 from ...parent.table import TableParent
 
@@ -25,11 +26,9 @@ class TestFilePage(TableParent):
         self._delete = HTTP.system.file_data.delete_file
 
     def download(self, row):
-        response = HTTP.not_auth.download_file(row.get('file'))
-        if response and response.content:
-            # 获取文件名（可以从响应中获取，或使用默认名）
-            default_file_name = row.get('name', 'downloaded_file')  # 从 row 中获取文件名
-            file_name, _ = QFileDialog.getSaveFileName(self, "保存文件", default_file_name)  # 让用户选择保存位置
+        response = requests.get(f'{FILE_PATH()}/test_file/{row.get("name")}')
+        if response.status_code == 200:
+            file_name, _ = QFileDialog.getSaveFileName(self, "保存文件", row.get('name'))
             if file_name:
                 try:
                     with open(file_name, 'wb') as f:
@@ -46,7 +45,7 @@ class TestFilePage(TableParent):
             file_size = os.path.getsize(file_name)
             file_name_only = os.path.basename(file_name)
             files = [
-                ('file', (file_name_only, open(file_name, 'rb'), 'application/octet-stream'))  # 根据文件类型设置 MIME 类型
+                ('test_file', (file_name_only, open(file_name, 'rb'), 'application/octet-stream'))  # 根据文件类型设置 MIME 类型
             ]
             response = self.post({
                 'type': 0,

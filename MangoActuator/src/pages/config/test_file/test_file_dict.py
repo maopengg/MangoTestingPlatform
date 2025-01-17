@@ -23,19 +23,10 @@ table_column = [
         'name': 'ID',
         'width': 7
     },
-    {
-        'key': 'project',
-        'name': '项目名称',
-        'width': 100
-    },
+
     {
         'key': 'name',
         'name': '文件名称',
-        'width': 150
-    },
-    {
-        'key': 'file',
-        'name': '文件地址',
     },
     {
         'key': 'ope',

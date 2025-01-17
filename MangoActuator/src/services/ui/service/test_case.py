@@ -107,7 +107,8 @@ class TestCase(PageSteps):
 
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
-            self.mysql_connect.condition_execute(sql.get('sql'))
+            if self.mysql_connect and sql.get('sql', None) is not None:
+                self.mysql_connect.condition_execute(sql.get('sql'))
         await self.sava_videos()
 
     async def sava_videos(self):
