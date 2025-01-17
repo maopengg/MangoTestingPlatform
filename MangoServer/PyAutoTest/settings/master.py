@@ -16,7 +16,7 @@ MYSQL_IP = 'db'
 MYSQL_PORT = 3306
 
 # ************************ DEBUG配置 ************************ #
-DEBUG = True
+DEBUG = False  # 这里也控制了是否使用minio。如果到生产环境，请将DEBUG改为False，False将使用minio
 
 # ************************ REDIS配置 ************************ #
 
