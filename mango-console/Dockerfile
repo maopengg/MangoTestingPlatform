@@ -2,7 +2,7 @@ FROM node:18.20.5-alpine3.21 as build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN npm config set registry https://registry.npmmirror.com/
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build:master
 
