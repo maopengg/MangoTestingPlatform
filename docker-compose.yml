@@ -60,7 +60,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8001:80"
-    mem_limit: 2g
     networks:
       - app_network
 
