@@ -1,11 +1,11 @@
 <template>
-  <div class="h-full-vh">
-    <router-view v-slot="{ Component, route }">
-      <keep-alive :include="cacheRoutes.cachedRoutes">
-        <component :is="Component" :key="route.fullPath" />
-      </keep-alive>
-    </router-view>
-  </div>
+  <!--  <div class="h-full-vh">-->
+  <router-view v-slot="{ Component, route }">
+    <keep-alive :include="cacheRoutes.cachedRoutes">
+      <component :is="Component" :key="route.fullPath" />
+    </keep-alive>
+  </router-view>
+  <!--  </div>-->
 </template>
 
 <script lang="ts">

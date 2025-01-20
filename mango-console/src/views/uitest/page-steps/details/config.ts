@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 export interface Item {
   value: string
@@ -42,7 +42,7 @@ export const customForm = reactive([
   {
     label: 'key',
     key: 'key',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入key',
@@ -53,7 +53,7 @@ export const customForm = reactive([
   {
     label: 'value',
     key: 'value',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入value',
@@ -66,7 +66,7 @@ export const sqlForm = reactive([
   {
     label: 'key_list',
     key: 'key_list',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请输入sql查询结果的key_list',
@@ -85,7 +85,7 @@ export const sqlForm = reactive([
   {
     label: 'sql语句',
     key: 'sql',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请输入sql',
@@ -98,7 +98,7 @@ export const assForm = reactive([
   {
     label: '断言操作',
     key: 'ope_key',
-    value: '',
+    value: ref(''),
     type: 'cascader',
     required: true,
     placeholder: '请选择断言类型',
@@ -109,7 +109,7 @@ export const assForm = reactive([
   {
     label: '选择元素',
     key: 'ele_name',
-    value: '',
+    value: ref(''),
     placeholder: '请选择locating',
     required: false,
     type: 'select',
@@ -122,7 +122,7 @@ export const eleForm = reactive([
   {
     label: '元素操作',
     key: 'ope_key',
-    value: '',
+    value: ref(''),
     type: 'cascader',
     required: true,
     placeholder: '请选择对元素的操作',
@@ -133,7 +133,7 @@ export const eleForm = reactive([
   {
     label: '选择元素',
     key: 'ele_name',
-    value: '',
+    value: ref(''),
     placeholder: '请选择locating',
     required: false,
     type: 'select',
@@ -147,7 +147,7 @@ export const formItems = reactive([
   {
     label: '步骤类型',
     key: 'type',
-    value: '',
+    value: ref(''),
     type: 'radio',
     required: true,
     placeholder: '请选择对元素的操作类型',

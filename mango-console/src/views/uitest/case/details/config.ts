@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { FormItem } from '@/types/components'
 import { Message } from '@arco-design/web-vue'
 
@@ -31,7 +31,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '选择模块',
     key: 'module',
-    value: '',
+    value: ref(''),
     placeholder: '请选择模块',
     required: true,
     type: 'cascader',
@@ -46,7 +46,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '选择页面',
     key: 'page',
-    value: '',
+    value: ref(''),
     placeholder: '请选择测试页面',
     required: true,
     type: 'select',
@@ -61,7 +61,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '页面步骤',
     key: 'page_step',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择页面步骤',

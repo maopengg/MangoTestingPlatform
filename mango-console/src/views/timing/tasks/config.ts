@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入任务ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '任务名称',
     type: 'input',
     placeholder: '请输入任务名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -27,7 +27,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'test_env',
     label: '测试环境',
-    value: '',
+    value: ref(''),
     type: 'cascader',
     placeholder: '请选择测试环境',
     optionItems: [],
@@ -38,7 +38,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -53,7 +53,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '任务名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入任务名称',
     required: true,
     type: 'input',
@@ -68,7 +68,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '定时策略',
     key: 'timing_strategy',
-    value: '',
+    value: ref(''),
     placeholder: '请输入选择定时器策略',
     required: true,
     type: 'select',
@@ -98,7 +98,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '测试环境',
     key: 'test_env',
-    value: '',
+    value: ref(''),
     placeholder: '请选择执行环境',
     required: true,
     type: 'select',
@@ -113,7 +113,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '负责人',
     key: 'case_people',
-    value: '',
+    value: ref(''),
     placeholder: '请选择定时任务负责人',
     required: true,
     type: 'select',

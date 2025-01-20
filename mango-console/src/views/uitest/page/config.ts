@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入页面ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '页面名称',
     type: 'input',
     placeholder: '请输入页面名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -29,7 +29,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '页面地址',
     type: 'input',
     placeholder: '请输入页面地址',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -37,7 +37,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'project_product',
     label: '产品',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择产品',
     optionItems: [],
@@ -46,7 +46,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'module',
     label: '模块',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请先选择模块',
     optionItems: [],
@@ -57,7 +57,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -72,7 +72,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '模块',
     key: 'module',
-    value: '',
+    value: ref(''),
     placeholder: '请选择测试模块',
     required: true,
     type: 'select',
@@ -87,7 +87,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '页面名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入页面名称',
@@ -102,7 +102,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '页面地址',
     key: 'url',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入页面名称',

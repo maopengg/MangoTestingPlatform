@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 export const columns = reactive([
   {
@@ -46,7 +46,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '元素名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入元素名称',
     required: true,
     type: 'input',
@@ -76,7 +76,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '元素表达式',
     key: 'loc',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入元素表达式',
@@ -87,7 +87,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '等待时间',
     key: 'sleep',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: false,
     placeholder: '请输入元素等待时间',
@@ -95,7 +95,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '元素下标',
     key: 'sub',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: false,
     placeholder: '请输入元素下标',
@@ -106,7 +106,7 @@ export const assForm = reactive([
   {
     label: '断言类型',
     key: 'ope_key',
-    value: '',
+    value: ref(''),
     type: 'cascader',
     required: true,
     placeholder: '请选择断言类型',
@@ -119,7 +119,7 @@ export const eleForm = reactive([
   {
     label: '元素操作',
     key: 'ope_key',
-    value: '',
+    value: ref(''),
     type: 'cascader',
     required: true,
     placeholder: '请选择对元素的操作',
@@ -133,7 +133,7 @@ export const formItems1 = reactive([
   {
     label: '步骤类型',
     key: 'type',
-    value: '',
+    value: ref(''),
     type: 'radio',
     required: true,
     placeholder: '请选择对元素的操作类型',

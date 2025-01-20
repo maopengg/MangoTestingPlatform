@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -7,7 +7,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '角色名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入角色名称',
     required: true,
     type: 'input',
@@ -22,7 +22,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '角色描述',
     key: 'description',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请输入角色描述',
