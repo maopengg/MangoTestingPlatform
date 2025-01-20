@@ -2,13 +2,11 @@
   <div>
     <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden">
       <template #extra>
-        <a-affix :offsetTop="80">
-          <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-            <a-button status="success" size="small" @click="onRunCase">调试</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-          </a-space>
-        </a-affix>
+        <a-space>
+          <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+          <a-button status="success" size="small" @click="onRunCase">调试</a-button>
+          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
       </template>
       <div class="container">
         <a-space direction="vertical" style="width: 25%">
