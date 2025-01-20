@@ -52,7 +52,7 @@
                   @change="doRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'type'">
+              <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
                   style="width: 150px"
                   v-model="item.value"
