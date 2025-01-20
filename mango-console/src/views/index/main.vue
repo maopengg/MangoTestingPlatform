@@ -202,9 +202,9 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      productModule.getProjectModule()
-      projectInfo.getProject()
-      projectInfo.projectProductName()
+      await productModule.getProjectModule()
+      await projectInfo.getProject()
+      await projectInfo.projectProductName()
     })
   })
 </script>
