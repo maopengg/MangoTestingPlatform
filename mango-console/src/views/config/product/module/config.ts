@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 export const columns = reactive([
   {
@@ -34,7 +34,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '模块名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入模块名称',
     required: true,
     type: 'input',
@@ -49,7 +49,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '上级模块',
     key: 'superior_module',
-    value: '',
+    value: ref(''),
     placeholder: '请输入上级模块',
     required: false,
     type: 'input',

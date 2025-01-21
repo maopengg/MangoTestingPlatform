@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
 
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入测试套ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -17,7 +17,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'status',
     label: '测试结果',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择测试结果',
     optionItems: [],
@@ -26,7 +26,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'type',
     label: '自动化类型',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择测试结果',
     optionItems: [],

@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -22,7 +22,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
     key: 'project',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'select',
@@ -37,7 +37,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '自动化类型',
     key: 'auto_type',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择产品的端类型',
@@ -52,7 +52,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '客户端类型',
     key: 'client_type',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择产品的端类型',
@@ -67,7 +67,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '产品名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入产品名称',
@@ -86,7 +86,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入产品ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -96,7 +96,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '产品名称',
     type: 'input',
     placeholder: '请输入产品名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },

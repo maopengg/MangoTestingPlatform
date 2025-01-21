@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '参数名称',
     type: 'input',
     placeholder: '请输入参数名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -27,7 +27,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'client',
     label: '客户端',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '选择客户端类型',
     optionItems: [],
@@ -39,7 +39,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -54,7 +54,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '客户端',
     key: 'client',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择客户端',
@@ -70,7 +70,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '类型',
     key: 'type',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择对应类型，注意不同类型的加载顺序',
@@ -86,7 +86,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '参数名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入名称',
@@ -101,7 +101,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: 'key',
     key: 'key',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入缓存的key',
@@ -116,7 +116,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: 'value',
     key: 'value',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请根据规则输入value值',

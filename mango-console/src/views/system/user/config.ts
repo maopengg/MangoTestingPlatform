@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入用户ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '昵称',
     type: 'input',
     placeholder: '请输入昵称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -29,7 +29,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '账号',
     type: 'input',
     placeholder: '请输入账号',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -39,7 +39,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '昵称',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入用户昵称',
     required: true,
     type: 'input',
@@ -54,7 +54,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '账号',
     key: 'username',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入用户账号',
@@ -69,7 +69,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '密码',
     key: 'password',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: false,
     placeholder: '请输入用户密码',
@@ -86,7 +86,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '绑定角色',
     key: 'role',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择用户角色',
@@ -101,7 +101,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '邮箱',
     key: 'mailbox',
-    value: '',
+    value: ref(''),
     type: 'input-tag',
     required: true,
     placeholder: '请输入邮箱，然后按回车',

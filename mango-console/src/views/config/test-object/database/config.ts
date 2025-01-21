@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入数据库ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '域名',
     key: 'host',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入数据库域名',
@@ -49,7 +49,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '主库',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入主库名称',
@@ -64,7 +64,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '用户名',
     key: 'user',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入用户名',
@@ -79,7 +79,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '密码',
     key: 'password',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入密码',

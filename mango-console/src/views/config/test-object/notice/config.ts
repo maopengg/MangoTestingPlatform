@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入通知ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -36,7 +36,7 @@ export const mailboxForm: FormItem[] = reactive([
   {
     label: '收件人',
     key: 'config',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请输入配置详情',
@@ -57,7 +57,7 @@ export const configForm: FormItem[] = reactive([
   {
     label: '企微链接',
     key: 'config',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请输入配置详情',

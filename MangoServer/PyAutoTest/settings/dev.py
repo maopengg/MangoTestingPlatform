@@ -13,18 +13,21 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '127.0.0.1'
+MYSQL_IP = '172.29.245.163'
 
 # ************************ DEBUG配置 ************************ #
+# 这里也控制了是否使用minio
+# True开启debug就不会使用minio
+# 生产环境=True，生产环境=False，使用minio
 DEBUG = True
 
 # ************************ REDIS配置 ************************ #
 
 REDIS = False
 # ************************ Minio配置 ************************ #
-MINIO_STORAGE_ENDPOINT = '127.0.0.1:9000'
-MINIO_STORAGE_ACCESS_KEY = 'OqfSUteNjt4mkPamOWB2'
-MINIO_STORAGE_SECRET_KEY = 'MXLJa38VRFDpTgDPzaVstlZW9LIQi7DXOPPUTQDr'
+MINIO_STORAGE_ENDPOINT = '172.29.245.163:9000'
+MINIO_STORAGE_ACCESS_KEY = 'R3SrN5q9XGWj1n28wpG9'  # ACCESS_KEY
+MINIO_STORAGE_SECRET_KEY = 'LliOFBMjp19jFTUw3byUGxgaj6GnmUdsEpRyFjw4'  # SECRET_KEY
 MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
 MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
 MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建

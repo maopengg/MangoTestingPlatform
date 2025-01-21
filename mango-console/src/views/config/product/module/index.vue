@@ -3,12 +3,10 @@
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
       <a-card :title="'产品名称：' + route.query.name">
         <template #extra>
-          <a-affix :offsetTop="80">
             <a-space>
               <a-button type="primary" size="small" @click="doAppend">增加</a-button>
               <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
             </a-space>
-          </a-affix>
         </template>
         <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
           <template #columns>

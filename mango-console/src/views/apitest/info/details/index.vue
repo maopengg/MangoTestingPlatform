@@ -2,11 +2,9 @@
   <div>
     <a-card title="接口详情">
       <template #extra>
-        <a-affix :offsetTop="80">
           <a-space>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
-        </a-affix>
       </template>
       <div class="container">
         <a-space direction="vertical" style="width: 25%">

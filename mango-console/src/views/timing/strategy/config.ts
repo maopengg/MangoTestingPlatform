@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入定时策略ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '定时器介绍',
     type: 'input',
     placeholder: '请输入定时器介绍',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -29,7 +29,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '定时器介绍',
     key: 'name',
-    value: '',
+    value: ref(''),
     placeholder: '请输入定时器的介绍',
     required: true,
     type: 'input',
@@ -44,7 +44,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: 'cron',
     key: 'cron',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入正确的cron表达式',

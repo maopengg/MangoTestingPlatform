@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -11,7 +11,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入接口ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -22,7 +22,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '接口名称',
     type: 'input',
     placeholder: '请输入用例名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -30,7 +30,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'url',
     label: 'url',
-    value: '',
+    value: ref(''),
     type: 'input',
     placeholder: '请选择产品',
     reset: function () {},
@@ -38,7 +38,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'project_product',
     label: '产品',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择产品',
     optionItems: [],
@@ -47,7 +47,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'module',
     label: '模块',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择产品',
     optionItems: [],
@@ -56,7 +56,7 @@ export const conditionItems: Array<FormItem> = reactive([
   {
     key: 'status',
     label: '状态',
-    value: '',
+    value: ref(''),
     type: 'select',
     placeholder: '请选择步骤状态',
     optionItems: [],
@@ -67,7 +67,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -82,7 +82,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '模块名称',
     key: 'module',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请用例归属模块',
@@ -97,7 +97,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '接口名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入用例名称',
@@ -113,7 +113,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: 'url',
     key: 'url',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入url',
@@ -121,7 +121,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: 'method',
     key: 'method',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择接口方法',
@@ -138,7 +138,7 @@ export const formItemsImport: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -153,7 +153,7 @@ export const formItemsImport: FormItem[] = reactive([
   {
     label: '模块名称',
     key: 'module',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请用例归属模块',
@@ -168,7 +168,7 @@ export const formItemsImport: FormItem[] = reactive([
   {
     label: '接口名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入用例名称',
@@ -183,7 +183,7 @@ export const formItemsImport: FormItem[] = reactive([
   {
     label: 'curl',
     key: 'curl',
-    value: '',
+    value: ref(''),
     type: 'textarea',
     required: true,
     placeholder: '请输入复制的curl',

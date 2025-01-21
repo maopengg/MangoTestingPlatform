@@ -1,5 +1,5 @@
 import { FormItem } from '@/types/components'
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
@@ -9,7 +9,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: 'ID',
     type: 'input',
     placeholder: '请输入测试对象ID',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -19,7 +19,7 @@ export const conditionItems: Array<FormItem> = reactive([
     label: '环境名称',
     type: 'input',
     placeholder: '请输入环境名称',
-    value: '',
+    value: ref(''),
     reset: function () {
       this.value = ''
     },
@@ -29,7 +29,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
     key: 'project_product',
-    value: '',
+    value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
     type: 'cascader',
@@ -44,7 +44,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '环境名称',
     key: 'name',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入环境名称',
@@ -59,7 +59,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '测试对象',
     key: 'value',
-    value: '',
+    value: ref(''),
     type: 'input',
     required: true,
     placeholder: '请输入域名/包名/路径',
@@ -75,7 +75,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '部署环境',
     key: 'environment',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择绑定环境',
@@ -90,7 +90,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '自动化类型',
     key: 'auto_type',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请选择产品的端类型',
@@ -105,7 +105,7 @@ export const formItems: FormItem[] = reactive([
   {
     label: '负责人名称',
     key: 'executor_name',
-    value: '',
+    value: ref(''),
     type: 'select',
     required: true,
     placeholder: '请输入负责人名称',
