@@ -19,6 +19,7 @@ from PyAutoTest.auto_test.auto_ui.service.send_test_data import SendTestData
 from PyAutoTest.enums.tools_enum import TaskEnum, AutoTestTypeEnum
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.models.api_model import ApiCaseModel
+from PyAutoTest.settings import IS_SEND_MAIL
 from PyAutoTest.tools.log_collector import log
 from mangokit import Mango
 
@@ -67,7 +68,8 @@ class ConsumerThread:
             except Exception as error:
                 log.system.error(error)
                 trace = traceback.format_exc()
-                Mango.s(self.consumer, error, trace, )
+                if IS_SEND_MAIL:
+                    Mango.s(self.consumer, error, trace, )
 
     def ui(self, environment_error, test_suite, test_suite_details):
         try:

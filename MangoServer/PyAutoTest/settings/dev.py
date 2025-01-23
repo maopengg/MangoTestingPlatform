@@ -34,6 +34,8 @@ MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True
+# *************** 是否发送error日志协助芒果修复问题 *************** #
+IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
 # file_name = 'PyAutoTest/settings/database.json'

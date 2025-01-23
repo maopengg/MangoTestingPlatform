@@ -31,6 +31,7 @@ from src.models.ui_model import EquipmentModel
 from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
+from src.settings.settings import IS_SEND_MAIL
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 
@@ -66,7 +67,8 @@ class NewBrowser:
             self.browser = None
             trace = traceback.format_exc()
             log.error(f'创建浏览器时报错：{trace}')
-            Mango.s(self.new_web_page, error, trace, config=self.config.model_dump_json())
+            if IS_SEND_MAIL:
+                Mango.s(self.new_web_page, error, trace, config=self.config.model_dump_json())
             if count >= 3:
                 raise UiError(*ERROR_MSG_0057)
             else:

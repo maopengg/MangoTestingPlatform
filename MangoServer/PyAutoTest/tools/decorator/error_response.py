@@ -9,6 +9,7 @@ from rest_framework.request import Request
 
 from PyAutoTest.exceptions import MangoServerError
 from PyAutoTest.exceptions.error_msg import ERROR_MSG_0000
+from PyAutoTest.settings import IS_SEND_MAIL
 from PyAutoTest.tools.log_collector import log
 from PyAutoTest.tools.view.response_data import ResponseData
 from mangokit import Mango
@@ -43,7 +44,8 @@ def error_response(app: str):
                     username = None
                 trace = traceback.format_exc()
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
-                Mango.s(func, error, trace, username, args, kwargs)
+                if IS_SEND_MAIL:
+                    Mango.s(func, error, trace, username, args, kwargs)
                 return ResponseData.fail(ERROR_MSG_0000, data=str(error))
 
         return wrapper
