@@ -13,7 +13,7 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.29.245.163'
+MYSQL_IP = '192.168.1.100'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
@@ -25,7 +25,7 @@ DEBUG = True
 
 REDIS = False
 # ************************ Minio配置 ************************ #
-MINIO_STORAGE_ENDPOINT = '172.29.245.163:9000'
+MINIO_STORAGE_ENDPOINT = '192.168.1.100:9000'
 MINIO_STORAGE_ACCESS_KEY = 'R3SrN5q9XGWj1n28wpG9'  # ACCESS_KEY
 MINIO_STORAGE_SECRET_KEY = 'LliOFBMjp19jFTUw3byUGxgaj6GnmUdsEpRyFjw4'  # SECRET_KEY
 MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
@@ -34,6 +34,8 @@ MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True
+# *************** 是否发送error日志协助芒果修复问题 *************** #
+IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
 # file_name = 'PyAutoTest/settings/database.json'

@@ -10,7 +10,9 @@ from mangokit import Mango
 from src.enums.system_enum import ClientTypeEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings import settings
+from src.settings.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
+
 
 def async_error_handle(is_error=False):
     def decorator(func):
@@ -20,7 +22,8 @@ def async_error_handle(is_error=False):
             except Exception as error:
                 trace = traceback.format_exc()
                 log.error(trace)
-                Mango.s(func, error, trace, settings.USERNAME, args, kwargs)
+                if IS_SEND_MAIL:
+                    Mango.s(func, error, trace, settings.USERNAME, args, kwargs)
                 await WebSocketClient().async_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
@@ -42,7 +45,8 @@ def sync_error_handle(is_error=False):
                 return func(*args, **kwargs)
             except Exception as error:
                 trace = traceback.format_exc()
-                Mango.s(func, error, trace, settings.USERNAME, args, kwargs)
+                if IS_SEND_MAIL:
+                    Mango.s(func, error, trace, settings.USERNAME, args, kwargs)
                 WebSocketClient().sync_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",

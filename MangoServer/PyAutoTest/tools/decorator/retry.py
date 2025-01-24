@@ -9,6 +9,7 @@ import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error
 
+from PyAutoTest.settings import IS_SEND_MAIL
 from PyAutoTest.tools.log_collector import log
 from mangokit import Mango
 
@@ -31,7 +32,7 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
                     try_count += 1
                     time.sleep(delay)  # 等待一段时间后重试
             else:
-                if error is not None:
+                if error is not None and IS_SEND_MAIL:
                     Mango.s(func, error, trace, args, kwargs)
 
         return wrapper

@@ -11,6 +11,7 @@ from datetime import datetime
 from queue import Queue
 
 from PyAutoTest.models.api_model import ApiCaseModel
+from PyAutoTest.settings import IS_SEND_MAIL
 from PyAutoTest.tools.log_collector import log
 from mangokit import singleton
 from mangokit import Mango
@@ -39,7 +40,8 @@ class CaseFlow:
             except Exception as error:
                 trace = traceback.format_exc()
                 log.system.error(f'API线程池发生异常：{error}，报错：{trace}')
-                Mango.s(self.process_tasks, error, trace, case_model=case_model)
+                if IS_SEND_MAIL:
+                    Mango.s(self.process_tasks, error, trace, case_model=case_model)
 
     @classmethod
     def execute_task(cls, case_model: ApiCaseModel):
@@ -56,7 +58,8 @@ class CaseFlow:
             return test_case.test_case(case_model.case_id)
         except Exception as error:
             trace = traceback.format_exc()
-            Mango.s(cls.execute_task, error, trace, case_model=case_model)
+            if IS_SEND_MAIL:
+                Mango.s(cls.execute_task, error, trace, case_model=case_model)
             log.system.error(f'API线程池发生异常：{error}')
 
     @classmethod
