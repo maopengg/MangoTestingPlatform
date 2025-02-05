@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from mangokit import EncryptionTool
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
 from src.auto_test.auto_user.views.role import RoleSerializers
@@ -21,7 +22,6 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from mangokit import EncryptionTool
 
 
 class UserSerializers(serializers.ModelSerializer):
@@ -198,5 +198,12 @@ class LoginViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
-        time.sleep(5)
-        return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
+        v = request.query_params.get('v')
+        if v:
+            if v == '4.7':
+                from data_cleanup_scripts.v_4_7_2025_01_24 import main_4_7
+                main_4_7()
+            return ResponseData.success(RESPONSE_MSG_0045)
+        else:
+            time.sleep(5)
+            return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
