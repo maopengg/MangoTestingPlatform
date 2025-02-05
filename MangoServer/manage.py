@@ -14,7 +14,7 @@ def main():
             del sys.argv[i]
             break
     os.environ.setdefault('DJANGO_ENV', django_env or 'master')
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'PyAutoTest.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
