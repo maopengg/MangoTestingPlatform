@@ -42,6 +42,8 @@ services:
     build:
       context: ./MangoServer
       dockerfile: Dockerfile
+      args:
+        DJANGO_ENV: ${DJANGO_ENV}
     ports:
       - "8000:8000"
     depends_on:
@@ -58,6 +60,8 @@ services:
     build:
       context: ./mango-console
       dockerfile: Dockerfile
+      args:
+        VUE_ENV: ${VUE_ENV}
     ports:
       - "8001:80"
     networks:
