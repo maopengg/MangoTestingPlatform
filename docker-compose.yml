@@ -50,7 +50,7 @@ services:
       minio:
         condition: service_healthy
     environment:
-      - DJANGO_SETTINGS_MODULE=PyAutoTest.settings
+      - DJANGO_SETTINGS_MODULE=src.settings
     networks:
       - app_network
 
