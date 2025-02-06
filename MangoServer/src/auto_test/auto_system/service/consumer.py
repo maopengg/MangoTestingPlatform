@@ -73,7 +73,7 @@ class ConsumerThread:
 
     def ui(self, environment_error, test_suite, test_suite_details):
         try:
-            user_list = SocketUser.user
+            user_list = [i for i in SocketUser.user if i.client_obj]
             if not user_list:
                 log.system.warning('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
                 return
