@@ -65,6 +65,7 @@ class SystemEnvEnum(BaseEnum):
     MASTER = 'master'
     PROD = 'prod'
     DEV = 'dev'
+    TEST = 'test'
 
 
 class EnvironmentEnum(BaseEnum):

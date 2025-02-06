@@ -48,7 +48,7 @@ service.interceptors.response.use(
     if (error.response.status === 403) {
       return error.response
     }
-    if (import.meta.env.MODE === 'development') {
+    if (import.meta.env.MODE === 'dev') {
       console.log(error)
     }
     return Promise.reject({ code: 500, msg: '服务器异常，请稍后重试…' })

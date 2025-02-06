@@ -18,6 +18,8 @@ elif DJANGO_ENV == SystemEnvEnum.PROD.value:
     from .prod import *
 elif DJANGO_ENV == SystemEnvEnum.MASTER.value:
     from .master import *
+elif DJANGO_ENV == SystemEnvEnum.TEST.value:
+    from .test import *
 else:
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')

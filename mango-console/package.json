@@ -2,11 +2,13 @@
   "name": "arco-work",
   "version": "4.7.0",
   "scripts": {
-    "dev": "vite --mode development --host",
-    "prod": "vite --mode production --host",
+    "dev": "vite --mode dev --host",
+    "test": "vite --mode test --host",
+    "prod": "vite --mode prod --host",
     "master": "vite --mode master --host",
-    "build:dev": "vite build --mode development",
-    "build:prod": "vite build --mode production",
+    "build:dev": "vite build --mode dev",
+    "build:test": "vite build --mode test",
+    "build:prod": "vite build --mode prod",
     "build:master": "vite build --mode master",
 
     "staging": "vite build --mode staging",

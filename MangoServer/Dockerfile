@@ -12,5 +12,7 @@ WORKDIR /app
 COPY --from=builder /root/.local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /app /app
 EXPOSE 8000
+ARG DJANGO_ENV
 ENV DJANGO_SETTINGS_MODULE=src.settings
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--env=prod"]
+ENV DJANGO_ENV=${DJANGO_ENV}
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "--env=${DJANGO_ENV}"]
