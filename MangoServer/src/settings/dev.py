@@ -13,7 +13,7 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'auto_test'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.29.0.83'
+MYSQL_IP = '172.20.157.117'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
