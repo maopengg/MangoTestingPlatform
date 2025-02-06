@@ -6,4 +6,4 @@
 logs/
 test_file/
 failed_screenshot/
-PyAutoTest/settings/database.json
+src/settings/database.json
