@@ -84,8 +84,9 @@
               {{ record.user?.name }}
             </template>
             <template v-else-if="item.key === 'source_type'" #cell="{ record }">
-              <a-tag color="green" size="small" v-if="record.source_type === '1'">控制端</a-tag>
-              <a-tag color="red" size="small" v-else-if="record.source_type === '2'">执行端</a-tag>
+              <a-tag :color="enumStore.colors[record.source_type]" size="small">{{
+                enumStore.cline_type[record.source_type].title
+              }}</a-tag>
             </template>
           </a-table-column>
         </template>

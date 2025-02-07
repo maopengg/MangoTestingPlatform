@@ -153,18 +153,17 @@
               }}{{ record?.module?.name }}
             </template>
             <template v-else-if="item.key === 'level'" #cell="{ record }">
-              <a-tag color="orange" size="small">
-                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}</a-tag
-              >
+              <a-tag :color="enumStore.colors[record?.level]" size="small">{{
+                record.level !== null ? enumStore.case_level[record.level].title : '-'
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'case_people'" #cell="{ record }">
               {{ record.case_people.name }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-              <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-              <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
-              <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
+              <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
+                enumStore.task_status[record.status].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>

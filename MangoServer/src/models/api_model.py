@@ -3,8 +3,9 @@
 # @Description: # @Time   : 2022-12-04 17:14
 # @Author : 毛鹏
 
-from pydantic import BaseModel
 from typing import Any
+
+from pydantic import BaseModel
 
 
 class ApiCaseModel(BaseModel):
@@ -19,7 +20,7 @@ class ApiCaseModel(BaseModel):
 class RequestDataModel(BaseModel):
     method: str | None
     url: str | None
-    headers: str | dict | list | None = None
+    headers: dict | None = None
     params: dict | list | str | None = None
     data: dict | list | None = None
     json_data: dict | list | None = None
@@ -27,6 +28,7 @@ class RequestDataModel(BaseModel):
 
 
 class ResponseDataModel(BaseModel):
+    name: str | None = None
     status_code: int
     response_time: float
     response_headers: dict

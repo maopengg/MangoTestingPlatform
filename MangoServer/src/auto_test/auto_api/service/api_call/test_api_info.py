@@ -11,6 +11,7 @@ from src.enums.tools_enum import StatusEnum, TaskEnum
 from src.models.api_model import RequestDataModel, ResponseDataModel
 from src.tools.log_collector import log
 
+
 class TestApiInfo(CaseBase):
 
     def __init__(self, user_id, test_env: int):
@@ -26,13 +27,14 @@ class TestApiInfo(CaseBase):
         request_data = self.request_data_clean(RequestDataModel(
             method=MethodEnum(self.api_info.method).name,
             url=urljoin(self.test_object.value, self.api_info.url),
-            headers=self.api_info.header,
+            headers=self.api_info.header if self.api_info.header else self.init_headers(),
             params=self.api_info.params,
             data=self.api_info.data,
             json_data=self.api_info.json,
             file=self.api_info.file))
         log.api.debug(f'接口调试请求数据：{request_data.model_dump_json()}')
         response: ResponseDataModel = self.http(request_data)
+        response.name = self.api_info.name
         if response.status_code == 300 or response.status_code == 200:
             self.api_info.status = StatusEnum.SUCCESS.value
         else:

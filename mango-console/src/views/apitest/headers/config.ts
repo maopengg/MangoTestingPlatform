@@ -14,16 +14,6 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
-  {
-    key: 'name',
-    label: '参数名称',
-    type: 'input',
-    placeholder: '请输入参数名称',
-    value: ref(''),
-    reset: function () {
-      this.value = ''
-    },
-  },
 ])
 
 export const formItems: FormItem[] = reactive([
@@ -36,37 +26,6 @@ export const formItems: FormItem[] = reactive([
     type: 'cascader',
     validator: function () {
       if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '类型',
-    key: 'type',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择对应类型，注意不同类型的加载顺序',
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '参数名称',
-    key: 'name',
-    value: ref(''),
-    type: 'input',
-    required: true,
-    placeholder: '请输入名称',
-    validator: function () {
-      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -114,16 +73,10 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '类型',
-    key: 'type',
-    dataIndex: 'type',
-    width: 150,
-  },
-  {
-    title: '参数名称',
-    key: 'name',
-    dataIndex: 'name',
-    width: 200,
+    title: '客户端',
+    key: 'client',
+    dataIndex: 'client',
+    width: 80,
   },
   {
     title: 'key',
@@ -140,10 +93,10 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '状态',
+    title: '默认使用',
     key: 'status',
     dataIndex: 'status',
-    width: 70,
+    width: 120,
   },
   {
     title: '操作',

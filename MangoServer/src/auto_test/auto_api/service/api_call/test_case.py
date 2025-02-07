@@ -4,10 +4,11 @@
 # @Time   : 2023-12-11 16:16
 # @Author : 毛鹏
 import traceback
+from copy import deepcopy
 from typing import Optional
 from urllib.parse import urljoin
 
-from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo
+from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders
 from src.auto_test.auto_api.service.base_tools.case_detailed import CaseDetailedInit
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
@@ -30,7 +31,7 @@ class TestCase(CaseDetailedInit):
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
 
-        self.headers = {}
+        self.case_headers = {}
 
         self.api_case_result: Optional[ApiCaseResultModel | None] = None
 
@@ -57,7 +58,6 @@ class TestCase(CaseDetailedInit):
             self.project_product_id = api_case.project_product.id
             self.init_public()
             self.init_case_front(api_case)
-
             self.case_detailed(case_id, case_sort)
 
             self.init_case_posterior(api_case)
@@ -83,7 +83,6 @@ class TestCase(CaseDetailedInit):
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             return self.api_case_result
-
 
     def case_detailed(self, case_id: int, case_sort: int | None):
         if case_sort:
@@ -124,7 +123,7 @@ class TestCase(CaseDetailedInit):
         request_data_model = self.request_data_clean(RequestDataModel(
             method=MethodEnum(data.api_info.method).name,
             url=urljoin(self.test_object.value, data.url),
-            headers=data.header,
+            headers=self.headers(data),
             params=data.params,
             data=data.data,
             json_data=data.json,
@@ -174,3 +173,15 @@ class TestCase(CaseDetailedInit):
         api_info_obj.status = status.value
         api_info_obj.result_data = result_data.model_dump()
         api_info_obj.save()
+
+    def headers(self, data: ApiCaseDetailed) -> dict:
+        if data.header:
+            case_details_header = {}
+            for i in ApiHeaders.objects.filter(id__in=data.header):
+                case_details_header[i.key] = i.value
+            case_headers = deepcopy(self.case_headers)
+            case_headers.update(case_details_header)
+            print(0, case_headers)
+            return case_headers
+        print(1, self.case_headers)
+        return self.case_headers

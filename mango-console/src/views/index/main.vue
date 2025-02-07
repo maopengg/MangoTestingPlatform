@@ -59,7 +59,7 @@
                       </template>
 
                       <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                        <a-tag color="orangered" size="small">
+                        <a-tag :color="enumStore.colors[record.test_env]" size="small">
                           {{
                             record.test_env !== null
                               ? enumStore.environment_type[record.test_env].title
@@ -68,7 +68,7 @@
                         >
                       </template>
                       <template v-else-if="item.key === 'type'" #cell="{ record }">
-                        <a-tag color="green" size="small">{{
+                        <a-tag :color="enumStore.colors[record.type]" size="small">{{
                           enumStore.auto_test_type[record.type].title
                         }}</a-tag>
                       </template>

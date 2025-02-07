@@ -3,9 +3,12 @@
 # @Description: 
 # @Time   : 2023-02-02 19:51
 # @Author : 毛鹏
+import os
+
+
 def ad_routes():
     """菜单模拟数据"""
-    return [
+    menu = [
         {
             "menuUrl": "/index",
             "menuName": "首页",
@@ -69,6 +72,16 @@ def ad_routes():
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/case/index",
                     "menuName": "测试用例",
+                },
+                {
+                    "parentPath": "/apitest",
+                    "menuUrl": "/apitest/suite/index",
+                    "menuName": "测试套件",
+                },
+                {
+                    "parentPath": "/apitest",
+                    "menuUrl": "/apitest/headers/index",
+                    "menuName": "请求头管理",
                 },
                 {
                     "parentPath": "/apitest",
@@ -225,3 +238,10 @@ def ad_routes():
             ],
         },
     ]
+    if os.getenv('DJANGO_ENV') == 'dev' or os.getenv('DJANGO_ENV') == 'test':
+        menu[-1]['children'].append({
+            "parentPath": "/help",
+            "menuUrl": "/help/test",
+            "menuName": "测试页面",
+        })
+    return menu

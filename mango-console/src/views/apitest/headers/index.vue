@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="项目产品配置"
+        title="公共方法"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -13,18 +13,44 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'select'">
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
                   style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="project.data"
+                  :options="data.moduleList"
                   :field-names="fieldNames"
                   value-key="key"
                   allow-clear
                   allow-search
                   @change="doRefresh"
                 />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'client'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.client"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-if="item.type === 'date'">
+                <a-date-picker v-model="item.value" />
+              </template>
+              <template v-if="item.type === 'time'">
+                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
+              </template>
+              <template v-if="item.type === 'check-group'">
+                <a-checkbox-group v-model="item.value">
+                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                    {{ item.label }}
+                  </a-checkbox>
+                </a-checkbox-group>
               </template>
             </a-form-item>
           </a-form>
@@ -37,13 +63,17 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
             </div>
-          </a-space>
+            <div>
+              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+            </div></a-space
+          >
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :loading="table.tableLoading.value"
         :data="table.dataList"
         :columns="tableColumns"
@@ -60,32 +90,31 @@
             :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project'" #cell="{ record }">
-              {{ record.project.name }}
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
-            <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
-                enumStore.auto_type[record.auto_type]?.title
-              }}</a-tag>
+            <template v-else-if="item.key === 'client'" #cell="{ record }">
+              <a-tag
+                :color="enumStore.colors[record.project_product.api_client_type]"
+                size="small"
+                >{{ enumStore.api_client[record.project_product.api_client_type]?.title }}</a-tag
+              >
             </template>
-            <template v-else-if="item.key === 'ui_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.ui_client_type]" size="small">{{
-                enumStore.drive_type[record.ui_client_type]?.title
-              }}</a-tag>
-            </template>
-            <template v-else-if="item.key === 'api_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.api_client_type]" size="small">{{
-                enumStore.api_client[record.api_client_type]?.title
-              }}</a-tag>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-switch
+                :default-checked="record.status === 1"
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+              />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button type="text" size="mini" @click="onClick(record)">增加模块</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                   >删除</a-button
                 >
@@ -111,48 +140,20 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'project'">
-            <a-select
+          <template v-else-if="item.type === 'textarea'">
+            <a-textarea
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="project.data"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
+              :auto-size="{ minRows: 3, maxRows: 5 }"
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
-            <a-select
+          <template v-else-if="item.type === 'cascader'">
+            <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="enumStore.auto_type"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
+              :options="projectInfo.projectProduct"
               allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'ui_client_type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.drive_type"
-              :field-names="fieldNames"
-              value-key="key"
               allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'api_client_type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.api_client"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
             />
           </template>
         </a-form-item>
@@ -166,45 +167,38 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { getFormItems } from '@/utils/datacleaning'
-  import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
+  import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { conditionItems, formItems, tableColumns } from './config'
+  import { tableColumns, formItems, conditionItems } from './config'
   import {
-    deleteUserProduct,
-    getUserProduct,
-    postUserProduct,
-    putUserProduct,
-  } from '@/api/system/product'
+    deleteApiHeaders,
+    getApiHeaders,
+    postApiHeaders,
+    putApiHeaders,
+  } from '@/api/apitest/headers'
   import { useEnum } from '@/store/modules/get-enum'
   const enumStore = useEnum()
 
+  const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
-  const { onSelectionChange } = useRowSelection()
+  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const router = useRouter()
-  const project = useProject()
-
   const data = reactive({
+    actionTitle: '添加接口',
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加项目',
+    moduleList: [],
   })
 
-  function onResetSearch() {
-    conditionItems.forEach((it) => {
-      it.value = ''
-    })
-  }
   function doRefresh() {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getUserProduct(value)
+    getApiHeaders(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -212,8 +206,14 @@
       .catch(console.log)
   }
 
-  function onAdd() {
-    data.actionTitle = '添加项目'
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+  }
+
+  function onAddPage() {
+    data.actionTitle = '添加公共参数'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -228,23 +228,41 @@
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此产品？',
+      content: '是否要删除此参数？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserProduct(data.id)
+        deleteApiHeaders(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.projectProductName()
           })
           .catch(console.log)
       },
     })
   }
-
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleteApiHeaders(selectedRowKeys.value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
   function onUpdate(item: any) {
-    data.actionTitle = '编辑项目'
+    data.actionTitle = '编辑公共参数'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
@@ -260,46 +278,51 @@
     })
   }
 
-  function onClick(record: any) {
-    router.push({
-      path: '/config/product/module',
-      query: {
-        id: record.id,
-        name: record.name,
-      },
-    })
-  }
-
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        value['status'] = 1
-        postUserProduct(value)
+        postApiHeaders(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.projectProductName()
           })
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putUserProduct(value)
+        putApiHeaders(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
-            project.projectProductName()
           })
           .catch(console.log)
       }
     }
   }
+
+  const onModifyStatus = async (newValue: boolean, id: number) => {
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await putApiHeaders({ id: id, status: newValue ? 1 : 0 })
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
+  }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
     })
   })
 </script>
-
-<style></style>

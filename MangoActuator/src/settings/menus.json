@@ -76,6 +76,13 @@
           "is_active": false
         },
         {
+          "btn_id": "api_headers",
+          "btn_text": "请求头管理",
+          "btn_tooltip": "请求头管理",
+          "show_top": true,
+          "is_active": false
+        },
+        {
           "btn_id": "api_public",
           "btn_text": "公共参数",
           "btn_tooltip": "公共参数",

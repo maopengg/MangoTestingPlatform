@@ -50,10 +50,11 @@
   }
 
   watchEffect(() => {
-    enumStore.getEnum()
     setTitle(userStore.selected_environment)
   })
-  onMounted(() => {})
+  onMounted(() => {
+    enumStore.getEnum()
+  })
 </script>
 
 <style lang="less" scoped>

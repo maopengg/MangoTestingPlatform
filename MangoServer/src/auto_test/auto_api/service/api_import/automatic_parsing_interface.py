@@ -6,7 +6,7 @@
 
 import jsonpath
 
-from src.enums.api_enum import ApiTypeEnum, ClientEnum, MethodEnum
+from src.enums.api_enum import ApiTypeEnum, ApiClientEnum, MethodEnum
 from src.enums.tools_enum import StatusEnum
 from src.tools.view.model_crud import ModelCRUD
 from mangokit import requests
@@ -57,7 +57,7 @@ class ApiParameter:
                                     else:
                                         dic[key1] = value2[0]
                             body1 = dic
-                        self.save_api_case(project_id=self.project_id, name=name1, client=ClientEnum.WEB.value,
+                        self.save_api_case(project_id=self.project_id, name=name1, client=ApiClientEnum.WEB.value,
                                            method=method1,
                                            url=url1, body=body1)
                         self.sum += 1

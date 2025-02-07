@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-11-25 20:57
 # @Author : 毛鹏
-from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_api.models import ApiCase, ApiHeaders
 from src.auto_test.auto_api.service.base_tools.case_base import CaseBase
 from src.exceptions import *
 
@@ -42,7 +42,12 @@ class ApiCaseData(CaseBase):
 
     def __front_headers(self, api_case: ApiCase):
         if api_case.front_headers:
-            self.headers = api_case.front_headers
+            case_details_header = {}
+            for i in ApiHeaders.objects.filter(id__in=api_case.front_headers):
+                case_details_header[i.key] = i.value
+            self.case_headers = case_details_header
+        else:
+            self.case_headers = self.init_headers()
 
     def __posterior_sql(self, api_case: ApiCase):
         for sql in api_case.posterior_sql:

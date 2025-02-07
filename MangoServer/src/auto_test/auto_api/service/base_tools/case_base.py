@@ -6,6 +6,8 @@
 from typing import Optional
 from urllib.parse import urljoin
 
+from mangokit import MysqlConnect, MangoKitError
+from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic, ApiInfo
 from src.auto_test.auto_api.service.base_tools.base_request import BaseRequest
 from src.auto_test.auto_system.models import TestObject
@@ -15,7 +17,6 @@ from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestDataModel
 from src.tools.obtain_test_data import ObtainTestData
-from mangokit import MysqlConnect, MangoKitError
 
 
 class CaseBase(ObtainTestData, BaseRequest):
@@ -39,6 +40,14 @@ class CaseBase(ObtainTestData, BaseRequest):
 
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
+
+    def init_headers(self):
+        headers = {}
+        for i in ApiHeaders.objects.filter(
+                project_product_id=self.project_product_id,
+                status=StatusEnum.SUCCESS.value):
+            headers[i.key] = i.value
+        return headers
 
     def init_test_object(self):
         self.test_object = func_test_object_value(self.test_env,
@@ -90,11 +99,11 @@ class CaseBase(ObtainTestData, BaseRequest):
                     value = self.replace(value)
                     setattr(request_data_model, key, value)
 
-                if key == 'headers' and hasattr(self, 'headers') and self.headers:
-                    new_dict = self.replace(self.headers)
-                    if new_dict and isinstance(new_dict, str):
-                        new_dict = self.loads(new_dict) if new_dict else new_dict
-                    request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
+                # if key == 'headers' and hasattr(self, 'headers') and self.headers:
+                #     new_dict = self.replace(self.headers)
+                #     if new_dict and isinstance(new_dict, str):
+                #         new_dict = self.loads(new_dict) if new_dict else new_dict
+                #     request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
         except MangoKitError as error:
             raise ApiError(error.code, error.msg)
         return request_data_model

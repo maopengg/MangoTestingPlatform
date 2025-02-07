@@ -55,7 +55,7 @@ class ApiCase(models.Model):
     level = models.SmallIntegerField(verbose_name="用例级别")
     front_custom = models.JSONField(verbose_name="前置自定义", null=True)
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
-    front_headers = models.TextField(verbose_name="前置请求头", null=True)
+    front_headers = models.JSONField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
 
     class Meta:
@@ -76,7 +76,7 @@ class ApiCaseDetailed(models.Model):
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
     # 请求
     url = models.CharField(verbose_name="请求url", max_length=1024, null=True)
-    header = models.TextField(verbose_name="请求头", max_length=2048, null=True)
+    header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
     params = models.JSONField(verbose_name="参数", null=True)
     data = models.JSONField(verbose_name="data", null=True)
     json = models.JSONField(verbose_name="json", null=True)
@@ -98,6 +98,60 @@ class ApiCaseDetailed(models.Model):
         db_table = 'api_case_detailed'
 
 
+class ApiCaseSuite(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="测试套件名称", max_length=64)
+    case_flow = models.TextField(verbose_name="步骤顺序", null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='测试套件责任人', on_delete=models.SET_NULL,
+                                    null=True)
+    parametrize = models.JSONField(verbose_name="参数化", null=True)
+    # 0失败，1成功，2警告
+    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    front_custom = models.JSONField(verbose_name="前置自定义", null=True)
+    front_sql = models.JSONField(verbose_name="前置sql", null=True)
+    posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
+
+    class Meta:
+        db_table = 'api_case_suite'
+        ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        if ApiCaseDetailed.objects.filter(case=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的用例步骤详情后再删除！")
+        super().delete(*args, **kwargs)
+
+
+class ApiCaseSuiteDetailed(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    case_suite = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_sort = models.IntegerField(verbose_name="用例排序", null=True)
+
+    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
+
+    class Meta:
+        db_table = 'api_case_suite_detailed'
+
+
+class ApiHeaders(models.Model):
+    """api公共"""
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    key = models.CharField(verbose_name="键", max_length=128)
+    value = models.TextField(verbose_name="值")
+    status = models.SmallIntegerField(verbose_name="是否默认开启", default=0)
+
+    class Meta:
+        db_table = 'api_headers'
+        ordering = ['-id']
+
+
 class ApiPublic(models.Model):
     """api公共"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
@@ -105,7 +159,6 @@ class ApiPublic(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     # 0等于自定义，1等于sql，2等于登录，3等于header
     type = models.SmallIntegerField(verbose_name="自定义变量类型")
-    client = models.SmallIntegerField(verbose_name="什么端")
     name = models.CharField(verbose_name="名称", max_length=64)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.CharField(verbose_name="值", max_length=2048)

@@ -89,18 +89,11 @@
               }}{{ record.module?.name }}
             </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.project_product.client_type === 0"
-                >WEB
-              </a-tag>
-              <a-tag color="cyan" size="small" v-else-if="record.project_product.client_type === 1"
-                >PC桌面
-              </a-tag>
-              <a-tag color="green" size="small" v-else-if="record.project_product.client_type === 2"
-                >安卓
-              </a-tag>
-              <a-tag color="green" size="small" v-else-if="record.project_product.client_type === 3"
-                >IOS
-              </a-tag>
+              <a-tag
+                :color="enumStore.colors[record.project_product.ui_client_type]"
+                size="small"
+                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}</a-tag
+              >
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -197,6 +190,7 @@
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns, formItems } from './config'
   import { useProject } from '@/store/modules/get-project'
+  import { useEnum } from '@/store/modules/get-enum'
 
   const productModule = useProductModule()
   const projectInfo = useProject()
@@ -207,6 +201,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const router = useRouter()
+  const enumStore = useEnum()
 
   const data: any = reactive({
     isAdd: false,

@@ -6,7 +6,7 @@ export const useEnum = defineStore('get-enum', {
     cline_type: StateValueType
     method: StateValueType
     api_public_type: StateValueType
-    client: StateValueType
+    api_client: StateValueType
     notice: StateValueType
     status: StateValueType
     drive_type: StateValueType
@@ -22,12 +22,14 @@ export const useEnum = defineStore('get-enum', {
     auto_type: StateValueType
     task_status: StateValueType
     environment_type: StateValueType
+    colors: string[]
+    status_colors: string[]
   } => {
     return {
       cline_type: null,
       method: null,
       api_public_type: null,
-      client: null,
+      api_client: null,
       notice: null,
       status: null,
       drive_type: null,
@@ -43,6 +45,23 @@ export const useEnum = defineStore('get-enum', {
       auto_type: null,
       task_status: null,
       environment_type: null,
+      colors: [
+        'magenta',
+        'cyan',
+        'orangered',
+        'orange',
+        'gold',
+        'lime',
+        'green',
+        'cyan',
+        'blue',
+        'red',
+        'arcoblue',
+        'purple',
+        'pinkpurple',
+        'gray',
+      ],
+      status_colors: ['red', 'green', 'gold', 'lime'],
     }
   },
   getters: {},
@@ -54,7 +73,7 @@ export const useEnum = defineStore('get-enum', {
             this.cline_type = res.data.cline_type
             this.method = res.data.method
             this.api_public_type = res.data.api_public_type
-            this.client = res.data.client
+            this.api_client = res.data.api_client
             this.notice = res.data.notice
             this.status = res.data.status
             this.drive_type = res.data.drive_type
