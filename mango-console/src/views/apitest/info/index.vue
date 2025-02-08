@@ -489,6 +489,8 @@
         modalDialogRef.value?.toggle()
         let value = getFormItems(formItems)
         value['type'] = data.apiType
+        value['front_json_path'] = []
+        value['front_re'] = []
         if (data.isAdd) {
           postApiInfo(value)
             .then((res) => {

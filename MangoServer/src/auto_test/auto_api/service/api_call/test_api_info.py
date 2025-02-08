@@ -17,27 +17,36 @@ class TestApiInfo(CaseBase):
     def __init__(self, user_id, test_env: int):
         super().__init__(user_id, test_env)
 
-    def api_info_run(self, api_info_id: int) -> ResponseDataModel:
-        self.api_info = ApiInfo.objects.get(id=api_info_id)
-        self.api_info.status = TaskEnum.PROCEED.value
-        self.api_info.save()
-        self.project_product_id = self.api_info.project_product.id
+    def api_info_run(self, api_info_id: int) -> dict:
+        api_info = ApiInfo.objects.get(id=api_info_id)
+        api_info.status = TaskEnum.PROCEED.value
+        api_info.save()
+        self.project_product_id = api_info.project_product.id
         self.init_test_object()
         self.init_public()
         request_data = self.request_data_clean(RequestDataModel(
-            method=MethodEnum(self.api_info.method).name,
-            url=urljoin(self.test_object.value, self.api_info.url),
-            headers=self.api_info.header if self.api_info.header else self.init_headers(),
-            params=self.api_info.params,
-            data=self.api_info.data,
-            json_data=self.api_info.json,
-            file=self.api_info.file))
+            method=MethodEnum(api_info.method).name,
+            url=urljoin(self.test_object.value, api_info.url),
+            headers=api_info.header if api_info.header else self.init_headers(),
+            params=api_info.params,
+            data=api_info.data,
+            json_data=api_info.json,
+            file=api_info.file))
         log.api.debug(f'接口调试请求数据：{request_data.model_dump_json()}')
         response: ResponseDataModel = self.http(request_data)
-        response.name = self.api_info.name
+        self.api_info_front_json_re(api_info, response)
+        self.api_info_front_json_path(api_info, response)
+        return self.save_api_info(api_info, response)
+
+    def save_api_info(self, api_info: ApiInfo, response: ResponseDataModel):
         if response.status_code == 300 or response.status_code == 200:
-            self.api_info.status = StatusEnum.SUCCESS.value
+            api_info.status = StatusEnum.SUCCESS.value
         else:
-            self.api_info.status = StatusEnum.FAIL.value
-        self.api_info.save()
-        return response
+            api_info.status = StatusEnum.FAIL.value
+        res = response.model_dump()
+        res['name'] = api_info.name
+
+        res['cache_all'] = self.get_all()
+        api_info.result_data = res
+        api_info.save()
+        return res

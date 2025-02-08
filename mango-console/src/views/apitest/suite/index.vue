@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="测试用例"
+        title="用例测试套件"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >
@@ -11,7 +11,11 @@
           <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @blur="doRefresh(null, false)"
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                 <a-select
@@ -152,11 +156,6 @@
             <template v-else-if="item.key === 'case_people'" #cell="{ record }">
               {{ record.case_people?.name }}
             </template>
-            <template v-else-if="item.key === 'level'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.level]" size="small">
-                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}</a-tag
-              >
-            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
                 enumStore.task_status[record.status].title
@@ -171,11 +170,6 @@
                   <template #content>
                     <a-doption>
                       <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    </a-doption>
-                    <a-doption>
-                      <a-button type="text" size="mini" @click="pageStepsCody(record)"
-                        >复制</a-button
-                      >
                     </a-doption>
                     <a-doption>
                       <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
@@ -238,17 +232,6 @@
               allow-search
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'level'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.case_level"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
         </a-form-item>
       </a-form>
     </template>
@@ -272,14 +255,13 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import {
-    getApiCase,
-    deleteApiCase,
-    postApiCase,
-    postApiCaseCody,
-    getApiCaseRun,
-    postApiCaseBatchRun,
-    putApiCase,
-  } from '@/api/apitest/case'
+    getApiCaseSuite,
+    deleteApiCaseSuite,
+    postApiCaseSuite,
+    putApiCaseSuite,
+    getApiCaseSuiteRun,
+    postApiCaseSuiteBatchRun,
+  } from '@/api/apitest/case-suite'
   import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
   import { getSystemTasksName } from '@/api/system/tasks'
 
@@ -314,7 +296,7 @@
       value['project_product'] = projectProductId
       productModule.getProjectModule(projectProductId)
     }
-    getApiCase(value)
+    getApiCaseSuite(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -348,7 +330,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiCase(data.id)
+        deleteApiCaseSuite(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -368,7 +350,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiCase(selectedRowKeys.value)
+        deleteApiCaseSuite(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -404,7 +386,7 @@
         value['front_sql'] = []
         value['posterior_sql'] = []
         value['front_headers'] = []
-        postApiCase(value)
+        postApiCaseSuite(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -412,7 +394,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putApiCase(value)
+        putApiCaseSuite(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -436,7 +418,7 @@
       return
     }
     Message.loading('正在执行用例请稍后~')
-    getApiCaseRun(record.id, userStore.selected_environment, null)
+    getApiCaseSuiteRun(record.id, userStore.selected_environment, null)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -453,7 +435,7 @@
       return
     }
     Message.loading('正在执行用例请稍后~')
-    postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
+    postApiCaseSuiteBatchRun(selectedRowKeys.value, userStore.selected_environment)
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
@@ -465,7 +447,7 @@
     const pageData = usePageData()
     pageData.setRecord(record)
     router.push({
-      path: '/apitest/case/details',
+      path: '/apitest/suite/details',
       query: {
         case_id: record.id,
         project_product: record.project_product.id,
@@ -473,14 +455,6 @@
     })
   }
 
-  function pageStepsCody(record: any) {
-    postApiCaseCody(record.id)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-  }
   const handleClick = () => {
     if (selectedRowKeys.value.length === 0) {
       Message.error('请选择要添加定时任务的用例')

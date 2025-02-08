@@ -23,28 +23,28 @@ interface Table {
   }
 }
 
-export const useTableHeight = async function (currentIns: any): Promise<number> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const clientHeight =
-        document.querySelector('.main-section')?.getBoundingClientRect().height || 0
-      const tableHeaderHeight =
-        document.querySelector('.arco-table-header')?.getBoundingClientRect().height || 41
-      if (currentIns) {
-        let tempHeight = tableHeaderHeight
-        if (currentIns.refs.tableHeaderRef) {
-          const header = (currentIns.refs as any).tableHeaderRef.$el
-          tempHeight += header.clientHeight
-        }
-        if (currentIns.refs.tableFooterRef) {
-          tempHeight += 56
-        }
-        resolve(clientHeight - tempHeight)
-      }
-      resolve(150)
-    }, 500)
-  })
-}
+// export const useTableHeight = async function (currentIns: any): Promise<number> {
+//   return new Promise((resolve) => {
+//     setTimeout(() => {
+//       const clientHeight =
+//         document.querySelector('.main-section')?.getBoundingClientRect().height || 0
+//       const tableHeaderHeight =
+//         document.querySelector('.arco-table-header')?.getBoundingClientRect().height || 41
+//       if (currentIns) {
+//         let tempHeight = tableHeaderHeight
+//         if (currentIns.refs.tableHeaderRef) {
+//           const header = (currentIns.refs as any).tableHeaderRef.$el
+//           tempHeight += header.clientHeight
+//         }
+//         if (currentIns.refs.tableFooterRef) {
+//           tempHeight += 56
+//         }
+//         resolve(clientHeight - tempHeight)
+//       }
+//       resolve(150)
+//     }, 500)
+//   })
+// }
 
 export const useTable = function (): Table {
   const dataList = shallowReactive([]) as Array<any>
@@ -96,7 +96,7 @@ export const useRowSelection = function () {
 export const useTableColumn = function (
   columns: TableColumnPops[],
   options: TableColumnPops = { dataIndex: '', key: '', align: 'center' }
-) {
+): any {
   return columns.map((it) => {
     return {
       ...options,

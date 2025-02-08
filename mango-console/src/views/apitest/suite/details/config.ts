@@ -2,15 +2,10 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 
-export const columns = reactive([
+export const columns: any = reactive([
   {
-    title: '接口名称',
+    title: '用例名称',
     dataIndex: 'name',
-  },
-
-  {
-    title: '请求方法',
-    dataIndex: 'method',
   },
   {
     title: '测试结果',
@@ -25,7 +20,7 @@ export const columns = reactive([
 ])
 export const formItems: FormItem[] = reactive([
   {
-    label: '模块',
+    label: '模块名称',
     key: 'module',
     value: ref(''),
     placeholder: '请选择测试模块',
@@ -40,8 +35,8 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '接口',
-    key: 'api_info',
+    label: '用例名称',
+    key: 'case',
     value: ref(''),
     placeholder: '请选择测试模块',
     required: true,

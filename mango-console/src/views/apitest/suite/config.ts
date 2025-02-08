@@ -108,22 +108,7 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-  {
-    label: '用例级别',
-    key: 'level',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请设置用例级别',
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
+
   {
     label: '用例负责人',
     key: 'case_people',
@@ -156,25 +141,19 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '用例名称',
+    title: '测试套件名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
     width: 300,
   },
   {
-    title: '用例顺序',
+    title: '测试套件顺序',
     key: 'case_flow',
     dataIndex: 'case_flow',
     align: 'left',
     ellipsis: true,
     tooltip: true,
-  },
-  {
-    title: '级别',
-    key: 'level',
-    dataIndex: 'level',
-    width: 60,
   },
   {
     title: '负责人',

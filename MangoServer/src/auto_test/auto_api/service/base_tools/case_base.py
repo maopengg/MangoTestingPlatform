@@ -15,7 +15,7 @@ from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_o
 from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel
+from src.models.api_model import RequestDataModel, ResponseDataModel
 from src.tools.obtain_test_data import ObtainTestData
 
 
@@ -72,8 +72,6 @@ class CaseBase(ObtainTestData, BaseRequest):
                 self.__login(i)
             elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
-            elif i.type == ApiPublicTypeEnum.HEADERS.value:
-                self.__headers(i)
 
     def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
         try:
@@ -109,29 +107,24 @@ class CaseBase(ObtainTestData, BaseRequest):
         return request_data_model
 
     async def __login(self, api_public_obj: ApiPublic):
-        key = api_public_obj.key
         value_dict = self.load(api_public_obj.value)
         api_info = ApiInfo.objects.get(id=value_dict.get('api_info_id'))
-        request_data_model = self.request_data_clean(RequestDataModel(method=MethodEnum(api_info.method).name,
-                                                                      url=urljoin(self.test_object.value, api_info.url),
-                                                                      headers=api_info.header,
-                                                                      params=api_info.params,
-                                                                      data=api_info.data,
-                                                                      json_data=api_info.json,
-                                                                      file=api_info.file))
-
+        request_data_model = self.request_data_clean(RequestDataModel(
+            method=MethodEnum(api_info.method).name,
+            url=urljoin(self.test_object.value, api_info.url),
+            headers=api_info.header if api_info.header else self.init_headers(),
+            params=api_info.params,
+            data=api_info.data,
+            json_data=api_info.json,
+            file=api_info.file))
         response = await self.http(request_data_model)
-        if response.response_json is None:
-            raise ApiError(*ERROR_MSG_0003)
-        value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))
-        self.set_cache(key, value)
+        # if response.response_json is None:
+        #     raise ApiError(*ERROR_MSG_0003)
+        self.api_info_front_json_re(api_info, response)
+        self.api_info_front_json_path(api_info, response)
 
     def __custom(self, api_public_obj: ApiPublic):
         self.set_cache(api_public_obj.key, api_public_obj.value)
-
-    def __headers(self, api_public_obj: ApiPublic):
-        value = self.replace(api_public_obj.value)
-        self.set_cache(api_public_obj.key, value)
 
     def __sql(self, api_public_obj: ApiPublic):
         if self.mysql_connect:
@@ -156,3 +149,12 @@ class CaseBase(ObtainTestData, BaseRequest):
             return result
         else:
             return new_dict
+
+    def api_info_front_json_path(self, api_info: ApiInfo, response: ResponseDataModel):
+        if response.response_json is None:
+            raise ApiError(*ERROR_MSG_0023)
+        for i in api_info.front_json_path:
+            self.set_cache(i.get('key'), self.get_json_path_value(response.response_json, i.get('value')))
+
+    def api_info_front_json_re(self, api_info: ApiInfo, response: ResponseDataModel):
+        pass

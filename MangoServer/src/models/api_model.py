@@ -28,7 +28,6 @@ class RequestDataModel(BaseModel):
 
 
 class ResponseDataModel(BaseModel):
-    name: str | None = None
     status_code: int
     response_time: float
     response_headers: dict
