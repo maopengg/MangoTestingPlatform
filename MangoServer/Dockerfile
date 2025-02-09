@@ -2,7 +2,7 @@ FROM python:3.10.16-alpine AS builder
 WORKDIR /app
 RUN echo "http://mirrors.aliyun.com/alpine/v3.21/main" > /etc/apk/repositories && \
     echo "http://mirrors.aliyun.com/alpine/v3.21/community" >> /etc/apk/repositories
-RUN apk add --no-cache gcc musl-dev python3-dev linux-headers
+RUN apk update && apk add --no-cache gcc musl-dev python3 python3-dev linux-headers
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 COPY . .
