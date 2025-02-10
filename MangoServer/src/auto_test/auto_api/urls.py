@@ -7,6 +7,7 @@ from django.urls import path
 
 from src.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
+from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
 from src.auto_test.auto_api.views.api_case_suite import ApiCaseSuiteCRUD, ApiCaseSuiteViews
 from src.auto_test.auto_api.views.api_case_suite_detailed import ApiCaseSuiteDetailedCRUD, ApiCaseSuiteDetailedViews
 from src.auto_test.auto_api.views.api_headers import ApiHeadersCRUD
@@ -31,6 +32,8 @@ urlpatterns = [
     path("case/detailed", ApiCaseDetailedCRUD.as_view()),
     path("case/detailed/sort", ApiCaseDetailedViews.as_view({'put': 'put_case_sort'})),
     path("case/detailed/refresh", ApiCaseDetailedViews.as_view({'put': 'put_refresh_api_info'})),
+    #
+    path("case/detailed/parameter", ApiCaseDetailedParameterCRUD.as_view()),
     #
     path("public", ApiPublicCRUD.as_view()),
     path("public/status", ApiPublicViews.as_view({'put': 'put_status'})),

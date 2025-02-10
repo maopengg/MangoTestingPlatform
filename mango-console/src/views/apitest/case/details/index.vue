@@ -182,8 +182,14 @@
             <a-space style="display: flex; justify-content: flex-end">
               <a-button type="primary" size="small" @click="addData">增加</a-button>
             </a-space>
-            <a-collapse :default-active-key="[1]" accordion :bordered="false">
-              <a-collapse-item header="Beijing Toutiao Technology Co., Ltd." key="1">
+            <a-collapse
+              :default-active-key="[1]"
+              accordion
+              :bordered="false"
+              v-for="item of data.selectDataObj.parameter"
+              :key="item.id"
+            >
+              <a-collapse-item :header="item.name" key="1">
                 <div>
                   <a-tabs
                     @tab-click="(key) => switchApiInfoType(key)"
@@ -196,13 +202,13 @@
                           <a-space direction="vertical">
                             <a-checkbox-group
                               direction="vertical"
-                              v-model="data.request.header"
+                              v-model="item.header"
                               @change="changeHeadersApi"
-                              v-for="item of data.headers_list"
-                              :key="item.id"
+                              v-for="header of data.headers_list"
+                              :key="header.id"
                             >
-                              <a-checkbox :value="item.id">
-                                {{ item.key + ': ' + item.value }}
+                              <a-checkbox :value="header.id">
+                                {{ header.key + ': ' + header.value }}
                               </a-checkbox>
                             </a-checkbox-group>
                           </a-space>
@@ -210,37 +216,37 @@
                         <a-tab-pane key="01" title="参数">
                           <a-textarea
                             placeholder="请输入参数，json格式"
-                            v-model="data.request.params"
+                            v-model="item.params"
                             allow-clear
                             auto-size
-                            @blur="blurSave('params', data.request.params)"
+                            @blur="blurSave('params', item.params, item.id)"
                           />
                         </a-tab-pane>
                         <a-tab-pane key="02" title="表单">
                           <a-textarea
                             placeholder="请输入表单，json格式"
-                            v-model="data.request.data"
+                            v-model="item.data"
                             allow-clear
                             auto-size
-                            @blur="blurSave('data', data.request.data)"
+                            @blur="blurSave('data', item.data, item.id)"
                           />
                         </a-tab-pane>
                         <a-tab-pane key="03" title="JSON">
                           <a-textarea
                             placeholder="请输入JSON，json格式"
-                            v-model="data.request.json"
+                            v-model="item.json"
                             allow-clear
                             auto-size
-                            @blur="blurSave('json', data.request.json)"
+                            @blur="blurSave('json', item.json, item.id)"
                           />
                         </a-tab-pane>
                         <a-tab-pane key="04" title="file">
                           <a-textarea
                             placeholder="请输入file，json格式"
-                            v-model="data.request.file"
+                            v-model="item.file"
                             allow-clear
                             auto-size
-                            @blur="blurSave('file', data.request.file)"
+                            @blur="blurSave('file', item.file, item.id)"
                           />
                         </a-tab-pane>
                       </a-tabs>
@@ -254,22 +260,19 @@
                         </template>
                         <a-tab-pane key="10" title="前置sql">
                           <a-space direction="vertical" fill>
-                            <a-space
-                              v-for="(inputObj, index) of data.selectDataObj.front_sql"
-                              :key="index"
-                            >
+                            <a-space v-for="(inputObj, index) of item.front_sql" :key="index">
                               <a-space>
                                 <a-input
                                   placeholder="请输入前置sql语句"
-                                  v-model="data.selectDataObj.front_sql[index]"
-                                  @blur="blurSave('front_sql', data.selectDataObj.front_sql)"
+                                  v-model="item.front_sql[index]"
+                                  @blur="blurSave('front_sql', item.front_sql, item.id)"
                                 />
                                 <a-button
                                   type="text"
                                   size="small"
                                   status="danger"
                                   @click="
-                                    removeFrontSql(data.selectDataObj.front_sql, index, 'front_sql')
+                                    removeFrontSql(item.front_sql, index, 'front_sql', item.id)
                                   "
                                   >移除
                                 </a-button>
@@ -310,52 +313,38 @@
                         <a-tab-pane key="30" title="响应一致断言">
                           <a-textarea
                             placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                            v-model="data.selectDataObj.ass_response_whole"
+                            v-model="item.ass_response_whole"
                             allow-clear
                             :auto-size="{ minRows: 9, maxRows: 9 }"
-                            @blur="
-                              blurSave('ass_response_whole', data.selectDataObj.ass_response_whole)
-                            "
+                            @blur="blurSave('ass_response_whole', item.ass_response_whole)"
                           />
                         </a-tab-pane>
                         <a-tab-pane key="31" title="响应条件断言">
                           <a-space direction="vertical">
-                            <a-space
-                              v-for="(value, index) of data.selectDataObj.ass_response_value"
-                              :key="index"
-                            >
+                            <a-space v-for="(value, index) of item.ass_response_value" :key="index">
                               <a-input
                                 placeholder="请输入jsonpath表达式"
-                                v-model="data.selectDataObj.ass_response_value[index].actual"
+                                v-model="item.ass_response_value[index].actual"
                                 @blur="
-                                  blurSave(
-                                    'ass_response_value',
-                                    data.selectDataObj.ass_response_value
-                                  )
+                                  blurSave('ass_response_value', item.ass_response_value, item.id)
                                 "
                               />
                               <a-cascader
-                                v-model="data.selectDataObj.ass_response_value[index].method"
+                                v-model="item.ass_response_value[index].method"
                                 :options="data.ass"
-                                :default-value="data.selectDataObj.ass_response_value[index].method"
+                                :default-value="item.ass_response_value[index].method"
                                 expand-trigger="hover"
                                 placeholder="请选择断言方法"
                                 value-key="key"
                                 @blur="
-                                  blurSave(
-                                    'ass_response_value',
-                                    data.selectDataObj.ass_response_value
-                                  )
+                                  blurSave('ass_response_value', item.ass_response_value, item.id)
                                 "
                               />
                               <a-input
                                 placeholder="请输入想要判断的值"
-                                v-model="data.selectDataObj.ass_response_value[index].expect"
+                                v-model="item.ass_response_value[index].expect"
                                 @blur="
-                                  blurSave(
-                                    'ass_response_value',
-                                    data.selectDataObj.ass_response_value
-                                  )
+                                  blurSave('ass_response_value', item.ass_response_value, item.id)
                                 "
                               />
                               <a-button
@@ -363,9 +352,10 @@
                                 status="danger"
                                 @click="
                                   removeFrontSql(
-                                    data.selectDataObj.ass_response_value,
+                                    item.ass_response_value,
                                     index,
-                                    'ass_response_value'
+                                    'ass_response_value',
+                                    item.id
                                   )
                                 "
                                 >移除
@@ -375,35 +365,30 @@
                         </a-tab-pane>
                         <a-tab-pane key="32" title="sql条件断言">
                           <a-space direction="vertical">
-                            <a-space
-                              v-for="(value, index) of data.selectDataObj.ass_sql"
-                              :key="index"
-                            >
+                            <a-space v-for="(value, index) of item.ass_sql" :key="index">
                               <a-input
                                 placeholder="请输入sql查询语句，只能查询一个字段"
-                                v-model="data.selectDataObj.ass_sql[index].actual"
-                                @blur="blurSave('ass_sql', data.selectDataObj.ass_sql)"
+                                v-model="item.ass_sql[index].actual"
+                                @blur="blurSave('ass_sql', item.ass_sql, item.id)"
                               />
                               <a-cascader
-                                v-model="data.selectDataObj.ass_sql[index].method"
+                                v-model="item.ass_sql[index].method"
                                 :options="data.ass"
-                                :default-value="data.selectDataObj.ass_sql[index].method"
+                                :default-value="item.ass_sql[index].method"
                                 expand-trigger="hover"
                                 placeholder="请选择断言方法"
                                 value-key="key"
-                                @blur="blurSave('ass_sql', data.selectDataObj.ass_sql)"
+                                @blur="blurSave('ass_sql', item.ass_sql, item.id)"
                               />
                               <a-input
                                 placeholder="请输入想要判断的值"
-                                v-model="data.selectDataObj.ass_sql[index].expect"
-                                @blur="blurSave('ass_sql', data.selectDataObj.ass_sql)"
+                                v-model="item.ass_sql[index].expect"
+                                @blur="blurSave('ass_sql', item.ass_sql, item.id)"
                               />
                               <a-button
                                 type="text"
                                 status="danger"
-                                @click="
-                                  removeFrontSql(data.selectDataObj.ass_sql, index, 'ass_sql')
-                                "
+                                @click="removeFrontSql(item.ass_sql, index, 'ass_sql', item.id)"
                                 >移除
                               </a-button>
                             </a-space>
@@ -420,28 +405,19 @@
                         </template>
                         <a-tab-pane key="40" title="响应结果提取">
                           <a-space direction="vertical">
-                            <a-space
-                              v-for="(value, index) of data.selectDataObj.posterior_response"
-                              :key="index"
-                            >
+                            <a-space v-for="(value, index) of item.posterior_response" :key="index">
                               <a-input
                                 placeholder="请输入jsonpath语法"
-                                v-model="data.selectDataObj.posterior_response[index].key"
+                                v-model="item.posterior_response[index].key"
                                 @blur="
-                                  blurSave(
-                                    'posterior_response',
-                                    data.selectDataObj.posterior_response
-                                  )
+                                  blurSave('posterior_response', item.posterior_response, item.id)
                                 "
                               />
                               <a-input
                                 placeholder="请输入缓存key"
-                                v-model="data.selectDataObj.posterior_response[index].value"
+                                v-model="item.posterior_response[index].value"
                                 @blur="
-                                  blurSave(
-                                    'posterior_response',
-                                    data.selectDataObj.posterior_response
-                                  )
+                                  blurSave('posterior_response', item.posterior_response, item.id)
                                 "
                               />
 
@@ -451,9 +427,10 @@
                                 status="danger"
                                 @click="
                                   removeFrontSql(
-                                    data.selectDataObj.posterior_response,
+                                    item.posterior_response,
                                     index,
-                                    'posterior_response'
+                                    'posterior_response',
+                                    item.id
                                   )
                                 "
                                 >移除
@@ -464,23 +441,16 @@
                         <a-tab-pane key="41" title="后置sql处理">
                           <a-space direction="vertical">
                             <a-space direction="vertical">
-                              <a-space
-                                v-for="(value, index) of data.selectDataObj.posterior_sql"
-                                :key="index"
-                              >
+                              <a-space v-for="(value, index) of item.posterior_sql" :key="index">
                                 <a-input
                                   placeholder="请输入sql"
-                                  v-model="data.selectDataObj.posterior_sql[index].key"
-                                  @blur="
-                                    blurSave('posterior_sql', data.selectDataObj.posterior_sql)
-                                  "
+                                  v-model="item.posterior_sql[index].key"
+                                  @blur="blurSave('posterior_sql', item.posterior_sql, item.id)"
                                 />
                                 <a-input
                                   placeholder="请输入缓存key，删除语句则不用"
-                                  v-model="data.selectDataObj.posterior_sql[index].value"
-                                  @blur="
-                                    blurSave('posterior_sql', data.selectDataObj.posterior_sql)
-                                  "
+                                  v-model="item.posterior_sql[index].value"
+                                  @blur="blurSave('posterior_sql', item.posterior_sql, item.id)"
                                 />
 
                                 <a-button
@@ -489,9 +459,10 @@
                                   status="danger"
                                   @click="
                                     removeFrontSql(
-                                      data.selectDataObj.posterior_sql,
+                                      item.posterior_sql,
                                       index,
-                                      'posterior_sql'
+                                      'posterior_sql',
+                                      item.id
                                     )
                                   "
                                   >移除
@@ -505,10 +476,8 @@
                             <a-space direction="vertical">
                               <a-input
                                 placeholder="请输入强制等待时间，单位是秒"
-                                v-model="data.selectDataObj.posterior_sleep"
-                                @blur="
-                                  blurSave('posterior_sleep', data.selectDataObj.posterior_sleep)
-                                "
+                                v-model="item.posterior_sleep"
+                                @blur="blurSave('posterior_sleep', item.posterior_sleep, item.id)"
                                 style="width: 300px"
                               />
                             </a-space>
@@ -592,6 +561,7 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
+  import { putApiCaseDetailedParameter } from '@/api/apitest/case-detailed-parameter'
 
   const userStore = useUserStore()
 
@@ -638,28 +608,15 @@
   function switchApiInfoType(key: any) {
     data.caseDetailsTypeKey = key
     if (key === '0') {
-      if (data.request.params) {
-        data.tabsKey = '01'
-      } else if (data.request.data) {
-        data.tabsKey = '02'
-      } else if (data.request.json) {
-        data.tabsKey = '03'
-      } else if (data.request.file) {
-        data.tabsKey = '04'
-      } else {
-        data.tabsKey = '00'
-      }
     } else if (key === '1') {
       data.tabsKey = '10'
     } else if (key === '2') {
-      console.log(key)
       data.tabsKey = '23'
     } else if (key === '3') {
       data.tabsKey = '30'
     } else if (key === '4') {
       data.tabsKey = '40'
     } else if (key === '5') {
-      console.log(key)
       data.tabsKey = '50'
     }
   }
@@ -676,7 +633,7 @@
       .catch(console.log)
   }
   function changeHeadersApi(selectedValues: any) {
-    if (Object.keys(data.selectDataObj).length !== 0) {
+    if (Object.keys(data.selectDataObj.header).length !== 0) {
       putApiCaseDetailed({ id: data.selectDataObj.id, header: selectedValues }, route.query.case_id)
         .then((res) => {
           Message.success(res.msg)
@@ -724,23 +681,20 @@
       .catch(console.log)
   }
 
-  function blurSave(key: string, item: string | null) {
-    if (key === 'header' || key === 'posterior_sleep') {
-      if (item === '') {
-        item = null
-      }
-      data.selectDataObj[key] = item
-    } else if (typeof item !== 'object') {
-      let jsonObj = formatJsonObj(key, item)
-      if (jsonObj === false) {
-        return
-      }
-      data.selectDataObj[key] = jsonObj
-    } else {
-      data.selectDataObj[key] = item
+  function blurSave(key: string, item: string | null, id: number) {
+    const serialize = ['url', 'header', 'posterior_sleep']
+    if (item === '') {
+      item = null
     }
-    const { case: b, api_info: c, ...newSelectDataObj } = data.selectDataObj
-    putApiCaseDetailed(newSelectDataObj, route.query.case_id)
+    const jsonValue = !serialize.includes(key) ? formatJsonObj(key, item) : item
+    if (jsonValue === false) {
+      return
+    }
+    const payload = {
+      id: id,
+      [key]: jsonValue,
+    }
+    putApiCaseDetailedParameter(payload)
       .then((res) => {
         Message.success(res.msg)
       })
@@ -750,9 +704,9 @@
     }
   }
 
-  function removeFrontSql(item: any, index: number, key: string) {
+  function removeFrontSql(item: any, index: number, key: string, id: number) {
     item.splice(index, 1)
-    blurSave(key, item)
+    blurSave(key, item, id)
   }
 
   function getUiRunSortAss() {
@@ -893,16 +847,22 @@
   }
 
   function select(record: any) {
-    data.selectDataObj = record
-    data.result_data = record.result_data
-    if (typeof record.ass_response_whole == 'object') {
-      data.selectDataObj['ass_response_whole'] = formatJson(record.ass_response_whole)
+    if (record) {
+      data.selectDataObj = record
+      data.result_data = record.result_data
+      const formatItemData = (item: any) => {
+        const propertiesToFormat = ['ass_response_whole', 'data', 'params', 'json', 'file']
+
+        propertiesToFormat.forEach((prop) => {
+          if (typeof item[prop] === 'object') {
+            item[prop] = formatJson(item[prop])
+          }
+        })
+      }
+      data.selectDataObj.parameter.forEach((item: any) => {
+        formatItemData(item)
+      })
     }
-    data.request.header = record.header
-    data.request.data = formatJson(record.data)
-    data.request.params = formatJson(record.params)
-    data.request.json = formatJson(record.json)
-    data.request.file = formatJson(record.file)
     switchApiInfoType(data.caseDetailsTypeKey)
   }
 
