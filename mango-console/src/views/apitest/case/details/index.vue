@@ -180,7 +180,7 @@
         <div class="right">
           <a-space direction="vertical" fill>
             <a-space style="display: flex; justify-content: flex-end">
-              <a-button type="primary" size="small" @click="addData">增加</a-button>
+              <a-button type="primary" size="small" @click="addParameter">增加</a-button>
             </a-space>
             <a-collapse
               :default-active-key="[1]"
@@ -190,6 +190,12 @@
               :key="item.id"
             >
               <a-collapse-item :header="item.name" key="1">
+                <template #extra>
+                  <a-button type="text" size="mini" @click.stop="parameterEditing">编辑</a-button>
+                  <a-button status="danger" type="text" size="mini" @click.stop="parameterEditing"
+                    >删除</a-button
+                  >
+                </template>
                 <div>
                   <a-tabs
                     @tab-click="(key) => switchApiInfoType(key)"
@@ -255,7 +261,9 @@
                       <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                         <template #extra>
                           <a-space>
-                            <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                            <a-button type="primary" size="small" @click="clickAdd(item)"
+                              >增加</a-button
+                            >
                           </a-space>
                         </template>
                         <a-tab-pane key="10" title="前置sql">
@@ -306,8 +314,10 @@
                     <a-tab-pane key="3" title="接口断言">
                       <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                         <template #extra>
-                          <a-space>
-                            <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                          <a-space v-if="data.assClickAdd">
+                            <a-button type="primary" size="small" @click="clickAdd(item)">
+                              增加
+                            </a-button>
                           </a-space>
                         </template>
                         <a-tab-pane key="30" title="响应一致断言">
@@ -316,7 +326,7 @@
                             v-model="item.ass_response_whole"
                             allow-clear
                             :auto-size="{ minRows: 9, maxRows: 9 }"
-                            @blur="blurSave('ass_response_whole', item.ass_response_whole)"
+                            @blur="blurSave('ass_response_whole', item.ass_response_whole, item.id)"
                           />
                         </a-tab-pane>
                         <a-tab-pane key="31" title="响应条件断言">
@@ -399,8 +409,10 @@
                     <a-tab-pane key="4" title="后置处理">
                       <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                         <template #extra>
-                          <a-space>
-                            <a-button type="primary" size="small" @click="clickAdd">增加</a-button>
+                          <a-space v-if="data.assClickAdd">
+                            <a-button type="primary" size="small" @click="clickAdd(item)"
+                              >增加</a-button
+                            >
                           </a-space>
                         </template>
                         <a-tab-pane key="40" title="响应结果提取">
@@ -534,6 +546,26 @@
       </a-form>
     </template>
   </ModalDialog>
+  <ModalDialog
+    ref="modalDialogRefParameter"
+    :title="data.actionParameterTitle"
+    @confirm="onDataFormParameter"
+  >
+    <template #content>
+      <a-form :model="formParameterModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formParameterItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 
 <script lang="ts" setup>
@@ -545,7 +577,7 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
-  import { formItems, columns } from './config'
+  import { formItems, columns, formParameterItems } from './config'
   import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
   import {
     getApiCaseDetailed,
@@ -561,25 +593,26 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
-  import { putApiCaseDetailedParameter } from '@/api/apitest/case-detailed-parameter'
+  import {
+    postApiCaseDetailedParameter,
+    putApiCaseDetailedParameter,
+    deleteApiCaseDetailedParameter,
+  } from '@/api/apitest/case-detailed-parameter'
 
   const userStore = useUserStore()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const modalDialogRefParameter = ref<ModalDialogType | null>(null)
   const formModel = ref({})
+  const formParameterModel = ref({})
   const pageData: any = usePageData()
   const enumStore = useEnum()
 
   const route = useRoute()
   const data: any = reactive({
     actionTitle: '新增接口',
-    request: {
-      headers: null,
-      params: null,
-      data: null,
-      json: null,
-      file: null,
-    },
+
+    assClickAdd: true,
     result_data: {},
     results: null,
     selectDataObj: {},
@@ -594,6 +627,8 @@
     apiSonType: '0',
     caseDetailsTypeKey: '0',
     tabsKey: '10',
+
+    actionParameterTitle: '新增接口场景',
   })
 
   function switchType(key: any) {
@@ -614,11 +649,61 @@
       data.tabsKey = '23'
     } else if (key === '3') {
       data.tabsKey = '30'
+      data.assClickAdd = false
     } else if (key === '4') {
       data.tabsKey = '40'
     } else if (key === '5') {
       data.tabsKey = '50'
     }
+  }
+
+  function switchSonType(key: any) {
+    data.apiSonType = key
+  }
+  function tabsChange(key: string | number) {
+    data.tabsKey = key
+    data.assClickAdd = !(key === '30' || key === '42')
+  }
+
+  function clickAdd(item: any = null) {
+    if ('10' === data.tabsKey) {
+      item['front_sql'].push('请添加sql语句')
+    } else if ('31' === data.tabsKey) {
+      item['ass_response_value'].push({ actual: '', method: '', expect: '' })
+    } else if ('32' === data.tabsKey) {
+      item['ass_sql'].push({ actual: '', method: '', expect: '' })
+    } else if ('40' === data.tabsKey) {
+      item['posterior_response'].push({ key: '', value: '' })
+    } else if ('41' === data.tabsKey) {
+      item['posterior_sql'].push({ key: '', value: '' })
+    }
+  }
+  function addData() {
+    if (data.apiType == '2') {
+      addApiInfo()
+      return
+    }
+    if (data.apiSonType === '11') {
+      pageData.record.front_custom.push({ key: '', value: '' })
+    } else if (data.apiSonType === '12') {
+      pageData.record.front_sql.push({ sql: '', key_list: '' })
+    } else if (data.apiSonType === '31') {
+      pageData.record.posterior_sql.push({ sql: '' })
+    }
+  }
+  function doResetSearch() {
+    window.history.back()
+  }
+  function parameterEditing() {
+    Message.info('点击了编辑')
+  }
+  function parameterDelete() {
+    Message.info('点击了删除')
+  }
+  function removeFrontSql1(item: any, index: number) {
+    item.splice(index, 1)
+
+    upDataCase()
   }
   function changeHeaders(selectedValues: any) {
     const value = {
@@ -641,30 +726,6 @@
         .catch(console.log)
     }
   }
-  function switchSonType(key: any) {
-    data.apiSonType = key
-  }
-
-  function addData() {
-    if (data.apiType == '2') {
-      addApiInfo()
-      return
-    }
-    if (data.apiSonType === '11') {
-      pageData.record.front_custom.push({ key: '', value: '' })
-    } else if (data.apiSonType === '12') {
-      pageData.record.front_sql.push({ sql: '', key_list: '' })
-    } else if (data.apiSonType === '31') {
-      pageData.record.posterior_sql.push({ sql: '' })
-    }
-  }
-
-  function removeFrontSql1(item: any, index: number) {
-    item.splice(index, 1)
-
-    upDataCase()
-  }
-
   function upDataCase() {
     putApiCase({
       id: pageData.record.id,
@@ -682,18 +743,28 @@
   }
 
   function blurSave(key: string, item: string | null, id: number) {
-    const serialize = ['url', 'header', 'posterior_sleep']
-    if (item === '') {
-      item = null
-    }
-    const jsonValue = !serialize.includes(key) ? formatJsonObj(key, item) : item
-    if (jsonValue === false) {
-      return
-    }
-    const payload = {
+    const not_serialize = ['url', 'header', 'posterior_sleep']
+    const in_serialize = ['data', 'json', 'data', 'file', 'params']
+    const payload: any = {
       id: id,
-      [key]: jsonValue,
+      [key]: null,
     }
+    if (not_serialize.includes(key)) {
+      if (item === '') {
+        payload[key] = null
+      } else {
+        payload[key] = item
+      }
+    } else if (in_serialize.includes(key)) {
+      if (formatJsonObj(key, item) === false) {
+        return
+      } else {
+        payload[key] = formatJsonObj(key, item)
+      }
+    } else {
+      payload[key] = item
+    }
+
     putApiCaseDetailedParameter(payload)
       .then((res) => {
         Message.success(res.msg)
@@ -803,6 +874,26 @@
         .catch(console.log)
     }
   }
+  function onDataFormParameter() {
+    if (formParameterItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRefParameter.value?.toggle()
+      let value = getFormItems(formParameterItems)
+      value['case_detailed'] = data.selectDataObj.id
+      value['api_info'] = data.selectDataObj.api_info.id
+      value['front_sql'] = []
+      value['ass_sql'] = []
+      value['ass_response_value'] = []
+      value['posterior_sql'] = []
+      value['posterior_response'] = []
+      value['header'] = []
+      postApiCaseDetailedParameter(value)
+        .then((res) => {
+          Message.success(res.msg)
+          doRefresh()
+        })
+        .catch(console.log)
+    }
+  }
 
   function onDelete(data: any) {
     Modal.confirm({
@@ -832,11 +923,16 @@
       }
     })
   }
-
-  function doResetSearch() {
-    window.history.back()
+  function addParameter() {
+    modalDialogRefParameter.value?.toggle()
+    formParameterItems.forEach((it) => {
+      if (it.reset) {
+        it.reset()
+      } else {
+        it.value = ''
+      }
+    })
   }
-
   function refresh(id: number) {
     putApiPutRefreshApiInfo(id)
       .then((res) => {
@@ -864,24 +960,6 @@
       })
     }
     switchApiInfoType(data.caseDetailsTypeKey)
-  }
-
-  function tabsChange(key: string | any) {
-    data.tabsKey = key
-  }
-
-  function clickAdd() {
-    if ('10' === data.tabsKey) {
-      data.selectDataObj.front_sql.push('请添加sql语句')
-    } else if ('31' === data.tabsKey) {
-      data.selectDataObj.ass_response_value.push({ actual: '', method: '', expect: '' })
-    } else if ('32' === data.tabsKey) {
-      data.selectDataObj.ass_sql.push({ actual: '', method: '', expect: '' })
-    } else if ('40' === data.tabsKey) {
-      data.selectDataObj.posterior_response.push({ key: '', value: '' })
-    } else if ('41' === data.tabsKey) {
-      data.selectDataObj.posterior_sql.push({ key: '', value: '' })
-    }
   }
 
   onMounted(() => {

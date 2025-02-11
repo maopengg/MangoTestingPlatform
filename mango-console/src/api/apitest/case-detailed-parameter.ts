@@ -11,9 +11,8 @@ export function getApiCaseDetailedParameter(caseId: any) {
   })
 }
 
-export function postApiCaseDetailedParameter(data: object, parent_id: any) {
+export function postApiCaseDetailedParameter(data: object) {
   // @ts-ignore
-  data['parent_id'] = parent_id
   return post({
     url: '/api/case/detailed/parameter',
     data: () => {

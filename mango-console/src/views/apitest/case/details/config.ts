@@ -50,3 +50,20 @@ export const formItems: FormItem[] = reactive([
     },
   },
 ])
+export const formParameterItems: FormItem[] = reactive([
+  {
+    label: '场景名称',
+    key: 'name',
+    value: ref(''),
+    placeholder: '请输入场景名称',
+    required: true,
+    type: 'input',
+    validator: function () {
+      if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
