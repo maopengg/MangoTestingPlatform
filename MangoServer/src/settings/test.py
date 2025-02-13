@@ -21,6 +21,7 @@ MYSQL_PORT = 3306
 # 生产环境=True，生产环境=False，使用minio
 
 DEBUG = False
+IS_DEBUG_LOG = False
 
 # ************************ REDIS配置 ************************ #
 

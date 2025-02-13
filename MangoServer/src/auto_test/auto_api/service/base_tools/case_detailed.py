@@ -6,6 +6,7 @@ import json
 
 import time
 
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
@@ -18,12 +19,11 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
 
     def send_request(self, request_data_model: RequestDataModel) -> tuple[RequestDataModel, ResponseDataModel]:
         response = self.http(request_data_model)
-        log.api.debug(f'响应请求：{response.model_dump_json()}')
         return request_data_model, response
 
-    def front_sql(self, case_detailed):
+    def front_sql(self, case_detailed_parameter: ApiCaseDetailedParameter):
         if self.mysql_connect:
-            for sql in case_detailed.front_sql:
+            for sql in case_detailed_parameter.front_sql:
                 res = self.mysql_connect.condition_execute(sql)
                 if isinstance(res, list):
                     for i in res:
@@ -31,7 +31,11 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
                             self.set_cache(key, value)
                             log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
-    def assertion(self, response: ResponseDataModel, case_detailed) -> list[AssResultModel]:
+    def assertion(
+            self,
+            response: ResponseDataModel,
+            case_detailed_parameter: ApiCaseDetailedParameter
+    ) -> list[AssResultModel]:
         if response.response_json:
             response_data = response.response_json
         else:
@@ -43,25 +47,28 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
                 raise ApiError(*ERROR_MSG_0039)
         self.ass_result = []
         try:
-            if case_detailed.ass_response_value:
-                self.__assertion_response_value(response_data, self.replace(case_detailed.ass_response_value))
-            if case_detailed.ass_sql:
-                self.__assertion_sql(self.replace(case_detailed.ass_sql))
-            if case_detailed.ass_response_whole:
-                self.__assertion_response_whole(response_data, self.replace(case_detailed.ass_response_whole))
-        except ApiError as error:
+            if case_detailed_parameter.ass_response_value:
+                format_value = self.replace(case_detailed_parameter.ass_response_value)
+                self.__assertion_response_value(response_data, format_value)
+            if case_detailed_parameter.ass_sql:
+                format_value = self.replace(case_detailed_parameter.ass_sql)
+                self.__assertion_sql(format_value)
+            if case_detailed_parameter.ass_response_whole:
+                format_value = self.replace(case_detailed_parameter.ass_response_whole)
+                self.__assertion_response_whole(response_data, format_value)
+        except (ToolsError, ApiError) as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
         finally:
             return self.ass_result
 
-    def posterior(self, response: ResponseDataModel, case_detailed):
-        if case_detailed.posterior_response:
-            self.__posterior_response(response.response_json, self.replace(case_detailed.posterior_response))
-        if case_detailed.posterior_sql:
-            self.__posterior_sql(self.replace(case_detailed.posterior_sql))
-        if case_detailed.posterior_sleep:
-            self.__posterior_sleep(self.replace(case_detailed.posterior_sleep))
+    def posterior(self, response: ResponseDataModel, case_detailed_parameter: ApiCaseDetailedParameter):
+        if case_detailed_parameter.posterior_response:
+            self.__posterior_response(response.response_json, self.replace(case_detailed_parameter.posterior_response))
+        if case_detailed_parameter.posterior_sql:
+            self.__posterior_sql(self.replace(case_detailed_parameter.posterior_sql))
+        if case_detailed_parameter.posterior_sleep:
+            self.__posterior_sleep(self.replace(case_detailed_parameter.posterior_sleep))
 
     # def dump_data(self, case_detailed):
     #     if self.mysql_connect:
@@ -111,7 +118,9 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0005)
         except ToolsError as error:
-            raise ApiError(error.code, error.msg)
+            log.api.debug(error)
+            self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
+            raise error
 
     def __assertion_sql(self, sql_list: list[dict]):
         _dict = {'actual': None}
@@ -138,7 +147,9 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
             self.ass_response_whole(actual, expect)
         except AssertionError as error:
             log.api.debug(error)
-            self.ass_result.append(AssResultModel(type='全匹配断言',
-                                                  expect=json.dumps(expect, ensure_ascii=False),
-                                                  actual=json.dumps(expect, ensure_ascii=False)))
+            self.ass_result.append(AssResultModel(
+                type='全匹配断言',
+                expect=json.dumps(expect, ensure_ascii=False),
+                actual=json.dumps(expect, ensure_ascii=False)
+            ))
             raise ApiError(*ERROR_MSG_0004, value=(expect, actual))

@@ -1,12 +1,10 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function getApiCaseDetailedParameter(caseId: any) {
+export function getApiCaseDetailedParameter(data: object) {
   return get({
     url: '/api/case/detailed/parameter',
     data: () => {
-      return {
-        case_id: caseId,
-      }
+      return data
     },
   })
 }
@@ -31,12 +29,9 @@ export function putApiCaseDetailedParameter(data: object) {
   })
 }
 
-export function deleteApiCaseDetailedParameter(id: number | string[] | number[], parentId: any) {
+export function deleteApiCaseDetailedParameter(id: number | string[] | number[]) {
   const data: any = {
     id: id,
-  }
-  if (parentId) {
-    data['parent_id'] = parentId
   }
   return deleted({
     url: '/api/case/detailed/parameter',

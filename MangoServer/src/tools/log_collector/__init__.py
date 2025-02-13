@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import logging
 
-from src.settings import DEBUG
+from src.settings import IS_DEBUG_LOG
 
 
 class System:
@@ -37,7 +37,7 @@ class Ui:
 
     @classmethod
     def debug(cls, msg: str):
-        if DEBUG:
+        if IS_DEBUG_LOG:
             cls.log.debug(msg)
 
     @classmethod
@@ -62,8 +62,8 @@ class Api:
 
     @classmethod
     def debug(cls, msg: str):
-        if DEBUG:
-            cls.log.debug(msg)
+        if IS_DEBUG_LOG:
+            cls.log.warning(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -87,7 +87,7 @@ class User:
 
     @classmethod
     def debug(cls, msg: str):
-        if DEBUG:
+        if IS_DEBUG_LOG:
             cls.log.debug(msg)
 
     @classmethod
@@ -112,7 +112,7 @@ class Perf:
 
     @classmethod
     def debug(cls, msg: str):
-        if DEBUG:
+        if IS_DEBUG_LOG:
             cls.log.debug(msg)
 
     @classmethod

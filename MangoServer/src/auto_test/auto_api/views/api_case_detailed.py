@@ -10,6 +10,7 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiCaseDetailedParameter
 from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
@@ -73,11 +74,11 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         except FieldError:
             pass
         data = self.serializer_class(instance=api_case_detailed, many=True).data
-        from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
-        for i in data:
-            api_case_detailed_parameter = ApiCaseDetailedParameter.objects.filter(case_detailed_id=i.get('id'))
-            parameter_dict = ApiCaseDetailedParameterCRUD.serializer(api_case_detailed_parameter, many=True).data
-            i['parameter'] = parameter_dict
+        # from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
+        # for i in data:
+        #     api_case_detailed_parameter = ApiCaseDetailedParameter.objects.filter(case_detailed_id=i.get('id'))
+        #     parameter_dict = ApiCaseDetailedParameterCRUD.serializer(api_case_detailed_parameter, many=True).data
+        #     i['parameter'] = parameter_dict
         return ResponseData.success(RESPONSE_MSG_0010, data)
 
     @error_response('api')
@@ -146,22 +147,16 @@ class ApiCaseDetailedViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('api')
     def put_refresh_api_info(self, request: Request):
-        api_info_detailed_obj = self.model.objects.get(id=request.data.get('id'))
-        api_info_obj = ApiInfo.objects.get(id=api_info_detailed_obj.api_info.id)
-        data = {
-            'url': api_info_obj.url,
-            'params': api_info_obj.params,
-            'data': api_info_obj.data,
-            'json': api_info_obj.json,
-            'file': api_info_obj.file,
-            'header': json.dumps(api_info_obj.header) if api_info_obj.header else None
-        }
-        serializer = self.serializer_class(
-            instance=api_info_detailed_obj,
-            data=data
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseData.success(RESPONSE_MSG_0014, serializer.data)
-        else:
-            return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)
+        model = self.model.objects.get(id=request.data.get('id'))
+        api_info_obj = ApiInfo.objects.get(id=model.api_info.id)
+
+        for i in ApiCaseDetailedParameter.objects.filter(case_detailed_id=model.id):
+            i.params = api_info_obj.params
+            i.data = api_info_obj.data
+            i.json = api_info_obj.json
+            i.file = api_info_obj.file
+            # i.header = []
+            i.save()
+
+        return ResponseData.success(RESPONSE_MSG_0014)
+        # return ResponseData.fail(RESPONSE_MSG_0015, serializer.errors)

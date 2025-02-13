@@ -8,13 +8,13 @@ from copy import deepcopy
 from typing import Optional
 from urllib.parse import urljoin
 
-from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders
+from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders, ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base_tools.case_detailed import CaseDetailedInit
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum, AutoTestTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel, ApiCaseResultModel, ResponseDataModel, ApiCaseStepsResultModel
+from src.models.api_model import RequestDataModel, ApiCaseResultModel, ApiCaseStepsResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
 
 
@@ -63,7 +63,7 @@ class TestCase(CaseDetailedInit):
             self.init_case_posterior(api_case)
             self.api_case_result.status = self.status.value
             self.api_case_result.error_message = self.error_message
-            self.update_test_case(case_id, self.status)
+            self.update_test_case(case_id)
             if self.test_suite:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                     id=self.test_suite_details,
@@ -99,12 +99,33 @@ class TestCase(CaseDetailedInit):
             raise ApiError(*ERROR_MSG_0008)
         # 这里有问题
         try:
-            for i in case_detailed_list:
-                request_data_model = self.case_steps_front(i)
-                request_data_model, response = self.send_request(request_data_model)
-                self.case_steps_posterior(i, request_data_model, response)
+            for case_detailed in case_detailed_list:
+                for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
+                        case_detailed_id=case_detailed.id):
+                    request_data_model = self.case_steps_front(case_detailed, case_detailed_parameter)
+                    request_data_model, response = self.send_request(request_data_model)
+                    self.posterior(response, case_detailed_parameter)
+                    api_case_steps_result = ApiCaseStepsResultModel(
+                        id=case_detailed.id,
+                        api_info_id=case_detailed.api_info.id,
+                        name=case_detailed_parameter.name,
+                        status=self.status.value,
+                        error_message=self.error_message,
+                        ass=self.assertion(response, case_detailed_parameter),
+                        request=request_data_model,
+                        response=response,
+                        cache_data=self.get_all()
+                    )
+                    self.api_case_result.steps.append(api_case_steps_result)
+
+                    self.update_case_detailed_parameter(case_detailed_parameter.id, api_case_steps_result)
+                    if self.status == StatusEnum.FAIL:
+                        break
+                self.update_api_info(case_detailed.api_info.id)
+                self.update_case_detailed(case_detailed.id)
                 if self.status == StatusEnum.FAIL:
                     break
+
         except MangoServerError as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
@@ -114,74 +135,52 @@ class TestCase(CaseDetailedInit):
             log.api.error(error)
             self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
 
-    def case_steps_front(self, data: ApiCaseDetailed) -> RequestDataModel:
-        data.status = TaskEnum.PROCEED.value
-        data.save()
-        self.project_product_id = data.api_info.project_product.id
+    def case_steps_front(self,
+                         case_detailed: ApiCaseDetailed,
+                         case_detailed_parameter: ApiCaseDetailedParameter) -> RequestDataModel:
+        case_detailed.status = TaskEnum.PROCEED.value
+        case_detailed.save()
+        self.project_product_id = case_detailed.api_info.project_product.id
         self.init_test_object()
-        self.front_sql(data)
+        self.front_sql(case_detailed_parameter)
         request_data_model = self.request_data_clean(RequestDataModel(
-            method=MethodEnum(data.api_info.method).name,
-            url=urljoin(self.test_object.value, data.url),
-            headers=self.headers(data),
-            params=data.params,
-            data=data.data,
-            json_data=data.json,
-            file=data.file
+            method=MethodEnum(case_detailed.api_info.method).name,
+            url=urljoin(self.test_object.value, case_detailed.api_info.url),
+            headers=self.headers(case_detailed_parameter),
+            params=case_detailed_parameter.params,
+            data=case_detailed_parameter.data,
+            json_data=case_detailed_parameter.json,
+            file=case_detailed_parameter.file
         ))
         return request_data_model
 
-    def case_steps_posterior(
-            self,
-            data: ApiCaseDetailed,
-            request: RequestDataModel,
-            response: ResponseDataModel):
-        ass = self.assertion(response, data)
-        self.posterior(response, data)
-        api_case_steps_result = ApiCaseStepsResultModel(
-            id=data.id,
-            api_info_id=data.api_info.id,
-            name=data.api_info.name,
-            status=self.status.value,
-            error_message=self.error_message,
-            ass=ass,
-            request=request,
-            response=response,
-            cache_data=self.get_all()
-        )
-        data.status = self.status.value
-        data.save()
-        self.api_case_result.steps.append(api_case_steps_result)
-        self.update_api_info(data.api_info.id, self.status)
-        self.update_case_detailed(data.id, self.status, api_case_steps_result)
+    def update_api_info(self, api_info_id: int):
+        model = ApiInfo.objects.get(id=api_info_id)
+        model.status = self.status.value
+        model.save()
 
-    @classmethod
-    def update_api_info(cls, api_info_id: int, status: StatusEnum):
-        api_info_obj = ApiInfo.objects.get(id=api_info_id)
-        api_info_obj.status = status.value
-        api_info_obj.save()
+    def update_test_case(self, case_id: int, ):
+        model = ApiCase.objects.get(id=case_id)
+        model.status = self.status.value
+        model.save()
 
-    @classmethod
-    def update_test_case(cls, case_id: int, status: StatusEnum):
-        api_case = ApiCase.objects.get(id=case_id)
-        api_case.status = status.value
-        api_case.save()
+    def update_case_detailed(self, case_detailed_id: int):
+        model = ApiCaseDetailed.objects.get(id=case_detailed_id)
+        model.status = self.status.value
+        model.save()
 
-    @classmethod
-    def update_case_detailed(cls, case_detailed_id: int, status: StatusEnum, result_data: ApiCaseStepsResultModel):
-        api_info_obj = ApiCaseDetailed.objects.get(id=case_detailed_id)
-        api_info_obj.status = status.value
-        api_info_obj.result_data = result_data.model_dump()
-        api_info_obj.save()
+    def update_case_detailed_parameter(self, case_detailed_parameter_id, result_data: ApiCaseStepsResultModel):
+        model = ApiCaseDetailedParameter.objects.get(id=case_detailed_parameter_id)
+        model.status = self.status.value
+        model.result_data = result_data.model_dump()
+        model.save()
 
-    def headers(self, data: ApiCaseDetailed) -> dict:
-        if data.header:
+    def headers(self, case_detailed_parameter: ApiCaseDetailedParameter) -> dict:
+        if case_detailed_parameter.header:
             case_details_header = {}
-            for i in ApiHeaders.objects.filter(id__in=data.header):
+            for i in ApiHeaders.objects.filter(id__in=case_detailed_parameter.header):
                 case_details_header[i.key] = i.value
             case_headers = deepcopy(self.case_headers)
             case_headers.update(case_details_header)
-            print(0, case_headers)
             return case_headers
-        print(1, self.case_headers)
         return self.case_headers

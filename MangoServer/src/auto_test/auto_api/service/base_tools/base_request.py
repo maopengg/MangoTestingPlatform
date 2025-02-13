@@ -8,11 +8,11 @@ import time
 from requests import Response
 from requests.exceptions import *
 
+from mangokit import requests
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *
 from src.models.api_model import RequestDataModel, ResponseDataModel
-from mangokit import requests
 
 
 class BaseRequest:
@@ -46,13 +46,16 @@ class BaseRequest:
         response_json = None
         if 'application/json' in response.headers.get('Content-Type', ''):
             response_json = response.json()
-        return ResponseDataModel(
+        response = ResponseDataModel(
             status_code=response.status_code,
             response_time=time.time() - s,
             response_headers=response.headers,
             response_json=response_json,
             response_text=response.text
         )
+
+        log.api.debug(f'API响应数据：{response.model_dump_json()}')
+        return response
 
     @classmethod
     def test_http(cls, request_data: RequestDataModel) -> Response:

@@ -89,7 +89,6 @@ class ApiCaseDetailedParameter(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.SET_NULL, null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
-    url = models.CharField(verbose_name="请求url", max_length=1024, null=True)
     header = models.JSONField(verbose_name="请求头", max_length=2048, null=True)
     params = models.JSONField(verbose_name="参数", null=True)
     data = models.JSONField(verbose_name="data", null=True)
@@ -100,8 +99,9 @@ class ApiCaseDetailedParameter(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     # 断言
     ass_sql = models.JSONField(verbose_name="sql断言", null=True)
-    ass_response_whole = models.JSONField(verbose_name="响应全匹配断言", null=True)
-    ass_response_value = models.JSONField(verbose_name="响应值断言", null=True)
+    ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
+    ass_text_all = models.JSONField(verbose_name="响应文本全匹配断言", null=True)
+    ass_jsonpath = models.JSONField(verbose_name="响应jsonpath断言", null=True)
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
     posterior_response = models.JSONField(verbose_name="后置响应处理", null=True)

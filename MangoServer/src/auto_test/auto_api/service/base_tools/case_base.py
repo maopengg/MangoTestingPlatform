@@ -76,10 +76,8 @@ class CaseBase(ObtainTestData, BaseRequest):
     def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
         try:
             for key, value in request_data_model:
-                if key == 'headers' and isinstance(value, str):
+                if key == 'headers':
                     value = self.replace(value)
-                    # if value == '${headers}':
-                    #     value = None
                     if value and isinstance(value, str):
                         value = self.loads(value) if value else value
                     setattr(request_data_model, key, value)
@@ -96,12 +94,6 @@ class CaseBase(ObtainTestData, BaseRequest):
                 else:
                     value = self.replace(value)
                     setattr(request_data_model, key, value)
-
-                # if key == 'headers' and hasattr(self, 'headers') and self.headers:
-                #     new_dict = self.replace(self.headers)
-                #     if new_dict and isinstance(new_dict, str):
-                #         new_dict = self.loads(new_dict) if new_dict else new_dict
-                #     request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
         except MangoKitError as error:
             raise ApiError(error.code, error.msg)
         return request_data_model

@@ -9,7 +9,6 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiInfo, ApiCaseDetailedParameter
-from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -23,6 +22,10 @@ class ApiCaseDetailedParameterSerializers(serializers.ModelSerializer):
     class Meta:
         model = ApiCaseDetailedParameter
         fields = '__all__'
+
+    @staticmethod
+    def setup_eager_loading(queryset):
+        return queryset
 
 
 class ApiCaseDetailedParameterCRUD(ModelCRUD):
