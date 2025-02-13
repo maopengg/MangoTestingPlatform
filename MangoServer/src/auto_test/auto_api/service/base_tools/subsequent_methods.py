@@ -4,7 +4,7 @@
 # @Time   : 2024-11-27 10:09
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCaseDetailed
-from src.models.api_model import ResponseDataModel, RequestDataModel
+from src.models.api_model import ResponseModel, RequestModel
 
 
 class SubsequentMethods:
@@ -13,7 +13,7 @@ class SubsequentMethods:
 
     def sub_set_cookie(self,
                        api_case_detailed: ApiCaseDetailed,
-                       request: RequestDataModel,
-                       response: ResponseDataModel):
+                       request: RequestModel,
+                       response: ResponseModel):
         """设置cookie"""
         pass

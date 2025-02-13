@@ -12,7 +12,7 @@ from mangokit import requests
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel, ResponseDataModel
+from src.models.api_model import RequestModel, ResponseModel
 
 
 class BaseRequest:
@@ -20,7 +20,7 @@ class BaseRequest:
     def __init__(self):
         self.timeout = CacheDataValue.get_cache_value(CacheDataKeyEnum.API_TIMEOUT.name)
 
-    def http(self, request_data: RequestDataModel) -> ResponseDataModel:
+    def http(self, request_data: RequestModel) -> ResponseModel:
         try:
             log.api.debug(f'开始执行接口：{request_data.model_dump_json()}')
             s = time.time()
@@ -46,7 +46,7 @@ class BaseRequest:
         response_json = None
         if 'application/json' in response.headers.get('Content-Type', ''):
             response_json = response.json()
-        response = ResponseDataModel(
+        response = ResponseModel(
             status_code=response.status_code,
             response_time=time.time() - s,
             response_headers=response.headers,
@@ -58,7 +58,7 @@ class BaseRequest:
         return response
 
     @classmethod
-    def test_http(cls, request_data: RequestDataModel) -> Response:
+    def test_http(cls, request_data: RequestModel) -> Response:
         s = time.time()
         response = requests.request(
             method=request_data.method,
@@ -79,7 +79,7 @@ class BaseRequest:
 #     def __init__(self):
 #         self.timeout = CacheDataValue.get_cache_value(CacheDataKeyEnum.API_TIMEOUT.name)
 #
-#     async def http(self, request_data: RequestDataModel) -> ResponseModel:
+#     async def http(self, request_data: RequestModel) -> ResponseModel:
 #         async_requests.timeout = int(self.timeout)
 #         return await async_requests.request(
 #             method=request_data.method,
@@ -91,7 +91,7 @@ class BaseRequest:
 #         )
 #
 #     @classmethod
-#     async def test_http(cls, request_data: RequestDataModel) -> ResponseModel:
+#     async def test_http(cls, request_data: RequestModel) -> ResponseModel:
 #         response = await async_requests.request(
 #             method=request_data.method,
 #             url=request_data.url,

@@ -15,7 +15,7 @@ from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_o
 from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel, ResponseDataModel
+from src.models.api_model import RequestModel, ResponseModel
 from src.tools.obtain_test_data import ObtainTestData
 
 
@@ -73,7 +73,7 @@ class CaseBase(ObtainTestData, BaseRequest):
             elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
 
-    def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
+    def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:
         try:
             for key, value in request_data_model:
                 if key == 'headers':
@@ -101,7 +101,7 @@ class CaseBase(ObtainTestData, BaseRequest):
     async def __login(self, api_public_obj: ApiPublic):
         value_dict = self.load(api_public_obj.value)
         api_info = ApiInfo.objects.get(id=value_dict.get('api_info_id'))
-        request_data_model = self.request_data_clean(RequestDataModel(
+        request_data_model = self.request_data_clean(RequestModel(
             method=MethodEnum(api_info.method).name,
             url=urljoin(self.test_object.value, api_info.url),
             headers=api_info.header if api_info.header else self.init_headers(),
@@ -142,11 +142,20 @@ class CaseBase(ObtainTestData, BaseRequest):
         else:
             return new_dict
 
-    def api_info_front_json_path(self, api_info: ApiInfo, response: ResponseDataModel):
-        if response.response_json is None:
-            raise ApiError(*ERROR_MSG_0023)
-        for i in api_info.front_json_path:
-            self.set_cache(i.get('key'), self.get_json_path_value(response.response_json, i.get('value')))
+    def api_info_posterior_json_path(self, api_info: ApiInfo, response: ResponseModel):
+        if api_info.posterior_json_path:
+            if response.response_json is None:
+                raise ApiError(*ERROR_MSG_0023)
+            for i in api_info.posterior_json_path:
+                self.set_cache(i.get('key'), self.get_json_path_value(response.response_json, i.get('value')))
 
-    def api_info_front_json_re(self, api_info: ApiInfo, response: ResponseDataModel):
-        pass
+    def api_info_posterior_json_re(self, api_info: ApiInfo, response: ResponseModel):
+        if api_info.posterior_re:
+            pass
+
+    @staticmethod
+    def posterior_func(func_str, func_name='func'):
+        global_namespace = {}
+        exec(func_str, global_namespace)
+        return global_namespace[func_name]
+

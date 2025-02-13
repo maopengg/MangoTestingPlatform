@@ -17,22 +17,21 @@ class ApiCaseModel(BaseModel):
     tasks_id: int | None = None
 
 
-class RequestDataModel(BaseModel):
+class RequestModel(BaseModel):
     method: str | None
     url: str | None
     headers: dict | None = None
     params: dict | list | str | None = None
     data: dict | list | None = None
-    json_data: dict | list | None = None
+    json: dict | list | None = None
     file: list[dict] | Any | None = None
 
-
-class ResponseDataModel(BaseModel):
-    status_code: int
-    response_time: float
-    response_headers: dict
-    response_json: dict | None = None
-    response_text: str | None = None
+class ResponseModel(BaseModel):
+    code: int
+    time: float
+    headers: dict
+    json: dict | None = None
+    text: str | None = None
 
 
 class RecordingApiModel(BaseModel):
@@ -48,7 +47,7 @@ class RecordingApiModel(BaseModel):
     header: dict | None = None
     params: list | dict | None = None
     data: list | dict | None = None
-    json_data: list | dict | None = None
+    json: list | dict | None = None
     file: str | None = None
     status: int | None = None
 
@@ -67,8 +66,8 @@ class ApiCaseStepsResultModel(BaseModel):
     status: int
     error_message: str | None = None
     ass: list[AssResultModel]
-    request: RequestDataModel
-    response: ResponseDataModel
+    request: RequestModel
+    response: ResponseModel
     cache_data: dict
 
 

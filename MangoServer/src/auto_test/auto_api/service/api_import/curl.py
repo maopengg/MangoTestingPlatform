@@ -33,7 +33,7 @@ class Curl:
         # print(encoded_data)
         # response = requests.request("POST", url, headers=headers, data=payload)
         # print(response.text)
-        # response = HTTPRequest().test_http(RequestDataModel(method='POST', url=url, headers=headers, data=encoded_data))
+        # response = HTTPRequest().test_http(RequestModel(method='POST', url=url, headers=headers, data=encoded_data))
         # print(response.json())
         # response_dict = response.json()
         # data1 = json.loads(response_dict.get('code'))

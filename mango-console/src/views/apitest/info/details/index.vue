@@ -24,10 +24,8 @@
     <a-card>
       <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
         <template #extra>
-          <a-space>
-            <a-button type="primary" size="small" @click="addData" :disabled="!data.addButton"
-              >增加</a-button
-            >
+          <a-space v-if="data.addButton">
+            <a-button type="primary" size="small" @click="addData">增加</a-button>
           </a-space>
         </template>
         <a-tab-pane key="0" title="请求头">
@@ -35,7 +33,7 @@
             placeholder="请输入请求头，字符串形式"
             v-model="data.header"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('header', data.header)"
           />
         </a-tab-pane>
@@ -44,7 +42,7 @@
             placeholder="请输入json格式的数据"
             v-model="data.params"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('params', data.params)"
           />
         </a-tab-pane>
@@ -53,7 +51,7 @@
             placeholder="请输入json格式的表单"
             v-model="data.data"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('data', data.data)"
           />
         </a-tab-pane>
@@ -62,7 +60,7 @@
             placeholder="请输入json格式的JSON"
             v-model="data.json"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('json', data.json)"
           />
         </a-tab-pane>
@@ -71,29 +69,29 @@
             placeholder="请输入json格式的文件上传数据"
             v-model="data.file"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('file', data.file)"
           />
         </a-tab-pane>
         <a-tab-pane key="5" title="后置jsonpath提取">
           <a-space direction="vertical">
-            <a-space v-for="(value, index) of data.front_json_path" :key="index">
+            <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
               <a-input
                 placeholder="请输入缓存key"
-                v-model="data.front_json_path[index].key"
-                @blur="upDate('front_json_path', data.front_json_path)"
+                v-model="data.posterior_json_path[index].key"
+                @blur="upDate('posterior_json_path', data.posterior_json_path)"
               />
               <a-input
                 placeholder="请输入jsonpath语法"
-                v-model="data.front_json_path[index].value"
-                @blur="upDate('front_json_path', data.front_json_path)"
+                v-model="data.posterior_json_path[index].value"
+                @blur="upDate('posterior_json_path', data.posterior_json_path)"
               />
 
               <a-button
                 type="text"
                 size="small"
                 status="danger"
-                @click="removeFrontSql(data.front_json_path, index, 'front_json_path')"
+                @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
                 >移除
               </a-button>
             </a-space>
@@ -101,30 +99,38 @@
         </a-tab-pane>
         <a-tab-pane key="6" title="后置正则提取">
           <a-space direction="vertical">
-            <a-space v-for="(value, index) of data.front_re" :key="index">
+            <a-space v-for="(value, index) of data.posterior_re" :key="index">
               <a-input
                 placeholder="请输入缓存key"
-                v-model="data.front_re[index].key"
-                @blur="upDate('front_re', data.front_re)"
+                v-model="data.posterior_re[index].key"
+                @blur="upDate('posterior_re', data.posterior_re)"
               />
               <a-input
                 placeholder="请输入jsonpath语法"
-                v-model="data.front_re[index].value"
-                @blur="upDate('front_re', data.front_re)"
+                v-model="data.posterior_re[index].value"
+                @blur="upDate('posterior_re', data.posterior_re)"
               />
 
               <a-button
                 type="text"
                 size="small"
                 status="danger"
-                @click="removeFrontSql(data.front_re, index, 'front_re')"
+                @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
                 >移除
               </a-button>
             </a-space>
           </a-space>
         </a-tab-pane>
-
-        <a-tab-pane key="7" title="响应结果">
+        <a-tab-pane key="7" title="后置函数">
+          <a-textarea
+            placeholder="根据帮助文档，输入自定义后置函数"
+            v-model="data.posterior_func"
+            allow-clear
+            :auto-size="{ minRows: 28, maxRows: 28 }"
+            @blur="upDate('posterior_func', data.posterior_func)"
+          />
+        </a-tab-pane>
+        <a-tab-pane key="8" title="响应结果">
           <a-space direction="vertical">
             <a-space>
               <a-tag color="orange">响 应 码</a-tag>
@@ -175,8 +181,8 @@
     json: formatJson(pageData.record.json),
     data: formatJson(pageData.record.data),
     file: formatJson(pageData.record.file),
-    front_json_path: pageData.record.front_json_path,
-    front_re: pageData.record.front_re,
+    posterior_json_path: pageData.record.posterior_json_path,
+    posterior_re: pageData.record.posterior_re,
     result_data: pageData.record.result_data,
   })
 
@@ -190,9 +196,9 @@
   }
   function addData() {
     if (data.pageType === '5') {
-      data.front_json_path.push({ key: '', value: '' })
+      data.posterior_json_path.push({ key: '', value: '' })
     } else if (data.pageType === '6') {
-      data.front_re.push({ key: '', value: '' })
+      data.posterior_re.push({ key: '', value: '' })
     }
   }
   function switchPageType() {
@@ -222,28 +228,29 @@
     upDate(key, item)
   }
   function upDate(key: string, value1: string) {
-    let value = pageData.record
-    if (!(key === 'front_json_path' || key === 'front_re')) {
+    let value = ''
+    if (!(key === 'posterior_json_path' || key === 'posterior_re') && key !== 'posterior_func') {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
           if (typeof parsedValue === 'object') {
-            value[key] = parsedValue
+            value = parsedValue
           } else {
             Message.error(`请输入json格式的：${key}`)
             return
           }
         } else {
-          value[key] = null
+          value = null
         }
       } catch (e) {
         Message.error(`请输入json格式的：${key}`)
         return
       }
+    } else {
+      value = value1
     }
-    delete value.module
-    delete value.project_product
-    putApiInfo(value)
+
+    putApiInfo({ id: pageData.record.id, [key]: value })
       .then((res) => {
         Message.success(res.msg)
       })
@@ -273,8 +280,8 @@
         data.json = formatJson(res_data.json)
         data.data = formatJson(res_data.data)
         data.file = formatJson(res_data.file)
-        data.front_json_path = res_data.front_json_path
-        data.front_re = res_data.front_re
+        data.posterior_json_path = res_data.posterior_json_path
+        data.posterior_re = res_data.posterior_re
         data.result_data = res_data.result_data
       })
       .catch(console.log)

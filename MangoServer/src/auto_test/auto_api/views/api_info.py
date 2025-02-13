@@ -16,7 +16,7 @@ from src.auto_test.auto_api.service.api_import.import_api import ImportApi
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.tools_enum import StatusEnum
-from src.models.api_model import ResponseDataModel
+from src.models.api_model import ResponseModel
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData

@@ -27,8 +27,9 @@ class ApiInfo(models.Model):
     json = models.JSONField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
-    front_json_path = models.JSONField(verbose_name="后置jsonpath提取", null=True)
-    front_re = models.JSONField(verbose_name="后置正则提取", null=True)
+    posterior_json_path = models.JSONField(verbose_name="后置jsonpath提取", null=True)
+    posterior_re = models.JSONField(verbose_name="后置正则提取", null=True)
+    posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
@@ -52,7 +53,7 @@ class ApiCase(models.Model):
                                     null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     level = models.SmallIntegerField(verbose_name="用例级别")
-    front_custom = models.JSONField(verbose_name="前置自定义", null=True)
+    front_func = models.JSONField(verbose_name="前置方法", null=True)
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     front_headers = models.JSONField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
@@ -97,6 +98,7 @@ class ApiCaseDetailedParameter(models.Model):
     # 前置-目前只支持sql1
 
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
+    front_func = models.TextField(verbose_name='后置自定义', null=True)
     # 断言
     ass_sql = models.JSONField(verbose_name="sql断言", null=True)
     ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
@@ -105,7 +107,8 @@ class ApiCaseDetailedParameter(models.Model):
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
     posterior_response = models.JSONField(verbose_name="后置响应处理", null=True)
-    posterior_sleep = models.CharField(verbose_name="步骤顺序", max_length=64, null=True)
+    posterior_sleep = models.CharField(verbose_name="强制等待", max_length=64, null=True)
+    posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
@@ -163,6 +166,11 @@ class ApiHeaders(models.Model):
     class Meta:
         db_table = 'api_headers'
         ordering = ['-id']
+
+    def delete(self, *args, **kwargs):
+        # if ApiCaseSuiteDetailed.objects.filter(case_suite=self).exists():
+        #     raise ToolsError(300, "有关联数据，请先删除绑定的用例套件详情后再删除！")
+        super().delete(*args, **kwargs)
 
 
 class ApiPublic(models.Model):

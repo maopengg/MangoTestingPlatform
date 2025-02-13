@@ -10,14 +10,14 @@ from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
-from src.models.api_model import ResponseDataModel, RequestDataModel, AssResultModel
+from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools.assertion.public_assertion import PublicAssertion
 
 
 class CaseDetailedInit(ApiCaseData, PublicAssertion):
     ass_result: list[AssResultModel] = []
 
-    def send_request(self, request_data_model: RequestDataModel) -> tuple[RequestDataModel, ResponseDataModel]:
+    def send_request(self, request_data_model: RequestModel) -> tuple[RequestModel, ResponseModel]:
         response = self.http(request_data_model)
         return request_data_model, response
 
@@ -33,7 +33,7 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
 
     def assertion(
             self,
-            response: ResponseDataModel,
+            response: ResponseModel,
             case_detailed_parameter: ApiCaseDetailedParameter
     ) -> list[AssResultModel]:
         if response.response_json:
@@ -62,7 +62,7 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
         finally:
             return self.ass_result
 
-    def posterior(self, response: ResponseDataModel, case_detailed_parameter: ApiCaseDetailedParameter):
+    def posterior(self, response: ResponseModel, case_detailed_parameter: ApiCaseDetailedParameter):
         if case_detailed_parameter.posterior_response:
             self.__posterior_response(response.response_json, self.replace(case_detailed_parameter.posterior_response))
         if case_detailed_parameter.posterior_sql:

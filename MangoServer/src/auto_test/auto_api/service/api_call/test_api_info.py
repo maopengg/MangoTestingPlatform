@@ -8,7 +8,7 @@ from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base_tools.case_base import CaseBase
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum
-from src.models.api_model import RequestDataModel, ResponseDataModel
+from src.models.api_model import RequestModel, ResponseModel
 from src.tools.log_collector import log
 
 
@@ -24,7 +24,7 @@ class TestApiInfo(CaseBase):
         self.project_product_id = api_info.project_product.id
         self.init_test_object()
         self.init_public()
-        request_data = self.request_data_clean(RequestDataModel(
+        request_data = self.request_data_clean(RequestModel(
             method=MethodEnum(api_info.method).name,
             url=urljoin(self.test_object.value, api_info.url),
             headers=api_info.header if api_info.header else self.init_headers(),
@@ -32,13 +32,14 @@ class TestApiInfo(CaseBase):
             data=api_info.data,
             json_data=api_info.json,
             file=api_info.file))
-        log.api.debug(f'接口调试请求数据：{request_data.model_dump_json()}')
-        response: ResponseDataModel = self.http(request_data)
-        self.api_info_front_json_re(api_info, response)
-        self.api_info_front_json_path(api_info, response)
+        response: ResponseModel = self.http(request_data)
+        self.api_info_posterior_json_path(api_info, response)
+        self.api_info_posterior_json_re(api_info, response)
+        self.posterior_func(api_info.posterior_func)(response)
         return self.save_api_info(api_info, response)
 
-    def save_api_info(self, api_info: ApiInfo, response: ResponseDataModel):
+
+    def save_api_info(self, api_info: ApiInfo, response: ResponseModel):
         if response.status_code == 300 or response.status_code == 200:
             api_info.status = StatusEnum.SUCCESS.value
         else:

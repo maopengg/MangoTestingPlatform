@@ -14,7 +14,7 @@ from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum, AutoTestTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel, ApiCaseResultModel, ApiCaseStepsResultModel
+from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
 
 
@@ -137,13 +137,13 @@ class TestCase(CaseDetailedInit):
 
     def case_steps_front(self,
                          case_detailed: ApiCaseDetailed,
-                         case_detailed_parameter: ApiCaseDetailedParameter) -> RequestDataModel:
+                         case_detailed_parameter: ApiCaseDetailedParameter) -> RequestModel:
         case_detailed.status = TaskEnum.PROCEED.value
         case_detailed.save()
         self.project_product_id = case_detailed.api_info.project_product.id
         self.init_test_object()
         self.front_sql(case_detailed_parameter)
-        request_data_model = self.request_data_clean(RequestDataModel(
+        request_data_model = self.request_data_clean(RequestModel(
             method=MethodEnum(case_detailed.api_info.method).name,
             url=urljoin(self.test_object.value, case_detailed.api_info.url),
             headers=self.headers(case_detailed_parameter),
