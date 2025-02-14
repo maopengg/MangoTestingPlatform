@@ -156,19 +156,17 @@
                     <a-space direction="vertical">
                       <a-space>
                         <a-tag color="orange">响 应 码</a-tag>
-                        <span>{{ data.caseResult.status_code }}</span>
+                        <span>{{ data.caseResult.code }}</span>
                       </a-space>
                       <a-space>
                         <a-tag color="orange">响应时间</a-tag>
-                        <span>{{ data.caseResult.response_time }}</span>
+                        <span>{{ data.caseResult.time }}</span>
                       </a-space>
                       <a-space>
                         <a-tag color="orange">响 应 体</a-tag>
                         <pre>{{
                           strJson(
-                            data.caseResult.response_json
-                              ? data.caseResult.response_json
-                              : data.caseResult.response_text
+                            data.caseResult.json ? data.caseResult.json : data.caseResult.text
                           )
                         }}</pre>
                       </a-space>

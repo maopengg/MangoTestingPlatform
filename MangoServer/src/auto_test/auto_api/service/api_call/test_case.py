@@ -57,10 +57,11 @@ class TestCase(CaseDetailedInit):
         try:
             self.project_product_id = api_case.project_product.id
             self.init_public()
-            self.init_case_front(api_case)
-            self.case_detailed(case_id, case_sort)
 
-            self.init_case_posterior(api_case)
+            self.case_front_main(api_case)
+            self.case_detailed(case_id, case_sort)
+            self.case_posterior_main(api_case)
+
             self.api_case_result.status = self.status.value
             self.api_case_result.error_message = self.error_message
             self.update_test_case(case_id)
@@ -97,62 +98,60 @@ class TestCase(CaseDetailedInit):
                 .order_by('case_sort')
         if not case_detailed_list:
             raise ApiError(*ERROR_MSG_0008)
-        # 这里有问题
-        try:
-            for case_detailed in case_detailed_list:
-                for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
-                        case_detailed_id=case_detailed.id):
-                    request_data_model = self.case_steps_front(case_detailed, case_detailed_parameter)
-                    request_data_model, response = self.send_request(request_data_model)
-                    self.posterior(response, case_detailed_parameter)
-                    api_case_steps_result = ApiCaseStepsResultModel(
-                        id=case_detailed.id,
-                        api_info_id=case_detailed.api_info.id,
-                        name=case_detailed_parameter.name,
-                        status=self.status.value,
-                        error_message=self.error_message,
-                        ass=self.assertion(response, case_detailed_parameter),
-                        request=request_data_model,
-                        response=response,
-                        cache_data=self.get_all()
-                    )
-                    self.api_case_result.steps.append(api_case_steps_result)
-
-                    self.update_case_detailed_parameter(case_detailed_parameter.id, api_case_steps_result)
-                    if self.status == StatusEnum.FAIL:
-                        break
+        for case_detailed in case_detailed_list:
+            try:
+                case_detailed.status = TaskEnum.PROCEED.value
+                case_detailed.save()
+                self.project_product_id = case_detailed.api_info.project_product.id
+                self.test_case_detailed_parameter(case_detailed)
                 self.update_api_info(case_detailed.api_info.id)
-                self.update_case_detailed(case_detailed.id)
                 if self.status == StatusEnum.FAIL:
                     break
+            except MangoServerError as error:
+                self.status = StatusEnum.FAIL
+                self.error_message = error.msg
+            except Exception as error:
+                traceback.print_exc()
+                self.status = StatusEnum.FAIL
+                log.api.error(error)
+                self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                raise error
+            case_detailed.status = self.status.value
+            case_detailed.save()
 
-        except MangoServerError as error:
-            self.status = StatusEnum.FAIL
-            self.error_message = error.msg
-        except Exception as error:
-            traceback.print_exc()
-            self.status = StatusEnum.FAIL
-            log.api.error(error)
-            self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
-
-    def case_steps_front(self,
-                         case_detailed: ApiCaseDetailed,
-                         case_detailed_parameter: ApiCaseDetailedParameter) -> RequestModel:
-        case_detailed.status = TaskEnum.PROCEED.value
-        case_detailed.save()
-        self.project_product_id = case_detailed.api_info.project_product.id
-        self.init_test_object()
-        self.front_sql(case_detailed_parameter)
-        request_data_model = self.request_data_clean(RequestModel(
-            method=MethodEnum(case_detailed.api_info.method).name,
-            url=urljoin(self.test_object.value, case_detailed.api_info.url),
-            headers=self.headers(case_detailed_parameter),
-            params=case_detailed_parameter.params,
-            data=case_detailed_parameter.data,
-            json_data=case_detailed_parameter.json,
-            file=case_detailed_parameter.file
-        ))
-        return request_data_model
+    def test_case_detailed_parameter(self, case_detailed, ):
+        for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
+                case_detailed_id=case_detailed.id):
+            request_model = self.request_data_clean(RequestModel(
+                method=MethodEnum(case_detailed.api_info.method).name,
+                url=urljoin(self.test_object.value, case_detailed.api_info.url),
+                headers=self.headers(case_detailed_parameter),
+                params=case_detailed_parameter.params,
+                data=case_detailed_parameter.data,
+                json=case_detailed_parameter.json,
+                file=case_detailed_parameter.file
+            ))
+            request_model = self.front_main(case_detailed_parameter, request_model)
+            response_model = self.api_request(case_detailed.api_info.id, request_model, False)
+            response_model = self.posterior_main(response_model, case_detailed_parameter)
+            case_steps_result = ApiCaseStepsResultModel(
+                id=case_detailed.id,
+                api_info_id=case_detailed.api_info.id,
+                name=case_detailed_parameter.name,
+                status=self.status.value,
+                error_message=self.error_message,
+                ass=self.ass_main(response_model, case_detailed_parameter),
+                request=request_model,
+                response=response_model,
+                cache_data=self.get_all()
+            )
+            self.api_case_result.steps.append(case_steps_result)
+            model = ApiCaseDetailedParameter.objects.get(id=case_detailed_parameter.id)
+            model.status = self.status.value
+            model.result_data = case_steps_result.model_dump()
+            model.save()
+            if self.status == StatusEnum.FAIL:
+                break
 
     def update_api_info(self, api_info_id: int):
         model = ApiInfo.objects.get(id=api_info_id)
@@ -162,17 +161,6 @@ class TestCase(CaseDetailedInit):
     def update_test_case(self, case_id: int, ):
         model = ApiCase.objects.get(id=case_id)
         model.status = self.status.value
-        model.save()
-
-    def update_case_detailed(self, case_detailed_id: int):
-        model = ApiCaseDetailed.objects.get(id=case_detailed_id)
-        model.status = self.status.value
-        model.save()
-
-    def update_case_detailed_parameter(self, case_detailed_parameter_id, result_data: ApiCaseStepsResultModel):
-        model = ApiCaseDetailedParameter.objects.get(id=case_detailed_parameter_id)
-        model.status = self.status.value
-        model.result_data = result_data.model_dump()
         model.save()
 
     def headers(self, case_detailed_parameter: ApiCaseDetailedParameter) -> dict:

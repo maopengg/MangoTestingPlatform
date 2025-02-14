@@ -30,7 +30,7 @@ class BaseRequest:
                 headers=request_data.headers,
                 params=request_data.params,
                 data=request_data.data,
-                json=request_data.json_data,
+                json=request_data.json,
                 files=request_data.file,
                 timeout=int(self.timeout)
             )
@@ -47,11 +47,11 @@ class BaseRequest:
         if 'application/json' in response.headers.get('Content-Type', ''):
             response_json = response.json()
         response = ResponseModel(
-            status_code=response.status_code,
-            response_time=time.time() - s,
-            response_headers=response.headers,
-            response_json=response_json,
-            response_text=response.text
+            code=response.status_code,
+            time=time.time() - s,
+            headers=response.headers,
+            json=response_json,
+            text=response.text
         )
 
         log.api.debug(f'API响应数据：{response.model_dump_json()}')
@@ -66,7 +66,7 @@ class BaseRequest:
             headers=request_data.headers,
             params=request_data.params,
             data=request_data.data,
-            json=request_data.json_data,
+            json=request_data.json,
             files=request_data.file,
             timeout=int(30)
         )

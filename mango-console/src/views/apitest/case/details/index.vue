@@ -263,7 +263,7 @@
                       <a-tab-pane key="1" title="前置处理">
                         <a-tabs @tab-click="(key) => tabsChange(key)" :active-key="data.tabsKey">
                           <template #extra>
-                            <a-space>
+                            <a-space v-if="data.assClickAdd">
                               <a-button type="primary" size="small" @click="clickAdd(item)"
                                 >增加</a-button
                               >
@@ -291,6 +291,15 @@
                               </a-space>
                             </a-space>
                           </a-tab-pane>
+                          <a-tab-pane key="11" title="前置函数">
+                            <a-textarea
+                              placeholder="根据帮助文档，输入自定义前置函数"
+                              v-model="item.front_func"
+                              allow-clear
+                              :auto-size="{ minRows: 10, maxRows: 10 }"
+                              @blur="blurSave('front_func', item.front_func, item.id)"
+                            />
+                          </a-tab-pane>
                         </a-tabs>
                       </a-tab-pane>
                       <a-tab-pane key="2" title="响应结果">
@@ -298,8 +307,8 @@
                           <a-tab-pane key="20" title="基础信息">
                             <a-space direction="vertical">
                               <span>URL：{{ item.result_data?.request?.url }}</span>
-                              <span>响应code：{{ item.result_data?.response?.status_code }}</span>
-                              <span>响应时间：{{ item.result_data?.response?.response_time }}</span>
+                              <span>响应code：{{ item.result_data?.response?.code }}</span>
+                              <span>响应时间：{{ item.result_data?.response?.time }}</span>
                               <span>失败原因：{{ item.result_data?.error_message }}</span>
                             </a-space>
                           </a-tab-pane>
@@ -307,10 +316,13 @@
                             <pre>{{ strJson(item.result_data?.request?.headers) }}</pre>
                           </a-tab-pane>
                           <a-tab-pane key="22" title="响应头">
-                            <pre>{{ strJson(item.result_data?.response?.response_headers) }}</pre>
+                            <pre>{{ strJson(item.result_data?.response?.headers) }}</pre>
                           </a-tab-pane>
-                          <a-tab-pane key="23" title="响应体">
-                            <pre>{{ strJson(item.result_data?.response?.response_text) }}</pre>
+                          <a-tab-pane key="23" title="响应JSON">
+                            <pre>{{ strJson(item.result_data?.response?.json) }}</pre>
+                          </a-tab-pane>
+                          <a-tab-pane key="24" title="响应文本">
+                            <pre>{{ strJson(item.result_data?.response?.text) }}</pre>
                           </a-tab-pane>
                         </a-tabs>
                       </a-tab-pane>
@@ -323,56 +335,45 @@
                               </a-button>
                             </a-space>
                           </template>
-                          <a-tab-pane key="30" title="响应一致断言">
+                          <a-tab-pane key="30" title="json一致断言">
                             <a-textarea
                               placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
-                              v-model="item.ass_response_whole"
+                              v-model="item.ass_json_all"
                               allow-clear
                               :auto-size="{ minRows: 9, maxRows: 9 }"
-                              @blur="
-                                blurSave('ass_response_whole', item.ass_response_whole, item.id)
-                              "
+                              @blur="blurSave('ass_json_all', item.ass_json_all, item.id)"
                             />
                           </a-tab-pane>
-                          <a-tab-pane key="31" title="响应条件断言">
+                          <a-tab-pane key="31" title="jsonpath断言">
                             <a-space direction="vertical">
-                              <a-space
-                                v-for="(value, index) of item.ass_response_value"
-                                :key="index"
-                              >
+                              <a-space v-for="(value, index) of item.ass_jsonpath" :key="index">
                                 <a-input
                                   placeholder="请输入jsonpath表达式"
-                                  v-model="item.ass_response_value[index].actual"
-                                  @blur="
-                                    blurSave('ass_response_value', item.ass_response_value, item.id)
-                                  "
+                                  v-model="item.ass_jsonpath[index].actual"
+                                  @blur="blurSave('ass_jsonpath', item.ass_jsonpath, item.id)"
                                 />
                                 <a-cascader
-                                  v-model="item.ass_response_value[index].method"
+                                  v-model="item.ass_jsonpath[index].method"
                                   :options="data.ass"
-                                  :default-value="item.ass_response_value[index].method"
+                                  :default-value="item.ass_jsonpath[index].method"
                                   expand-trigger="hover"
                                   placeholder="请选择断言方法"
                                   value-key="key"
-                                  @blur="
-                                    blurSave('ass_response_value', item.ass_response_value, item.id)
-                                  "
+                                  @blur="blurSave('ass_jsonpath', item.ass_jsonpath, item.id)"
                                 />
                                 <a-input
                                   placeholder="请输入想要判断的值"
-                                  v-model="item.ass_response_value[index].expect"
-                                  @blur="
-                                    blurSave('ass_response_value', item.ass_response_value, item.id)
-                                  "
+                                  v-model="item.ass_jsonpath[index].expect"
+                                  @blur="blurSave('ass_jsonpath', item.ass_jsonpath, item.id)"
                                 />
                                 <a-button
                                   type="text"
                                   status="danger"
                                   @click="
                                     removeFrontSql(
-                                      item.ass_response_value,
+                                      item.ass_jsonpath,
                                       index,
-                                      'ass_response_value',
+                                      'ass_jsonpath',
                                       item.id
                                     )
                                   "
@@ -381,7 +382,7 @@
                               </a-space>
                             </a-space>
                           </a-tab-pane>
-                          <a-tab-pane key="32" title="sql条件断言">
+                          <a-tab-pane key="32" title="sql断言">
                             <a-space direction="vertical">
                               <a-space v-for="(value, index) of item.ass_sql" :key="index">
                                 <a-input
@@ -411,6 +412,15 @@
                                 </a-button>
                               </a-space>
                             </a-space>
+                          </a-tab-pane>
+                          <a-tab-pane key="33" title="文本一致断言">
+                            <a-textarea
+                              placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
+                              v-model="item.ass_text_all"
+                              allow-clear
+                              :auto-size="{ minRows: 9, maxRows: 9 }"
+                              @blur="blurSave('ass_text_all', item.ass_text_all, item.id)"
+                            />
                           </a-tab-pane>
                         </a-tabs>
                       </a-tab-pane>
@@ -506,6 +516,15 @@
                               </a-space>
                             </a-space>
                           </a-tab-pane>
+                          <a-tab-pane key="43" title="后置函数">
+                            <a-textarea
+                              placeholder="根据帮助文档，输入自定义后置函数"
+                              v-model="item.posterior_func"
+                              allow-clear
+                              :auto-size="{ minRows: 10, maxRows: 10 }"
+                              @blur="blurSave('posterior_func', item.posterior_func, item.id)"
+                            />
+                          </a-tab-pane>
                         </a-tabs>
                       </a-tab-pane>
                       <a-tab-pane key="5" title="缓存数据">
@@ -593,7 +612,6 @@
   import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
   import {
     getApiCaseDetailed,
-    putApiCaseDetailed,
     deleteApiCaseDetailed,
     postApiCaseDetailed,
     putApiPutCaseSort,
@@ -676,14 +694,20 @@
   }
   function tabsChange(key: string | number) {
     data.tabsKey = key
-    data.assClickAdd = !(key === '30' || key === '42')
+    data.assClickAdd = !(
+      key === '30' ||
+      key === '42' ||
+      key === '33' ||
+      key === '43' ||
+      key === '11'
+    )
   }
 
   function clickAdd(item: any = null) {
     if ('10' === data.tabsKey) {
       item['front_sql'].push('请添加sql语句')
     } else if ('31' === data.tabsKey) {
-      item['ass_response_value'].push({ actual: '', method: '', expect: '' })
+      item['ass_jsonpath'].push({ actual: '', method: '', expect: '' })
     } else if ('32' === data.tabsKey) {
       item['ass_sql'].push({ actual: '', method: '', expect: '' })
     } else if ('40' === data.tabsKey) {
@@ -781,8 +805,15 @@
   }
 
   function blurSave(key: string, item: string | null, id: number) {
-    const not_serialize = ['url', 'header', 'posterior_sleep']
-    const in_serialize = ['data', 'json', 'data', 'file', 'params']
+    const not_serialize = [
+      'url',
+      'header',
+      'posterior_sleep',
+      'posterior_func',
+      'front_func',
+      'ass_text_all',
+    ]
+    const in_serialize = ['data', 'json', 'data', 'file', 'params', 'ass_json_all']
     const payload: any = {
       id: id,
       [key]: null,
@@ -808,9 +839,6 @@
         Message.success(res.msg)
       })
       .catch(console.log)
-    if (typeof data.selectDataObj.ass_response_whole == 'object') {
-      data.selectDataObj['ass_response_whole'] = formatJson(data.selectDataObj.ass_response_whole)
-    }
   }
 
   function removeFrontSql(item: any, index: number, key: string, id: number) {
@@ -844,7 +872,7 @@
         if (res.data.length !== 0) {
           data.selectDataObj = res.data
           const formatItemData = (item: any) => {
-            const propertiesToFormat = ['ass_response_whole', 'data', 'params', 'json', 'file']
+            const propertiesToFormat = ['ass_json_all', 'data', 'params', 'json', 'file']
 
             propertiesToFormat.forEach((prop) => {
               if (typeof item[prop] === 'object') {
@@ -924,7 +952,7 @@
       value['case_sort'] = data.data.length
       value['front_sql'] = []
       value['ass_sql'] = []
-      value['ass_response_value'] = []
+      value['ass_jsonpath'] = []
       value['posterior_sql'] = []
       value['posterior_response'] = []
       value['header'] = []
@@ -945,7 +973,7 @@
         value['api_info'] = data.tabelJson.api_info.id
         value['front_sql'] = []
         value['ass_sql'] = []
-        value['ass_response_value'] = []
+        value['ass_jsonpath'] = []
         value['posterior_sql'] = []
         value['posterior_response'] = []
         value['header'] = []

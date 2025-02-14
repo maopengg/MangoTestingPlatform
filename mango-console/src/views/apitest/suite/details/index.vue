@@ -433,9 +433,7 @@
     data.selectDataObj = record
     console.log(data.selectDataObj)
     data.result_data = record.result_data
-    if (typeof record.ass_response_whole == 'object') {
-      data.selectDataObj['ass_response_whole'] = formatJson(record.ass_response_whole)
-    }
+
     data.request.header = record.header
     data.request.data = formatJson(record.data)
     data.request.params = formatJson(record.params)

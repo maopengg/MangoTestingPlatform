@@ -3,9 +3,12 @@
 # @Description: # @Time   : 2022-12-04 17:14
 # @Author : 毛鹏
 
+import warnings
 from typing import Any
 
 from pydantic import BaseModel
+
+warnings.filterwarnings("ignore")
 
 
 class ApiCaseModel(BaseModel):
@@ -25,6 +28,7 @@ class RequestModel(BaseModel):
     data: dict | list | None = None
     json: dict | list | None = None
     file: list[dict] | Any | None = None
+
 
 class ResponseModel(BaseModel):
     code: int

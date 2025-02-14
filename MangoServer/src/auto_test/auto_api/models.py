@@ -53,7 +53,7 @@ class ApiCase(models.Model):
                                     null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     level = models.SmallIntegerField(verbose_name="用例级别")
-    front_func = models.JSONField(verbose_name="前置方法", null=True)
+    front_custom = models.JSONField(verbose_name="前置方法", null=True)
     front_sql = models.JSONField(verbose_name="前置sql", null=True)
     front_headers = models.JSONField(verbose_name="前置请求头", null=True)
     posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
@@ -121,37 +121,20 @@ class ApiCaseSuite(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="测试套件名称", max_length=64)
-    case_flow = models.TextField(verbose_name="步骤顺序", null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='测试套件责任人', on_delete=models.SET_NULL,
                                     null=True)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="测试套件名称", max_length=64)
     parametrize = models.JSONField(verbose_name="参数化", null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
-    front_custom = models.JSONField(verbose_name="前置自定义", null=True)
-    front_sql = models.JSONField(verbose_name="前置sql", null=True)
-    posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
 
     class Meta:
         db_table = 'api_case_suite'
         ordering = ['-id']
 
     def delete(self, *args, **kwargs):
-        if ApiCaseSuiteDetailed.objects.filter(case_suite=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的用例套件详情后再删除！")
         super().delete(*args, **kwargs)
-
-
-class ApiCaseSuiteDetailed(models.Model):
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    case_suite = models.ForeignKey(to=ApiCaseSuite, to_field="id", on_delete=models.SET_NULL, null=True)
-    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_sort = models.IntegerField(verbose_name="用例排序", null=True)
-    status = models.SmallIntegerField(verbose_name="状态", default=2)
-    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
-
-    class Meta:
-        db_table = 'api_case_suite_detailed'
 
 
 class ApiHeaders(models.Model):

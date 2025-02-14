@@ -10,21 +10,25 @@ from src.exceptions import *
 
 class ApiCaseData(CaseBase):
 
-    def init_case_front(self, api_case):
-        self.__front_custom(api_case)
-        self.__front_sql(api_case)
-        self.__front_headers(api_case)
+    def case_front_main(self, api_case: ApiCase):
+        if api_case.front_custom:
+            self.__front_custom(api_case.front_custom)  # type: ignore
+        if api_case.front_sql:
+            self.__front_sql(api_case.front_sql)  # type: ignore
+        if api_case.front_headers:
+            self.__front_headers(api_case)
 
-    def init_case_posterior(self, api_case):
-        self.__posterior_sql(api_case)
+    def case_posterior_main(self, api_case: ApiCase):
+        if api_case.posterior_sql:
+            self.__posterior_sql(api_case.posterior_sql)  # type: ignore
 
-    def __front_custom(self, api_case: ApiCase):
-        for custom in api_case.front_custom:
+    def __front_custom(self, front_custom):
+        for custom in front_custom:
             self.set_cache(custom.get('key'), custom.get('value'))
 
-    def __front_sql(self, api_case: ApiCase):
-        for i in api_case.front_sql:
-            if self.mysql_connect:
+    def __front_sql(self, front_sql: list[dict]):
+        if self.mysql_connect:
+            for i in front_sql:
                 sql = self.replace(i.get('sql'))
                 result_list: list[dict] = self.mysql_connect.condition_execute(sql)
                 if isinstance(result_list, list):
@@ -49,6 +53,6 @@ class ApiCaseData(CaseBase):
         else:
             self.case_headers = self.init_headers()
 
-    def __posterior_sql(self, api_case: ApiCase):
-        for sql in api_case.posterior_sql:
+    def __posterior_sql(self, posterior_sql: list[dict]):
+        for sql in posterior_sql:
             self.mysql_connect.condition_execute(self.replace(sql.get('sql')))

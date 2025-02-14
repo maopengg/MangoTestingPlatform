@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-# @Project: 芒果测试平台# @Description: 解决接口的依赖关系
+# @Project: 芒果测试平台
+# @Description: 解决接口的依赖关系
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
 import json
 
 import time
 
+from mangokit import MangoKitError
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
 from src.enums.tools_enum import StatusEnum
@@ -17,67 +19,58 @@ from src.tools.assertion.public_assertion import PublicAssertion
 class CaseDetailedInit(ApiCaseData, PublicAssertion):
     ass_result: list[AssResultModel] = []
 
-    def send_request(self, request_data_model: RequestModel) -> tuple[RequestModel, ResponseModel]:
-        response = self.http(request_data_model)
-        return request_data_model, response
 
-    def front_sql(self, case_detailed_parameter: ApiCaseDetailedParameter):
-        if self.mysql_connect:
-            for sql in case_detailed_parameter.front_sql:
-                res = self.mysql_connect.condition_execute(sql)
-                if isinstance(res, list):
-                    for i in res:
-                        for key, value in i.items():
-                            self.set_cache(key, value)
-                            log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
 
-    def assertion(
+    def front_main(self, case_detailed_parameter: ApiCaseDetailedParameter, request: RequestModel) -> RequestModel:
+        if case_detailed_parameter.front_sql:
+            self.__front_sql(case_detailed_parameter.front_sql)  # type: ignore
+        if case_detailed_parameter.front_func:
+            request = self.__front_func(case_detailed_parameter.front_func, request)
+        return request
+
+    def ass_main(
             self,
             response: ResponseModel,
             case_detailed_parameter: ApiCaseDetailedParameter
     ) -> list[AssResultModel]:
-        if response.response_json:
-            response_data = response.response_json
-        else:
-            try:
-                response_data = eval(response.response_text)
-            except SyntaxError:
-                raise ApiError(*ERROR_MSG_0007)
-            except ValueError:
-                raise ApiError(*ERROR_MSG_0039)
         self.ass_result = []
         try:
-            if case_detailed_parameter.ass_response_value:
-                format_value = self.replace(case_detailed_parameter.ass_response_value)
-                self.__assertion_response_value(response_data, format_value)
+            if case_detailed_parameter.ass_jsonpath:
+                ass_jsonpath = self.replace(case_detailed_parameter.ass_jsonpath)  # type: ignore
+                self.__ass_jsonpath(response.json, ass_jsonpath)
             if case_detailed_parameter.ass_sql:
-                format_value = self.replace(case_detailed_parameter.ass_sql)
-                self.__assertion_sql(format_value)
-            if case_detailed_parameter.ass_response_whole:
-                format_value = self.replace(case_detailed_parameter.ass_response_whole)
-                self.__assertion_response_whole(response_data, format_value)
+                ass_sql = self.replace(case_detailed_parameter.ass_sql)  # type: ignore
+                self.__ass_sql(ass_sql)
+            if case_detailed_parameter.ass_json_all:
+                ass_json_all = self.replace(case_detailed_parameter.ass_json_all)  # type: ignore
+                self.__ass_json_all(response.json, ass_json_all)
+            if case_detailed_parameter.ass_text_all:
+                self.__ass_test_all(response.text, self.replace(case_detailed_parameter.ass_text_all))  # type: ignore
         except (ToolsError, ApiError) as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
         finally:
             return self.ass_result
 
-    def posterior(self, response: ResponseModel, case_detailed_parameter: ApiCaseDetailedParameter):
+    def posterior_main(self, response: ResponseModel,
+                       case_detailed_parameter: ApiCaseDetailedParameter) -> ResponseModel:
         if case_detailed_parameter.posterior_response:
-            self.__posterior_response(response.response_json, self.replace(case_detailed_parameter.posterior_response))
+            self.__posterior_response(response.response_json,
+                                      self.replace(case_detailed_parameter.posterior_response))  # type: ignore
         if case_detailed_parameter.posterior_sql:
-            self.__posterior_sql(self.replace(case_detailed_parameter.posterior_sql))
+            self.__posterior_sql(self.replace(case_detailed_parameter.posterior_sql))  # type: ignore
         if case_detailed_parameter.posterior_sleep:
             self.__posterior_sleep(self.replace(case_detailed_parameter.posterior_sleep))
+        if case_detailed_parameter.posterior_func:
+            response = self.__posterior_func(case_detailed_parameter.posterior_func, response)
+        return response
 
-    # def dump_data(self, case_detailed):
-    #     if self.mysql_connect:
-    #         for sql in case_detailed.dump_data:
-    #             if sql.strip().lower().startswith('select'):
-    #                 raise DumpDataError(*ERROR_MSG_0010)
-    #             res = self.mysql_connect.condition_execute(self.replace(sql))
-    #             if isinstance(res, int):
-    #                 log.info(f'删除成功的条数：{res}')
+    def __posterior_func(self, posterior_func: str, response: ResponseModel) -> RequestModel:
+        try:
+            return self.analytic_func(posterior_func)(self, response)
+        except (KeyError, MangoKitError) as error:
+            log.api.debug(f"数据报错，函数：{posterior_func}, request:{response.model_dump_json()}, error：{error}")
+            raise ApiError(*ERROR_MSG_0013)
 
     def __posterior_sql(self, sql_list: list[dict]):
         if self.mysql_connect:
@@ -98,12 +91,12 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
     def __posterior_sleep(cls, sleep: str):
         time.sleep(int(sleep))
 
-    def __assertion_response_value(self, response_data, ass_response_value):
+    def __ass_jsonpath(self, response_data, ass_jsonpath):
         _dict = {}
         method = None
         try:
-            if ass_response_value:
-                for i in ass_response_value:
+            if ass_jsonpath:
+                for i in ass_jsonpath:
                     value = self.get_json_path_value(response_data, i['actual'])
                     _dict = {'actual': str(value)}
                     if i.get('expect'):
@@ -122,7 +115,7 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise error
 
-    def __assertion_sql(self, sql_list: list[dict]):
+    def __ass_sql(self, sql_list: list[dict]):
         _dict = {'actual': None}
         method = None
         try:
@@ -142,14 +135,43 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0006)
 
-    def __assertion_response_whole(self, actual: dict, expect: dict):
+    def __ass_json_all(self, actual: dict, ass_json_all: dict):
         try:
-            self.ass_response_whole(actual, expect)
+            self.ass_response_whole(actual, ass_json_all)
         except AssertionError as error:
             log.api.debug(error)
             self.ass_result.append(AssResultModel(
                 type='全匹配断言',
-                expect=json.dumps(expect, ensure_ascii=False),
-                actual=json.dumps(expect, ensure_ascii=False)
+                expect=json.dumps(ass_json_all, ensure_ascii=False),
+                actual=json.dumps(actual, ensure_ascii=False)
             ))
-            raise ApiError(*ERROR_MSG_0004, value=(expect, actual))
+            raise ApiError(*ERROR_MSG_0004, value=(ass_json_all, actual))
+
+    def __ass_test_all(self, actual: str, ass_test_all: str):
+        try:
+            assert actual.strip() == ass_test_all.strip()
+        except AssertionError as error:
+            log.api.debug(error)
+            self.ass_result.append(AssResultModel(
+                type='响应文本全匹配',
+                expect=ass_test_all,
+                actual=actual
+            ))
+            raise ApiError(*ERROR_MSG_0009, value=(ass_test_all, actual))
+
+    def __front_sql(self, front_sql: list[str]):
+        if self.mysql_connect:
+            for sql in front_sql:
+                res = self.mysql_connect.condition_execute(sql)
+                if isinstance(res, list):
+                    for i in res:
+                        for key, value in i.items():
+                            self.set_cache(key, value)
+                            log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
+
+    def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
+        try:
+            return self.analytic_func(front_func)(self, request)
+        except (KeyError, MangoKitError) as error:
+            log.api.debug(f"数据报错，函数：{front_func}, request:{request.model_dump_json()}, error：{error}")
+            raise ApiError(*ERROR_MSG_0010)

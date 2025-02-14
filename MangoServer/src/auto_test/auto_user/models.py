@@ -1,5 +1,6 @@
 from django.db import models
 
+
 from src.exceptions import ToolsError
 
 """
@@ -55,6 +56,12 @@ class User(models.Model):
         if TestObject.objects.filter(executor_name=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的测试对象后再删除！")
         if Tasks.objects.filter(case_people=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        from src.auto_test.auto_api.models import ApiCaseSuite
+        from src.auto_test.auto_ui.models import UiCaseSuite
+        if ApiCaseSuite.objects.filter(case_people=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        if UiCaseSuite.objects.filter(case_people=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
         if TestSuite.objects.filter(user=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的测试套后再删除！")

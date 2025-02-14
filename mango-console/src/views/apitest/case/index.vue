@@ -439,6 +439,7 @@
     getApiCaseRun(record.id, userStore.selected_environment, null)
       .then((res) => {
         Message.success(res.msg)
+        doRefresh()
       })
       .catch(console.log)
     doRefresh()

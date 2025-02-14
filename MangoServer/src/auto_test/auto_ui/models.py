@@ -149,6 +149,24 @@ class UiCaseStepsDetailed(models.Model):
         db_table = 'ui_case_steps_detailed'
 
 
+class UiCaseSuite(models.Model):
+    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='测试套件责任人', on_delete=models.SET_NULL,
+                                    null=True)
+    case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
+    name = models.CharField(verbose_name="测试套件名称", max_length=64)
+    parametrize = models.JSONField(verbose_name="参数化", null=True)
+    status = models.SmallIntegerField(verbose_name="状态", default=2)
+    result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
+
+    class Meta:
+        db_table = 'ui_case_suite'
+        ordering = ['-id']
+
+
 class UiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)

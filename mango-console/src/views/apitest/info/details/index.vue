@@ -134,11 +134,11 @@
           <a-space direction="vertical">
             <a-space>
               <a-tag color="orange">响 应 码</a-tag>
-              <span>{{ data.result_data?.status_code }}</span>
+              <span>{{ data.result_data?.code }}</span>
             </a-space>
             <a-space>
               <a-tag color="orange">响应时间</a-tag>
-              <span>{{ data.result_data?.response_time }}</span>
+              <span>{{ data.result_data?.time }}</span>
             </a-space>
             <a-space>
               <a-tag color="orange">缓存数据</a-tag>
@@ -147,11 +147,7 @@
             <a-space>
               <a-tag color="orange">响 应 体</a-tag>
               <pre>{{
-                strJson(
-                  data.result_data?.response_json
-                    ? data.result_data?.response_json
-                    : data.result_data?.response_text
-                )
+                strJson(data.result_data?.json ? data.result_data?.json : data.result_data?.text)
               }}</pre>
             </a-space>
           </a-space>
@@ -181,6 +177,7 @@
     json: formatJson(pageData.record.json),
     data: formatJson(pageData.record.data),
     file: formatJson(pageData.record.file),
+    posterior_func: pageData.record.posterior_func,
     posterior_json_path: pageData.record.posterior_json_path,
     posterior_re: pageData.record.posterior_re,
     result_data: pageData.record.result_data,
@@ -280,6 +277,7 @@
         data.json = formatJson(res_data.json)
         data.data = formatJson(res_data.data)
         data.file = formatJson(res_data.file)
+        data.posterior_func = res_data.posterior_func
         data.posterior_json_path = res_data.posterior_json_path
         data.posterior_re = res_data.posterior_re
         data.result_data = res_data.result_data

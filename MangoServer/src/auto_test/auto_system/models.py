@@ -63,6 +63,12 @@ class ProjectProduct(models.Model):
             raise ToolsError(300, "有关联数据，请先删除绑定的UI全局参数后再删除！")
         if Tasks.objects.filter(project_product=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        from src.auto_test.auto_api.models import ApiCaseSuite
+        from src.auto_test.auto_ui.models import UiCaseSuite
+        if ApiCaseSuite.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
+        if UiCaseSuite.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的定时任务后再删除！")
         if TestSuiteDetails.objects.filter(project_product=self).exists():
             TestSuiteDetails.objects.filter(project_product=self).delete()
         if TestSuite.objects.filter(project_product=self).exists():
@@ -95,6 +101,12 @@ class ProductModule(models.Model):
         if Page.objects.filter(module=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的UI页面后再删除！")
         if PageSteps.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+        from src.auto_test.auto_api.models import ApiCaseSuite
+        from src.auto_test.auto_ui.models import UiCaseSuite
+        if ApiCaseSuite.objects.filter(module=self).exists():
+            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+        if UiCaseSuite.objects.filter(module=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
         super().delete(*args, **kwargs)
 
@@ -199,7 +211,6 @@ class Tasks(models.Model):
     name = models.CharField(verbose_name="任务名称", max_length=64)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
                                     null=True)
-    type = models.SmallIntegerField(verbose_name="任务类型")
     status = models.SmallIntegerField(verbose_name="任务状态")
     timing_strategy = models.ForeignKey(to=TimeTasks, to_field="id", on_delete=models.SET_NULL, null=True)
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知")
@@ -211,17 +222,16 @@ class Tasks(models.Model):
     def delete(self, *args, **kwargs):
         if TasksDetails.objects.filter(task=self).exists():
             raise ToolsError(300, "有关联数据，请先删除绑定的任务明细后再删除！")
-        # if TestSuite.objects.filter(tasks=self).exists():
-        #     TestSuite.objects.filter(tasks=self).delete()
         super().delete(*args, **kwargs)
 
 
 class TasksDetails(models.Model):
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    task = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_id = models.SmallIntegerField(verbose_name="用例ID", null=True)
-    command = models.TextField(verbose_name="命令", null=True)
+    type = models.SmallIntegerField(verbose_name="任务类型")
+    task = models.ForeignKey(to='Tasks', to_field="id", on_delete=models.SET_NULL, null=True)
+    ui_case = models.ForeignKey(to='auto_ui.UiCase', to_field="id", on_delete=models.SET_NULL, null=True)
+    api_case = models.ForeignKey(to='auto_api.ApiCase', to_field="id", on_delete=models.SET_NULL, null=True)
+    ui_case_suite = models.ForeignKey(to='auto_ui.UiCaseSuite', to_field="id", on_delete=models.SET_NULL, null=True)
+    api_case_suite = models.ForeignKey(to='auto_api.ApiCaseSuite', to_field="id", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'tasks_details'
