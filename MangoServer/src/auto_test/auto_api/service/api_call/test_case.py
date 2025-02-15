@@ -55,8 +55,7 @@ class TestCase(CaseDetailedInit):
             error_message=self.error_message,
         )
         try:
-            self.project_product_id = api_case.project_product.id
-            self.init_public()
+            self.init_public(api_case.project_product.id)
 
             self.case_front_main(api_case)
             self.case_detailed(case_id, case_sort)

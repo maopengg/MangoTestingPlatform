@@ -13,7 +13,7 @@ class Role(models.Model):
     """角色表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    name = models.CharField(verbose_name="角色名称", max_length=64, unique=True)
+    name = models.CharField(verbose_name="角色名称", max_length=64)
     description = models.CharField(verbose_name="角色描述", max_length=64, null=True)
 
     class Meta:

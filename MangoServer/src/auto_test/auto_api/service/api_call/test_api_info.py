@@ -18,14 +18,19 @@ class TestApiInfo(CaseBase):
 
     def api_info_run(self, api_info_id: int) -> dict:
         api_info = ApiInfo.objects.get(id=api_info_id)
-        api_info.status = TaskEnum.PROCEED.value
-        api_info.save()
-        self.init_public()
+        try:
+            api_info.status = TaskEnum.PROCEED.value
+            api_info.save()
+            self.init_public(api_info.project_product_id)
 
-        response = self.api_request(api_info.id)
-        api_info.status = TaskEnum.SUCCESS.value
-        api_info.save()
-        return self.save_api_info(api_info, response)
+            response = self.api_request(api_info.id)
+            api_info.status = TaskEnum.SUCCESS.value
+            api_info.save()
+            return self.save_api_info(api_info, response)
+        except Exception as error:
+            api_info.status = TaskEnum.FAIL.value
+            api_info.save()
+            raise error
 
     def save_api_info(self, api_info: ApiInfo, response: ResponseModel):
         if response.code == 300 or response.code == 200:

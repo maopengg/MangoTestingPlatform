@@ -60,10 +60,10 @@ class CaseBase(ObtainTestData, BaseRequest):
                 bool(self.test_object.db_rud_status)
             )
 
-    def init_public(self):
+    def init_public(self, project_product_id):
         api_public = ApiPublic.objects \
             .filter(status=StatusEnum.SUCCESS.value,
-                    project_product=self.project_product_id) \
+                    project_product=project_product_id) \
             .order_by('type')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
