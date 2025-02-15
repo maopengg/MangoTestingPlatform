@@ -474,7 +474,7 @@
     data.visible = false
   }
   function scheduledName() {
-    getSystemTasksName(1)
+    getSystemTasksName()
       .then((res) => {
         data.scheduledName = res.data
       })

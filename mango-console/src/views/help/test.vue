@@ -1,19 +1,26 @@
 <template>
-  <a-space direction="vertical">
-    <a-checkbox-group direction="vertical" v-model="data" @change="handleChange">
-      <a-checkbox value="1">Option 1</a-checkbox>
-      <a-checkbox value="2">Option 2</a-checkbox>
-      <a-checkbox value="3">Option 3</a-checkbox>
-    </a-checkbox-group>
-  </a-space>
+  <a-button type="primary" @click="handleClick">Open Drawer</a-button>
+  <a-drawer :width="800" :visible="visible" @ok="handleOk" @cancel="handleCancel" unmountOnClose>
+    <template #title> Title </template>
+    <div
+      >You can customize modal body text by the current situation. This modal will be closed
+      immediately once you press the OK button.
+    </div>
+  </a-drawer>
 </template>
 
-<script setup>
+<script setup lang="ts">
   import { ref } from 'vue'
 
-  const data = ref(['2'])
+  const visible = ref(false)
 
-  const handleChange = (values) => {
-    console.log(values)
+  const handleClick = () => {
+    visible.value = true
+  }
+  const handleOk = () => {
+    visible.value = false
+  }
+  const handleCancel = () => {
+    visible.value = false
   }
 </script>

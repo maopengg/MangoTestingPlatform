@@ -39,11 +39,7 @@
               </a-space>
             </template>
             <a-tab-pane key="1" title="前置数据">
-              <a-tabs
-                :default-active-key="data.apiSonType"
-                @tab-click="(key) => switchSonType(key)"
-                position="left"
-              >
+              <a-tabs @tab-click="(key) => switchSonType(key)" position="left">
                 <a-tab-pane key="11" title="自定义变量">
                   <a-space direction="vertical">
                     <a-space v-for="(item, index) of pageData.record.front_custom" :key="item.key">
@@ -153,11 +149,7 @@
               </a-table>
             </a-tab-pane>
             <a-tab-pane key="3" title="后置清除">
-              <a-tabs
-                :default-active-key="data.apiSonType"
-                @tab-click="(key) => switchSonType(key)"
-                position="left"
-              >
+              <a-tabs @tab-click="(key) => switchSonType(key)" position="left">
                 <a-tab-pane key="31" title="sql清除">
                   <a-space direction="vertical">
                     <a-space v-for="(item, index) of pageData.record.posterior_sql" :key="item.sql">

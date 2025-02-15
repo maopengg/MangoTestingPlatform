@@ -67,11 +67,6 @@
                           }}</a-tag
                         >
                       </template>
-                      <template v-else-if="item.key === 'type'" #cell="{ record }">
-                        <a-tag :color="enumStore.colors[record.type]" size="small">{{
-                          enumStore.auto_test_type[record.type].title
-                        }}</a-tag>
-                      </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
                           <a-button type="text" size="mini" @click="onClick(record)"
@@ -155,11 +150,6 @@
       key: 'name',
       dataIndex: 'name',
       align: 'left',
-    },
-    {
-      title: '任务类型',
-      key: 'type',
-      dataIndex: 'type',
     },
     {
       title: '测试对象',

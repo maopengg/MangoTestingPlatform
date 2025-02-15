@@ -45,6 +45,7 @@ class SystemViews(ViewSet):
             'auto_type': AutoTypeEnum.get_option(),
             'task_status': TaskEnum.get_option(),
             'environment_type': EnvironmentEnum.get_option(),
+            'test_case_type': TestCaseTypeEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 

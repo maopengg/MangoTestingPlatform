@@ -22,6 +22,7 @@ interface EnumState {
   auto_type: StateValueType
   task_status: StateValueType
   environment_type: StateValueType
+  test_case_type: StateValueType
   colors: string[]
   status_colors: string[]
 }
@@ -46,6 +47,7 @@ export const useEnum = defineStore('get-enum', {
     auto_type: [],
     task_status: [],
     environment_type: [],
+    test_case_type: [],
     colors: [
       'magenta',
       'cyan',
@@ -89,6 +91,7 @@ export const useEnum = defineStore('get-enum', {
             this.auto_type = res.data.auto_type
             this.task_status = res.data.task_status
             this.environment_type = res.data.environment_type
+            this.test_case_type = res.data.test_case_type
           }
         })
         .catch(console.log)

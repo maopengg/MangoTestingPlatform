@@ -508,7 +508,7 @@
   }
 
   function scheduledName() {
-    getSystemTasksName(0)
+    getSystemTasksName()
       .then((res) => {
         data.scheduledName = res.data
       })

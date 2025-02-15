@@ -7,14 +7,14 @@ const table = useTable()
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {
+    title: '测试类型',
+    key: 'type',
+    dataIndex: 'type',
+  },
+  {
     title: '用例名称',
     key: 'case_id',
     dataIndex: 'case_id',
-  },
-  {
-    title: 'cmd命令',
-    key: 'command',
-    dataIndex: 'command',
   },
   {
     title: '操作',
@@ -26,6 +26,21 @@ export const tableColumns = useTableColumn([
 ])
 
 export const formItems: FormItem[] = reactive([
+  {
+    label: '测试类型',
+    key: 'type',
+    value: 0,
+    placeholder: '请选择自动化类型',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
   {
     label: '模块',
     key: 'module',
