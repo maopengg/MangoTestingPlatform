@@ -9,7 +9,6 @@ from src.auto_test.auto_api.views.api_case import ApiCaseCRUD, ApiCaseViews
 from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD, ApiCaseDetailedViews
 from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
 from src.auto_test.auto_api.views.api_case_suite import ApiCaseSuiteCRUD, ApiCaseSuiteViews
-from src.auto_test.auto_api.views.api_case_suite_detailed import ApiCaseSuiteDetailedCRUD, ApiCaseSuiteDetailedViews
 from src.auto_test.auto_api.views.api_headers import ApiHeadersCRUD
 from src.auto_test.auto_api.views.api_info import ApiInfoCRUD, ApiInfoViews
 from src.auto_test.auto_api.views.api_pulic import ApiPublicCRUD, ApiPublicViews
@@ -44,7 +43,4 @@ urlpatterns = [
     path("case/suite", ApiCaseSuiteCRUD.as_view()),
     path("case/suite/test", ApiCaseSuiteViews.as_view({'get': 'api_test_case_suite'})),
     path("case/suite/batch", ApiCaseSuiteViews.as_view({'post': 'api_test_case_suite_batch'})),
-    #
-    path("case/suite/detailed", ApiCaseSuiteDetailedCRUD.as_view()),
-    path("case/suite/detailed/sort", ApiCaseSuiteDetailedViews.as_view({'put': 'put_case_sort'})),
 ]
