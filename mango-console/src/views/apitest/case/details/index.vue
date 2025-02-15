@@ -182,7 +182,9 @@
                   :key="index"
                 >
                   <template #extra>
-                    <a-button type="text" size="mini" @click.stop="parameterEditing">编辑</a-button>
+                    <a-button type="text" size="mini" @click.stop="parameterEditing(item)"
+                      >编辑</a-button
+                    >
                     <a-button
                       status="danger"
                       type="text"
@@ -725,7 +727,7 @@
     window.history.back()
   }
   function parameterEditing(item: any) {
-    data.actionParameterTitle = '新增接口场景'
+    data.actionParameterTitle = '编辑接口场景名称'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRefParameter.value?.toggle()
@@ -942,12 +944,7 @@
       let value = getFormItems(formItems)
       value['case'] = route.query.case_id
       value['case_sort'] = data.data.length
-      value['front_sql'] = []
-      value['ass_sql'] = []
-      value['ass_jsonpath'] = []
-      value['posterior_sql'] = []
-      value['posterior_response'] = []
-      value['header'] = []
+
       postApiCaseDetailed(value, route.query.case_id)
         .then((res) => {
           Message.success(res.msg)
@@ -963,12 +960,6 @@
       if (data.isAdd) {
         value['case_detailed'] = data.tabelJson.id
         value['api_info'] = data.tabelJson.api_info.id
-        value['front_sql'] = []
-        value['ass_sql'] = []
-        value['ass_jsonpath'] = []
-        value['posterior_sql'] = []
-        value['posterior_response'] = []
-        value['header'] = []
         postApiCaseDetailedParameter(value)
           .then((res) => {
             Message.success(res.msg)
@@ -1016,6 +1007,8 @@
     })
   }
   function addParameter() {
+    data.actionParameterTitle = '增加接口场景'
+    data.isAdd = true
     modalDialogRefParameter.value?.toggle()
     formParameterItems.forEach((it) => {
       if (it.reset) {

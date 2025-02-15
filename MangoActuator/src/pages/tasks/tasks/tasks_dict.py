@@ -49,13 +49,6 @@ form_data = [
         'select': HTTP.system.time.system_time_name
     },
     {
-        'title': '自动化类型',
-        'placeholder': '请选择自动化类型',
-        'key': 'type',
-        'type': 1,
-        'select': AutoTestTypeEnum.get_select()
-    },
-    {
         'title': '测试环境',
         'placeholder': '请选择自动化定时环境',
         'key': 'test_env',
@@ -104,13 +97,6 @@ table_column = [
         'key': 'timing_strategy',
         'name': '定时策略',
         'width': 150,
-    },
-    {
-        'key': 'type',
-        'name': '任务类型',
-        'width': 80,
-        'option': AutoTestTypeEnum.get_option('value', 'label')
-
     },
     {
         'key': 'test_env',

@@ -79,13 +79,6 @@ export const extraRoutes = [
           title: '用例详情',
         },
       },
-      {
-        path: 'suite/details',
-        component: () => import('@/views/apitest/suite/details/index.vue'),
-        meta: {
-          title: '套件详情',
-        },
-      },
     ],
   },
   {

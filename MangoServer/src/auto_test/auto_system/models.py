@@ -32,9 +32,9 @@ class ProjectProduct(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project = models.ForeignKey(to=Project, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="产品名称", max_length=64)
-    ui_client_type = models.SmallIntegerField(verbose_name="UI客户端类型")
-    api_client_type = models.SmallIntegerField(verbose_name="API客户端类型")
-    auto_type = models.SmallIntegerField(verbose_name="自动化类型")
+    ui_client_type = models.SmallIntegerField(verbose_name="UI客户端类型", default=0)
+    api_client_type = models.SmallIntegerField(verbose_name="API客户端类型", default=0)
+    auto_type = models.SmallIntegerField(verbose_name="自动化类型", default=0)
 
     class Meta:
         db_table = 'project_product'
@@ -215,7 +215,7 @@ class Tasks(models.Model):
 
 
 class TasksDetails(models.Model):
-    type = models.SmallIntegerField(verbose_name="任务类型")
+    type = models.SmallIntegerField(verbose_name="任务类型", default=0)
     task = models.ForeignKey(to='Tasks', to_field="id", on_delete=models.PROTECT)
     ui_case = models.ForeignKey(to='auto_ui.UiCase', to_field="id", on_delete=models.SET_NULL, null=True)
     api_case = models.ForeignKey(to='auto_api.ApiCase', to_field="id", on_delete=models.SET_NULL, null=True)

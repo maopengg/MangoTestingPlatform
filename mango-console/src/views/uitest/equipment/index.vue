@@ -42,9 +42,9 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'web_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.config?.web_type]" size="small">{{
-                enumStore.browser_type[record.config?.web_type].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.config?.web_type]" size="small">
+                {{ enumStore.browser_type[record.config.web_type]?.title || '' }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'web_max'" #cell="{ record }">
               <a-switch

@@ -16,13 +16,6 @@ table_column = [
         'name': '任务名称',
     },
     {
-        'key': 'type',
-        'name': '任务类型',
-        'width': 140,
-        'option': AutoTestTypeEnum.get_option('value', 'label')
-
-    },
-    {
         'key': 'test_env',
         'name': '测试环境',
         'width': 100,

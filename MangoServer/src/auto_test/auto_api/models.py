@@ -14,15 +14,15 @@ class ApiInfo(models.Model):
     """api用例表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL)
-    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     # 0和空等于录制，1等于本期接口，2是调试完成
     type = models.SmallIntegerField(verbose_name='接口的类型', default=1)
     name = models.CharField(verbose_name="接口名称", max_length=1024)
 
     url = models.CharField(verbose_name="请求url", max_length=1024)
     method = models.SmallIntegerField(verbose_name="请求方法")
-    header = models.JSONField(verbose_name="请求头",  null=True)
+    header = models.JSONField(verbose_name="请求头", null=True)
     params = models.JSONField(verbose_name="参数", null=True)
     data = models.JSONField(verbose_name="data", null=True)
     json = models.JSONField(verbose_name="json", null=True)
@@ -48,11 +48,11 @@ class ApiInfo(models.Model):
 class ApiCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL)
-    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="测试用例名称", max_length=64)
     case_flow = models.TextField(verbose_name="步骤顺序", null=True)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
 
     parametrize = models.JSONField(verbose_name="参数化", default=list)
     level = models.SmallIntegerField(verbose_name="用例级别", default=1)
@@ -78,8 +78,8 @@ class ApiCase(models.Model):
 class ApiCaseDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.SET_NULL)
-    api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.SET_NULL)
+    case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.PROTECT)
+    api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.PROTECT)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
 
@@ -95,7 +95,7 @@ class ApiCaseDetailed(models.Model):
 class ApiCaseDetailedParameter(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.SET_NULL)
+    case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
     header = models.JSONField(verbose_name="请求头", default=list)
     params = models.JSONField(verbose_name="参数", null=True)
@@ -108,13 +108,13 @@ class ApiCaseDetailedParameter(models.Model):
     front_func = models.TextField(verbose_name='后置自定义', null=True)
     # 断言
     ass_sql = models.JSONField(verbose_name="sql断言", default=list)
-    ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言",  default=list)
-    ass_text_all = models.JSONField(verbose_name="响应文本全匹配断言", default=list)
+    ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
+    ass_text_all = models.TextField(verbose_name="响应文本全匹配断言", null=True)
     ass_jsonpath = models.JSONField(verbose_name="响应jsonpath断言", default=list)
     # 后置
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
     posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
-    posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", max_length=64, null=True)
+    posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", null=True)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
@@ -127,7 +127,7 @@ class ApiHeaders(models.Model):
     """api公共"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     key = models.CharField(verbose_name="键", max_length=128)
     value = models.TextField(verbose_name="值")
     status = models.SmallIntegerField(verbose_name="是否默认开启", default=0)
@@ -146,7 +146,7 @@ class ApiPublic(models.Model):
     """api公共"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     # 0等于自定义，1等于sql，2等于登录
     type = models.SmallIntegerField(verbose_name="自定义变量类型", default=0)
     name = models.CharField(verbose_name="名称", max_length=64)

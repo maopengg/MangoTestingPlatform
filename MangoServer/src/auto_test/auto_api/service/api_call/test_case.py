@@ -119,9 +119,11 @@ class TestCase(CaseDetailedInit):
             case_detailed.status = self.status.value
             case_detailed.save()
 
-    def test_case_detailed_parameter(self, case_detailed, ):
+    def test_case_detailed_parameter(self, case_detailed: ApiCaseDetailed):
         for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
                 case_detailed_id=case_detailed.id):
+            self.project_product_id = case_detailed.api_info.project_product.id
+            self.init_test_object()
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(case_detailed.api_info.method).name,
                 url=urljoin(self.test_object.value, case_detailed.api_info.url),

@@ -33,7 +33,7 @@ class User(models.Model):
     name = models.CharField(verbose_name="昵称", max_length=64, unique=True)
     username = models.CharField(verbose_name="登录账号", max_length=64, unique=True)
     password = models.CharField(verbose_name="登录密码", max_length=64)
-    role = models.ForeignKey(to=Role, to_field="id", on_delete=models.PROTECT)
+    role = models.ForeignKey(to=Role, to_field="id", on_delete=models.SET_NULL, null=True)
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)
     mailbox = models.JSONField(verbose_name="邮箱", max_length=64, default=list)
     selected_project = models.SmallIntegerField(verbose_name="选中的项目ID", null=True)

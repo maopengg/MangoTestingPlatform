@@ -75,11 +75,6 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/apitest",
-                    "menuUrl": "/apitest/suite/index",
-                    "menuName": "测试套件",
-                },
-                {
-                    "parentPath": "/apitest",
                     "menuUrl": "/apitest/headers/index",
                     "menuName": "请求头管理",
                 },

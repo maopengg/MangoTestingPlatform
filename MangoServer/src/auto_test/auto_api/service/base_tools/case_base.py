@@ -49,7 +49,7 @@ class CaseBase(ObtainTestData, BaseRequest):
             headers[i.key] = i.value
         return headers
 
-    def init_test_object(self):
+    def init_test_object(self, ):
         self.test_object = func_test_object_value(self.test_env,
                                                   self.project_product_id,
                                                   AutoTypeEnum.API.value)
