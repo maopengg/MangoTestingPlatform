@@ -99,10 +99,9 @@
                 {{ enumStore.auto_test_type[record.type].title }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
-                <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
+                <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
+                  enumStore.task_status[record.status].title
+                }}</a-tag>
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>

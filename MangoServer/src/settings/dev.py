@@ -10,17 +10,17 @@ IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
 
 # ************************ Mysql配置 ************************ #
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'auto_test'
+MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.20.157.117'
+MYSQL_IP = '172.31.116.23'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
 # True开启debug就不会使用minio
 # 生产环境=True，生产环境=False，使用minio
 DEBUG = True
-
+IS_DEBUG_LOG = True
 # ************************ REDIS配置 ************************ #
 
 REDIS = False

@@ -46,11 +46,11 @@ export function getSystemTriggerTiming(id: number) {
     },
   })
 }
-export function getSystemTasksName(case_type: number) {
+export function getSystemTasksName() {
   return get({
     url: 'system/tasks/name',
     data: () => {
-      return { case_type: case_type }
+      return {}
     },
   })
 }

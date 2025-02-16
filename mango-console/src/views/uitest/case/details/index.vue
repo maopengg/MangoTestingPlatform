@@ -2,11 +2,11 @@
   <div>
     <a-card title="用例详情">
       <template #extra>
-          <a-space>
-            <a-button type="primary" size="small" @click="doRefresh" disabled>刷新页面</a-button>
-            <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-          </a-space>
+        <a-space>
+          <a-button type="primary" size="small" @click="doRefresh" disabled>刷新页面</a-button>
+          <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
+          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
       </template>
       <div class="container">
         <a-space direction="vertical" style="width: 25%">
@@ -123,10 +123,9 @@
                       {{ record.page_step?.name }}
                     </template>
                     <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
-                      <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-                      <a-tag color="red" size="small" v-else-if="record.status === 0">失败</a-tag>
-                      <a-tag color="red" size="small" v-else-if="record.status === 2">待开始</a-tag>
-                      <a-tag color="red" size="small" v-else-if="record.status === 3">进行中</a-tag>
+                      <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
+                        enumStore.task_status[record.status].title
+                      }}</a-tag>
                     </template>
                     <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                       <a-button type="text" size="mini" @click="onPageStep(record)"

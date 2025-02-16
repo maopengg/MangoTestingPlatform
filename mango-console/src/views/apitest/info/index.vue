@@ -124,53 +124,54 @@
               }}{{ record?.module?.name }}
             </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag color="arcoblue" size="small" v-if="record.project_product.client_type === 0"
-                >WEB</a-tag
-              >
               <a-tag
-                color="magenta"
+                :color="enumStore.colors[record.project_product.api_client_type]"
                 size="small"
-                v-else-if="record.project_product.client_type === 1"
-                >PC桌面</a-tag
-              >
-              <a-tag color="green" size="small" v-else-if="record.project_product.client_type === 2"
-                >APP</a-tag
-              >
-              <a-tag color="green" size="small" v-else-if="record.project_product.client_type === 4"
-                >小程序</a-tag
+                >{{ enumStore.api_client[record.project_product.api_client_type]?.title }}</a-tag
               >
             </template>
             <template v-else-if="item.key === 'method'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.method === 0">GET</a-tag>
-              <a-tag color="gold" size="small" v-else-if="record.method === 1">POST</a-tag>
-              <a-tag color="arcoblue" size="small" v-else-if="record.method === 2">PUT</a-tag>
-              <a-tag color="magenta" size="small" v-else-if="record.method === 3">DELETE</a-tag>
+              <a-tag :color="enumStore.colors[record.method]" size="small">{{
+                enumStore.method[record.method].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag color="green" size="small" v-if="record.status === 1">通过</a-tag>
-              <a-tag color="red" size="small" v-else-if="record.status === 2">失败</a-tag>
-              <a-tag color="gray" size="small" v-else>未测试</a-tag>
+              <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
+                enumStore.task_status[record.status].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <template>
-                <a-button @click="onRunCase">Open Modal</a-button>
                 <a-modal
-                  width="50%"
+                  width="55%"
                   v-model:visible="visible"
                   @ok="handleOk"
                   @cancel="handleCancel"
                 >
                   <template #title>
-                    {{ record.name == null ? record.name : '' }}接口-测试结果</template
-                  >
-                  <a-space direction="vertical" :key="key" v-for="(value, key) in data.caseResult">
-                    <template v-if="value && key != 'response_headers' && key != 'headers'">
+                    {{ data.caseResult.name ? data.caseResult.name : '' }}接口-测试结果
+                  </template>
+
+                  <div style="max-height: 400px; overflow-y: auto">
+                    <a-space direction="vertical">
                       <a-space>
-                        <a-tag color="orange">{{ key }}</a-tag>
-                        <span>{{ value }}</span>
+                        <a-tag color="orange">响 应 码</a-tag>
+                        <span>{{ data.caseResult.code }}</span>
                       </a-space>
-                    </template>
-                  </a-space>
+                      <a-space>
+                        <a-tag color="orange">响应时间</a-tag>
+                        <span>{{ data.caseResult.time }}</span>
+                      </a-space>
+                      <a-space>
+                        <a-tag color="orange">响 应 体</a-tag>
+                        <pre>{{
+                          strJson(
+                            data.caseResult.json ? data.caseResult.json : data.caseResult.text
+                          )
+                        }}</pre>
+                      </a-space>
+                    </a-space>
+                  </div>
                 </a-modal>
               </template>
               <a-button type="text" size="mini" @click="onRunCase(record)">执行</a-button>
@@ -285,6 +286,7 @@
   import { getUiConfigNewBrowserObj } from '@/api/uitest/config'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+  import { strJson } from '@/utils/tools'
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -485,6 +487,8 @@
         modalDialogRef.value?.toggle()
         let value = getFormItems(formItems)
         value['type'] = data.apiType
+        value['front_json_path'] = []
+        value['front_re'] = []
         if (data.isAdd) {
           postApiInfo(value)
             .then((res) => {
@@ -624,5 +628,9 @@
 
   .header-tag {
     width: 100px; /* 设置标签的宽度 */
+  }
+  /* 可选的样式 */
+  .a-modal {
+    position: relative; /* 使模态框相对定位 */
   }
 </style>

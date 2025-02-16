@@ -86,7 +86,7 @@
               {{ record.case_people?.name }}
             </template>
             <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-              <a-tag color="orangered" size="small">
+              <a-tag :color="enumStore.colors[record.test_env]" size="small">
                 {{
                   record.test_env !== null ? enumStore.environment_type[record.test_env].title : ''
                 }}</a-tag
@@ -106,11 +106,6 @@
                 :default-checked="record.is_notice === 1"
                 :beforeChange="(newValue) => onModifyIsNotice(newValue, record.id)"
               />
-            </template>
-            <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small">{{
-                enumStore.auto_test_type[record.type].title
-              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
@@ -197,17 +192,7 @@
               allow-search
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.auto_test_type"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
+
           <template v-else-if="item.type === 'select' && item.key === 'case_executor'">
             <a-select
               v-model="item.value"
@@ -386,7 +371,7 @@
       })
       .catch(console.log)
   }
-  const onModifyStatus = async (newValue: boolean, id: number) => {
+  const onModifyStatus = async (newValue: any, id: number) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
         try {
@@ -404,7 +389,7 @@
       }, 300)
     })
   }
-  const onModifyIsNotice = async (newValue: boolean, id: number) => {
+  const onModifyIsNotice = async (newValue: any, id: number) => {
     return new Promise<any>((resolve, reject) => {
       setTimeout(async () => {
         try {

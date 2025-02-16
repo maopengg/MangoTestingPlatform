@@ -65,9 +65,9 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 0">邮箱</a-tag>
-              <a-tag color="cyan" size="small" v-else-if="record.type === 1">企微群</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.type === 2">钉钉</a-tag>
+              <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                enumStore.notice[record.type].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'config'" #cell="{ record }">
               {{ record.config }}

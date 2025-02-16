@@ -3,11 +3,11 @@
     <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
       <a-card :title="'定时任务：' + route.query.name">
         <template #extra>
-            <a-space>
-              <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
-              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
-              <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-            </a-space>
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
+            <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
         </template>
         <a-table
           :draggable="{ type: 'handle', width: 40 }"
@@ -33,7 +33,19 @@
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
               </template>
-
+              <template v-else-if="item.key === 'type'" #cell="{ record }">
+                <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                  enumStore.test_case_type[record.type].title
+                }}</a-tag>
+              </template>
+              <template v-else-if="item.key === 'case_id'" #cell="{ record }">
+                {{
+                  record.ui_case?.name ||
+                  record.api_case?.name ||
+                  record.api_case_suite?.name ||
+                  record.ui_case_suite?.name
+                }}
+              </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                   >删除
@@ -65,6 +77,19 @@
                   allow-clear
                   allow-search
                   @change="tasksTypeCaseName(item.value)"
+                  :disabled="data.isModule"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'type'">
+                <a-select
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.test_case_type"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="changeType"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_id'">
@@ -101,7 +126,10 @@
     putSystemTasksRunCase,
   } from '@/api/system/tasks_details'
   import { getUserModuleName } from '@/api/system/module'
+  import { useEnum } from '@/store/modules/get-enum'
   const pagination = usePagination(doRefresh)
+  const enumStore = useEnum()
+
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
@@ -112,6 +140,7 @@
   const data: any = reactive({
     isAdd: false,
     value: null,
+    isModule: true,
     updateId: 0,
     actionTitle: '添加定时任务',
     caseList: [],
@@ -191,9 +220,12 @@
     if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
+      let typeList = ['ui_case', 'api_case', 'api_case_suite', 'api_case_suite']
+      value[typeList[value.type]] = value.case_id
+      delete value['case_id']
+      delete value['module']
       if (data.isAdd) {
         value['task'] = route.query.id
-        value['sort'] = data.data.length
         postSystemTasksRunCase(value)
           .then((res) => {
             Message.success(res.msg)
@@ -231,13 +263,24 @@
       })
       .catch(console.log)
   }
-
+  function changeType() {
+    data.isModule = false
+    formItems.forEach((item: any) => {
+      if (item.key === 'module' || item.key === 'case_id') {
+        item.value = ''
+      }
+    })
+  }
   function tasksTypeCaseName(value: number) {
-    getSystemTasksTypeCaseName(route.query.type, value)
-      .then((res) => {
-        data.caseList = res.data
-      })
-      .catch(console.log)
+    if (value) {
+      const type = formItems.find((item) => item.key === 'type')?.value
+
+      getSystemTasksTypeCaseName(type, value)
+        .then((res) => {
+          data.caseList = res.data
+        })
+        .catch(console.log)
+    }
   }
   function onProductModuleName(projectProductId: any) {
     getUserModuleName(projectProductId)

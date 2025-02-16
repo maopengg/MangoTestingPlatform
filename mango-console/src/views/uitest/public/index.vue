@@ -70,10 +70,9 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
-              <a-tag color="cyan" size="small" v-else-if="record.type === 1">SQL</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.type === 2">登录</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.type === 3">请求头</a-tag>
+              <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                enumStore.ui_public[record.type].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch

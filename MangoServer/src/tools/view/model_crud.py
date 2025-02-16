@@ -6,7 +6,7 @@
 import json
 from threading import Thread
 
-from django.core.exceptions import FieldError
+from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
 from rest_framework.generics import GenericAPIView
@@ -22,8 +22,11 @@ class ModelCRUD(GenericAPIView):
     model = None
     # post专用
     serializer = None
-    not_matching_str = ['pageSize', 'page', 'type', 'project', 'module', 'project_product', 'case_people',
-                        'test_object', 'status', 'user']
+    not_matching_str = [
+        'pageSize', 'page',
+        'type', 'status',
+        'module', 'project_product', 'case_people', 'test_object', 'project', 'user'
+    ]
 
     @error_response('system')
     def get(self, request: Request):
@@ -43,7 +46,11 @@ class ModelCRUD(GenericAPIView):
         if request.query_params.get("pageSize") and request.query_params.get("page"):
             del query_dict['pageSize']
             del query_dict['page']
-            books = self.model.objects.filter(**query_dict)
+            try:
+                self.model._meta.get_field('case_sort')
+                books = self.model.objects.filter(**query_dict).order_by('case_sort')
+            except FieldDoesNotExist:
+                books = self.model.objects.filter(**query_dict)
             data_list, count = self.paging_list(
                 request.query_params.get("pageSize"),
                 request.query_params.get("page"),
@@ -56,7 +63,11 @@ class ModelCRUD(GenericAPIView):
                 count
             )
         else:
-            books = self.model.objects.filter(**query_dict)
+            try:
+                self.model._meta.get_field('case_sort')
+                books = self.model.objects.filter(**query_dict).order_by('case_sort')
+            except FieldDoesNotExist:
+                books = self.model.objects.filter(**query_dict)
             serializer = self.get_serializer_class()
             try:
                 books = serializer.setup_eager_loading(books)

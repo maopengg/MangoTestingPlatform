@@ -100,16 +100,11 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.type === 0">自定义</a-tag>
-              <a-tag color="cyan" size="small" v-else-if="record.type === 1">SQL</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.type === 2">登录</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.type === 3">请求头</a-tag>
+              <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                enumStore.api_public_type[record.type].title
+              }}</a-tag>
             </template>
-            <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.client === 0">web端</a-tag>
-              <a-tag color="orange" size="small" v-else-if="record.client === 1">小程序</a-tag>
-              <a-tag color="blue" size="small" v-else-if="record.client === 2">app</a-tag>
-            </template>
+
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
                 :default-checked="record.status === 1"
@@ -158,17 +153,6 @@
               :options="projectInfo.projectProduct"
               allow-search
               allow-clear
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'client'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.apiPublicEnd"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'type'">

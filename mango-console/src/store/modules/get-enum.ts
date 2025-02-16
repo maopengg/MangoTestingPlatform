@@ -1,50 +1,71 @@
 import { defineStore } from 'pinia'
 import { getSystemEnum } from '@/api/system/system'
-type StateValueType = null | { key: number; title: string }[] | string[]
+type StateValueType = null | { key: number; title: string }[]
+
+interface EnumState {
+  cline_type: StateValueType
+  method: StateValueType
+  api_public_type: StateValueType
+  api_client: StateValueType
+  notice: StateValueType
+  status: StateValueType
+  drive_type: StateValueType
+  browser_type: StateValueType
+  element_exp: StateValueType
+  auto_test_type: StateValueType
+  case_level: StateValueType
+  ui_public: StateValueType
+  element_ope: StateValueType
+  api_parameter_type: StateValueType
+  device: string[]
+  product_type: StateValueType
+  auto_type: StateValueType
+  task_status: StateValueType
+  environment_type: StateValueType
+  test_case_type: StateValueType
+  colors: string[]
+  status_colors: string[]
+}
 export const useEnum = defineStore('get-enum', {
-  state: (): {
-    cline_type: StateValueType
-    method: StateValueType
-    api_public_type: StateValueType
-    client: StateValueType
-    notice: StateValueType
-    status: StateValueType
-    drive_type: StateValueType
-    browser_type: StateValueType
-    element_exp: StateValueType
-    auto_test_type: StateValueType
-    case_level: StateValueType
-    ui_public: StateValueType
-    element_ope: StateValueType
-    api_parameter_type: StateValueType
-    device: StateValueType
-    product_type: StateValueType
-    auto_type: StateValueType
-    task_status: StateValueType
-    environment_type: StateValueType
-  } => {
-    return {
-      cline_type: null,
-      method: null,
-      api_public_type: null,
-      client: null,
-      notice: null,
-      status: null,
-      drive_type: null,
-      browser_type: null,
-      element_exp: null,
-      auto_test_type: null,
-      case_level: null,
-      ui_public: null,
-      element_ope: null,
-      api_parameter_type: null,
-      device: null,
-      product_type: null,
-      auto_type: null,
-      task_status: null,
-      environment_type: null,
-    }
-  },
+  state: (): EnumState => ({
+    cline_type: [],
+    method: [],
+    api_public_type: [],
+    api_client: [],
+    notice: [],
+    status: [],
+    drive_type: [],
+    browser_type: [],
+    element_exp: [],
+    auto_test_type: [],
+    case_level: [],
+    ui_public: [],
+    element_ope: [],
+    api_parameter_type: [],
+    device: [],
+    product_type: [],
+    auto_type: [],
+    task_status: [],
+    environment_type: [],
+    test_case_type: [],
+    colors: [
+      'magenta',
+      'cyan',
+      'orangered',
+      'orange',
+      'gold',
+      'lime',
+      'green',
+      'cyan',
+      'blue',
+      'red',
+      'arcoblue',
+      'purple',
+      'pinkpurple',
+      'gray',
+    ],
+    status_colors: ['red', 'green', 'gold', 'lime'],
+  }),
   getters: {},
   actions: {
     getEnum() {
@@ -54,7 +75,7 @@ export const useEnum = defineStore('get-enum', {
             this.cline_type = res.data.cline_type
             this.method = res.data.method
             this.api_public_type = res.data.api_public_type
-            this.client = res.data.client
+            this.api_client = res.data.api_client
             this.notice = res.data.notice
             this.status = res.data.status
             this.drive_type = res.data.drive_type
@@ -70,6 +91,7 @@ export const useEnum = defineStore('get-enum', {
             this.auto_type = res.data.auto_type
             this.task_status = res.data.task_status
             this.environment_type = res.data.environment_type
+            this.test_case_type = res.data.test_case_type
           }
         })
         .catch(console.log)

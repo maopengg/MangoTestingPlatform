@@ -27,7 +27,7 @@ from src.tools.log_collector import log
 
 class TestCase(PageSteps):
 
-    def __init__(self, parent, case_model: CaseModel, driver_object):
+    def __init__(self, parent, case_model: CaseModel, driver_object, parametrize: dict | None):
         super().__init__(
             parent,
             driver_object,
@@ -36,6 +36,7 @@ class TestCase(PageSteps):
             case_id=case_model.id,
         )
         self.case_model: CaseModel = case_model
+        self.parametrize: dict = parametrize
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,
             name=self.case_model.name,
@@ -64,6 +65,7 @@ class TestCase(PageSteps):
     async def case_page_step(self) -> None:
         try:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
+            await self.case_parametrize()
         except Exception as error:
             self.case_result.status = StatusEnum.FAIL.value
             await self.send_case_result(f'初始化用例前置数据发生未知异常，请联系管理员来解决!')
@@ -104,6 +106,12 @@ class TestCase(PageSteps):
                             raise ToolsError(*ERROR_MSG_0039)
                     if not result_list:
                         raise ToolsError(*ERROR_MSG_0037, value=(sql,))
+
+    async def case_parametrize(self):
+        if self.parametrize:
+            for i in self.parametrize:
+                self.test_data.set_cache(i.get('key'), i.get('value'))
+                print(self.test_data.get_cache(i.get('key')))
 
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:

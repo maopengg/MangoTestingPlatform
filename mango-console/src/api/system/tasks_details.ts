@@ -58,14 +58,3 @@ export function getSystemTasksTypeCaseName(type: any, moduleId: number) {
     },
   })
 }
-export function putSystemTasksCaseTestObject(caseList: any, testObj: any) {
-  return put({
-    url: 'system/tasks/details/case/test/object',
-    data: () => {
-      return {
-        case_list: caseList,
-        test_obj_id: testObj,
-      }
-    },
-  })
-}

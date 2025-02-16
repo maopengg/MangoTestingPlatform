@@ -81,21 +81,6 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '自动化类型',
-    key: 'type',
-    value: 0,
-    placeholder: '请选择自动化类型',
-    required: true,
-    type: 'select',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
     label: '测试环境',
     key: 'test_env',
     value: ref(''),
@@ -140,11 +125,6 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-  },
-  {
-    title: '任务类型',
-    key: 'type',
-    dataIndex: 'type',
   },
   {
     title: '定时器介绍',

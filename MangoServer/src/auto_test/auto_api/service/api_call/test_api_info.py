@@ -2,40 +2,42 @@
 # @Project: 芒果测试平台# @Description: api用例执行类
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
-from urllib.parse import urljoin
-
 from src.auto_test.auto_api.models import ApiInfo
-from src.auto_test.auto_api.service.base_tools.case_base import CaseBase
-from src.enums.api_enum import MethodEnum
+from src.auto_test.auto_api.service.base.api_info import ApiInfoBase
 from src.enums.tools_enum import StatusEnum, TaskEnum
-from src.models.api_model import RequestDataModel, ResponseDataModel
-from src.tools.log_collector import log
+from src.models.api_model import ResponseModel
 
-class TestApiInfo(CaseBase):
+
+class TestApiInfo(ApiInfoBase):
 
     def __init__(self, user_id, test_env: int):
         super().__init__(user_id, test_env)
 
-    def api_info_run(self, api_info_id: int) -> ResponseDataModel:
-        self.api_info = ApiInfo.objects.get(id=api_info_id)
-        self.api_info.status = TaskEnum.PROCEED.value
-        self.api_info.save()
-        self.project_product_id = self.api_info.project_product.id
-        self.init_test_object()
-        self.init_public()
-        request_data = self.request_data_clean(RequestDataModel(
-            method=MethodEnum(self.api_info.method).name,
-            url=urljoin(self.test_object.value, self.api_info.url),
-            headers=self.api_info.header,
-            params=self.api_info.params,
-            data=self.api_info.data,
-            json_data=self.api_info.json,
-            file=self.api_info.file))
-        log.api.debug(f'接口调试请求数据：{request_data.model_dump_json()}')
-        response: ResponseDataModel = self.http(request_data)
-        if response.status_code == 300 or response.status_code == 200:
-            self.api_info.status = StatusEnum.SUCCESS.value
+    def api_info_run(self, api_info_id: int) -> dict:
+        api_info = ApiInfo.objects.get(id=api_info_id)
+        try:
+            api_info.status = TaskEnum.PROCEED.value
+            api_info.save()
+            self.init_public(api_info.project_product_id)
+
+            response = self.api_request(api_info.id)
+            api_info.status = TaskEnum.SUCCESS.value
+            api_info.save()
+            return self.save_api_info(api_info, response)
+        except Exception as error:
+            api_info.status = TaskEnum.FAIL.value
+            api_info.save()
+            raise error
+
+    def save_api_info(self, api_info: ApiInfo, response: ResponseModel):
+        if response.code == 300 or response.code == 200:
+            api_info.status = StatusEnum.SUCCESS.value
         else:
-            self.api_info.status = StatusEnum.FAIL.value
-        self.api_info.save()
-        return response
+            api_info.status = StatusEnum.FAIL.value
+        res = response.model_dump()
+        res['name'] = api_info.name
+
+        res['cache_all'] = self.get_all()
+        api_info.result_data = res
+        api_info.save()
+        return res

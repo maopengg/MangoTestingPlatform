@@ -96,8 +96,7 @@ class TasksViews(ViewSet):
         :param request:
         :return:
         """
-        case_type = request.query_params.get('case_type')
-        _tasks_list = self.model.objects.filter(type=case_type).values_list('id', 'name')
+        _tasks_list = self.model.objects.all().values_list('id', 'name')
         data = [{'key': _id, 'title': name} for _id, name in _tasks_list]
         return ResponseData.success(RESPONSE_MSG_0099, data)
 

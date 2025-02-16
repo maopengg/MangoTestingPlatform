@@ -50,8 +50,23 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '客户端类型',
-    key: 'client_type',
+    label: 'UI端类型',
+    key: 'ui_client_type',
+    value: ref(''),
+    type: 'select',
+    required: true,
+    placeholder: '请选择产品的端类型',
+    validator: function () {
+      if (this.value === null && this.value === '') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: 'API端类型',
+    key: 'api_client_type',
     value: ref(''),
     type: 'select',
     required: true,
@@ -130,9 +145,14 @@ export const tableColumns = useTableColumn([
     dataIndex: 'auto_type',
   },
   {
-    title: '产品类型',
-    key: 'client_type',
-    dataIndex: 'client_type',
+    title: 'UI产品类型',
+    key: 'ui_client_type',
+    dataIndex: 'ui_client_type',
+  },
+  {
+    title: 'API产品类型',
+    key: 'api_client_type',
+    dataIndex: 'api_client_type',
   },
   {
     title: '操作',

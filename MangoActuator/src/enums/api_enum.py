@@ -38,11 +38,10 @@ class ApiPublicTypeEnum(BaseEnum):
     CUSTOM = 0
     SQL = 1
     LOGIN = 2
-    HEADERS = 3
 
     @classmethod
     def obj(cls):
-        return {0: "自定义-第一加载", 1: "SQL-第二加载", 2: "登录-第三加载", 3: "请求头-第四加载"}
+        return {0: "自定义-第一加载", 1: "SQL-第二加载", 2: "登录-第三加载",}
 
 
 class ApiTypeEnum(BaseEnum):

@@ -14,10 +14,10 @@ class Page(models.Model):
     """页面表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="页面名称", max_length=64)
-    url = models.CharField(verbose_name="url", max_length=128)
+    url = models.CharField(verbose_name="url", max_length=1048)
 
     class Meta:
         db_table = 'page'
@@ -25,9 +25,9 @@ class Page(models.Model):
 
     def delete(self, *args, **kwargs):
         if PageSteps.objects.filter(page=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤后再删除！")
+            raise ToolsError(300, "页面步骤-有关联数据，请先删除绑定的数据后再删除！")
         if PageElement.objects.filter(page=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的元素后再删除！")
+            raise ToolsError(300, "元素-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -35,12 +35,12 @@ class PageElement(models.Model):
     """页面元素表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    page = models.ForeignKey(to=Page, to_field="id", on_delete=models.SET_NULL, null=True)
+    page = models.ForeignKey(to=Page, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="元素名称", max_length=64)
     exp = models.SmallIntegerField(verbose_name="元素表达式")
     loc = models.TextField(verbose_name="元素定位")
-    sleep = models.IntegerField(verbose_name="等待时间", null=True)
-    sub = models.IntegerField(verbose_name="下标", null=True)
+    sleep = models.SmallIntegerField(verbose_name="等待时间", null=True)
+    sub = models.SmallIntegerField(verbose_name="下标", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
 
     class Meta:
@@ -49,7 +49,7 @@ class PageElement(models.Model):
 
     def delete(self, *args, **kwargs):
         if PageStepsDetailed.objects.filter(ele_name=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+            raise ToolsError(300, "页面步骤详情-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -57,11 +57,11 @@ class PageSteps(models.Model):
     """页面步骤表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    page = models.ForeignKey(to=Page, to_field="id", on_delete=models.SET_NULL, null=True)
-    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    page = models.ForeignKey(to=Page, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="步骤名称", max_length=64)
-    run_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
+    run_flow = models.TextField(verbose_name="步骤顺序", null=True)
     # 0和空等于调试用例，1等于调试完成
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="测试结果", null=True)
@@ -72,9 +72,9 @@ class PageSteps(models.Model):
 
     def delete(self, *args, **kwargs):
         if PageStepsDetailed.objects.filter(page_step=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+            raise ToolsError(300, "页面步骤详情-有关联数据，请先删除绑定的数据后再删除！")
         if UiCaseStepsDetailed.objects.filter(page_step=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的用例步骤详情后再删除！")
+            raise ToolsError(300, "用例步骤详情-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -82,10 +82,10 @@ class PageStepsDetailed(models.Model):
     """步骤详情表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
+    page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.PROTECT)
     # type==0是进行操作，==1是进行断言
     type = models.SmallIntegerField(verbose_name="操作类型")
-    ele_name = models.ForeignKey(to=PageElement, to_field="id", on_delete=models.SET_NULL, null=True)
+    ele_name = models.ForeignKey(to=PageElement, to_field="id", on_delete=models.PROTECT)
     step_sort = models.IntegerField(verbose_name="顺序的排序")
 
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
@@ -107,18 +107,18 @@ class UiCase(models.Model):
     """用例表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
+    module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="用例组名称", max_length=64)
-    case_flow = models.CharField(verbose_name="步骤顺序", max_length=2000, null=True)
-    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.SET_NULL,
-                                    null=True)
+    case_flow = models.TextField(verbose_name="步骤顺序",  null=True)
+    case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
+    parametrize = models.JSONField(verbose_name="参数化", default=list)
     # 0失败，1成功，2待开始，3，进行中
     status = models.SmallIntegerField(verbose_name="状态", default=2)
-    level = models.SmallIntegerField(verbose_name="用例级别")
-    front_custom = models.JSONField(verbose_name="前置自定义", null=True)
-    front_sql = models.JSONField(verbose_name="前置sql", null=True)
-    posterior_sql = models.JSONField(verbose_name="后置sql", null=True)
+    level = models.SmallIntegerField(verbose_name="用例级别", default=0)
+    front_custom = models.JSONField(verbose_name="前置自定义", default=list)
+    front_sql = models.JSONField(verbose_name="前置sql", default=list)
+    posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
 
     class Meta:
         db_table = 'ui_case'
@@ -126,7 +126,10 @@ class UiCase(models.Model):
 
     def delete(self, *args, **kwargs):
         if UiCaseStepsDetailed.objects.filter(case=self).exists():
-            raise ToolsError(300, "有关联数据，请先删除绑定的页面步骤详情后再删除！")
+            raise ToolsError(300, "页面步骤详情-有关联数据，请先删除绑定的数据后再删除！")
+        from src.auto_test.auto_system.models import TasksDetails
+        if TasksDetails.objects.filter(ui_case=self).exists():
+            raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 
@@ -134,9 +137,9 @@ class UiCaseStepsDetailed(models.Model):
     """用例详情表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.SET_NULL, null=True)
-    page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.SET_NULL, null=True)
-    case_sort = models.IntegerField(verbose_name="用例排序")
+    case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.PROTECT)
+    page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.PROTECT)
+    case_sort = models.SmallIntegerField(verbose_name="用例排序")
     case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
     case_cache_ass = models.JSONField(verbose_name="步骤缓存断言", null=True)
     case_data = models.JSONField(verbose_name="用例步骤数据", null=True)
@@ -152,7 +155,7 @@ class UiCaseStepsDetailed(models.Model):
 class UiPublic(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
+    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     # 0等于自定义，1等于sql，2等于登录，3等于header
     type = models.SmallIntegerField(verbose_name="自定义变量类型")
     name = models.CharField(verbose_name="名称", max_length=64)
@@ -168,7 +171,7 @@ class UiPublic(models.Model):
 class UiConfig(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    user = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
+    user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
     # 0是web，1是安卓
     type = models.SmallIntegerField(verbose_name="什么客户端")
     config = models.JSONField(verbose_name="配置json")

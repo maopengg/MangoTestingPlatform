@@ -37,22 +37,13 @@
               {{ record.user.name }}
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag color="orange" size="small"
+              <a-tag :color="enumStore.colors[record.tpye]" size="small"
                 >{{ enumStore.drive_type[record.type].title }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'web_type'" #cell="{ record }">
-              <a-tag color="green" size="small" v-if="record.config?.web_type === 0"
-                >谷歌浏览器
-              </a-tag>
-              <a-tag color="red" size="small" v-else-if="record.config?.web_type === 1"
-                >EDGE
-              </a-tag>
-              <a-tag color="red" size="small" v-else-if="record.config?.web_type === 2"
-                >火狐
-              </a-tag>
-              <a-tag color="red" size="small" v-else-if="record.config?.web_type === 3"
-                >WEBKIT
+              <a-tag :color="enumStore.colors[record.config?.web_type]" size="small">
+                {{ enumStore.browser_type[record.config.web_type]?.title || '' }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'web_max'" #cell="{ record }">
