@@ -86,6 +86,34 @@ def ad_routes():
             ],
         },
         {
+            "menuUrl": "/pytest",
+            "menuName": "mango_pytest",
+            "icon": "icon-calendar-clock",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-init/index",
+                    "menuName": "API初始化",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-api-info/index",
+                    "menuName": "API接口",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-api-file/index",
+                    "menuName": "测试文件",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-case/index",
+                    "menuName": "API用例",
+                },
+            ]
+        },
+        {
             "menuUrl": "/report",
             "menuName": "测试报告",
             "icon": "icon-calendar-clock",

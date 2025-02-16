@@ -2,16 +2,13 @@
 # @Project: 芒果测试平台# @Description: api用例执行类
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
-from urllib.parse import urljoin
-
 from src.auto_test.auto_api.models import ApiInfo
-from src.auto_test.auto_api.service.base_tools.case_base import CaseBase
-from src.enums.api_enum import MethodEnum
+from src.auto_test.auto_api.service.base.api_info import ApiInfoBase
 from src.enums.tools_enum import StatusEnum, TaskEnum
-from src.models.api_model import RequestModel, ResponseModel
+from src.models.api_model import ResponseModel
 
 
-class TestApiInfo(CaseBase):
+class TestApiInfo(ApiInfoBase):
 
     def __init__(self, user_id, test_env: int):
         super().__init__(user_id, test_env)

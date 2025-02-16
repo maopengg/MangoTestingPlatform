@@ -1,6 +1,12 @@
 <template>
-  <a-button type="primary" @click="handleClick">Open Drawer</a-button>
-  <a-drawer :width="800" :visible="visible" @ok="handleOk" @cancel="handleCancel" unmountOnClose>
+  <a-button type="primary" @click="data.drawerVisible = true">Open Drawer</a-button>
+  <a-drawer
+    :width="800"
+    :visible="data.drawerVisible"
+    @ok="data.drawerVisible = false"
+    @cancel="data.drawerVisible = false"
+    unmountOnClose
+  >
     <template #title> Title </template>
     <div
       >You can customize modal body text by the current situation. This modal will be closed
@@ -10,17 +16,9 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, reactive } from 'vue'
 
-  const visible = ref(false)
-
-  const handleClick = () => {
-    visible.value = true
-  }
-  const handleOk = () => {
-    visible.value = false
-  }
-  const handleCancel = () => {
-    visible.value = false
-  }
+  const data = reactive({
+    drawerVisible: false,
+  })
 </script>

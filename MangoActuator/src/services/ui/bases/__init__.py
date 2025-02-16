@@ -98,9 +98,9 @@ class ElementOperation(WebDevice, AndroidDriver):
 
     async def action_element(self):
         async def set_ope_value(ope_value):
-            if 'locating' in ope_value:
-                del ope_value['locating']
-            self.element_test_result.ope_value = ope_value
+            # if 'locating' in ope_value:
+            #     ope_value['locating']
+            self.element_test_result.ope_value = str(ope_value)
 
         ope_value = self.element_model.ope_value
         try:
@@ -117,7 +117,7 @@ class ElementOperation(WebDevice, AndroidDriver):
                 raise Exception('不存在的设备类型')
         except UiError as error:
             if ope_value:
-                await set_ope_value(ope_value)
+                await set_ope_value(self.element_model.ope_value)
             raise error
         else:
             await set_ope_value(ope_value)

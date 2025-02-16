@@ -92,6 +92,7 @@ class CaseModel(BaseModel):
     front_custom: list
     front_sql: list
     posterior_sql: list
+    parametrize: list[dict] | list
     steps: list[PageStepsModel]
     public_data_list: list[UiPublicModel] = []
 

@@ -9,7 +9,7 @@ from typing import Optional
 from urllib.parse import urljoin
 
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders, ApiCaseDetailedParameter
-from src.auto_test.auto_api.service.base_tools.case_detailed import CaseDetailedInit
+from src.auto_test.auto_api.service.base.case_api import CaseApiBase
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum, AutoTestTypeEnum
@@ -18,7 +18,7 @@ from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsR
 from src.models.system_model import TestSuiteDetailsResultModel
 
 
-class TestCase(CaseDetailedInit):
+class TestCase(CaseApiBase):
 
     def __init__(self,
                  user_id: int,
@@ -58,7 +58,12 @@ class TestCase(CaseDetailedInit):
             self.init_public(api_case.project_product.id)
 
             self.case_front_main(api_case)
-            self.case_detailed(case_id, case_sort)
+            if api_case.parametrize:
+                for i in api_case.parametrize:
+                    self.case_detailed(case_id, case_sort, i)
+            else:
+                self.case_detailed(case_id, case_sort)
+
             self.case_posterior_main(api_case)
 
             self.api_case_result.status = self.status.value
@@ -84,7 +89,7 @@ class TestCase(CaseDetailedInit):
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             return self.api_case_result
 
-    def case_detailed(self, case_id: int, case_sort: int | None):
+    def case_detailed(self, case_id: int, case_sort: int | None, parametrize: dict | None = None):
         if case_sort:
             case_detailed_list = ApiCaseDetailed \
                 .objects \
@@ -97,6 +102,7 @@ class TestCase(CaseDetailedInit):
                 .order_by('case_sort')
         if not case_detailed_list:
             raise ApiError(*ERROR_MSG_0008)
+        self.case_parametrize(parametrize)
         for case_detailed in case_detailed_list:
             try:
                 case_detailed.status = TaskEnum.PROCEED.value

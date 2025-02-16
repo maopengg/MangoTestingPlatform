@@ -54,6 +54,7 @@ class SendTestData:
             front_custom=case.front_custom,
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
+            parametrize=case.parametrize,
             steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
             public_data_list=self.__public_data(case.project_product_id)
         )

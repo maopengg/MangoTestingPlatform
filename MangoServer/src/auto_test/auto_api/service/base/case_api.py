@@ -9,17 +9,14 @@ import time
 
 from mangokit import MangoKitError
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter
-from src.auto_test.auto_api.service.base_tools.api_case_data import ApiCaseData
+from src.auto_test.auto_api.service.base.case_data import ApiCaseBase
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
-from src.tools.assertion.public_assertion import PublicAssertion
 
 
-class CaseDetailedInit(ApiCaseData, PublicAssertion):
+class CaseApiBase(ApiCaseBase):
     ass_result: list[AssResultModel] = []
-
-
 
     def front_main(self, case_detailed_parameter: ApiCaseDetailedParameter, request: RequestModel) -> RequestModel:
         if case_detailed_parameter.front_sql:
@@ -60,7 +57,7 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
         if case_detailed_parameter.posterior_sql:
             self.__posterior_sql(self.replace(case_detailed_parameter.posterior_sql))  # type: ignore
         if case_detailed_parameter.posterior_sleep:
-            self.__posterior_sleep(self.replace(case_detailed_parameter.posterior_sleep))
+            time.sleep(int(case_detailed_parameter.posterior_sleep))
         if case_detailed_parameter.posterior_func:
             response = self.__posterior_func(case_detailed_parameter.posterior_func, response)
         return response
@@ -86,10 +83,6 @@ class CaseDetailedInit(ApiCaseData, PublicAssertion):
         for i in posterior_response:
             value = self.get_json_path_value(response_text, i['key'])
             self.set_cache(i['value'], value)
-
-    @classmethod
-    def __posterior_sleep(cls, sleep: str):
-        time.sleep(int(sleep))
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
         _dict = {}

@@ -90,13 +90,13 @@
           <a-space>
             <div>
               <a-button status="success" size="small" @click="onConcurrency('批量执行')"
-                >批量执行</a-button
-              >
+                >批量执行
+              </a-button>
             </div>
             <div>
               <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
               <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
-                <template #title> 设为定时任务 </template>
+                <template #title> 设为定时任务</template>
                 <div>
                   <a-select
                     v-model="data.value"
@@ -153,22 +153,24 @@
               }}{{ record?.module?.name }}
             </template>
             <template v-else-if="item.key === 'level'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record?.level]" size="small">{{
-                record.level !== null ? enumStore.case_level[record.level].title : '-'
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record?.level]" size="small"
+                >{{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'case_people'" #cell="{ record }">
               {{ record.case_people.name }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
-                enumStore.task_status[record.status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                >{{ enumStore.task_status[record.status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" @click="onCaseRun(record.id)">执行</a-button>
                 <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
+                <a-button type="text" size="mini" @click="clickSuite(record)">套件</a-button>
+
                 <a-dropdown trigger="hover">
                   <a-button type="text" size="mini">···</a-button>
                   <template #content>
@@ -180,8 +182,8 @@
                     </a-doption>
                     <a-doption>
                       <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                        >删除</a-button
-                      >
+                        >删除
+                      </a-button>
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -190,6 +192,62 @@
           </a-table-column>
         </template>
       </a-table>
+      <a-drawer
+        :width="800"
+        :visible="data.drawerVisible"
+        @ok="drawerOk"
+        @cancel="data.drawerVisible = false"
+        unmountOnClose
+      >
+        <template #title> 用例套件</template>
+        <div>
+          <a-space>
+            <a-button size="mini" @click.stop="data.row.parametrize.push([{ key: '', value: '' }])"
+              >增加测试套
+            </a-button>
+          </a-space>
+          <a-collapse :default-active-key="[0]" accordion :bordered="false">
+            <!-- 遍历 row 数组，生成每一行 -->
+            <a-collapse-item
+              :header="'循环第 ' + (index + 1) + ' 次'"
+              :key="index"
+              v-for="(item, index) of data.row.parametrize"
+            >
+              <template #extra>
+                <a-space>
+                  <a-button
+                    size="mini"
+                    @click.stop="data.row.parametrize[index].push({ key: '', value: '' })"
+                    >增加一行
+                  </a-button>
+                  <a-button
+                    status="danger"
+                    size="mini"
+                    @click.stop="data.row.parametrize.splice(index, 1)"
+                    >删除
+                  </a-button>
+                </a-space>
+              </template>
+              <a-space direction="vertical" fill>
+                <a-space v-for="(items, index1) in item" :key="index1">
+                  <span>key：</span>
+                  <a-input placeholder="请输入key" v-model="items.key" />
+                  <span>value：</span>
+                  <a-input placeholder="请输入value" v-model="items.value" />
+                  <a-button
+                    type="text"
+                    size="small"
+                    status="danger"
+                    @click="item.splice(index1, 1)"
+                  >
+                    移除
+                  </a-button>
+                </a-space>
+              </a-space>
+            </a-collapse-item>
+          </a-collapse>
+        </div>
+      </a-drawer>
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -282,6 +340,7 @@
   import { getUserName } from '@/api/user/user'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+
   const enumStore = useEnum()
 
   const productModule = useProductModule()
@@ -296,7 +355,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
 
-  const data = reactive({
+  const data: any = reactive({
     isAdd: false,
     updateId: 0,
     actionTitle: '添加用例',
@@ -306,6 +365,8 @@
     scheduledName: [],
     value: null,
     visible: false,
+    drawerVisible: false,
+    row: {},
   })
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
@@ -359,6 +420,7 @@
       },
     })
   }
+
   function onDeleteItems() {
     if (selectedRowKeys.value.length === 0) {
       Message.error('请选择要删除的数据')
@@ -379,6 +441,7 @@
       },
     })
   }
+
   function onUpdate(item: any) {
     data.actionTitle = '编辑用例'
     data.isAdd = false
@@ -453,6 +516,7 @@
   const handleCancel = () => {
     data.visible = false
   }
+
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
@@ -498,6 +562,25 @@
     })
   }
 
+  function clickSuite(record: any) {
+    data.drawerVisible = true
+    data.row = record
+  }
+
+  function drawerOk() {
+    data.drawerVisible = false
+    let value = {
+      id: data.row['id'],
+      parametrize: data.row['parametrize'],
+    }
+    putUiCase(value)
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+      })
+      .catch(console.log)
+  }
+
   function caseCody(record: any) {
     postUiCaseCopy(record.id)
       .then((res) => {
@@ -514,7 +597,8 @@
       })
       .catch(console.log)
   }
-  function onModuleSelect(projectProductId: number) {
+
+  function onModuleSelect(projectProductId: number | string) {
     productModule.getProjectModule(projectProductId)
     formItems.forEach((item: FormItem) => {
       if (item.key === 'module') {
@@ -522,6 +606,7 @@
       }
     })
   }
+
   onMounted(() => {
     nextTick(async () => {
       await getNickName()

@@ -4,11 +4,11 @@
 # @Time   : 2024-11-25 20:57
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase, ApiHeaders
-from src.auto_test.auto_api.service.base_tools.case_base import CaseBase
+from src.auto_test.auto_api.service.base.api_info import ApiInfoBase
 from src.exceptions import *
 
 
-class ApiCaseData(CaseBase):
+class ApiCaseBase(ApiInfoBase):
 
     def case_front_main(self, api_case: ApiCase):
         if api_case.front_custom:
@@ -56,3 +56,8 @@ class ApiCaseData(CaseBase):
     def __posterior_sql(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
             self.mysql_connect.condition_execute(self.replace(sql.get('sql')))
+
+    def case_parametrize(self, parametrize: dict):
+        if parametrize:
+            for i in parametrize:
+                self.set_cache(i.get('key'), i.get('value'))

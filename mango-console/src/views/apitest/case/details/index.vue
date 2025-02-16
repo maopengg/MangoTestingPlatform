@@ -177,7 +177,7 @@
             <a-space direction="vertical" fill>
               <a-collapse :default-active-key="[0]" accordion :bordered="false">
                 <a-collapse-item
-                  :header="item.name"
+                  :header="item.name + (item.status === 1 ? '-成功' : '-失败')"
                   v-for="(item, index) of data.selectDataObj"
                   :key="index"
                 >
