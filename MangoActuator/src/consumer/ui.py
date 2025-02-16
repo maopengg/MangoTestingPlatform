@@ -63,4 +63,7 @@ class UI:
             PageObject.case_flow = CaseFlow(self.parent, max_tasks) if max_tasks else CaseFlow(self.parent)
         else:
             PageObject.case_flow.max_tasks = max_tasks
-        await PageObject.case_flow.add_task(data)
+        if data.parametrize:
+            for parametrize in data.parametrize:
+                await PageObject.case_flow.add_task(data, parametrize)
+        await PageObject.case_flow.add_task(data, None)

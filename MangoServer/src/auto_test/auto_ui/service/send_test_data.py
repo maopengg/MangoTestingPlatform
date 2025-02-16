@@ -54,6 +54,7 @@ class SendTestData:
             front_custom=case.front_custom,
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
+            parametrize=case.parametrize,
             steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
             public_data_list=self.__public_data(case.project_product_id)
         )
@@ -74,10 +75,10 @@ class SendTestData:
             project_product=page_steps_detailed.page_step.project_product.id,
             project_product_name=page_steps_detailed.page_step.project_product.name,
             module_name=page_steps_detailed.page_step.module.name,
-            type=page_steps_detailed.page_step.project_product.client_type,
+            type=page_steps_detailed.page_step.project_product.ui_client_type,
             url=page_steps_detailed.ele_name.page.url,
             element_list=[self.element_model(page_steps_detailed, )],
-            equipment_config=self.__equipment_config(page_steps_detailed.page_step.project_product.client_type),
+            equipment_config=self.__equipment_config(page_steps_detailed.page_step.project_product.ui_client_type),
             environment_config=self.__environment_config(page_steps_detailed.page_step.project_product.id),
             public_data_list=self.__public_data(page_steps_detailed.page_step.project_product.id),
         )
@@ -96,10 +97,10 @@ class SendTestData:
             project_product=page.project_product.id,
             project_product_name=page.project_product.name,
             module_name=page.module.name,
-            type=page.project_product.client_type,
+            type=page.project_product.ui_client_type,
             url=page.url,
             element_list=[self.element_model(element_obj, True, data)],
-            equipment_config=self.__equipment_config(page.project_product.client_type),
+            equipment_config=self.__equipment_config(page.project_product.ui_client_type),
             environment_config=self.__environment_config(page.project_product.id),
             public_data_list=self.__public_data(page.project_product_id),
         )
@@ -115,9 +116,9 @@ class SendTestData:
             project_product=page_steps.project_product.id,
             project_product_name=page_steps.project_product.name,
             module_name=page_steps.module.name,
-            type=page_steps.project_product.client_type,
+            type=page_steps.project_product.ui_client_type,
             url=page_steps.page.url,
-            equipment_config=self.__equipment_config(page_steps.project_product.client_type),
+            equipment_config=self.__equipment_config(page_steps.project_product.ui_client_type),
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
             case_step_details_id=case_step_details_id,
@@ -207,7 +208,7 @@ class SendTestData:
         for i in objects_filter:
             try:
                 page_steps = PageSteps.objects.get(id=i.page_step.id)
-                self.__equipment_config(page_steps.project_product.client_type)
+                self.__equipment_config(page_steps.project_product.ui_client_type)
             except UiError:
                 return False
         return True

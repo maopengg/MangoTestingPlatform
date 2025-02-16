@@ -2,9 +2,10 @@
   <div>
     <a-card title="接口详情">
       <template #extra>
-          <a-space>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-          </a-space>
+        <a-space>
+          <a-button status="success" size="small" @click="onRunCase">执行</a-button>
+          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
       </template>
       <div class="container">
         <a-space direction="vertical" style="width: 25%">
@@ -22,12 +23,17 @@
     </a-card>
     <a-card>
       <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
+        <template #extra>
+          <a-space v-if="data.addButton">
+            <a-button type="primary" size="small" @click="addData">增加</a-button>
+          </a-space>
+        </template>
         <a-tab-pane key="0" title="请求头">
           <a-textarea
             placeholder="请输入请求头，字符串形式"
             v-model="data.header"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('header', data.header)"
           />
         </a-tab-pane>
@@ -36,7 +42,7 @@
             placeholder="请输入json格式的数据"
             v-model="data.params"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('params', data.params)"
           />
         </a-tab-pane>
@@ -45,7 +51,7 @@
             placeholder="请输入json格式的表单"
             v-model="data.data"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('data', data.data)"
           />
         </a-tab-pane>
@@ -54,7 +60,7 @@
             placeholder="请输入json格式的JSON"
             v-model="data.json"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('json', data.json)"
           />
         </a-tab-pane>
@@ -63,9 +69,88 @@
             placeholder="请输入json格式的文件上传数据"
             v-model="data.file"
             allow-clear
-            auto-size
+            :auto-size="{ minRows: 28, maxRows: 28 }"
             @blur="upDate('file', data.file)"
           />
+        </a-tab-pane>
+        <a-tab-pane key="5" title="后置jsonpath提取">
+          <a-space direction="vertical">
+            <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
+              <a-input
+                placeholder="请输入缓存key"
+                v-model="data.posterior_json_path[index].key"
+                @blur="upDate('posterior_json_path', data.posterior_json_path)"
+              />
+              <a-input
+                placeholder="请输入jsonpath语法"
+                v-model="data.posterior_json_path[index].value"
+                @blur="upDate('posterior_json_path', data.posterior_json_path)"
+              />
+
+              <a-button
+                type="text"
+                size="small"
+                status="danger"
+                @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
+                >移除
+              </a-button>
+            </a-space>
+          </a-space>
+        </a-tab-pane>
+        <a-tab-pane key="6" title="后置正则提取">
+          <a-space direction="vertical">
+            <a-space v-for="(value, index) of data.posterior_re" :key="index">
+              <a-input
+                placeholder="请输入缓存key"
+                v-model="data.posterior_re[index].key"
+                @blur="upDate('posterior_re', data.posterior_re)"
+              />
+              <a-input
+                placeholder="请输入jsonpath语法"
+                v-model="data.posterior_re[index].value"
+                @blur="upDate('posterior_re', data.posterior_re)"
+              />
+
+              <a-button
+                type="text"
+                size="small"
+                status="danger"
+                @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
+                >移除
+              </a-button>
+            </a-space>
+          </a-space>
+        </a-tab-pane>
+        <a-tab-pane key="7" title="后置函数">
+          <a-textarea
+            placeholder="根据帮助文档，输入自定义后置函数"
+            v-model="data.posterior_func"
+            allow-clear
+            :auto-size="{ minRows: 28, maxRows: 28 }"
+            @blur="upDate('posterior_func', data.posterior_func)"
+          />
+        </a-tab-pane>
+        <a-tab-pane key="8" title="响应结果">
+          <a-space direction="vertical">
+            <a-space>
+              <a-tag color="orange">响 应 码</a-tag>
+              <span>{{ data.result_data?.code }}</span>
+            </a-space>
+            <a-space>
+              <a-tag color="orange">响应时间</a-tag>
+              <span>{{ data.result_data?.time }}</span>
+            </a-space>
+            <a-space>
+              <a-tag color="orange">缓存数据</a-tag>
+              <span>{{ data.result_data?.cache_all }}</span>
+            </a-space>
+            <a-space>
+              <a-tag color="orange">响 应 体</a-tag>
+              <pre>{{
+                strJson(data.result_data?.json ? data.result_data?.json : data.result_data?.text)
+              }}</pre>
+            </a-space>
+          </a-space>
         </a-tab-pane>
       </a-tabs>
     </a-card>
@@ -75,23 +160,43 @@
   import { nextTick, onMounted, reactive } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
-  import { putApiInfo } from '@/api/apitest/info'
+  import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
   import { useEnum } from '@/store/modules/get-enum'
+  import useUserStore from '@/store/modules/user'
+  import { strJson } from '@/utils/tools'
   const enumStore = useEnum()
+  const userStore = useUserStore()
 
   const pageData: any = usePageData()
   const data: any = reactive({
     id: 0,
     pageType: '0',
+    addButton: false,
     header: formatJson(pageData.record.header),
     params: formatJson(pageData.record.params),
     json: formatJson(pageData.record.json),
     data: formatJson(pageData.record.data),
     file: formatJson(pageData.record.file),
+    posterior_func: pageData.record.posterior_func,
+    posterior_json_path: pageData.record.posterior_json_path,
+    posterior_re: pageData.record.posterior_re,
+    result_data: pageData.record.result_data,
   })
 
-  function switchType(key: string) {
+  function switchType(key: any) {
     data.pageType = key
+    if (data.pageType === '5' || data.pageType === '6') {
+      data.addButton = true
+    } else {
+      data.addButton = false
+    }
+  }
+  function addData() {
+    if (data.pageType === '5') {
+      data.posterior_json_path.push({ key: '', value: '' })
+    } else if (data.pageType === '6') {
+      data.posterior_re.push({ key: '', value: '' })
+    }
   }
   function switchPageType() {
     if (pageData.record.params) {
@@ -115,30 +220,67 @@
     }
     return JSON.stringify(items, null, 2)
   }
-
+  function removeFrontSql(item: any, index: number, key: string) {
+    item.splice(index, 1)
+    upDate(key, item)
+  }
   function upDate(key: string, value1: string) {
-    let value = pageData.record
-    try {
-      if (value1) {
-        const parsedValue = JSON.parse(value1)
-        if (typeof parsedValue === 'object') {
-          value[key] = parsedValue
+    let value = ''
+    if (!(key === 'posterior_json_path' || key === 'posterior_re') && key !== 'posterior_func') {
+      try {
+        if (value1) {
+          const parsedValue = JSON.parse(value1)
+          if (typeof parsedValue === 'object') {
+            value = parsedValue
+          } else {
+            Message.error(`请输入json格式的：${key}`)
+            return
+          }
         } else {
-          Message.error(`请输入json格式的：${key}`)
-          return
+          value = null
         }
-      } else {
-        value[key] = null
+      } catch (e) {
+        Message.error(`请输入json格式的：${key}`)
+        return
       }
-    } catch (e) {
-      Message.error(`请输入json格式的：${key}`)
-      return
+    } else {
+      value = value1
     }
-    delete value.module
-    delete value.project_product
-    putApiInfo(value)
+
+    putApiInfo({ id: pageData.record.id, [key]: value })
       .then((res) => {
         Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+  function onRunCase() {
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
+    Message.loading('接口开始执行中~')
+    getApiCaseInfoRun(pageData.record.id, userStore.selected_environment)
+      .then((res) => {
+        data.caseResult = res.data
+        Message.success(res.msg)
+
+        doRefresh()
+      })
+      .catch(console.log)
+  }
+  function doRefresh() {
+    getApiInfo({ id: pageData.record.id })
+      .then((res) => {
+        const res_data = res.data[0]
+        data.header = formatJson(res_data.header)
+        data.params = formatJson(res_data.params)
+        data.json = formatJson(res_data.json)
+        data.data = formatJson(res_data.data)
+        data.file = formatJson(res_data.file)
+        data.posterior_func = res_data.posterior_func
+        data.posterior_json_path = res_data.posterior_json_path
+        data.posterior_re = res_data.posterior_re
+        data.result_data = res_data.result_data
       })
       .catch(console.log)
   }

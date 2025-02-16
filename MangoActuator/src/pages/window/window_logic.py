@@ -65,6 +65,7 @@ class WindowLogic(MangoMain1Window):
             'api_case': ApiCasePage,
             'api_case_detailed': ApiCaseDetailedPage,
             'api_public': ApiPublicPage,
+            'api_headers': ApiHeadersPage,
 
             'test_suite': TestSuitePage,
             'test_suite_detailed': TestSuiteDetailedPage,

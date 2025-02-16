@@ -25,8 +25,8 @@ class Recording:
         except ApiInfo.DoesNotExist:
             msg = f'接口URL:<{data.url}>录制成功，刷新页面可查看'
             data = data.model_dump()
-            data['json'] = data['json_data']
-            del data['json_data']
+            data['json'] = data['json']
+            del data['json']
             ApiInfoCRUD.inside_post(data)
         except ApiInfo.MultipleObjectsReturned:
             msg = f'接口URL:<{data.url}>已经存在，所以不需要进行录制到数据库中！'

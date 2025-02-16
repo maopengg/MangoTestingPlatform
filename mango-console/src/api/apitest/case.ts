@@ -79,3 +79,14 @@ export function postApiCaseCody(caseId: number) {
     },
   })
 }
+
+export function getApiCaseName(moduleId: any) {
+  return get({
+    url: '/api/case/name',
+    data: () => {
+      return {
+        module_id: moduleId,
+      }
+    },
+  })
+}

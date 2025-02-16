@@ -16,7 +16,7 @@ from src.auto_test.auto_api.service.api_import.import_api import ImportApi
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.tools_enum import StatusEnum
-from src.models.api_model import ResponseDataModel
+from src.models.api_model import ResponseModel
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -71,13 +71,13 @@ class ApiInfoViews(ViewSet):
         if not api_info_id and api_info_list:
             api_info_res_list = []
             for api_info_id in api_info_list:
-                api_info_res: ResponseDataModel = TestApiInfo(
+                api_info_res: dict = TestApiInfo(
                     request.user['id'], test_env, ).api_info_run(api_info_id)
-                api_info_res_list.append(api_info_res.model_dump_json())
+                api_info_res_list.append(api_info_res)
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res_list)
         else:
-            api_info_res: ResponseDataModel = TestApiInfo(request.user['id'], test_env, ).api_info_run(api_info_id)
-            return ResponseData.success(RESPONSE_MSG_0072, api_info_res.model_dump())
+            api_info_res: dict = TestApiInfo(request.user['id'], test_env, ).api_info_run(api_info_id)
+            return ResponseData.success(RESPONSE_MSG_0072, api_info_res)
 
     @action(methods=['get'], detail=False)
     @error_response('api')

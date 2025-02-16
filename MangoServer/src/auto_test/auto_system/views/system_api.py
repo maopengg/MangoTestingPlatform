@@ -29,7 +29,7 @@ class SystemViews(ViewSet):
             'cline_type': ClientTypeEnum.get_option(),
             'method': MethodEnum.get_option(),
             'api_public_type': ApiPublicTypeEnum.get_option(),
-            'client': ClientEnum.get_option(),
+            'api_client': ApiClientEnum.get_option(),
             'notice': NoticeEnum.get_option(),
             'status': StatusEnum.get_option(),
             'drive_type': DriveTypeEnum.get_option(),
@@ -45,6 +45,7 @@ class SystemViews(ViewSet):
             'auto_type': AutoTypeEnum.get_option(),
             'task_status': TaskEnum.get_option(),
             'environment_type': EnvironmentEnum.get_option(),
+            'test_case_type': TestCaseTypeEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 

@@ -26,18 +26,18 @@ class CaseFlow:
     async def process_tasks(self):
         while True:
             if self.running_tasks < self.max_tasks and not self.queue.empty():
-                case_model = await self.queue.get()
+                case_model: dict = await self.queue.get()
                 self.running_tasks += 1
-                asyncio.create_task(self.execute_task(case_model))
+                asyncio.create_task(self.execute_task(**case_model))
             await asyncio.sleep(0.1)
 
     @async_memory
-    async def execute_task(self, case_model: CaseModel):
-        async with TestCase(self.parent, case_model, self.driver_object) as obj:
+    async def execute_task(self, case_model: CaseModel, parametrize):
+        async with TestCase(self.parent, case_model, self.driver_object, parametrize) as obj:
             self.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
             await obj.case_init()
             await obj.case_page_step()
         self.running_tasks -= 1
 
-    async def add_task(self, api_case_model: CaseModel):
-        await self.queue.put(api_case_model)
+    async def add_task(self, case_model: CaseModel, parametrize):
+        await self.queue.put({'case_model': case_model, 'parametrize': parametrize})

@@ -68,16 +68,20 @@
               {{ record.project.name }}
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag color="orangered" size="small">{{
+              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
                 enumStore.auto_type[record.auto_type]?.title
               }}</a-tag>
             </template>
-            <template v-else-if="item.key === 'client_type'" #cell="{ record }">
-              <a-tag color="orangered" size="small">{{
-                enumStore.drive_type[record.client_type]?.title
+            <template v-else-if="item.key === 'ui_client_type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.ui_client_type]" size="small">{{
+                enumStore.drive_type[record.ui_client_type]?.title
               }}</a-tag>
             </template>
-
+            <template v-else-if="item.key === 'api_client_type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.api_client_type]" size="small">{{
+                enumStore.api_client[record.api_client_type]?.title
+              }}</a-tag>
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -129,11 +133,22 @@
               allow-search
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'client_type'">
+          <template v-else-if="item.type === 'select' && item.key === 'ui_client_type'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
               :options="enumStore.drive_type"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'api_client_type'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.api_client"
               :field-names="fieldNames"
               value-key="key"
               allow-clear

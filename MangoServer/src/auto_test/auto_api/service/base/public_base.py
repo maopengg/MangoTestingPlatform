@@ -4,21 +4,22 @@
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 from typing import Optional
-from urllib.parse import urljoin
 
-from src.auto_test.auto_api.models import ApiPublic, ApiInfo
-from src.auto_test.auto_api.service.base_tools.base_request import BaseRequest
+from mangokit import MysqlConnect, MangoKitError
+from src.auto_test.auto_api.models import ApiHeaders
+from src.auto_test.auto_api.models import ApiPublic
+from src.auto_test.auto_api.service.base.base_request import BaseRequest
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
-from src.enums.api_enum import ApiPublicTypeEnum, MethodEnum
+from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestDataModel
+from src.models.api_model import RequestModel, ResponseModel
 from src.tools.obtain_test_data import ObtainTestData
-from mangokit import MysqlConnect, MangoKitError
+from src.tools.assertion.public_assertion import PublicAssertion
 
 
-class CaseBase(ObtainTestData, BaseRequest):
+class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
 
     def __init__(self,
                  user_id: int,
@@ -40,7 +41,15 @@ class CaseBase(ObtainTestData, BaseRequest):
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
 
-    def init_test_object(self):
+    def init_headers(self):
+        headers = {}
+        for i in ApiHeaders.objects.filter(
+                project_product_id=self.project_product_id,
+                status=StatusEnum.SUCCESS.value):
+            headers[i.key] = i.value
+        return headers
+
+    def init_test_object(self, ):
         self.test_object = func_test_object_value(self.test_env,
                                                   self.project_product_id,
                                                   AutoTypeEnum.API.value)
@@ -51,28 +60,24 @@ class CaseBase(ObtainTestData, BaseRequest):
                 bool(self.test_object.db_rud_status)
             )
 
-    def init_public(self):
+    def init_public(self, project_product_id):
         api_public = ApiPublic.objects \
             .filter(status=StatusEnum.SUCCESS.value,
-                    project_product=self.project_product_id) \
+                    project_product=project_product_id) \
             .order_by('type')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
             elif i.type == ApiPublicTypeEnum.LOGIN.value:
-                self.__login(i)
+                self.api_request(i.value)
             elif i.type == ApiPublicTypeEnum.CUSTOM.value:
                 self.__custom(i)
-            elif i.type == ApiPublicTypeEnum.HEADERS.value:
-                self.__headers(i)
 
-    def request_data_clean(self, request_data_model: RequestDataModel) -> RequestDataModel:
+    def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:
         try:
             for key, value in request_data_model:
-                if key == 'headers' and isinstance(value, str):
+                if key == 'headers':
                     value = self.replace(value)
-                    # if value == '${headers}':
-                    #     value = None
                     if value and isinstance(value, str):
                         value = self.loads(value) if value else value
                     setattr(request_data_model, key, value)
@@ -89,40 +94,12 @@ class CaseBase(ObtainTestData, BaseRequest):
                 else:
                     value = self.replace(value)
                     setattr(request_data_model, key, value)
-
-                if key == 'headers' and hasattr(self, 'headers') and self.headers:
-                    new_dict = self.replace(self.headers)
-                    if new_dict and isinstance(new_dict, str):
-                        new_dict = self.loads(new_dict) if new_dict else new_dict
-                    request_data_model.headers = self.__merge_dicts(request_data_model.headers, new_dict)
         except MangoKitError as error:
             raise ApiError(error.code, error.msg)
         return request_data_model
 
-    async def __login(self, api_public_obj: ApiPublic):
-        key = api_public_obj.key
-        value_dict = self.load(api_public_obj.value)
-        api_info = ApiInfo.objects.get(id=value_dict.get('api_info_id'))
-        request_data_model = self.request_data_clean(RequestDataModel(method=MethodEnum(api_info.method).name,
-                                                                      url=urljoin(self.test_object.value, api_info.url),
-                                                                      headers=api_info.header,
-                                                                      params=api_info.params,
-                                                                      data=api_info.data,
-                                                                      json_data=api_info.json,
-                                                                      file=api_info.file))
-
-        response = await self.http(request_data_model)
-        if response.response_json is None:
-            raise ApiError(*ERROR_MSG_0003)
-        value = self.get_json_path_value(response.response_json, value_dict.get('json_path'))
-        self.set_cache(key, value)
-
     def __custom(self, api_public_obj: ApiPublic):
         self.set_cache(api_public_obj.key, api_public_obj.value)
-
-    def __headers(self, api_public_obj: ApiPublic):
-        value = self.replace(api_public_obj.value)
-        self.set_cache(api_public_obj.key, value)
 
     def __sql(self, api_public_obj: ApiPublic):
         if self.mysql_connect:
@@ -136,14 +113,3 @@ class CaseBase(ObtainTestData, BaseRequest):
                         raise ToolsError(*ERROR_MSG_0035)
                 if not result_list:
                     raise ToolsError(*ERROR_MSG_0033, value=(api_public_obj.value,))
-
-    @classmethod
-    def __merge_dicts(cls, base_dict, new_dict):
-        if base_dict:
-            result = base_dict.copy()
-            for key, value in new_dict.items():
-                if key not in result:
-                    result[key] = value
-            return result
-        else:
-            return new_dict

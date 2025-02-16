@@ -69,10 +69,9 @@
                 </template>
 
                 <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-                  <a-tag color="orangered" size="small" v-if="record.type === 1">断言</a-tag>
-                  <a-tag color="orange" size="small" v-else-if="record.type === 0">操作</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.type === 2">SQL</a-tag>
-                  <a-tag color="blue" size="small" v-else-if="record.type === 3">参数</a-tag>
+                  <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                    enumStore.element_ope[record.type].title
+                  }}</a-tag>
                 </template>
                 <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                   <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>

@@ -126,7 +126,7 @@ export const tableColumns = useTableColumn([
     title: '类型',
     key: 'type',
     dataIndex: 'type',
-    width: 80,
+    width: 150,
   },
   {
     title: '参数名称',

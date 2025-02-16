@@ -81,13 +81,9 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag color="orangered" size="small" v-if="record.auto_type === 0"
-                >前端&接口通用</a-tag
-              >
-              <a-tag color="cyan" size="small" v-else-if="record.auto_type === 1">前端自动化</a-tag>
-              <a-tag color="green" size="small" v-else-if="record.auto_type === 2"
-                >接口自动化</a-tag
-              >
+              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
+                enumStore.auto_type[record.auto_type].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
               {{ record.executor_name ? record.executor_name.name : '-' }}
@@ -105,7 +101,7 @@
               />
             </template>
             <template v-else-if="item.key === 'environment'" #cell="{ record }">
-              <a-tag color="orangered" size="small">
+              <a-tag :color="enumStore.colors[record.environment]" size="small">
                 {{ enumStore.environment_type[record.environment].title }}
               </a-tag>
             </template>

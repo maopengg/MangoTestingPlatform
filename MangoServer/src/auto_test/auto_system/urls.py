@@ -47,7 +47,6 @@ urlpatterns = [
     path('tasks/details', TasksDetailsCRUD.as_view()),
     path('tasks/details/type/case/name', TasksDetailsViews.as_view({'get': 'get_type_case_name'})),
     path('tasks/details/batch/set/cases', TasksDetailsViews.as_view({'post': 'batch_set_cases'})),
-    path('tasks/details/case/test/object', TasksDetailsViews.as_view({'put': 'put_tasks_case_test_object'})),
     #
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),

@@ -158,3 +158,11 @@ class ApiCaseViews(ViewSet):
             return ResponseData.success(RESPONSE_MSG_0009, serializer.data)
         else:
             return ResponseData.fail(RESPONSE_MSG_0008, serializer.errors)
+
+    @action(methods=['GET'], detail=False)
+    @error_response('api')
+    def case_name(self, request: Request):
+        res = self.model.objects \
+            .filter(module_id=request.query_params.get('module_id')) \
+            .values_list('id', 'name')
+        return ResponseData.fail(RESPONSE_MSG_0023, [{'key': _id, 'title': name} for _id, name in res])

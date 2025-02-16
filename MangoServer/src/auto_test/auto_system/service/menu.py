@@ -3,9 +3,12 @@
 # @Description: 
 # @Time   : 2023-02-02 19:51
 # @Author : 毛鹏
+import os
+
+
 def ad_routes():
     """菜单模拟数据"""
-    return [
+    menu = [
         {
             "menuUrl": "/index",
             "menuName": "首页",
@@ -72,10 +75,43 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/apitest",
+                    "menuUrl": "/apitest/headers/index",
+                    "menuName": "请求头管理",
+                },
+                {
+                    "parentPath": "/apitest",
                     "menuUrl": "/apitest/public/index",
                     "menuName": "公共参数",
                 },
             ],
+        },
+        {
+            "menuUrl": "/pytest",
+            "menuName": "mango_pytest",
+            "icon": "icon-calendar-clock",
+            "parentPath": "",
+            "children": [
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-init/index",
+                    "menuName": "API初始化",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-api-info/index",
+                    "menuName": "API接口",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-api-file/index",
+                    "menuName": "测试文件",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/api-case/index",
+                    "menuName": "API用例",
+                },
+            ]
         },
         {
             "menuUrl": "/report",
@@ -225,3 +261,10 @@ def ad_routes():
             ],
         },
     ]
+    if os.getenv('DJANGO_ENV') == 'dev' or os.getenv('DJANGO_ENV') == 'test':
+        menu[-1]['children'].append({
+            "parentPath": "/help",
+            "menuUrl": "/help/test",
+            "menuName": "测试页面",
+        })
+    return menu

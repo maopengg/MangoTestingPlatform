@@ -24,15 +24,6 @@ export const conditionItems: Array<FormItem> = reactive([
       this.value = ''
     },
   },
-  {
-    key: 'client',
-    label: '客户端',
-    value: ref(''),
-    type: 'select',
-    placeholder: '选择客户端类型',
-    optionItems: [],
-    reset: function () {},
-  },
 ])
 
 export const formItems: FormItem[] = reactive([
@@ -45,22 +36,6 @@ export const formItems: FormItem[] = reactive([
     type: 'cascader',
     validator: function () {
       if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '客户端',
-    key: 'client',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择客户端',
-    validator: function () {
-      // @ts-ignore
-      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -139,16 +114,10 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '客户端',
-    key: 'client',
-    dataIndex: 'client',
-    width: 80,
-  },
-  {
     title: '类型',
     key: 'type',
     dataIndex: 'type',
-    width: 70,
+    width: 150,
   },
   {
     title: '参数名称',
