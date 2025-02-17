@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase
 from src.auto_test.auto_ui.models import UiCase
-from src.enums.tools_enum import TaskEnum, AutoTestTypeEnum
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.tools.view import Snowflake
 
 
@@ -23,7 +23,6 @@ class AddTasks:
         from src.auto_test.auto_system.views.test_suite import TestSuiteCRUD
         TestSuiteCRUD.inside_post({
             'id': self.test_suite_id,
-            'type': 0,
             'project_product': self.project_product,
             'test_env': self.test_env,
             'user': self.user_id,
@@ -32,7 +31,8 @@ class AddTasks:
             'tasks': self.tasks_id,
         })
 
-    def add_test_suite_details(self, case_id: int, _type: AutoTestTypeEnum):
+    def add_test_suite_details(self, case_id: int, _type: TestCaseTypeEnum):
+        print(_type.value)
         def set_task(case_id, case_name, project_product, ):
             from src.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
@@ -48,11 +48,11 @@ class AddTasks:
                 'retry': 0 if self.tasks_id else 2,
             })
 
-        if _type == AutoTestTypeEnum.UI:
+        if _type == TestCaseTypeEnum.UI:
             case = UiCase.objects.get(id=case_id)
             set_task(case.id, case.name, case.project_product.id)
-        elif _type == AutoTestTypeEnum.API:
+        elif _type == TestCaseTypeEnum.API:
             case = ApiCase.objects.get(id=case_id)
             set_task(case.id, case.name, case.project_product.id)
         else:
-            set_task(0, None, self.project_product)
+            print('还没实现')

@@ -73,3 +73,30 @@ object {
 .arco-switch-checked{
   background-color: rgb(var(--primary-6));
 }
+/* 外部盒子样式 */
+.box {
+    width: 100%; /* 撑满整行宽度 */
+    margin: 0 auto;
+    padding: 5px;
+    //border: 1px solid #e0e0e0;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  /* 左侧内容样式 */
+  .left {
+    flex: 1; /* 左侧占比 2 */
+    padding: 5px;
+    /*border: 1px solid #e0e0e0;*/
+
+    //background-color: #f0f0f0;
+  }
+
+  /* 右侧内容样式 */
+  .right {
+    flex: 1; /* 右侧占比 1 */
+    padding: 5px;
+    /*border: 1px solid #e0e0e0;*/
+
+    //background-color: #e0e0e0;
+  }

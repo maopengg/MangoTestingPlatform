@@ -64,11 +64,14 @@ class TasksDetailsCRUD(ModelCRUD):
         _type = int(request.data.get('type'))
         try:
             if _type == TestCaseTypeEnum.UI.value:
-                TasksDetails.objects.filter(ui_case_id=request.data.get('ui_case'))
+                tasks_details = TasksDetails.objects.filter(ui_case_id=request.data.get('ui_case'))
             else:
-                TasksDetails.objects.filter(api_case_id=request.data.get('api_case'))
-
-            return ResponseData.fail(RESPONSE_MSG_0112)
+                tasks_details = TasksDetails.objects.filter(api_case_id=request.data.get('api_case'))
+            if tasks_details.exists():
+                return ResponseData.fail(RESPONSE_MSG_0112)
+            else:
+                data = self.inside_post(request.data)
+                return ResponseData.success(RESPONSE_MSG_0002, data)
         except TasksDetails.DoesNotExist:
             data = self.inside_post(request.data)
             return ResponseData.success(RESPONSE_MSG_0002, data)
