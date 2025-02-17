@@ -1,127 +1,136 @@
 <template>
-  <div class="main-container">
-    <a-card title="界面测试报告详情">
-      <template #extra>
+  <TableBody ref="tableBody">
+    <template #header>
+      <a-card title="界面测试报告详情" :bordered="false">
+        <template #extra>
           <a-space>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
-      </template>
-      <div class="container">
-        <a-space direction="vertical" style="width: 30%">
-          <p>测试套ID：{{ pageData.record.id }}</p>
-          <p>所属项目：{{ pageData.record.project_product?.project?.name }}</p>
-          <p>执行时间：{{ pageData.record.create_time }}</p>
-          <p>当前状态：{{ enumStore.task_status[pageData.record.status].title }}</p>
-        </a-space>
-        <a-space direction="vertical" style="width: 42%" />
-        <a-space size="large" v-for="item of data.summary" :key="item.name" style="width: 7%">
-          <a-statistic :title="item.name" :value="item.value" show-group-separator />
-        </a-space>
-      </div>
-    </a-card>
-    <a-card>
-      <div class="content-container">
-        <div class="left-content">
-          <span class="span">测试套</span>
-          <TableBody ref="tableBody">
-            <template #header>
-              <a-tree blockNode ref="childRef" :data="data.treeData" @select="(key) => click(key)">
-                <template #icon="{ node }">
-                  <template v-if="node.status === 1">
-                    <icon-check />
-                  </template>
-                  <template v-else>
-                    <icon-close />
-                  </template>
-                </template>
-                <template #title="{ title }">
-                  <div>
-                    <span>{{ getNodeTitle(title) }}</span>
-                  </div>
-                </template>
-              </a-tree>
-            </template>
-          </TableBody>
+        </template>
+        <div class="container">
+          <a-space direction="vertical" style="width: 30%">
+            <p>测试套ID：{{ pageData.record.id }}</p>
+            <p>所属项目：{{ pageData.record.project_product?.project?.name }}</p>
+            <p>执行时间：{{ pageData.record.create_time }}</p>
+            <p>当前状态：{{ enumStore.task_status[pageData.record.status].title }}</p>
+          </a-space>
+          <a-space direction="vertical" style="width: 42%" />
+          <a-space size="large" v-for="item of data.summary" :key="item.name" style="width: 7%">
+            <a-statistic :title="item.name" :value="item.value" show-group-separator />
+          </a-space>
         </div>
-        <div class="divider"></div>
-        <div class="right-content">
-          <a-collapse
-            :default-active-key="data.eleResultKey"
-            v-for="item of data.selectData.element_result_list"
-            :bordered="false"
-            :key="item.id"
-            destroy-on-hide
-          >
-            <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
-              <div>
-                <a-space direction="vertical" style="width: 50%">
-                  <p
-                    >操作类型：{{
-                      item.type === 0
-                        ? getLabelByValue(data.ope, item.ope_key)
-                        : getLabelByValue(data.ass, item.ope_key)
-                    }}</p
-                  >
-                  <p
-                    >表达式类型：{{
-                      item.exp ? enumStore.element_exp[item.exp].title : item.exp
-                    }}</p
-                  >
-                  <p
-                    >测试结果：{{
-                      item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
-                    }}</p
-                  >
-                  <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                  <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
-                  <p v-if="item.expect">预期：{{ item.expect }}</p>
-                  <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
-                </a-space>
-                <a-space direction="vertical" style="width: 50%">
-                  <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                  <p>元素个数：{{ item.ele_quantity }}</p>
-                  <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                  <div v-if="item.status === 0">
-                    <a-image
-                      :src="minioURL + '/failed_screenshot/' + item.picture_path"
-                      title="失败截图"
-                      width="260"
-                      style="margin-right: 67px; vertical-align: top"
-                      :preview-visible="visible1"
-                      @preview-visible-change="
-                        () => {
-                          visible1 = false
-                        }
-                      "
+      </a-card>
+    </template>
+    <template #default>
+      <a-card :bordered="false">
+        <div class="content-container">
+          <div class="left-content">
+            <span class="span">测试套</span>
+            <TableBody ref="tableBody">
+              <template #header>
+                <a-tree
+                  blockNode
+                  ref="childRef"
+                  :data="data.treeData"
+                  @select="(key) => click(key)"
+                >
+                  <template #icon="{ node }">
+                    <template v-if="node.status === 1">
+                      <icon-check />
+                    </template>
+                    <template v-else>
+                      <icon-close />
+                    </template>
+                  </template>
+                  <template #title="{ title }">
+                    <div>
+                      <span>{{ getNodeTitle(title) }}</span>
+                    </div>
+                  </template>
+                </a-tree>
+              </template>
+            </TableBody>
+          </div>
+          <div class="divider"></div>
+          <div class="right-content">
+            <a-collapse
+              :default-active-key="data.eleResultKey"
+              v-for="item of data.selectData.element_result_list"
+              :bordered="false"
+              :key="item.id"
+              destroy-on-hide
+            >
+              <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+                <div>
+                  <a-space direction="vertical" style="width: 50%">
+                    <p
+                      >操作类型：{{
+                        item.type === 0
+                          ? getLabelByValue(data.ope, item.ope_key)
+                          : getLabelByValue(data.ass, item.ope_key)
+                      }}</p
                     >
-                      <template #extra>
-                        <div class="actions">
-                          <span
-                            class="action"
-                            @click="
-                              () => {
-                                visible1 = true
-                              }
-                            "
-                            ><icon-eye
-                          /></span>
-                          <span class="action"><icon-download /></span>
-                          <a-tooltip content="失败截图">
-                            <span class="action"><icon-info-circle /></span>
-                          </a-tooltip>
-                        </div>
-                      </template>
-                    </a-image>
-                  </div>
-                  <p v-if="item.expect">实际：{{ item.actual }}</p>
-                </a-space>
-              </div>
-            </a-collapse-item>
-          </a-collapse>
+                    <p
+                      >表达式类型：{{
+                        item.exp ? enumStore.element_exp[item.exp].title : item.exp
+                      }}</p
+                    >
+                    <p
+                      >测试结果：{{
+                        item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                      }}</p
+                    >
+                    <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                    <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+                    <p v-if="item.expect">预期：{{ item.expect }}</p>
+                    <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                  </a-space>
+                  <a-space direction="vertical" style="width: 50%">
+                    <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                    <p>元素个数：{{ item.ele_quantity }}</p>
+                    <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                    <div v-if="item.status === 0">
+                      <a-image
+                        :src="minioURL + '/failed_screenshot/' + item.picture_path"
+                        title="失败截图"
+                        width="260"
+                        style="margin-right: 67px; vertical-align: top"
+                        :preview-visible="visible1"
+                        @preview-visible-change="
+                          () => {
+                            visible1 = false
+                          }
+                        "
+                      >
+                        <template #extra>
+                          <div class="actions">
+                            <span
+                              class="action"
+                              @click="
+                                () => {
+                                  visible1 = true
+                                }
+                              "
+                              ><icon-eye
+                            /></span>
+                            <span class="action"><icon-download /></span>
+                            <a-tooltip content="失败截图">
+                              <span class="action"><icon-info-circle /></span>
+                            </a-tooltip>
+                          </div>
+                        </template>
+                      </a-image>
+                    </div>
+                    <p v-if="item.expect">实际：{{ item.actual }}</p>
+                  </a-space>
+                </div>
+              </a-collapse-item>
+            </a-collapse>
+          </div>
         </div>
-      </div>
-    </a-card>
-  </div>
+      </a-card>
+    </template>
+  </TableBody>
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'

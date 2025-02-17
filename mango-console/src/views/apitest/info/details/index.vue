@@ -1,160 +1,164 @@
 <template>
-  <div>
-    <a-card title="接口详情">
-      <template #extra>
-        <a-space>
-          <a-button status="success" size="small" @click="onRunCase">执行</a-button>
-          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-        </a-space>
-      </template>
-      <div class="container">
-        <a-space direction="vertical" style="width: 25%">
-          <p>接口ID：{{ pageData.record.id }}</p>
-          <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-          <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-          <span>所属模块：{{ pageData.record.module?.name }}</span>
-        </a-space>
-        <a-space direction="vertical" style="width: 25%">
-          <span>接口名称：{{ pageData.record.name }}</span>
-          <span>接口URL：{{ pageData.record.url }}</span>
-          <span>接口方法：{{ enumStore.method[pageData.record.method].title }}</span>
-        </a-space>
-      </div>
-    </a-card>
-    <a-card>
-      <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
+  <TableBody ref="tableBody">
+    <template #header>
+      <a-card title="接口详情" :bordered="false">
         <template #extra>
-          <a-space v-if="data.addButton">
-            <a-button type="primary" size="small" @click="addData">增加</a-button>
+          <a-space>
+            <a-button status="success" size="small" @click="onRunCase">执行</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
-        <a-tab-pane key="0" title="请求头">
-          <a-textarea
-            placeholder="请输入请求头，字符串形式"
-            v-model="data.header"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('header', data.header)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="1" title="参数">
-          <a-textarea
-            placeholder="请输入json格式的数据"
-            v-model="data.params"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('params', data.params)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="2" title="表单">
-          <a-textarea
-            placeholder="请输入json格式的表单"
-            v-model="data.data"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('data', data.data)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="3" title="JSON">
-          <a-textarea
-            placeholder="请输入json格式的JSON"
-            v-model="data.json"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('json', data.json)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="4" title="文件">
-          <a-textarea
-            placeholder="请输入json格式的文件上传数据"
-            v-model="data.file"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('file', data.file)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="5" title="后置jsonpath提取">
-          <a-space direction="vertical">
-            <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
-              <a-input
-                placeholder="请输入缓存key"
-                v-model="data.posterior_json_path[index].key"
-                @blur="upDate('posterior_json_path', data.posterior_json_path)"
-              />
-              <a-input
-                placeholder="请输入jsonpath语法"
-                v-model="data.posterior_json_path[index].value"
-                @blur="upDate('posterior_json_path', data.posterior_json_path)"
-              />
+        <div class="container">
+          <a-space direction="vertical" style="width: 25%">
+            <p>接口ID：{{ pageData.record.id }}</p>
+            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
+            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
+            <span>所属模块：{{ pageData.record.module?.name }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 25%">
+            <span>接口名称：{{ pageData.record.name }}</span>
+            <span>接口URL：{{ pageData.record.url }}</span>
+            <span>接口方法：{{ enumStore.method[pageData.record.method].title }}</span>
+          </a-space>
+        </div>
+      </a-card>
+    </template>
+    <template #default>
+      <a-card :bordered="false">
+        <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
+          <template #extra>
+            <a-space v-if="data.addButton">
+              <a-button type="primary" size="small" @click="addData">增加</a-button>
+            </a-space>
+          </template>
+          <a-tab-pane key="0" title="请求头">
+            <a-textarea
+              placeholder="请输入请求头，字符串形式"
+              v-model="data.header"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('header', data.header)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="1" title="参数">
+            <a-textarea
+              placeholder="请输入json格式的数据"
+              v-model="data.params"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('params', data.params)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="2" title="表单">
+            <a-textarea
+              placeholder="请输入json格式的表单"
+              v-model="data.data"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('data', data.data)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="3" title="JSON">
+            <a-textarea
+              placeholder="请输入json格式的JSON"
+              v-model="data.json"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('json', data.json)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="4" title="文件">
+            <a-textarea
+              placeholder="请输入json格式的文件上传数据"
+              v-model="data.file"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('file', data.file)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="5" title="后置jsonpath提取">
+            <a-space direction="vertical">
+              <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
+                <a-input
+                  placeholder="请输入缓存key"
+                  v-model="data.posterior_json_path[index].key"
+                  @blur="upDate('posterior_json_path', data.posterior_json_path)"
+                />
+                <a-input
+                  placeholder="请输入jsonpath语法"
+                  v-model="data.posterior_json_path[index].value"
+                  @blur="upDate('posterior_json_path', data.posterior_json_path)"
+                />
 
-              <a-button
-                type="text"
-                size="small"
-                status="danger"
-                @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
-                >移除
-              </a-button>
+                <a-button
+                  type="text"
+                  size="small"
+                  status="danger"
+                  @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
+                  >移除
+                </a-button>
+              </a-space>
             </a-space>
-          </a-space>
-        </a-tab-pane>
-        <a-tab-pane key="6" title="后置正则提取">
-          <a-space direction="vertical">
-            <a-space v-for="(value, index) of data.posterior_re" :key="index">
-              <a-input
-                placeholder="请输入缓存key"
-                v-model="data.posterior_re[index].key"
-                @blur="upDate('posterior_re', data.posterior_re)"
-              />
-              <a-input
-                placeholder="请输入jsonpath语法"
-                v-model="data.posterior_re[index].value"
-                @blur="upDate('posterior_re', data.posterior_re)"
-              />
+          </a-tab-pane>
+          <a-tab-pane key="6" title="后置正则提取">
+            <a-space direction="vertical">
+              <a-space v-for="(value, index) of data.posterior_re" :key="index">
+                <a-input
+                  placeholder="请输入缓存key"
+                  v-model="data.posterior_re[index].key"
+                  @blur="upDate('posterior_re', data.posterior_re)"
+                />
+                <a-input
+                  placeholder="请输入jsonpath语法"
+                  v-model="data.posterior_re[index].value"
+                  @blur="upDate('posterior_re', data.posterior_re)"
+                />
 
-              <a-button
-                type="text"
-                size="small"
-                status="danger"
-                @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
-                >移除
-              </a-button>
+                <a-button
+                  type="text"
+                  size="small"
+                  status="danger"
+                  @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
+                  >移除
+                </a-button>
+              </a-space>
             </a-space>
-          </a-space>
-        </a-tab-pane>
-        <a-tab-pane key="7" title="后置函数">
-          <a-textarea
-            placeholder="根据帮助文档，输入自定义后置函数"
-            v-model="data.posterior_func"
-            allow-clear
-            :auto-size="{ minRows: 28, maxRows: 28 }"
-            @blur="upDate('posterior_func', data.posterior_func)"
-          />
-        </a-tab-pane>
-        <a-tab-pane key="8" title="响应结果">
-          <a-space direction="vertical">
-            <a-space>
-              <a-tag color="orange">响 应 码</a-tag>
-              <span>{{ data.result_data?.code }}</span>
+          </a-tab-pane>
+          <a-tab-pane key="7" title="后置函数">
+            <a-textarea
+              placeholder="根据帮助文档，输入自定义后置函数"
+              v-model="data.posterior_func"
+              allow-clear
+              :auto-size="{ minRows: 28, maxRows: 28 }"
+              @blur="upDate('posterior_func', data.posterior_func)"
+            />
+          </a-tab-pane>
+          <a-tab-pane key="8" title="响应结果">
+            <a-space direction="vertical">
+              <a-space>
+                <a-tag color="orange">响 应 码</a-tag>
+                <span>{{ data.result_data?.code }}</span>
+              </a-space>
+              <a-space>
+                <a-tag color="orange">响应时间</a-tag>
+                <span>{{ data.result_data?.time }}</span>
+              </a-space>
+              <a-space>
+                <a-tag color="orange">缓存数据</a-tag>
+                <span>{{ data.result_data?.cache_all }}</span>
+              </a-space>
+              <a-space>
+                <a-tag color="orange">响 应 体</a-tag>
+                <pre>{{
+                  strJson(data.result_data?.json ? data.result_data?.json : data.result_data?.text)
+                }}</pre>
+              </a-space>
             </a-space>
-            <a-space>
-              <a-tag color="orange">响应时间</a-tag>
-              <span>{{ data.result_data?.time }}</span>
-            </a-space>
-            <a-space>
-              <a-tag color="orange">缓存数据</a-tag>
-              <span>{{ data.result_data?.cache_all }}</span>
-            </a-space>
-            <a-space>
-              <a-tag color="orange">响 应 体</a-tag>
-              <pre>{{
-                strJson(data.result_data?.json ? data.result_data?.json : data.result_data?.text)
-              }}</pre>
-            </a-space>
-          </a-space>
-        </a-tab-pane>
-      </a-tabs>
-    </a-card>
-  </div>
+          </a-tab-pane>
+        </a-tabs>
+      </a-card>
+    </template>
+  </TableBody>
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive } from 'vue'

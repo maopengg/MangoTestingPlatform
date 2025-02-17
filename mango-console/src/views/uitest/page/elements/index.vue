@@ -1,64 +1,68 @@
 <template>
-  <div>
-    <a-card title="页面元素详情">
-      <template #extra>
-        <a-space>
-          <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-        </a-space>
-      </template>
-      <div class="container">
-        <a-space direction="vertical" style="width: 25%">
-          <p>页面ID：{{ pageData.record.id }}</p>
-          <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-          <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
-          <span>所属模块：{{ pageData.record.module?.name }}</span>
-        </a-space>
-        <a-space direction="vertical" style="width: 75%">
-          <span>页面名称：{{ pageData.record.name }}</span>
-          <span>页面地址：{{ pageData.record.url }}</span>
-          <span>元素个数：{{ data.totalSize }}</span>
-          <span>页面类型：{{ pageData.record.type }}</span>
-        </a-space>
-      </div>
-    </a-card>
-    <a-card>
-      <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
-        <template #columns>
-          <a-table-column
-            :key="item.key"
-            v-for="item of columns"
-            :align="item.align"
-            :title="item.title"
-            :width="item.width"
-            :data-index="item.dataIndex"
-            :fixed="item.fixed"
-            :ellipsis="item.ellipsis"
-            :tooltip="item.tooltip"
-          >
-            <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.exp]" size="small">{{
-                enumStore.element_exp[record.exp].title
-              }}</a-tag>
-            </template>
-            <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
-              <a-switch
-                :default-checked="record.is_iframe === 1"
-                :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
-              />
-            </template>
-            <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除</a-button
-              >
-            </template>
-          </a-table-column>
+  <TableBody ref="tableBody">
+    <template #header>
+      <a-card title="页面元素详情" :bordered="false">
+        <template #extra>
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
         </template>
-      </a-table>
-    </a-card>
-  </div>
+        <div class="container">
+          <a-space direction="vertical" style="width: 25%">
+            <p>页面ID：{{ pageData.record.id }}</p>
+            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
+            <span>顶级模块：{{ pageData.record.module?.superior_module }}</span>
+            <span>所属模块：{{ pageData.record.module?.name }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 75%">
+            <span>页面名称：{{ pageData.record.name }}</span>
+            <span>页面地址：{{ pageData.record.url }}</span>
+            <span>元素个数：{{ data.totalSize }}</span>
+            <span>页面类型：{{ pageData.record.type }}</span>
+          </a-space>
+        </div>
+      </a-card>
+    </template>
+    <template #default>
+      <a-card :bordered="false">
+        <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
+          <template #columns>
+            <a-table-column
+              :key="item.key"
+              v-for="item of columns"
+              :align="item.align"
+              :title="item.title"
+              :width="item.width"
+              :data-index="item.dataIndex"
+              :fixed="item.fixed"
+              :ellipsis="item.ellipsis"
+              :tooltip="item.tooltip"
+            >
+              <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
+                <a-tag :color="enumStore.colors[record.exp]" size="small">{{
+                  enumStore.element_exp[record.exp].title
+                }}</a-tag>
+              </template>
+              <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
+                <a-switch
+                  :default-checked="record.is_iframe === 1"
+                  :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                />
+              </template>
+              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
+                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                  >删除</a-button
+                >
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+      </a-card>
+    </template>
+  </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">

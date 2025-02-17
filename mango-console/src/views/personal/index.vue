@@ -1,60 +1,62 @@
 <template>
-  <div class="main-container">
-    <div class="box-wrapper">
-      <div class="flex">
-        <a-card
-          :bordered="false"
-          class="card-border-radius personal-box"
-          :body-style="{ padding: '10px' }"
-        >
-          <div class="info-wrapper">
-            <div class="avatar-wrapper">
-<!--              <div-->
-<!--                class="avatar"-->
-<!--                :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }"-->
-<!--                @mouseenter="avatarTouchStart"-->
-<!--              >-->
-<!--                <img :src="userStore.avatar" />-->
-<!--              </div>-->
-              <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
-                <icon-camera style="color: #fff; font-size: 30px" />
+  <TableBody ref="tableBody">
+    <div class="main-container">
+      <div class="box-wrapper">
+        <div class="flex">
+          <a-card
+            :bordered="false"
+            class="card-border-radius personal-box"
+            :body-style="{ padding: '10px' }"
+          >
+            <div class="info-wrapper">
+              <div class="avatar-wrapper">
+                <!--              <div-->
+                <!--                class="avatar"-->
+                <!--                :class="{ 'avatar-touch': touched, 'avatar-end': uploaded }"-->
+                <!--                @mouseenter="avatarTouchStart"-->
+                <!--              >-->
+                <!--                <img :src="userStore.avatar" />-->
+                <!--              </div>-->
+                <div class="flex items-center justify-center camera-layer" @click="uploadAvatar">
+                  <icon-camera style="color: #fff; font-size: 30px" />
+                </div>
+              </div>
+              <div class="text-xl">
+                {{ userStore.nickName }}
+              </div>
+              <div class="text-wrapper">
+                <div class="label">昵称：</div>
+                <div class="value">{{ personalCenterData.data.name }}</div>
+              </div>
+              <div class="text-wrapper">
+                <div class="label">账号：</div>
+                <div class="value">{{ personalCenterData.data.username }}</div>
+              </div>
+              <div class="text-wrapper">
+                <div class="label">角色：</div>
+                <div class="value">{{ personalCenterData.data.role?.name }}</div>
+              </div>
+              <div class="text-wrapper">
+                <div class="label">最近登录时间：</div>
+                <div class="value">{{ personalCenterData.data?.last_login_time }}</div>
+              </div>
+              <div class="text-wrapper">
+                <div class="label">socketIP断言：</div>
+                <div class="value">{{ personalCenterData.data.ip }}</div>
+              </div>
+              <div class="text-wrapper">
+                <div class="label">邮箱：</div>
+                <div class="value">{{ personalCenterData.data.mailbox }}</div>
+              </div>
+              <div class="mt-4">
+                <a-button type="text" size="mini" @click="onUpdate">修改密码</a-button>
               </div>
             </div>
-            <div class="text-xl">
-              {{ userStore.nickName }}
-            </div>
-            <div class="text-wrapper">
-              <div class="label">昵称：</div>
-              <div class="value">{{ personalCenterData.data.name }}</div>
-            </div>
-            <div class="text-wrapper">
-              <div class="label">账号：</div>
-              <div class="value">{{ personalCenterData.data.username }}</div>
-            </div>
-            <div class="text-wrapper">
-              <div class="label">角色：</div>
-              <div class="value">{{ personalCenterData.data.role?.name }}</div>
-            </div>
-            <div class="text-wrapper">
-              <div class="label">最近登录时间：</div>
-              <div class="value">{{ personalCenterData.data?.last_login_time }}</div>
-            </div>
-            <div class="text-wrapper">
-              <div class="label">socketIP断言：</div>
-              <div class="value">{{ personalCenterData.data.ip }}</div>
-            </div>
-            <div class="text-wrapper">
-              <div class="label">邮箱：</div>
-              <div class="value">{{ personalCenterData.data.mailbox }}</div>
-            </div>
-            <div class="mt-4">
-              <a-button type="text" size="mini" @click="onUpdate">修改密码</a-button>
-            </div>
-          </div>
-        </a-card>
+          </a-card>
+        </div>
       </div>
     </div>
-  </div>
+  </TableBody>
   <ModalDialog ref="modalDialogRef" :title="personalCenterData.actionTitle" @confirm="onDataForm">
     <template #content>
       <a-form :model="formModel">
