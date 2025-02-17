@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'产品名称：' + route.query.name">
+  <TableBody ref="tableBody">
+    <template #default>
+      <a-card :title="'产品名称：' + route.query.name" :bordered="false">
         <template #extra>
-            <a-space>
-              <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-              <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-            </a-space>
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
         </template>
         <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
           <template #columns>
@@ -29,24 +29,24 @@
           </template>
         </a-table>
       </a-card>
-      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of formItems"
-              :key="item.key"
-            >
-              <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </ModalDialog>
-    </div>
-  </div>
+    </template>
+  </TableBody>
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'

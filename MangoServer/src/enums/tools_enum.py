@@ -98,14 +98,12 @@ class TestCaseTypeEnum(BaseEnum):
     """用例类型"""
     UI = 0
     API = 1
-    UI_SUITE = 2
-    API_SUITE = 3
-    UI_PYTEST = 4
-    API_PYTEST = 5
+    UI_PYTEST = 2
+    API_PYTEST = 3
 
     @classmethod
     def obj(cls):
-        return {0: "界面用例", 1: "接口用例", 2: "界面用例套", 3: "接口用例套", 4: "界面PYTEST", 5: "接口PYTEST"}
+        return {0: "界面用例", 1: "接口用例", 2: "界面pytest", 3: "接口pytest"}
 
 
 class CaseLevelEnum(BaseEnum):

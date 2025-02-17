@@ -5,19 +5,17 @@
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase
 from src.auto_test.auto_ui.models import UiCase
-from src.enums.tools_enum import TaskEnum, AutoTestTypeEnum
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.tools.view import Snowflake
 
 
 class AddTasks:
-    def __init__(self, project_product: int, test_env: int, is_notice: int, user_id: int, _type: AutoTestTypeEnum,
-                 tasks_id: int | None = None):
+    def __init__(self, project_product: int, test_env: int, is_notice: int, user_id: int, tasks_id: int | None = None):
         self.test_suite_id = Snowflake.generate_id()
         self.project_product = project_product
         self.test_env = test_env
         self.is_notice = is_notice
         self.user_id = user_id
-        self._type = _type
         self.tasks_id = tasks_id
         self.add_test_suite()
 
@@ -25,7 +23,6 @@ class AddTasks:
         from src.auto_test.auto_system.views.test_suite import TestSuiteCRUD
         TestSuiteCRUD.inside_post({
             'id': self.test_suite_id,
-            'type': self._type,
             'project_product': self.project_product,
             'test_env': self.test_env,
             'user': self.user_id,
@@ -34,12 +31,13 @@ class AddTasks:
             'tasks': self.tasks_id,
         })
 
-    def add_test_suite_details(self, case_id_list: list[id]):
+    def add_test_suite_details(self, case_id: int, _type: TestCaseTypeEnum):
+        print(_type.value)
         def set_task(case_id, case_name, project_product, ):
             from src.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
                 'test_suite': self.test_suite_id,
-                'type': self._type,
+                'type': _type.value,
                 'project_product': project_product,
                 'test_env': self.test_env,
                 'case_id': case_id,
@@ -50,13 +48,11 @@ class AddTasks:
                 'retry': 0 if self.tasks_id else 2,
             })
 
-        if self._type == AutoTestTypeEnum.UI.value:
-            for _id in case_id_list:
-                case = UiCase.objects.get(id=_id)
-                set_task(case.id, case.name, case.project_product.id)
-        elif self._type == AutoTestTypeEnum.API.value:
-            for _id in case_id_list:
-                case = ApiCase.objects.get(id=_id)
-                set_task(case.id, case.name, case.project_product.id)
+        if _type == TestCaseTypeEnum.UI:
+            case = UiCase.objects.get(id=case_id)
+            set_task(case.id, case.name, case.project_product.id)
+        elif _type == TestCaseTypeEnum.API:
+            case = ApiCase.objects.get(id=case_id)
+            set_task(case.id, case.name, case.project_product.id)
         else:
-            set_task(0, None, self.project_product)
+            print('还没实现')

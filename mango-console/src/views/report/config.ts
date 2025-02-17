@@ -23,15 +23,6 @@ export const conditionItems: Array<FormItem> = reactive([
     optionItems: [],
     reset: function () {},
   },
-  {
-    key: 'type',
-    label: '自动化类型',
-    value: ref(''),
-    type: 'select',
-    placeholder: '请选择测试结果',
-    optionItems: [],
-    reset: function () {},
-  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
@@ -42,24 +33,28 @@ export const tableColumns = useTableColumn([
     width: 220,
   },
   {
-    title: '自动化类型',
-    key: 'type',
-    dataIndex: 'type',
+    title: '任务名称',
+    key: 'tasks',
+    dataIndex: 'tasks',
+    align: 'left',
   },
   {
     title: '执行环境',
     key: 'test_env',
     dataIndex: 'test_env',
+    width: 120,
   },
   {
-    title: '执行时间',
+    title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
+    width: 170,
   },
   {
     title: '执行人',
     key: 'user',
     dataIndex: 'user',
+    width: 139,
   },
   {
     title: '结果',

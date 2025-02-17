@@ -89,14 +89,16 @@
                 {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
               </template>
               <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                {{ enumStore.environment_type[record.test_env]?.title }}
+                <a-tag :color="enumStore.status_colors[record.test_env]" size="small">{{
+                  enumStore.environment_type[record.test_env]?.title
+                }}</a-tag>
               </template>
 
               <template v-else-if="item.key === 'user'" #cell="{ record }">
                 {{ record.user?.name }}
               </template>
-              <template v-else-if="item.key === 'type'" #cell="{ record }">
-                {{ enumStore.auto_test_type[record.type].title }}
+              <template v-else-if="item.key === 'tasks'" #cell="{ record }">
+                {{ record.tasks.name }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
                 <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
@@ -172,21 +174,12 @@
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
-    if (record.type == 0) {
-      router.push({
-        path: '/report/ui/details',
-        query: {
-          id: record.id,
-        },
-      })
-    } else if (record.type === 1) {
-      router.push({
-        path: '/report/api/details',
-        query: {
-          id: record.id,
-        },
-      })
-    }
+    router.push({
+      path: '/report/details',
+      query: {
+        id: record.id,
+      },
+    })
   }
   function onRetry(record: any) {
     getSystemTestSuiteDetailsAllRetry(record.id)

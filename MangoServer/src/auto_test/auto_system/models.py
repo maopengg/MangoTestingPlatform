@@ -242,8 +242,6 @@ class TestSuite(models.Model):
     id = models.BigIntegerField(primary_key=True, editable=False)
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    # type=0是UI,=1是接口,=2是性能
-    type = models.SmallIntegerField(verbose_name="类型")
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     user = models.ForeignKey(to=User, to_field="id", verbose_name='用例执行人', on_delete=models.PROTECT)

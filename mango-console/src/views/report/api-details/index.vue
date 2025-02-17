@@ -2,9 +2,9 @@
   <div class="main-container">
     <a-card title="界面测试报告详情">
       <template #extra>
-          <a-space>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-          </a-space>
+        <a-space>
+          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+        </a-space>
       </template>
       <div class="container">
         <a-space direction="vertical" style="width: 30%">
@@ -173,60 +173,4 @@
     })
   })
 </script>
-<style>
-  .content-container {
-    display: flex;
-  }
-
-  .left-content {
-    flex: 1;
-    padding-right: 10px;
-  }
-
-  .right-content {
-    flex: 1;
-    padding-left: 10px;
-  }
-
-  .divider {
-    width: 1px;
-    background-color: #ccc;
-    margin: 0 10px;
-    position: relative;
-  }
-
-  .divider:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -3px;
-    border-left: 1px dashed #ccc;
-  }
-
-  .span {
-    display: block;
-    font-size: 16px;
-    font-weight: bold;
-    margin-top: 10px;
-    margin-bottom: 10px;
-  }
-
-  .verticallayout > div {
-    flex: 1;
-  }
-
-  .pppp {
-    display: -webkit-box;
-    -webkit-line-clamp: 5; /* 设置为盒子高度的百分之80 */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  p {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-</style>
+<style></style>
