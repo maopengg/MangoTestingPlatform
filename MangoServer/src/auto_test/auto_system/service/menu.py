@@ -87,7 +87,7 @@ def ad_routes():
         },
         {
             "menuUrl": "/pytest",
-            "menuName": "api_pytest",
+            "menuName": "芒果pytest",
             "icon": "icon-calendar-clock",
             "parentPath": "",
             "children": [
@@ -213,7 +213,7 @@ def ad_routes():
                 {
                     "parentPath": "/system",
                     "menuUrl": "/system/settings/index",
-                    "menuName": "系统设置",
+                    "menuName": "配置管理",
                 },
                 {
                     "parentPath": "/system",

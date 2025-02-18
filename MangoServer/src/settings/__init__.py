@@ -6,9 +6,10 @@
 import os
 from pathlib import Path
 
-from src.tools import nuw_dir
+from src.tools import project_dir
 from ..enums.tools_enum import SystemEnvEnum
 
+project_dir.init_project_path()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -30,9 +31,6 @@ if DEBUG:
     MINIO_STORAGE_SECRET_KEY = None
 else:
     DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
-
-
-nuw_dir()
 
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'
