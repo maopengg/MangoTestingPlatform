@@ -46,7 +46,5 @@ project_dir = ProjectDir()
 
 if __name__ == '__main__':
     print(project_dir.logs())
-    print(project_dir.cache())
-    print(project_dir.download())
     print(project_dir.root_path())
 

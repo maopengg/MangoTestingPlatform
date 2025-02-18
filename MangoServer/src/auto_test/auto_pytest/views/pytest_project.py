@@ -9,10 +9,13 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestProject
+from src.auto_test.auto_pytest.service.base.init_file import save
+from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
+import threading
 
 
 class PytestProjectSerializers(serializers.ModelSerializer):
@@ -51,12 +54,10 @@ class PytestProjectViews(ViewSet):
     serializer_class = PytestProjectSerializers
 
     @action(methods=['get'], detail=False)
-    @error_response('ui')
-    def ui_test_case(self, request: Request):
-        """
-        执行单个用例组
-        @param request:
-        @return:
-        """
-
-        return ResponseData.success(RESPONSE_MSG_0074)
+    @error_response('pytest')
+    def pytest_update(self, request: Request):
+        repo = GitRepo()
+        repo.pull_repo()
+        task = threading.Thread(target=save)
+        task.start()
+        return ResponseData.success(RESPONSE_MSG_0078)

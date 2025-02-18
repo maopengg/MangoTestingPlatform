@@ -19,7 +19,8 @@ log_dict = {
     'ui': log.ui,
     'api': log.api,
     'system': log.system,
-    'user': log.user
+    'user': log.user,
+    'pytest': log.pytest
 }
 
 

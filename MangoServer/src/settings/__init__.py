@@ -201,6 +201,7 @@ LOGGING = {
             'backupCount': 30,
             'encoding': 'utf-8',
         },
+
         'system': {  # 文件
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
@@ -218,7 +219,16 @@ LOGGING = {
             'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,
             'encoding': 'utf-8',
-        }
+        },
+        'pytest': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/auto_ui/log.log',
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 30,
+            'encoding': 'utf-8',
+        },
     },
     'loggers': {  # log记录器，配置之后就会对应的输出日志
         'console': {  # django记录器，它将所有 INFO 或更高等级的消息传递给3个处理程序——files、console 和 default

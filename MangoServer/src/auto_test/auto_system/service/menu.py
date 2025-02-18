@@ -93,24 +93,20 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-init/index",
-                    "menuName": "API初始化",
+                    "menuUrl": "/pytest/project/index",
+                    "menuName": "项目绑定",
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-api-info/index",
-                    "menuName": "API接口",
+                    "menuUrl": "/pytest/act/index",
+                    "menuName": "ACT对象",
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-api-file/index",
-                    "menuName": "测试文件",
+                    "menuUrl": "/pytest/case/index",
+                    "menuName": "测试用例",
                 },
-                {
-                    "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-case/index",
-                    "menuName": "API用例",
-                },
+
             ]
         },
         {

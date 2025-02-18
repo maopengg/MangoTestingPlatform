@@ -8,8 +8,10 @@ import os
 from git import Repo
 
 from src.tools import project_dir
+from src.tools.decorator.singleton import singleton
 
 
+@singleton
 class GitRepo:
     def __init__(
             self,
@@ -17,7 +19,7 @@ class GitRepo:
             password='mP729164035',
             repo_url='gitee.com/mao-peng/MangoPytest.git'
     ):
-        self.local_warehouse_path = os.path.join(project_dir.root_path(), "mango_pytest")
+        self.local_warehouse_path = os.path.join(project_dir.root_path(), "src/auto_test/auto_pytest/mango_pytest")
         self.repo_url = f"https://{username}:{password}@{repo_url}"
         if not os.path.exists(self.local_warehouse_path):
             self.clone_repo()
