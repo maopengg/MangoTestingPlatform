@@ -111,7 +111,6 @@ class TestCase(PageSteps):
         if self.parametrize:
             for i in self.parametrize:
                 self.test_data.set_cache(i.get('key'), i.get('value'))
-                print(self.test_data.get_cache(i.get('key')))
 
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:

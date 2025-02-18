@@ -90,17 +90,10 @@ export const extraRoutes = [
     },
     children: [
       {
-        path: 'api/details',
-        component: () => import('@/views/report/api-details/index.vue'),
+        path: 'details',
+        component: () => import('@/views/report/details/index.vue'),
         meta: {
-          title: 'API测试报告',
-        },
-      },
-      {
-        path: 'ui/details',
-        component: () => import('@/views/report/ui-details/index.vue'),
-        meta: {
-          title: 'UI测试报告',
+          title: '测试报告详情',
         },
       },
     ],

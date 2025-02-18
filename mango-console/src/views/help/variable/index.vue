@@ -1,21 +1,23 @@
 <template>
-  <a-card>
-    <div class="container">
-      <span>公共变量</span>
-    </div>
-    <a-space>
-      <a-input :style="{ width: '320px' }" placeholder="请直接输入函数试一试" v-model="input" />
-      <a-button type="primary" @click="obtain">测试一下</a-button>
-    </a-space>
-    <a-card
-      :body-style="{ padding: '10px' }"
-      :bordered="false"
-      v-for="item of randomList"
-      :key="item.label"
-    >
-      <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
-    </a-card>
-  </a-card>
+  <TableBody ref="tableBody">
+    <template #header> </template>
+    <template #default>
+      <a-card title="公共变量" :bordered="false">
+        <a-space>
+          <a-input :style="{ width: '320px' }" placeholder="请直接输入函数试一试" v-model="input" />
+          <a-button type="primary" @click="obtain">测试一下</a-button>
+        </a-space>
+        <a-card
+          :body-style="{ padding: '10px' }"
+          :bordered="false"
+          v-for="item of randomList"
+          :key="item.label"
+        >
+          <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
+        </a-card>
+      </a-card>
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>
@@ -42,8 +44,4 @@
       .catch()
   }
 </script>
-<style>
-  .container span {
-    font-size: 25px;
-  }
-</style>
+<style lang="less"></style>
