@@ -67,3 +67,12 @@ export function getUiUiElementName(id: any) {
     },
   })
 }
+
+export function getUiElementUpload(data: any) {
+  return post({
+    url: '/ui/element/upload',
+    data: () => {
+      return data
+    },
+  })
+}
