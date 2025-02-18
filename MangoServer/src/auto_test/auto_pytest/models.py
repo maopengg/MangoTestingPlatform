@@ -59,7 +59,7 @@ class PytestAct(models.Model):
         super().delete(*args, **kwargs)
 
 
-class PytestCae(models.Model):
+class PytestCase(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     pytest_project = models.ForeignKey(to=PytestProject, to_field="id", on_delete=models.PROTECT)
@@ -74,15 +74,15 @@ class PytestCae(models.Model):
         super().delete(*args, **kwargs)
 
 
-class PytestUpload(models.Model):
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    pytest_project = models.ForeignKey(to=PytestProject, to_field="id", on_delete=models.PROTECT)
-    module = models.ForeignKey(to=PytestProjectModule, to_field="id", on_delete=models.PROTECT)
-    name = models.CharField(verbose_name="文件名称", max_length=1024, null=True)
-
-    class Meta:
-        db_table = 'pytest_upload'
-
-    def delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
+# class PytestUpload(models.Model):
+#     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+#     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+#     pytest_project = models.ForeignKey(to=PytestProject, to_field="id", on_delete=models.PROTECT)
+#     module = models.ForeignKey(to=PytestProjectModule, to_field="id", on_delete=models.PROTECT)
+#     name = models.CharField(verbose_name="文件名称", max_length=1024, null=True)
+#
+#     class Meta:
+#         db_table = 'pytest_upload'
+#
+#     def delete(self, *args, **kwargs):
+#         super().delete(*args, **kwargs)
