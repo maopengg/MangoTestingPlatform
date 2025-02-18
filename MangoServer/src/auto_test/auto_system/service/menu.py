@@ -87,7 +87,7 @@ def ad_routes():
         },
         {
             "menuUrl": "/pytest",
-            "menuName": "芒果pytest",
+            "menuName": "单元自动化",
             "icon": "icon-calendar-clock",
             "parentPath": "",
             "children": [
