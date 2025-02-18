@@ -25,7 +25,7 @@
       <a-card title="测试套" :bordered="false">
         <div class="box">
           <div class="left">
-            <a-tree blockNode ref="childRef" :data="data.treeData" @select="(key) => click(key)">
+            <a-tree blockNode ref="childRef" :data="data.treeData" @select="clickTree">
               <template #icon="{ node }">
                 <template v-if="node.status === 1">
                   <icon-check />
@@ -42,9 +42,8 @@
             </a-tree>
           </div>
           <div class="right">
-            <div v-if="data.selectData.type === 0">
+            <div v-if="data.caseType === 0">
               <a-collapse
-                :default-active-key="data.eleResultKey"
                 v-for="item of data.selectData.element_result_list"
                 :bordered="false"
                 :key="item.id"
@@ -117,7 +116,7 @@
                 </a-collapse-item>
               </a-collapse>
             </div>
-            <div v-else-if="data.selectData.type === 1">
+            <div v-else-if="data.caseType === 1">
               <a-tabs default-active-key="1">
                 <a-tab-pane key="1" title="接口信息">
                   <a-space direction="vertical">
@@ -144,8 +143,8 @@
                 </a-tab-pane>
                 <a-tab-pane key="7" title="响应信息">
                   <a-space direction="vertical">
-                    <p>响应code码：{{ data.selectData?.response?.status_code }}</p>
-                    <p>响应时间：{{ data.selectData?.response?.response_time }}</p>
+                    <p>响应code码：{{ data.selectData?.response?.code }}</p>
+                    <p>响应时间：{{ data.selectData?.response?.time }}</p>
                     <p :style="{ color: data.selectData?.status === 0 ? 'red' : 'inherit' }">
                       测试结果：{{
                         data.selectData?.status === 1
@@ -161,20 +160,23 @@
                   </a-space>
                 </a-tab-pane>
                 <a-tab-pane key="8" title="响应头">
-                  <pre>{{ strJson(data.selectData?.response?.response_headers) }}</pre>
+                  <pre>{{ strJson(data.selectData?.response?.headers) }}</pre>
                 </a-tab-pane>
-                <a-tab-pane key="9" title="响应体">
-                  <pre>{{ strJson(data.selectData?.response?.response_text) }}</pre>
+                <a-tab-pane key="9" title="响应文本">
+                  <pre>{{ strJson(data.selectData?.response?.text) }}</pre>
                 </a-tab-pane>
-                <a-tab-pane key="10" title="缓存数据">
+                <a-tab-pane key="10" title="响应JSON">
+                  <pre>{{ strJson(data.selectData?.response?.json) }}</pre>
+                </a-tab-pane>
+                <a-tab-pane key="11" title="缓存数据">
                   <pre>{{ strJson(data.selectData?.cache_data) }}</pre>
                 </a-tab-pane>
-                <a-tab-pane key="11" title="断言数据">
+                <a-tab-pane key="12" title="断言数据">
                   <pre>{{ strJson(data.selectData?.ass) }}</pre>
                 </a-tab-pane>
               </a-tabs>
             </div>
-            <div v-else-if="data.selectData.type === 2">
+            <div v-else-if="data.caseType === 2">
               <span>界面pytest</span>
             </div>
             <div v-else>
@@ -197,6 +199,7 @@
   import { minioURL } from '@/api/axios.config'
   import { useEnum } from '@/store/modules/get-enum'
   import { strJson } from '@/utils/tools'
+  import { nanoid } from 'nanoid'
 
   const childRef: any = ref(null)
   const enumStore = useEnum()
@@ -208,11 +211,9 @@
     treeData: [],
     selectData: {},
     summary: [],
-    eleResult: [],
-    eleResultKey: [],
-    eleExp: [],
     ass: [],
     ope: [],
+    caseType: 0,
   })
   const customStyle = reactive({
     borderRadius: '6px',
@@ -222,15 +223,14 @@
   })
   const visible1 = ref(false)
 
-  function click(key: any) {
-    if (typeof key[0] === 'number') {
-      childRef.value.expandNode(key, true)
+  function clickTree(selectedKeys: any, eventData: any) {
+    if (typeof selectedKeys[0] === 'number') {
+      childRef.value.expandNode(selectedKeys, true)
       return
     }
-    data.selectData = key[0]
-    console.log(data.selectData)
+    data.caseType = eventData.node.type
+    data.selectData = eventData.node.data
   }
-
   function doResetSearch() {
     window.history.back()
   }
@@ -240,18 +240,17 @@
       .then((res) => {
         res.data.forEach((item: any) => {
           const children: any = {
-            title: `用例ID：${item.case_id}--用例名称：${item.case_name}`,
+            title: `${item.case_id}--用例名称：${item.case_name}`,
             key: item.case_id,
-            status: item.status,
-            error_msg: item.error_message,
             children: [],
           }
           if (item.result_data) {
             item.result_data.forEach((item1: any) => {
               children['children'].push({
                 title: item1.name,
-                key: item1,
-                status: item1.status,
+                key: nanoid(),
+                type: item.type,
+                data: item1,
                 children: [],
               })
             })
@@ -305,4 +304,23 @@
     })
   })
 </script>
-<style lang="less"></style>
+<style lang="less">
+  .box {
+    width: 100%;
+    margin: 0 auto;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  .left {
+    flex: 4;
+    padding: 5px;
+  }
+
+  .right {
+    flex: 6;
+    padding: 5px;
+    max-width: 60%; /* 或者根据实际需求调整 */
+  }
+</style>
