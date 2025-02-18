@@ -1,24 +1,18 @@
 <template>
-  <a-button type="primary" @click="data.drawerVisible = true">Open Drawer</a-button>
-  <a-drawer
-    :width="800"
-    :visible="data.drawerVisible"
-    @ok="data.drawerVisible = false"
-    @cancel="data.drawerVisible = false"
-    unmountOnClose
-  >
-    <template #title> Title </template>
-    <div
-      >You can customize modal body text by the current situation. This modal will be closed
-      immediately once you press the OK button.
-    </div>
-  </a-drawer>
+  <TableBody ref="tableBody">
+    <template #default>
+      <div class="box">
+        <div class="left">
+          <h2>左侧内容</h2>
+          <p>这里是左侧的内容区域。</p>
+        </div>
+        <div class="right">
+          <h2>右侧内容</h2>
+          <p>这里是右侧的内容区域。</p>
+        </div>
+      </div>
+    </template>
+  </TableBody>
 </template>
 
-<script setup lang="ts">
-  import { ref, reactive } from 'vue'
-
-  const data = reactive({
-    drawerVisible: false,
-  })
-</script>
+<style lang="less"></style>

@@ -87,7 +87,7 @@ def ad_routes():
         },
         {
             "menuUrl": "/pytest",
-            "menuName": "mango_pytest",
+            "menuName": "api_pytest",
             "icon": "icon-calendar-clock",
             "parentPath": "",
             "children": [

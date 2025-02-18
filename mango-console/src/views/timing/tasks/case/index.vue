@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-      <a-card :title="'定时任务：' + route.query.name">
+  <TableBody ref="tableBody">
+    <template #default>
+      <a-card :bordered="false" :title="'定时任务：' + route.query.name">
         <template #extra>
           <a-space>
             <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
@@ -55,59 +55,60 @@
           </template>
         </a-table>
       </a-card>
-      <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-        <template #content>
-          <a-form :model="formModel">
-            <a-form-item
-              :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-              :label="item.label"
-              v-for="item of data.formItems"
-              :key="item.key"
-            >
-              <template v-if="item.type === 'input'">
-                <a-input :placeholder="item.placeholder" v-model="item.value" />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.moduleList"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                  @change="tasksTypeCaseName(item.value)"
-                  :disabled="data.isModule"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'type'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.test_case_type"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                  @change="changeType"
-                />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'case_id'">
-                <a-select
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.caseList"
-                  :field-names="fieldNames"
-                  allow-clear
-                  allow-search
-                />
-              </template>
-            </a-form-item>
-          </a-form>
-        </template>
-      </ModalDialog>
-    </div>
-  </div>
+    </template>
+  </TableBody>
+
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of data.formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="data.moduleList"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+              @change="tasksTypeCaseName(item.value)"
+              :disabled="data.isModule"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'type'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.test_case_type"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+              @change="changeType"
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'case_id'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="data.caseList"
+              :field-names="fieldNames"
+              allow-clear
+              allow-search
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'

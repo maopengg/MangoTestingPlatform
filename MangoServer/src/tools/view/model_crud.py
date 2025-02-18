@@ -4,11 +4,13 @@
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
 import json
+import traceback
 from threading import Thread
 
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
+from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
 
@@ -20,7 +22,6 @@ from src.tools.view import *
 
 class ModelCRUD(GenericAPIView):
     model = None
-    # post专用
     serializer = None
     not_matching_str = [
         'pageSize', 'page',
@@ -43,41 +44,50 @@ class ModelCRUD(GenericAPIView):
             project_product = ProjectProduct.objects.filter(project_id=project_id)
             if project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
-        if request.query_params.get("pageSize") and request.query_params.get("page"):
-            del query_dict['pageSize']
-            del query_dict['page']
-            try:
-                self.model._meta.get_field('case_sort')
-                books = self.model.objects.filter(**query_dict).order_by('case_sort')
-            except FieldDoesNotExist:
-                books = self.model.objects.filter(**query_dict)
-            data_list, count = self.paging_list(
-                request.query_params.get("pageSize"),
-                request.query_params.get("page"),
-                books,
-                self.get_serializer_class()
-            )
-            return ResponseData.success(
-                RESPONSE_MSG_0001,
-                data_list,
-                count
-            )
-        else:
-            try:
-                self.model._meta.get_field('case_sort')
-                books = self.model.objects.filter(**query_dict).order_by('case_sort')
-            except FieldDoesNotExist:
-                books = self.model.objects.filter(**query_dict)
-            serializer = self.get_serializer_class()
-            try:
-                books = serializer.setup_eager_loading(books)
-            except FieldError:
-                pass
-            return ResponseData.success(
-                RESPONSE_MSG_0001,
-                serializer(instance=books, many=True).data,
-                books.count()
-            )
+        try:
+            if request.query_params.get("pageSize") and request.query_params.get("page"):
+                del query_dict['pageSize']
+                del query_dict['page']
+                try:
+                    self.model._meta.get_field('case_sort')
+                    books = self.model.objects.filter(**query_dict).order_by('case_sort')
+                except FieldDoesNotExist:
+                    books = self.model.objects.filter(**query_dict)
+                data_list, count = self.paging_list(
+                    request.query_params.get("pageSize"),
+                    request.query_params.get("page"),
+                    books,
+                    self.get_serializer_class()
+                )
+                return ResponseData.success(
+                    RESPONSE_MSG_0001,
+                    data_list,
+                    count
+                )
+            else:
+                try:
+                    self.model._meta.get_field('case_sort')
+                    books = self.model.objects.filter(**query_dict).order_by('case_sort')
+                except FieldDoesNotExist:
+                    books = self.model.objects.filter(**query_dict)
+                serializer = self.get_serializer_class()
+                try:
+                    books = serializer.setup_eager_loading(books)
+                except FieldError:
+                    pass
+                    return ResponseData.success(
+                        RESPONSE_MSG_0001,
+                        serializer(instance=books, many=True).data,
+                        books.count()
+                    )
+        except S3Error as error:
+            log.system.error(f'GET请求发送异常，请排查问题：{error}')
+            traceback.print_exc()
+            ResponseData.fail(RESPONSE_MSG_0026, )
+        except Exception as error:
+            log.system.error(f'GET请求发送异常，请排查问题：{error}')
+            traceback.print_exc()
+            ResponseData.fail(RESPONSE_MSG_0027, )
 
     @error_response('system')
     def post(self, request: Request):

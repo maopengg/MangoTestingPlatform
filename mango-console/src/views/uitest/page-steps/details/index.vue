@@ -1,270 +1,274 @@
 <template>
-  <div>
-    <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden">
-      <template #extra>
-        <a-space>
-          <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-          <a-button status="success" size="small" @click="onRunCase">调试</a-button>
-          <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
-        </a-space>
-      </template>
+  <TableBody ref="tableBody">
+    <template #header>
+      <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden" :bordered="false">
+        <template #extra>
+          <a-space>
+            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
+            <a-button status="success" size="small" @click="onRunCase">调试</a-button>
+            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+          </a-space>
+        </template>
+        <div class="container">
+          <a-space direction="vertical" style="width: 25%">
+            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
+            <span>所属模块：{{ pageData.record.module?.name }}</span>
+            <span>所属页面：{{ pageData.record.page?.name }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 25%">
+            <span>步骤ID：{{ pageData.record.id }}</span>
+            <span>步骤名称：{{ pageData.record.name }}</span>
+            <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
+          </a-space>
+          <a-space direction="vertical" style="width: 50%">
+            <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
+          </a-space>
+        </div>
+      </a-card>
+    </template>
+    <template #default>
       <div class="container">
-        <a-space direction="vertical" style="width: 25%">
-          <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-          <span>所属模块：{{ pageData.record.module?.name }}</span>
-          <span>所属页面：{{ pageData.record.page?.name }}</span>
-        </a-space>
-        <a-space direction="vertical" style="width: 25%">
-          <span>步骤ID：{{ pageData.record.id }}</span>
-          <span>步骤名称：{{ pageData.record.name }}</span>
-          <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
-        </a-space>
-        <a-space direction="vertical" style="width: 50%">
-          <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
-        </a-space>
-      </div>
-    </a-card>
-    <div class="container">
-      <div class="left">
-        <a-card style="border-radius: 10px; overflow: hidden">
-          <a-table
-            :columns="columns"
-            :data="data.dataList"
-            @change="handleChange"
-            :draggable="{ type: 'handle', width: 40 }"
-            :pagination="false"
-            :bordered="false"
-          >
-            <template #columns>
-              <a-table-column
-                v-for="item of columns"
-                :key="item.key"
-                :align="item.align"
-                :title="item.title"
-                :width="item.width"
-                :data-index="item.dataIndex"
-                :fixed="item.fixed"
-                :ellipsis="item.ellipsis"
-                :tooltip="item.tooltip"
-              >
-                <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-                  {{ record.page_step?.name }}
-                </template>
-                <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
-                  {{ record.ele_name ? record.ele_name.name : '-' }}
-                </template>
-                <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
-                  {{
-                    record.ope_key
-                      ? getLabelByValue(record.type, record.ope_key)
-                      : record.key
-                      ? record.key
-                      : record.key_list
-                  }}
-                </template>
-                <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-                  {{
-                    record.ope_value ? record.ope_value : record.value ? record.value : record.sql
-                  }}
-                </template>
+        <div class="left">
+          <a-card style="border-radius: 10px; overflow: hidden" :bordered="false">
+            <a-table
+              :columns="columns"
+              :data="data.dataList"
+              @change="handleChange"
+              :draggable="{ type: 'handle', width: 40 }"
+              :pagination="false"
+              :bordered="false"
+            >
+              <template #columns>
+                <a-table-column
+                  v-for="item of columns"
+                  :key="item.key"
+                  :align="item.align"
+                  :title="item.title"
+                  :width="item.width"
+                  :data-index="item.dataIndex"
+                  :fixed="item.fixed"
+                  :ellipsis="item.ellipsis"
+                  :tooltip="item.tooltip"
+                >
+                  <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
+                    {{ record.page_step?.name }}
+                  </template>
+                  <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
+                    {{ record.ele_name ? record.ele_name.name : '-' }}
+                  </template>
+                  <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
+                    {{
+                      record.ope_key
+                        ? getLabelByValue(record.type, record.ope_key)
+                        : record.key
+                        ? record.key
+                        : record.key_list
+                    }}
+                  </template>
+                  <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
+                    {{
+                      record.ope_value ? record.ope_value : record.value ? record.value : record.sql
+                    }}
+                  </template>
 
-                <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-                  <a-tag :color="enumStore.colors[record.type]" size="small">{{
-                    enumStore.element_ope[record.type].title
-                  }}</a-tag>
-                </template>
-                <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                  <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
-                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                  <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                    >删除
-                  </a-button>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
-        </a-card>
-      </div>
-      <div class="right">
-        <a-card title="最近一次步骤执行过程" style="overflow: hidden">
-          <a-collapse
-            :default-active-key="data.eleResultKey"
-            v-for="item of pageData.record.result_data?.element_result_list"
-            :bordered="false"
-            :key="item.id"
-            destroy-on-hide
-          >
-            <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
-              <div>
-                <a-space direction="vertical" style="width: 50%">
-                  <p
-                    >操作类型：{{
-                      item.type === 0
-                        ? getLabelByValue(data.ope, item.ope_key)
-                        : getLabelByValue(data.ass, item.ope_key)
-                    }}</p
-                  >
-                  <p
-                    >表达式类型：{{
-                      item.exp ? enumStore.element_exp[item.exp].title : item.exp
-                    }}</p
-                  >
-                  <p
-                    >测试结果：{{
-                      item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
-                    }}</p
-                  >
-                  <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                  <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
-                  <p v-if="item.expect">预期：{{ item.expect }}</p>
-                  <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
-                </a-space>
-                <a-space direction="vertical" style="width: 50%">
-                  <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                  <p>元素个数：{{ item.ele_quantity }}</p>
-                  <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                  <div v-if="item.status === 0">
-                    <a-image
-                      :src="minioURL + '/failed_screenshot/' + item.picture_path"
-                      title="失败截图"
-                      width="260"
-                      style="margin-right: 67px; vertical-align: top"
-                      :preview-visible="visible1"
-                      @preview-visible-change="
-                        () => {
-                          visible1 = false
-                        }
-                      "
+                  <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
+                    <a-tag :color="enumStore.colors[record.type]" size="small">{{
+                      enumStore.element_ope[record.type].title
+                    }}</a-tag>
+                  </template>
+                  <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+                    <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
+                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      >删除
+                    </a-button>
+                  </template>
+                </a-table-column>
+              </template>
+            </a-table>
+          </a-card>
+        </div>
+        <div class="right">
+          <a-card title="最近一次步骤执行过程" style="overflow: hidden" :bordered="false">
+            <a-collapse
+              :default-active-key="data.eleResultKey"
+              v-for="item of pageData.record.result_data?.element_result_list"
+              :bordered="false"
+              :key="item.id"
+              destroy-on-hide
+            >
+              <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+                <div>
+                  <a-space direction="vertical" style="width: 50%">
+                    <p
+                      >操作类型：{{
+                        item.type === 0
+                          ? getLabelByValue(data.ope, item.ope_key)
+                          : getLabelByValue(data.ass, item.ope_key)
+                      }}</p
                     >
-                      <template #extra>
-                        <div class="actions">
-                          <span
-                            class="action"
-                            @click="
-                              () => {
-                                visible1 = true
-                              }
-                            "
-                            ><icon-eye
-                          /></span>
-                          <span class="action"><icon-download /></span>
-                          <a-tooltip content="失败截图">
-                            <span class="action"><icon-info-circle /></span>
-                          </a-tooltip>
-                        </div>
-                      </template>
-                    </a-image>
-                  </div>
-                  <p v-if="item.expect">实际：{{ item.actual }}</p>
-                </a-space>
-              </div>
-            </a-collapse-item>
-          </a-collapse>
-        </a-card>
+                    <p
+                      >表达式类型：{{
+                        item.exp ? enumStore.element_exp[item.exp].title : item.exp
+                      }}</p
+                    >
+                    <p
+                      >测试结果：{{
+                        item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                      }}</p
+                    >
+                    <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
+                    <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+                    <p v-if="item.expect">预期：{{ item.expect }}</p>
+                    <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+                  </a-space>
+                  <a-space direction="vertical" style="width: 50%">
+                    <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
+                    <p>元素个数：{{ item.ele_quantity }}</p>
+                    <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+                    <div v-if="item.status === 0">
+                      <a-image
+                        :src="minioURL + '/failed_screenshot/' + item.picture_path"
+                        title="失败截图"
+                        width="260"
+                        style="margin-right: 67px; vertical-align: top"
+                        :preview-visible="visible1"
+                        @preview-visible-change="
+                          () => {
+                            visible1 = false
+                          }
+                        "
+                      >
+                        <template #extra>
+                          <div class="actions">
+                            <span
+                              class="action"
+                              @click="
+                                () => {
+                                  visible1 = true
+                                }
+                              "
+                              ><icon-eye
+                            /></span>
+                            <span class="action"><icon-download /></span>
+                            <a-tooltip content="失败截图">
+                              <span class="action"><icon-info-circle /></span>
+                            </a-tooltip>
+                          </div>
+                        </template>
+                      </a-image>
+                    </div>
+                    <p v-if="item.expect">实际：{{ item.actual }}</p>
+                  </a-space>
+                </div>
+              </a-collapse-item>
+            </a-collapse>
+          </a-card>
+        </div>
       </div>
-    </div>
-    <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-      <template #content>
-        <a-form :model="formModel">
-          <a-form-item
-            :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-            :label="item.label"
-            v-for="item of formItems"
-            :key="item.key"
-          >
-            <template v-if="item.type === 'input'">
-              <a-input :placeholder="item.placeholder" v-model="item.value" />
-            </template>
-            <template v-else-if="item.type === 'select' && item.key === 'ele_name'">
-              <a-select
+    </template>
+  </TableBody>
+  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
+    <template #content>
+      <a-form :model="formModel">
+        <a-form-item
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
+        >
+          <template v-if="item.type === 'input'">
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'ele_name'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="data.uiPageName"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+
+          <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
+            <a-space direction="vertical">
+              <a-cascader
                 v-model="item.value"
+                :options="data.ope"
+                :default-value="item.value"
+                expand-trigger="hover"
                 :placeholder="item.placeholder"
-                :options="data.uiPageName"
-                :field-names="fieldNames"
+                @change="upDataOpeValue(item.value)"
                 value-key="key"
-                allow-clear
+                style="width: 380px"
                 allow-search
-              />
-            </template>
-
-            <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
-              <a-space direction="vertical">
-                <a-cascader
-                  v-model="item.value"
-                  :options="data.ope"
-                  :default-value="item.value"
-                  expand-trigger="hover"
-                  :placeholder="item.placeholder"
-                  @change="upDataOpeValue(item.value)"
-                  value-key="key"
-                  style="width: 380px"
-                  allow-search
-                  allow-clear
-                />
-              </a-space>
-            </template>
-            <template v-else-if="item.type === 'cascader' && item.label === '断言操作'">
-              <a-space direction="vertical">
-                <a-cascader
-                  v-model="item.value"
-                  :options="data.ass"
-                  :default-value="item.value"
-                  expand-trigger="hover"
-                  :placeholder="item.placeholder"
-                  @change="upDataAssValue(item.value)"
-                  value-key="key"
-                  style="width: 380px"
-                  allow-search
-                  allow-clear
-                />
-              </a-space>
-            </template>
-            <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
-              <a-textarea
-                :auto-size="{ minRows: 4, maxRows: 7 }"
-                :placeholder="item.placeholder"
-                :default-value="item.value"
-                v-model="item.value"
                 allow-clear
               />
-            </template>
-
-            <template v-else-if="item.type === 'radio' && item.key === 'type'">
-              <a-select
-                v-model="data.type"
+            </a-space>
+          </template>
+          <template v-else-if="item.type === 'cascader' && item.label === '断言操作'">
+            <a-space direction="vertical">
+              <a-cascader
+                v-model="item.value"
+                :options="data.ass"
+                :default-value="item.value"
+                expand-trigger="hover"
                 :placeholder="item.placeholder"
-                :options="enumStore.element_ope"
-                :field-names="fieldNames"
-                @change="changeStatus"
+                @change="upDataAssValue(item.value)"
                 value-key="key"
-                allow-clear
+                style="width: 380px"
                 allow-search
-              />
-            </template>
-            <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
-              <a-textarea
-                :auto-size="{ minRows: 4, maxRows: 7 }"
-                :placeholder="item.placeholder"
-                :default-value="item.value"
-                v-model="item.value"
                 allow-clear
               />
-            </template>
+            </a-space>
+          </template>
+          <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+            <a-textarea
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :placeholder="item.placeholder"
+              :default-value="item.value"
+              v-model="item.value"
+              allow-clear
+            />
+          </template>
 
-            <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
-              <a-textarea
-                :auto-size="{ minRows: 4, maxRows: 7 }"
-                :placeholder="item.placeholder"
-                :default-value="item.value"
-                v-model="item.value"
-                allow-clear
-              />
-            </template>
-          </a-form-item>
-        </a-form>
-      </template>
-    </ModalDialog>
-  </div>
+          <template v-else-if="item.type === 'radio' && item.key === 'type'">
+            <a-select
+              v-model="data.type"
+              :placeholder="item.placeholder"
+              :options="enumStore.element_ope"
+              :field-names="fieldNames"
+              @change="changeStatus"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
+            <a-textarea
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :placeholder="item.placeholder"
+              :default-value="item.value"
+              v-model="item.value"
+              allow-clear
+            />
+          </template>
+
+          <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
+            <a-textarea
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :placeholder="item.placeholder"
+              :default-value="item.value"
+              v-model="item.value"
+              allow-clear
+            />
+          </template>
+        </a-form-item>
+      </a-form>
+    </template>
+  </ModalDialog>
 </template>
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'

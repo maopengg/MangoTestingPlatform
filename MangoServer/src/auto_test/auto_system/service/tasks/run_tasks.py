@@ -9,7 +9,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
-from src.enums.tools_enum import StatusEnum, AutoTestTypeEnum
+from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.tools.decorator.retry import orm_retry
 from src.tools.log_collector import log
 
@@ -46,38 +46,18 @@ class RunTasks:
 
     @classmethod
     def distribute(cls, tasks: Tasks):
-        if tasks.type == AutoTestTypeEnum.API.value:
-            tasks_details = TasksDetails.objects.filter(task=tasks.id)
-            add_tasks = AddTasks(
-                project_product=tasks.project_product.id,
-                test_env=tasks.test_env,
-                is_notice=tasks.is_notice,
-                user_id=tasks.case_people.id,
-                _type=AutoTestTypeEnum.API.value,
-                tasks_id=tasks.id,
-            )
-            add_tasks.add_test_suite_details([tasks.case_id for tasks in tasks_details])
-        elif tasks.type == AutoTestTypeEnum.UI.value:
-            tasks_details = TasksDetails.objects.filter(task=tasks.id)
-            add_tasks = AddTasks(
-                project_product=tasks.project_product.id,
-                test_env=tasks.test_env,
-                is_notice=tasks.is_notice,
-                user_id=tasks.case_people.id,
-                _type=AutoTestTypeEnum.UI.value,
-                tasks_id=tasks.id,
-            )
-            add_tasks.add_test_suite_details([tasks.case_id for tasks in tasks_details])
-        elif tasks.type == AutoTestTypeEnum.MangoPytest.value:
-            tasks_details = TasksDetails.objects.filter(task=tasks.id)
-            add_tasks = AddTasks(
-                project_product=tasks.project_product.id,
-                test_env=tasks.test_env,
-                is_notice=tasks.is_notice,
-                user_id=tasks.case_people.id,
-                _type=AutoTestTypeEnum.MangoPytest.value,
-                tasks_id=tasks.id,
-            )
-            add_tasks.add_test_suite_details([tasks.command for tasks in tasks_details])
-        else:
-            log.system.error('开始执行性能自动化任务')
+        tasks_details = TasksDetails.objects.filter(task=tasks.id)
+        add_tasks = AddTasks(
+            project_product=tasks.project_product.id,
+            test_env=tasks.test_env,
+            is_notice=tasks.is_notice,
+            user_id=tasks.case_people.id,
+            tasks_id=tasks.id,
+        )
+        for task in tasks_details:
+            if task.type == TestCaseTypeEnum.API.value:
+                add_tasks.add_test_suite_details(task.api_case.id, TestCaseTypeEnum.API)
+            elif task.type == TestCaseTypeEnum.UI.value:
+                add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.UI)
+            else:
+                log.system.error('开始执行性能自动化任务')

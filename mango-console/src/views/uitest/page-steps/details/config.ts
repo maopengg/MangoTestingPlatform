@@ -9,7 +9,7 @@ export interface Item {
   children?: Item[]
 }
 
-export const columns = reactive([
+export const columns: any = reactive([
   {
     title: '元素名称',
     dataIndex: 'ele_name',
@@ -143,7 +143,7 @@ export const eleForm = reactive([
   },
 ])
 
-export const formItems = reactive([
+export const formItems: any = reactive([
   {
     label: '步骤类型',
     key: 'type',

@@ -22,7 +22,7 @@ class ApiInfoBase(PublicBase):
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(api_info.method).name,
                 url=urljoin(self.test_object.value, api_info.url),
-                headers=api_info.header if api_info.header else self.init_headers(),
+                headers=api_info.header if api_info.header is not None else self.init_headers(),
                 params=api_info.params,
                 data=api_info.data,
                 json=api_info.json,
