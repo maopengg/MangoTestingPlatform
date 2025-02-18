@@ -311,7 +311,7 @@
   }
 
   function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(pageData.record.project_product.client_type)
+    getUiPageStepsDetailedOpe(pageData.record.project_product.ui_client_type)
       .then((res) => {
         data.ope = res.data
       })
@@ -319,7 +319,7 @@
   }
 
   function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(pageData.record.project_product.client_type)
+    getUiPageStepsDetailedAss(pageData.record.project_product.ui_client_type)
       .then((res) => {
         data.ass = res.data
       })
