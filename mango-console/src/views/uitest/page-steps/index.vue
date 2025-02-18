@@ -397,7 +397,7 @@
       query: {
         id: parseInt(record.id, 10),
         pageId: record.page.id,
-        pageType: record.project_product.client_type,
+        pageType: record.project_product.ui_client_type,
       },
     })
   }
