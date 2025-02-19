@@ -75,11 +75,11 @@ class ModelCRUD(GenericAPIView):
                     books = serializer.setup_eager_loading(books)
                 except FieldError:
                     pass
-                    return ResponseData.success(
-                        RESPONSE_MSG_0001,
-                        serializer(instance=books, many=True).data,
-                        books.count()
-                    )
+                return ResponseData.success(
+                    RESPONSE_MSG_0001,
+                    serializer(instance=books, many=True).data,
+                    books.count()
+                )
         except S3Error as error:
             log.system.error(f'GET请求发送异常，请排查问题：{error}')
             traceback.print_exc()
