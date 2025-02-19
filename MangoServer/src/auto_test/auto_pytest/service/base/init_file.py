@@ -5,6 +5,8 @@
 # @Author : 毛鹏
 import os
 
+from src.tools import project_dir
+
 
 def list_files(directory, exclude_file=None, prefix=None, suffix=None, is_upload=False):
     file_list = []
@@ -46,12 +48,11 @@ def find_test_files(directory):
     return subdirectories
 
 
-def save():
+def save(dir='src/auto_test/auto_pytest/mango_pytest/auto_test'):
     from src.auto_test.auto_pytest.views.pytest_project import PytestProjectCRUD
     from src.auto_test.auto_pytest.views.pytest_case import PytestCaseCRUD
     from src.auto_test.auto_pytest.views.pytest_act import PytestActCRUD
-    target_directory = r'D:\code\MangoTestingPlatform\MangoServer\src\auto_test\auto_pytest\mango_pytest\auto_test'
-    for project in find_test_files(target_directory):
+    for project in find_test_files(os.path.join(project_dir.root_path(), dir)):
         for project_dir_name, project_dirs in project.items():
             PytestProjectCRUD.inside_post({'name': project_dir_name})
             for i in project_dirs.get('act', []):
