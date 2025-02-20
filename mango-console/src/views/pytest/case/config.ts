@@ -29,11 +29,45 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '项目目录名称',
+    title: '模块',
+    key: 'module',
+    dataIndex: 'module',
+    width: 70,
+  },
+  {
+    title: '名称',
     key: 'name',
     dataIndex: 'name',
   },
-
+  {
+    title: '文件名称',
+    key: 'file_name',
+    dataIndex: 'file_name',
+  },
+  {
+    title: '修改时间',
+    key: 'file_update_time',
+    dataIndex: 'file_update_time',
+    width: 170,
+  },
+  {
+    title: '用例等级',
+    key: 'level',
+    dataIndex: 'level',
+    width: 90,
+  },
+  {
+    title: '测试结果',
+    key: 'status',
+    dataIndex: 'status',
+    width: 90,
+  },
+  {
+    title: '文件状态',
+    key: 'file_status',
+    dataIndex: 'file_status',
+    width: 90,
+  },
   {
     title: '操作',
     key: 'actions',

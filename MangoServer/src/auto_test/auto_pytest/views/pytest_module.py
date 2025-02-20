@@ -54,7 +54,7 @@ class PytestProjectModuleViews(ViewSet):
     serializer_class = PytestProjectModuleSerializers
 
     @action(methods=['get'], detail=False)
-    @error_response('ui')
+    @error_response('pytest')
     def ui_test_case(self, request: Request):
         """
         执行单个用例组

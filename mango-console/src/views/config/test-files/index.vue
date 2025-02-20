@@ -89,7 +89,7 @@
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此文件？',
+      content: '是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {

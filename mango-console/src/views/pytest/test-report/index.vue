@@ -1,10 +1,8 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="项目绑定">
-        <template #extra>
-          <a-button type="primary" size="small" @click="clickUpdate">更新项目</a-button>
-        </template>
+      <a-card :bordered="false" title="测试报告队列">
+        <template #extra> </template>
       </a-card>
     </template>
 
@@ -46,24 +44,17 @@
                 {{ record.module.name }}
               </span>
             </template>
-            <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag
-                :color="enumStore.colors[record.project_product.ui_client_type]"
-                size="small"
-                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}</a-tag
-              >
+            <template v-else-if="item.key === 'file_status'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.file_status]" size="small">{{
+                enumStore.file_status[record.file_status].title
+              }}</a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">模块</a-button>
+              <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
-                  <a-doption>
-                    <a-button type="text" size="mini" @click="onPageCopy(record.id)"
-                      >初始化文件</a-button
-                    >
-                  </a-doption>
                   <a-doption>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除
@@ -151,11 +142,12 @@
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    getPytestProject,
-    getPytestUpdate,
-    postPytestProject,
-    putPytestProject,
-  } from '@/api/pytest/project'
+    getPytestTools,
+    getPytestToolsUpdate,
+    postPytestTools,
+    putPytestTools,
+    deletePytestTools,
+  } from '@/api/pytest/tools'
 
   const productModule = useProductModule()
   const projectInfo = useProject()
@@ -175,25 +167,25 @@
   })
 
   function onDelete(data: any) {
-    // Modal.confirm({
-    //   title: '提示',
-    //   content: '是否要删除此页面？',
-    //   cancelText: '取消',
-    //   okText: '删除',
-    //   onOk: () => {
-    //     deleteUiPage(data.id)
-    //       .then((res) => {
-    //         Message.success(res.msg)
-    //         doRefresh()
-    //       })
-    //       .catch(console.log)
-    //   },
-    // })
+    Message.info('该删除只会删除数据库数据，不会影响git文件！')
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此数据？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deletePytestTools(data.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
   }
   function clickUpdate() {
     Message.loading('项目更新中...')
-
-    getPytestUpdate()
+    getPytestToolsUpdate()
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
@@ -206,7 +198,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        postPytestProject(value)
+        postPytestTools(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -214,7 +206,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putPytestProject(value)
+        putPytestTools(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -246,7 +238,7 @@
     const value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getPytestProject(value)
+    getPytestTools(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -262,8 +254,6 @@
       }
     })
   }
-
-  function onPageCopy(id: number) {}
 
   function onClick(record: any) {
     const pageData = usePageData()

@@ -7,9 +7,9 @@ from django.urls import path
 
 from src.auto_test.auto_pytest.views.pytest_act import PytestActViews, PytestActCRUD
 from src.auto_test.auto_pytest.views.pytest_case import PytestCaseCRUD, PytestCaseViews
-from src.auto_test.auto_pytest.views.pytest_init import PytestInitCRUD, PytestInitViews
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleCRUD, PytestProjectModuleViews
 from src.auto_test.auto_pytest.views.pytest_project import PytestProjectViews, PytestProjectCRUD
+from src.auto_test.auto_pytest.views.pytest_tools import PytestToolsCRUD, PytestToolsViews
 
 urlpatterns = [
     #
@@ -19,14 +19,20 @@ urlpatterns = [
     path("module", PytestProjectModuleCRUD.as_view()),
     path("module/name", PytestProjectModuleViews.as_view({'get': 'ui_test_case'})),
     #
-    path("act/steps", PytestActCRUD.as_view()),
-    path("act/steps/test", PytestActViews.as_view({'get': 'ui_test_case'})),
+    path("act", PytestActCRUD.as_view()),
+    path("act/update", PytestActViews.as_view({'get': 'pytest_update'})),
+    path("act/read", PytestActViews.as_view({'get': 'pytest_read'})),
+    path("act/write", PytestActViews.as_view({'post': 'pytest_write'})),
     #
-    path("case/steps/detailed", PytestCaseCRUD.as_view()),
-    path("case/steps/detailed/test", PytestCaseViews.as_view({'get': 'ui_test_case'})),
+    path("case", PytestCaseCRUD.as_view()),
+    path("case/update", PytestCaseViews.as_view({'get': 'pytest_update'})),
+    path("case/read", PytestCaseViews.as_view({'get': 'pytest_read'})),
+    path("case/write", PytestCaseViews.as_view({'post': 'pytest_write'})),
 
     #
-    path("init", PytestInitCRUD.as_view()),
-    path("init/status", PytestInitViews.as_view({'put': 'ui_test_case'})),
+    path("tools", PytestToolsCRUD.as_view()),
+    path("tools/update", PytestToolsViews.as_view({'get': 'pytest_update'})),
+    path("tools/read", PytestToolsViews.as_view({'get': 'pytest_read'})),
+    path("tools/write", PytestToolsViews.as_view({'post': 'pytest_write'})),
 
 ]

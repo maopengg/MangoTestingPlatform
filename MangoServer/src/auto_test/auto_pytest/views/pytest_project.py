@@ -8,14 +8,14 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestProject
-from src.auto_test.auto_pytest.service.base.init_file import save
+from src.auto_test.auto_pytest.models import PytestProject, PytestCase
+from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
+from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-import threading
 
 
 class PytestProjectSerializers(serializers.ModelSerializer):
@@ -58,6 +58,10 @@ class PytestProjectViews(ViewSet):
     def pytest_update(self, request: Request):
         repo = GitRepo()
         repo.pull_repo()
-        task = threading.Thread(target=save)
-        task.start()
+        for project in UpdateFile(PytestFileTypeEnum.TEST_CASE).find_test_files(True):
+            if not self.model.objects.filter(name=project.project_name).exists():
+                self.model.objects.create(
+                    name=project.project_name,
+                    init_file=project.init_file_path,
+                )
         return ResponseData.success(RESPONSE_MSG_0078)

@@ -9,8 +9,10 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestAct
+from src.auto_test.auto_pytest.service.base.update_file import UpdateFile, PytestFileTypeEnum
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
 from src.auto_test.auto_pytest.views.pytest_project import PytestProjectSerializersC
+from src.enums.pytest_enum import FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -20,6 +22,7 @@ from src.tools.view.response_msg import *
 class PytestActSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = PytestAct
@@ -29,6 +32,7 @@ class PytestActSerializers(serializers.ModelSerializer):
 class PytestActSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     pytest_project = PytestProjectSerializersC(read_only=True)
     module = PytestProjectModuleSerializersC(read_only=True)
 
@@ -57,12 +61,39 @@ class PytestActViews(ViewSet):
     serializer_class = PytestActSerializers
 
     @action(methods=['get'], detail=False)
-    @error_response('ui')
-    def ui_test_case(self, request: Request):
-        """
-        执行单个用例组
-        @param request:
-        @return:
-        """
+    @error_response('pytest')
+    def pytest_update(self, request: Request):
+        for project in UpdateFile(PytestFileTypeEnum.ACT).find_test_files():
+            for file in project.file:
+                for act in file.act:
+                    pytest_act, created = self.model.objects.get_or_create(
+                        file_path=act.path,
+                        defaults={
+                            'name': act.name,
+                            'file_name': act.name,
+                            'file_status': FileStatusEnum.UNBOUND.value,
+                            'file_update_time': act.time.replace(tzinfo=None),
 
-        return ResponseData.success(RESPONSE_MSG_0074)
+                        }
+                    )
+                    if not created:
+                        pytest_act.file_update_time = act.time.replace(tzinfo=None)
+                        pytest_act.save()
+        return ResponseData.success(RESPONSE_MSG_0078)
+
+    @action(methods=['get'], detail=False)
+    @error_response('pytest')
+    def pytest_read(self, request: Request):
+        file_path = self.model.objects.get(id=request.query_params.get('id')).file_path
+        with open(file_path, 'r', encoding='utf-8') as file:
+            file_content = file.read()
+        return ResponseData.success(RESPONSE_MSG_0084, data=file_content)
+
+    @action(methods=['POST'], detail=False)
+    @error_response('pytest')
+    def pytest_write(self, request: Request):
+        file_path = self.model.objects.get(id=request.data.get('id')).file_path
+        file_content = request.data.get('file_content')
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(file_content)
+        return ResponseData.success(RESPONSE_MSG_0085)

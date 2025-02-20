@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_pytest.models import PytestTools
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
 from src.auto_test.auto_pytest.views.pytest_project import PytestProjectSerializersC
@@ -19,17 +19,17 @@ from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
 
 
-class PytestCaseSerializers(serializers.ModelSerializer):
+class PytestToolsSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = PytestCase
+        model = PytestTools
         fields = '__all__'
 
 
-class PytestCaseSerializersC(serializers.ModelSerializer):
+class PytestToolsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -37,7 +37,7 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
     module = PytestProjectModuleSerializersC(read_only=True)
 
     class Meta:
-        model = PytestCase
+        model = PytestTools
         fields = '__all__'
 
     @staticmethod
@@ -49,28 +49,23 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class PytestCaseCRUD(ModelCRUD):
-    model = PytestCase
-    queryset = PytestCase.objects.all()
-    serializer_class = PytestCaseSerializersC
-    serializer = PytestCaseSerializers
+class PytestToolsCRUD(ModelCRUD):
+    model = PytestTools
+    queryset = PytestTools.objects.all()
+    serializer_class = PytestToolsSerializersC
+    serializer = PytestToolsSerializers
 
 
-class PytestCaseViews(ViewSet):
-    model = PytestCase
-    serializer_class = PytestCaseSerializers
+class PytestToolsViews(ViewSet):
+    model = PytestTools
+    serializer_class = PytestToolsSerializers
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        """
-        执行单个用例组
-        @param request:
-        @return:
-        """
-        for project in UpdateFile(PytestFileTypeEnum.TEST_CASE).find_test_files():
+        for project in UpdateFile(PytestFileTypeEnum.TOOLS).find_test_files():
             for file in project.file:
-                for act in file.test_case:
+                for act in file.tools:
                     pytest_act, created = self.model.objects.get_or_create(
                         file_path=act.path,
                         defaults={

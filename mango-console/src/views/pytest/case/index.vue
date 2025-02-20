@@ -1,7 +1,7 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="项目绑定">
+      <a-card :bordered="false" title="测试用例">
         <template #extra>
           <a-button type="primary" size="small" @click="clickUpdate">更新项目</a-button>
         </template>
@@ -46,23 +46,29 @@
                 {{ record.module.name }}
               </span>
             </template>
-            <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag
-                :color="enumStore.colors[record.project_product.ui_client_type]"
-                size="small"
-                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}</a-tag
+            <template v-else-if="item.key === 'file_status'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.file_status]" size="small">{{
+                enumStore.file_status[record.file_status].title
+              }}</a-tag>
+            </template>
+            <template v-else-if="item.key === 'status'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.status]" size="small">{{
+                enumStore.task_status[record.status].title
+              }}</a-tag>
+            </template>
+            <template v-else-if="item.key === 'level'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.level]" size="small">
+                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}</a-tag
               >
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">模块</a-button>
+              <a-button type="text" size="mini" @click="onRun(record)">执行</a-button>
+              <a-button type="text" size="mini" @click="onClick(record)">文件</a-button>
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onPageCopy(record.id)"
-                      >初始化文件</a-button
-                    >
+                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                   </a-doption>
                   <a-doption>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
@@ -75,7 +81,25 @@
           </a-table-column>
         </template>
       </a-table>
+      <a-drawer
+        :width="1000"
+        :visible="data.drawerVisible"
+        @ok="drawerOk"
+        @cancel="data.drawerVisible = false"
+        unmountOnClose
+      >
+        <template #title> 编辑代码</template>
+        <div>
+          <codemirror
+            v-model="data.codeText"
+            :options="cmOptions"
+            @ready="onCmReady"
+            @input="onCmCodeChange"
+          />
+        </div>
+      </a-drawer>
     </template>
+
     <template #footer>
       <TableFooter :pagination="pagination" />
     </template>
@@ -146,17 +170,23 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProductModule } from '@/store/modules/project_module'
-  import { usePageData } from '@/store/page-data'
   import { tableColumns, formItems } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    getPytestProject,
-    getPytestUpdate,
-    postPytestProject,
-    putPytestProject,
-  } from '@/api/pytest/project'
-
+    getPytestCase,
+    getPytestCaseRead,
+    getPytestCaseUpdate,
+    postPytestCase,
+    postPytestCaseWrite,
+    putPytestCase,
+  } from '@/api/pytest/case'
+  import { deletePytestTools } from '@/api/pytest/tools'
+  // 编辑组件
+  import { Codemirror } from 'vue-codemirror'
+  import { basicSetup } from '@codemirror/basic-setup'
+  import { oneDarkTheme } from '@codemirror/theme-one-dark'
+  import { python } from '@codemirror/lang-python' // 引入 Python 语言支持
   const productModule = useProductModule()
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -172,28 +202,31 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加页面',
+    drawerVisible: false,
+    codeText: '',
   })
 
   function onDelete(data: any) {
-    // Modal.confirm({
-    //   title: '提示',
-    //   content: '是否要删除此页面？',
-    //   cancelText: '取消',
-    //   okText: '删除',
-    //   onOk: () => {
-    //     deleteUiPage(data.id)
-    //       .then((res) => {
-    //         Message.success(res.msg)
-    //         doRefresh()
-    //       })
-    //       .catch(console.log)
-    //   },
-    // })
+    Message.info('该删除只会删除数据库数据，不会影响git文件！')
+    Modal.confirm({
+      title: '提示',
+      content: '是否要删除此数据？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deletePytestTools(data.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
   }
   function clickUpdate() {
     Message.loading('项目更新中...')
 
-    getPytestUpdate()
+    getPytestCaseUpdate()
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
@@ -206,7 +239,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        postPytestProject(value)
+        postPytestCase(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -214,7 +247,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putPytestProject(value)
+        putPytestCase(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -246,7 +279,7 @@
     const value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getPytestProject(value)
+    getPytestCase(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -263,19 +296,54 @@
     })
   }
 
-  function onPageCopy(id: number) {}
-
-  function onClick(record: any) {
-    const pageData = usePageData()
-    pageData.setRecord(record)
-    router.push({
-      path: '/uitest/page/elements',
-      query: {
-        id: record.id,
-      },
-    })
+  function onRun(record: any) {
+    Message.loading('准备开始执行，请前往测试任务中查看测试结果~')
+    console.log(record)
+  }
+  function drawerOk() {
+    data.drawerVisible = false
+    postPytestCaseWrite(data.updateId, data.codeText)
+      .then((res) => {
+        data.codeText = res.data
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
 
+  function onClick(record: any) {
+    data.drawerVisible = true
+    data.updateId = record.id
+    getPytestCaseRead(record.id)
+      .then((res) => {
+        data.codeText = res.data
+      })
+      .catch(console.log)
+  }
+  const onCmCodeChange = (newCode) => {
+    console.log('Code changed:', newCode)
+    data.codeText = newCode
+  }
+  const onCmReady = (cm) => {
+    console.log('CodeMirror is ready!', cm)
+  }
+
+  const cmOptions = {
+    extensions: [
+      basicSetup,
+      python(), // 添加 Python 语言支持
+      oneDarkTheme, // 使用 One Dark 主题
+    ],
+    tabSize: 4,
+    lineNumbers: true,
+    line: true,
+    indentUnit: 4,
+    smartIndent: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    foldGutter: true,
+    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
