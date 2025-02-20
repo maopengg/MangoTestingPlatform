@@ -28,6 +28,7 @@ urlpatterns = [
     path("case/update", PytestCaseViews.as_view({'get': 'pytest_update'})),
     path("case/read", PytestCaseViews.as_view({'get': 'pytest_read'})),
     path("case/write", PytestCaseViews.as_view({'post': 'pytest_write'})),
+    path("case/test", PytestCaseViews.as_view({'post': 'pytest_test_case'})),
 
     #
     path("tools", PytestToolsCRUD.as_view()),

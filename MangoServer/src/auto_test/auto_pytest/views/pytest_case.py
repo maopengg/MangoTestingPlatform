@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
+import subprocess
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -102,3 +104,21 @@ class PytestCaseViews(ViewSet):
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(file_content)
         return ResponseData.success(RESPONSE_MSG_0085)
+
+    @action(methods=['POST'], detail=False)
+    @error_response('pytest')
+    def pytest_test_case(self, request: Request):
+        file_path = request.data.get('file_path')  # pytest的测试文件
+        print(file_path)
+        _id = request.data.get('id')
+        result = subprocess.run(
+            ['pytest', file_path],  # 运行指定文件或目录
+            capture_output=True,  # 捕获标准输出和错误
+            text=True  # 以文本形式返回输出
+        )
+        return ResponseData.success(RESPONSE_MSG_0085, data={
+            'id': _id,
+            'stdout': result.stdout,  # pytest 的标准输出
+            'stderr': result.stderr,  # pytest 的错误输出
+            'returncode': result.returncode  # 返回码（0 表示成功）
+        })

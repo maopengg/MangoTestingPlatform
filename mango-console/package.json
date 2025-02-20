@@ -15,6 +15,7 @@
     "serve": "vite preview"
   },
   "dependencies": {
+    "@codemirror/basic-setup": "^0.20.0",
     "@codemirror/lang-python": "^6.1.7",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@logicflow/core": "^0.7.13-alpha.1",

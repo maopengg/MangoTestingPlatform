@@ -37,6 +37,7 @@ export function putPytestCase(data: object) {
     },
   })
 }
+
 export function getPytestCaseUpdate() {
   return get({
     url: 'pytest/case/update',
@@ -45,6 +46,7 @@ export function getPytestCaseUpdate() {
     },
   })
 }
+
 export function getPytestCaseRead(id: any) {
   return get({
     url: 'pytest/case/read',
@@ -53,11 +55,21 @@ export function getPytestCaseRead(id: any) {
     },
   })
 }
-export function postPytestCaseWrite(id: any, file_content) {
+
+export function postPytestCaseWrite(id: any, file_content: any) {
   return post({
     url: 'pytest/case/write',
     data: () => {
       return { id: id, file_content: file_content }
+    },
+  })
+}
+
+export function postPytestCaseTest(id: any, file_path: string) {
+  return post({
+    url: 'pytest/case/test',
+    data: () => {
+      return { id: id, file_path: file_path }
     },
   })
 }

@@ -178,6 +178,7 @@
     getPytestCaseRead,
     getPytestCaseUpdate,
     postPytestCase,
+    postPytestCaseTest,
     postPytestCaseWrite,
     putPytestCase,
   } from '@/api/pytest/case'
@@ -298,7 +299,11 @@
 
   function onRun(record: any) {
     Message.loading('准备开始执行，请前往测试任务中查看测试结果~')
-    console.log(record)
+    postPytestCaseTest(record.id, record.file_path)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
   function drawerOk() {
     data.drawerVisible = false
