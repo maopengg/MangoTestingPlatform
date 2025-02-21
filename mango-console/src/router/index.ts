@@ -82,6 +82,23 @@ export const extraRoutes = [
     ],
   },
   {
+    path: '/pytest',
+    name: 'pytest',
+    component: Layout,
+    meta: {
+      title: 'Pytest',
+    },
+    children: [
+      {
+        path: 'project/module',
+        component: () => import('@/views/pytest/project/module/index.vue'),
+        meta: {
+          title: '绑定pytest中的模块',
+        },
+      },
+    ],
+  },
+  {
     path: '/report',
     name: 'report',
     component: Layout,
@@ -115,6 +132,7 @@ export const extraRoutes = [
       },
     ],
   },
+
   {
     path: '/config',
     name: '测试配置',

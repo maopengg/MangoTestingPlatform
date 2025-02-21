@@ -45,3 +45,27 @@ export function getPytestUpdate() {
     },
   })
 }
+export function getPytestProjectRead(id: any) {
+  return get({
+    url: 'pytest/project/read',
+    data: () => {
+      return { id: id }
+    },
+  })
+}
+export function postPytestProjectWrite(id: any, file_content: any) {
+  return post({
+    url: 'pytest/project/write',
+    data: () => {
+      return { id: id, file_content: file_content }
+    },
+  })
+}
+export function getPytestProjectName() {
+  return get({
+    url: 'pytest/project/name',
+    data: () => {
+      return {}
+    },
+  })
+}

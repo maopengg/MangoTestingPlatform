@@ -45,3 +45,19 @@ export function getPytestToolsUpdate() {
     },
   })
 }
+export function getPytestToolsRead(id: any) {
+  return get({
+    url: 'pytest/tools/read',
+    data: () => {
+      return { id: id }
+    },
+  })
+}
+export function postPytestToolsWrite(id: any, file_content: any) {
+  return post({
+    url: 'pytest/tools/write',
+    data: () => {
+      return { id: id, file_content: file_content }
+    },
+  })
+}

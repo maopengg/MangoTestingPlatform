@@ -24,3 +24,4 @@ class UpdateFileModel(BaseModel):
     project_name: str
     file: list[PytestAutoTestModel]
     init_file_path: str
+    module_name: list[str] | list

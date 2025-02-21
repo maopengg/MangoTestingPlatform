@@ -37,11 +37,28 @@ export function putPytestAct(data: object) {
     },
   })
 }
+
 export function getPytestActUpdate() {
   return get({
     url: 'pytest/act/update',
     data: () => {
       return {}
+    },
+  })
+}
+export function getPytestActRead(id: any) {
+  return get({
+    url: 'pytest/act/read',
+    data: () => {
+      return { id: id }
+    },
+  })
+}
+export function postPytestActWrite(id: any, file_content: any) {
+  return post({
+    url: 'pytest/act/write',
+    data: () => {
+      return { id: id, file_content: file_content }
     },
   })
 }

@@ -6,13 +6,43 @@ const table = useTable()
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
-    key: 'project_product',
+    key: 'pytest_project',
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'cascader',
+    type: 'select',
     validator: function () {
       if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '模块',
+    key: 'module',
+    value: ref(''),
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '名称',
+    key: 'name',
+    value: ref(''),
+    placeholder: '请输入模块名称',
+    required: true,
+    type: 'input',
+    validator: function () {
+      if (!this.value) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -24,8 +54,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目/产品',
-    key: 'project_product',
-    dataIndex: 'project_product',
+    key: 'pytest_project',
+    dataIndex: 'pytest_project',
     width: 180,
   },
   {

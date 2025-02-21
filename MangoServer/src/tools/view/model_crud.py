@@ -27,6 +27,7 @@ class ModelCRUD(GenericAPIView):
         'pageSize', 'page',
         'type', 'status',
         'module', 'project_product', 'case_people', 'test_object', 'project', 'user'
+        'pytest_product'
     ]
 
     @error_response('system')

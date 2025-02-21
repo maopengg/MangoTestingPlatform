@@ -55,11 +55,13 @@ class PytestProjectModuleViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
-    def ui_test_case(self, request: Request):
+    def pytest_module_name(self, request: Request):
         """
         执行单个用例组
         @param request:
         @return:
         """
-
-        return ResponseData.success(RESPONSE_MSG_0074)
+        res = self.model.objects \
+            .filter(pytest_project_id=request.query_params.get('pytest_project_id')) \
+            .values_list('id', 'name')
+        return ResponseData.success(RESPONSE_MSG_0074, [{'key': _id, 'title': name} for _id, name in res])

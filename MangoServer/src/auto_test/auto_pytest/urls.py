@@ -15,9 +15,12 @@ urlpatterns = [
     #
     path("project", PytestProjectCRUD.as_view()),
     path("project/update", PytestProjectViews.as_view({'get': 'pytest_update'})),
+    path("project/read", PytestProjectViews.as_view({'get': 'pytest_read'})),
+    path("project/write", PytestProjectViews.as_view({'post': 'pytest_write'})),
+    path("project/name", PytestProjectViews.as_view({'get': 'pytest_project_name'})),
     #
     path("module", PytestProjectModuleCRUD.as_view()),
-    path("module/name", PytestProjectModuleViews.as_view({'get': 'ui_test_case'})),
+    path("module/name", PytestProjectModuleViews.as_view({'get': 'pytest_module_name'})),
     #
     path("act", PytestActCRUD.as_view()),
     path("act/update", PytestActViews.as_view({'get': 'pytest_update'})),

@@ -1,4 +1,4 @@
-import { Ref, UnwrapRef } from 'vue'
+import { CSSProperties, Ref, UnwrapRef } from 'vue'
 import { RouteRecordRaw } from 'vue-router'
 
 export interface UserState {
@@ -95,4 +95,15 @@ export interface OriginRoute {
   isSingle?: boolean
   localFilePath?: string
   children?: Array<OriginRoute>
+}
+export interface Props {
+  codeStyle?: CSSProperties // 代码样式
+  dark?: boolean // 是否暗黑主题
+  code?: string // 代码字符串
+  // placeholder?: string // 占位文本
+  // autofocus?: boolean // 自动聚焦
+  // disabled?: boolean // 禁用输入行为和更改状态
+  indentWithTab?: boolean // 启用 tab 按键
+  // tabSize?: number // tab 按键缩进空格数
+  autoDestroy?: boolean // 组件销毁时是否自动销毁代码编辑器实例
 }

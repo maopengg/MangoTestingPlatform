@@ -70,17 +70,25 @@ class UpdateFile:
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)
             if os.path.isdir(item_path) and not '.' in item:
+                module_path = os.path.join(item_path, 'test_case')
+                if os.path.exists(module_path):
+                    module_name = [d for d in os.listdir(module_path) if os.path.isdir(os.path.join(module_path, d))]
+                else:
+                    module_name = []
                 if is_project:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         file=self.generate_json(item_path),
-                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py'))
+                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py')),
+                        module_name=module_name
                     ))
                 else:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         file=self.generate_json(item_path),
-                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py'))
+                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py')),
+                        module_name=module_name
+
                     ))
         return subdirectories
 

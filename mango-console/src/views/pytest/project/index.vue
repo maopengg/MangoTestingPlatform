@@ -60,12 +60,12 @@
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onPageCopy(record.id)"
+                    <a-button type="text" size="mini" @click="onEditFile(record)"
                       >初始化文件</a-button
                     >
                   </a-doption>
                   <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    <a-button status="danger" type="text" size="mini" @click="onDelete()"
                       >删除
                     </a-button>
                   </a-doption>
@@ -75,6 +75,18 @@
           </a-table-column>
         </template>
       </a-table>
+      <a-drawer
+        :width="1000"
+        :visible="data.drawerVisible"
+        @ok="drawerOk"
+        @cancel="data.drawerVisible = false"
+        unmountOnClose
+      >
+        <template #title> 编辑代码</template>
+        <div>
+          <CodeEditor v-model="data.codeText" />
+        </div>
+      </a-drawer>
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -140,7 +152,7 @@
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { Message } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
@@ -152,10 +164,13 @@
   import { useEnum } from '@/store/modules/get-enum'
   import {
     getPytestProject,
+    getPytestProjectRead,
     getPytestUpdate,
     postPytestProject,
+    postPytestProjectWrite,
     putPytestProject,
   } from '@/api/pytest/project'
+  import CodeEditor from '@/components/CodeEditor.vue'
 
   const productModule = useProductModule()
   const projectInfo = useProject()
@@ -172,23 +187,12 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加页面',
+    drawerVisible: false,
+    codeText: '',
   })
 
-  function onDelete(data: any) {
-    // Modal.confirm({
-    //   title: '提示',
-    //   content: '是否要删除此页面？',
-    //   cancelText: '取消',
-    //   okText: '删除',
-    //   onOk: () => {
-    //     deleteUiPage(data.id)
-    //       .then((res) => {
-    //         Message.success(res.msg)
-    //         doRefresh()
-    //       })
-    //       .catch(console.log)
-    //   },
-    // })
+  function onDelete() {
+    Message.error('请在git中删除项目目录~')
   }
   function clickUpdate() {
     Message.loading('项目更新中...')
@@ -263,19 +267,36 @@
     })
   }
 
-  function onPageCopy(id: number) {}
-
   function onClick(record: any) {
     const pageData = usePageData()
     pageData.setRecord(record)
     router.push({
-      path: '/uitest/page/elements',
+      path: '/pytest/project/module',
       query: {
         id: record.id,
       },
     })
   }
 
+  function drawerOk() {
+    data.drawerVisible = false
+    postPytestProjectWrite(data.updateId, data.codeText)
+      .then((res) => {
+        data.codeText = res.data
+        Message.success(res.msg)
+      })
+      .catch(console.log)
+  }
+
+  function onEditFile(record: any) {
+    data.drawerVisible = true
+    data.updateId = record.id
+    getPytestProjectRead(record.id)
+      .then((res) => {
+        data.codeText = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

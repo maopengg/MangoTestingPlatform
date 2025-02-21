@@ -32,12 +32,9 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              <span v-if="record?.project_product?.project && record?.project_product?.name">
-                {{ record.project_product.project.name + '/' + record.project_product.name }}
-              </span>
+            <template v-else-if="item.key === 'pytest_project'" #cell="{ record }">
+              {{ record?.pytest_project?.name }}
             </template>
-
             <template v-else-if="item.key === 'module'" #cell="{ record }">
               <span v-if="record?.module?.name">
                 <span v-if="record.module.superior_module">
@@ -90,12 +87,7 @@
       >
         <template #title> 编辑代码</template>
         <div>
-          <codemirror
-            v-model="data.codeText"
-            :options="cmOptions"
-            @ready="onCmReady"
-            @input="onCmCodeChange"
-          />
+          <CodeEditor v-model="data.codeText" />
         </div>
       </a-drawer>
     </template>
@@ -116,39 +108,23 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'textarea'">
-            <a-textarea
+          <template v-else-if="item.type === 'select' && item.key === 'pytest_project'">
+            <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :auto-size="{ minRows: 3, maxRows: 5 }"
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader'">
-            <a-cascader
-              v-model="item.value"
+              :options="data.projectNameList"
+              :field-names="fieldNames"
+              value-key="key"
               @change="onModuleSelect(item.value)"
-              :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
-              allow-search
               allow-clear
+              allow-search
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="productModule.data"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="productModule.data"
+              :options="data.moduleList"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -163,10 +139,9 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProductModule } from '@/store/modules/project_module'
@@ -183,11 +158,9 @@
     putPytestCase,
   } from '@/api/pytest/case'
   import { deletePytestTools } from '@/api/pytest/tools'
-  // 编辑组件
-  import { Codemirror } from 'vue-codemirror'
-  import { basicSetup } from '@codemirror/basic-setup'
-  import { oneDarkTheme } from '@codemirror/theme-one-dark'
-  import { python } from '@codemirror/lang-python' // 引入 Python 语言支持
+  import CodeEditor from '@/components/CodeEditor.vue'
+  import { getPytestModuleName } from '@/api/pytest/module'
+  import { getPytestProjectName } from '@/api/pytest/project' // 引入 Python 语言支持
   const productModule = useProductModule()
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -196,7 +169,6 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const router = useRouter()
   const enumStore = useEnum()
 
   const data: any = reactive({
@@ -205,6 +177,8 @@
     actionTitle: '添加页面',
     drawerVisible: false,
     codeText: '',
+    projectNameList: [],
+    moduleList: [],
   })
 
   function onDelete(data: any) {
@@ -263,7 +237,7 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    productModule.getProjectModule(item.project_product.id)
+    onPytestProjectName()
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -286,15 +260,6 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
-  }
-
-  function onModuleSelect(projectProductId: number) {
-    productModule.getProjectModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = ''
-      }
-    })
   }
 
   function onRun(record: any) {
@@ -324,30 +289,19 @@
       })
       .catch(console.log)
   }
-  const onCmCodeChange = (newCode) => {
-    console.log('Code changed:', newCode)
-    data.codeText = newCode
+  function onPytestProjectName() {
+    getPytestProjectName()
+      .then((res) => {
+        data.projectNameList = res.data
+      })
+      .catch(console.log)
   }
-  const onCmReady = (cm) => {
-    console.log('CodeMirror is ready!', cm)
-  }
-
-  const cmOptions = {
-    extensions: [
-      basicSetup,
-      python(), // 添加 Python 语言支持
-      oneDarkTheme, // 使用 One Dark 主题
-    ],
-    tabSize: 4,
-    lineNumbers: true,
-    line: true,
-    indentUnit: 4,
-    smartIndent: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    styleActiveLine: true,
-    foldGutter: true,
-    gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+  function onModuleSelect(pytestProductId: number) {
+    getPytestModuleName(pytestProductId)
+      .then((res) => {
+        data.moduleList = res.data
+      })
+      .catch(console.log)
   }
   onMounted(() => {
     nextTick(async () => {

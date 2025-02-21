@@ -7,7 +7,8 @@ class PytestProject(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.SET_NULL, null=True)
-    name = models.CharField(verbose_name="目录名称", max_length=1024, null=True)
+    name = models.CharField(verbose_name="名称", max_length=1024, null=True)
+    file_name = models.CharField(verbose_name="文件名称", max_length=1024)
     init_file = models.CharField(verbose_name="__init__文件", max_length=1024, null=True)
 
     class Meta:
@@ -23,6 +24,7 @@ class PytestProjectModule(models.Model):
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     pytest_project = models.ForeignKey(to=PytestProject, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="模块目录名称", max_length=64)
+    file_name = models.CharField(verbose_name="文件名称", max_length=1024)
 
     class Meta:
         db_table = 'pytest_module'

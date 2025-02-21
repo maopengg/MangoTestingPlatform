@@ -19,6 +19,21 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '名称',
+    key: 'name',
+    value: ref(''),
+    placeholder: '请选择项目名称',
+    required: true,
+    type: 'input',
+    validator: function () {
+      if (!this.value && this.value !== '0') {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
@@ -32,6 +47,11 @@ export const tableColumns = useTableColumn([
     title: '项目目录名称',
     key: 'name',
     dataIndex: 'name',
+  },
+  {
+    title: '文件名称',
+    key: 'file_name',
+    dataIndex: 'file_name',
   },
 
   {
