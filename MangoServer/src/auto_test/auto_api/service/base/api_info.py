@@ -17,7 +17,7 @@ class ApiInfoBase(PublicBase):
     def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
         self.project_product_id = api_info.project_product.id
-        self.init_test_object()
+
         if request_model is None:
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(api_info.method).name,
@@ -48,7 +48,6 @@ class ApiInfoBase(PublicBase):
         if response.json is None:
             raise ApiError(*ERROR_MSG_0023)
         for i in posterior_json_path:
-            print(i.get('key'), response.json, i.get('value'))
             self.set_cache(i.get('key'), self.get_json_path_value(response.json, i.get('value')))
 
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):

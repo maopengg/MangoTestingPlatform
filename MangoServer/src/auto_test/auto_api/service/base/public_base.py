@@ -14,9 +14,9 @@ from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_o
 from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestModel, ResponseModel
-from src.tools.obtain_test_data import ObtainTestData
+from src.models.api_model import RequestModel
 from src.tools.assertion.public_assertion import PublicAssertion
+from src.tools.obtain_test_data import ObtainTestData
 
 
 class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
@@ -49,9 +49,9 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
             headers[i.key] = i.value
         return headers
 
-    def init_test_object(self, ):
+    def init_test_object(self, project_product_id: int):
         self.test_object = func_test_object_value(self.test_env,
-                                                  self.project_product_id,
+                                                  project_product_id,
                                                   AutoTypeEnum.API.value)
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
             self.mysql_connect = MysqlConnect(
@@ -103,6 +103,7 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
 
     def __sql(self, api_public_obj: ApiPublic):
         if self.mysql_connect:
+            print(self.replace(api_public_obj.value))
             result_list: list[dict] = self.mysql_connect.condition_execute(self.replace(api_public_obj.value))
             if isinstance(result_list, list):
                 for result in result_list:
