@@ -133,9 +133,9 @@
               {{ record.page.name }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
-                enumStore.task_status[record.status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                >{{ enumStore.task_status[record.status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onRunCase(record)">调试</a-button>
@@ -148,13 +148,13 @@
                   </a-doption>
                   <a-doption>
                     <a-button type="text" size="mini" @click="onPageStepsCopy(record)"
-                      >复制</a-button
-                    >
+                      >复制
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除</a-button
-                    >
+                      >删除
+                    </a-button>
                   </a-doption>
                 </template>
               </a-dropdown>
@@ -223,7 +223,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
   import { fieldNames } from '@/setting'
@@ -239,9 +239,10 @@
     putUiSteps,
   } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
-  import { conditionItems, tableColumns, formItems } from './config'
+  import { conditionItems, formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+
   const productModule = useProductModule()
   const projectInfo = useProject()
   const enumStore = useEnum()
@@ -335,7 +336,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑页面步骤'
+    data.actionTitle = '编辑步骤'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

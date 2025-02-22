@@ -60,4 +60,5 @@ class RunTasks:
             elif task.type == TestCaseTypeEnum.UI.value:
                 add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.UI)
             else:
-                log.system.error('开始执行性能自动化任务')
+                add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.PYTEST)
+

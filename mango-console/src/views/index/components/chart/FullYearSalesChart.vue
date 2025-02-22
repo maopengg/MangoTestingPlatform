@@ -30,6 +30,7 @@
       const fullYearSalesChart = ref<HTMLDivElement | null>(null)
       let interval: any = null
       let data: any = reactive([])
+
       function caseResultWeekSum() {
         getSystemCaseResultWeekSum()
           .then((res) => {
@@ -38,6 +39,7 @@
           })
           .catch(console.log)
       }
+
       const init = () => {
         const option = {
           color: ['rgba(64, 58, 255)'],
@@ -120,8 +122,9 @@
           loading.value = false
           setTimeout(() => {
             nextTick(() => {
-              if (fullYearSalesChart.value){
-              useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)}
+              if (fullYearSalesChart.value) {
+                useEcharts(fullYearSalesChart.value as HTMLDivElement).setOption(option)
+              }
             })
           }, 100)
         }, 1000)

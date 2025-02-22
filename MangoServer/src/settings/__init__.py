@@ -6,9 +6,10 @@
 import os
 from pathlib import Path
 
-from src.tools import nuw_dir
+from src.tools import project_dir
 from ..enums.tools_enum import SystemEnvEnum
 
+project_dir.init_project_path()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
@@ -30,9 +31,6 @@ if DEBUG:
     MINIO_STORAGE_SECRET_KEY = None
 else:
     DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
-
-
-nuw_dir()
 
 USE_TZ = False
 TIME_ZONE = 'Asia/Shanghai'
@@ -203,6 +201,7 @@ LOGGING = {
             'backupCount': 30,
             'encoding': 'utf-8',
         },
+
         'system': {  # 文件
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
@@ -220,7 +219,16 @@ LOGGING = {
             'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,
             'encoding': 'utf-8',
-        }
+        },
+        'pytest': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs/auto_ui/log.log',
+            'formatter': 'verbose',
+            'maxBytes': 1024 * 1024 * 10,
+            'backupCount': 30,
+            'encoding': 'utf-8',
+        },
     },
     'loggers': {  # log记录器，配置之后就会对应的输出日志
         'console': {  # django记录器，它将所有 INFO 或更高等级的消息传递给3个处理程序——files、console 和 default

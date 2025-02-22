@@ -19,20 +19,18 @@ from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.ui_model import *
 
 
-class SendTestData:
+class TestCase:
 
     def __init__(self,
                  user_id: int,
                  username: str,
                  test_env: int,
                  tasks_id: int = None,
-                 is_notice: int = 0,
                  is_send: bool = False):
         self.user_id = user_id
         self.username = username
         self.test_env = test_env
         self.tasks_id = tasks_id
-        self.is_notice = is_notice
         self.is_send = is_send
 
     def test_case(self,

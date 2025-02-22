@@ -1,9 +1,10 @@
+from threading import Thread
+
 import atexit
 import time
 from django.apps import AppConfig
-from threading import Thread
 
-from src.auto_test.auto_api.service.api_call.case_flow import CaseFlow
+from src.auto_test.auto_api.service.test_case.case_flow import CaseFlow
 
 
 class AutoApiConfig(AppConfig):

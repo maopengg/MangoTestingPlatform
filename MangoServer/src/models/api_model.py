@@ -11,15 +11,6 @@ from pydantic import BaseModel
 warnings.filterwarnings("ignore")
 
 
-class ApiCaseModel(BaseModel):
-    test_suite_details: int
-    test_suite: int
-    case_id: int
-    test_env: int
-    user_id: int
-    tasks_id: int | None = None
-
-
 class RequestModel(BaseModel):
     method: str | None
     url: str | None

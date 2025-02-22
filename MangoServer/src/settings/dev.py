@@ -3,6 +3,8 @@
 # @Description:
 # @Time   : 2024-07-12 14:13
 # @Author : 毛鹏
+import json
+import os
 
 # ************************ 数据源类型 ************************ #
 
@@ -44,8 +46,8 @@ IS_SEND_MAIL = False
 #     with open(file_name, 'r') as file:
 #         data = json.load(file)
 #
-#     mysql_port = data.get('mysql_port', mysql_port)
-#     mysql_db_name = data.get('mysql_db_name', mysql_db_name)
-#     mysql_user = data.get('mysql_user', mysql_user)
-#     mysql_password = data.get('mysql_password', mysql_password)
-#     mysql_ip = data.get('mysql_ip', mysql_ip)
+#     MYSQL_PORT = data.get('mysql_port', MYSQL_PORT)
+#     MYSQL_DB_NAME = data.get('mysql_db_name', MYSQL_DB_NAME)
+#     MYSQL_USER = data.get('mysql_user', MYSQL_USER)
+#     MYSQL_PASSWORD = data.get('mysql_password', MYSQL_PASSWORD)
+#     MYSQL_IP = data.get('mysql_ip', MYSQL_IP)

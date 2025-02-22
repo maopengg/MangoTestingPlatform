@@ -4,11 +4,16 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 import re
+
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from mangokit import NoticeEnum
+from mangokit import ObtainRandomData
+from mangokit.tools.method import class_methods
 from src.enums.api_enum import *
+from src.enums.pytest_enum import *
 from src.enums.system_enum import *
 from src.enums.tools_enum import *
 from src.enums.ui_enum import *
@@ -16,9 +21,6 @@ from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
 from src.tools.redis.redis import Cache
 from src.tools.view import *
-from mangokit import NoticeEnum
-from mangokit import ObtainRandomData
-from mangokit.tools.method import class_methods
 
 
 class SystemViews(ViewSet):
@@ -46,6 +48,8 @@ class SystemViews(ViewSet):
             'task_status': TaskEnum.get_option(),
             'environment_type': EnvironmentEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),
+            'file_status': FileStatusEnum.get_option(),
+            'file_type': PytestFileTypeEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 

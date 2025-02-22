@@ -4,6 +4,7 @@
 # @Time   : 2024-11-24 20:26
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_ui.models import UiCase
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.tools.view import Snowflake
@@ -32,7 +33,6 @@ class AddTasks:
         })
 
     def add_test_suite_details(self, case_id: int, _type: TestCaseTypeEnum):
-        print(_type.value)
         def set_task(case_id, case_name, project_product, ):
             from src.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
@@ -55,4 +55,5 @@ class AddTasks:
             case = ApiCase.objects.get(id=case_id)
             set_task(case.id, case.name, case.project_product.id)
         else:
-            print('还没实现')
+            case = PytestCase.objects.get(id=case_id)
+            set_task(case.id, case.name, case.project_product.id)

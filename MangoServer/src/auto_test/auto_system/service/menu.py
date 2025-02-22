@@ -87,30 +87,35 @@ def ad_routes():
         },
         {
             "menuUrl": "/pytest",
-            "menuName": "api_pytest",
+            "menuName": "单元自动化",
             "icon": "icon-calendar-clock",
             "parentPath": "",
             "children": [
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-init/index",
-                    "menuName": "API初始化",
+                    "menuUrl": "/pytest/project/index",
+                    "menuName": "项目绑定",
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-api-info/index",
-                    "menuName": "API接口",
+                    "menuUrl": "/pytest/act/index",
+                    "menuName": "过程对象",
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-api-file/index",
+                    "menuUrl": "/pytest/case/index",
+                    "menuName": "测试用例",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/tools/index",
+                    "menuName": "工具文件",
+                },
+                {
+                    "parentPath": "/pytest",
+                    "menuUrl": "/pytest/test-file/index",
                     "menuName": "测试文件",
-                },
-                {
-                    "parentPath": "/pytest",
-                    "menuUrl": "/pytest/api-case/index",
-                    "menuName": "API用例",
-                },
+                }
             ]
         },
         {
@@ -213,7 +218,7 @@ def ad_routes():
                 {
                     "parentPath": "/system",
                     "menuUrl": "/system/settings/index",
-                    "menuName": "系统设置",
+                    "menuName": "配置管理",
                 },
                 {
                     "parentPath": "/system",

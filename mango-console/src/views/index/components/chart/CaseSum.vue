@@ -6,7 +6,7 @@
 
 <script lang="ts">
   import useEcharts from '@/hooks/useEcharts'
-  import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
+  import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { dispose } from 'echarts/core'
   import { getSystemCaseSum } from '@/api/system'
 
@@ -106,9 +106,9 @@
           loading.value = false
           nextTick(() => {
             if (channelsChart.value) {
-              useEcharts(channelsChart.value as HTMLDivElement).setOption(option);
+              useEcharts(channelsChart.value as HTMLDivElement).setOption(option)
             }
-          });
+          })
         }, 1000)
       }
       const updateChart = () => {

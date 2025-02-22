@@ -132,12 +132,38 @@ class Perf:
         cls.log.error(msg)
 
 
+class Pytest:
+    log = logging.getLogger('pytest')
+
+    @classmethod
+    def debug(cls, msg: str):
+        if IS_DEBUG_LOG:
+            cls.log.debug(msg)
+
+    @classmethod
+    def info(cls, msg: str):
+        cls.log.info(msg)
+
+    @classmethod
+    def warning(cls, msg: str):
+        cls.log.warning(msg)
+
+    @classmethod
+    def critical(cls, msg: str):
+        cls.log.critical(msg)
+
+    @classmethod
+    def error(cls, msg: str):
+        cls.log.error(msg)
+
+
 class Log:
     system = System
     ui = Ui
     api = Api
     user = User
     perf = Perf
+    pytest = Pytest
 
 
 log = Log

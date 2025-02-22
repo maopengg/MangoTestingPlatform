@@ -5,30 +5,46 @@
 # @Author : 毛鹏
 import os
 
-
-def ensure_path_sep(path: str) -> str:
-    from src.settings import BASE_DIR
-    """兼容 windows 和 linux 不同环境的操作系统路径 """
-    if "/" in path:
-        path = os.sep.join(path.split("/"))
-
-    if "\\" in path:
-        path = os.sep.join(path.split("\\"))
-    return str(BASE_DIR) + path
+import sys
 
 
-def nuw_dir():
-    for i in ['/logs', '/test_file', '/failed_screenshot', '/upload_template']:
-        file = ensure_path_sep(i)
-        if not os.path.exists(file):
-            os.makedirs(file)
+class ProjectDir:
 
-    logs_dir = ensure_path_sep('/logs')
-    for i in ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user']:
-        subdirectory = os.path.join(logs_dir, i)
-        if not os.path.exists(subdirectory):
-            os.makedirs(subdirectory)
+    def __init__(self):
+        self.folder_list = ['logs', 'test_file', 'failed_screenshot', 'upload_template']
+        self._root_path = self.init_project_path()
+        self.init_folder()
 
+    @staticmethod
+    def init_project_path():
+        current_directory = os.path.abspath(__file__)
+        project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
+        current_dir2 = os.path.dirname(sys.executable)
+        if 'python.exe' not in sys.executable:
+            project_root_directory = current_dir2
+        return project_root_directory
+
+    def init_folder(self):
+        for i in self.folder_list:
+            file = os.path.join(self._root_path, i)
+            if not os.path.exists(file):
+                os.makedirs(file)
+        logs_dir = os.path.join(self._root_path, 'logs')
+        for i in ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user']:
+            subdirectory = os.path.join(logs_dir, i)
+            if not os.path.exists(subdirectory):
+                os.makedirs(subdirectory)
+
+    def root_path(self):
+        return self._root_path
+
+    def logs(self, folder_name='logs'):
+        return os.path.join(self._root_path, folder_name)
+
+
+project_dir = ProjectDir()
 
 if __name__ == '__main__':
-    nuw_dir()
+    print(project_dir.logs())
+    print(project_dir.root_path())
+

@@ -49,6 +49,7 @@ class CacheDataKeyEnum(BaseEnum):
     EMAIL_HOST = '邮箱域名'
     STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
+    GIT_URL = 'git的请求url示例>https://{username}:{password}@gitee.com/mao-peng/MangoPytest.git'
 
     @classmethod
     def obj(cls):
@@ -58,6 +59,7 @@ class CacheDataKeyEnum(BaseEnum):
             'EMAIL_HOST': None,
             'STAMP_KET': None,
             'API_TIMEOUT': 15,
+            'GIT_URL': None
         }
 
 

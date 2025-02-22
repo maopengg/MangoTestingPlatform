@@ -11,14 +11,14 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_ui.models import PageElement
-from src.auto_test.auto_ui.service.send_test_data import SendTestData
+from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_ui.views.ui_page import PageSerializers
 from src.enums.system_enum import ClientNameEnum
+from src.enums.ui_enum import ElementExpEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from src.enums.ui_enum import ElementExpEnum
 
 
 class PageElementSerializers(serializers.ModelSerializer):
@@ -75,7 +75,7 @@ class PageElementViews(ViewSet):
         """
         获取所有的页面名称
         """
-        SendTestData(
+        TestCase(
             request.user.get('id'),
             request.user.get('username'),
             request.data.get("test_env"),

@@ -12,7 +12,7 @@ from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, Api
 from src.auto_test.auto_api.service.base.case_api import CaseApiBase
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
-from src.enums.tools_enum import StatusEnum, TaskEnum, AutoTestTypeEnum
+from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
@@ -23,11 +23,9 @@ class TestCase(CaseApiBase):
     def __init__(self,
                  user_id: int,
                  test_env: int,
-                 tasks_id: int = None,
                  test_suite: int = None,
-                 test_suite_details: int = None,
-                 is_send: bool = False):
-        super().__init__(user_id, test_env, tasks_id, is_send)
+                 test_suite_details: int = None):
+        super().__init__(user_id, test_env, )
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
 
@@ -55,6 +53,7 @@ class TestCase(CaseApiBase):
             error_message=self.error_message,
         )
         try:
+            self.init_test_object(api_case.project_product.id)
             self.init_public(api_case.project_product.id)
 
             self.case_front_main(api_case)
@@ -69,17 +68,17 @@ class TestCase(CaseApiBase):
             self.api_case_result.status = self.status.value
             self.api_case_result.error_message = self.error_message
             self.update_test_case(case_id)
-            if self.test_suite:
+            api_case.status = self.status.value
+            api_case.save()
+            if self.test_suite and self.test_suite_details:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                     id=self.test_suite_details,
-                    type=AutoTestTypeEnum.API,
+                    type=TestCaseTypeEnum.API,
                     test_suite=self.test_suite,
                     status=self.status.value,
                     error_message=self.error_message,
                     result_data=self.api_case_result
                 ))
-            api_case.status = self.status.value
-            api_case.save()
             return self.api_case_result
         except Exception as error:
             api_case.status = TaskEnum.FAIL.value
@@ -128,7 +127,7 @@ class TestCase(CaseApiBase):
         for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
                 case_detailed_id=case_detailed.id):
             self.project_product_id = case_detailed.api_info.project_product.id
-            self.init_test_object()
+            self.init_test_object(case_detailed.api_info.project_product.id)
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(case_detailed.api_info.method).name,
                 url=urljoin(self.test_object.value, case_detailed.api_info.url),

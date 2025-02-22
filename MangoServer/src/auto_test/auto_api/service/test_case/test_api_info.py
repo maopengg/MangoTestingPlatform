@@ -2,6 +2,8 @@
 # @Project: 芒果测试平台# @Description: api用例执行类
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
+import traceback
+
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.api_info import ApiInfoBase
 from src.enums.tools_enum import StatusEnum, TaskEnum
@@ -18,13 +20,14 @@ class TestApiInfo(ApiInfoBase):
         try:
             api_info.status = TaskEnum.PROCEED.value
             api_info.save()
+            self.init_test_object(api_info.project_product_id)
             self.init_public(api_info.project_product_id)
-
             response = self.api_request(api_info.id)
             api_info.status = TaskEnum.SUCCESS.value
             api_info.save()
             return self.save_api_info(api_info, response)
         except Exception as error:
+            traceback.print_exc()
             api_info.status = TaskEnum.FAIL.value
             api_info.save()
             raise error

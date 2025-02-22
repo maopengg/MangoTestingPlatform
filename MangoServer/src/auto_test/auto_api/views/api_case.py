@@ -11,8 +11,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
-from src.auto_test.auto_api.service.api_call.test_case import TestCase
 from src.auto_test.auto_api.service.api_import.automatic_parsing_interface import ApiParameter
+from src.auto_test.auto_api.service.test_case.test_case import TestCase
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC

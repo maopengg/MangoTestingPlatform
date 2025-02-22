@@ -4,6 +4,12 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
+            <a-upload
+              type="primary"
+              size="small"
+              @before-upload="beforeUpload"
+              :show-file-list="false"
+            />
             <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
@@ -167,6 +173,7 @@
   import {
     deleteUiElement,
     getUiElement,
+    getUiElementUpload,
     postUiElement,
     putUiElement,
     putUiUiElementPutIsIframe,
@@ -179,6 +186,7 @@
   import { assForm, eleForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
+  import { postUserFile } from '@/api/system/file_data'
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -218,7 +226,28 @@
       }
     })
   }
-
+  const beforeUpload = (file: any) => {
+    return new Promise((resolve, reject) => {
+      Modal.confirm({
+        title: '上传文件',
+        content: `确认上传：${file.name}`,
+        onOk: () => {
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('page_id', route.query.id)
+          formData.append('name', file.name)
+          getUiElementUpload(formData)
+            .then((res) => {
+              Message.success(res.msg)
+              doRefresh()
+              // resolve(true)
+            })
+            .catch(console.log)
+        },
+        onCancel: () => reject('cancel'),
+      })
+    })
+  }
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',

@@ -85,7 +85,7 @@ class PageStepsDetailed(models.Model):
     page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.PROTECT)
     # type==0是进行操作，==1是进行断言
     type = models.SmallIntegerField(verbose_name="操作类型")
-    ele_name = models.ForeignKey(to=PageElement, to_field="id", on_delete=models.PROTECT)
+    ele_name = models.ForeignKey(to=PageElement, to_field="id", on_delete=models.SET_NULL, null=True)
     step_sort = models.IntegerField(verbose_name="顺序的排序")
 
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
