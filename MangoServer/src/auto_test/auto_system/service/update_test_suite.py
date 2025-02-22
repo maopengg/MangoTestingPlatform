@@ -5,12 +5,11 @@
 # @Author : 毛鹏
 from django.db import connection
 
-from src.auto_test.auto_api.service.update_test_status import UpdateTestStatus
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.auto_test.auto_system.service.notice import NoticeMain
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.tools_enum import TaskEnum, StatusEnum, AutoTestTypeEnum
+from src.enums.tools_enum import TaskEnum, StatusEnum, TestCaseTypeEnum
 from src.models.socket_model import SocketDataModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.tools.decorator.retry import orm_retry
@@ -41,13 +40,8 @@ class UpdateTestSuite:
                                                                  status__in=[TaskEnum.STAY_BEGIN.value,
                                                                              TaskEnum.PROCEED.value])
 
-        if data.type == AutoTestTypeEnum.API:
-            pass
-            # UpdateTestStatus.update_api_case(data.result_data)
-        elif data.type == AutoTestTypeEnum.UI:
+        if data.type == TestCaseTypeEnum.UI:
             TestReportWriting.update_test_case(data.result_data)
-        else:
-            pass
         if not test_suite_detail_list.exists():
             test_suite = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
             if not test_suite.exists():

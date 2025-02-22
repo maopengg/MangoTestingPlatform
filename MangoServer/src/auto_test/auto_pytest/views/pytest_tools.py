@@ -10,8 +10,9 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestTools
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
+from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
-from src.auto_test.auto_pytest.views.pytest_project import PytestProjectSerializersC
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -33,7 +34,7 @@ class PytestToolsSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    pytest_project = PytestProjectSerializersC(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     module = PytestProjectModuleSerializersC(read_only=True)
 
     class Meta:
@@ -63,23 +64,22 @@ class PytestToolsViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        for project in UpdateFile(PytestFileTypeEnum.TOOLS).find_test_files():
-            for file in project.file:
-                for act in file.tools:
-                    pytest_act, created = self.model.objects.get_or_create(
-                        file_path=act.path,
-                        defaults={
-                            'name': act.name,
-                            'file_name': act.name,
-                            'file_status': FileStatusEnum.UNBOUND.value,
-                            'file_update_time': act.time.replace(tzinfo=None),
+        for project in UpdateFile(PytestFileTypeEnum.TOOLS, GitRepo().local_warehouse_path).find_test_files():
+            for file in project.auto_test:
+                pytest_act, created = self.model.objects.get_or_create(
+                    file_path=file.path,
+                    defaults={
+                        'name': file.name,
+                        'file_name': file.name,
+                        'file_status': FileStatusEnum.UNBOUND.value,
+                        'file_update_time': file.time.replace(tzinfo=None),
 
-                        }
-                    )
-                    if not created:
-                        pytest_act.file_update_time = act.time.replace(tzinfo=None)
-                        pytest_act.save()
-        return ResponseData.success(RESPONSE_MSG_0074)
+                    }
+                )
+                if not created:
+                    pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                    pytest_act.save()
+        return ResponseData.success(RESPONSE_MSG_0078)
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')

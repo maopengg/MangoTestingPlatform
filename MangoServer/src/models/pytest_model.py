@@ -13,15 +13,8 @@ class FileModel(BaseModel):
     time: datetime
 
 
-class PytestAutoTestModel(BaseModel):
-    act: list[FileModel] | None = None
-    test_case: list[FileModel] | None = None
-    upload: list[FileModel] | None = None
-    tools: list[FileModel] | None = None
-
-
 class UpdateFileModel(BaseModel):
     project_name: str
-    file: list[PytestAutoTestModel]
+    auto_test: list[FileModel] | list = []
     init_file_path: str
     module_name: list[str] | list

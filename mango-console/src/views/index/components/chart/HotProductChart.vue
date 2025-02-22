@@ -5,7 +5,7 @@
 </template>
 <script lang="ts">
   import useEcharts from '@/hooks/useEcharts'
-  import { defineComponent, nextTick, onBeforeUnmount, onMounted, ref, reactive } from 'vue'
+  import { defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
   import { dispose } from 'echarts/core'
   import { getSystemActivityLevel } from '@/api/system'
 
@@ -16,6 +16,7 @@
       const hotProdChart = ref<HTMLDivElement | null>(null)
       let interval: any = null
       let data: any = reactive([])
+
       function activityLevel() {
         getSystemActivityLevel()
           .then((res) => {
@@ -24,6 +25,7 @@
           })
           .catch(console.log)
       }
+
       const init = () => {
         const option = {
           grid: {
@@ -84,9 +86,10 @@
         setTimeout(() => {
           loading.value = false
           setTimeout(() => {
-            nextTick(() =>{
-              if (hotProdChart.value){
-              useEcharts(hotProdChart.value as HTMLDivElement).setOption(option)}
+            nextTick(() => {
+              if (hotProdChart.value) {
+                useEcharts(hotProdChart.value as HTMLDivElement).setOption(option)
+              }
             })
           }, 100)
         }, 1000)

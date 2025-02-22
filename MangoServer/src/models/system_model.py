@@ -5,23 +5,24 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
+from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.api_model import ApiCaseResultModel
 from src.models.ui_model import UiCaseResultModel
-from src.enums.tools_enum import AutoTestTypeEnum
+
 
 class TestSuiteDetailsResultModel(BaseModel):
     id: int
-    type: AutoTestTypeEnum
+    type: TestCaseTypeEnum
     test_suite: int
     status: int
     error_message: str | None = None
     result_data: UiCaseResultModel | ApiCaseResultModel
 
 
-class CmdTestModel(BaseModel):
+class ConsumerCaseModel(BaseModel):
     test_suite_details: int
-    test_suite_id: int
-    project_product: int
-    project_product_name: str
+    test_suite: int
+    case_id: int
     test_env: int
-    cmd: list
+    user_id: int
+    tasks_id: int | None = None

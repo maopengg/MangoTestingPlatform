@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.auto_test.auto_ui.models import PageStepsDetailed
-from src.auto_test.auto_ui.service.send_test_data import SendTestData
+from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from src.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from src.enums.system_enum import CacheDataKey2Enum, ClientNameEnum
@@ -107,7 +107,7 @@ class PageStepsDetailedView(ViewSet):
     @error_response('ui')
     def get_test_page_steps_detailed(self, request: Request):
         page_steps_detailed_id = request.query_params.get('page_steps_detailed_id')
-        SendTestData(
+        TestCase(
             request.user.get('id'),
             request.user.get('username'),
             request.query_params.get("test_env"),

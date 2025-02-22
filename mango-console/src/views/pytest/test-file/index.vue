@@ -1,8 +1,10 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="测试报告队列">
-        <template #extra> </template>
+      <a-card :bordered="false" title="测试文件管理">
+        <template #extra>
+          <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+        </template>
       </a-card>
     </template>
 
@@ -35,7 +37,6 @@
                 {{ record.project_product.project.name + '/' + record.project_product.name }}
               </span>
             </template>
-
             <template v-else-if="item.key === 'module'" #cell="{ record }">
               <span v-if="record?.module?.name">
                 <span v-if="record.module.superior_module">
@@ -45,23 +46,15 @@
               </span>
             </template>
             <template v-else-if="item.key === 'file_status'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.file_status]" size="small">{{
-                enumStore.file_status[record.file_status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.file_status]" size="small"
+                >{{ enumStore.file_status[record.file_status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
-              <a-dropdown trigger="hover">
-                <a-button type="text" size="mini">···</a-button>
-                <template #content>
-                  <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </a-doption>
-                </template>
-              </a-dropdown>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                >删除
+              </a-button>
             </template>
           </a-table-column>
         </template>
@@ -83,39 +76,30 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'textarea'">
-            <a-textarea
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :auto-size="{ minRows: 3, maxRows: 5 }"
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader'">
+          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              @change="onModuleSelect(item.value)"
+              @change="onPytestProjectName(item.value)"
               :placeholder="item.placeholder"
               :options="projectInfo.projectProduct"
               allow-search
               allow-clear
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+            <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="productModule.data"
-              :field-names="fieldNames"
-              value-key="key"
+              :options="data.projectNameList"
               allow-clear
               allow-search
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
+          <template v-else-if="item.type === 'select' && item.key === 'file_status'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="productModule.data"
+              :options="enumStore.file_status"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -130,51 +114,51 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { FormItem, ModalDialogType } from '@/types/components'
+  import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProductModule } from '@/store/modules/project_module'
-  import { usePageData } from '@/store/page-data'
-  import { tableColumns, formItems } from './config'
-  import { useProject } from '@/store/modules/get-project'
+  import { formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    getPytestTools,
-    getPytestToolsUpdate,
-    postPytestTools,
-    putPytestTools,
-    deletePytestTools,
-  } from '@/api/pytest/tools'
+    deletePytestFile,
+    getPytestFile,
+    getPytestFileUpdate,
+    postPytestFile,
+    putPytestFile,
+  } from '@/api/pytest/test-file'
+  import { getPytestProjectName } from '@/api/pytest/project'
+  import { useProject } from '@/store/modules/get-project'
 
-  const productModule = useProductModule()
   const projectInfo = useProject()
+
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const router = useRouter()
   const enumStore = useEnum()
 
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加页面',
+    actionTitle: '添加',
+    drawerVisible: false,
+    codeText: '',
+    projectNameList: [],
+    moduleList: [],
   })
 
   function onDelete(data: any) {
-    Message.info('该删除只会删除数据库数据，不会影响git文件！')
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此数据？',
+      content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deletePytestTools(data.id)
+        deletePytestFile(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -183,9 +167,10 @@
       },
     })
   }
+
   function clickUpdate() {
-    Message.loading('项目更新中...')
-    getPytestToolsUpdate()
+    Message.loading('文件更新中，请耐心等待10秒左右...')
+    getPytestFileUpdate()
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
@@ -198,7 +183,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        postPytestTools(value)
+        postPytestFile(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -206,7 +191,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putPytestTools(value)
+        putPytestFile(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -217,11 +202,13 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑页面'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    productModule.getProjectModule(item.project_product.id)
+    if (item.project_product) {
+      onPytestProjectName(item.project_product.id)
+    }
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -238,7 +225,7 @@
     const value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getPytestTools(value)
+    getPytestFile(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -246,24 +233,12 @@
       .catch(console.log)
   }
 
-  function onModuleSelect(projectProductId: number) {
-    productModule.getProjectModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = ''
-      }
-    })
-  }
-
-  function onClick(record: any) {
-    const pageData = usePageData()
-    pageData.setRecord(record)
-    router.push({
-      path: '/uitest/page/elements',
-      query: {
-        id: record.id,
-      },
-    })
+  function onPytestProjectName(projectProductId: any) {
+    getPytestProjectName(projectProductId)
+      .then((res) => {
+        data.projectNameList = res.data
+      })
+      .catch(console.log)
   }
 
   onMounted(() => {

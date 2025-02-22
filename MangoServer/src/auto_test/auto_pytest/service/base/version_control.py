@@ -15,11 +15,9 @@ from src.tools.decorator.singleton import singleton
 
 @singleton
 class GitRepo:
-    def __init__(
-            self,
-
-    ):
-        self.local_warehouse_path = os.path.dirname(project_dir.root_path())
+    def __init__(self):
+        self.local_warehouse_path = os.path.join(
+            os.path.dirname(os.path.dirname(project_dir.root_path())), 'mango_pytest')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not os.path.exists(self.local_warehouse_path):
             self.clone_repo()
@@ -35,11 +33,11 @@ class GitRepo:
         origin = self.repo.remotes.origin
         origin.pull()
 
-    def push_repo(self, push_file):
+    def push_repo(self):
         status = self.repo.git.status()
         print(f"提交前的存储库状态：{status}")
         if "nothing to commit" not in status:
-            self.repo.git.add(push_file)
+            self.repo.git.add(self.local_warehouse_path)
             self.repo.git.commit("-m", "自动提交")
         if not self.repo.active_branch.tracking_branch():
             self.repo.git.push("--set-upstream", "origin", "master")

@@ -5,7 +5,7 @@
 <script setup lang="ts">
   import { CSSProperties, ref, defineProps, withDefaults, watch, defineEmits } from 'vue'
   import { Codemirror } from 'vue-codemirror'
-  import { python } from '@codemirror/lang-python' // 引入 Python 语言支持
+  import { python } from '@codemirror/lang-python'
   import { oneDark } from '@codemirror/theme-one-dark'
 
   interface Props {

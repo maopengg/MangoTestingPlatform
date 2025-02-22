@@ -5,13 +5,13 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from src.enums.tools_enum import AutoTestTypeEnum
+from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.ui_model import UiCaseResultModel
 
 
 class TestSuiteDetailsResultModel(BaseModel):
     id: int
-    type: AutoTestTypeEnum
+    type: TestCaseTypeEnum
     test_suite: int
     status: int
     error_message: str | None = None

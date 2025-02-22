@@ -43,7 +43,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'cascader',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -73,7 +73,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -103,7 +103,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

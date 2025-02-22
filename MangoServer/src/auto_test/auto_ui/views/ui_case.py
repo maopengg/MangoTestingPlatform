@@ -13,7 +13,7 @@ from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_ui.models import UiCase
-from src.auto_test.auto_ui.service.send_test_data import SendTestData
+from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.system_enum import ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTestTypeEnum
@@ -71,7 +71,7 @@ class UiCaseViews(ViewSet):
         @param request:
         @return:
         """
-        case_model = SendTestData(
+        case_model = TestCase(
             request.user['id'],
             request.user['username'],
             request.query_params.get("test_env"),

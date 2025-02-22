@@ -3,7 +3,6 @@ import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 import { Message } from '@arco-design/web-vue'
 const table = useTable()
-import { ref } from 'vue'
 
 export const formItems: FormItem[] = reactive([
   {
@@ -112,7 +111,7 @@ export const androidFormItems: FormItem[] = reactive([
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

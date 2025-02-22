@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+
 const table = useTable()
 
 interface Project {
@@ -18,6 +19,7 @@ interface ProjectProduct {
   auto_type: number
   client_type: number
 }
+
 export const formItems: FormItem[] = reactive([
   {
     label: '项目名称',
@@ -27,22 +29,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'select',
     validator: function () {
-      if (!this.value && this.value !== '0') {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-  {
-    label: '自动化类型',
-    key: 'auto_type',
-    value: ref(''),
-    type: 'select',
-    required: true,
-    placeholder: '请选择产品的端类型',
-    validator: function () {
-      if (this.value === null && this.value === '') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

@@ -3,8 +3,20 @@
     <template #header>
       <a-card :bordered="false" title="项目绑定">
         <template #extra>
-          <a-button type="primary" size="small" @click="clickUpdate">更新项目</a-button>
+          <a-space>
+            <a-button type="primary" size="small" @click="clickUpdate">更新项目</a-button>
+            <a-button type="primary" size="small" @click="clickPush">提交项目</a-button>
+          </a-space>
         </template>
+        <div>
+          <h4>注意项：</h4>
+          <h1> 1. 右上角的**更新项目**是git pull+git clone</h1>
+          <h1> 2. 右上角的**提交项目**是git push，冲突会默认接收远程最新的</h1>
+          <h1>
+            3.
+            现在编辑文件功能，如果多个人同时编辑一个文件，那么会以最后一个人提交的为主，不会合并，所以自己编辑自己的用例~</h1
+          >
+        </div>
       </a-card>
     </template>
 
@@ -46,12 +58,10 @@
                 {{ record.module.name }}
               </span>
             </template>
-            <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag
-                :color="enumStore.colors[record.project_product.ui_client_type]"
-                size="small"
-                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}</a-tag
-              >
+            <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record?.auto_type]" size="small"
+                >{{ enumStore.auto_test_type[record?.auto_type].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -61,11 +71,11 @@
                 <template #content>
                   <a-doption>
                     <a-button type="text" size="mini" @click="onEditFile(record)"
-                      >初始化文件</a-button
-                    >
+                      >初始化文件
+                    </a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete()"
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -114,29 +124,18 @@
           <template v-else-if="item.type === 'cascader'">
             <a-cascader
               v-model="item.value"
-              @change="onModuleSelect(item.value)"
               :placeholder="item.placeholder"
               :options="projectInfo.projectProduct"
               allow-search
               allow-clear
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
+
+          <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="productModule.data"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="productModule.data"
+              :options="enumStore.auto_test_type"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -151,20 +150,21 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { FormItem, ModalDialogType } from '@/types/components'
-  import { Message } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { ModalDialogType } from '@/types/components'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
-  import { tableColumns, formItems } from './config'
+  import { formItems, tableColumns } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import {
+    deletePytestProject,
     getPytestProject,
     getPytestProjectRead,
+    getPytestPush,
     getPytestUpdate,
     postPytestProject,
     postPytestProjectWrite,
@@ -172,7 +172,6 @@
   } from '@/api/pytest/project'
   import CodeEditor from '@/components/CodeEditor.vue'
 
-  const productModule = useProductModule()
   const projectInfo = useProject()
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
@@ -191,9 +190,23 @@
     codeText: '',
   })
 
-  function onDelete() {
-    Message.error('请在git中删除项目目录~')
+  function onDelete(record: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deletePytestProject(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
   }
+
   function clickUpdate() {
     Message.loading('项目更新中...')
 
@@ -201,6 +214,15 @@
       .then((res) => {
         Message.success(res.msg)
         doRefresh()
+      })
+      .catch(console.log)
+  }
+
+  function clickPush() {
+    Message.loading('项目提交中...')
+    getPytestPush()
+      .then((res) => {
+        Message.success(res.msg)
       })
       .catch(console.log)
   }
@@ -229,11 +251,10 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑页面'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    productModule.getProjectModule(item.project_product.id)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -256,15 +277,6 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
-  }
-
-  function onModuleSelect(projectProductId: number) {
-    productModule.getProjectModule(projectProductId)
-    formItems.forEach((item: FormItem) => {
-      if (item.key === 'module') {
-        item.value = ''
-      }
-    })
   }
 
   function onClick(record: any) {
@@ -297,6 +309,7 @@
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

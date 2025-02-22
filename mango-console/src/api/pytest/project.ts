@@ -37,6 +37,7 @@ export function putPytestProject(data: object) {
     },
   })
 }
+
 export function getPytestUpdate() {
   return get({
     url: 'pytest/project/update',
@@ -45,6 +46,16 @@ export function getPytestUpdate() {
     },
   })
 }
+
+export function getPytestPush() {
+  return get({
+    url: 'pytest/project/push',
+    data: () => {
+      return {}
+    },
+  })
+}
+
 export function getPytestProjectRead(id: any) {
   return get({
     url: 'pytest/project/read',
@@ -53,6 +64,7 @@ export function getPytestProjectRead(id: any) {
     },
   })
 }
+
 export function postPytestProjectWrite(id: any, file_content: any) {
   return post({
     url: 'pytest/project/write',
@@ -61,11 +73,12 @@ export function postPytestProjectWrite(id: any, file_content: any) {
     },
   })
 }
-export function getPytestProjectName() {
+
+export function getPytestProjectName(projectProductId: any) {
   return get({
     url: 'pytest/project/name',
     data: () => {
-      return {}
+      return { project_product_id: projectProductId }
     },
   })
 }

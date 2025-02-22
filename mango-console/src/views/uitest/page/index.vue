@@ -89,11 +89,9 @@
               }}{{ record.module?.name }}
             </template>
             <template v-else-if="item.key === 'client'" #cell="{ record }">
-              <a-tag
-                :color="enumStore.colors[record.project_product.ui_client_type]"
-                size="small"
-                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}</a-tag
-              >
+              <a-tag :color="enumStore.colors[record.project_product.ui_client_type]" size="small"
+                >{{ enumStore.drive_type[record.project_product.ui_client_type].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
@@ -178,17 +176,17 @@
 </template>
 
 <script lang="ts" setup>
-  import { getUiPage, deleteUiPage, postUiPage, putUiPage, postUiPageCopy } from '@/api/uitest/page'
+  import { deleteUiPage, getUiPage, postUiPage, postUiPageCopy, putUiPage } from '@/api/uitest/page'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
   import { useProductModule } from '@/store/modules/project_module'
   import { usePageData } from '@/store/page-data'
-  import { conditionItems, tableColumns, formItems } from './config'
+  import { conditionItems, formItems, tableColumns } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
 
@@ -290,7 +288,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑页面'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

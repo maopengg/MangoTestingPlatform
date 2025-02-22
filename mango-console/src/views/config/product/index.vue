@@ -67,28 +67,24 @@
             <template v-else-if="item.key === 'project'" #cell="{ record }">
               {{ record.project.name }}
             </template>
-            <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
-                enumStore.auto_type[record.auto_type]?.title
-              }}</a-tag>
-            </template>
+
             <template v-else-if="item.key === 'ui_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.ui_client_type]" size="small">{{
-                enumStore.drive_type[record.ui_client_type]?.title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.ui_client_type]" size="small"
+                >{{ enumStore.drive_type[record.ui_client_type]?.title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'api_client_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.api_client_type]" size="small">{{
-                enumStore.api_client[record.api_client_type]?.title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.api_client_type]" size="small"
+                >{{ enumStore.api_client[record.api_client_type]?.title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                 <a-button type="text" size="mini" @click="onClick(record)">增加模块</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -116,17 +112,6 @@
               v-model="item.value"
               :placeholder="item.placeholder"
               :options="project.data"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
-              allow-search
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
-            <a-select
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.auto_type"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
@@ -165,7 +150,7 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { useRouter } from 'vue-router'
   import { useProject } from '@/store/modules/get-project'
@@ -178,6 +163,7 @@
     putUserProduct,
   } from '@/api/system/product'
   import { useEnum } from '@/store/modules/get-enum'
+
   const enumStore = useEnum()
 
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -200,6 +186,7 @@
       it.value = ''
     })
   }
+
   function doRefresh() {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
@@ -295,6 +282,7 @@
       }
     }
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

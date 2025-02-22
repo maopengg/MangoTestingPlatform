@@ -44,7 +44,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'input',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -59,7 +59,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入用户账号',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -106,7 +106,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入邮箱，然后按回车',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

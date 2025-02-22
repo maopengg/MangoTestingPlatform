@@ -102,7 +102,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入用例名称',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -173,7 +173,7 @@ export const formItemsImport: FormItem[] = reactive([
     required: true,
     placeholder: '请输入用例名称',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

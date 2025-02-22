@@ -87,11 +87,22 @@ class AutoTestTypeEnum(BaseEnum):
     UI = 0
     API = 1
     PERF = 2
-    MangoPytest = 3
+    OTHER = 3
 
     @classmethod
     def obj(cls):
-        return {0: "前端", 1: "接口", 2: "性能", 3: "MangoPytest"}
+        return {0: "前端", 1: "接口", 2: "性能", 3: "其他"}
+
+
+class TestCaseTypeEnum(BaseEnum):
+    """用例类型"""
+    UI = 0
+    API = 1
+    PYTEST = 2
+
+    @classmethod
+    def obj(cls):
+        return {0: "界面自动化", 1: "接口自动化", 2: "单元自动化"}
 
 
 class CaseLevelEnum(BaseEnum):

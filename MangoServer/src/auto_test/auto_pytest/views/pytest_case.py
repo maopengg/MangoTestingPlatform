@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
-import subprocess
 
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -12,8 +11,10 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
+from src.auto_test.auto_pytest.service.base.version_control import GitRepo
+from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
-from src.auto_test.auto_pytest.views.pytest_project import PytestProjectSerializersC
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -35,7 +36,7 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    pytest_project = PytestProjectSerializersC(read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     module = PytestProjectModuleSerializersC(read_only=True)
 
     class Meta:
@@ -70,23 +71,22 @@ class PytestCaseViews(ViewSet):
         @param request:
         @return:
         """
-        for project in UpdateFile(PytestFileTypeEnum.TEST_CASE).find_test_files():
-            for file in project.file:
-                for act in file.test_case:
-                    pytest_act, created = self.model.objects.get_or_create(
-                        file_path=act.path,
-                        defaults={
-                            'name': act.name,
-                            'file_name': act.name,
-                            'file_status': FileStatusEnum.UNBOUND.value,
-                            'file_update_time': act.time.replace(tzinfo=None),
+        for project in UpdateFile(PytestFileTypeEnum.TEST_CASE, GitRepo().local_warehouse_path).find_test_files():
+            for file in project.auto_test:
+                pytest_act, created = self.model.objects.get_or_create(
+                    file_path=file.path,
+                    defaults={
+                        'name': file.name,
+                        'file_name': file.name,
+                        'file_status': FileStatusEnum.UNBOUND.value,
+                        'file_update_time': file.time.replace(tzinfo=None),
 
-                        }
-                    )
-                    if not created:
-                        pytest_act.file_update_time = act.time.replace(tzinfo=None)
-                        pytest_act.save()
-        return ResponseData.success(RESPONSE_MSG_0074)
+                    }
+                )
+                if not created:
+                    pytest_act.file_update_time = file.time.replace(tzinfo=None)
+                    pytest_act.save()
+        return ResponseData.success(RESPONSE_MSG_0078)
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
@@ -105,20 +105,8 @@ class PytestCaseViews(ViewSet):
             file.write(file_content)
         return ResponseData.success(RESPONSE_MSG_0085)
 
-    @action(methods=['POST'], detail=False)
+    @action(methods=['GET'], detail=False)
     @error_response('pytest')
     def pytest_test_case(self, request: Request):
-        file_path = request.data.get('file_path')  # pytest的测试文件
-        print(file_path)
-        _id = request.data.get('id')
-        result = subprocess.run(
-            ['pytest', file_path],  # 运行指定文件或目录
-            capture_output=True,  # 捕获标准输出和错误
-            text=True  # 以文本形式返回输出
-        )
-        return ResponseData.success(RESPONSE_MSG_0085, data={
-            'id': _id,
-            'stdout': result.stdout,  # pytest 的标准输出
-            'stderr': result.stderr,  # pytest 的错误输出
-            'returncode': result.returncode  # 返回码（0 表示成功）
-        })
+        report_data = TestCase().test_case_main(request.query_params.get('id'))
+        return ResponseData.success(RESPONSE_MSG_0086, data=report_data)

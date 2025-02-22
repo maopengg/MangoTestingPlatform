@@ -45,7 +45,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     type: 'cascader',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -75,7 +75,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入名称',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -90,7 +90,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请输入缓存的key',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -105,7 +105,7 @@ export const formItems: FormItem[] = reactive([
     required: true,
     placeholder: '请根据规则输入value值',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }

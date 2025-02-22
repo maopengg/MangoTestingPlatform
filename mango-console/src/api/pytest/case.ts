@@ -65,11 +65,11 @@ export function postPytestCaseWrite(id: any, file_content: any) {
   })
 }
 
-export function postPytestCaseTest(id: any, file_path: string) {
-  return post({
+export function getPytestCaseTest(id: any) {
+  return get({
     url: 'pytest/case/test',
     data: () => {
-      return { id: id, file_path: file_path }
+      return { id: id }
     },
   })
 }

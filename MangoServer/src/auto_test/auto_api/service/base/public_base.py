@@ -23,15 +23,11 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
 
     def __init__(self,
                  user_id: int,
-                 test_env: int,
-                 tasks_id: int = None,
-                 is_send: bool = False):
+                 test_env: int):
         ObtainTestData.__init__(self)
         BaseRequest.__init__(self)
         self.user_id = user_id
         self.test_env = test_env
-        self.tasks_id = tasks_id
-        self.is_send = is_send
 
         self.project_product_id = None
 

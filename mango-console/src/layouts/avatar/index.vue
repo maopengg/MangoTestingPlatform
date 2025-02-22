@@ -24,9 +24,9 @@
   </div>
   <template>
     <a-modal v-model:visible="visible" @ok="handleOk" @cancel="handleCancel">
-      <template #title> 扫描二维码加群 </template>
+      <template #title> 扫描二维码加群</template>
       <a-space>
-<img alt="作者微信" src="/static/images/author.jpg" />
+        <img alt="作者微信" src="/static/images/author.jpg" />
         <img alt="交流群" src="/static/images/group.jpg" />
       </a-space>
     </a-modal>
@@ -35,12 +35,12 @@
 
 <script lang="ts" setup>
   import { Modal, Notification } from '@arco-design/web-vue'
-  import { onMounted, onBeforeUnmount, ref } from 'vue'
+  import { onBeforeUnmount, onMounted, ref } from 'vue'
   import { IconCaretDown } from '@arco-design/web-vue/es/icon'
   import useUserStore from '@/store/modules/user'
   import { useRouter } from 'vue-router'
   import { websocket } from '@/utils/socket'
-  import {  webSocketURL } from '@/api/axios.config'
+  import { webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
 
   const userStore = useUserStore()
@@ -92,6 +92,7 @@
         break
     }
   }
+
   const socket = ref<WebSocket | null>(null)
 
   const connectWebSocket = () => {

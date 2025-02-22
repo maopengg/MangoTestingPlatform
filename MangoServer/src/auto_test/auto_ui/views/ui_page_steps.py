@@ -12,7 +12,7 @@ from rest_framework.viewsets import ViewSet
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_ui.models import PageSteps, PageStepsDetailed
-from src.auto_test.auto_ui.service.send_test_data import SendTestData
+from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_ui.views.ui_page import PageSerializers
 from src.enums.system_enum import ClientNameEnum
 from src.enums.tools_enum import StatusEnum
@@ -75,7 +75,7 @@ class PageStepsViews(ViewSet):
         if is_send:
             is_send = bool(int(is_send))
         try:
-            case_json = SendTestData(
+            case_json = TestCase(
                 request.user['id'],
                 request.user['username'],
                 request.GET.get("te"),

@@ -3,7 +3,7 @@
     <template #header>
       <a-card :bordered="false" title="测试用例">
         <template #extra>
-          <a-button type="primary" size="small" @click="clickUpdate">更新项目</a-button>
+          <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
         </template>
       </a-card>
     </template>
@@ -32,8 +32,10 @@
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
-            <template v-else-if="item.key === 'pytest_project'" #cell="{ record }">
-              {{ record?.pytest_project?.name }}
+            <template v-else-if="item.key === 'project_product'" #cell="{ record }">
+              <span v-if="record?.project_product?.project && record?.project_product?.name">
+                {{ record.project_product.project.name + '/' + record.project_product.name }}
+              </span>
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
               <span v-if="record?.module?.name">
@@ -43,20 +45,23 @@
                 {{ record.module.name }}
               </span>
             </template>
+            <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+              {{ record.case_people?.name }}
+            </template>
             <template v-else-if="item.key === 'file_status'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.file_status]" size="small">{{
-                enumStore.file_status[record.file_status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.file_status]" size="small"
+                >{{ enumStore.file_status[record.file_status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.status]" size="small">{{
-                enumStore.task_status[record.status].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.status]" size="small"
+                >{{ enumStore.task_status[record.status].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'level'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.level]" size="small">
-                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}</a-tag
-              >
+                {{ record.level !== null ? enumStore.case_level[record.level].title : '-' }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onRun(record)">执行</a-button>
@@ -66,6 +71,9 @@
                 <template #content>
                   <a-doption>
                     <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  </a-doption>
+                  <a-doption>
+                    <a-button type="text" size="mini" @click="onResult(record)">结果</a-button>
                   </a-doption>
                   <a-doption>
                     <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
@@ -85,9 +93,12 @@
         @cancel="data.drawerVisible = false"
         unmountOnClose
       >
-        <template #title> 编辑代码</template>
-        <div>
+        <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
+        <div v-if="!data.isResult">
           <CodeEditor v-model="data.codeText" />
+        </div>
+        <div v-else>
+          <pre>{{ strJson(data?.codeText) }}</pre>
         </div>
       </a-drawer>
     </template>
@@ -108,27 +119,57 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'pytest_project'">
-            <a-select
+          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+            <a-cascader
+              v-model="item.value"
+              @change="onPytestProjectName(item.value)"
+              :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
+            />
+          </template>
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+            <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
               :options="data.projectNameList"
-              :field-names="fieldNames"
-              value-key="key"
-              @change="onModuleSelect(item.value)"
               allow-clear
               allow-search
             />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
+          <template v-else-if="item.type === 'select' && item.key === 'file_status'">
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="data.moduleList"
+              :options="enumStore.file_status"
               :field-names="fieldNames"
               value-key="key"
               allow-clear
               allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'level'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="enumStore.case_level"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+            />
+          </template>
+          <template v-else-if="item.type === 'select' && item.key === 'case_people'">
+            <a-select
+              v-model="item.value"
+              :placeholder="item.placeholder"
+              :options="data.userList"
+              :field-names="fieldNames"
+              value-key="key"
+              allow-clear
+              allow-search
+              @change="doRefresh"
             />
           </template>
         </a-form-item>
@@ -141,28 +182,29 @@
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, ref, nextTick, reactive } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { useProductModule } from '@/store/modules/project_module'
-  import { tableColumns, formItems } from './config'
-  import { useProject } from '@/store/modules/get-project'
+  import { formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
+    deletePytestCase,
     getPytestCase,
     getPytestCaseRead,
+    getPytestCaseTest,
     getPytestCaseUpdate,
     postPytestCase,
-    postPytestCaseTest,
     postPytestCaseWrite,
     putPytestCase,
   } from '@/api/pytest/case'
-  import { deletePytestTools } from '@/api/pytest/tools'
   import CodeEditor from '@/components/CodeEditor.vue'
-  import { getPytestModuleName } from '@/api/pytest/module'
-  import { getPytestProjectName } from '@/api/pytest/project' // 引入 Python 语言支持
-  const productModule = useProductModule()
+  import { getPytestProjectName } from '@/api/pytest/project'
+  import { getUserName } from '@/api/user/user'
+  import { strJson } from '@/utils/tools'
+  import { useProject } from '@/store/modules/get-project'
+
   const projectInfo = useProject()
+
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
@@ -179,17 +221,17 @@
     codeText: '',
     projectNameList: [],
     moduleList: [],
+    isResult: false,
   })
 
   function onDelete(data: any) {
-    Message.info('该删除只会删除数据库数据，不会影响git文件！')
     Modal.confirm({
       title: '提示',
-      content: '是否要删除此数据？',
+      content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deletePytestTools(data.id)
+        deletePytestCase(data.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -198,8 +240,9 @@
       },
     })
   }
+
   function clickUpdate() {
-    Message.loading('项目更新中...')
+    Message.loading('文件更新中，请耐心等待10秒左右...')
 
     getPytestCaseUpdate()
       .then((res) => {
@@ -233,11 +276,13 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑页面'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    onPytestProjectName()
+    if (item.project_product) {
+      onPytestProjectName(item.project_product.id)
+    }
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -264,12 +309,14 @@
 
   function onRun(record: any) {
     Message.loading('准备开始执行，请前往测试任务中查看测试结果~')
-    postPytestCaseTest(record.id, record.file_path)
+    getPytestCaseTest(record.id)
       .then((res) => {
         Message.success(res.msg)
+        doRefresh()
       })
       .catch(console.log)
   }
+
   function drawerOk() {
     data.drawerVisible = false
     postPytestCaseWrite(data.updateId, data.codeText)
@@ -280,7 +327,14 @@
       .catch(console.log)
   }
 
+  function onResult(record: any) {
+    data.isResult = true
+    data.drawerVisible = true
+    data.codeText = record.result_data
+  }
+
   function onClick(record: any) {
+    data.isResult = false
     data.drawerVisible = true
     data.updateId = record.id
     getPytestCaseRead(record.id)
@@ -289,23 +343,27 @@
       })
       .catch(console.log)
   }
-  function onPytestProjectName() {
-    getPytestProjectName()
+
+  function onPytestProjectName(projectProductId: any) {
+    getPytestProjectName(projectProductId)
       .then((res) => {
         data.projectNameList = res.data
       })
       .catch(console.log)
   }
-  function onModuleSelect(pytestProductId: number) {
-    getPytestModuleName(pytestProductId)
+
+  function getNickName() {
+    getUserName()
       .then((res) => {
-        data.moduleList = res.data
+        data.userList = res.data
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      getNickName()
     })
   })
 </script>

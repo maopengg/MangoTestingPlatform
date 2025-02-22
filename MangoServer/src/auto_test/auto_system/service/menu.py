@@ -113,8 +113,8 @@ def ad_routes():
                 },
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/test-report/index",
-                    "menuName": "测试报告",
+                    "menuUrl": "/pytest/test-file/index",
+                    "menuName": "测试文件",
                 }
             ]
         },

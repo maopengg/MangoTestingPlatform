@@ -11,11 +11,10 @@ class FileStatusEnum(BaseEnum):
     UNBOUND = 0
     ALREADY_BOUND = 1
     DELETED = 2
-    DELETE = 3
 
     @classmethod
     def obj(cls):
-        return {0: "未绑定", 1: "已绑定", 2: "已删除", 3: "DELETE", }
+        return {0: "未绑定", 1: "已绑定", 2: "已删除"}
 
 
 class PytestFileTypeEnum(BaseEnum):

@@ -2,17 +2,18 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+
 const table = useTable()
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
-    key: 'pytest_project',
+    key: 'project_product',
     value: ref(''),
     placeholder: '请选择项目名称',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -23,11 +24,11 @@ export const formItems: FormItem[] = reactive([
     label: '模块',
     key: 'module',
     value: ref(''),
-    placeholder: '请选择项目名称',
+    placeholder: '请选择模块名称',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
-      if (!this.value && this.value !== '0') {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -38,11 +39,26 @@ export const formItems: FormItem[] = reactive([
     label: '名称',
     key: 'name',
     value: ref(''),
-    placeholder: '请输入模块名称',
+    placeholder: '请输入名称',
     required: true,
     type: 'input',
     validator: function () {
       if (!this.value) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '绑定状态',
+    key: 'file_status',
+    value: ref(''),
+    placeholder: '请选择绑定状态',
+    required: true,
+    type: 'select',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
@@ -54,8 +70,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '项目/产品',
-    key: 'pytest_project',
-    dataIndex: 'pytest_project',
+    key: 'project_product',
+    dataIndex: 'project_product',
     width: 180,
   },
   {

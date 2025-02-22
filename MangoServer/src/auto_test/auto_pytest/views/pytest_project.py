@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestProject
+from src.auto_test.auto_pytest.models import PytestProject, PytestProjectModule
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
@@ -61,7 +61,7 @@ class PytestProjectViews(ViewSet):
     def pytest_update(self, request: Request):
         repo = GitRepo()
         repo.pull_repo()
-        update_file = UpdateFile(PytestFileTypeEnum.TEST_CASE).find_test_files(True)
+        update_file = UpdateFile(PytestFileTypeEnum.TEST_CASE, repo.local_warehouse_path).find_test_files(True)
         from src.auto_test.auto_pytest.models import PytestProjectModule
 
         for project in update_file:
@@ -85,8 +85,17 @@ class PytestProjectViews(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
+    def pytest_push(self, request: Request):
+        try:
+            repo = GitRepo()
+            repo.push_repo()
+            return ResponseData.success(RESPONSE_MSG_0090)
+        except Exception as error:
+            return ResponseData.fail(RESPONSE_MSG_0091, data=str(error))
+
+    @action(methods=['get'], detail=False)
+    @error_response('pytest')
     def pytest_read(self, request: Request):
-        print(request.query_params.get('id'))
         file_path = self.model.objects.get(id=request.query_params.get('id')).init_file
         with open(file_path, 'r', encoding='utf-8') as file:
             file_content = file.read()
@@ -110,6 +119,14 @@ class PytestProjectViews(ViewSet):
         @return:
         """
         res = self.model.objects \
-            .all() \
+            .filter(project_product_id=request.query_params.get('project_product_id')) \
             .values_list('id', 'name')
-        return ResponseData.success(RESPONSE_MSG_0074, [{'key': _id, 'title': name} for _id, name in res])
+        data = []
+        for _id, name in res:
+            module = PytestProjectModule.objects \
+                .filter(pytest_project_id=_id) \
+                .values_list('id', 'name')
+            data.append(
+                {'value': _id, 'label': name, 'children': [{'value': __id, 'label': _name} for __id, _name in module]})
+
+        return ResponseData.success(RESPONSE_MSG_0074, data)
