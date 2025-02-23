@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 复制 requirements.txt 并安装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt -i https://pypi.org/simple
+RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 
 # 复制应用程序代码
 COPY . .
