@@ -4,8 +4,11 @@ FROM python:3.10.16-slim AS builder
 # 设置工作目录
 WORKDIR /app
 
-# 替换为阿里云的 Debian 镜像源
-RUN sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list
+# 手动创建并写入阿里云的 Debian 镜像源
+RUN echo "deb http://mirrors.aliyun.com/debian bookworm main non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian bookworm-updates main non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian bookworm-backports main non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security bookworm-security main non-free non-free-firmware" >> /etc/apt/sources.list
 
 # 安装构建依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
