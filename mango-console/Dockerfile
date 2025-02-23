@@ -5,6 +5,7 @@ RUN npm config set registry https://mirrors.huaweicloud.com/repository/npm/
 RUN npm install
 COPY . .
 ARG VUE_ENV
+ENV NODE_OPTIONS=--max-old-space-size=1024
 ENV VUE_ENV=test
 RUN npm run build:test
 
