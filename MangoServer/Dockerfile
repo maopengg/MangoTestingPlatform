@@ -1,7 +1,8 @@
+# 构建阶段
 FROM python:3.10-slim AS builder
 WORKDIR /app
 
-# 创建并写入阿里云的 Debian 镜像源
+# 替换为阿里云的 Debian 镜像源，并启用 backports
 RUN echo "deb http://mirrors.aliyun.com/debian/ bullseye main non-free contrib" > /etc/apt/sources.list && \
     echo "deb http://mirrors.aliyun.com/debian-security bullseye-security main" >> /etc/apt/sources.list && \
     echo "deb http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib" >> /etc/apt/sources.list && \
@@ -17,6 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 COPY . .
 
+# 生产阶段
 FROM python:3.10-slim
 WORKDIR /app
 
