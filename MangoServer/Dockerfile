@@ -2,7 +2,11 @@ FROM ubuntu/python:3.10-22.04_stable AS builder
 WORKDIR /app
 RUN echo "http://mirrors.aliyun.com/alpine/v3.21/main" > /etc/apk/repositories && \
     echo "http://mirrors.aliyun.com/alpine/v3.21/community" >> /etc/apk/repositories
-RUN apk update && apk add --no-cache gcc musl-dev python3 python3-dev linux-headers
+RUN apt-get update && apt-get install -y \
+    gcc \
+    python3-dev \
+    linux-headers-generic \
+    && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 COPY . .
