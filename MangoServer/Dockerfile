@@ -1,14 +1,14 @@
-FROM ubuntu/python:3.10-22.04_stable AS builder
+FROM python:3.10-slim AS builder
 WORKDIR /app
-RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+RUN sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
     apt-get update && apt-get install -y --no-install-recommends \
-    gcc python3-dev libpython3.10-dev linux-headers-generic && \
+    gcc python3-dev libpython3.10-dev && \
     rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
 COPY . .
 
-FROM ubuntu/python:3.10-22.04_stable
+FROM python:3.10-slim
 WORKDIR /app
 COPY --from=builder /root/.local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /app /app
