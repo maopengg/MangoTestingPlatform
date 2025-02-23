@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 COPY . .
 
 FROM python:3.10.16-slim
