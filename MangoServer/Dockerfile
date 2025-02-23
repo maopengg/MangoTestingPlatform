@@ -7,6 +7,7 @@ RUN echo "deb http://mirrors.aliyun.com/debian bookworm main non-free non-free-f
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     python3-dev \
+    git \
     && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
