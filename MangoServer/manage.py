@@ -4,9 +4,13 @@ import os
 
 import sys
 
+from src.tools import project_dir
+
 
 def main():
     """Run administrative tasks."""
+    project_dir.init_folder()
+
     django_env = None
     for i, arg in enumerate(sys.argv):
         if '--env=' in arg:

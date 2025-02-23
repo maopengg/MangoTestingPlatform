@@ -6,10 +6,8 @@
 import os
 from pathlib import Path
 
-from src.tools import project_dir
 from ..enums.tools_enum import SystemEnvEnum
 
-project_dir.init_folder()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
