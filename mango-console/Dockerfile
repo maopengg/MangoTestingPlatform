@@ -8,8 +8,8 @@ RUN npm config set registry https://mirrors.huaweicloud.com/repository/npm/
 # 复制 package.json 和 package-lock.json
 COPY package*.json ./
 
-# 安装依赖（分步安装以减少内存占用）
-RUN npm install --omit=dev && \
+# 安装所有依赖（包括开发依赖）
+RUN npm install && \
     npm cache clean --force
 
 # 复制项目文件
