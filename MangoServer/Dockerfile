@@ -1,4 +1,4 @@
-FROM python:3.10.16-alpine AS builder
+FROM ubuntu/python:3.10-22.04_stable AS builder
 WORKDIR /app
 RUN echo "http://mirrors.aliyun.com/alpine/v3.21/main" > /etc/apk/repositories && \
     echo "http://mirrors.aliyun.com/alpine/v3.21/community" >> /etc/apk/repositories
