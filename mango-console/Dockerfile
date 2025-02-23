@@ -18,7 +18,7 @@ COPY . .
 # 设置构建环境变量
 ARG VUE_ENV
 ENV VUE_ENV=${VUE_ENV}
-ENV NODE_OPTIONS=--max-old-space-size=1536  # 设置 Node.js 内存限制为 1.5GB
+ENV NODE_OPTIONS=--max-old-space-size=1536
 
 # 运行构建命令
 RUN npm run build:${VUE_ENV}
