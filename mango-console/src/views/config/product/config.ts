@@ -127,11 +127,6 @@ export const tableColumns = useTableColumn([
     dataIndex: 'name',
   },
   {
-    title: '自动化类型',
-    key: 'auto_type',
-    dataIndex: 'auto_type',
-  },
-  {
     title: 'UI产品类型',
     key: 'ui_client_type',
     dataIndex: 'ui_client_type',
