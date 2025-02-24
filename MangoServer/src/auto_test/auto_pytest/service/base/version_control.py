@@ -17,7 +17,7 @@ from src.tools.decorator.singleton import singleton
 class GitRepo:
     def __init__(self):
         self.local_warehouse_path = os.path.join(
-            os.path.dirname(os.path.dirname(project_dir.root_path())), 'mango_pytest')
+            os.path.dirname(project_dir.root_path()), 'mango_pytest')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not os.path.exists(self.local_warehouse_path):
             self.clone_repo()
