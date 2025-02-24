@@ -25,7 +25,8 @@ class UiError(MangoServerError):
 class ApiError(MangoServerError):
     pass
 
-
+class PytestError(MangoServerError):
+    pass
 class ToolsError(MangoServerError):
     pass
 
