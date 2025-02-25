@@ -88,7 +88,7 @@ def ad_routes():
         {
             "menuUrl": "/pytest",
             "menuName": "单元自动化",
-            "icon": "copyright",
+            "icon": "IconPen",
             "parentPath": "",
             "children": [
                 {

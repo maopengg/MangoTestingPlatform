@@ -17,8 +17,7 @@ from src.tools.decorator.singleton import singleton
 @singleton
 class GitRepo:
     def __init__(self):
-        self.local_warehouse_path = os.path.join(
-            os.path.dirname(project_dir.root_path()), 'mango_pytest')
+        self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not self.repo_url:
             raise PytestError(*ERROR_MSG_0015)
