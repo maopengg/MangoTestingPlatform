@@ -20,21 +20,6 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-  {
-    label: '模块',
-    key: 'module',
-    value: ref(''),
-    placeholder: '请选择模块名称',
-    required: true,
-    type: 'cascader',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
 ])
 export const tableColumns = useTableColumn([
   table.indexColumn,
@@ -45,14 +30,10 @@ export const tableColumns = useTableColumn([
     width: 180,
   },
   {
-    title: '模块',
-    key: 'module',
-    dataIndex: 'module',
-  },
-  {
     title: '文件名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
   },
   {
     title: '操作',

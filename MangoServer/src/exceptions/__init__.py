@@ -12,10 +12,10 @@ class MangoServerError(Exception):
     def __init__(self, code: int, msg: str, value: tuple = None, error: str = None):
         self.code = code
         if value:
-            self.msg = msg.format(*value)
+            self.msg = msg.format(str(*value))
         else:
             self.msg = msg
-        log.system.error(f'报错提示：{msg}， 报错内容：{error}')
+        log.system.error(f'报错提示：{self.msg}， 报错内容：{error}')
 
 
 class UiError(MangoServerError):
@@ -25,8 +25,11 @@ class UiError(MangoServerError):
 class ApiError(MangoServerError):
     pass
 
+
 class PytestError(MangoServerError):
     pass
+
+
 class ToolsError(MangoServerError):
     pass
 

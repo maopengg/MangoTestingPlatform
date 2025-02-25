@@ -40,14 +40,14 @@ IS_DELETE = True
 IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
-# file_name = 'src/settings/database.json'
-# if os.path.exists(file_name):
-#     # 读取数据
-#     with open(file_name, 'r') as file:
-#         data = json.load(file)
-#
-#     MYSQL_PORT = data.get('mysql_port', MYSQL_PORT)
-#     MYSQL_DB_NAME = data.get('mysql_db_name', MYSQL_DB_NAME)
-#     MYSQL_USER = data.get('mysql_user', MYSQL_USER)
-#     MYSQL_PASSWORD = data.get('mysql_password', MYSQL_PASSWORD)
-#     MYSQL_IP = data.get('mysql_ip', MYSQL_IP)
+file_name = 'src/settings/database.json'
+if os.path.exists(file_name):
+    # 读取数据
+    with open(file_name, 'r') as file:
+        data = json.load(file)
+
+    MYSQL_PORT = data.get('mysql_port', MYSQL_PORT)
+    MYSQL_DB_NAME = data.get('mysql_db_name', MYSQL_DB_NAME)
+    MYSQL_USER = data.get('mysql_user', MYSQL_USER)
+    MYSQL_PASSWORD = data.get('mysql_password', MYSQL_PASSWORD)
+    MYSQL_IP = data.get('mysql_ip', MYSQL_IP)

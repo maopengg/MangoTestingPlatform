@@ -29,7 +29,8 @@ class TestCase:
         obj = PytestCase.objects.get(id=case_id)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
-        report_path = fr'{project_dir.logs()}\{uuid.uuid4()}.json'
+        report_path = os.path.join(project_dir.root_path(), f'{uuid.uuid4()}.json')
+
         subprocess.run(
             ['pytest', obj.file_path, '--json-report', f'--json-report-file={report_path}'],
             capture_output=True,
@@ -55,15 +56,17 @@ class TestCase:
         return report_data
 
     def result_data(self, result_data, model):
+        status = TaskEnum.SUCCESS.value if result_data.get('summary', {}).get('failed',
+                                                                              None) is None else TaskEnum.FAIL.value
         model.result_data = result_data
-        model.status = 0 if result_data.get('summary').get('failed', None) is None else 1
+        model.status = status
         model.save()
         if self.test_suite and self.test_suite_details:
             UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                 id=self.test_suite_details,
                 type=TestCaseTypeEnum.PYTEST,
                 test_suite=self.test_suite,
-                status=0 if result_data.get('summary').get('failed', None) is None else 1,
+                status=status,
                 error_message=None,
                 result_data=result_data
             ))

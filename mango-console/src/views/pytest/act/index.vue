@@ -28,6 +28,8 @@
             :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
