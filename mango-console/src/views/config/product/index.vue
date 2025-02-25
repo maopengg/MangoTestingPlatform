@@ -67,7 +67,6 @@
             <template v-else-if="item.key === 'project'" #cell="{ record }">
               {{ record.project.name }}
             </template>
-
             <template v-else-if="item.key === 'ui_client_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record.ui_client_type]" size="small"
                 >{{ enumStore.drive_type[record.ui_client_type]?.title }}

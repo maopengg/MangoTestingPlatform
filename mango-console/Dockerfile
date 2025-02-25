@@ -6,6 +6,7 @@ RUN npm install
 COPY . .
 ARG VUE_ENV
 ENV VUE_ENV=${VUE_ENV}
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build:${VUE_ENV}
 
 FROM nginx:stable-alpine3.20-perl as production-stage

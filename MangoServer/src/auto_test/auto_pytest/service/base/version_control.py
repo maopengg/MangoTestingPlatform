@@ -7,6 +7,7 @@ import os
 
 from git import Repo
 
+from src.exceptions import ERROR_MSG_0015, PytestError
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
 from src.tools import project_dir
@@ -16,9 +17,10 @@ from src.tools.decorator.singleton import singleton
 @singleton
 class GitRepo:
     def __init__(self):
-        self.local_warehouse_path = os.path.join(
-            os.path.dirname(project_dir.root_path()), 'mango_pytest')
+        self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
+        if not self.repo_url:
+            raise PytestError(*ERROR_MSG_0015)
         if not os.path.exists(self.local_warehouse_path):
             self.clone_repo()
         self.repo = Repo(self.local_warehouse_path)
