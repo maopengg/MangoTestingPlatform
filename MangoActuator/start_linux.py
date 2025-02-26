@@ -6,6 +6,8 @@
 import argparse
 import asyncio
 
+from mangokit import Mango
+
 from src.consumer import SocketConsumer
 from src.network import WebSocketClient
 from src.network.http import HTTP
@@ -16,7 +18,7 @@ from src.tools.log_collector import log
 class LinuxLoop:
 
     def __init__(self):
-        pass
+        self.loop = Mango.t()
 
     def set_tips_info(self, value):
         log.debug(value)
