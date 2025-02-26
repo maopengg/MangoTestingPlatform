@@ -6,7 +6,7 @@
 import argparse
 import asyncio
 
-from mangokit import Mango
+from mangokit import Mango, EncryptionTool
 
 from src.consumer import SocketConsumer
 from src.network import WebSocketClient
@@ -30,7 +30,7 @@ async def main(ip, port, username, password):
     settings.USERNAME = username
     settings.PASSWORD = password
     HTTP.api.public.set_host(settings.IP, settings.PORT)
-    HTTP.not_auth.login(username, password)
+    HTTP.not_auth.login(username, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
 
     loop = LinuxLoop()
     s = WebSocketClient()

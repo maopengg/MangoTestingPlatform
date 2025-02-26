@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
-RUN pip install --no-cache-dir -r linux_requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
+RUN pip install --no-cache-dir --user -r linux_requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 ENV PLAYWRIGHT_DOWNLOAD_HOST=https://registry.npmmirror.com/-/binary/playwright
 RUN playwright install chromium
 
