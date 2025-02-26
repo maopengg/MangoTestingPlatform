@@ -8,7 +8,7 @@ IP = None
 PORT = None
 USERNAME = None
 PASSWORD = None
-if platform.system() == "Linux":
+if platform.system() != "Linux":
     from mango_ui import AppConfig, MenusModel
 with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
     STYLE = AppConfig(**json.loads(f.read()))
