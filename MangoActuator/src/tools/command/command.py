@@ -3,10 +3,23 @@
 # @Description: 
 # @Time   : 2024-12-05 18:25
 # @Author : 毛鹏
+import platform
 import subprocess
 
-from PySide6.QtCore import QThread
-from PySide6.QtCore import Signal
+if platform.system() != "Linux":
+    from PySide6.QtCore import QThread
+    from PySide6.QtCore import Signal
+else:
+    class QObject:
+        pass
+
+
+    class Signal:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            pass
 
 
 def run_command(command):
