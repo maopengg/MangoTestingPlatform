@@ -7,7 +7,7 @@ import platform
 import subprocess
 from typing import Optional
 
-if platform.system() == "Linux":
+if platform.system() != "Linux":
     import uiautomation as auto
     from uiautomation.uiautomation import WindowControl
 
