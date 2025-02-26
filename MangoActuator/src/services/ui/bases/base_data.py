@@ -8,7 +8,6 @@ from typing import Optional
 
 from mangokit import MysqlConnect, MysqlConingModel
 from playwright.async_api import Page, BrowserContext
-from uiautomation import WindowControl
 from uiautomator2 import Device
 
 from src.enums.tools_enum import StatusEnum
@@ -19,9 +18,14 @@ from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
 
 if platform.system() != "Linux":
+    from uiautomation import WindowControl
     from PySide6.QtCore import QObject, Signal
 else:
     class QObject:
+        pass
+
+
+    class WindowControl:
         pass
 
 
