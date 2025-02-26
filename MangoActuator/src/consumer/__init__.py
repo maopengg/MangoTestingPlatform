@@ -21,7 +21,7 @@ from src.tools.log_collector import log
 class SocketConsumer(UI, API, Perf, Tools):
     queue = asyncio.Queue()
 
-    def __init__(self, parent, debug: bool = False):
+    def __init__(self, parent=None, debug: bool = False):
         self.parent = parent
         if not debug:
             self.parent.loop.create_task(self.consumer())
@@ -78,6 +78,7 @@ class Test:
 if __name__ == '__main__':
     from src.settings import settings
     from src.network.http import HTTP
+
     settings.IP = '127.0.0.1'
     settings.PORT = 8000
     HTTP.api.public.set_host(settings.IP, settings.PORT)

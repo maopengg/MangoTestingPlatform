@@ -88,7 +88,7 @@ class WebSocketClient:
             recv_json = await cls.websocket.recv()
             data = cls.__output_method(recv_json)
             if data.data:
-                await SocketConsumer(cls.parent).add_task(data.data)
+                await SocketConsumer().add_task(data.data)
             await asyncio.sleep(0.1)
 
     async def async_send(cls,

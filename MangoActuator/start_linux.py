@@ -33,8 +33,8 @@ async def main(ip, port, username, password):
     loop = LinuxLoop()
     s = WebSocketClient()
     s.parent = loop
-    await s.client_run()
     r = SocketConsumer(loop)
+    await s.client_run()
 
 
 # 创建参数解析器
