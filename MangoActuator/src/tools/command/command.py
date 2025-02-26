@@ -10,7 +10,7 @@ if platform.system() != "Linux":
     from PySide6.QtCore import QThread
     from PySide6.QtCore import Signal
 else:
-    class QObject:
+    class QThread:
         pass
 
 
