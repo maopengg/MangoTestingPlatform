@@ -10,4 +10,4 @@ COPY --from=builder /root/.local/lib/python3.10/site-packages /usr/local/lib/pyt
 COPY --from=builder /app /app
 EXPOSE 8000
 
-CMD ["python", "start_linux.py", "--ip=127.0.0.1", "--port=8000", "--username=admin", "--password=123456"]
+CMD ["python", "start_linux.py", "--ip=121.37.174.56", "--port=8000", "--username=admin", "--password=as123456"]
