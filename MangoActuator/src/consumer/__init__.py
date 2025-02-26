@@ -79,7 +79,7 @@ if __name__ == '__main__':
     from src.settings import settings
     from src.network.http import HTTP
 
-    settings.IP = '127.0.0.1'
+    settings.IP = '121.37.174.56'
     settings.PORT = 8000
     HTTP.api.public.set_host(settings.IP, settings.PORT)
     r = SocketConsumer(Test())
