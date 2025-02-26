@@ -76,23 +76,23 @@ class NewBrowser:
                 await self.new_web_page(count=count + 1)
 
     async def new_browser(self) -> Browser:
-        self.playwright = await async_playwright().start()
-        if self.config.web_type \
-                == BrowserTypeEnum.CHROMIUM.value or self.config.web_type == BrowserTypeEnum.EDGE.value:
-            browser = self.playwright.chromium
-        elif self.config.web_type == BrowserTypeEnum.FIREFOX.value:
-            browser = self.playwright.firefox
-        elif self.config.web_type == BrowserTypeEnum.WEBKIT.value:
-            browser = self.playwright.webkit
-        else:
-            raise UiError(*ERROR_MSG_0008)
         try:
-            self.config \
-                .web_path = self.config \
-                .web_path if self.config \
-                .web_path else self.__search_path()
             if platform.system() != "Linux":
+                self.playwright = await async_playwright().start()
 
+                if self.config.web_type \
+                        == BrowserTypeEnum.CHROMIUM.value or self.config.web_type == BrowserTypeEnum.EDGE.value:
+                    browser = self.playwright.chromium
+                elif self.config.web_type == BrowserTypeEnum.FIREFOX.value:
+                    browser = self.playwright.firefox
+                elif self.config.web_type == BrowserTypeEnum.WEBKIT.value:
+                    browser = self.playwright.webkit
+                else:
+                    raise UiError(*ERROR_MSG_0008)
+                self.config \
+                    .web_path = self.config \
+                    .web_path if self.config \
+                    .web_path else self.__search_path()
                 if self.config.web_max:
                     return await browser.launch(
                         headless=self.config.web_headers == StatusEnum.SUCCESS.value,
@@ -105,8 +105,9 @@ class NewBrowser:
                         executable_path=self.config.web_path
                     )
             else:
-                return await self.playwright.chromium.launch()
-
+                playwright_ = await async_playwright().start()
+                self.browser = playwright_
+                return await playwright_.chromium.launch()
         except Error:
             raise UiError(*ERROR_MSG_0009, value=(self.config.web_path,))
 

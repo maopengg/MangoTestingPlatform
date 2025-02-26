@@ -7,7 +7,7 @@ import asyncio
 
 from mangokit import Mango
 
-from src.tools.log_collector import log
+from src.consumer import UI
 
 
 class LinuxLoop:
@@ -16,10 +16,8 @@ class LinuxLoop:
         self.loop = Mango.t()
 
     def set_tips_info(self, value):
-        log.info(value)
+        print(value)
 
-
-from src.consumer import UI
 
 data = {"test_suite_details": None, "test_suite_id": None, "id": 2, "name": "鼠标悬停", "project_product": 1,
         "project_product_name": "百度", "module_name": "首页", "test_env": 2, "case_people": "admin",
