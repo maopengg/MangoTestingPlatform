@@ -219,9 +219,7 @@ class LoginViews(ViewSet):
     @error_response('user')
     @action(methods=['get'], detail=False)
     def get_download(self, request: Request):
-        file_name = request.query_params.get('file_name')
-        file_name = unquote(file_name)
+        file_name = unquote(request.query_params.get('file_name'))
         file_path = os.path.join(settings.BASE_DIR, 'upload_template', file_name)
-        response = FileResponse(open(file_path, 'rb'))
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_name)
         return response
