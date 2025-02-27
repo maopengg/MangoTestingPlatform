@@ -11,6 +11,7 @@
 import asyncio
 import ctypes
 import os
+import platform
 import string
 import traceback
 from typing import Optional
@@ -26,7 +27,7 @@ from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions import *
-from src.models.api_model import ApiInfoModel, RecordingApiModel
+from src.models.api_model import RecordingApiModel
 from src.models.ui_model import EquipmentModel
 from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
@@ -75,33 +76,38 @@ class NewBrowser:
                 await self.new_web_page(count=count + 1)
 
     async def new_browser(self) -> Browser:
-        self.playwright = await async_playwright().start()
-        if self.config.web_type \
-                == BrowserTypeEnum.CHROMIUM.value or self.config.web_type == BrowserTypeEnum.EDGE.value:
-            browser = self.playwright.chromium
-        elif self.config.web_type == BrowserTypeEnum.FIREFOX.value:
-            browser = self.playwright.firefox
-        elif self.config.web_type == BrowserTypeEnum.WEBKIT.value:
-            browser = self.playwright.webkit
-        else:
-            raise UiError(*ERROR_MSG_0008)
         try:
-            self.config \
-                .web_path = self.config \
-                .web_path if self.config \
-                .web_path else self.__search_path()
+            if platform.system() != "Linux":
+                self.playwright = await async_playwright().start()
 
-            if self.config.web_max:
-                return await browser.launch(
-                    headless=self.config.web_headers == StatusEnum.SUCCESS.value,
-                    executable_path=self.config.web_path,
-                    args=['--start-maximized']
-                )
+                if self.config.web_type \
+                        == BrowserTypeEnum.CHROMIUM.value or self.config.web_type == BrowserTypeEnum.EDGE.value:
+                    browser = self.playwright.chromium
+                elif self.config.web_type == BrowserTypeEnum.FIREFOX.value:
+                    browser = self.playwright.firefox
+                elif self.config.web_type == BrowserTypeEnum.WEBKIT.value:
+                    browser = self.playwright.webkit
+                else:
+                    raise UiError(*ERROR_MSG_0008)
+                self.config \
+                    .web_path = self.config \
+                    .web_path if self.config \
+                    .web_path else self.__search_path()
+                if self.config.web_max:
+                    return await browser.launch(
+                        headless=self.config.web_headers == StatusEnum.SUCCESS.value,
+                        executable_path=self.config.web_path,
+                        args=['--start-maximized']
+                    )
+                else:
+                    return await browser.launch(
+                        headless=self.config.web_headers == StatusEnum.SUCCESS.value,
+                        executable_path=self.config.web_path
+                    )
             else:
-                return await browser.launch(
-                    headless=self.config.web_headers == StatusEnum.SUCCESS.value,
-                    executable_path=self.config.web_path
-                )
+                playwright_ = await async_playwright().start()
+                self.browser = playwright_
+                return await playwright_.chromium.launch()
         except Error:
             raise UiError(*ERROR_MSG_0009, value=(self.config.web_path,))
 

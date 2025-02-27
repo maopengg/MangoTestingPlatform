@@ -4,10 +4,11 @@
 # @Time   : 2025-01-06 18:32
 # @Author : 毛鹏
 
-from playwright.sync_api import Playwright, sync_playwright
+from playwright.sync_api import sync_playwright
 
 
-def run(playwright: Playwright) -> None:
+def run() -> None:
+    playwright = sync_playwright().start()
     browser = playwright.chromium.launch()
     context = browser.new_context()
     page = context.new_page()
@@ -18,5 +19,4 @@ def run(playwright: Playwright) -> None:
     browser.close()
 
 
-with sync_playwright() as playwright:
-    run(playwright)
+run()
