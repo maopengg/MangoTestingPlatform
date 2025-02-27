@@ -2,7 +2,7 @@ FROM python:3.10.16-slim AS builder
 WORKDIR /app
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+RUN pip install --no-cache-dir --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple/
 COPY . .
 
 FROM python:3.10.16-slim
