@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import os
 from datetime import datetime
+from urllib.parse import unquote
 
 import time
 from django.forms import model_to_dict
@@ -14,8 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src import settings
 from mangokit import EncryptionTool
+from src import settings
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
 from src.auto_test.auto_user.views.role import RoleSerializers
@@ -219,6 +220,7 @@ class LoginViews(ViewSet):
     @action(methods=['get'], detail=False)
     def get_download(self, request: Request):
         file_name = request.query_params.get('file_name')
+        file_name = unquote(file_name)
 
         file_path = os.path.join(settings.BASE_DIR, 'upload_template', file_name)
         response = FileResponse(open(file_path, 'rb'))
