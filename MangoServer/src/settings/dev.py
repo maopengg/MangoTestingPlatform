@@ -3,8 +3,6 @@
 # @Description:
 # @Time   : 2024-07-12 14:13
 # @Author : 毛鹏
-import json
-import os
 
 # ************************ 数据源类型 ************************ #
 
@@ -12,10 +10,10 @@ IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
 
 # ************************ Mysql配置 ************************ #
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'mango_server'
+MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.27.190.172'
+MYSQL_IP = '172.25.239.230'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
