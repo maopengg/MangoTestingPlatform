@@ -103,9 +103,8 @@ class UiCaseViews(ViewSet):
             test_env=request.data.get("test_env"),
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],
-            _type=AutoTestTypeEnum.UI.value,
         )
-        add_tasks.add_test_suite_details(case_id_list)
+        add_tasks.add_test_suite_details(case_id_list, AutoTestTypeEnum.UI.value)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)

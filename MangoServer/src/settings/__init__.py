@@ -9,7 +9,7 @@ from pathlib import Path
 from ..enums.tools_enum import SystemEnvEnum
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+# **********************************************************************************************************************
 DJANGO_ENV = os.getenv('DJANGO_ENV', 'master')
 if DJANGO_ENV == SystemEnvEnum.DEV.value:
     from .dev import *
@@ -22,20 +22,26 @@ elif DJANGO_ENV == SystemEnvEnum.TEST.value:
 else:
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
-if DEBUG:
+# **********************************************************************************************************************
+
+if not IS_MINIO:
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    MINIO_STORAGE_ENDPOINT = None
-    MINIO_STORAGE_ACCESS_KEY = None
-    MINIO_STORAGE_SECRET_KEY = None
+    MEDIA_URL = '/mango-file/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'mango-file')
 else:
     DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
+# **********************************************************************************************************************
 
 USE_TZ = False
+
 TIME_ZONE = 'Asia/Shanghai'
+# **********************************************************************************************************************
 
 ALLOWED_HOSTS = ["*"]
+# **********************************************************************************************************************
 
 SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1'
+# **********************************************************************************************************************
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -55,6 +61,7 @@ INSTALLED_APPS = [
     'channels',  # 验证
     'minio_storage',
 ]
+# **********************************************************************************************************************
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -68,7 +75,10 @@ MIDDLEWARE = [
     # 'src.middleware.log_collector.LogMiddleWare',
     'src.middleware.is_delete.IsDeleteMiddleWare',
 ]
+# **********************************************************************************************************************
+
 ROOT_URLCONF = 'src.urls'
+# **********************************************************************************************************************
 
 TEMPLATES = [
     {
@@ -86,14 +96,18 @@ TEMPLATES = [
         },
     },
 ]
+# **********************************************************************************************************************
 
 ASGI_APPLICATION = 'src.asgi.application'
+# **********************************************************************************************************************
 
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     }
 }
+# **********************************************************************************************************************
+
 if not IS_SQLITE:
     DATABASES = {
         'default': {
@@ -120,6 +134,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+# **********************************************************************************************************************
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator', },
@@ -127,13 +142,17 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator', },
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator', },
 ]
+# **********************************************************************************************************************
 
 LANGUAGE_CODE = 'en-us'
+# **********************************************************************************************************************
 
 USE_I18N = True
+# **********************************************************************************************************************
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATIC_URL = '/static/'
+# **********************************************************************************************************************
 
 # CACHES = {
 #     "default": {
@@ -161,6 +180,7 @@ STATIC_URL = '/static/'
 #         }
 #     }
 # }
+# **********************************************************************************************************************
 
 LOGGING = {
     'version': 1,  # 指明dictConnfig的版本
@@ -256,10 +276,13 @@ LOGGING = {
         }
     }
 }
+# **********************************************************************************************************************
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': ['src.middleware.auth.JwtQueryParamsAuthentication', ],
     'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema'
 }
+# **********************************************************************************************************************
 
 # ************************ 接口文档 ************************ #
 APPEND_SLASH = False

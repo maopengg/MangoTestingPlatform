@@ -3,8 +3,6 @@
 # @Description:
 # @Time   : 2024-07-12 14:13
 # @Author : 毛鹏
-import json
-import os
 
 # ************************ 数据源类型 ************************ #
 
@@ -12,10 +10,10 @@ IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
 
 # ************************ Mysql配置 ************************ #
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'mango_server'
+MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.27.190.172'
+MYSQL_IP = '172.25.239.230'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
@@ -27,12 +25,14 @@ IS_DEBUG_LOG = True
 
 REDIS = False
 # ************************ Minio配置 ************************ #
-MINIO_STORAGE_ENDPOINT = '192.168.1.100:9000'
-MINIO_STORAGE_ACCESS_KEY = 'R3SrN5q9XGWj1n28wpG9'  # ACCESS_KEY
-MINIO_STORAGE_SECRET_KEY = 'LliOFBMjp19jFTUw3byUGxgaj6GnmUdsEpRyFjw4'  # SECRET_KEY
-MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
-MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
-MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
+IS_MINIO = False
+if IS_MINIO:
+    MINIO_STORAGE_ENDPOINT = '192.168.1.100:9000'
+    MINIO_STORAGE_ACCESS_KEY = 'R3SrN5q9XGWj1n28wpG9'  # ACCESS_KEY
+    MINIO_STORAGE_SECRET_KEY = 'LliOFBMjp19jFTUw3byUGxgaj6GnmUdsEpRyFjw4'  # SECRET_KEY
+    MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
+    MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
+    MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True

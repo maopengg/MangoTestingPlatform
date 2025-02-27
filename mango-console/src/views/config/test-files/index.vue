@@ -5,7 +5,11 @@
         <div class="container">
           <span>测试文件</span>
         </div>
-        <a-upload @before-upload="beforeUpload" :show-file-list="false" />
+        <a-upload
+          @before-upload="beforeUpload"
+          :show-file-list="false"
+          :before-upload="beforeUpload"
+        />
       </a-space>
 
       <a-tabs />
@@ -32,13 +36,7 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button
-                type="text"
-                size="mini"
-                @click="onDownload(record)"
-                download="{{ record.file_name }}"
-                >下载
-              </a-button>
+              <a-button type="text" size="mini" @click="onDownload(record)">下载 </a-button>
               <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                 >删除</a-button
               >
@@ -57,6 +55,7 @@
   import { tableColumns } from './config'
   import { deleteUserFile, getUserFile, postUserFile } from '@/api/system/file_data'
   import { useProject } from '@/store/modules/get-project'
+  import { minioURL } from '@/api/axios.config'
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
@@ -70,6 +69,11 @@
         pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
+  }
+
+  function downFile() {
+    let aLink = document.createElement('a')
+    aLink.href = '文件地址'
   }
 
   // function onDownload(record: any) {
@@ -126,6 +130,21 @@
     })
   }
 
+  function onDownload(record: any) {
+    const file_path = minioURL + record.test_file
+    const file_name = record.name
+    if (file_name.includes('jpg') || file_name.includes('png')) {
+      window.open(file_path, '_blank')
+    } else {
+      let aLink = document.createElement('a')
+      aLink.href = file_path
+      aLink.download = file_name
+      Message.loading('文件下载中，请到下载中心查看~')
+      document.body.appendChild(aLink)
+      aLink.click()
+      document.body.removeChild(aLink)
+    }
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

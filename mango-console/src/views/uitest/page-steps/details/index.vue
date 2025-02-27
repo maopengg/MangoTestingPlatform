@@ -128,7 +128,7 @@
                     <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
                     <div v-if="item.status === 0">
                       <a-image
-                        :src="minioURL + '/failed_screenshot/' + item.picture_path"
+                        :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
                         title="失败截图"
                         width="260"
                         style="margin-right: 67px; vertical-align: top"

@@ -4,12 +4,8 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
-            <a-upload
-              type="primary"
-              size="small"
-              @before-upload="beforeUpload"
-              :show-file-list="false"
-            />
+            <a-upload @before-upload="beforeUpload" :show-file-list="false" />
+            <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
             <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
@@ -186,7 +182,7 @@
   import { assForm, eleForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { postUserFile } from '@/api/system/file_data'
+  import { baseURL } from '@/api/axios.config'
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -501,7 +497,17 @@
       })
     })
   }
-
+  function onDownload() {
+    const file_name = '元素批量上传模版.xlsx'
+    const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
+    let aLink = document.createElement('a')
+    aLink.href = file_path
+    aLink.download = file_name
+    Message.loading('文件下载中，请到下载中心查看~')
+    document.body.appendChild(aLink)
+    aLink.click()
+    document.body.removeChild(aLink)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

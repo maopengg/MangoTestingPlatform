@@ -13,7 +13,7 @@ from src.settings import BASE_DIR
 class ProjectDir:
 
     def __init__(self):
-        self.folder_list = ['logs', 'test_file', 'failed_screenshot', 'upload_template']
+        self.folder_list = ['logs', 'mango-file', 'failed_screenshot', 'upload_template']
         self._root_path = BASE_DIR
         self.init_folder()
 

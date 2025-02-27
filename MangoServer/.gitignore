@@ -4,7 +4,7 @@
 *.log
 .logs/*
 logs/
-test_file/
+mango-file/
 failed_screenshot/
 src/settings/database.json
 src/auto_test/auto_pytest/mango_pytest/
