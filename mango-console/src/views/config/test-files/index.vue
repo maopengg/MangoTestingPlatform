@@ -106,63 +106,29 @@
       },
     })
   }
-  const beforeUpload = (file) => {
+
+  const beforeUpload = (file: any) => {
     return new Promise((resolve, reject) => {
-      if (!file) {
-        reject('文件不能为空')
-        return
-      }
-      console.log('文件对象:', file)
-
-      const formData = new FormData()
-      formData.append('test_file', file)
-      formData.append('type', '0')
-      formData.append('name', file.name)
-
       Modal.confirm({
         title: '上传文件',
         content: `确认上传：${file.name}`,
         onOk: () => {
+          const formData = new FormData()
+          formData.append('test_file', file)
+          formData.append('type', '0')
+          formData.append('name', file.name)
           postUserFile(formData)
             .then((res) => {
               Message.success(res.msg)
               doRefresh()
-              resolve(true)
+              // resolve(true)
             })
-            .catch((error) => {
-              console.error('文件上传失败:', error)
-              Message.error('文件上传失败')
-              reject(error)
-            })
+            .catch(console.log)
         },
-        onCancel: () => {
-          reject('cancel')
-        },
+        onCancel: () => reject('cancel'),
       })
     })
   }
-  //   const beforeUpload = (file: any) => {
-  //     return new Promise((resolve, reject) => {
-  //       Modal.confirm({
-  //         title: '上传文件',
-  //         content: `确认上传：${file.name}`,
-  //         onOk: () => {
-  //           const formData = new FormData()
-  //           formData.append('test_file', file)
-  //           formData.append('type', '0')
-  //           formData.append('name', file.name)
-  //           postUserFile(formData)
-  //             .then((res) => {
-  //               Message.success(res.msg)
-  //               doRefresh()
-  //               // resolve(true)
-  //             })
-  //             .catch(console.log)
-  //         },
-  //         onCancel: () => reject('cancel'),
-  //       })
-  //     })
-  //   }
 
   function onDownload(record: any) {
     const file_path = minioURL + record.test_file
