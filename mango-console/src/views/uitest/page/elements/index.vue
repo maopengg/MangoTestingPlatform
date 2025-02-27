@@ -182,8 +182,6 @@
   import { assForm, eleForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { postUserFile } from '@/api/system/file_data'
-  import { minioURL } from '@/api/axios.config'
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -500,7 +498,7 @@
   }
   function onDownload() {
     const file_name = '元素批量上传模版.xlsx'
-    const file_path = `${minioURL}/download?file_name=${file_name}`
+    const file_path = `${baseURL}/download?file_name=${file_name}`
     let aLink = document.createElement('a')
     aLink.href = file_path
     aLink.download = file_name
