@@ -3,15 +3,18 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-import time
+import os
 from datetime import datetime
 
+import time
 from django.forms import model_to_dict
+from django.http import FileResponse
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src import settings
 from mangokit import EncryptionTool
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
@@ -133,6 +136,7 @@ class LoginViews(ViewSet):
     authentication_classes = []
     access_token = None
 
+    @error_response('user')
     @action(methods=['post'], detail=False)
     def login(self, request: Request):
         username = request.data.get('username')
@@ -173,6 +177,7 @@ class LoginViews(ViewSet):
             ]
         })
 
+    @error_response('user')
     @action(methods=['post'], detail=False)
     def register(self, request: Request):
         username = request.data.get('username')
@@ -192,10 +197,12 @@ class LoginViews(ViewSet):
             user_obj.save()
             return ResponseData.success(RESPONSE_MSG_0114, data)
 
+    @error_response('user')
     @action(methods=['POST'], detail=False)
     def menu(self, request: Request):
         return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
 
+    @error_response('user')
     @action(methods=['get'], detail=False)
     def test(self, request: Request):
         v = request.query_params.get('v')
@@ -207,3 +214,13 @@ class LoginViews(ViewSet):
         else:
             time.sleep(5)
             return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
+
+    @error_response('user')
+    @action(methods=['get'], detail=False)
+    def get_download(self, request: Request):
+        file_name = request.query_params.get('file_name')
+
+        file_path = os.path.join(settings.BASE_DIR, 'upload_template', file_name)
+        response = FileResponse(open(file_path, 'rb'))
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        return response

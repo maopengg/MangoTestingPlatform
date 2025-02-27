@@ -27,6 +27,8 @@ IS_DEBUG_LOG = False
 
 REDIS = False
 # ************************ Minio配置 ************************ #
+IS_MINIO = True
+
 MINIO_STORAGE_ENDPOINT = 'minio:9000'  # 访问IP+端口
 MINIO_STORAGE_ACCESS_KEY = 'Qs6vh4jyQtakTPcjpGTD'  # ACCESS_KEY
 MINIO_STORAGE_SECRET_KEY = 'l9kmezbVChMieUtmCWg5MDIcRYetThnK0t8NkkTk'  # SECRET_KEY

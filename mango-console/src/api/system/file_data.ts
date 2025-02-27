@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function getUserFile(type = 0) {
   return get({
     url: '/system/file',

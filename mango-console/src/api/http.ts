@@ -33,6 +33,8 @@ export function http<T = any>({
   const successHandler = (res: AxiosResponse<Response<T>>) => {
     if (res.data.code === 200) {
       return res.data
+    } else if (!res.data.msg) {
+      return res.data
     }
     Message.error(res.data.msg)
     throw new Error(res.data.msg || '请求失败，未知异常')

@@ -27,6 +27,8 @@ IS_DEBUG_LOG = False
 
 REDIS = False
 # ************************ Minio配置 ************************ #
+IS_MINIO = True
+
 MINIO_STORAGE_ENDPOINT = 'minio:9000'
 MINIO_STORAGE_ACCESS_KEY = 'MCIK0dsiAFwgjthxlTdA'
 MINIO_STORAGE_SECRET_KEY = '0rx2pFV3bc5q7q0hj7c66bRlcVhozKbv5E05Tqkx'
