@@ -29,12 +29,13 @@ REDIS = False
 # ************************ Minio配置 ************************ #
 IS_MINIO = True
 
-MINIO_STORAGE_ENDPOINT = 'minio:9000'  # 访问IP+端口
-MINIO_STORAGE_ACCESS_KEY = 'Qs6vh4jyQtakTPcjpGTD'  # ACCESS_KEY
-MINIO_STORAGE_SECRET_KEY = 'l9kmezbVChMieUtmCWg5MDIcRYetThnK0t8NkkTk'  # SECRET_KEY
-MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
-MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
-MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
+if IS_MINIO:
+    MINIO_STORAGE_ENDPOINT = 'minio:9000'  # 访问IP+端口
+    MINIO_STORAGE_ACCESS_KEY = 'Qs6vh4jyQtakTPcjpGTD'  # ACCESS_KEY
+    MINIO_STORAGE_SECRET_KEY = 'l9kmezbVChMieUtmCWg5MDIcRYetThnK0t8NkkTk'  # SECRET_KEY
+    MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
+    MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
+    MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
 
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True
