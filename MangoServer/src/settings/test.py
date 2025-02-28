@@ -31,12 +31,13 @@ IS_MINIO = True
 
 if IS_MINIO:
     MINIO_STORAGE_ENDPOINT = 'minio:9000'  # 访问IP+端口
-    MINIO_STORAGE_ACCESS_KEY = 'jkPxfhklQqhUmDEpP0po'  # ACCESS_KEY
-    MINIO_STORAGE_SECRET_KEY = 'aQriZMcIH8rVXc5uNpondikDNOLdPbsba77dT6mF'  # SECRET_KEY
     MINIO_STORAGE_USE_HTTPS = False  # 如果使用 HTTPS，设置为 True
     MINIO_STORAGE_MEDIA_BUCKET_NAME = 'mango-file'  # 桶名称
     MINIO_STORAGE_AUTO_CREATE_MEDIA_BUCKET = True  # 桶不存在时自动创建
-
+    # MINIO_STORAGE_ACCESS_KEY = 'jkPxfhklQqhUmDEpP0po'  # ACCESS_KEY
+    # MINIO_STORAGE_SECRET_KEY = 'aQriZMcIH8rVXc5uNpondikDNOLdPbsba77dT6mF'  # SECRET_KEY
+    MINIO_STORAGE_ACCESS_KEY = 'eQUpBpIGUgHc1f2nZbte'  # 家里的
+    MINIO_STORAGE_SECRET_KEY = 'AqNnxHTrxVAZtPUgu6lLEArekqjHfMtku4tM1qgz'  # 家里的
 # ************************ 是否允许删除 ************************ #
 IS_DELETE = True
 # *************** 是否发送error日志协助芒果修复问题 *************** #
