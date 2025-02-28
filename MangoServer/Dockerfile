@@ -1,4 +1,4 @@
-FROM python:3.10.16-slim AS builder
+FROM ubuntu/python:3.10-22.04 AS builder
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
