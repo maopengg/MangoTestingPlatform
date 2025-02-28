@@ -253,7 +253,7 @@ class TestSuite(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     test_env = models.SmallIntegerField(verbose_name="测试环境")
     user = models.ForeignKey(to=User, to_field="id", verbose_name='用例执行人', on_delete=models.PROTECT)
-    tasks = models.ForeignKey(to=Tasks, to_field="id", on_delete=models.PROTECT)
+    tasks = models.ForeignKey(to=Tasks, to_field="id",on_delete=models.SET_NULL, null=True)
 
     status = models.SmallIntegerField(verbose_name="测试结果")
     is_notice = models.SmallIntegerField(verbose_name="是否发送通知")
