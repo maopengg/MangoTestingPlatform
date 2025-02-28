@@ -3,51 +3,23 @@
 # @Description: 
 # @Time   : 2024-11-23 20:38
 # @Author : 毛鹏
-import traceback
-from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
 
 import time
 
-from mangokit import Mango
-from mangokit import singleton
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.enums.tools_enum import TaskEnum
 from src.models.system_model import ConsumerCaseModel
-from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 
 
-@singleton
-class CaseFlow:
-    queue = Queue()
-    max_tasks = 2
+class UiCaseFlow:
     current_index = 0
-
-    def __init__(self):
-        self.executor = ThreadPoolExecutor(max_workers=self.max_tasks)
-        self.running = True
-
-    def stop(self):
-        self.running = False
-
-    def process_tasks(self):
-        while self.running:
-            try:
-                if not self.queue.empty():
-                    case_model: ConsumerCaseModel = self.queue.get()
-                    self.executor.submit(self.execute_task, case_model, 0, 3)
-                time.sleep(0.2)
-            except Exception as error:
-                trace = traceback.format_exc()
-                log.ui.error(f'UI线程池发生异常：{error}，报错：{trace}')
-                if IS_SEND_MAIL:
-                    Mango.s(self.process_tasks, error, trace)
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel, retry=0, max_retry=3):
+        retry += 1
         user_list = [i for i in SocketUser.user if i.client_obj]
         if not user_list:
             log.system.warning('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
@@ -57,6 +29,7 @@ class CaseFlow:
             cls.current_index = (cls.current_index + 1) % len(user_list)
             user = user_list[cls.current_index]
         except IndexError:
+            time.sleep(3)
             return cls.execute_task(case_model, retry, max_retry)
         send_case = TestCase(
             user_id=user.user_id,
@@ -87,4 +60,4 @@ class CaseFlow:
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
-        cls.queue.put(case_model)
+        cls.execute_task(case_model)

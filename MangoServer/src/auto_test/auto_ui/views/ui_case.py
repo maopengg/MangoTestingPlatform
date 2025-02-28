@@ -16,7 +16,7 @@ from src.auto_test.auto_ui.models import UiCase
 from src.auto_test.auto_ui.service.test_case.test_case import TestCase
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.system_enum import ClientNameEnum
-from src.enums.tools_enum import StatusEnum, AutoTestTypeEnum
+from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -104,7 +104,8 @@ class UiCaseViews(ViewSet):
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],
         )
-        add_tasks.add_test_suite_details(case_id_list, AutoTestTypeEnum.UI.value)
+        for case_id in case_id_list:
+            add_tasks.add_test_suite_details(case_id, TestCaseTypeEnum.UI)
         return ResponseData.success(RESPONSE_MSG_0074, value=(ClientNameEnum.DRIVER.value,))
 
     @action(methods=['POST'], detail=False)

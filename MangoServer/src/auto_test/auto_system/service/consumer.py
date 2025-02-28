@@ -12,9 +12,11 @@ from django.db.utils import Error
 from django.utils import timezone
 
 from mangokit import Mango
-from src.auto_test.auto_api.service.test_case.case_flow import CaseFlow
+from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
+from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
 from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
-from src.enums.tools_enum import TaskEnum, AutoTestTypeEnum
+from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
 from src.settings import IS_SEND_MAIL
@@ -42,7 +44,7 @@ class ConsumerThread:
                 ).first()
                 if test_suite_details:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-                    api_case_model = ConsumerCaseModel(
+                    case_model = ConsumerCaseModel(
                         test_suite_details=test_suite_details.id,
                         test_suite=test_suite_details.test_suite.id,
                         case_id=test_suite_details.case_id,
@@ -50,15 +52,8 @@ class ConsumerThread:
                         user_id=test_suite.user.id,
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                     )
-                    if test_suite_details.type == AutoTestTypeEnum.UI.value:
-                        self.ui(0, test_suite, test_suite_details)
-                    elif test_suite_details.type == AutoTestTypeEnum.API.value:
-                        self.api(api_case_model)
-                    else:
-                        self.mango_pytest(test_suite, test_suite_details)
-                    test_suite_details.retry += 1
-                    test_suite_details.push_time = timezone.now()
-                    test_suite_details.save()
+                    self.send_case(test_suite, test_suite_details, case_model)
+                    self.update_status_proceed(test_suite, test_suite_details)
 
                 if time.time() - reset_tims > self.clean_time * 60:
                     reset_tims = time.time()
@@ -74,48 +69,25 @@ class ConsumerThread:
                 if IS_SEND_MAIL:
                     Mango.s(self.consumer, error, trace, )
 
-    def ui(self, environment_error, test_suite, test_suite_details):
+    def send_case(self, test_suite, test_suite_details, case_model: ConsumerCaseModel, retry=0, max_retry=3):
+        retry += 1
         try:
+            if test_suite_details.type == TestCaseTypeEnum.UI.value:
+                UiCaseFlow.add_task(case_model)
+            elif test_suite_details.type == TestCaseTypeEnum.API.value:
+                ApiCaseFlow.add_task(case_model)
+            else:
+                PytestCaseFlow.add_task(case_model)
             log.system.info(
-                f'推送UI任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            self.update_status_proceed(test_suite, test_suite_details)
+                f'推送{TestCaseTypeEnum.get_value(test_suite_details.type)}任务成功，test_suite_details":{test_suite_details.id}')
         except MangoServerError as error:
             log.system.warning(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
-            self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
-
-    def api(self, case_model: ConsumerCaseModel):
-        try:
-            CaseFlow().add_task(case_model)
-            log.system.info(
-                f'推送API任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            self.update_status_proceed(test_suite, test_suite_details)
-        except MangoServerError as error:
-            log.system.warning(f'API测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
-        except Exception as error:
-            self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
-
-    def mango_pytest(self, case_model: ConsumerCaseModel):
-        try:
-            send_case = CmdTest(
-                user_id=test_suite.user.id,
-                username=test_suite.user.username,
-                test_env=test_suite_details.test_env,
-                tasks_id=test_suite.tasks.id,
-                is_notice=test_suite.is_notice,
-                is_send=True
-            )
-            send_case.test_case(
-                test_suite=test_suite_details.test_suite.id,
-                test_suite_details=test_suite_details.id
-            )
-            log.system.info(
-                f'推送UI任务成功，数据：{{"case_id":{test_suite_details.case_id},"test_suite":{test_suite_details.test_suite.id},"test_suite_details":{test_suite_details.id}}}')
-            self.update_status_proceed(test_suite, test_suite_details)
-        except MangoServerError as error:
-            log.system.warning(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
-        except Exception as error:
-            self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
+            if retry > max_retry:
+                self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
+                return
+            else:
+                self.send_case(test_suite, test_suite_details, case_model, retry, max_retry)
 
     def clean_proceed(self):
         """
@@ -148,12 +120,17 @@ class ConsumerThread:
     def update_status_proceed(self, test_suite, test_suite_details):
         test_suite.status = TaskEnum.PROCEED.value
         test_suite.save()
+
         test_suite_details.status = TaskEnum.PROCEED.value
+        test_suite_details.retry += 1
+        test_suite_details.push_time = timezone.now()
         test_suite_details.save()
 
     def consumer_error(self, test_suite, test_suite_details, error, trace):
         test_suite.status = TaskEnum.FAIL.value
         test_suite.save()
         test_suite_details.status = TaskEnum.FAIL.value
-        test_suite_details.error_message = f'发生未知异常，请联系管理员处理，类型：{AutoTestTypeEnum.get_value(test_suite.type)}，异常内容：{error}'
+        test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}，报错内容：{trace}'
         test_suite.save()
+        if IS_SEND_MAIL:
+            Mango.s(self.consumer_error, error, trace)

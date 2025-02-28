@@ -10,37 +10,36 @@ from queue import Queue
 import time
 
 from mangokit import Mango
-from mangokit import singleton
 from src.models.system_model import ConsumerCaseModel
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 
 
-@singleton
-class CaseFlow:
+class ApiCaseFlow:
     queue = Queue()
     max_tasks = 2
 
-    def __init__(self):
-        self.executor = ThreadPoolExecutor(max_workers=self.max_tasks)
-        self.running = True
+    executor = ThreadPoolExecutor(max_workers=max_tasks)
+    running = True
 
-    def stop(self):
-        self.running = False
+    @classmethod
+    def stop(cls):
+        cls.running = False
 
-    def process_tasks(self):
+    @classmethod
+    def process_tasks(cls):
         case_model = None
-        while self.running:
+        while cls.running:
             try:
-                if not self.queue.empty():
-                    case_model = self.queue.get()
-                    self.executor.submit(self.execute_task, case_model)
+                if not cls.queue.empty():
+                    case_model = cls.queue.get()
+                    cls.executor.submit(cls.execute_task, case_model)
                 time.sleep(0.1)
             except Exception as error:
                 trace = traceback.format_exc()
                 log.system.error(f'API线程池发生异常：{error}，报错：{trace}')
                 if IS_SEND_MAIL:
-                    Mango.s(self.process_tasks, error, trace, case_model=case_model)
+                    Mango.s(cls.process_tasks, error, trace, case_model=case_model)
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
