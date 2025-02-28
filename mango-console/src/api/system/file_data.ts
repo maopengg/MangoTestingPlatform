@@ -14,6 +14,9 @@ export function getUserFile(type = 0) {
 export function postUserFile(data: object) {
   return post({
     url: '/system/file',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
     data: () => {
       return data
     },

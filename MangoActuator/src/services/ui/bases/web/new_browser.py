@@ -26,7 +26,7 @@ from src.enums.api_enum import ClientEnum, MethodEnum, ApiTypeEnum
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import BrowserTypeEnum
 from src.exceptions import *
-from src.models.api_model import ApiInfoModel
+from src.models.api_model import ApiInfoModel, RecordingApiModel
 from src.models.ui_model import EquipmentModel
 from src.network.web_socket.socket_api_enum import ApiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
@@ -175,7 +175,7 @@ class NewBrowser:
                 parse.parse_qs(request.post_data).items()} if json_data is None else None
         params = {key: value[0] for key, value in
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
-        api_info = ApiInfoModel(
+        api_info = RecordingApiModel(
             project_product=project_product,
             username=settings.USERNAME,
             type=ApiTypeEnum.batch.value,
@@ -185,7 +185,7 @@ class NewBrowser:
             method=MethodEnum.get_key(request.method),
             params=None if params == {} else params,
             data=None if data == {} else data,
-            json_data=None if json_data == {} else json_data
+            json=None if json_data == {} else json_data
         )
         await WebSocketClient().async_send(
             msg="发送录制接口",

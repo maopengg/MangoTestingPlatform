@@ -79,20 +79,10 @@
           <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              @change="onPytestProjectName(item.value)"
               :placeholder="item.placeholder"
               :options="projectInfo.projectProduct"
               allow-search
               allow-clear
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
-            <a-cascader
-              v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.projectNameList"
-              allow-clear
-              allow-search
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'file_status'">
@@ -128,7 +118,6 @@
     postPytestFile,
     putPytestFile,
   } from '@/api/pytest/test-file'
-  import { getPytestProjectName } from '@/api/pytest/project'
   import { useProject } from '@/store/modules/get-project'
 
   const projectInfo = useProject()
@@ -147,8 +136,6 @@
     actionTitle: '添加',
     drawerVisible: false,
     codeText: '',
-    projectNameList: [],
-    moduleList: [],
   })
 
   function onDelete(data: any) {
@@ -206,9 +193,6 @@
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
-    if (item.project_product) {
-      onPytestProjectName(item.project_product.id)
-    }
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]
@@ -229,14 +213,6 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-
-  function onPytestProjectName(projectProductId: any) {
-    getPytestProjectName(projectProductId)
-      .then((res) => {
-        data.projectNameList = res.data
       })
       .catch(console.log)
   }

@@ -63,16 +63,22 @@ export const tableColumns = useTableColumn([
     title: '名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
   },
   {
     title: '文件名称',
     key: 'file_name',
     dataIndex: 'file_name',
+    align: 'left',
+    ellipsis: true,
+    tooltip: true,
+    width: 250,
   },
   {
     title: '自动化类型',
     key: 'auto_type',
     dataIndex: 'auto_type',
+    width: 120,
   },
   {
     title: '操作',

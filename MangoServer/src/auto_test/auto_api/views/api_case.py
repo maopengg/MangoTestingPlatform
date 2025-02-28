@@ -17,7 +17,7 @@ from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_user.views.user import UserSerializers
-from src.enums.tools_enum import StatusEnum, AutoTestTypeEnum
+from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.models.api_model import ApiCaseResultModel
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
@@ -100,9 +100,9 @@ class ApiCaseViews(ViewSet):
             test_env=request.data.get('test_env'),
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],
-            _type=AutoTestTypeEnum.API.value,
         )
-        add_tasks.add_test_suite_details(case_id_list)
+        for case_id in case_id_list:
+            add_tasks.add_test_suite_details(case_id, TestCaseTypeEnum.API)
         return ResponseData.success(RESPONSE_MSG_0111)
 
     @action(methods=['get'], detail=False)

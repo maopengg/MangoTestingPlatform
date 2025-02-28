@@ -32,14 +32,14 @@
             :data-index="item.key"
             :fixed="item.fixed"
           >
-            <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
+            <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onDownload(record)">下载 </a-button>
+              <a-button type="text" size="mini" @click="onDownload(record)">下载</a-button>
               <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                >删除</a-button
-              >
+                >删除
+              </a-button>
             </template>
           </a-table-column>
         </template>
@@ -51,16 +51,15 @@
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { onMounted, nextTick } from 'vue'
+  import { nextTick, onMounted } from 'vue'
   import { tableColumns } from './config'
   import { deleteUserFile, getUserFile, postUserFile } from '@/api/system/file_data'
-  import { useProject } from '@/store/modules/get-project'
   import { minioURL } from '@/api/axios.config'
+
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
-  const projectInfo: any = useProject()
 
   function doRefresh() {
     getUserFile()
@@ -70,25 +69,6 @@
       })
       .catch(console.log)
   }
-
-  function downFile() {
-    let aLink = document.createElement('a')
-    aLink.href = '文件地址'
-  }
-
-  // function onDownload(record: any) {
-  //   get({
-  //     url: userFilesDownload,
-  //     data: () => {
-  //       return {
-  //         project_id: record.project_id,
-  //         file_name: record.file_name,
-  //       }
-  //     },
-  //   })
-  //     .then((res) => {})
-  //     .catch(console.log)
-  // }
 
   function onDelete(record: any) {
     Modal.confirm({
@@ -107,7 +87,9 @@
     })
   }
 
-  const beforeUpload = (file: any) => {
+  const beforeUpload = (file) => {
+    console.log(file)
+
     return new Promise((resolve, reject) => {
       Modal.confirm({
         title: '上传文件',
@@ -145,6 +127,7 @@
       document.body.removeChild(aLink)
     }
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

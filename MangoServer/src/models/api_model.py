@@ -8,8 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-warnings.filterwarnings("ignore")
-
+warnings.filterwarnings("ignore", category=UserWarning)
 
 class RequestModel(BaseModel):
     method: str | None
@@ -34,7 +33,7 @@ class RecordingApiModel(BaseModel):
     project_product: int
     username: str
     type: int = 0
-    module_name: int | None = None
+    module: int | None = None
     name: str
     client: int = 0
     url: str

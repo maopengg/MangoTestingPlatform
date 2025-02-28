@@ -15,6 +15,7 @@ from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
 from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -38,6 +39,7 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
     module = PytestProjectModuleSerializersC(read_only=True)
+    case_people = UserSerializers(read_only=True)
 
     class Meta:
         model = PytestCase
@@ -48,6 +50,7 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
         queryset = queryset.select_related(
             'project_product',
             'module',
+            'case_people',
         )
         return queryset
 
