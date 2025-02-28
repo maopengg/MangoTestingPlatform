@@ -108,9 +108,12 @@ class UiConfigViews(ViewSet):
         is_recording = request.query_params.get('is_recording')
         if is_recording == '1':
             user_obj = User.objects.get(id=request.user['id'])
-            config_obj = UiConfig.objects.get(user_id=request.user['id'],
-                                              status=StatusEnum.SUCCESS.value,
-                                              type=DriveTypeEnum.WEB.value)
+            try:
+                config_obj = UiConfig.objects.get(user_id=request.user['id'],
+                                                  status=StatusEnum.SUCCESS.value,
+                                                  type=DriveTypeEnum.WEB.value)
+            except UiConfig.DoesNotExist:
+                return ResponseData.fail(RESPONSE_MSG_0106, )
             if user_obj.selected_environment is None:
                 return ResponseData.fail(RESPONSE_MSG_0120, )
             if user_obj.selected_project is None:

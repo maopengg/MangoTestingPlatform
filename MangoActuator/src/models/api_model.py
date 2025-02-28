@@ -39,7 +39,7 @@ class RecordingApiModel(BaseModel):
     project_product: int
     username: str
     type: int = 0
-    module_name: int | None = None
+    module: int | None = None
     name: str
     client: int = 0
     url: str
@@ -47,14 +47,14 @@ class RecordingApiModel(BaseModel):
     header: dict | None = None
     params: list | dict | None = None
     data: list | dict | None = None
-    json_data: list | dict | None = None
+    json: list | dict | None = None
     file: str | None = None
     status: int | None = None
 
 
 class ApiInfoModel(BaseModel):
     """ApiInfo模型"""
-    project: int
+    project_product: int
     type: int = 0
     module_name: int | None = None
     name: str

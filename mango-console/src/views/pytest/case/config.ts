@@ -109,7 +109,7 @@ export const tableColumns = useTableColumn([
     title: '模块',
     key: 'module',
     dataIndex: 'module',
-    width: 70,
+    width: 130,
   },
   {
     title: '名称',
@@ -120,6 +120,9 @@ export const tableColumns = useTableColumn([
     title: '文件名称',
     key: 'file_name',
     dataIndex: 'file_name',
+    ellipsis: true,
+    tooltip: true,
+    width: 100,
   },
   {
     title: '修改时间',
@@ -128,10 +131,10 @@ export const tableColumns = useTableColumn([
     width: 170,
   },
   {
-    title: '用例等级',
+    title: '用例负责人',
     key: 'case_people',
     dataIndex: 'case_people',
-    width: 90,
+    width: 120,
   },
   {
     title: '用例等级',

@@ -100,9 +100,8 @@ class ApiCaseViews(ViewSet):
             test_env=request.data.get('test_env'),
             is_notice=StatusEnum.FAIL.value,
             user_id=request.user['id'],
-            _type=AutoTestTypeEnum.API.value,
         )
-        add_tasks.add_test_suite_details(case_id_list)
+        add_tasks.add_test_suite_details(case_id_list, AutoTestTypeEnum.API.value)
         return ResponseData.success(RESPONSE_MSG_0111)
 
     @action(methods=['get'], detail=False)
