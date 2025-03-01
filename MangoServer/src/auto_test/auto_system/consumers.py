@@ -111,21 +111,19 @@ class ChatConsumer(WebsocketConsumer):
                     pass
                 else:
                     obj.send(send_data.model_dump_json())
-                    if DEBUG:
-                        log.system.info(
-                            f'发送的用户：{send_data.user}\n'
-                            f'发送的客户端类型：{ClientTypeEnum.get_value(1)}\n'
-                            f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
-                        )
+                    log.system.warning(
+                        f'发送的用户：{send_data.user}'
+                        f'发送的客户端类型：{ClientTypeEnum.get_value(1)}'
+                        f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                    )
             elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
-                if DEBUG:
-                    log.system.info(
-                        f'发送的用户：{send_data.user}\n'
-                        f'发送的客户端类型：{ClientTypeEnum.get_value(2)}\n'
-                        f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
-                    )
+                log.system.warning(
+                    f'发送的用户：{send_data.user}'
+                    f'发送的客户端类型：{ClientTypeEnum.get_value(2)}'
+                    f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
+                )
 
     def inside_send(self,
                     msg: str,

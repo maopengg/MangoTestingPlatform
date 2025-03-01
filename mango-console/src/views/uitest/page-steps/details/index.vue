@@ -72,9 +72,9 @@
                   </template>
 
                   <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-                    <a-tag :color="enumStore.colors[record.type]" size="small">{{
-                      enumStore.element_ope[record.type].title
-                    }}</a-tag>
+                    <a-tag :color="enumStore.colors[record.type]" size="small"
+                      >{{ enumStore.element_ope[record.type].title }}
+                    </a-tag>
                   </template>
                   <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                     <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
@@ -92,7 +92,7 @@
           <a-card title="最近一次步骤执行过程" style="overflow: hidden" :bordered="false">
             <a-collapse
               :default-active-key="data.eleResultKey"
-              v-for="item of pageData.record.result_data?.element_result_list"
+              v-for="item of data.result_data?.element_result_list"
               :bordered="false"
               :key="item.id"
               destroy-on-hide
@@ -128,7 +128,7 @@
                     <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
                     <div v-if="item.status === 0">
                       <a-image
-                        :src="minioURL + '/failed_screenshot/' + item.picture_path"
+                        :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
                         title="失败截图"
                         width="260"
                         style="margin-right: 67px; vertical-align: top"
@@ -285,12 +285,12 @@
     getUiPageStepsDetailed,
     getUiPageStepsDetailedAss,
     getUiPageStepsDetailedOpe,
+    getUiPageStepsDetailedTest,
     postUiPageStepsDetailed,
     putUiPagePutStepSort,
     putUiPageStepsDetailed,
-    getUiPageStepsDetailedTest,
   } from '@/api/uitest/page-steps-detailed'
-  import { getUiStepsTest } from '@/api/uitest/page-steps'
+  import { getUiSteps, getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
@@ -314,6 +314,7 @@
     uiPageName: [],
     type: 0,
     plainOptions: [],
+    result_data: {},
   })
   const visible1 = ref(false)
 
@@ -323,6 +324,7 @@
     border: 'none',
     overflow: 'hidden',
   })
+
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems.length - 1; i >= 0; i--) {
@@ -410,7 +412,7 @@
         deleteUiPageStepsDetailed(record.id, record.page_step.id)
           .then((res) => {
             Message.success(res.msg)
-            getUiRunSort()
+            doRefresh()
           })
           .catch(console.log)
       },
@@ -474,7 +476,7 @@
         postUiPageStepsDetailed(value, route.query.id)
           .then((res) => {
             Message.success(res.msg)
-            getUiRunSort()
+            doRefresh()
           })
           .catch(console.log)
       } else {
@@ -482,7 +484,7 @@
         putUiPageStepsDetailed(value, route.query.id)
           .then((res) => {
             Message.success(res.msg)
-            getUiRunSort()
+            doRefresh()
           })
           .catch(console.log)
       }
@@ -493,7 +495,7 @@
     window.history.back()
   }
 
-  function getUiRunSort() {
+  function doRefresh() {
     getUiPageStepsDetailed(route.query.id)
       .then((res) => {
         data.dataList = res.data
@@ -637,13 +639,20 @@
       .catch(console.log)
   }
 
-  onMounted(() => {
-    nextTick(async () => {
-      await getUiRunSortAss()
-      await getUiRunSortOpe()
-      await getEleName()
-      getUiRunSort()
-    })
+  function doRefreshSteps(pageStepsId: any) {
+    getUiSteps({ id: pageStepsId })
+      .then((res) => {
+        data.result_data = res.data[0].result_data
+      })
+      .catch(console.log)
+  }
+
+  onMounted(async () => {
+    doRefresh()
+    doRefreshSteps(pageData.record.id)
+    getUiRunSortAss()
+    getUiRunSortOpe()
+    getEleName()
   })
 </script>
 <style>
