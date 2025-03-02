@@ -107,6 +107,11 @@ class NewBrowser:
             else:
                 playwright_ = await async_playwright().start()
                 self.browser = playwright_
+                browser = await playwright_.chromium.launch()
+                context = await browser.new_context()
+                page = await context.new_page()
+                await page.goto("https://www.baidu.com/")
+                print(await page.title())
                 return await playwright_.chromium.launch()
         except Error:
             raise UiError(*ERROR_MSG_0009, value=(self.config.web_path,))
