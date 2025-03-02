@@ -148,3 +148,7 @@ class UiCaseResultModel(BaseModel):
     error_message: str | None = None
     video_path: str | None = None
     steps: list[PageStepsResultModel]
+
+
+class GetTaskModel(BaseModel):
+    username: str

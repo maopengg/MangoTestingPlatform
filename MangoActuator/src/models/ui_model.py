@@ -131,7 +131,7 @@ class PageStepsResultModel(BaseModel):
 
     cache_data: dict
     test_object: dict  # url或者软件包
-    equipment: dict  # 设备名称或者浏览器类型
+    equipment: EquipmentModel  # 设备名称或者浏览器类型
 
     status: int
     error_message: str | None = None
@@ -149,6 +149,10 @@ class UiCaseResultModel(BaseModel):
     error_message: str | None = None
     video_path: str | None = None
     steps: list[PageStepsResultModel] = []
+
+
+class GetTaskModel(BaseModel):
+    username: str
 
 
 class PageObject:

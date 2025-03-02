@@ -40,7 +40,8 @@ class ConsumerThread:
             try:
                 test_suite_details = TestSuiteDetails.objects.filter(
                     status=TaskEnum.STAY_BEGIN.value,
-                    retry__lt=self.retry_frequency
+                    retry__lt=self.retry_frequency,
+                    type__in=[TestCaseTypeEnum.API.value, TestCaseTypeEnum.PYTEST.value]
                 ).first()
                 if test_suite_details:
                     test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)

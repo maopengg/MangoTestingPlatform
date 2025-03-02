@@ -31,15 +31,14 @@
           </a-space>
           <a-space direction="vertical" style="width: 50%">
             <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
-            <span v-if="data.elementLocator">元素表达式：{{ data.elementLocator }}</span>
           </a-space>
         </div>
       </a-card>
     </template>
     <template #default>
       <a-card :bordered="false">
-        <div style="display: flex">
-          <div style="width: 50%; margin-right: 10px">
+        <div class="box">
+          <div class="left">
             <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
               <template #extra>
                 <a-space>
@@ -133,20 +132,20 @@
                         {{ record.page_step?.name }}
                       </template>
                       <template v-else-if="item.dataIndex === 'status'" #cell="{ record }">
-                        <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
-                          enumStore.task_status[record.status].title
-                        }}</a-tag>
+                        <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                          >{{ enumStore.task_status[record.status].title }}
+                        </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                         <a-button type="text" size="mini" @click="onPageStep(record)"
-                          >单步执行</a-button
-                        >
+                          >单步执行
+                        </a-button>
                         <a-button type="text" size="mini" @click="oeFreshSteps(record)"
-                          >更新数据</a-button
-                        >
+                          >更新数据
+                        </a-button>
                         <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                          >删除</a-button
-                        >
+                          >删除
+                        </a-button>
                       </template>
                     </a-table-column>
                   </template>
@@ -184,11 +183,11 @@
               </a-tab-pane>
             </a-tabs>
           </div>
-          <div style="width: 50%; margin-left: 10px">
+          <div class="right">
             <a-tabs default-active-key="1">
               <a-tab-pane key="1" title="步骤数据">
                 <a-list :bordered="false">
-                  <template #header> {{ data.selectData?.page_step?.name }} </template>
+                  <template #header> {{ data.selectData?.page_step?.name }}</template>
                   <a-list-item
                     v-for="item of data.selectData?.case_data"
                     :key="item.page_step_details_id"
@@ -218,13 +217,23 @@
                           v-for="key in Object.keys(item.page_step_details_data)"
                           :key="key"
                         >
-                          <div style="display: flex">
-                            <span style="width: 13%">{{ key + '：' }}</span>
+                          <div style="display: flex; align-items: center; margin-bottom: 12px">
+                            <span
+                              style="
+                                width: 120px;
+                                flex-shrink: 0;
+                                font-size: 14px;
+                                color: #333;
+                                font-weight: 500;
+                              "
+                            >
+                              {{ key + '：' }}
+                            </span>
                             <a-textarea
                               v-model="item.page_step_details_data[key]"
                               @blur="onUpdate"
                               :auto-size="{ minRows: 1, maxRows: 5 }"
-                              style="width: 90%"
+                              style="flex: 1; margin-left: 12px"
                             />
                           </div>
                         </template>
@@ -234,79 +243,7 @@
                 </a-list>
               </a-tab-pane>
               <a-tab-pane key="2" title="测试结果">
-                <a-collapse
-                  :default-active-key="data.eleResultKey"
-                  v-for="item of data.selectData.result_data?.element_result_list"
-                  :bordered="false"
-                  :key="item.id"
-                  destroy-on-hide
-                >
-                  <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
-                    <div>
-                      <a-space direction="vertical" style="width: 50%">
-                        <p
-                          >操作类型：{{
-                            item.type === 0
-                              ? getLabelByValue(data.ope, item.ope_key)
-                              : getLabelByValue(data.ass, item.ope_key)
-                          }}</p
-                        >
-                        <p
-                          >表达式类型：{{
-                            item.exp ? enumStore.element_exp[item.exp].title : item.exp
-                          }}</p
-                        >
-                        <p
-                          >测试结果：{{
-                            item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
-                          }}</p
-                        >
-                        <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                        <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
-                        <p v-if="item.expect">预期：{{ item.expect }}</p>
-                        <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
-                      </a-space>
-                      <a-space direction="vertical" style="width: 50%">
-                        <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                        <p>元素个数：{{ item.ele_quantity }}</p>
-                        <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                        <div v-if="item.status === 0">
-                          <a-image
-                            :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
-                            title="失败截图"
-                            width="260"
-                            style="margin-right: 67px; vertical-align: top"
-                            :preview-visible="visible1"
-                            @preview-visible-change="
-                              () => {
-                                visible1 = false
-                              }
-                            "
-                          >
-                            <template #extra>
-                              <div class="actions">
-                                <span
-                                  class="action"
-                                  @click="
-                                    () => {
-                                      visible1 = true
-                                    }
-                                  "
-                                  ><icon-eye
-                                /></span>
-                                <span class="action"><icon-download /></span>
-                                <a-tooltip content="失败截图">
-                                  <span class="action"><icon-info-circle /></span>
-                                </a-tooltip>
-                              </div>
-                            </template>
-                          </a-image>
-                        </div>
-                        <p v-if="item.expect">实际：{{ item.actual }}</p>
-                      </a-space>
-                    </div>
-                  </a-collapse-item>
-                </a-collapse>
+                <ElementTestReport :result-data="data.selectData.result_data" />
               </a-tab-pane>
             </a-tabs>
           </div>
@@ -374,24 +311,25 @@
   import { usePageData } from '@/store/page-data'
   import { columns, formItems } from './config'
   import {
-    putUiCasePutCaseSort,
-    postUiCaseStepsDetailed,
+    deleteUiCaseStepsDetailed,
     getUiCaseStepsDetailed,
     getUiCaseStepsRefreshCacheData,
+    postUiCaseStepsDetailed,
+    putUiCasePutCaseSort,
     putUiCaseStepsDetailed,
-    deleteUiCaseStepsDetailed,
   } from '@/api/uitest/case-steps-detailed'
   import { getUserProductAllModuleName } from '@/api/system/product'
-  import { putUiCase, getUiCaseRun } from '@/api/uitest/case'
-  import {
-    getUiPageStepsDetailedOpe,
-    getUiPageStepsDetailedAss,
-  } from '@/api/uitest/page-steps-detailed'
+  import { getUiCaseRun, putUiCase } from '@/api/uitest/case'
   import { getUiStepsPageStepsName, getUiStepsTest } from '@/api/uitest/page-steps'
   import { getUiPageName } from '@/api/uitest/page'
   import useUserStore from '@/store/modules/user'
-  import { minioURL } from '@/api/axios.config'
   import { useEnum } from '@/store/modules/get-enum'
+  import ElementTestReport from '@/components/ElementTestReport.vue'
+  import {
+    getUiPageStepsDetailedAss,
+    getUiPageStepsDetailedOpe,
+  } from '@/api/uitest/page-steps-detailed'
+
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -404,24 +342,14 @@
     pageName: [],
     pageStepsName: [],
     data: [],
-    isAdd: false,
-    updateId: 0,
     selectData: {},
     actionTitle: '添加用例步骤',
-    elementLocator: null,
-    ope: [],
-    ass: [],
     uiType: '2',
     uiSonType: '11',
+    ass: [],
+    ope: [],
   })
-  const visible1 = ref(false)
 
-  const customStyle = reactive({
-    borderRadius: '6px',
-    marginBottom: '2px',
-    border: 'none',
-    overflow: 'hidden',
-  })
   function switchType(key: any) {
     if (key === '1') {
       data.uiSonType = '11'
@@ -430,9 +358,11 @@
     }
     data.uiType = key
   }
+
   function switchSonType(key: any) {
     data.uiSonType = key
   }
+
   function addData() {
     if (data.uiType == '2') {
       doAppend()
@@ -446,10 +376,12 @@
       pageData.record.posterior_sql.push({ sql: '' })
     }
   }
+
   function removeFrontSql(item: any, index: number) {
     item.splice(index, 1)
     upDataCase()
   }
+
   function upDataCase() {
     putUiCase({
       id: pageData.record.id,
@@ -464,6 +396,7 @@
       })
       .catch(console.log)
   }
+
   function doAppend() {
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -585,6 +518,7 @@
       })
       .catch(console.log)
   }
+
   function onCaseRun() {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -596,9 +530,11 @@
       })
       .catch(console.log)
   }
+
   function select(record: any) {
     data.selectData = record
   }
+
   function onUpdate() {
     putUiCaseStepsDetailed(
       {
@@ -612,6 +548,7 @@
       })
       .catch(console.log)
   }
+
   function onPageStep(record: any) {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -623,8 +560,9 @@
       })
       .catch(console.log)
   }
-  function getLabelByValue(data: any, value: string): string {
-    const list = [...data]
+
+  function getLabelByValue(opeData: any, value: string): string {
+    const list = [...opeData]
     for (const item of list) {
       if (item.children) {
         list.push(...item.children)
@@ -633,17 +571,18 @@
     return list.find((item: any) => item.value === value)?.label
   }
 
-  function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(route.query.pageType)
+  function getUiRunSortAss() {
+    getUiPageStepsDetailedAss(null)
       .then((res) => {
-        data.ope = res.data
+        data.ass = res.data
       })
       .catch(console.log)
   }
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(route.query.pageType)
+
+  function getUiRunSortOpe() {
+    getUiPageStepsDetailedOpe(null)
       .then((res) => {
-        data.ass = res.data
+        data.ope = res.data
       })
       .catch(console.log)
   }
@@ -651,25 +590,34 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getUiRunSortOpe()
-      getUiRunSortAss()
       onProductModuleName()
+      getUiRunSortAss()
+      getUiRunSortOpe()
     })
   })
 </script>
 
 <style>
   .container {
-    display: flex; /* 开启flex布局 */
+    display: flex;
+  }
+
+  .box {
+    width: 100%;
+    margin: 0 auto;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
   }
 
   .left {
-    width: 30%; /* 左边区域占据50%的宽度 */
-    margin-right: 10px; /* 设置左边盒子的右边距 */
+    flex: 5;
+    padding: 5px;
   }
 
   .right {
-    width: 70%; /* 右边区域占据50%的宽度 */
-    margin-left: 10px; /* 设置右边盒子的左边距 */
+    flex: 5;
+    padding: 5px;
+    max-width: 60%;
   }
 </style>

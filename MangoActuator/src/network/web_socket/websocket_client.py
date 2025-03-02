@@ -45,7 +45,7 @@ class WebSocketClient:
             res = self.__output_method(response_str)
             if res.code == 200:
                 await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
-                                     is_notice=ClientTypeEnum.WEB)
+                                      is_notice=ClientTypeEnum.WEB)
                 self.parent.set_tips_info("心跳已连接")
                 return True
             else:
@@ -94,7 +94,7 @@ class WebSocketClient:
     async def async_send(self,
                          msg: str,
                          code: int = 200,
-                         func_name: None = None,
+                         func_name: None | str = None,
                          func_args: Optional[Union[list[T], T]] | None = None,
                          is_notice: ClientTypeEnum | None = None,
                          ):
@@ -107,14 +107,17 @@ class WebSocketClient:
         )
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
-        try:
-            if not settings.IS_DEBUG or self.websocket:
+
+        if self.websocket and self.websocket.open:
+            try:
                 await self.websocket.send(self.__serialize(send_data))
-            else:
-                self.__serialize(send_data)
-        except WebSocketException:
-            await self.client_run()
-            await self.websocket.send(self.__serialize(send_data))
+            except WebSocketException:
+                await self.client_run()
+                if self.websocket and self.websocket.open:
+                    await self.websocket.send(self.__serialize(send_data))
+        else:
+            if settings.IS_DEBUG:
+                log.debug(f"调试模式：序列化数据 ->{self.__serialize(send_data)}")
 
     def sync_send(self,
                   msg: str,

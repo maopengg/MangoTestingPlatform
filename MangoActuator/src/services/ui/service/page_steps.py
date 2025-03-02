@@ -36,7 +36,7 @@ class PageSteps(ElementOperation):
             case_step_details_id=self.page_steps_model.case_step_details_id,
             cache_data={},
             test_object={},
-            equipment={},
+            equipment=self.page_steps_model.equipment_config,
             status=StatusEnum.FAIL.value,
             element_result_list=[]
         )
@@ -72,7 +72,7 @@ class PageSteps(ElementOperation):
         self.progress.emit(element_result)
         self.page_step_result_model.cache_data = self.test_data.get_all()
         self.page_step_result_model.test_object = {'url': self.url, 'package_name': self.package_name}
-        self.page_step_result_model.equipment = {'name': self.driver_object.web.config}
+        self.page_step_result_model.equipment = self.driver_object.web.config
         self.page_step_result_model.element_result_list.append(element_result)
 
     @async_memory

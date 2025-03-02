@@ -9,10 +9,10 @@ import traceback
 
 from django.dispatch import Signal
 
+from mangokit import singleton
 from src.models.socket_model import QueueModel
 from src.settings import DEBUG
 from src.tools.log_collector import log
-from mangokit import singleton
 from .api_consumer import APIConsumer
 from .perf_consumer import PerfConsumer
 from .system_consumer import SystemConsumer
@@ -32,7 +32,7 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
             data = kwargs.get('data')
             if isinstance(data, QueueModel):
                 if DEBUG:
-                    log.system.info(f"开始处理接收的消息：{data.model_dump_json()}")
+                    log.system.warning(f"开始处理接收的消息：{data.model_dump_json()}")
                 future = self.executor.submit(getattr(self, data.func_name), data.func_args)
                 future.add_done_callback(self.handle_task_result)  # 添加任务完成后的回调函数
             else:

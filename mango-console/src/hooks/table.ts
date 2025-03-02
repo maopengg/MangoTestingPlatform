@@ -107,7 +107,7 @@ export const useTableColumn = function (
 
 export const useTableIndexColumn = function () {
   return {
-    title: '序号',
+    title: 'ID',
     key: 'index',
     width: 80,
     dataIndex: 'index',
