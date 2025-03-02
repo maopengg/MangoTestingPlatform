@@ -89,21 +89,21 @@
                 {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
               </template>
               <template v-else-if="item.key === 'test_env'" #cell="{ record }">
-                <a-tag :color="enumStore.status_colors[record.test_env]" size="small">{{
-                  enumStore.environment_type[record.test_env]?.title
-                }}</a-tag>
+                <a-tag :color="enumStore.status_colors[record.test_env]" size="small"
+                  >{{ enumStore.environment_type[record.test_env]?.title }}
+                </a-tag>
               </template>
 
               <template v-else-if="item.key === 'user'" #cell="{ record }">
                 {{ record.user?.name }}
               </template>
               <template v-else-if="item.key === 'tasks'" #cell="{ record }">
-                {{ record.tasks.name }}
+                {{ record.tasks?.name }}
               </template>
               <template v-else-if="item.key === 'status'" #cell="{ record }">
-                <a-tag :color="enumStore.status_colors[record.status]" size="small">{{
-                  enumStore.task_status[record.status].title
-                }}</a-tag>
+                <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                  >{{ enumStore.task_status[record.status].title }}
+                </a-tag>
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
@@ -126,7 +126,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { onMounted, nextTick, ref } from 'vue'
+  import { nextTick, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
   import * as echarts from 'echarts'
@@ -149,6 +149,7 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
+
   function doRefresh() {
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
@@ -160,11 +161,13 @@
       })
       .catch(console.log)
   }
+
   function tableScrollHeight() {
     const headerHeight = 460
     const footerHeight = 45
     return `calc(94vh - ${headerHeight}px - ${footerHeight}px)`
   }
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -181,6 +184,7 @@
       },
     })
   }
+
   function onRetry(record: any) {
     getSystemTestSuiteDetailsAllRetry(record.id)
       .then((res) => {
@@ -188,6 +192,7 @@
       })
       .catch(console.log)
   }
+
   const barChart = ref<HTMLElement>()
   const myChart1 = ref<any>()
 

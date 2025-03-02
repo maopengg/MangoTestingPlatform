@@ -3,9 +3,11 @@
 # @Description: 
 # @Time   : 2023-04-29 11:23
 # @Author : 毛鹏
+import platform
 from enum import Enum
 
-from mango_ui import ComboBoxDataModel
+if platform.system() != "Linux":
+    from mango_ui import ComboBoxDataModel
 
 
 class BaseEnum(Enum):

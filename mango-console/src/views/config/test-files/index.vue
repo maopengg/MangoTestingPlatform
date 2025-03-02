@@ -87,9 +87,7 @@
     })
   }
 
-  const beforeUpload = (file) => {
-    console.log(file)
-
+  const beforeUpload = (file: any) => {
     return new Promise((resolve, reject) => {
       Modal.confirm({
         title: '上传文件',

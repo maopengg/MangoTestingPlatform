@@ -4,7 +4,6 @@
 # @Time   : 2023-03-25 13:25
 # @Author : 毛鹏
 
-from django.forms.models import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -12,10 +11,10 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
 from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
-from src.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from src.auto_test.auto_system.models import TasksDetails
 from src.auto_test.auto_system.views.tasks import TasksSerializers
 from src.auto_test.auto_ui.models import UiCase
+from src.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD

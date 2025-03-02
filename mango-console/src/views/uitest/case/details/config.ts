@@ -2,7 +2,7 @@ import { reactive, ref } from 'vue'
 import { FormItem } from '@/types/components'
 import { Message } from '@arco-design/web-vue'
 
-export const columns = reactive([
+export const columns: any = reactive([
   {
     title: '步骤名称',
     dataIndex: 'page_step_name',
@@ -10,6 +10,7 @@ export const columns = reactive([
   {
     title: '测试结果',
     dataIndex: 'status',
+    width: 110,
   },
   {
     title: '错误提示',
@@ -17,6 +18,7 @@ export const columns = reactive([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+    width: 200,
   },
 
   {

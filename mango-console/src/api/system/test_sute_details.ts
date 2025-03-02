@@ -8,6 +8,7 @@ export function getSystemTestSuiteDetails(test_suite_id: number) {
     },
   })
 }
+
 export function postSystemTestSuiteDetails(data: object) {
   return post({
     url: 'system/test/suite/details',
@@ -16,6 +17,7 @@ export function postSystemTestSuiteDetails(data: object) {
     },
   })
 }
+
 export function putSystemTestSuiteDetails(data: object) {
   return put({
     url: 'system/test/suite/details',
@@ -35,6 +37,7 @@ export function deleteSystemTestSuiteDetails(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getSystemTestSuiteDetailsReport() {
   return get({
     url: 'system/test/suite/details/report',
@@ -43,9 +46,19 @@ export function getSystemTestSuiteDetailsReport() {
     },
   })
 }
+
 export function getSystemTestSuiteDetailsAllRetry(test_suite_id: number) {
   return get({
     url: 'system/test/suite/details/all/retry',
+    data: () => {
+      return { test_suite_id: test_suite_id }
+    },
+  })
+}
+
+export function getSystemTestSuiteDetailsSummary(test_suite_id: number) {
+  return get({
+    url: 'system/test/suite/details/summary',
     data: () => {
       return { test_suite_id: test_suite_id }
     },

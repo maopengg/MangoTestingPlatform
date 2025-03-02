@@ -35,5 +35,5 @@ async def main():
 
 
 asyncio.run(main())
-
+# pywinauto==0.6.8s
 # pyinstaller .\执行器.spec

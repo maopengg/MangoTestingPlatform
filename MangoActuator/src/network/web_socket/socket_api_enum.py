@@ -17,6 +17,7 @@ class UiSocketEnum(Enum):
     PAGE_STEPS = 'u_page_steps'  # 步骤详情
     TEST_CASE = 'u_test_case'  #
     TEST_CASE_BATCH = 'u_test_suite_details'  #
+    GET_TASK = 'u_get_task'  #
 
 
 class ToolsSocketEnum(Enum):

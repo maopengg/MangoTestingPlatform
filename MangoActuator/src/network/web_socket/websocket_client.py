@@ -25,33 +25,33 @@ T = TypeVar('T')
 @singleton
 class WebSocketClient:
 
-    def __init__(cls, parent=None):
-        cls.parent = parent
-        cls.websocket: Optional[WebSocketClientProtocol | None] = None
-        cls.is_recv = True
+    def __init__(self, parent=None):
+        self.parent = parent
+        self.websocket: Optional[WebSocketClientProtocol | None] = None
+        self.is_recv = True
 
-    async def close(cls):
-        await cls.websocket.close()
-        cls.is_recv = False
+    async def close(self):
+        await self.websocket.close()
+        self.is_recv = False
 
-    async def client_hands(cls):
+    async def client_hands(self):
         """
         判断链接是否可以被建立
         @return:
         """
         while True:
-            await cls.async_send(f'{ClientNameEnum.DRIVER.value} 请求连接！')
-            response_str = await cls.websocket.recv()
-            res = cls.__output_method(response_str)
+            await self.async_send(f'{ClientNameEnum.DRIVER.value} 请求连接！')
+            response_str = await self.websocket.recv()
+            res = self.__output_method(response_str)
             if res.code == 200:
-                await cls.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
-                                     is_notice=ClientTypeEnum.WEB)
-                cls.parent.set_tips_info("心跳已连接")
+                await self.async_send(f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
+                                      is_notice=ClientTypeEnum.WEB)
+                self.parent.set_tips_info("心跳已连接")
                 return True
             else:
                 return False
 
-    async def client_run(cls):
+    async def client_run(self):
         """
         进行websocket连接
         @return:
@@ -59,42 +59,42 @@ class WebSocketClient:
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?{settings.USERNAME}"
         log.debug(str(f"websockets server url:{server_url}"))
         retry = 1
-        while cls.is_recv:
+        while self.is_recv:
             try:
-                async with websockets.connect(server_url, max_size=50000000) as cls.websocket:
-                    if await cls.client_hands():
-                        await cls.client_recv()
+                async with websockets.connect(server_url, max_size=50000000) as self.websocket:
+                    if await self.client_hands():
+                        await self.client_recv()
                     await asyncio.sleep(2)
                     retry = 1
             except (ConnectionRefusedError, OSError, WebSocketException, websockets.ConnectionClosed):
-                cls.parent.set_tips_info(
+                self.parent.set_tips_info(
                     f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                 retry += 1
                 await asyncio.sleep(5)
             except Exception as error:
                 traceback.print_exc()
                 log.error(error)
-                cls.parent.set_tips_info(f"socket发生未知错误，请把日志发送给管理员！")
+                self.parent.set_tips_info(f"socket发生未知错误，请把日志发送给管理员！")
                 await asyncio.sleep(5)
                 raise error
 
-    async def client_recv(cls):
+    async def client_recv(self):
         """
         接受消息
         @return:
         """
         from src.consumer import SocketConsumer
-        while cls.is_recv:
-            recv_json = await cls.websocket.recv()
-            data = cls.__output_method(recv_json)
+        while self.is_recv:
+            recv_json = await self.websocket.recv()
+            data = self.__output_method(recv_json)
             if data.data:
                 await SocketConsumer().add_task(data.data)
             await asyncio.sleep(0.1)
 
-    async def async_send(cls,
+    async def async_send(self,
                          msg: str,
                          code: int = 200,
-                         func_name: None = None,
+                         func_name: None | str = None,
                          func_args: Optional[Union[list[T], T]] | None = None,
                          is_notice: ClientTypeEnum | None = None,
                          ):
@@ -107,16 +107,19 @@ class WebSocketClient:
         )
         if func_name:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
-        try:
-            if not settings.IS_DEBUG or cls.websocket:
-                await cls.websocket.send(cls.__serialize(send_data))
-            else:
-                cls.__serialize(send_data)
-        except WebSocketException:
-            await cls.client_run()
-            await cls.websocket.send(cls.__serialize(send_data))
 
-    def sync_send(cls,
+        if self.websocket and self.websocket.open:
+            try:
+                await self.websocket.send(self.__serialize(send_data))
+            except WebSocketException:
+                await self.client_run()
+                if self.websocket and self.websocket.open:
+                    await self.websocket.send(self.__serialize(send_data))
+        else:
+            if settings.IS_DEBUG:
+                log.debug(f"调试模式：序列化数据 ->{self.__serialize(send_data)}")
+
+    def sync_send(self,
                   msg: str,
                   code: int = 200,
                   func_name: None = None,
@@ -124,9 +127,9 @@ class WebSocketClient:
                   is_notice: ClientTypeEnum | None = None,
                   ):
         async def send_message():
-            await cls.async_send(msg, code, func_name, func_args, is_notice)
+            await self.async_send(msg, code, func_name, func_args, is_notice)
 
-        cls.parent.loop.create_task(send_message())
+        self.parent.loop.create_task(send_message())
 
     @staticmethod
     def __output_method(recv_json) -> SocketDataModel:

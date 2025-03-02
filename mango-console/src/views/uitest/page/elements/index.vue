@@ -4,8 +4,12 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
-            <a-upload @before-upload="beforeUpload" :show-file-list="false" />
-            <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
+            <a-upload
+              type="primary"
+              size="small"
+              @before-upload="beforeUpload"
+              :show-file-list="false"
+            />
             <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>

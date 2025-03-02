@@ -27,7 +27,7 @@
       </a-card>
     </template>
     <template #default>
-      <div class="container">
+      <div class="box">
         <div class="left">
           <a-card style="border-radius: 10px; overflow: hidden" :bordered="false">
             <a-table
@@ -58,9 +58,11 @@
                   </template>
                   <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
                     {{
-                      record.ope_key
-                        ? getLabelByValue(record.type, record.ope_key)
-                        : record.key
+                      record.type === 0
+                        ? getLabelByValue(data.ope, record.ope_key)
+                        : record.type === 1
+                        ? getLabelByValue(data.ass, record.ope_key)
+                        : record.type === 2
                         ? record.key
                         : record.key_list
                     }}
@@ -89,81 +91,7 @@
           </a-card>
         </div>
         <div class="right">
-          <a-card title="最近一次步骤执行过程" style="overflow: hidden" :bordered="false">
-            <a-collapse
-              :default-active-key="data.eleResultKey"
-              v-for="item of data.result_data?.element_result_list"
-              :bordered="false"
-              :key="item.id"
-              destroy-on-hide
-            >
-              <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
-                <div>
-                  <a-space direction="vertical" style="width: 50%">
-                    <p
-                      >操作类型：{{
-                        item.type === 0
-                          ? getLabelByValue(data.ope, item.ope_key)
-                          : getLabelByValue(data.ass, item.ope_key)
-                      }}</p
-                    >
-                    <p
-                      >表达式类型：{{
-                        item.exp ? enumStore.element_exp[item.exp].title : item.exp
-                      }}</p
-                    >
-                    <p
-                      >测试结果：{{
-                        item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
-                      }}</p
-                    >
-                    <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                    <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
-                    <p v-if="item.expect">预期：{{ item.expect }}</p>
-                    <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
-                  </a-space>
-                  <a-space direction="vertical" style="width: 50%">
-                    <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                    <p>元素个数：{{ item.ele_quantity }}</p>
-                    <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                    <div v-if="item.status === 0">
-                      <a-image
-                        :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
-                        title="失败截图"
-                        width="260"
-                        style="margin-right: 67px; vertical-align: top"
-                        :preview-visible="visible1"
-                        @preview-visible-change="
-                          () => {
-                            visible1 = false
-                          }
-                        "
-                      >
-                        <template #extra>
-                          <div class="actions">
-                            <span
-                              class="action"
-                              @click="
-                                () => {
-                                  visible1 = true
-                                }
-                              "
-                              ><icon-eye
-                            /></span>
-                            <span class="action"><icon-download /></span>
-                            <a-tooltip content="失败截图">
-                              <span class="action"><icon-info-circle /></span>
-                            </a-tooltip>
-                          </div>
-                        </template>
-                      </a-image>
-                    </div>
-                    <p v-if="item.expect">实际：{{ item.actual }}</p>
-                  </a-space>
-                </div>
-              </a-collapse-item>
-            </a-collapse>
-          </a-card>
+          <ElementTestReport :result-data="data.result_data" />
         </div>
       </div>
     </template>
@@ -294,7 +222,7 @@
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
-  import { minioURL } from '@/api/axios.config'
+  import ElementTestReport from '@/components/ElementTestReport.vue'
 
   const enumStore = useEnum()
 
@@ -308,21 +236,13 @@
     isAdd: false,
     updateId: 0,
     actionTitle: '添加测试对象',
-    ass: [],
-    ope: [],
     dataList: [],
     uiPageName: [],
     type: 0,
     plainOptions: [],
     result_data: {},
-  })
-  const visible1 = ref(false)
-
-  const customStyle = reactive({
-    borderRadius: '6px',
-    marginBottom: '2px',
-    border: 'none',
-    overflow: 'hidden',
+    ass: [],
+    ope: [],
   })
 
   function changeStatus(event: number) {
@@ -360,26 +280,6 @@
       ) {
         formItems.push(...customForm)
       }
-    }
-  }
-
-  function getLabelByValue(type: any, value: string): string {
-    if (type === 0) {
-      const data_list = [...data.ope]
-      for (const item of data_list) {
-        if (item.children) {
-          data_list.push(...item.children)
-        }
-      }
-      return data_list.find((item: any) => item.value === value)?.label
-    } else {
-      const data_list = [...data.ass]
-      for (const item of data_list) {
-        if (item.children) {
-          data_list.push(...item.children)
-        }
-      }
-      return data_list.find((item: any) => item.value === value)?.label
     }
   }
 
@@ -499,22 +399,6 @@
     getUiPageStepsDetailed(route.query.id)
       .then((res) => {
         data.dataList = res.data
-      })
-      .catch(console.log)
-  }
-
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(route.query.pageType)
-      .then((res) => {
-        data.ass = res.data
-      })
-      .catch(console.log)
-  }
-
-  function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(route.query.pageType)
-      .then((res) => {
-        data.ope = res.data
       })
       .catch(console.log)
   }
@@ -647,12 +531,38 @@
       .catch(console.log)
   }
 
-  onMounted(async () => {
+  function getUiRunSortAss() {
+    getUiPageStepsDetailedAss(route.query.pageType)
+      .then((res) => {
+        data.ass = res.data
+      })
+      .catch(console.log)
+  }
+
+  function getUiRunSortOpe() {
+    getUiPageStepsDetailedOpe(route.query.pageType)
+      .then((res) => {
+        data.ope = res.data
+      })
+      .catch(console.log)
+  }
+
+  function getLabelByValue(opeData: any, value: string): string {
+    const list = [...opeData]
+    for (const item of list) {
+      if (item.children) {
+        list.push(...item.children)
+      }
+    }
+    return list.find((item: any) => item.value === value)?.label
+  }
+
+  onMounted(() => {
     doRefresh()
     doRefreshSteps(pageData.record.id)
+    getEleName()
     getUiRunSortAss()
     getUiRunSortOpe()
-    getEleName()
   })
 </script>
 <style>
@@ -660,5 +570,24 @@
     display: grid;
     grid-template-columns: 60% 40%; /* 左侧60%，右侧40% */
     gap: 10px; /* 添加间距 */
+  }
+
+  .box {
+    width: 100%;
+    margin: 0 auto;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+  }
+
+  .left {
+    flex: 6;
+    padding: 5px;
+  }
+
+  .right {
+    flex: 4;
+    padding: 5px;
+    max-width: 60%;
   }
 </style>

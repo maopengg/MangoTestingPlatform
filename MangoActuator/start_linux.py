@@ -6,6 +6,8 @@
 import argparse
 import asyncio
 
+from mangokit import Mango, EncryptionTool
+
 from src.consumer import SocketConsumer
 from src.network import WebSocketClient
 from src.network.http import HTTP
@@ -16,7 +18,7 @@ from src.tools.log_collector import log
 class LinuxLoop:
 
     def __init__(self):
-        pass
+        self.loop = Mango.t()
 
     def set_tips_info(self, value):
         log.debug(value)
@@ -28,13 +30,13 @@ async def main(ip, port, username, password):
     settings.USERNAME = username
     settings.PASSWORD = password
     HTTP.api.public.set_host(settings.IP, settings.PORT)
-    HTTP.not_auth.login(username, password)
+    HTTP.not_auth.login(username, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
 
     loop = LinuxLoop()
     s = WebSocketClient()
     s.parent = loop
-    await s.client_run()
     r = SocketConsumer(loop)
+    await s.client_run()
 
 
 # 创建参数解析器

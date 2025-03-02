@@ -3,19 +3,38 @@
 # @Description: 
 # @Time   : 2024-02-04 10:43
 # @Author : 毛鹏
+import platform
 from typing import Optional
 
-from PySide6.QtCore import QObject, Signal
 from mangokit import MysqlConnect, MysqlConingModel
 from playwright.async_api import Page, BrowserContext
-from uiautomation import WindowControl
 from uiautomator2 import Device
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import ToolsError, ERROR_MSG_0036, ERROR_MSG_0038
 from src.models.ui_model import EnvironmentConfigModel, UiPublicModel, EquipmentModel
+from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
+
+if platform.system() != "Linux":
+    from uiautomation import WindowControl
+    from PySide6.QtCore import QObject, Signal
+else:
+    class QObject:
+        pass
+
+
+    class WindowControl:
+        pass
+
+
+    class Signal:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def emit(self, *args, **kwargs):
+            log.debug(str(f'{args}{kwargs}'))
 
 
 class BaseData(QObject):

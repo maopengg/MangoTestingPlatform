@@ -13,7 +13,7 @@ from rest_framework.viewsets import ViewSet
 from src.auto_test.auto_system.models import TestSuiteDetails
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.test_suite import TestSuiteSerializers
-from src.enums.tools_enum import StatusEnum, TaskEnum
+from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view import *
 from src.tools.view.model_crud import ModelCRUD
@@ -168,3 +168,19 @@ class TestSuiteDetailsViews(ViewSet):
             data['fail'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             data['success'] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             return ResponseData.success(RESPONSE_MSG_0129, data)
+
+    @action(methods=['get'], detail=False)
+    @error_response('system')
+    def get_summary(self, request: Request):
+        test_suite_id = request.query_params.get('test_suite_id')
+        model = self.model.objects.filter(test_suite_id=test_suite_id)
+        return ResponseData.success(RESPONSE_MSG_0065, {
+            'count': model.count(),
+            'fail_count': model.filter(status=TaskEnum.FAIL.value).count(),
+            'success_count': model.filter(status=TaskEnum.SUCCESS.value).count(),
+            'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).count(),
+            'proceed_count': model.filter(status=TaskEnum.PROCEED.value).count(),
+            'api_count': model.filter(type=TestCaseTypeEnum.API.value).count(),
+            'ui_count': model.filter(type=TestCaseTypeEnum.UI.value).count(),
+            'pytest_count': model.filter(type=TestCaseTypeEnum.PYTEST.value).count(),
+        })
