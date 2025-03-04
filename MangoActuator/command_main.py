@@ -39,17 +39,15 @@ async def main(ip, port, username, password):
     await s.client_run()
 
 
-# 创建参数解析器
 parser = argparse.ArgumentParser(description="启动Linux服务脚本")
 
-# 添加参数
 parser.add_argument("--ip", type=str, help="服务器IP地址", required=True)
 parser.add_argument("--port", type=str, help="服务器端口", required=True)
 parser.add_argument("--username", type=str, help="用户名", required=True)
 parser.add_argument("--password", type=str, help="密码", required=True)
 
-# 解析参数
 args = parser.parse_args()
 
-# 调用主函数
 asyncio.run(main(args.ip, args.port, args.username, args.password))
+
+# python command_main.py --ip= --port= --username= --password=

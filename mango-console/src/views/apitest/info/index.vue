@@ -76,14 +76,14 @@
         <template #extra>
           <a-space v-if="data.apiType === '0'">
             <a-button type="primary" size="small" @click="onBatchUpload">录制</a-button>
-            <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>
+            <!--            <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>-->
             <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
             <a-button status="warning" size="small" @click="setCase('设为调试')">设为调试</a-button>
             <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
             <a-button type="primary" size="small" @click="onAdd(0)">新增</a-button>
-            <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
+            <!--            <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>-->
             <a-button status="success" size="small" @click="onConcurrency">批量执行</a-button>
             <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
           </a-space>
