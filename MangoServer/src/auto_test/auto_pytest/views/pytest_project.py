@@ -65,7 +65,8 @@ class PytestProjectViews(ViewSet):
         from src.auto_test.auto_pytest.models import PytestProjectModule
 
         for project in update_file:
-            if not self.model.objects.get(file_name=project.project_name).exists():
+            projects = self.model.objects.filter(file_name=project.project_name)
+            if not projects.exists():
                 pytest_project = self.model.objects.create(
                     name=project.project_name,
                     file_name=project.project_name,
@@ -73,7 +74,7 @@ class PytestProjectViews(ViewSet):
                 )
                 pytest_project_id = pytest_project.id
             else:
-                pytest_project_id = self.model.objects.get(name=project.project_name).id
+                pytest_project_id = self.model.objects.get(file_name=project.project_name).id
             for module_name in project.module_name:
                 if not PytestProjectModule.objects.filter(file_name=module_name).exists():
                     PytestProjectModule.objects.create(
