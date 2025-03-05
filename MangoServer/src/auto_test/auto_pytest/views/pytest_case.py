@@ -76,6 +76,7 @@ class PytestCaseViews(ViewSet):
         """
         for project in UpdateFile(PytestFileTypeEnum.TEST_CASE, GitRepo().local_warehouse_path).find_test_files():
             for file in project.auto_test:
+                print(file.path)
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
                     defaults={

@@ -12,12 +12,14 @@ from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
 from src.tools import project_dir
 from src.tools.decorator.singleton import singleton
+from src.tools.log_collector import log
 
 
 @singleton
 class GitRepo:
     def __init__(self):
         self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
+        log.pytest.info(f'git路径：{self.local_warehouse_path}')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not self.repo_url:
             raise PytestError(*ERROR_MSG_0015)

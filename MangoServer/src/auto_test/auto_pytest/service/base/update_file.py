@@ -32,7 +32,7 @@ class UpdateFile:
         for root, dirs, files in os.walk(directory):
             if '__pycache__' not in dirs and '__pycache__' not in root:
                 for file in files:
-                    path = os.path.normpath(os.path.join(root, file))
+                    path = os.path.abspath(os.path.join(root, file))
                     parent_dir = os.path.basename(os.path.normpath(root))
                     if file not in '.pyc':
                         file_name_with_parent = f"{parent_dir}/{file}"
@@ -85,7 +85,6 @@ class UpdateFile:
                         module_name=module_name
                     ))
                 else:
-                    print(type(auto_test))
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         auto_test=auto_test if auto_test else [],
