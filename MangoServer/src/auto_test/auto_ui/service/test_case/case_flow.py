@@ -42,7 +42,7 @@ class UiCaseFlow:
 
     @classmethod
     def get_case(cls, data: GetTaskModel):
-        model = User.objects.get(name=data.username)
+        model = User.objects.get(username=data.username)
         test_suite_details = TestSuiteDetails.objects.filter(
             status=TaskEnum.STAY_BEGIN.value,
             retry__lt=cls.retry_frequency,
