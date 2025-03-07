@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import uuid
+from pathlib import Path
 
 import pytest
 from pytest_jsonreport.plugin import JSONReport
@@ -55,7 +56,7 @@ class TestCase:
         self.result_data(report_data, obj)
         return report_data
 
-    def result_data(self, result_data, model):
+    def result_data(self, result_data: dict | list, model):
         status = TaskEnum.SUCCESS.value if result_data.get('summary', {}).get('failed',
                                                                               None) is None else TaskEnum.FAIL.value
         model.result_data = result_data
@@ -70,3 +71,45 @@ class TestCase:
                 error_message=None,
                 result_data=result_data
             ))
+
+    def test_case_allure(self, case_id) -> list[dict]:
+        obj = PytestCase.objects.get(id=case_id)
+        obj.status = TaskEnum.PROCEED.value
+        obj.save()
+        allure_results_dir = os.path.join(project_dir.root_path(), f'allure-results-{uuid.uuid4()}')
+        os.makedirs(allure_results_dir, exist_ok=True)
+
+        # 运行 pytest 并生成 Allure JSON 报告
+        subprocess.run(
+            ['pytest', obj.file_path, '-q', '--alluredir', allure_results_dir],
+            capture_output=True,
+            text=True
+        )
+
+        # 读取 Allure JSON 报告
+        report_data = self.read_allure_json_results(allure_results_dir)
+
+        # 删除生成的 Allure 结果目录
+        self.delete_allure_results(allure_results_dir)
+
+        # 处理报告数据
+        self.result_data(report_data, obj)
+        return report_data
+
+    def read_allure_json_results(self, results_dir):
+        """
+        读取 Allure JSON 报告文件并返回数据
+        """
+        report_data = []
+        for json_file in Path(results_dir).glob('*.json'):
+            with open(json_file, 'r') as f:
+                report_data.append(json.load(f))
+        return report_data
+
+    def delete_allure_results(self, results_dir):
+        """
+        删除 Allure 结果目录
+        """
+        for json_file in Path(results_dir).glob('*.json'):
+            os.remove(json_file)
+        os.rmdir(results_dir)
