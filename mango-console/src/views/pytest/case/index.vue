@@ -100,7 +100,7 @@
           <CodeEditor v-model="data.codeText" />
         </div>
         <div v-else>
-          <pre>{{ strJson(data?.codeText) }}</pre>
+          <PytestTestReport :resultData="data?.codeText" />
         </div>
       </a-drawer>
     </template>
@@ -204,6 +204,7 @@
   import { getUserName } from '@/api/user/user'
   import { strJson } from '@/utils/tools'
   import { useProject } from '@/store/modules/get-project'
+  import ApiTestReport from '@/components/ApiTestReport.vue'
 
   const projectInfo = useProject()
 
