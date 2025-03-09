@@ -41,7 +41,7 @@ class TestCase:
         self.delete_allure_results(allure_results_dir)
         return report_data
 
-    def result_data(self, result_data: list, model):
+    def result_data(self, result_data: list[dict], model):
         status = TaskEnum.SUCCESS.value
         for i in result_data:
             if i.get('status') != AllureStatusEnum.SUCCESS.value:
@@ -57,7 +57,7 @@ class TestCase:
                 status=status,
                 error_message=None,
                 result_data=result_data
-            ))
+            ), case_name=model.name)
 
     def read_allure_json_results(self, results_dir):
         """

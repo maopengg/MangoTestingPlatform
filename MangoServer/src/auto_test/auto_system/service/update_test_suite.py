@@ -27,14 +27,18 @@ class UpdateTestSuite:
 
     @classmethod
     @orm_retry('update_test_suite')
-    def update_test_suite_details(cls, data: TestSuiteDetailsResultModel):
+    def update_test_suite_details(cls, data: TestSuiteDetailsResultModel, case_name=None):
         connection.ensure_connection()
         log.system.debug(f'开始更新测试套数据：{data.model_dump_json()}')
         test_suite_detail = TestSuiteDetails.objects.get(id=data.id)
-        test_suite_detail.result_data = [i.model_dump() for i in data.result_data.steps]
-        test_suite_detail.case_name = data.result_data.name
+        if data.type == TestCaseTypeEnum.UI or data.type == TestCaseTypeEnum.API:
+            test_suite_detail.result_data = [i.model_dump() for i in data.result_data.steps]
+            test_suite_detail.case_name = data.result_data.name
+            test_suite_detail.error_message = data.error_message
+        else:
+            test_suite_detail.result_data = data.result_data
+            test_suite_detail.case_name = case_name
         test_suite_detail.status = data.status
-        test_suite_detail.error_message = data.error_message
         test_suite_detail.save()
         test_suite_detail_list = TestSuiteDetails.objects.filter(test_suite=data.test_suite,
                                                                  status__in=[TaskEnum.STAY_BEGIN.value,
