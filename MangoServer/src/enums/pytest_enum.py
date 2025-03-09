@@ -17,6 +17,17 @@ class FileStatusEnum(BaseEnum):
         return {0: "未绑定", 1: "已绑定", 2: "已删除"}
 
 
+class AllureStatusEnum(BaseEnum):
+    """方法枚举"""
+    SUCCESS = 'passed'
+    FAIL = 'failed'
+    BROKEN = 'broken'
+
+    @classmethod
+    def obj(cls):
+        return {0: "未绑定", 1: "已绑定", 2: "已删除"}
+
+
 class PytestFileTypeEnum(BaseEnum):
     ACT = 0
     TEST_CASE = 1
