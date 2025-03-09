@@ -77,7 +77,7 @@ class PytestProjectViews(ViewSet):
                 pytest_project_id = self.model.objects.get(file_name=project.project_name).id
             for module_name in project.module_name:
                 if not PytestProjectModule.objects.filter(pytest_project_id=pytest_project_id,
-                                                          ile_name=module_name).exists():
+                                                          file_name=module_name).exists():
                     PytestProjectModule.objects.create(
                         pytest_project_id=pytest_project_id,
                         name=module_name,
