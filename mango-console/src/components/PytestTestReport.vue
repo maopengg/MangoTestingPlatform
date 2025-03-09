@@ -19,8 +19,8 @@
 </template>
 
 <script setup lang="ts">
-  import { defineProps, reactive } from 'vue'
-  import { strJson } from '@/utils/tools'
+  import { reactive } from 'vue'
+
   const customStyle = reactive({
     borderRadius: '6px',
     marginBottom: '2px',

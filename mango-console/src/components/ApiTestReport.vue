@@ -57,7 +57,6 @@
 </template>
 
 <script setup lang="ts">
-  import { defineProps } from 'vue'
   import { strJson } from '@/utils/tools'
 
   defineProps({
