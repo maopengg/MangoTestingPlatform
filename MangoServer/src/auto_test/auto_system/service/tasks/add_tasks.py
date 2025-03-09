@@ -56,4 +56,4 @@ class AddTasks:
             set_task(case.id, case.name, case.project_product.id)
         else:
             case = PytestCase.objects.get(id=case_id)
-            set_task(case.id, case.name, case.project_product.id)
+            set_task(case.id, case.name, case.project_product.project_product.id)
