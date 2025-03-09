@@ -16,7 +16,7 @@ class TestSuiteDetailsResultModel(BaseModel):
     test_suite: int
     status: int
     error_message: str | None = None
-    result_data: UiCaseResultModel | ApiCaseResultModel
+    result_data: UiCaseResultModel | ApiCaseResultModel | list[dict]
 
 
 class ConsumerCaseModel(BaseModel):
