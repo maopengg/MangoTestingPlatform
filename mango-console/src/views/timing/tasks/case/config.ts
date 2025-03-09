@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+
 const table = useTable()
 
 export const tableColumns = useTableColumn([
@@ -47,7 +48,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     placeholder: '请选择测试模块',
     required: true,
-    type: 'select',
+    type: 'cascader',
     validator: function () {
       if (!this.value) {
         Message.error(this.placeholder || '')

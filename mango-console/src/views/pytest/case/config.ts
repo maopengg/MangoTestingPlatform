@@ -26,7 +26,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     placeholder: '请选择模块名称',
     required: true,
-    type: 'cascader',
+    type: 'select',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')

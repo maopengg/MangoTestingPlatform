@@ -13,7 +13,8 @@ from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
-from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
+from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
+from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
@@ -37,8 +38,8 @@ class PytestCaseSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializersC(read_only=True)
-    module = PytestProjectModuleSerializersC(read_only=True)
+    project_product = PytestProductSerializersC(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
     case_people = UserSerializers(read_only=True)
 
     class Meta:

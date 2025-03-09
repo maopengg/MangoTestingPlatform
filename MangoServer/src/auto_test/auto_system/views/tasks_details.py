@@ -11,6 +11,8 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_api.models import ApiCase
 from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
+from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_pytest.views.pytest_case import PytestCaseSerializers
 from src.auto_test.auto_system.models import TasksDetails
 from src.auto_test.auto_system.views.tasks import TasksSerializers
 from src.auto_test.auto_ui.models import UiCase
@@ -37,6 +39,7 @@ class TasksDetailsSerializersC(serializers.ModelSerializer):
     task = TasksSerializers(read_only=True)
     ui_case = UiCaseSerializers(read_only=True)
     api_case = ApiCaseSerializers(read_only=True)
+    pytest_case = PytestCaseSerializers(read_only=True)
 
     class Meta:
         model = TasksDetails
@@ -64,8 +67,10 @@ class TasksDetailsCRUD(ModelCRUD):
         try:
             if _type == TestCaseTypeEnum.UI.value:
                 tasks_details = TasksDetails.objects.filter(ui_case_id=request.data.get('ui_case'))
-            else:
+            elif _type == TestCaseTypeEnum.API.value:
                 tasks_details = TasksDetails.objects.filter(api_case_id=request.data.get('api_case'))
+            else:
+                tasks_details = TasksDetails.objects.filter(pytest_case_id=request.data.get('pytest_case'))
             if tasks_details.exists():
                 return ResponseData.fail(RESPONSE_MSG_0112)
             else:
@@ -87,8 +92,10 @@ class TasksDetailsViews(ViewSet):
         module_id = request.query_params.get('module_id')
         if _type == TestCaseTypeEnum.UI.value:
             res = UiCase.objects.filter(module=module_id).values_list('id', 'name')
-        else:
+        elif _type == TestCaseTypeEnum.API.value:
             res = ApiCase.objects.filter(module=module_id).values_list('id', 'name')
+        else:
+            res = PytestCase.objects.filter(module=module_id).values_list('id', 'name')
         return ResponseData.success(RESPONSE_MSG_0065, [{'key': _id, 'title': name} for _id, name in res])
 
     @action(methods=['post'], detail=False)

@@ -60,5 +60,4 @@ class RunTasks:
             elif task.type == TestCaseTypeEnum.UI.value:
                 add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.UI)
             else:
-                add_tasks.add_test_suite_details(task.ui_case.id, TestCaseTypeEnum.PYTEST)
-
+                add_tasks.add_test_suite_details(task.pytest_case.id, TestCaseTypeEnum.PYTEST)

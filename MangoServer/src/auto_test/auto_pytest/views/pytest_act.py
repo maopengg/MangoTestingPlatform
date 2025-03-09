@@ -11,7 +11,8 @@ from rest_framework.viewsets import ViewSet
 from src.auto_test.auto_pytest.models import PytestAct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile, PytestFileTypeEnum
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
-from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleSerializersC
+from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
+from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import FileStatusEnum
 from src.tools.decorator.error_response import error_response
@@ -34,8 +35,8 @@ class PytestActSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     file_update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    project_product = ProjectProductSerializersC(read_only=True)
-    module = PytestProjectModuleSerializersC(read_only=True)
+    project_product = PytestProductSerializersC(read_only=True)
+    module = ProductModuleSerializers(read_only=True)
 
     class Meta:
         model = PytestAct

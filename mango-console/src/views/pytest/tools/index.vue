@@ -33,8 +33,14 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              <span v-if="record?.project_product?.project && record?.project_product?.name">
-                {{ record.project_product.project.name + '/' + record.project_product.name }}
+              <span
+                v-if="record?.project_product?.project_product && record?.project_product?.name"
+              >
+                {{
+                  record.project_product.project_product.project.name +
+                  '/' +
+                  record.project_product.name
+                }}
               </span>
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
@@ -101,7 +107,7 @@
               v-model="item.value"
               @change="onPytestProjectName(item.value)"
               :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
+              :options="data.projectPytest"
               allow-search
               allow-clear
             />
@@ -110,7 +116,7 @@
             <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="data.projectNameList"
+              :options="data.moduleList"
               allow-clear
               allow-search
             />
@@ -134,7 +140,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
@@ -151,7 +157,6 @@
     putPytestTools,
   } from '@/api/pytest/tools'
   import CodeEditor from '@/components/CodeEditor.vue'
-  import { getPytestProjectName } from '@/api/pytest/project'
   import { useProject } from '@/store/modules/get-project'
 
   const projectInfo = useProject()
@@ -277,11 +282,28 @@
   }
 
   function onPytestProjectName(projectProductId: any) {
-    getPytestProjectName(projectProductId)
-      .then((res) => {
-        data.projectNameList = res.data
+    if (!projectProductId) {
+      projectInfo.projectPytestName()
+      data.projectPytest = JSON.parse(JSON.stringify(projectInfo.projectPytest))
+      data.projectPytest.forEach((item) => {
+        item.children.forEach((item1) => {
+          delete item1.children
+        })
       })
-      .catch(console.log)
+    } else {
+      projectInfo.projectPytest.forEach((item) => {
+        item.children.forEach((item1) => {
+          if (projectProductId === item1.value) {
+            data.moduleList = item1.children
+          }
+        })
+      })
+    }
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
   }
 
   onMounted(() => {
