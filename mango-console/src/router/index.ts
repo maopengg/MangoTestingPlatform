@@ -88,15 +88,7 @@ export const extraRoutes = [
     meta: {
       title: 'Pytest',
     },
-    children: [
-      {
-        path: 'project/module',
-        component: () => import('@/views/pytest/project/module/index.vue'),
-        meta: {
-          title: '绑定pytest中的模块',
-        },
-      },
-    ],
+    children: [],
   },
   {
     path: '/report',

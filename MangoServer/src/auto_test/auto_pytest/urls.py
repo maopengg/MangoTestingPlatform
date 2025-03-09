@@ -7,22 +7,18 @@ from django.urls import path
 
 from src.auto_test.auto_pytest.views.pytest_act import PytestActViews, PytestActCRUD
 from src.auto_test.auto_pytest.views.pytest_case import PytestCaseCRUD, PytestCaseViews
-from src.auto_test.auto_pytest.views.pytest_module import PytestProjectModuleCRUD, PytestProjectModuleViews
-from src.auto_test.auto_pytest.views.pytest_project import PytestProjectViews, PytestProjectCRUD
+from src.auto_test.auto_pytest.views.pytest_product import PytestProductViews, PytestProductCRUD
 from src.auto_test.auto_pytest.views.pytest_test_file import PytestTestFileCRUD, PytestTestFileViews
 from src.auto_test.auto_pytest.views.pytest_tools import PytestToolsCRUD, PytestToolsViews
 
 urlpatterns = [
     #
-    path("project", PytestProjectCRUD.as_view()),
-    path("project/update", PytestProjectViews.as_view({'get': 'pytest_update'})),
-    path("project/push", PytestProjectViews.as_view({'get': 'pytest_push'})),
-    path("project/read", PytestProjectViews.as_view({'get': 'pytest_read'})),
-    path("project/write", PytestProjectViews.as_view({'post': 'pytest_write'})),
-    path("project/name", PytestProjectViews.as_view({'get': 'pytest_project_name'})),
-    #
-    path("module", PytestProjectModuleCRUD.as_view()),
-    path("module/name", PytestProjectModuleViews.as_view({'get': 'pytest_module_name'})),
+    path("product", PytestProductCRUD.as_view()),
+    path("product/update", PytestProductViews.as_view({'get': 'pytest_update'})),
+    path("product/push", PytestProductViews.as_view({'get': 'pytest_push'})),
+    path("product/read", PytestProductViews.as_view({'get': 'pytest_read'})),
+    path("product/write", PytestProductViews.as_view({'post': 'pytest_write'})),
+    path("product/name", PytestProductViews.as_view({'get': 'pytest_project_name'})),
     #
     path("act", PytestActCRUD.as_view()),
     path("act/update", PytestActViews.as_view({'get': 'pytest_update'})),

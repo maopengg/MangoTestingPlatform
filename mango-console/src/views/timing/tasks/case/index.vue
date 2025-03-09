@@ -34,17 +34,12 @@
                 {{ record.id }}
               </template>
               <template v-else-if="item.key === 'type'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.type]" size="small">{{
-                  enumStore.test_case_type[record.type].title
-                }}</a-tag>
+                <a-tag :color="enumStore.colors[record.type]" size="small"
+                  >{{ enumStore.test_case_type[record.type].title }}
+                </a-tag>
               </template>
               <template v-else-if="item.key === 'case_id'" #cell="{ record }">
-                {{
-                  record.ui_case?.name ||
-                  record.api_case?.name ||
-                  record.api_case_suite?.name ||
-                  record.ui_case_suite?.name
-                }}
+                {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
@@ -70,16 +65,14 @@
           <template v-if="item.type === 'input'">
             <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'module'">
-            <a-select
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+            <a-cascader
               v-model="item.value"
+              @change="tasksTypeCaseName(item.value)"
               :placeholder="item.placeholder"
               :options="data.moduleList"
-              :field-names="fieldNames"
-              value-key="key"
-              allow-clear
               allow-search
-              @change="tasksTypeCaseName(item.value)"
+              allow-clear
               :disabled="data.isModule"
             />
           </template>
@@ -92,7 +85,7 @@
               value-key="key"
               allow-clear
               allow-search
-              @change="changeType"
+              @change="changeType(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_id'">
@@ -128,6 +121,8 @@
   } from '@/api/system/tasks_details'
   import { getUserModuleName } from '@/api/system/module'
   import { useEnum } from '@/store/modules/get-enum'
+  import { getPytestProductName } from '@/api/pytest/product'
+
   const pagination = usePagination(doRefresh)
   const enumStore = useEnum()
 
@@ -202,26 +197,11 @@
     })
   }
 
-  function onUpdate(record: any) {
-    data.actionTitle = '编辑用例'
-    data.isAdd = false
-    data.updateId = record.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      data.formItems.forEach((it: any) => {
-        const propName = record[it.key]
-        if (propName) {
-          it.value = record.case
-        }
-      })
-    })
-  }
-
   function onDataForm() {
     if (data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(data.formItems)
-      let typeList = ['ui_case', 'api_case', 'api_case_suite', 'api_case_suite']
+      let typeList = ['ui_case', 'api_case', 'pytest_case']
       value[typeList[value.type]] = value.case_id
       delete value['case_id']
       delete value['module']
@@ -264,14 +244,21 @@
       })
       .catch(console.log)
   }
-  function changeType() {
+
+  function changeType(value: number) {
     data.isModule = false
     formItems.forEach((item: any) => {
       if (item.key === 'module' || item.key === 'case_id') {
         item.value = ''
       }
     })
+    if (value === 2) {
+      onPytestProductModuleName(route.query.project_product_id)
+    } else {
+      onProductModuleName(route.query.project_product_id)
+    }
   }
+
   function tasksTypeCaseName(value: number) {
     if (value) {
       const type = formItems.find((item) => item.key === 'type')?.value
@@ -283,8 +270,22 @@
         .catch(console.log)
     }
   }
+
   function onProductModuleName(projectProductId: any) {
     getUserModuleName(projectProductId)
+      .then((res) => {
+        data.moduleList = res.data.map((item) => ({
+          value: item.key,
+          label: item.title,
+        }))
+      })
+      .catch((error) => {
+        console.error(error)
+      })
+  }
+
+  function onPytestProductModuleName(projectProductId: any) {
+    getPytestProductName(projectProductId)
       .then((res) => {
         data.moduleList = res.data
       })
@@ -292,10 +293,10 @@
         console.error(error)
       })
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      onProductModuleName(route.query.project_product_id)
     })
   })
 </script>

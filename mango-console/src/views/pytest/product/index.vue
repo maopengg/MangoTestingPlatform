@@ -67,22 +67,10 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">模块</a-button>
-              <a-dropdown trigger="hover">
-                <a-button type="text" size="mini">···</a-button>
-                <template #content>
-                  <a-doption>
-                    <a-button type="text" size="mini" @click="onEditFile(record)"
-                      >初始化文件
-                    </a-button>
-                  </a-doption>
-                  <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </a-doption>
-                </template>
-              </a-dropdown>
+              <a-button type="text" size="mini" @click="onEditFile(record)">初始化文件</a-button>
+              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                >删除
+              </a-button>
             </template>
           </a-table-column>
         </template>
@@ -155,23 +143,21 @@
   import { ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, reactive, ref } from 'vue'
-  import { useRouter } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { usePageData } from '@/store/page-data'
   import { formItems, tableColumns } from './config'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import {
-    deletePytestProject,
-    getPytestProject,
-    getPytestProjectRead,
+    deletePytestProduct,
+    getPytestProduct,
+    getPytestProductRead,
     getPytestPush,
     getPytestUpdate,
-    postPytestProject,
-    postPytestProjectWrite,
-    putPytestProject,
-  } from '@/api/pytest/project'
+    postPytestProduct,
+    postPytestProductWrite,
+    putPytestProduct,
+  } from '@/api/pytest/product'
   import CodeEditor from '@/components/CodeEditor.vue'
 
   const projectInfo = useProject()
@@ -181,7 +167,6 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const formModel = ref({})
-  const router = useRouter()
   const enumStore = useEnum()
 
   const data: any = reactive({
@@ -199,7 +184,7 @@
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deletePytestProject(record.id)
+        deletePytestProduct(record.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -234,7 +219,7 @@
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
       if (data.isAdd) {
-        postPytestProject(value)
+        postPytestProduct(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -242,7 +227,7 @@
           .catch(console.log)
       } else {
         value['id'] = data.updateId
-        putPytestProject(value)
+        putPytestProduct(value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -273,7 +258,7 @@
     const value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getPytestProject(value)
+    getPytestProduct(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -281,20 +266,9 @@
       .catch(console.log)
   }
 
-  function onClick(record: any) {
-    const pageData = usePageData()
-    pageData.setRecord(record)
-    router.push({
-      path: '/pytest/project/module',
-      query: {
-        id: record.id,
-      },
-    })
-  }
-
   function drawerOk() {
     data.drawerVisible = false
-    postPytestProjectWrite(data.updateId, data.codeText)
+    postPytestProductWrite(data.updateId, data.codeText)
       .then((res) => {
         data.codeText = res.data
         Message.success(res.msg)
@@ -305,7 +279,7 @@
   function onEditFile(record: any) {
     data.drawerVisible = true
     data.updateId = record.id
-    getPytestProjectRead(record.id)
+    getPytestProductRead(record.id)
       .then((res) => {
         data.codeText = res.data
       })

@@ -227,6 +227,7 @@ class TasksDetails(models.Model):
     task = models.ForeignKey(to='Tasks', to_field="id", on_delete=models.PROTECT)
     ui_case = models.ForeignKey(to='auto_ui.UiCase', to_field="id", on_delete=models.SET_NULL, null=True)
     api_case = models.ForeignKey(to='auto_api.ApiCase', to_field="id", on_delete=models.SET_NULL, null=True)
+    pytest_case = models.ForeignKey(to='auto_pytest.PytestCase', to_field="id", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = 'tasks_details'

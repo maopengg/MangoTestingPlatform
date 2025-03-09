@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
-import { getUserProjectAll, getUserProjectProductName } from '@/api/system/project'
+import {
+  getProjectPytestName,
+  getUserProjectAll,
+  getUserProjectProductName,
+} from '@/api/system/project'
 import { getUserProductName } from '@/api/system/product'
+
 export const useProject = defineStore('get-project', {
   state: () => {
     return {
@@ -10,6 +15,7 @@ export const useProject = defineStore('get-project', {
       projectList: [],
       projectProduct: [],
       projectProductList: [],
+      projectPytest: [],
     }
   },
   getters: {},
@@ -34,6 +40,13 @@ export const useProject = defineStore('get-project', {
       getUserProductName(projectId)
         .then((res) => {
           this.projectProductList = res.data
+        })
+        .catch(console.log)
+    },
+    projectPytestName() {
+      getProjectPytestName()
+        .then((res) => {
+          this.projectPytest = res.data
         })
         .catch(console.log)
     },

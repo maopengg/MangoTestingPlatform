@@ -8,9 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_pytest.models import PytestProject, PytestProjectModule
+from src.auto_test.auto_pytest.models import PytestProduct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
+from src.auto_test.auto_system.models import ProductModule
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import PytestFileTypeEnum
 from src.tools.decorator.error_response import error_response
@@ -19,22 +20,22 @@ from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
 
 
-class PytestProjectSerializers(serializers.ModelSerializer):
+class PytestProductSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
-        model = PytestProject
+        model = PytestProduct
         fields = '__all__'
 
 
-class PytestProjectSerializersC(serializers.ModelSerializer):
+class PytestProductSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     project_product = ProjectProductSerializersC(read_only=True)
 
     class Meta:
-        model = PytestProject
+        model = PytestProduct
         fields = '__all__'
 
     @staticmethod
@@ -45,16 +46,16 @@ class PytestProjectSerializersC(serializers.ModelSerializer):
         return queryset
 
 
-class PytestProjectCRUD(ModelCRUD):
-    model = PytestProject
-    queryset = PytestProject.objects.all()
-    serializer_class = PytestProjectSerializersC
-    serializer = PytestProjectSerializers
+class PytestProductCRUD(ModelCRUD):
+    model = PytestProduct
+    queryset = PytestProduct.objects.all()
+    serializer_class = PytestProductSerializersC
+    serializer = PytestProductSerializers
 
 
-class PytestProjectViews(ViewSet):
-    model = PytestProject
-    serializer_class = PytestProjectSerializers
+class PytestProductViews(ViewSet):
+    model = PytestProduct
+    serializer_class = PytestProductSerializers
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
@@ -62,27 +63,14 @@ class PytestProjectViews(ViewSet):
         repo = GitRepo()
         repo.pull_repo()
         update_file = UpdateFile(PytestFileTypeEnum.TEST_CASE, repo.local_warehouse_path).find_test_files(True)
-        from src.auto_test.auto_pytest.models import PytestProjectModule
-
         for project in update_file:
             projects = self.model.objects.filter(file_name=project.project_name)
             if not projects.exists():
-                pytest_project = self.model.objects.create(
+                self.model.objects.create(
                     name=project.project_name,
                     file_name=project.project_name,
                     init_file=project.init_file_path,
                 )
-                pytest_project_id = pytest_project.id
-            else:
-                pytest_project_id = self.model.objects.get(file_name=project.project_name).id
-            for module_name in project.module_name:
-                if not PytestProjectModule.objects.filter(pytest_project_id=pytest_project_id,
-                                                          file_name=module_name).exists():
-                    PytestProjectModule.objects.create(
-                        pytest_project_id=pytest_project_id,
-                        name=module_name,
-                        file_name=module_name,
-                    )
         return ResponseData.success(RESPONSE_MSG_0078)
 
     @action(methods=['get'], detail=False)
@@ -123,12 +111,13 @@ class PytestProjectViews(ViewSet):
         res = self.model.objects \
             .filter(project_product_id=request.query_params.get('project_product_id')) \
             .values_list('id', 'name')
-        data = []
+        data_list = []
         for _id, name in res:
-            module = PytestProjectModule.objects \
-                .filter(pytest_project_id=_id) \
-                .values_list('id', 'name')
-            data.append(
-                {'value': _id, 'label': name, 'children': [{'value': __id, 'label': _name} for __id, _name in module]})
-
-        return ResponseData.success(RESPONSE_MSG_0074, data)
+            v = ProductModule.objects.values_list('id', 'name').filter(
+                project_product=request.query_params.get('project_product_id'))
+            data_list.append({
+                'value': _id,
+                'label': name,
+                'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]
+            })
+        return ResponseData.success(RESPONSE_MSG_0074, data_list)

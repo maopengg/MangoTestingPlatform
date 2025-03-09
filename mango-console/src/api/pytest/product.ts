@@ -1,17 +1,17 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function postPytestProject(data: any) {
+export function postPytestProduct(data: any) {
   return post({
-    url: 'pytest/project',
+    url: 'pytest/product',
     data: () => {
       return data
     },
   })
 }
 
-export function deletePytestProject(id: number) {
+export function deletePytestProduct(id: number) {
   return deleted({
-    url: 'pytest/project',
+    url: 'pytest/product',
     data: () => {
       return {
         id: id,
@@ -20,18 +20,18 @@ export function deletePytestProject(id: number) {
   })
 }
 
-export function getPytestProject(data: any) {
+export function getPytestProduct(data: any) {
   return get({
-    url: 'pytest/project',
+    url: 'pytest/product',
     data: () => {
       return data
     },
   })
 }
 
-export function putPytestProject(data: object) {
+export function putPytestProduct(data: object) {
   return put({
-    url: 'pytest/project',
+    url: 'pytest/product',
     data: () => {
       return data
     },
@@ -40,7 +40,7 @@ export function putPytestProject(data: object) {
 
 export function getPytestUpdate() {
   return get({
-    url: 'pytest/project/update',
+    url: 'pytest/product/update',
     data: () => {
       return {}
     },
@@ -49,34 +49,34 @@ export function getPytestUpdate() {
 
 export function getPytestPush() {
   return get({
-    url: 'pytest/project/push',
+    url: 'pytest/product/push',
     data: () => {
       return {}
     },
   })
 }
 
-export function getPytestProjectRead(id: any) {
+export function getPytestProductRead(id: any) {
   return get({
-    url: 'pytest/project/read',
+    url: 'pytest/product/read',
     data: () => {
       return { id: id }
     },
   })
 }
 
-export function postPytestProjectWrite(id: any, file_content: any) {
+export function postPytestProductWrite(id: any, file_content: any) {
   return post({
-    url: 'pytest/project/write',
+    url: 'pytest/product/write',
     data: () => {
       return { id: id, file_content: file_content }
     },
   })
 }
 
-export function getPytestProjectName(projectProductId: any) {
+export function getPytestProductName(projectProductId: any) {
   return get({
-    url: 'pytest/project/name',
+    url: 'pytest/product/name',
     data: () => {
       return { project_product_id: projectProductId }
     },

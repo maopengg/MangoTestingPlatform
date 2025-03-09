@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.auto_test.auto_pytest.models import PytestProduct
 from src.auto_test.auto_system.models import TestObject, Project, ProjectProduct, ProductModule
 from src.enums.tools_enum import StatusEnum, EnvironmentEnum
 from src.tools.decorator.error_response import error_response
@@ -80,6 +81,34 @@ class ProjectViews(ViewSet):
                     project['children'].append({
                         'value': product_id,
                         'label': product_name})
+            options.append(project)
+        return ResponseData.success(RESPONSE_MSG_0025, options)
+
+    @action(methods=['GET'], detail=False)
+    @error_response('user')
+    def project_pytest_name(self, request: Request):
+        """
+        项目和产品的选项
+        @param request:
+        @return:
+        """
+        book = Project.objects.values_list('id', 'name').filter(status=StatusEnum.SUCCESS.value)
+        options = []
+        for _id, name in book:
+            project = {
+                'value': _id,
+                'label': name,
+                'children': []
+            }
+            product_list = ProjectProduct.objects.filter(project=_id)
+            for i in product_list:
+                pytest_product_list = PytestProduct.objects.values_list('id', 'name').filter(project_product_id=i.id)
+                for product_id, product_name in pytest_product_list:
+                    v = ProductModule.objects.values_list('id', 'name').filter(project_product=i.id)
+                    project['children'].append({
+                        'value': product_id,
+                        'label': product_name,
+                        'children': [{'value': module_id, 'label': module_name} for module_id, module_name in v]})
             options.append(project)
         return ResponseData.success(RESPONSE_MSG_0025, options)
 

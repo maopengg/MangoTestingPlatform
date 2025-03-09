@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function getUserDepartmentList(data: object) {
   return get({
     url: '/system/project',
@@ -36,6 +37,7 @@ export function deleteUserDepartmentList(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getUserProjectAll() {
   return get({
     url: '/system/project/all',
@@ -44,6 +46,7 @@ export function getUserProjectAll() {
     },
   })
 }
+
 export function getUserProjectProductName() {
   return get({
     url: '/system/project/product/name',
@@ -52,9 +55,19 @@ export function getUserProjectProductName() {
     },
   })
 }
+
 export function getUserTestObjName() {
   return get({
     url: '/system/project/environment/name',
+    data: () => {
+      return {}
+    },
+  })
+}
+
+export function getProjectPytestName() {
+  return get({
+    url: '/system/project/pytest/name',
     data: () => {
       return {}
     },

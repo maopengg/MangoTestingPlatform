@@ -33,8 +33,14 @@
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'project_product'" #cell="{ record }">
-              <span v-if="record?.project_product?.project && record?.project_product?.name">
-                {{ record.project_product.project.name + '/' + record.project_product.name }}
+              <span
+                v-if="record?.project_product?.project_product && record?.project_product?.name"
+              >
+                {{
+                  record.project_product.project_product.project.name +
+                  '/' +
+                  record.project_product.name
+                }}
               </span>
             </template>
             <template v-else-if="item.key === 'module'" #cell="{ record }">
@@ -80,7 +86,7 @@
             <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
-              :options="projectInfo.projectProduct"
+              :options="data.projectPytest"
               allow-search
               allow-clear
             />
@@ -104,7 +110,7 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { ModalDialogType } from '@/types/components'
+  import { FormItem, ModalDialogType } from '@/types/components'
   import { Message, Modal } from '@arco-design/web-vue'
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
@@ -136,6 +142,7 @@
     actionTitle: '添加',
     drawerVisible: false,
     codeText: '',
+    projectPytest: [],
   })
 
   function onDelete(data: any) {
@@ -217,9 +224,35 @@
       .catch(console.log)
   }
 
+  function onPytestProjectName(projectProductId: any) {
+    if (!projectProductId) {
+      projectInfo.projectPytestName()
+      data.projectPytest = JSON.parse(JSON.stringify(projectInfo.projectPytest))
+      data.projectPytest.forEach((item) => {
+        item.children.forEach((item1) => {
+          delete item1.children
+        })
+      })
+    } else {
+      projectInfo.projectPytest.forEach((item) => {
+        item.children.forEach((item1) => {
+          if (projectProductId === item1.value) {
+            data.moduleList = item1.children
+          }
+        })
+      })
+    }
+    formItems.forEach((item: FormItem) => {
+      if (item.key === 'module') {
+        item.value = ''
+      }
+    })
+  }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      onPytestProjectName(null)
     })
   })
 </script>

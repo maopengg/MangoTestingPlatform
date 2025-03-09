@@ -93,7 +93,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/pytest",
-                    "menuUrl": "/pytest/project/index",
+                    "menuUrl": "/pytest/product/index",
                     "menuName": "项目绑定",
                 },
                 {
