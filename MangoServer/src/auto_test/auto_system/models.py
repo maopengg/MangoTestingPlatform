@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from src.auto_test.auto_user.models import User
 from src.exceptions import ToolsError
@@ -263,15 +263,15 @@ class TestSuite(models.Model):
         ordering = ['-create_time']
 
     def delete(self, *args, **kwargs):
-        if TestSuiteDetails.objects.filter(test_suite=self).exists():
+        with transaction.atomic():
             TestSuiteDetails.objects.filter(test_suite=self).delete()
-        super().delete(*args, **kwargs)
+            super().delete(*args, **kwargs)
 
 
 class TestSuiteDetails(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    test_suite = models.ForeignKey(to=TestSuite, to_field="id", on_delete=models.PROTECT)
+    test_suite = models.ForeignKey(to=TestSuite, to_field="id", on_delete=models.CASCADE)
     # type=0是UI,=1是接口,=2是pytest
     type = models.SmallIntegerField(verbose_name="类型")
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
