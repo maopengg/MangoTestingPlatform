@@ -53,7 +53,7 @@ class PytestCaseFlow:
             trace = traceback.format_exc()
             if IS_SEND_MAIL:
                 Mango.s(cls.execute_task, error, trace, case_model=case_model)
-            log.system.error(f'API线程池发生异常：{error}')
+            log.system.error(f'Pytest线程池发生异常：{error}，错误内容：{trace}')
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):
