@@ -1,17 +1,40 @@
 <template>
   <a-tabs default-active-key="1">
     <a-tab-pane key="1" title="执行过程">
-      <a-collapse v-for="item of resultData" :bordered="false" :key="item.uuid" destroy-on-hide>
-        <a-collapse-item :header="item.name" :style="customStyle" :key="item.uuid">
-          <a-descriptions :column="{ xs: 1, md: 3, lg: 4 }">
-            <a-descriptions-item
-              v-for="attachments of item.attachments"
-              :key="attachments.name"
-              :label="attachments.name"
-            >
-              <a-tag>{{ attachments.source }}</a-tag>
-            </a-descriptions-item>
-          </a-descriptions>
+      <a-collapse
+        v-for="item of resultData"
+        :bordered="false"
+        :key="item.uuid"
+        accordion
+        destroy-on-hide
+      >
+        <a-collapse-item
+          :header="item.name + '-' + item.status"
+          :style="customStyle"
+          :key="item.uuid"
+        >
+          <a-collapse
+            :default-active-key="['1']"
+            v-for="(attachments, index) of item.attachments"
+            :key="index"
+            :bordered="false"
+            accordion
+            destroy-on-hide
+          >
+            <a-collapse-item :header="attachments.name" :key="index">
+              <div>{{ attachments.source }}</div>
+            </a-collapse-item>
+          </a-collapse>
+
+          <!--          <a-descriptions>-->
+          <!--            <a-descriptions-item-->
+          <!--              v-for="(attachments, index) of item.attachments"-->
+          <!--              :key="index"-->
+          <!--              :label="attachments.name"-->
+          <!--            >-->
+          <!--              <a-tag>{{ attachments.source }}</a-tag>-->
+          <!--            </a-descriptions-item>-->
+          <!--          </a-descriptions>-->
         </a-collapse-item>
       </a-collapse>
     </a-tab-pane>

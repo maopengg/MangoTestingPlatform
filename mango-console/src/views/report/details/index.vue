@@ -65,17 +65,19 @@
           </div>
           <div class="right">
             <div v-if="data.caseType === 0">
-              <a-card :title="data.resultData.name" :bordered="false">
-                <ElementTestReport :resultData="data.resultData" />
+              <a-card :title="data?.resultData?.name" :bordered="false">
+                <ElementTestReport :resultData="data?.resultData" />
               </a-card>
             </div>
             <div v-else-if="data.caseType === 1">
-              <a-card :title="data.resultData.name" :bordered="false">
-                <ApiTestReport :resultData="data.resultData" />
+              <a-card :title="data?.resultData?.name" :bordered="false">
+                <ApiTestReport :resultData="data?.resultData" />
               </a-card>
             </div>
             <div v-else-if="data.caseType === 2">
-              <span>pytest</span>
+              <a-card :title="data?.resultData?.name" :bordered="false">
+                <PytestTestReport :resultData="data?.resultData">pytest</PytestTestReport>
+              </a-card>
             </div>
           </div>
         </div>
@@ -94,6 +96,7 @@
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import ApiTestReport from '@/components/ApiTestReport.vue'
   import { useEnum } from '@/store/modules/get-enum'
+  import PytestTestReport from '@/components/PytestTestReport.vue'
 
   const enumStore = useEnum()
 
