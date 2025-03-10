@@ -6,7 +6,6 @@
         v-for="(attachments, index) of resultData.attachments"
         :key="index"
         :bordered="false"
-        accordion
         destroy-on-hide
       >
         <a-collapse-item :header="attachments.name" :key="index">
