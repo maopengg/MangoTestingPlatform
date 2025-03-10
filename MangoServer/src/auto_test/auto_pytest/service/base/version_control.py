@@ -39,7 +39,7 @@ class GitRepo:
 
     def push_repo(self):
         status = self.repo.git.status()
-        print(f"提交前的存储库状态：{status}")
+        log.pytest.info(f"提交前的存储库状态：{status}")
         if "nothing to commit" not in status:
             self.repo.git.add(self.local_warehouse_path)
             self.repo.git.commit("-m", "自动提交")
@@ -47,4 +47,4 @@ class GitRepo:
             self.repo.git.push("--set-upstream", "origin", "master")
         origin = self.repo.remotes.origin
         push_result = origin.push()
-        print(f"推送结果:{push_result}")
+        log.pytest.info(f"推送结果:{push_result}")
