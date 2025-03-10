@@ -10,6 +10,8 @@ import subprocess
 import uuid
 from pathlib import Path
 
+import pytest
+
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.pytest_enum import AllureStatusEnum
@@ -31,11 +33,12 @@ class TestCase:
         obj.save()
         allure_results_dir = os.path.join(project_dir.logs(), f'allure-results-{uuid.uuid4()}')
         os.makedirs(allure_results_dir, exist_ok=True)
-        subprocess.run(
-            ['pytest', obj.file_path, '-q', '--alluredir', allure_results_dir],
-            capture_output=True,
-            text=True
-        )
+        pytest_args = [
+            obj.file_path,
+            '-q',
+            '--alluredir', allure_results_dir
+        ]
+        pytest.main(pytest_args)
         report_data = self.read_allure_json_results(allure_results_dir)
         self.result_data(report_data, obj)
         self.delete_allure_results(allure_results_dir)
