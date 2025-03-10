@@ -6,7 +6,6 @@
 import json
 import os
 import shutil
-import subprocess
 import uuid
 from pathlib import Path
 
@@ -48,7 +47,11 @@ class TestCase:
         status = TaskEnum.SUCCESS.value
         for i in result_data:
             if i.get('status') != AllureStatusEnum.SUCCESS.value:
+                i['status'] = TaskEnum.FAIL.value
                 status = TaskEnum.FAIL.value
+            else:
+                i['status'] = TaskEnum.SUCCESS.value
+
         model.result_data = result_data
         model.status = status
         model.save()

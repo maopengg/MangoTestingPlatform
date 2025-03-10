@@ -106,7 +106,21 @@
           <CodeEditor v-model="data.codeText" />
         </div>
         <div v-else>
-          <PytestTestReport :resultData="data?.codeText" />
+          <a-collapse
+            v-for="item of data?.codeText"
+            :bordered="false"
+            :key="item.uuid"
+            accordion
+            destroy-on-hide
+          >
+            <a-collapse-item
+              :header="item.name + '-' + item.status"
+              :style="customStyle"
+              :key="item.uuid"
+            >
+              <PytestTestReport :resultData="item" />
+            </a-collapse-item>
+          </a-collapse>
         </div>
       </a-drawer>
     </template>
@@ -231,6 +245,12 @@
     isResult: false,
   })
 
+  const customStyle = reactive({
+    borderRadius: '6px',
+    marginBottom: '2px',
+    border: 'none',
+    overflow: 'hidden',
+  })
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
