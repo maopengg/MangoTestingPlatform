@@ -10,6 +10,7 @@
               @before-upload="beforeUpload"
               :show-file-list="false"
             />
+            <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
             <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
@@ -507,7 +508,7 @@
     let aLink = document.createElement('a')
     aLink.href = file_path
     aLink.download = file_name
-    Message.loading('文件下载中，请到下载中心查看~')
+    Message.loading('文件下载中~')
     document.body.appendChild(aLink)
     aLink.click()
     document.body.removeChild(aLink)

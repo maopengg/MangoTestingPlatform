@@ -48,24 +48,30 @@ class PlaywrightBrowser(BaseData):
         """设置弹窗不予处理"""
         self.page.on("dialog", lambda dialog: dialog.accept())
 
+    async def w_get_cookie(self):
+        """获取storage_state保存到download目录"""
+        with open(f'{project_dir.download()}/storage_state.json', 'w') as file:
+            file.write(json.dumps(await self.context.storage_state()))
+
     async def w_set_cookie(self, storage_state: str):
         """设置storage_state（cookie）"""
         storage_state = json.loads(storage_state)
         await self.context.add_cookies(storage_state['cookies'])
-        # 设置 local storage 和 session storage
         for storage in storage_state['origins']:
             local_storage = storage.get('localStorage', [])
             session_storage = storage.get('sessionStorage', [])
-            # 设置 local storage
             for item in local_storage:
                 await self.context.add_init_script(f"window.localStorage.setItem('{item['name']}', '{item['value']}');")
-            # 设置 session storage
             for item in session_storage:
                 await self.context.add_init_script(
                     f"window.sessionStorage.setItem('{item['name']}', '{item['value']}');")
         await self.page.reload()
 
-    async def w_get_cookie(self):
-        """获取storage_state保存到logs目录"""
-        with open(f'{project_dir.download()}/storage_state.json', 'w') as file:
-            file.write(json.dumps(await self.context.storage_state()))
+    async def w_clear_cookies(self):
+        """清除所有cookies"""
+        await self.context.clear_cookies()
+
+    async def w_clear_storage(self):
+        """清除本地存储和会话存储"""
+        await self.page.evaluate("() => localStorage.clear()")
+        await self.page.evaluate("() => sessionStorage.clear()")

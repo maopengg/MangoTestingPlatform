@@ -9,6 +9,7 @@ from playwright.async_api import Locator, Error
 
 from src.exceptions import *
 from src.services.ui.bases.base_data import BaseData
+from src.tools import project_dir
 
 
 class PlaywrightElement(BaseData):
@@ -63,12 +64,15 @@ class PlaywrightElement(BaseData):
         file_chooser = await fc_info.value
         await file_chooser.set_files(file_path)
 
-    async def w_download(self, locating: Locator, save_path: str):
+    async def w_download(self, locating: Locator, file_key: str):
         """下载文件"""
         async with self.page.expect_download() as download_info:
             await locating.click()
         download = await download_info.value
-        await download.save_as(os.path.join(save_path, download.suggested_filename))
+        file_name = download.suggested_filename
+        save_path = os.path.join(project_dir.download(), file_name)
+        await download.save_as(save_path)
+        self.test_data.set_cache(file_key, file_name)
 
     @classmethod
     async def w_drag_to(cls, locating1: Locator, locating2: Locator):

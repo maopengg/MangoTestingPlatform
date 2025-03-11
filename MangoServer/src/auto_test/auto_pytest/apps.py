@@ -5,6 +5,7 @@ import time
 from django.apps import AppConfig
 
 from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
+from src.enums.system_enum import CacheDataKeyEnum
 
 
 class AutoPytestConfig(AppConfig):
@@ -25,6 +26,16 @@ class AutoPytestConfig(AppConfig):
         self.pytest_task = Thread(target=self.case_flow.process_tasks)
         self.pytest_task.daemon = True
         self.pytest_task.start()
+
+    def pull_code(self):
+        time.sleep(5)
+        from src.auto_test.auto_pytest.service.base.version_control import GitRepo
+        from src.auto_test.auto_system.models import CacheData
+
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
+        if repo_url:
+            repo = GitRepo()
+            repo.pull_repo()
 
     def shutdown(self):
         self.case_flow.stop()
