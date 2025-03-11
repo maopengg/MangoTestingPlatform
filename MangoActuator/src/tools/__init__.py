@@ -32,7 +32,7 @@ class ProjectDir:
 
     def resource_path(self, relative_path):
         if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS
+            base_path = sys._MEIPASS  # type: ignore
         else:
             base_path = self.root_path()
         return os.path.join(base_path, relative_path)

@@ -2,7 +2,6 @@ import json
 import platform
 from src.tools import project_dir
 
-
 # **************************************** 下面不用管 **************************************** #
 IP = None
 PORT = None
@@ -10,6 +9,7 @@ USERNAME = None
 PASSWORD = None
 if platform.system() != "Linux":
     from mango_ui import AppConfig, MenusModel
+
     with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
         STYLE = AppConfig(**json.loads(f.read()))
     with open(project_dir.resource_path('src/settings/menus.json'), "r", encoding='utf-8') as f:
@@ -20,7 +20,7 @@ LOOP_MIX = 10  # 最大检查内存次数
 # **************************************** 上面不用管 **************************************** #
 
 # ****************************************** DEBUG ****************************************** #
-IS_DEBUG = True
+IS_DEBUG = False
 # ************************************** 是否弹出首页弹窗 ************************************** #
 IS_WINDOW = True
 # ************************************* 找不到元素循环次数 ************************************* #
