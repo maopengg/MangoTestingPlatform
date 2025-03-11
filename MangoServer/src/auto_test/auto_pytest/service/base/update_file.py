@@ -27,7 +27,7 @@ class UpdateFile:
         else:
             return datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
 
-    def list_files(self, directory, act=False, test_case=False, tools=False, is_upload=False) -> list[FileModel]:
+    def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False) -> list[FileModel]:
         file_list = []
         for root, dirs, files in os.walk(directory):
             if '__pycache__' not in dirs and '__pycache__' not in root:
@@ -39,7 +39,7 @@ class UpdateFile:
                         time = self.get_git_update_time(path)
                         if is_upload or tools:
                             file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
-                        if act and file != "__init__.py":
+                        if components and file != "__init__.py":
                             file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
                         if test_case and (file.startswith('test') or file.endswith('test')):
                             file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
@@ -47,10 +47,10 @@ class UpdateFile:
         return file_list
 
     def generate_json(self, directory) -> list[FileModel]:
-        if self.file_type == PytestFileTypeEnum.ACT:
-            subdir_path = os.path.join(directory, 'act')
+        if self.file_type == PytestFileTypeEnum.COMPONENTS:
+            subdir_path = os.path.join(directory, 'components')
             if os.path.isdir(subdir_path) and os.path.exists(subdir_path):
-                return self.list_files(subdir_path, act=True)
+                return self.list_files(subdir_path, components=True)
         elif self.file_type == PytestFileTypeEnum.TEST_CASE:
             subdir_path = os.path.join(directory, 'test_case')
             if os.path.isdir(subdir_path) and os.path.exists(subdir_path):

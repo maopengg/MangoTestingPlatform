@@ -13,7 +13,6 @@ from src.auto_test.auto_pytest.service.base.update_file import UpdateFile, Pytes
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
-from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -65,7 +64,7 @@ class PytestActViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        for project in UpdateFile(PytestFileTypeEnum.ACT, GitRepo().local_warehouse_path).find_test_files():
+        for project in UpdateFile(PytestFileTypeEnum.COMPONENTS, GitRepo().local_warehouse_path).find_test_files():
             for file in project.auto_test:
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,

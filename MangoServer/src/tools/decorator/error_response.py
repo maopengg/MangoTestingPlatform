@@ -11,6 +11,7 @@ from src.exceptions import MangoServerError
 from src.exceptions.error_msg import ERROR_MSG_0000
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
+from src.tools.view import RESPONSE_MSG_0107
 from src.tools.view.response_data import ResponseData
 from mangokit import Mango
 from mangokit import MangoKitError
@@ -38,6 +39,8 @@ def error_response(app: str):
                 return ResponseData.fail((error.code, error.msg))
             except MangoKitError as error:
                 return ResponseData.fail((error.code, error.msg))
+            except FileNotFoundError:
+                return ResponseData.fail(RESPONSE_MSG_0107)
             except Exception as error:
                 try:
                     username = request.user.get('username')

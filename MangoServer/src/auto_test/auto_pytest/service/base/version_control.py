@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 import os
 
-from git import Repo
+from git import Repo, GitCommandError
 
-from src.exceptions import ERROR_MSG_0015, PytestError
+from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
 from src.tools import project_dir
@@ -39,12 +39,16 @@ class GitRepo:
 
     def push_repo(self):
         status = self.repo.git.status()
-        print(f"提交前的存储库状态：{status}")
+        log.pytest.info(f"提交前的存储库状态：{status}")
         if "nothing to commit" not in status:
             self.repo.git.add(self.local_warehouse_path)
             self.repo.git.commit("-m", "自动提交")
-        if not self.repo.active_branch.tracking_branch():
-            self.repo.git.push("--set-upstream", "origin", "master")
+        try:
+            self.repo.git.pull("origin", "master", strategy_option="theirs")
+        except GitCommandError as e:
+            log.pytest.error(f"拉取远程更改时发生冲突，自动解决失败: {e}")
+            raise PytestError(*ERROR_MSG_0016)
+
         origin = self.repo.remotes.origin
-        push_result = origin.push()
-        print(f"推送结果:{push_result}")
+        push_result = origin.push("master")
+        log.pytest.info(f"推送结果: {push_result}")
