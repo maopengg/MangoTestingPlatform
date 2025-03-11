@@ -64,7 +64,7 @@ class PytestActViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        for project in UpdateFile(PytestFileTypeEnum.ACT, GitRepo().local_warehouse_path).find_test_files():
+        for project in UpdateFile(PytestFileTypeEnum.COMPONENTS, GitRepo().local_warehouse_path).find_test_files():
             for file in project.auto_test:
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
