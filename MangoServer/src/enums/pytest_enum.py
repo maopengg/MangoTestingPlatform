@@ -29,11 +29,11 @@ class AllureStatusEnum(BaseEnum):
 
 
 class PytestFileTypeEnum(BaseEnum):
-    ACT = 0
+    COMPONENTS = 0
     TEST_CASE = 1
     UPLOAD = 2
     TOOLS = 3
 
     @classmethod
     def obj(cls):
-        return {0: "act", 1: "test_case", 2: "upload", 3: "tools", }
+        return {0: "components", 1: "test_case", 2: "upload", 3: "tools", }
