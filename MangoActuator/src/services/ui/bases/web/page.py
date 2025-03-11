@@ -26,7 +26,7 @@ class PlaywrightPage(BaseData):
         await pages[-1].close()
         self.page = pages[0]
 
-    async def open_new_tab_and_switch(self, locating: Locator):
+    async def w_open_new_tab_and_switch(self, locating: Locator):
         """点击并打开新页签"""
         await locating.click()
         await asyncio.sleep(2)
@@ -35,3 +35,15 @@ class PlaywrightPage(BaseData):
         await new_page.bring_to_front()
         self.page = new_page
         await asyncio.sleep(1)
+
+    async def w_refresh(self):
+        """刷新页面"""
+        await self.page.reload()
+
+    async def w_go_back(self):
+        """返回上一页"""
+        await self.page.go_back()
+
+    async def w_go_forward(self):
+        """前进到下一页"""
+        await self.page.go_forward()
