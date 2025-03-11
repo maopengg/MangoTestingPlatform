@@ -35,5 +35,14 @@ async def main():
 
 
 asyncio.run(main())
-# pywinauto==0.6.8s
-# pyinstaller .\执行器.spec
+# 下面是需要打包成exe的人看的
+"""
+pyinstaller 
+--add-data="src/settings/settings.json;src/settings" 
+--add-data="src/settings/menus.json;src/settings" 
+--add-data="E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000" 
+--add-data="E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000" 
+--hidden-import="email.mime.multipart" --name="执行器" -F -w --icon="app_icon.ico" main.py
+"""
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"

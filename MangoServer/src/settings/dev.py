@@ -12,10 +12,10 @@ IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
 
 # ************************ Mysql配置 ************************ #
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'dev_mango_server'
+MYSQL_DB_NAME = 'test_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.19.85.178'
+MYSQL_IP = '172.27.190.172'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
@@ -42,14 +42,14 @@ IS_DELETE = True
 IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
-file_name = 'src/settings/database.json'
-if os.path.exists(file_name):
-    # 读取数据
-    with open(file_name, 'r') as file:
-        data = json.load(file)
-
-    MYSQL_PORT = data.get('mysql_port', MYSQL_PORT)
-    MYSQL_DB_NAME = data.get('mysql_db_name', MYSQL_DB_NAME)
-    MYSQL_USER = data.get('mysql_user', MYSQL_USER)
-    MYSQL_PASSWORD = data.get('mysql_password', MYSQL_PASSWORD)
-    MYSQL_IP = data.get('mysql_ip', MYSQL_IP)
+# file_name = 'src/settings/database.json'
+# if os.path.exists(file_name):
+#     # 读取数据
+#     with open(file_name, 'r') as file:
+#         data = json.load(file)
+#
+#     MYSQL_PORT = data.get('mysql_port', MYSQL_PORT)
+#     MYSQL_DB_NAME = data.get('mysql_db_name', MYSQL_DB_NAME)
+#     MYSQL_USER = data.get('mysql_user', MYSQL_USER)
+#     MYSQL_PASSWORD = data.get('mysql_password', MYSQL_PASSWORD)
+#     MYSQL_IP = data.get('mysql_ip', MYSQL_IP)

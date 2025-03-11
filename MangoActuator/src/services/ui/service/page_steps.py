@@ -14,6 +14,7 @@ from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentM
 from src.services.ui.bases import ElementOperation
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
+from src.settings import settings
 
 
 class PageSteps(ElementOperation):
@@ -99,6 +100,8 @@ class PageSteps(ElementOperation):
                 self.url = test_object_value
 
         if self.page and self.url:
+            if settings.IS_SWITCH_URL:
+                await open_url()
             return
         elif self.page:
             await open_url()

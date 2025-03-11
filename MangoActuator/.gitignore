@@ -13,3 +13,4 @@ videos/
 download/
 tests/*.json
 report/
+*.spec
