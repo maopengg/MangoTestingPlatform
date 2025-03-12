@@ -19,6 +19,7 @@ from src.tools.log_collector import log
 from src.enums.gui_enum import TipsTypeEnum
 from mangokit.tools.method import class_methods
 
+
 class SettingPage(QWidget):
     def __init__(self, parent):
         super().__init__()
@@ -32,10 +33,10 @@ class SettingPage(QWidget):
         self.toggle1 = MangoToggle()
         self.toggle1.set_value(settings.IS_DEBUG)
         self.toggle1.clicked.connect(self.debug)
-        card_layout1.addRow('是否开启调试', self.toggle1)
+        card_layout1.addRow('是否开启调试：', self.toggle1)
         self.sendRedisData = MangoPushButton('发送')
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
-        card_layout1.addRow('发送缓存数据', self.sendRedisData, )
+        card_layout1.addRow('发送缓存数据：', self.sendRedisData, )
 
         card_layout2 = MangoVBoxLayout()
         card_widget2 = MangoCard(card_layout2)
@@ -51,9 +52,21 @@ class SettingPage(QWidget):
         card_layout2_3_1 = MangoHBoxLayout()
         card_layout2_3.addLayout(card_layout2_3_1)
         self.input_2_1 = MangoLineEdit('请输入请求超时时间', )
-        card_layout2_3_1.addWidget(MangoLabel('请求超时时间'))
+        card_layout2_3_1.addWidget(MangoLabel('请求超时时间：'))
         card_layout2_3_1.addWidget(self.input_2_1)
         card_layout2_3_1.addStretch()
+
+        card_layout6 = MangoVBoxLayout()
+        card_widget6 = MangoCard(card_layout6, 'UI全局配置')
+        card_layout6_3 = MangoVBoxLayout()
+        card_layout6.addLayout(card_layout6_3)
+        card_layout6_3_1 = MangoHBoxLayout()
+        card_layout6_3.addLayout(card_layout6_3_1)
+        self.input_6_1 = MangoToggle(settings.IS_SWITCH_URL)
+        self.input_6_1.clicked.connect(self.switch_url)
+        card_layout6_3_1.addWidget(MangoLabel('是否切换页面执行跳转URL：'))
+        card_layout6_3_1.addWidget(self.input_6_1)
+        card_layout6_3_1.addStretch()
 
         card_layout3 = MangoVBoxLayout()
         card_widget3 = MangoCard(card_layout3, )
@@ -67,11 +80,11 @@ class SettingPage(QWidget):
         card_layout3_2 = MangoFormLayout()
         card_layout3.addLayout(card_layout3_2)
         self.mail_send_user = MangoLineEdit('请输入邮箱发送人', )
-        card_layout3_2.addRow('邮箱发送人', self.mail_send_user)
+        card_layout3_2.addRow('邮箱发送人：', self.mail_send_user)
         self.mail_send_host = MangoLineEdit('请输入邮箱域名', )
-        card_layout3_2.addRow('邮箱域名', self.mail_send_host)
+        card_layout3_2.addRow('邮箱域名：', self.mail_send_host)
         self.mail_send_stamp_key = MangoLineEdit('请输入邮箱的stamp_key', )
-        card_layout3_2.addRow('邮箱stamp_key', self.mail_send_stamp_key)
+        card_layout3_2.addRow('邮箱stamp_key：', self.mail_send_stamp_key)
 
         card_layout4 = MangoVBoxLayout()
         card_widget4 = MangoCard(card_layout4, )
@@ -85,7 +98,7 @@ class SettingPage(QWidget):
         card_layout4_2 = MangoFormLayout()
         card_layout4.addLayout(card_layout4_2)
         self.localhost = MangoLineEdit('请输入测试平台域名，测试通知会发送域名查看测试报告', )
-        card_layout4_2.addRow('服务域名', self.localhost)
+        card_layout4_2.addRow('服务域名：', self.localhost)
 
         card_layout5 = MangoVBoxLayout()
         card_widget5 = MangoCard(card_layout5, '测试卡片')
@@ -98,6 +111,7 @@ class SettingPage(QWidget):
 
         self.layout.addWidget(card_widget)
         self.layout.addWidget(card_widget2)
+        self.layout.addWidget(card_widget6)
         self.layout.addWidget(card_widget3)
         self.layout.addWidget(card_widget4)
         self.layout.addWidget(card_widget5)
@@ -122,6 +136,9 @@ class SettingPage(QWidget):
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
         log.set_debug(settings.IS_DEBUG)
+
+    def switch_url(self, value):
+        settings.IS_SWITCH_URL = bool(self.input_6_1.get_value())
 
     def click_send_redis_data(self):
         r = GetClassMethod()
