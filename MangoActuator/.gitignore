@@ -14,3 +14,4 @@ download/
 tests/*.json
 report/
 *.spec
+__pycache__/

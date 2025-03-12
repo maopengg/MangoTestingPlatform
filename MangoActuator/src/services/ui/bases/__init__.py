@@ -3,7 +3,7 @@
 # @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
 import traceback
-
+import os
 from mangokit import MangoKitError
 from playwright._impl._errors import TargetClosedError, Error, TimeoutError
 
@@ -256,7 +256,7 @@ class ElementOperation(WebDevice, AndroidDriver):
         )
         if self.element_test_result:
             file_name = f'失败截图-{self.element_model.name}{self.test_data.get_time_for_min()}.jpg'
-            file_path = rf"{project_dir.screenshot()}/{file_name}"
+            file_path = os.path.join(project_dir.screenshot(), file_name)
             self.element_test_result.picture_path = f'files/{file_name}'
             await self.__error_screenshot(file_path, file_name)
 

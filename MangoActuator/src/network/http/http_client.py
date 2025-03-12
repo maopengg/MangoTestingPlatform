@@ -32,7 +32,7 @@ class HttpClientApi(HttpBase):
             'name': file_name
         }
         files = [
-            ('file', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
+            ('failed_screenshot', (file_name, open(file_path, 'rb'), 'application/octet-stream'))
         ]
         headers = copy.copy(cls.headers)
         response = cls.post('/system/file', headers=headers, data=data, files=files)
