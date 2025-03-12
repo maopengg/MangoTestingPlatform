@@ -19,12 +19,6 @@ os.environ["QT_FONT_DPI"] = "96"
 
 # 4K
 # os.environ["QT_SCALE_FACTOR"] = "2"
-import ctypes
-try:
-    # 设置 DPI 感知为系统级别
-    ctypes.windll.shcore.SetProcessDpiAwareness(2)
-except Exception as e:
-    print(f"Failed to set DPI awareness: {e}")
 
 async def main():
     try:

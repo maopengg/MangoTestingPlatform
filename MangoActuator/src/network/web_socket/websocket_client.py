@@ -66,7 +66,8 @@ class WebSocketClient:
                         await self.client_recv()
                     await asyncio.sleep(2)
                     retry = 1
-            except (ConnectionRefusedError, OSError, WebSocketException, websockets.ConnectionClosed):
+            except (ConnectionRefusedError, OSError, WebSocketException, websockets.ConnectionClosed) as error:
+                log.error(f'错误类型：{error}，错误详情：{traceback.print_exc()}')
                 self.parent.set_tips_info(
                     f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                 retry += 1
