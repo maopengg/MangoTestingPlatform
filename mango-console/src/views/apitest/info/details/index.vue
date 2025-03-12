@@ -168,6 +168,8 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import { strJson } from '@/utils/tools'
+  import CodeEditor from '@/components/CodeEditor.vue'
+
   const enumStore = useEnum()
   const userStore = useUserStore()
 
@@ -195,6 +197,7 @@
       data.addButton = false
     }
   }
+
   function addData() {
     if (data.pageType === '5') {
       data.posterior_json_path.push({ key: '', value: '' })
@@ -202,6 +205,7 @@
       data.posterior_re.push({ key: '', value: '' })
     }
   }
+
   function switchPageType() {
     if (pageData.record.params) {
       data.pageType = '1'
@@ -215,19 +219,23 @@
       data.pageType = '0'
     }
   }
+
   function doResetSearch() {
     window.history.back()
   }
+
   function formatJson(items: any) {
     if (items === null) {
       return null
     }
     return JSON.stringify(items, null, 2)
   }
+
   function removeFrontSql(item: any, index: number, key: string) {
     item.splice(index, 1)
     upDate(key, item)
   }
+
   function upDate(key: string, value1: string) {
     let value = ''
     if (!(key === 'posterior_json_path' || key === 'posterior_re') && key !== 'posterior_func') {
@@ -257,6 +265,7 @@
       })
       .catch(console.log)
   }
+
   function onRunCase() {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -272,6 +281,7 @@
       })
       .catch(console.log)
   }
+
   function doRefresh() {
     getApiInfo({ id: pageData.record.id })
       .then((res) => {

@@ -1,5 +1,5 @@
 <template>
-  <Codemirror v-model="codeValue" :style="codeStyle" :extensions="extensions" v-bind="$attrs" />
+  <Codemirror v-model="codeValue" :style="codeStyle" :extensions="extensions" v-bind="$attrs" :placeholder="placeholder" />
 </template>
 
 <script setup lang="ts">
@@ -14,6 +14,8 @@
     modelValue?: string // 用于 v-model 的代码字符串
     indentWithTab?: boolean // 启用 tab 按键
     autoDestroy?: boolean // 组件销毁时是否自动销毁代码编辑器实例
+    lineHeight?: number // 行数高度
+    placeholder?: string // 占位符文本
   }
 
   // 定义组件的 props 和默认值
@@ -23,6 +25,8 @@
     modelValue: '',
     indentWithTab: true,
     autoDestroy: true,
+    lineHeight: 20, // 默认行数高度
+    placeholder: '', // 默认占位符文本
   })
 
   const emit = defineEmits<{
@@ -43,6 +47,12 @@
   watch(codeValue, (newCode) => {
     emit('update:modelValue', newCode)
   })
+
+  // 根据传入的 lineHeight 设置代码编辑器的高度
+  const codeStyle = {
+    ...props.codeStyle,
+    height: `${props.lineHeight}px`,
+  }
 </script>
 
 <style lang="less" scoped>

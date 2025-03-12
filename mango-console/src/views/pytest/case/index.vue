@@ -103,7 +103,7 @@
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
-          <CodeEditor v-model="data.codeText" />
+          <CodeEditor v-model="data.codeText" :lineHeight="600" placeholder="输入python代码" />
         </div>
         <div v-else>
           <a-collapse
