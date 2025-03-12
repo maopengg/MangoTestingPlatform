@@ -2,6 +2,7 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
+import os.path
 import traceback
 
 from mangokit import MangoKitError
@@ -256,8 +257,8 @@ class ElementOperation(WebDevice, AndroidDriver):
         )
         if self.element_test_result:
             file_name = f'失败截图-{self.element_model.name}{self.test_data.get_time_for_min()}.jpg'
-            file_path = rf"{project_dir.screenshot()}/{file_name}"
-            self.element_test_result.picture_path = f'files/{file_name}'
+            file_path = os.path.join(project_dir.screenshot(), file_name)
+            self.element_test_result.picture_path = file_name
             await self.__error_screenshot(file_path, file_name)
 
     async def __error_screenshot(self, file_path, file_name):
