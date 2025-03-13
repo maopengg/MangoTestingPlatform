@@ -9,7 +9,9 @@ from playwright.sync_api import sync_playwright
 
 def run() -> None:
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch()
+    browser = playwright.chromium.launch(
+        executable_path=r"C:\Users\Administrator\AppData\Local\Google\Chrome\Application\chrome.exe",
+        headless=False)
     context = browser.new_context()
     page = context.new_page()
     page.goto("https://www.baidu.com/")
