@@ -122,7 +122,6 @@ def ad_routes():
             "menuUrl": "/report",
             "menuName": "测试报告",
             "icon": "icon-calendar-clock",
-            "parentPath": "",
             "children": [
                 {
                     "parentPath": "/report",
