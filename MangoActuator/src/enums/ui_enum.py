@@ -11,11 +11,10 @@ class DriveTypeEnum(BaseEnum):
     WEB = 0
     ANDROID = 1
     DESKTOP = 2
-    IOS = 3
 
     @classmethod
     def obj(cls):
-        return {0: "WEB", 1: "安卓", 2: "PC桌面", 3: "IOS"}
+        return {0: "WEB", 1: "安卓", 2: "PC桌面"}
 
 
 class BrowserTypeEnum(BaseEnum):
