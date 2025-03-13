@@ -82,6 +82,7 @@
   } from '@arco-design/web-vue/es/icon'
   import useVisitedRouteStore from '@/store/modules/visited-routes'
   import { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
+
   export default defineComponent({
     name: 'TabBar',
     components: {
@@ -269,31 +270,38 @@
   :deep(.arco-btn-outline) {
     border: 1px solid rgba(var(--primary-5), 0.7) !important;
     color: rgba(var(--primary-5), 0.7) !important;
+
     &:hover {
       border: 1px solid rgba(var(--primary-5), 1) !important;
       color: rgba(var(--primary-5), 1) !important;
     }
   }
+
   :deep(.arco-btn-disabled) {
     background-color: transparent !important;
     color: rgba(var(--primary-5), 0.7) !important;
   }
+
   :deep(.arco-btn-primary) {
     background-color: rgba(var(--primary-5), 0.8) !important;
+
     &:hover {
       background-color: rgba(var(--primary-5), 1) !important;
     }
   }
+
   .vaw-tab-bar-container {
     :deep(.arco-btn-size-small) {
       padding: 0 8px;
       height: 24px;
     }
+
     position: relative;
     height: @tabHeight;
     box-sizing: border-box;
     white-space: nowrap;
     box-shadow: 10px 5px 10px rgb(0 0 0 / 10%);
+
     .contex-menu-wrapper {
       position: absolute;
       width: 130px;
@@ -302,20 +310,24 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
       background-color: #fff;
       padding-left: 0;
+
       & > li {
         width: 100%;
         box-sizing: border-box;
         display: flex;
         align-items: center;
         padding: 5px 0;
+
         & button {
           width: 100%;
         }
       }
+
       & > li:hover {
         color: var(--primary-color);
       }
     }
+
     .humburger-wrapper {
       position: absolute;
       top: 0;
@@ -326,10 +338,12 @@
       align-items: center;
       height: 100%;
     }
+
     .tab-humburger-wrapper {
       margin-left: 40px;
       transition: margin-left @transitionTime;
     }
+
     .tab-no-humburger-wrapper {
       margin-left: 0;
       transition: margin-left @transitionTime;
@@ -341,6 +355,7 @@
       justify-content: center;
       align-items: center;
       font-size: 12px;
+
       .icon-item {
         margin-left: 0;
         width: 0;
@@ -348,6 +363,7 @@
         display: inline-flex;
         overflow: hidden;
       }
+
       &:hover {
         .icon-item {
           display: inline-flex;
@@ -365,12 +381,14 @@
         }
       }
     }
+
     .arrow-wrapper {
       cursor: pointer;
       font-size: 16px;
       margin: 0 8px;
       display: inline-flex;
     }
+
     .arrow-wrapper__disabled {
       cursor: not-allowed;
       color: #b9b9b9;

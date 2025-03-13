@@ -183,4 +183,16 @@ class TestSuiteDetailsViews(ViewSet):
             'api_count': model.filter(type=TestCaseTypeEnum.API.value).count(),
             'ui_count': model.filter(type=TestCaseTypeEnum.UI.value).count(),
             'pytest_count': model.filter(type=TestCaseTypeEnum.PYTEST.value).count(),
+            'api_in_progress_count': model.filter(
+                type=TestCaseTypeEnum.API.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).count(),
+            'ui_in_progress_count': model.filter(
+                type=TestCaseTypeEnum.UI.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).count(),
+            'pytest_in_progress_count': model.filter(
+                type=TestCaseTypeEnum.PYTEST.value,
+                status__in=[TaskEnum.FAIL.value, TaskEnum.SUCCESS.value]
+            ).count(),
         })
