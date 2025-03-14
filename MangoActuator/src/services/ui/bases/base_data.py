@@ -41,44 +41,77 @@ class BaseData(QObject):
     progress = Signal(object)
     finished = Signal(object)
 
-    def __init__(self,
-                 parent,
-                 driver_object,
-                 project_product_id,
-                 equipment_config: None = None,
-                 environment_config: None = None,
-                 test_suite_id: int | None = None,
-                 case_id: int | None = None,
-                 case_step_details_id: int | None = None,
-                 page_step_id: int | None = None,
-                 is_step: bool = False) -> None:
+    def __init__(self, parent, driver_object, project_product_id):
         super().__init__()
         self.parent = parent
-
         self.project_product_id = project_product_id
-        self.test_suite_id: Optional[int | None] = test_suite_id
-        self.case_id: Optional[int | None] = case_id
-        self.case_step_details_id: Optional[int | None] = case_step_details_id
-        self.page_step_id: Optional[int | None] = page_step_id
-        self.is_step: bool = is_step
-        self.equipment_config: Optional[EquipmentModel | None] = equipment_config
-        self.environment_config: Optional[EnvironmentConfigModel | None] = environment_config
-
         from src.services.ui.bases.driver_object import DriverObject
         self.driver_object: DriverObject = driver_object
-
         self.test_data = ObtainTestData()
+
+        self.test_suite_id: Optional[int | None] = None
+        self.case_id: Optional[int | None] = None
+        self.case_step_details_id: Optional[int | None] = None
+
+        self.page_step_id: Optional[int | None] = None
+        self.is_step: bool = False
+
+        self.equipment_config: Optional[EquipmentModel | None] = None
+
+        self.environment_config: Optional[EnvironmentConfigModel | None] = None
+
         self.mysql_config: Optional[MysqlConingModel | None] = None  # mysql连接配置
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
 
         self.url: Optional[str | None] = None
+        self.package_name: Optional[str | None] = None
+
         self.page: Optional[Page | None] = None
         self.context: Optional[BrowserContext | None] = None
-
-        self.package_name: Optional[str | None] = None
         self.android: Optional[Device | None] = None
-
         self.windows: Optional[None | WindowControl] = None
+
+    def set_case_id(self, case_id: int):
+        self.case_id = case_id
+        return self
+
+    def set_case_step_details_id(self, case_step_details_id: int):
+        self.case_step_details_id = case_step_details_id
+        return self
+
+    def set_test_suite_id(self, test_suite_id: int):
+        self.test_suite_id = test_suite_id
+        return self
+
+    def set_environment_config(self, environment_config: EnvironmentConfigModel):
+        self.environment_config = environment_config
+        return self
+
+    def set_equipment_config(self, equipment_config: EquipmentModel):
+        self.equipment_config = equipment_config
+        return self
+
+    def set_is_step(self, is_step: bool):
+        self.is_step = is_step
+        return self
+
+    def set_url(self, url: str):
+        self.url = url
+        return self
+
+    def set_page_context(self, page: Page, context: BrowserContext):
+        self.page = page
+        self.context = context
+
+        return self
+
+    def set_package_name(self, package_name: str):
+        self.package_name = package_name
+        return self
+
+    def set_android(self, android: Device):
+        self.android = android
+        return self
 
     async def setup(self) -> None:
         self.url = None
@@ -109,6 +142,7 @@ class BaseData(QObject):
             self.mysql_connect = MysqlConnect(run_config.mysql_config,
                                               bool(run_config.db_c_status),
                                               bool(run_config.db_rud_status))
+        return self
 
     async def public_front(self, public_model: list[UiPublicModel]):
         for cache_data in public_model:

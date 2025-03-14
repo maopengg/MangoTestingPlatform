@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 import asyncio
+import threading
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
@@ -30,7 +31,7 @@ from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
 from ...tools.components.message import response_message
 from ...tools.methods import Methods
-
+from src import process
 
 class NotificationTask(QThread):
     notify_signal = Signal(int, str)
@@ -99,12 +100,27 @@ class WindowLogic(MangoMain1Window):
             height_coefficient=0.815
         )
         self.loop = loop
-
-        self.consumer = SocketConsumer(self)
-
-        self.socket: WebSocketClient = WebSocketClient()
-        self.socket.parent = self
-        asyncio.run_coroutine_threadsafe(self.socket.client_run(), self.loop)
+        
+        # 创建一个新线程来运行协程任务
+        def run_process():
+            # 在新线程中创建一个新的事件循环
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                # 在新的事件循环中运行process协程
+                new_loop.run_until_complete(process(self))
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print(f"运行process协程时出现异常: {e}")
+            finally:
+                new_loop.close()
+        
+        # 启动线程
+        threading.Thread(
+            target=run_process,
+            daemon=True
+        ).start()
 
         self.notification_thread = NotificationTask()
         self.notification_thread.notify_signal.connect(self.handle_notification)

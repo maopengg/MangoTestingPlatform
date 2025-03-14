@@ -154,7 +154,3 @@ class UiCaseResultModel(BaseModel):
 class GetTaskModel(BaseModel):
     username: str
 
-
-class PageObject:
-    test_page_steps = None
-    case_flow = None

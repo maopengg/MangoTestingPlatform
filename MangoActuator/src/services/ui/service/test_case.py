@@ -32,9 +32,9 @@ class TestCase(PageSteps):
             parent,
             driver_object,
             project_product_id=case_model.project_product,
-            test_suite_id=case_model.test_suite_id,
-            case_id=case_model.id,
         )
+        self.set_case_id(case_model.id)
+        self.set_test_suite_id(case_model.test_suite_id)
         self.case_model: CaseModel = case_model
         self.parametrize: dict = parametrize
         self.case_result = UiCaseResultModel(

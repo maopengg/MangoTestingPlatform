@@ -12,9 +12,9 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
 from src.services.ui.bases import ElementOperation
+from src.settings import settings
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
-from src.settings import settings
 
 
 class PageSteps(ElementOperation):
@@ -83,8 +83,6 @@ class PageSteps(ElementOperation):
                 await self.web_init()
             case DriveTypeEnum.ANDROID.value:
                 self.__android_init()
-            case DriveTypeEnum.IOS.value:
-                self.__ios_init()
             case DriveTypeEnum.DESKTOP.value:
                 self.__desktop_init()
             case _:
@@ -128,17 +126,9 @@ class PageSteps(ElementOperation):
             self.android = self.driver_object.android.new_android()
             self.a_press_home()
             self.a_app_stop_all()
-            # if self.is_screen_locked():
-            #     raise UiError(*ERROR_MSG_0059)
-            # else:
-            #     print("屏幕处于解锁状态。")
-
         if self.android and self.package_name != package_name:
             self.a_start_app(package_name)
             self.package_name = package_name
-
-    def __ios_init(self, ):
-        pass
 
     def __desktop_init(self, ):
         pass

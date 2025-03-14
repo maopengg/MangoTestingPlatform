@@ -2,8 +2,9 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
-import traceback
 import os
+import traceback
+
 from mangokit import MangoKitError
 from playwright._impl._errors import TargetClosedError, Error, TimeoutError
 
@@ -108,8 +109,6 @@ class ElementOperation(WebDevice, AndroidDriver):
                 ope_value = await self.web_action_element()
             elif self.drive_type == DriveTypeEnum.ANDROID.value:
                 ope_value = self.a_action_element()
-            elif self.drive_type == DriveTypeEnum.IOS.value:
-                ope_value = None
             elif self.drive_type == DriveTypeEnum.DESKTOP.value:
                 ope_value = None
             else:
@@ -138,8 +137,6 @@ class ElementOperation(WebDevice, AndroidDriver):
                 actual = await self.web_assertion_element()
             elif self.drive_type == DriveTypeEnum.ANDROID.value:
                 actual = self.a_assertion_element()
-            elif self.drive_type == DriveTypeEnum.IOS.value:
-                actual = None
             elif self.drive_type == DriveTypeEnum.DESKTOP.value:
                 actual = None
             else:
@@ -274,8 +271,6 @@ class ElementOperation(WebDevice, AndroidDriver):
                     raise UiError(*ERROR_MSG_0010)
             case DriveTypeEnum.ANDROID.value:
                 self.a_screenshot(file_path)
-            case DriveTypeEnum.IOS.value:
-                pass
             case DriveTypeEnum.DESKTOP.value:
                 pass
             case _:

@@ -8,9 +8,8 @@ import json
 
 from mango_ui import *
 
-from src.enums.tools_enum import TaskEnum
 from src.models.socket_model import ResponseModel
-from src.models.ui_model import PageStepsModel, ElementResultModel, PageObject
+from src.models.ui_model import PageStepsModel, ElementResultModel
 from src.models.user_model import UserModel
 from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.components.message import response_message
@@ -97,11 +96,9 @@ class PageStepsDetailedPage(SubPage):
         response_message(self, response_model)
         if response_model.code == 200:
             data = PageStepsModel(**response_model.data)
-            if PageObject.test_page_steps is None:
-                PageObject.test_page_steps = TestPageSteps(self.parent, data.project_product)
-                PageObject.test_page_steps.progress.connect(self.update_card)
-            asyncio.run_coroutine_threadsafe(
-                PageObject.test_page_steps.page_steps_mian(data), self.parent.loop)  # type: ignore
+            test_page_steps = TestPageSteps(self.parent, data.project_product)
+            test_page_steps.progress.connect(self.update_card)
+            asyncio.run_coroutine_threadsafe(test_page_steps.page_steps_mian(data), self.parent.loop)  # type: ignore
 
     def save_callback(self, data: dict, is_post: bool = False):
         data['ope_value'] = json.loads(data.get('ope_value')) if data.get('ope_value') else None

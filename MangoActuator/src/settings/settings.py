@@ -1,5 +1,6 @@
 import json
 import platform
+
 from src.tools import project_dir
 
 # ****************************************** 用户信息 ****************************************** #

@@ -11,7 +11,7 @@ from mangokit import Mango
 from src.enums.tools_enum import Status5Enum
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.socket_model import ResponseModel
-from src.models.ui_model import EquipmentModel, PageObject
+from src.models.ui_model import EquipmentModel
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.services.ui.service.test_page_steps import TestPageSteps
@@ -225,6 +225,5 @@ class EquipmentPage(TableParent):
 
     def launch_browser(self, data):
         equipment_model = EquipmentModel(type=data.get('type'), **data.get('config'))
-        if PageObject.test_page_steps is None:
-            PageObject.test_page_steps = TestPageSteps(self.parent, None)
-        self.parent.loop.create_task(PageObject.test_page_steps.new_web_obj(equipment_model))  # type: ignore
+        test_page_steps = TestPageSteps(self.parent, None)
+        self.parent.loop.create_task(test_page_steps.new_web_obj(equipment_model))  # type: ignore
