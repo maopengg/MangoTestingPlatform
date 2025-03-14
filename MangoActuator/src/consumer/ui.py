@@ -61,7 +61,6 @@ class UI:
         max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
         if max_tasks:
             CaseFlow.max_tasks = max_tasks
-        print(data)
         if data.parametrize:
             for parametrize in data.parametrize:
                 await CaseFlow.add_task(data, parametrize)

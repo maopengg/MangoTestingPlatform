@@ -12,10 +12,10 @@ IS_SQLITE = False  # 是否选用sqlite作为数据源，默认使用mysql
 
 # ************************ Mysql配置 ************************ #
 MYSQL_PORT = 3306
-MYSQL_DB_NAME = 'test_mango_server'
+MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.19.85.178'
+MYSQL_IP = '172.18.9.209'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio

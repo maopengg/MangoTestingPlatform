@@ -44,7 +44,7 @@ class CaseFlow:
     async def get_case_task(cls):
         try:
             from src.network import UiSocketEnum, WebSocketClient
-            await WebSocketClient().async_send(
+            await WebSocketClient.async_send(
                 '请求获取任务',
                 func_name=UiSocketEnum.GET_TASK.value,
                 func_args=GetTaskModel(username=settings.USERNAME)

@@ -7,7 +7,9 @@ import asyncio
 
 from mangokit import Mango
 
+from src import test_process
 from src.consumer import UI
+from src.settings import settings
 
 
 class LinuxLoop:
@@ -39,9 +41,11 @@ data = {"test_suite_details": None, "test_suite_id": None, "id": 2, "name": "鼠
 
 async def run():
     loop = LinuxLoop()
-    ui = UI()
-    ui.parent = loop
-    await ui.u_case(data)
+    settings.IS_DEBUG = True
+    settings.USERNAME = 'maopeng'
+    await test_process(loop)
+    UI.parent = loop
+    await UI.u_case(data)
     while True:
         await asyncio.sleep(0.1)
 
