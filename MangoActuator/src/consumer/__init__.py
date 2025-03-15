@@ -38,7 +38,6 @@ class SocketConsumer(UI, API, Perf, Tools):
                 task = cls.parent.loop.create_task(getattr(cls, data.func_name)(data.func_args))
                 task.add_done_callback(cls.handle_task_result)
             else:
-                # 当队列为空时，让出控制权，避免阻塞事件循环
                 await asyncio.sleep(0.1)
 
     @classmethod
@@ -68,23 +67,3 @@ class SocketConsumer(UI, API, Perf, Tools):
                 await cls.u_case(out)
         while True:
             await asyncio.sleep(1)
-
-
-class Test:
-
-    def __init__(self):
-        from mangokit import Mango
-        self.loop = Mango.t()
-
-    def set_tips_info(self, value):
-        print(value)
-
-
-if __name__ == '__main__':
-    from src.network.http import HTTP
-
-    settings.IP = '121.37.174.56'
-    settings.PORT = 8000
-    HTTP.api.public.set_host(settings.IP, settings.PORT)
-    SocketConsumer.parent = Test()
-    asyncio.run(SocketConsumer.test())

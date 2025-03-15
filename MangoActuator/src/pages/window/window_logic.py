@@ -33,6 +33,7 @@ from ...tools.components.message import response_message
 from ...tools.methods import Methods
 from src import process
 
+
 class NotificationTask(QThread):
     notify_signal = Signal(int, str)
 
@@ -45,7 +46,7 @@ class NotificationTask(QThread):
     def check_queue(self):
         while not queue_notification.empty():
             data: dict = queue_notification.get_nowait()
-            self.notify_signal.emit(data.get('type'), data.get('value'))
+            self.notify_signal.emit(data['type'].value, data['value'])
 
 
 class WindowLogic(MangoMain1Window):
@@ -100,22 +101,16 @@ class WindowLogic(MangoMain1Window):
             height_coefficient=0.815
         )
         self.loop = loop
-        
-        # 创建一个新线程来运行协程任务
+
         def run_process():
-            # 在新线程中创建一个新的事件循环
-            new_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(new_loop)
             try:
-                # 在新的事件循环中运行process协程
-                new_loop.run_until_complete(process(self))
+                # 使用已有的self.loop而不是创建新的事件循环
+                asyncio.run_coroutine_threadsafe(process(self), self.loop)
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 print(f"运行process协程时出现异常: {e}")
-            finally:
-                new_loop.close()
-        
+
         # 启动线程
         threading.Thread(
             target=run_process,

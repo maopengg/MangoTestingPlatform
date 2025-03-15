@@ -129,7 +129,7 @@ class PageStepsResultModel(BaseModel):
     case_step_details_id: int | None = None
 
     cache_data: dict
-    test_object: dict  # url或者软件包
+    test_object: str  # url或者软件包
     equipment: dict  # 设备名称或者浏览器类型
 
     status: int

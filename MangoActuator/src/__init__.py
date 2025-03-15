@@ -20,11 +20,6 @@ async def process(parent):
         websocket_task = asyncio.create_task(WebSocketClient.client_run())
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
-        await asyncio.gather(
-            websocket_task,
-            consumer_task,
-            case_flow_task
-        )
     except Exception as error:
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")
@@ -38,10 +33,6 @@ async def test_process(parent):
         CaseFlow.parent = parent
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
-        await asyncio.gather(
-            consumer_task,
-            case_flow_task
-        )
     except Exception as error:
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")

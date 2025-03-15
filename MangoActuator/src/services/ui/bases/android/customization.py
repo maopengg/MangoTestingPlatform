@@ -6,6 +6,8 @@
 from src.services.ui.bases.base_data import BaseData
 
 
-class UiautomatorCustomization(BaseData):
+class UiautomatorCustomization:
     """定制开发"""
-    pass
+
+    def __init__(self, base_data: BaseData):
+        self.base_data = base_data

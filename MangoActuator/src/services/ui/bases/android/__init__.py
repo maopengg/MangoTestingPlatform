@@ -7,6 +7,7 @@ from uiautomator2 import UiObject, UiObjectNotFoundError
 from uiautomator2.exceptions import XPathElementNotFoundError
 from uiautomator2.xpath import XPathSelector
 
+from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum
 from src.exceptions import *
 from src.models.ui_model import ElementModel, ElementResultModel
@@ -25,8 +26,39 @@ class AndroidDriver(UiautomatorEquipment,
                     UiautomatorPage,
                     UiautomatorElement,
                     UiautomatorCustomization):
-    element_test_result: ElementResultModel = None
-    element_model: ElementModel = None
+    def __init__(self, base_data, element_model: ElementModel):
+        super().__init__(base_data)
+        self.element_model: ElementModel = element_model
+        self.element_test_result = ElementResultModel(
+            id=self.element_model.id,
+            name=self.element_model.name,
+            loc=self.element_model.loc,
+            exp=element_model.exp,
+            sub=element_model.sub,
+            sleep=element_model.sleep,
+
+            type=self.element_model.type,
+            ope_key=self.element_model.ope_key,
+            ope_value=None,
+            expect=None,
+            actual=None,
+            sql=self.element_model.sql,
+            key_list=self.element_model.key_list,
+            key=self.element_model.key,
+            value=self.element_model.value,
+
+            status=StatusEnum.FAIL.value,
+            ele_quantity=0,
+            error_message=None,
+            picture_path=None,
+        )
+
+    def open_app(self):
+        self.a_press_home()
+        self.a_app_stop_all()
+        if self.android and self.package_name != package_name:
+            self.a_start_app(package_name)
+            self.package_name = package_name
 
     @sync_retry
     def a_action_element(self) -> dict:
@@ -71,11 +103,11 @@ class AndroidDriver(UiautomatorEquipment,
                     **{k: actual if k == 'value' else v for k, v in self.element_model.ope_value.items()})
             elif is_method_sql:
                 actual = 'sql匹配'
-                if self.mysql_connect is not None:
-                    SqlAssertion.mysql_obj = self.mysql_connect
-                    SqlAssertion.sql_is_equal(**self.element_model.ope_value)
+                if self.base_data.mysql_connect is not None:
+                    SqlAssertion.mysql_obj = self.base_data.mysql_connect
+                    SqlAssertion.sql_is_equal(**self.base_data.element_model.ope_value)
                 else:
-                    raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
+                    raise UiError(*ERROR_MSG_0019, value=(self.base_data.case_id, self.base_data.test_suite_id))
             return actual
         except AssertionError as error:
             raise UiError(*ERROR_MSG_0017, error=error)
@@ -96,15 +128,15 @@ class AndroidDriver(UiautomatorEquipment,
                 except SyntaxError:
                     raise UiError(*ERROR_MSG_0022)
             case ElementExpEnum.XPATH.value:
-                loc = self.android.xpath(self.element_model.loc)
+                loc = self.base_data.android.xpath(self.element_model.loc)
             case ElementExpEnum.BOUNDS.value:
-                loc = self.android(text=self.element_model.loc)
+                loc = self.base_data.android(text=self.element_model.loc)
             case ElementExpEnum.DESCRIPTION.value:
-                loc = self.android(description=self.element_model.loc)
+                loc = self.base_data.android(description=self.element_model.loc)
             # case ElementExpEnum.PERCENTAGE.value:
             #     return self.android(resourceId=self.element_model.loc)
             case ElementExpEnum.RESOURCE_ID.value:
-                loc = self.android(resourceId=self.element_model.loc)
+                loc = self.base_data.android(resourceId=self.element_model.loc)
             case _:
                 raise UiError(*ERROR_MSG_0020)
         return 0, loc

@@ -3,6 +3,7 @@
 # @Description: # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import re
+from urllib.parse import urljoin, urlparse
 
 from mangokit import Mango
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
@@ -11,7 +12,8 @@ from playwright.async_api._generated import Locator
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import ElementExpEnum, ElementOperationEnum
 from src.exceptions import *
-from src.models.ui_model import ElementModel
+from src.models.ui_model import ElementModel, ElementResultModel
+from src.services.ui.bases.base_data import BaseData
 from src.services.ui.bases.web.assertion import PlaywrightAssertion
 from src.services.ui.bases.web.browser import PlaywrightBrowser
 from src.services.ui.bases.web.customization import PlaywrightCustomization
@@ -20,6 +22,7 @@ from src.services.ui.bases.web.input_device import PlaywrightDeviceInput
 from src.services.ui.bases.web.page import PlaywrightPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.async_retry import async_retry
+from src.settings import settings
 
 re = re
 
@@ -29,7 +32,41 @@ class WebDevice(PlaywrightBrowser,
                 PlaywrightElement,
                 PlaywrightDeviceInput,
                 PlaywrightCustomization):
-    element_model: ElementModel = None
+
+    def __init__(self, base_data: BaseData, element_model: ElementModel):
+        super().__init__(base_data)
+        self.element_model: ElementModel = element_model
+        self.element_test_result = ElementResultModel(
+            id=self.element_model.id,
+            name=self.element_model.name,
+            loc=self.element_model.loc,
+            exp=element_model.exp,
+            sub=element_model.sub,
+            sleep=element_model.sleep,
+
+            type=self.element_model.type,
+            ope_key=self.element_model.ope_key,
+            ope_value=None,
+            expect=None,
+            actual=None,
+            sql=self.element_model.sql,
+            key_list=self.element_model.key_list,
+            key=self.element_model.key,
+            value=self.element_model.value,
+
+            status=StatusEnum.FAIL.value,
+            ele_quantity=0,
+            error_message=None,
+            picture_path=None,
+        )
+
+    async def open_url(self):
+        self.base_data.is_open_url = True
+        if not self.base_data.is_open_url:
+            await self.w_goto(self.base_data.url)
+        elif settings.IS_SWITCH_URL and self.base_data.page.url != self.base_data.url:
+            await self.w_wait_for_timeout(2)
+            await self.w_goto(self.base_data.url)
 
     @async_retry
     async def web_action_element(self) -> dict:
@@ -42,7 +79,7 @@ class WebDevice(PlaywrightBrowser,
         except TimeoutError as error:
             raise UiError(*ERROR_MSG_0011, error=error, value=(self.element_model.name,))
         except TargetClosedError:
-            await self.setup()
+            await self.base_data.setup()
             raise UiError(*ERROR_MSG_0010)
         except Error as error:
             raise UiError(*ERROR_MSG_0032, value=(self.element_model.name,), error=error, )
@@ -74,13 +111,13 @@ class WebDevice(PlaywrightBrowser,
                 getattr(PublicAssertion, self.element_model.ope_key)(**ope_value)
             elif is_method_sql:
                 actual = 'sql匹配'
-                if self.mysql_connect is not None:
-                    SqlAssertion.mysql_obj = self.mysql_connect
+                if self.base_data.mysql_connect is not None:
+                    SqlAssertion.mysql_obj = self.base_data.mysql_connect
                     log.debug(
                         f'开始断言，方法：sql相等端游，实际值：{self.element_model.ope_value}')
                     await SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
-                    raise UiError(*ERROR_MSG_0019, value=(self.case_id, self.test_suite_id))
+                    raise UiError(*ERROR_MSG_0019, value=(self.base_data.case_id, self.base_data.test_suite_id))
             return actual
         except AssertionError as error:
             raise UiError(*ERROR_MSG_0017, error=error)
@@ -89,7 +126,7 @@ class WebDevice(PlaywrightBrowser,
         except ValueError as error:
             raise UiError(*ERROR_MSG_0018, error=error)
         except TargetClosedError:
-            await self.setup()
+            await self.base_data.setup()
             raise UiError(*ERROR_MSG_0010)
         except Error as error:
             raise UiError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
@@ -100,7 +137,7 @@ class WebDevice(PlaywrightBrowser,
         # 是否在iframe中
         if self.element_model.is_iframe == StatusEnum.SUCCESS.value:
             ele_list: list[Locator] = []
-            for i in self.page.frames:
+            for i in self.base_data.page.frames:
                 locator: Locator = await self.__find_ele(i, locator_str)
                 try:
                     count = await locator.count()
@@ -124,7 +161,7 @@ class WebDevice(PlaywrightBrowser,
             except IndexError:
                 raise UiError(*ERROR_MSG_0033, value=(ele_quantity,))
         else:
-            locator: Locator = await self.__find_ele(self.page, locator_str)
+            locator: Locator = await self.__find_ele(self.base_data.page, locator_str)
             try:
                 count = await locator.count()
             except Error:
@@ -151,19 +188,9 @@ class WebDevice(PlaywrightBrowser,
                 return page.locator(f'xpath={loc}')
             case ElementExpEnum.CSS.value:
                 return page.locator(loc)
-            case ElementExpEnum.TEST_ID.value:
-                return page.get_by_test_id(loc)
             case ElementExpEnum.TEXT.value:
                 return page.get_by_text(loc, exact=True)
             case ElementExpEnum.PLACEHOLDER.value:
                 return page.get_by_placeholder(loc)
-            case ElementExpEnum.LABEL.value:
-                return page.get_by_label(loc)
-            case ElementExpEnum.TITLE.value:
-                return page.get_by_title(loc)
-            case ElementExpEnum.ROLE.value:
-                return page.get_by_role(loc)
-            case ElementExpEnum.AIT_TEXT.value:
-                return page.get_by_alt_text(loc)
             case _:
                 raise UiError(*ERROR_MSG_0020)

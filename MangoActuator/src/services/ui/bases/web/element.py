@@ -3,6 +3,7 @@
 # @Description: # @Time   : 2023-04-26 22:22
 # @Author : 毛鹏
 import os.path
+from typing import Optional
 
 import time
 from playwright.async_api import Locator, Error
@@ -12,8 +13,11 @@ from src.services.ui.bases.base_data import BaseData
 from src.tools import project_dir
 
 
-class PlaywrightElement(BaseData):
+class PlaywrightElement:
     """元素操作"""
+
+    def __init__(self, base_data: BaseData):
+        self.base_data = base_data
 
     @classmethod
     async def w_click(cls, locating: Locator):
@@ -40,8 +44,8 @@ class PlaywrightElement(BaseData):
         value = await locating.inner_text()
         log.debug(f'获取元素的值：{value}，存储的key：{set_cache_key}')
         if set_cache_key:
-            self.test_data.set_cache(key=set_cache_key, value=value)
-            self.parent.set_tips_info(f'元素key设置成功，key：{set_cache_key}，value：{value}')
+            self.base_data.test_data.set_cache(key=set_cache_key, value=value)
+            self.base_data.parent.set_tips_info(f'元素key设置成功，key：{set_cache_key}，value：{value}')
 
         return value
 
@@ -59,20 +63,20 @@ class PlaywrightElement(BaseData):
 
     async def w_click_upload_files(self, locating: Locator, file_path: str | list):
         """点击并选择文件上传"""
-        async with self.page.expect_file_chooser() as fc_info:
+        async with self.base_data.page.expect_file_chooser() as fc_info:
             await locating.click()
         file_chooser = await fc_info.value
         await file_chooser.set_files(file_path)
 
     async def w_download(self, locating: Locator, file_key: str):
         """下载文件"""
-        async with self.page.expect_download() as download_info:
+        async with self.base_data.page.expect_download() as download_info:
             await locating.click()
         download = await download_info.value
         file_name = download.suggested_filename
         save_path = os.path.join(project_dir.download(), file_name)
         await download.save_as(save_path)
-        self.test_data.set_cache(file_key, file_name)
+        self.base_data.test_data.set_cache(file_key, file_name)
 
     @classmethod
     async def w_drag_to(cls, locating1: Locator, locating2: Locator):
@@ -101,11 +105,11 @@ class PlaywrightElement(BaseData):
 
         box = await locating.bounding_box()
 
-        if box:  # 检查元素是否可见
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
-            await self.page.mouse.down()
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 - n)
-            await self.page.mouse.up()
+        if box:
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.down()
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 - n)
+            await self.base_data.page.mouse.up()
 
     async def w_drag_down_pixel(self, locating: Locator, n: int):
         """往下拖动N个像素"""
@@ -116,11 +120,11 @@ class PlaywrightElement(BaseData):
 
         box = await locating.bounding_box()
 
-        if box:  # 检查元素是否可见
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
-            await self.page.mouse.down()
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 + n)
-            await self.page.mouse.up()
+        if box:
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.down()
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2 + n)
+            await self.base_data.page.mouse.up()
 
     async def w_drag_left_pixel(self, locating: Locator, n: int):
         """往左拖动N个像素"""
@@ -131,11 +135,11 @@ class PlaywrightElement(BaseData):
 
         box = await locating.bounding_box()
 
-        if box:  # 检查元素是否可见
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
-            await self.page.mouse.down()
-            await self.page.mouse.move(box['x'] + box['width'] / 2 - n, box['y'] + box['height'] / 2)
-            await self.page.mouse.up()
+        if box:
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.down()
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2 - n, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.up()
 
     async def w_drag_right_pixel(self, locating: Locator, n: int):
         """往右拖动N个像素"""
@@ -145,9 +149,8 @@ class PlaywrightElement(BaseData):
             raise UiError(*ERROR_MSG_0056)
         box = await locating.bounding_box()
 
-        if box:  # 检查元素是否可见
-            # 执行拖动操作
-            await self.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
-            await self.page.mouse.down()
-            await self.page.mouse.move(box['x'] + box['width'] / 2 + n, box['y'] + box['height'] / 2)
-            await self.page.mouse.up()
+        if box:
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.down()
+            await self.base_data.page.mouse.move(box['x'] + box['width'] / 2 + n, box['y'] + box['height'] / 2)
+            await self.base_data.page.mouse.up()

@@ -2,6 +2,7 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-07-15 11:57
 # @Author : 毛鹏
+import asyncio
 import os
 import traceback
 
@@ -21,49 +22,33 @@ from src.tools.log_collector import log
 
 
 class ElementOperation(WebDevice, AndroidDriver):
-    element_test_result: ElementResultModel = None
-    element_model: ElementModel = None
-    element_data: dict = None
-    ope_name: str = None
-    drive_type: int = None
 
-    async def element_setup(self, element_model: ElementModel, element_data: dict, drive_type: int):
-        self.element_model = element_model
+    def __init__(self, base_data, element_model: ElementModel, element_data: dict, drive_type: int):
+        super().__init__(base_data, element_model)
         self.element_data = element_data
         self.drive_type = drive_type
         self.ope_name = element_model.name if element_model.name else element_model.ope_key
-        try:
-            for key, value in self.element_model:
-                value = self.test_data.replace(value)
-                setattr(self.element_model, key, value)
-        except MangoKitError as error:
-            raise UiError(error.code, error.msg)
-        self.element_test_result = ElementResultModel(
-            id=self.element_model.id,
-            name=self.element_model.name,
-            loc=self.element_model.loc,
-            exp=element_model.exp,
-            sub=element_model.sub,
-            sleep=element_model.sleep,
 
-            type=self.element_model.type,
-            ope_key=self.element_model.ope_key,
-            ope_value=None,
-            expect=None,
-            actual=None,
-            sql=self.element_model.sql,
-            key_list=self.element_model.key_list,
-            key=self.element_model.key,
-            value=self.element_model.value,
-
-            status=StatusEnum.FAIL.value,
-            ele_quantity=0,
-            error_message=None,
-            picture_path=None,
-        )
+    async def open_device(self):
+        if self.drive_type == DriveTypeEnum.WEB.value:
+            await self.open_url()
+        elif self.drive_type == DriveTypeEnum.ANDROID.value:
+            self.open_app()
+        elif self.drive_type == DriveTypeEnum.DESKTOP.value:
+            pass
+        else:
+            log.error('不存在的设备类型')
+            raise Exception('不存在的设备类型')
 
     @async_memory
     async def element_main(self) -> ElementResultModel:
+        try:
+            for key, value in self.element_model:
+                value = self.base_data.test_data.replace(value)
+                setattr(self.element_model, key, value)
+        except MangoKitError as error:
+            raise UiError(error.code, error.msg)
+
         try:
             if self.element_model.type == ElementOperationEnum.OPE.value:
                 await self.__ope()
@@ -78,7 +63,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             self.element_test_result.status = StatusEnum.SUCCESS.value
             return self.element_test_result
         except TargetClosedError as error:
-            await self.setup()
+            await self.base_data.setup()
             log.warning(f'浏览器对象关闭异常：{error}')
             self.element_test_result.status = StatusEnum.FAIL.value
             self.element_test_result.error_message = '浏览器对象被关闭，请检查是人为关闭还是异常关闭，异常关闭请发送error日志联系管理员！'
@@ -98,11 +83,6 @@ class ElementOperation(WebDevice, AndroidDriver):
             raise error
 
     async def action_element(self):
-        async def set_ope_value(ope_value):
-            # if 'locating' in ope_value:
-            #     ope_value['locating']
-            self.element_test_result.ope_value = str(ope_value)
-
         ope_value = self.element_model.ope_value
         try:
             if self.drive_type == DriveTypeEnum.WEB.value:
@@ -116,10 +96,10 @@ class ElementOperation(WebDevice, AndroidDriver):
                 raise Exception('不存在的设备类型')
         except UiError as error:
             if ope_value:
-                await set_ope_value(self.element_model.ope_value)
+                self.element_test_result.ope_value = str(ope_value)
             raise error
         else:
-            await set_ope_value(ope_value)
+            self.element_test_result.ope_value = str(ope_value)
 
     async def assertion_element(self):
         async def set_result(actual):
@@ -182,19 +162,19 @@ class ElementOperation(WebDevice, AndroidDriver):
         await self.assertion_element()
 
     async def __sql(self):
-        if self.is_step:
+        if self.base_data.is_step:
             sql = self.element_model.sql
             key_list = self.element_model.key_list
         else:
             sql = self.element_data.get('sql')
             key_list = self.element_data.get('key_list')
-        if self.mysql_connect:
-            result_list: list[dict] = self.mysql_connect.condition_execute(sql)
+        if self.base_data.mysql_connect:
+            result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
             if isinstance(result_list, list):
                 for result in result_list:
                     try:
                         for value, key in zip(result, key_list):
-                            self.test_data.set_cache(key, result.get(value))
+                            self.base_data.test_data.set_cache(key, result.get(value))
                     except SyntaxError:
                         raise ToolsError(*ERROR_MSG_0038)
 
@@ -202,13 +182,13 @@ class ElementOperation(WebDevice, AndroidDriver):
                     raise ToolsError(*ERROR_MSG_0036, value=(self.element_model.sql,))
 
     async def __custom(self):
-        if self.is_step:
+        if self.base_data.is_step:
             key = self.element_model.key
             value = self.element_model.value
         else:
             key = self.element_data.get('key')
             value = self.element_data.get('value')
-        self.test_data.set_cache(key, value)
+        self.base_data.test_data.set_cache(key, value)
 
     async def __find_element(self):
         try:
@@ -216,8 +196,6 @@ class ElementOperation(WebDevice, AndroidDriver):
                 count, loc = await self.web_find_ele()
             elif self.drive_type == DriveTypeEnum.ANDROID.value:
                 count, loc = self.a_find_ele()
-            # elif self.drive_type == DriveTypeEnum.IOS.value:
-            #     pass
             # elif self.drive_type == DriveTypeEnum.DESKTOP.value:
             #     pass
             else:
@@ -236,7 +214,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             for ele_name, case_data in self.element_data.items():
                 if ele_name == key:
                     value = case_data
-                    return self.test_data.replace(value)
+                    return self.base_data.test_data.replace(value)
         return value
 
     async def __error(self, error: UiError):
@@ -252,7 +230,7 @@ class ElementOperation(WebDevice, AndroidDriver):
             """
         )
         if self.element_test_result:
-            file_name = f'失败截图-{self.element_model.name}{self.test_data.get_time_for_min()}.jpg'
+            file_name = f'失败截图-{self.element_model.name}{self.base_data.test_data.get_time_for_min()}.jpg'
             file_path = os.path.join(project_dir.screenshot(), file_name)
             self.element_test_result.picture_path = file_name
             await self.__error_screenshot(file_path, file_name)
@@ -264,10 +242,10 @@ class ElementOperation(WebDevice, AndroidDriver):
                 try:
                     await self.w_screenshot(file_path)
                 except (TargetClosedError, TimeoutError):
-                    await self.setup()
+                    await self.base_data.setup()
                     raise UiError(*ERROR_MSG_0010)
                 except AttributeError:
-                    await self.setup()
+                    await self.base_data.setup()
                     raise UiError(*ERROR_MSG_0010)
             case DriveTypeEnum.ANDROID.value:
                 self.a_screenshot(file_path)

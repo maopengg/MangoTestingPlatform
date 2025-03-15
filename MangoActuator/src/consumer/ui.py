@@ -25,17 +25,10 @@ class UI:
         @param data:
         @return:
         """
-        try:
-            async with cls.lock:
-                test_page_steps = TestPageSteps(cls.parent, data.project_product)
-                cls.parent.set_tips_info(f'开始执行页面步骤：{data.name}')
-                await test_page_steps.page_steps_mian(data)
-        except MangoActuatorError as error:
-            await WebSocketClient().async_send(
-                code=error.code,
-                msg=error.msg,
-                is_notice=ClientTypeEnum.WEB
-            )
+        async with cls.lock:
+            test_page_steps = TestPageSteps(cls.parent, data.project_product)
+            cls.parent.set_tips_info(f'开始执行页面步骤：{data.name}')
+            await test_page_steps.page_steps_mian(data)
 
     @classmethod
     @convert_args(EquipmentModel)

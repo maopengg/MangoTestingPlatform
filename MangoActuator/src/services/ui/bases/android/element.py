@@ -11,8 +11,11 @@ from src.exceptions import UiError, ERROR_MSG_0043, ERROR_MSG_0044
 from src.services.ui.bases.base_data import BaseData
 
 
-class UiautomatorElement(BaseData):
+class UiautomatorElement:
     """元素操作"""
+
+    def __init__(self, base_data: BaseData):
+        self.base_data = base_data
 
     @classmethod
     def a_click(cls, locating: UiObject | XPathSelector):
@@ -27,9 +30,9 @@ class UiautomatorElement(BaseData):
     def a_input(self, locating: UiObject, text):
         """单击输入"""
         locating.click()
-        self.android.set_fastinput_ime(True)
+        self.base_data.android.set_fastinput_ime(True)
         time.sleep(1)
-        self.android.send_keys(text)
+        self.base_data.android.send_keys(text)
 
     @classmethod
     def a_set_text(cls, locating: UiObject, text):
@@ -38,11 +41,11 @@ class UiautomatorElement(BaseData):
 
     def a_click_coord(self, x, y):
         """坐标单击"""
-        self.android.click(x, y)
+        self.base_data.android.click(x, y)
 
     def a_double_click_coord(self, x, y):
         """坐标双击"""
-        self.android.double_click(x, y)
+        self.base_data.android.double_click(x, y)
 
     @classmethod
     def a_long_click(cls, locating: UiObject, time_):
@@ -58,7 +61,7 @@ class UiautomatorElement(BaseData):
         """获取元素文本"""
         value = locating.get_text()
         if set_cache_key:
-            self.test_data.set_cache(key=set_cache_key, value=value)
+            self.base_data.test_data.set_cache(key=set_cache_key, value=value)
         return value
 
     @classmethod
@@ -123,6 +126,6 @@ class UiautomatorElement(BaseData):
         """提取元素坐标"""
         x, y = locating.center()
         if x_key and y_key:
-            self.test_data.set_cache(key=x_key, value=x)
-            self.test_data.set_cache(key=y_key, value=y)
+            self.base_data.test_data.set_cache(key=x_key, value=x)
+            self.base_data.test_data.set_cache(key=y_key, value=y)
         return x, y

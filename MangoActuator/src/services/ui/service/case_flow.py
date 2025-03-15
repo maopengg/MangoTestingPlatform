@@ -33,8 +33,7 @@ class CaseFlow:
             if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
                 case_model: dict = await cls.queue.get()
                 cls.running_tasks += 1
-                print(case_model)
-                cls.parent.loop.create_task(cls.execute_task(**case_model))
+                task = asyncio.create_task(cls.execute_task(**case_model))
             else:
                 if time.time() - s > 5:
                     s = time.time()
@@ -52,7 +51,7 @@ class CaseFlow:
             cls.parent.set_tips_info('正在主动获取任务')
         except Exception as error:
             traceback.print_exc()
-            log.error(f'获取任务异常：{error}')
+            log.error(f'get_case_task，类型：{error}，错误：{traceback.print_exc()}')
 
     @classmethod
     @async_memory

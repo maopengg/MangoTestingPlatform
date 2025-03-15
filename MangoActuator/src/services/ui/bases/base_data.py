@@ -41,12 +41,10 @@ class BaseData(QObject):
     progress = Signal(object)
     finished = Signal(object)
 
-    def __init__(self, parent, driver_object, project_product_id):
+    def __init__(self, parent, project_product_id):
         super().__init__()
         self.parent = parent
         self.project_product_id = project_product_id
-        from src.services.ui.bases.driver_object import DriverObject
-        self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
 
         self.test_suite_id: Optional[int | None] = None
@@ -64,6 +62,7 @@ class BaseData(QObject):
         self.mysql_connect: Optional[MysqlConnect | None] = None  # mysql连接对象
 
         self.url: Optional[str | None] = None
+        self.is_open_url = False
         self.package_name: Optional[str | None] = None
 
         self.page: Optional[Page | None] = None
@@ -83,6 +82,10 @@ class BaseData(QObject):
         self.test_suite_id = test_suite_id
         return self
 
+    def set_page_step_id(self, page_step_id: int):
+        self.page_step_id = page_step_id
+        return self
+
     def set_environment_config(self, environment_config: EnvironmentConfigModel):
         self.environment_config = environment_config
         return self
@@ -93,6 +96,10 @@ class BaseData(QObject):
 
     def set_is_step(self, is_step: bool):
         self.is_step = is_step
+        return self
+
+    def set_project_product_id(self, project_product_id: bool):
+        self.project_product_id = project_product_id
         return self
 
     def set_url(self, url: str):
@@ -129,9 +136,6 @@ class BaseData(QObject):
             await self.context.close()
         if self.page and isinstance(self.page, Page):
             await self.page.close()
-        if self.driver_object.android.example_dict:
-            for i in self.driver_object.android.example_dict:
-                pass
         if self.mysql_connect:
             self.mysql_connect.close()
         await self.setup()

@@ -11,8 +11,11 @@ from src.exceptions import UiError, ERROR_MSG_0022
 from src.services.ui.bases.base_data import BaseData
 
 
-class PlaywrightCustomization(BaseData):
+class PlaywrightCustomization:
     """定制开发"""
+
+    def __init__(self, base_data: BaseData):
+        self.base_data = base_data
 
     async def w_list_input(self, locating: list[Locator], input_list_value: list[str], element_loc: str):
         """DESK定开-列表输入"""
@@ -23,7 +26,7 @@ class PlaywrightCustomization(BaseData):
         for loc, data in zip(locating, input_list_value):
             await loc.click()
             locator: Optional[Locator] = None
-            for i in self.page.frames:
+            for i in self.base_data.page.frames:
                 locator = await find_ele(i)
                 if await locator.count() > 0:
                     break
@@ -34,8 +37,7 @@ class PlaywrightCustomization(BaseData):
     async def w_click_right_coordinate(self, locating: Locator):
         """CDP定开-总和坐标点击"""
         button_position = await locating.bounding_box()
-        # 计算点击位置的坐标
         x = button_position['x'] + button_position['width'] + 50
         y = button_position['y'] - 40
         await asyncio.sleep(1)
-        await self.page.mouse.click(x, y)
+        await self.base_data.page.mouse.click(x, y)

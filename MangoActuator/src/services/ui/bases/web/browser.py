@@ -14,8 +14,11 @@ from src.services.ui.bases.base_data import BaseData
 from src.tools import project_dir
 
 
-class PlaywrightBrowser(BaseData):
+class PlaywrightBrowser:
     """浏览器操作"""
+
+    def __init__(self, base_data: BaseData):
+        self.base_data = base_data
 
     @classmethod
     async def w_wait_for_timeout(cls, _time: int):
@@ -28,7 +31,7 @@ class PlaywrightBrowser(BaseData):
             result = urlparse(url)
             if not all([result.scheme, result.netloc]):
                 raise UiError(*ERROR_MSG_0049)
-            await self.page.goto(url, timeout=60000)
+            await self.base_data.page.goto(url, timeout=60000)
             await asyncio.sleep(2)
         except TimeoutError:
             raise UiError(*ERROR_MSG_0013, value=(url,))
@@ -37,7 +40,7 @@ class PlaywrightBrowser(BaseData):
 
     async def w_screenshot(self, path: str, full_page=True):
         """整个页面截图"""
-        await self.page.screenshot(path=path, full_page=full_page)
+        await self.base_data.page.screenshot(path=path, full_page=full_page)
 
     @classmethod
     async def w_ele_screenshot(cls, locating: Locator, path: str):
@@ -46,32 +49,33 @@ class PlaywrightBrowser(BaseData):
 
     async def w_alert(self):
         """设置弹窗不予处理"""
-        self.page.on("dialog", lambda dialog: dialog.accept())
+        self.base_data.page.on("dialog", lambda dialog: dialog.accept())
 
     async def w_get_cookie(self):
         """获取storage_state保存到download目录"""
         with open(f'{project_dir.download()}/storage_state.json', 'w') as file:
-            file.write(json.dumps(await self.context.storage_state()))
+            file.write(json.dumps(await self.base_data.context.storage_state()))
 
     async def w_set_cookie(self, storage_state: str):
         """设置storage_state（cookie）"""
         storage_state = json.loads(storage_state)
-        await self.context.add_cookies(storage_state['cookies'])
+        await self.base_data.context.add_cookies(storage_state['cookies'])
         for storage in storage_state['origins']:
             local_storage = storage.get('localStorage', [])
             session_storage = storage.get('sessionStorage', [])
             for item in local_storage:
-                await self.context.add_init_script(f"window.localStorage.setItem('{item['name']}', '{item['value']}');")
+                await self.base_data.context.add_init_script(
+                    f"window.localStorage.setItem('{item['name']}', '{item['value']}');")
             for item in session_storage:
-                await self.context.add_init_script(
+                await self.base_data.context.add_init_script(
                     f"window.sessionStorage.setItem('{item['name']}', '{item['value']}');")
-        await self.page.reload()
+        await self.base_data.page.reload()
 
     async def w_clear_cookies(self):
         """清除所有cookies"""
-        await self.context.clear_cookies()
+        await self.base_data.context.clear_cookies()
 
     async def w_clear_storage(self):
         """清除本地存储和会话存储"""
-        await self.page.evaluate("() => localStorage.clear()")
-        await self.page.evaluate("() => sessionStorage.clear()")
+        await self.base_data.page.evaluate("() => localStorage.clear()")
+        await self.base_data.page.evaluate("() => sessionStorage.clear()")

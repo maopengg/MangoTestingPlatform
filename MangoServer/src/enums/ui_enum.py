@@ -32,14 +32,14 @@ class BrowserTypeEnum(BaseEnum):
 class ElementExpEnum(BaseEnum):
     """元素定位方式枚举"""
     XPATH = 0
-    TEST_ID = 1
+    # TEST_ID = 1
     LOCATOR = 2
     TEXT = 3
     PLACEHOLDER = 4
-    LABEL = 5
-    TITLE = 6
-    ROLE = 7
-    AIT_TEXT = 8
+    # LABEL = 5
+    # TITLE = 6
+    # ROLE = 7
+    # AIT_TEXT = 8
     CSS = 9
     # APP专属
     DESCRIPTION = 11
@@ -51,14 +51,14 @@ class ElementExpEnum(BaseEnum):
     def obj(cls):
         return {
             0: "XPATH",
-            1: "W_TestID",
+            # 1: "W_TestID",
             2: "定位器",
             3: "W_文本",
             4: "W_占位符",
-            5: "W_标签",
-            6: "W_标题",
-            7: "W_ROLE",
-            8: "W_AIT_TEXT",
+            # 5: "W_标签",
+            # 6: "W_标题",
+            # 7: "W_ROLE",
+            # 8: "W_AIT_TEXT",
             9: "W_CSS",
             11: "A_DESCRIPTION",
             12: "A_BOUNDS",
