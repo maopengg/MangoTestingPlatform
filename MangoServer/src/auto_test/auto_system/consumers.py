@@ -15,7 +15,7 @@ from src.auto_test.auto_user.models import User
 from src.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
-from src.settings import DEBUG
+from src.settings import DEBUG, IS_DEBUG_LOG
 
 T = TypeVar('T')
 
@@ -153,6 +153,6 @@ class ChatConsumer(WebsocketConsumer):
         except TypeError:
             log.system.error(f'序列化数据错误，请检查发送数据！')
         else:
-            if DEBUG:
+            if IS_DEBUG_LOG:
                 log.system.debug(f"发送的数据：{data_json}")
             return data_json

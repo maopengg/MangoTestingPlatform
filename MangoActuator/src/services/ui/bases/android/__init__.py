@@ -54,11 +54,12 @@ class AndroidDriver(UiautomatorEquipment,
         )
 
     def open_app(self):
-        self.a_press_home()
-        self.a_app_stop_all()
-        if self.android and self.package_name != package_name:
-            self.a_start_app(package_name)
-            self.package_name = package_name
+        if not self.base_data.is_open_app:
+            self.base_data.is_open_app = True
+            self.a_press_home()
+            self.a_app_stop_all()
+            if self.base_data.android and self.base_data.package_name:
+                self.a_start_app(self.base_data.package_name)
 
     @sync_retry
     def a_action_element(self) -> dict:
@@ -105,7 +106,7 @@ class AndroidDriver(UiautomatorEquipment,
                 actual = 'sql匹配'
                 if self.base_data.mysql_connect is not None:
                     SqlAssertion.mysql_obj = self.base_data.mysql_connect
-                    SqlAssertion.sql_is_equal(**self.base_data.element_model.ope_value)
+                    SqlAssertion.sql_is_equal(**self.element_model.ope_value)
                 else:
                     raise UiError(*ERROR_MSG_0019, value=(self.base_data.case_id, self.base_data.test_suite_id))
             return actual
