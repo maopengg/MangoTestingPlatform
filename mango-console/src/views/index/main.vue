@@ -3,11 +3,11 @@
     <div class="left">
       <div class="item">
         <Title title="用例占比" />
-        <CaseSum ref="reportSum" />
+        <PieChart :chartData="data.caseSum" />
       </div>
       <div class="item">
         <Title title="执行占比" />
-        <ReportSum ref="caseSum" />
+        <PieChart :chartData="data.reportSum" />
       </div>
       <div class="item">
         <Title title="活跃度" />
@@ -64,14 +64,14 @@
                             record.test_env !== null
                               ? enumStore.environment_type[record.test_env].title
                               : ''
-                          }}</a-tag
-                        >
+                          }}
+                        </a-tag>
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
                           <a-button type="text" size="mini" @click="onClick(record)"
-                            >查看结果</a-button
-                          >
+                            >查看结果
+                          </a-button>
                         </a-space>
                       </template>
                     </a-table-column>
@@ -88,13 +88,11 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, ref, unref, watch, onMounted, nextTick } from 'vue'
-  import Title from './components/Title'
+  import { computed, ref, unref, watch, onMounted, nextTick, reactive } from 'vue'
+  import Title from '@/views/index/components/Title'
   import useAppConfigStore from '@/store/modules/app-config'
-  import CenterTitle from './components/CenterTitle.vue'
+  import CenterTitle from '@/views/index/components/CenterTitle.vue'
   import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
-  import ReportSum from './components/chart/RreportSum.vue'
-  import CaseSum from './components/chart/CaseSum.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
   import {
     usePagination,
@@ -108,6 +106,8 @@
   import { getSystemTasks } from '@/api/system/tasks'
   import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
+  import PieChart from '@/components/chart/PieChart.vue'
+  import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
 
   const appStore = useAppConfigStore()
   const mainHeight = computed(() => {
@@ -116,15 +116,10 @@
   const projectInfo = useProject()
   const productModule = useProductModule()
   const enumStore = useEnum()
-  const reportSum = ref()
-  const caseSum = ref()
   const hotProductChart = ref()
   const fullYearSalesChart = ref()
   const onResize = () => {
     setTimeout(() => {
-      unref(caseSum).updateChart()
-      unref(reportSum).updateChart()
-      // unref(weekSalesChart).updateChart()
       unref(hotProductChart).updateChart()
       unref(fullYearSalesChart).updateChart()
     }, 500)
@@ -142,6 +137,10 @@
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
+  const data: any = reactive({
+    caseSum: [],
+    reportSum: [],
+  })
   const tableColumns = useTableColumn([
     table.indexColumn,
 
@@ -185,6 +184,27 @@
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
+        caseSum()
+        getAllReportSum()
+        productModule.getProjectModule()
+        projectInfo.getProject()
+        projectInfo.projectProductName()
+      })
+      .catch(console.log)
+  }
+
+  function caseSum() {
+    getSystemCaseSum()
+      .then((res) => {
+        data.caseSum = res.data
+      })
+      .catch(console.log)
+  }
+
+  function getAllReportSum() {
+    getSystemCaseRunSum()
+      .then((res) => {
+        data.reportSum = res.data
       })
       .catch(console.log)
   }
@@ -192,9 +212,6 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      await productModule.getProjectModule()
-      await projectInfo.getProject()
-      await projectInfo.projectProductName()
     })
   })
 </script>

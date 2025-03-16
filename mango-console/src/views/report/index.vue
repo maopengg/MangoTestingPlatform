@@ -50,12 +50,12 @@
         <div style="margin-bottom: 10px">
           <a-card style="float: left; width: 30%" :bordered="false">
             <Title title="接口数&用例数" />
-            <div ref="pieChart" :style="{ width: '100%', height: '250px' }"></div>
+            <StatusChart :success="data.successSum" :fail="data.failSum" />
           </a-card>
 
           <a-card style="float: right; width: 70%" :bordered="false">
             <Title title="近三个季度执行用例趋势图" />
-            <div ref="barChart" :style="{ width: '100%', height: '250px' }"></div>
+            <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
           </a-card>
         </div>
         <a-table
@@ -126,10 +126,9 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { nextTick, onMounted, ref } from 'vue'
+  import { nextTick, onMounted, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
-  import * as echarts from 'echarts'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import { conditionItems, tableColumns } from './config'
@@ -149,6 +148,12 @@
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()
+  const data: any = reactive({
+    successSum: [],
+    failSum: [],
+    weekSuccessData: [],
+    weekFailData: [],
+  })
 
   function doRefresh() {
     let value = getFormItems(conditionItems)
@@ -193,132 +198,17 @@
       .catch(console.log)
   }
 
-  const barChart = ref<HTMLElement>()
-  const myChart1 = ref<any>()
-
-  function initBarEcharts() {
-    myChart1.value = echarts.init(barChart.value!)
-    getSystemTestSuiteDetailsReport()
-      .then((res) => {
-        myChart1.value.setOption({
-          tooltip: {
-            trigger: 'item',
-          },
-          xAxis: {
-            type: 'category',
-            data: [
-              '1周',
-              '2周',
-              '3周',
-              '4周',
-              '5周',
-              '6周',
-              '7周',
-              '8周',
-              '9周',
-              '10周',
-              '11周',
-              '12周',
-            ],
-          },
-          legend: {
-            data: ['成功', '失败'],
-          },
-          yAxis: {
-            type: 'value',
-          },
-          series: [
-            {
-              name: '成功',
-              data: res.data.success,
-              type: 'line',
-              itemStyle: {
-                color: 'green', // Set the line color to green
-              },
-            },
-            {
-              name: '失败',
-              data: res.data.fail,
-              type: 'line',
-              itemStyle: {
-                color: 'red', // Set the line color to red
-              },
-            },
-          ],
-        })
-      })
-      .catch(console.log)
-  }
-
-  const pieChart = ref<HTMLElement>()
-  const myChart2 = ref<any>()
-
-  function initPieEcharts() {
-    myChart2.value = echarts.init(pieChart.value!)
-    getSystemTestSuiteDetailsReport()
-      .then((res) => {
-        myChart2.value.setOption({
-          tooltip: {
-            trigger: 'item',
-          },
-          legend: {
-            top: '5%',
-            left: 'center',
-          },
-          series: [
-            {
-              name: 'Access From',
-              type: 'pie',
-              radius: ['40%', '70%'],
-              avoidLabelOverlap: false,
-              itemStyle: {
-                borderRadius: 10,
-                borderColor: '#fff',
-                borderWidth: 2,
-              },
-              label: {
-                show: true,
-                position: 'center',
-              },
-              emphasis: {
-                label: {
-                  show: true,
-                  fontSize: 40,
-                  fontWeight: 'bold',
-                },
-              },
-              labelLine: {
-                show: false,
-              },
-              data: [
-                {
-                  value: res.data.successSun,
-                  name: '用例通过数',
-                  itemStyle: {
-                    color: '#11a834', // Set the color to green for case pass count #00b42a
-                  },
-                },
-                {
-                  value: res.data.failSun,
-                  name: '用例失败数',
-                  itemStyle: {
-                    color: '#d34141', // Set the color to red for case fail count  #f53f3f
-                  },
-                },
-              ],
-            },
-          ],
-        })
-      })
-
-      .catch(console.log)
-  }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      initPieEcharts()
-      initBarEcharts()
+      getSystemTestSuiteDetailsReport()
+        .then((res) => {
+          data.weekFailData = res.data.fail
+          data.weekSuccessData = res.data.success
+          data.failSum = res.data.failSun
+          data.successSum = res.data.successSun
+        })
+        .catch(console.log)
     })
   })
 </script>

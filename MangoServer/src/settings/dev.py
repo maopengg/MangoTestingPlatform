@@ -15,7 +15,7 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.19.31.179'
+MYSQL_IP = '172.19.65.203'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio

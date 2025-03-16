@@ -53,6 +53,35 @@ class TestSuiteDetailsCRUD(ModelCRUD):
     serializer_class = TestSuiteDetailsSerializersC
     serializer = TestSuiteDetailsSerializers
 
+    @error_response('system')
+    def get(self, request: Request):
+        query_dict = {}
+        for k, v in dict(request.query_params.lists()).items():
+            if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
+                query_dict[f'{k}__contains'] = v[0]
+            else:
+                query_dict[k] = v[0]
+        del query_dict['pageSize']
+        del query_dict['page']
+        books = self.model.objects.filter(**query_dict)
+        data_list, count = self.paging_list(
+            request.query_params.get("pageSize"),
+            request.query_params.get("page"),
+            books,
+            self.get_serializer_class()
+        )
+        for item in data_list:
+            if 'result_data' in item:
+                item['children'] = item.pop('result_data')
+                if item.get('children'):
+                    for i in item.get('children'):
+                        i['case_type'] = item['type']
+        return ResponseData.success(
+            RESPONSE_MSG_0001,
+            data_list,
+            count
+        )
+
 
 class TestSuiteDetailsViews(ViewSet):
     model = TestSuiteDetails

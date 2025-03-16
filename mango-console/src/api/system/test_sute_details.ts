@@ -1,10 +1,10 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function getSystemTestSuiteDetails(test_suite_id: number) {
+export function getSystemTestSuiteDetails(data: object) {
   return get({
     url: 'system/test/suite/details',
     data: () => {
-      return { test_suite_id: test_suite_id }
+      return data
     },
   })
 }

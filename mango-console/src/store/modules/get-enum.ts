@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { getSystemEnum } from '@/api/system/system'
+
 type StateValueType = null | { key: number; title: string }[]
 
 interface EnumState {
@@ -28,6 +29,7 @@ interface EnumState {
   colors: string[]
   status_colors: string[]
 }
+
 export const useEnum = defineStore('get-enum', {
   state: (): EnumState => ({
     cline_type: [],
@@ -68,7 +70,7 @@ export const useEnum = defineStore('get-enum', {
       'pinkpurple',
       'gray',
     ],
-    status_colors: ['red', 'green', 'gold', 'lime'],
+    status_colors: ['red', 'green', '#FFB400', 'gray'],
   }),
   getters: {},
   actions: {

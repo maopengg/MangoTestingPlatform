@@ -30,20 +30,26 @@
     top: 5px;
     bottom: 55px;
   }
+
   // 这个样式是不是要写到里面去
   .variable {
     overflow: hidden;
     overflow-y: scroll;
     /* 设置滚动条的样式 */
+
     &::-webkit-scrollbar {
       width: 3px;
       height: 6px;
     }
+
     /* 滚动槽 */
+
     &::-webkit-scrollbar-track {
       border-radius: 3px;
     }
+
     /* 滚动条滑块 */
+
     &::-webkit-scrollbar-thumb {
       border-radius: 3px;
       background: rgba(51, 51, 51, 0.4);
