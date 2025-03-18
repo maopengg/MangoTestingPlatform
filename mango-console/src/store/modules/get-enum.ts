@@ -70,7 +70,7 @@ export const useEnum = defineStore('get-enum', {
       'pinkpurple',
       'gray',
     ],
-    status_colors: ['red', 'green', '#FFB400', 'gray'],
+    status_colors: ['red', 'green', 'gold', 'gray'],
   }),
   getters: {},
   actions: {
