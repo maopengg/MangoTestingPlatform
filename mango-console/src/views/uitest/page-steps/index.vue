@@ -341,6 +341,7 @@
     data.updateId = item.id
     modalDialogRef.value?.toggle()
     productModule.getProjectModule(item.project_product.id)
+    onModulePage(item.module.id, false)
     nextTick(() => {
       formItems.forEach((it) => {
         const propName = item[it.key]

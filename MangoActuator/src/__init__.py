@@ -13,6 +13,9 @@ from .tools.log_collector import log
 
 
 async def process(parent):
+    websocket_task = None
+    consumer_task = None
+    case_flow_task = None
     try:
         WebSocketClient.parent = parent
         SocketConsumer.parent = parent
@@ -21,6 +24,14 @@ async def process(parent):
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
     except Exception as error:
+        if websocket_task:
+            websocket_task.cancel()
+        if consumer_task:
+            consumer_task.cancel()
+        if case_flow_task:
+            case_flow_task.cancel()
+        if WebSocketClient.websocket:
+            WebSocketClient.websocket = None
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")
         await asyncio.sleep(5)
