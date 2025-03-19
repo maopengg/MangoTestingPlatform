@@ -161,7 +161,6 @@
               {{ record.case_people.name }}
             </template>
             <template v-else-if="item.key === 'switch_step_open_url'" #cell="{ record }">
-              {{ record.case_people.name }}
               <a-switch
                 :default-checked="record.switch_step_open_url === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
