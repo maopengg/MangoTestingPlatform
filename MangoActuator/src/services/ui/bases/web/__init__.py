@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import re
-from urllib.parse import urljoin, urlparse
 
 from mangokit import Mango
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
@@ -22,7 +21,6 @@ from src.services.ui.bases.web.input_device import PlaywrightDeviceInput
 from src.services.ui.bases.web.page import PlaywrightPage
 from src.tools.assertion.sql_assertion import SqlAssertion
 from src.tools.decorator.async_retry import async_retry
-from src.settings import settings
 
 re = re
 
@@ -64,8 +62,8 @@ class WebDevice(PlaywrightBrowser,
         if not self.base_data.is_open_url:
             await self.w_goto(self.base_data.url)
             self.base_data.is_open_url = True
-        elif settings.IS_SWITCH_URL and self.base_data.page.url != self.base_data.url:
-            await self.w_wait_for_timeout(2)
+        elif self.base_data.switch_step_open_url and self.base_data.page.url != self.base_data.url:
+            await self.w_wait_for_timeout(1)
             await self.w_goto(self.base_data.url)
 
     @async_retry

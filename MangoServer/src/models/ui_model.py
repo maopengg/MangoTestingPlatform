@@ -94,6 +94,7 @@ class CaseModel(BaseModel):
     parametrize: list[dict] | list
     steps: list[PageStepsModel]
     public_data_list: list[UiPublicModel] = []
+    switch_step_open_url: bool = True
 
 
 class ElementResultModel(BaseModel):

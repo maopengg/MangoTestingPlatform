@@ -54,7 +54,8 @@ class TestCase:
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
             steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
-            public_data_list=self.__public_data(case.project_product_id)
+            public_data_list=self.__public_data(case.project_product_id),
+            switch_step_open_url=True if case.switch_step_open_url == 1 else False
         )
         self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                            data_model=case_model)

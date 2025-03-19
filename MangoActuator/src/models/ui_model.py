@@ -73,7 +73,6 @@ class PageStepsModel(BaseModel):
     element_list: list[ElementModel] = []
     equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
-
     public_data_list: list[UiPublicModel] = []
     case_step_details_id: int | None = None
     case_data: list[StepsDataModel] = []
@@ -95,6 +94,7 @@ class CaseModel(BaseModel):
     parametrize: list[dict] | list
     steps: list[PageStepsModel]
     public_data_list: list[UiPublicModel] = []
+    switch_step_open_url: bool = True
 
 
 class ElementResultModel(BaseModel):

@@ -63,6 +63,7 @@ class BaseData(QObject):
 
         self.url: Optional[str | None] = None
         self.is_open_url = False
+        self.switch_step_open_url = True
         self.package_name: Optional[str | None] = None
 
         self.page: Optional[Page | None] = None
@@ -80,6 +81,10 @@ class BaseData(QObject):
 
     def set_test_suite_id(self, test_suite_id: int):
         self.test_suite_id = test_suite_id
+        return self
+
+    def set_step_open_url(self, switch_step_open_url: bool):
+        self.switch_step_open_url = switch_step_open_url
         return self
 
     def set_page_step_id(self, page_step_id: int):

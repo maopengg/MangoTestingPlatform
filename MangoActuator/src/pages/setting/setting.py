@@ -62,10 +62,6 @@ class SettingPage(QWidget):
         card_layout6.addLayout(card_layout6_3)
         card_layout6_3_1 = MangoHBoxLayout()
         card_layout6_3.addLayout(card_layout6_3_1)
-        self.input_6_1 = MangoToggle(settings.IS_SWITCH_URL)
-        self.input_6_1.clicked.connect(self.switch_url)
-        card_layout6_3_1.addWidget(MangoLabel('是否切换页面执行跳转URL：'))
-        card_layout6_3_1.addWidget(self.input_6_1)
         card_layout6_3_1.addStretch()
 
         card_layout3 = MangoVBoxLayout()
@@ -137,8 +133,7 @@ class SettingPage(QWidget):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
         log.set_debug(settings.IS_DEBUG)
 
-    def switch_url(self, value):
-        settings.IS_SWITCH_URL = bool(self.input_6_1.get_value())
+
 
     def click_send_redis_data(self):
         r = GetClassMethod()

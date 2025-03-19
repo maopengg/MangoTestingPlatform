@@ -375,7 +375,7 @@
     }
   }
 
-  const onModifyStatus = async (newValue: number, id: number, key: string) => {
+  const onModifyStatus = async (newValue: any, id: number, key: string) => {
     let obj: any = {
       id: id,
     }

@@ -17,13 +17,13 @@ from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
+from src.services.ui.bases.base_data import BaseData
+from src.services.ui.bases.driver_object import DriverObject
 from src.services.ui.service.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
-from src.services.ui.bases.base_data import BaseData
-from src.services.ui.bases.driver_object import DriverObject
 
 
 class TestCase:
@@ -35,7 +35,8 @@ class TestCase:
         self.parametrize: dict = parametrize
         self.base_data = BaseData(self.parent, case_model.project_product)
         self.base_data = self.base_data.set_case_id(case_model.id) \
-            .set_test_suite_id(case_model.test_suite_id)
+            .set_test_suite_id(case_model.test_suite_id) \
+            .set_step_open_url(case_model.switch_step_open_url)
 
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,

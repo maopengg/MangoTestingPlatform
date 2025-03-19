@@ -145,12 +145,14 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
+    align: 'left',
     width: 180,
   },
   {
     title: '模块',
     key: 'module',
-    dataIndex: 'modul',
+    dataIndex: 'module',
+    align: 'left',
     width: 180,
   },
   {
@@ -158,7 +160,7 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
-    width: 200,
+    width: 300,
   },
   {
     title: '步骤顺序',
@@ -167,6 +169,12 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+  },
+  {
+    title: '切换URL',
+    key: 'switch_step_open_url',
+    dataIndex: 'switch_step_open_url',
+    width: 100,
   },
   {
     title: '级别',
@@ -180,7 +188,6 @@ export const tableColumns = useTableColumn([
     dataIndex: 'case_people',
     width: 80,
   },
-
   {
     title: '结果',
     key: 'status',

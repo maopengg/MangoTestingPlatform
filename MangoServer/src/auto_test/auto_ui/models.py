@@ -110,9 +110,10 @@ class UiCase(models.Model):
     project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="用例组名称", max_length=64)
-    case_flow = models.TextField(verbose_name="步骤顺序",  null=True)
+    case_flow = models.TextField(verbose_name="步骤顺序", null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
+    switch_step_open_url = models.SmallIntegerField(verbose_name="是否在切换步骤的时候切换url", default=1)
     # 0失败，1成功，2待开始，3，进行中
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     level = models.SmallIntegerField(verbose_name="用例级别", default=0)
