@@ -67,22 +67,13 @@ class WebSocketClient:
                         await cls.client_recv()
                     await asyncio.sleep(2)
                     retry = 1
-            except (ConnectionRefusedError,
-                    OSError,
-                    WebSocketException,
-                    websockets.ConnectionClosed,
-                    ConnectionAbortedError) as error:
+            except Exception as error:
                 log.error(f'错误类型：{error}，错误详情：{traceback.print_exc()}')
                 cls.parent.set_tips_info(
                     f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                 retry += 1
                 await asyncio.sleep(5)
-            except Exception as error:
-                traceback.print_exc()
-                log.error(error)
-                cls.parent.set_tips_info(f"socket发生未知错误，请把日志发送给管理员！")
-                await asyncio.sleep(5)
-                raise error
+                await cls.client_run()
 
     @classmethod
     async def client_recv(cls):
