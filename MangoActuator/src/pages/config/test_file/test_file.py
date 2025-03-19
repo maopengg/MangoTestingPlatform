@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import os
 
-from mango_ui import *
+from mangoui import *
 from mangokit import requests
 
 from src.network import HTTP

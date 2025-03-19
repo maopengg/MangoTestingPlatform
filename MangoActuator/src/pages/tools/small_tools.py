@@ -6,7 +6,7 @@
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QHBoxLayout
-from mango_ui import MangoWindow, MangoVBoxLayout, MangoCard, MangoLabel
+from mangoui import MangoWindow, MangoVBoxLayout, MangoCard, MangoLabel
 
 from .small_tools_dict import tools_data
 

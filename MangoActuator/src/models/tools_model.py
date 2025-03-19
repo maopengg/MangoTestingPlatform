@@ -4,7 +4,7 @@
 # @Time   : 2023-11-08 15:48
 # @Author : 毛鹏
 
-from mango_ui import CascaderModel
+from mangoui import CascaderModel
 from pydantic import BaseModel
 
 

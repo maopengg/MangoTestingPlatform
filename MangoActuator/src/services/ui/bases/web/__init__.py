@@ -61,9 +61,9 @@ class WebDevice(PlaywrightBrowser,
         )
 
     async def open_url(self):
-        self.base_data.is_open_url = True
         if not self.base_data.is_open_url:
             await self.w_goto(self.base_data.url)
+            self.base_data.is_open_url = True
         elif settings.IS_SWITCH_URL and self.base_data.page.url != self.base_data.url:
             await self.w_wait_for_timeout(2)
             await self.w_goto(self.base_data.url)

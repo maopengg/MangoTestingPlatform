@@ -6,7 +6,7 @@
 import json
 from copy import deepcopy
 
-from mango_ui import DialogCallbackModel, DialogWidget, FormDataModel, error_message
+from mangoui import DialogCallbackModel, DialogWidget, FormDataModel, error_message
 
 from src.enums.ui_enum import ElementOperationEnum
 from src.models.user_model import UserModel

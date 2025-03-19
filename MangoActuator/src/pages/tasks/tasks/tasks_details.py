@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-16 17:35
 # @Author : 毛鹏
-from mango_ui import DialogCallbackModel, ComboBoxDataModel, FormDataModel
+from mangoui import DialogCallbackModel, ComboBoxDataModel, FormDataModel
 
 from src.enums.tools_enum import AutoTestTypeEnum
 from src.models.socket_model import ResponseModel

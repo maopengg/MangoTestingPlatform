@@ -8,7 +8,7 @@ import asyncio
 import threading
 
 from PySide6.QtCore import QThread, Signal, QTimer
-from mango_ui import warning_notification, error_notification, success_notification, info_notification, \
+from mangoui import warning_notification, error_notification, success_notification, info_notification, \
     MangoMain1Window, DialogWidget, FormDataModel
 
 from src.consumer import SocketConsumer

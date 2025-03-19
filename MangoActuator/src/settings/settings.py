@@ -9,9 +9,9 @@ PORT = None
 USERNAME = None
 PASSWORD = None
 # ****************************************** DEBUG ****************************************** #
-IS_DEBUG = True
+IS_DEBUG = False
 # ************************************** 是否弹出首页弹窗 ************************************** #
-IS_WINDOW = False
+IS_WINDOW = True
 # ********************************** 是否在切换页面的时候切换url ********************************** #
 IS_SWITCH_URL = True
 # ************************************* 找不到元素循环次数 ************************************* #
@@ -34,7 +34,7 @@ def FILE_PATH():
 
 # **************************************** 下面不用管 **************************************** #
 if platform.system() != "Linux":
-    from mango_ui import AppConfig, MenusModel
+    from mangoui import AppConfig, MenusModel
 
     with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
         STYLE = AppConfig(**json.loads(f.read()))

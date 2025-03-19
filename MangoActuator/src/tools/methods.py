@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import threading
 
-from mango_ui import *
+from mangoui import *
 
 from src.models.tools_model import BaseDictModel
 from src.network import HTTP

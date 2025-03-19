@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-15 14:54
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel
+from mangoui import ComboBoxDataModel, FormDataModel
 
 from src.pages.parent.table import TableParent
 from src.tools.components.message import response_message

@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from mango_ui import *
+from mangoui import *
 
 from src.network import HTTP
 from src.pages.parent.sub import SubPage

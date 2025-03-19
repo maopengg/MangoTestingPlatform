@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import ComboBoxDataModel, FormDataModel, error_message
+from mangoui import ComboBoxDataModel, FormDataModel, error_message
 
 from src.models.socket_model import ResponseModel
 from src.models.user_model import UserModel

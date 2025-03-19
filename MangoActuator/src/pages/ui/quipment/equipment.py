@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import copy
 
-from mango_ui import *
+from mangoui import *
 from mangokit import Mango
 
 from src.enums.tools_enum import Status5Enum

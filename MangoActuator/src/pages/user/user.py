@@ -1,6 +1,6 @@
 from typing import Optional
 
-from mango_ui import *
+from mangoui import *
 
 from src.models.user_model import UserModel
 from src.network import HTTP

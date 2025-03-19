@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from PySide6.QtCore import QMetaObject
 from PySide6.QtWidgets import QFrame, QSpacerItem, QPushButton
-from mango_ui import *
+from mangoui import *
 
 
 class LoginWindow(QWidget):

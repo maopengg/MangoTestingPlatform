@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import copy
 
-from mango_ui import *
+from mangoui import *
 
 from src.models.socket_model import ResponseModel
 from src.network import HTTP

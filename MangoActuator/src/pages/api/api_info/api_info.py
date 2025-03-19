@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-08-28 16:30
 # @Author : 毛鹏
-from mango_ui import *
+from mangoui import *
 
 from src.models.user_model import UserModel
 from src.network import HTTP

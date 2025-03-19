@@ -6,7 +6,7 @@
 
 import uuid
 
-from mango_ui import *
+from mangoui import *
 
 from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
 from src.models.socket_model import ResponseModel

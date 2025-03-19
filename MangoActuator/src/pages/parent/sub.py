@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from typing import Optional
 
-from mango_ui import *
+from mangoui import *
 
 from src.pages.parent.parent import Parent
 from src.tools.components.message import response_message

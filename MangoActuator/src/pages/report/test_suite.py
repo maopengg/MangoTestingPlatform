@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-24 17:10
 # @Author : 毛鹏
-from mango_ui import *
+from mangoui import *
 
 from src.network import HTTP
 from .test_suite_dict import *

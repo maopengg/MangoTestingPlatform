@@ -4,7 +4,7 @@
 # @Time   : 2024-09-01 下午9:01
 # @Author : 毛鹏
 
-from mango_ui import *
+from mangoui import *
 
 from src.enums.tools_enum import Status3Enum, StatusEnum, TaskEnum, AutoTestTypeEnum
 from src.network import HTTP

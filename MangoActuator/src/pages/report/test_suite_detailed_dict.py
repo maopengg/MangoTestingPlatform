@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-05 11:56
 # @Author : 毛鹏
-from mango_ui import THEME
+from mangoui import THEME
 
 right_data = [
     {'name': '刷新', 'theme': THEME.group.info, 'action': 'show_data'},

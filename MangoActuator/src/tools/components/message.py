@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-12-09 15:30
 # @Author : 毛鹏
-from mango_ui import success_message, error_message
+from mangoui import success_message, error_message
 
 from src.models.socket_model import ResponseModel
 

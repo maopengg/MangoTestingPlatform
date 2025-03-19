@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-16 17:35
 # @Author : 毛鹏
-from mango_ui import THEME
+from mangoui import THEME
 
 from src.tools.methods import Methods
 

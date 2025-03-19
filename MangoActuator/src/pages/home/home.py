@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QPixmap
-from mango_ui import *
+from mangoui import *
 
 from src.models.socket_model import ResponseModel
 from src.network import HTTP

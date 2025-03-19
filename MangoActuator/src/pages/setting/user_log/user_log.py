@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import copy
 
-from mango_ui import SearchDataModel, ComboBoxDataModel
+from mangoui import SearchDataModel, ComboBoxDataModel
 
 from .user_log_dict import *
 from ...parent.table import TableParent

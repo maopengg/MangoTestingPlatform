@@ -4,7 +4,7 @@
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
 
-from mango_ui import *
+from mangoui import *
 
 from src.enums.system_enum import ClientTypeEnum, CacheDataKey2Enum
 from src.models import queue_notification

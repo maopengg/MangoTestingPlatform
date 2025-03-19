@@ -7,7 +7,7 @@ import platform
 from enum import Enum
 
 if platform.system() != "Linux":
-    from mango_ui import ComboBoxDataModel
+    from mangoui import ComboBoxDataModel
 
 
 class BaseEnum(Enum):

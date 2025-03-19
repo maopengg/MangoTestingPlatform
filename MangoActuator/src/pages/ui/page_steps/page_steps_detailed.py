@@ -6,7 +6,7 @@
 import asyncio
 import json
 
-from mango_ui import *
+from mangoui import *
 
 from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel

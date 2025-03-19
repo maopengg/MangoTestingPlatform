@@ -4,7 +4,7 @@
 # @Time   : 2024-09-18 15:07
 # @Author : 毛鹏
 from PySide6.QtCore import QThread
-from mango_ui import *
+from mangoui import *
 
 from src.pages.parent.parent import Parent
 from src.tools.components.message import response_message

@@ -1,5 +1,5 @@
 from PySide6.QtCore import QTimer
-from mango_ui import *
+from mangoui import *
 
 
 class ExamplePage(MangoWindow):
