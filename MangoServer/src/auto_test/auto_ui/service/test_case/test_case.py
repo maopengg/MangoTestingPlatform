@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
+import copy
+
 from pydantic import ValidationError
 
 from src.auto_test.auto_system.consumers import ChatConsumer
@@ -57,8 +59,16 @@ class TestCase:
             public_data_list=self.__public_data(case.project_product_id),
             switch_step_open_url=True if case.switch_step_open_url else False
         )
-        self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                           data_model=case_model)
+        if case.parametrize:
+            for index, i in enumerate(case.parametrize):
+                case_model_1 = copy.deepcopy(case_model)
+                case_model_1.parametrize = i
+                case_model_1.name = f'{case.name}-测试套第{index}次'
+                self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                                   data_model=case_model_1)
+        else:
+            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                               data_model=case_model)
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:

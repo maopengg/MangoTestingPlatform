@@ -31,7 +31,7 @@ class CaseFlow:
         while cls.running:
             await asyncio.sleep(0.1)
             if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
-                case_model: dict = await cls.queue.get()
+                case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 task = asyncio.create_task(cls.execute_task(**case_model))
             else:
@@ -55,16 +55,16 @@ class CaseFlow:
 
     @classmethod
     @async_memory
-    async def execute_task(cls, case_model: CaseModel, parametrize):
-        async with TestCase(cls.parent, case_model, cls.driver_object, parametrize) as obj:
+    async def execute_task(cls, case_model: CaseModel):
+        async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
             cls.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
             await obj.case_init()
             await obj.case_page_step()
         cls.running_tasks -= 1
 
     @classmethod
-    async def add_task(cls, case_model: CaseModel, parametrize):
-        await cls.queue.put({'case_model': case_model, 'parametrize': parametrize})
+    async def add_task(cls, case_model: CaseModel):
+        await cls.queue.put(case_model)
 
     @classmethod
     def stop(cls):

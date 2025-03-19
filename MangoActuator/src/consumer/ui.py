@@ -4,14 +4,11 @@
 # @Author : 毛鹏
 import asyncio
 
-from src.enums.system_enum import ClientTypeEnum
-from src.exceptions import MangoActuatorError
 from src.models.ui_model import PageStepsModel, CaseModel, EquipmentModel
-from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.service.case_flow import CaseFlow
 from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
-
+import copy
 
 class UI:
     lock = asyncio.Lock()
@@ -54,8 +51,4 @@ class UI:
         max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
         if max_tasks:
             CaseFlow.max_tasks = max_tasks
-        if data.parametrize:
-            for parametrize in data.parametrize:
-                await CaseFlow.add_task(data, parametrize)
-        else:
-            await CaseFlow.add_task(data, None)
+        await CaseFlow.add_task(data)

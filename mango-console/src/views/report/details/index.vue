@@ -24,29 +24,29 @@
               <div class="chart-container">
                 <a-space direction="vertical" style="width: 100%">
                   <div class="info-item">
-                    <span class="info-label">测试套ID</span>
+                    <span class="info-label">测试套ID：</span>
                     <span class="info-value">{{ pageData.record.id }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-label">任务名称</span>
+                    <span class="info-label">任务名称：</span>
                     <span class="info-value">{{ pageData.record.tasks?.name }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-label">执行时间</span>
+                    <span class="info-label">执行时间：</span>
                     <span class="info-value">{{ pageData.record.create_time }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-label">测试环境</span>
+                    <span class="info-label">测试环境：</span>
                     <span class="info-value">{{
                       enumStore.environment_type[pageData.record.test_env].title
                     }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-label">执行人</span>
+                    <span class="info-label">执行人：</span>
                     <span class="info-value">{{ pageData.record.user?.name }}</span>
                   </div>
                   <div class="info-item">
-                    <span class="info-label">是否通知</span>
+                    <span class="info-label">是否通知：</span>
                     <span class="info-value">{{
                       enumStore.status[pageData.record.is_notice].title
                     }}</span>

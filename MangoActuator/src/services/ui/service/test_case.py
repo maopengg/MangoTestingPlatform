@@ -28,11 +28,10 @@ from src.tools.log_collector import log
 
 class TestCase:
 
-    def __init__(self, parent, case_model: CaseModel, driver_object: DriverObject, parametrize: dict | None):
+    def __init__(self, parent, case_model: CaseModel, driver_object: DriverObject):
         self.parent = parent
         self.case_model: CaseModel = case_model
         self.driver_object: DriverObject = driver_object
-        self.parametrize: dict = parametrize
         self.base_data = BaseData(self.parent, case_model.project_product)
         self.base_data = self.base_data.set_case_id(case_model.id) \
             .set_test_suite_id(case_model.test_suite_id) \
@@ -109,8 +108,8 @@ class TestCase:
                         raise ToolsError(*ERROR_MSG_0037, value=(sql,))
 
     async def case_parametrize(self):
-        if self.parametrize:
-            for i in self.parametrize:
+        if self.case_model.parametrize:
+            for i in self.case_model.parametrize:
                 self.base_data.test_data.set_cache(i.get('key'), i.get('value'))
 
     async def case_posterior(self, posterior_sql: list[dict]):

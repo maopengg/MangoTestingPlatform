@@ -3,6 +3,7 @@
 # @Description: # @Time   : 2023/5/16 14:50
 # @Author : 毛鹏
 import re
+import traceback
 
 from mangokit import Mango
 from playwright._impl._errors import TimeoutError, Error, TargetClosedError
@@ -92,7 +93,8 @@ class WebDevice(PlaywrightBrowser,
         is_method_sql = callable(getattr(SqlAssertion, self.element_model.ope_key, None))
 
         if is_method or is_method_public:
-            if self.element_model.ope_value['actual'] is None:
+            if self.element_model.ope_value.get('actual', None) is None:
+                traceback.print_exc()
                 raise UiError(*ERROR_MSG_0031, value=(self.element_model.name, self.element_model.loc))
         try:
             actual = None
