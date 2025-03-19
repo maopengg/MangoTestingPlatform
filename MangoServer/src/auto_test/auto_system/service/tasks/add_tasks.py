@@ -33,7 +33,7 @@ class AddTasks:
         })
 
     def add_test_suite_details(self, case_id: int, _type: TestCaseTypeEnum):
-        def set_task(case_id, case_name, project_product, ):
+        def set_task(case_id, case_name, project_product, parametrize=None):
             from src.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
                 'test_suite': self.test_suite_id,
@@ -42,6 +42,7 @@ class AddTasks:
                 'test_env': self.test_env,
                 'case_id': case_id,
                 'case_name': case_name,
+                'parametrize': parametrize if parametrize else [],
                 'status': TaskEnum.STAY_BEGIN.value,
                 'error_message': None,
                 'result': None,
@@ -50,10 +51,18 @@ class AddTasks:
 
         if _type == TestCaseTypeEnum.UI:
             case = UiCase.objects.get(id=case_id)
-            set_task(case.id, case.name, case.project_product.id)
+            if case.parametrize:
+                for i in case.parametrize:
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
+            else:
+                set_task(case.id, case.name, case.project_product.id)
         elif _type == TestCaseTypeEnum.API:
             case = ApiCase.objects.get(id=case_id)
-            set_task(case.id, case.name, case.project_product.id)
+            if case.parametrize:
+                for i in case.parametrize:
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
+            else:
+                set_task(case.id, case.name, case.project_product.id)
         else:
             case = PytestCase.objects.get(id=case_id)
             set_task(case.id, case.name, case.project_product.project_product.id)

@@ -49,9 +49,11 @@ class ConsumerThread:
                         test_suite_details=test_suite_details.id,
                         test_suite=test_suite_details.test_suite.id,
                         case_id=test_suite_details.case_id,
+                        case_name=test_suite_details.case_name,
                         test_env=test_suite_details.test_env,
                         user_id=test_suite.user.id,
                         tasks_id=test_suite.tasks.id if test_suite.tasks else None,
+                        parametrize=test_suite_details.parametrize
                     )
                     self.send_case(test_suite, test_suite_details, case_model)
                     self.update_status_proceed(test_suite, test_suite_details)
@@ -74,7 +76,8 @@ class ConsumerThread:
         retry += 1
         try:
             if test_suite_details.type == TestCaseTypeEnum.UI.value:
-                UiCaseFlow.add_task(case_model)
+                # UiCaseFlow.add_task(case_model)
+                pass
             elif test_suite_details.type == TestCaseTypeEnum.API.value:
                 ApiCaseFlow.add_task(case_model)
             else:

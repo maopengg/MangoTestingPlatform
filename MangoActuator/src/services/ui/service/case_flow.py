@@ -33,7 +33,7 @@ class CaseFlow:
             if cls.running_tasks < cls.max_tasks and not cls.queue.empty():
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
-                task = asyncio.create_task(cls.execute_task(**case_model))
+                task = asyncio.create_task(cls.execute_task(case_model))
             else:
                 if time.time() - s > 5:
                     s = time.time()
@@ -60,7 +60,7 @@ class CaseFlow:
             cls.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
             await obj.case_init()
             await obj.case_page_step()
-        cls.running_tasks -= 1
+            cls.running_tasks -= 1
 
     @classmethod
     async def add_task(cls, case_model: CaseModel):

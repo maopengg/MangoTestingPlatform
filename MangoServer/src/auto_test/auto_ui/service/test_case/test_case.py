@@ -37,15 +37,17 @@ class TestCase:
 
     def test_case(self,
                   case_id: int,
+                  case_name: str = None,
                   test_suite: int | None = None,
-                  test_suite_details: int | None = None) -> CaseModel:
+                  test_suite_details: int | None = None,
+                  parametrize: list[dict] | list = None) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_model = CaseModel(
             test_suite_details=test_suite_details,
             test_suite_id=test_suite,
             id=case.id,
-            name=case.name,
+            name=case_name if case_name else case.name,
             module_name=case.module.name,
             project_product=case.project_product.id,
             project_product_name=case.project_product.name,
@@ -59,13 +61,17 @@ class TestCase:
             public_data_list=self.__public_data(case.project_product_id),
             switch_step_open_url=True if case.switch_step_open_url else False
         )
-        if case.parametrize:
-            for index, i in enumerate(case.parametrize):
+        if case.parametrize and test_suite is None:
+            for i in case.parametrize:
                 case_model_1 = copy.deepcopy(case_model)
-                case_model_1.parametrize = i
-                case_model_1.name = f'{case.name}-测试套第{index}次'
+                case_model_1.parametrize = i.get('parametrize')
+                case_model_1.name = f'{case.name} - {i.get("name")}'
                 self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                    data_model=case_model_1)
+        elif test_suite and test_suite_details and parametrize:
+            case_model.parametrize = parametrize
+            self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
+                               data_model=case_model)
         else:
             self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
                                data_model=case_model)
@@ -213,14 +219,17 @@ class TestCase:
                 raise error
 
     def inspect_environment_config(self, case_id: int) -> bool:
-        objects_filter = UiCaseStepsDetailed.objects.filter(case=case_id).order_by('case_sort')
-        for i in objects_filter:
+        objects_filter = UiCaseStepsDetailed.objects.filter(case=case_id).first()
+        if objects_filter:
             try:
-                page_steps = PageSteps.objects.get(id=i.page_step.id)
+                page_steps = PageSteps.objects.get(id=objects_filter.page_step.id)
                 self.__equipment_config(page_steps.project_product.ui_client_type)
             except UiError:
                 return False
-        return True
+            else:
+                return True
+        else:
+            return False
 
     def __equipment_config(self, _type: int) -> EquipmentModel:
         try:
