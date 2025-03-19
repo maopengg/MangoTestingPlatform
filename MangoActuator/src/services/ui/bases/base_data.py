@@ -63,7 +63,7 @@ class BaseData(QObject):
 
         self.url: Optional[str | None] = None
         self.is_open_url = False
-        self.switch_step_open_url = True
+        self.switch_step_open_url = False
         self.package_name: Optional[str | None] = None
 
         self.page: Optional[Page | None] = None
