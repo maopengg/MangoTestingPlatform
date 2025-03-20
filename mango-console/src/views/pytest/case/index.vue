@@ -103,7 +103,7 @@
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
-          <CodeEditor v-model="data.codeText" :lineHeight="600" placeholder="输入python代码" />
+          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
         </div>
         <div v-else>
           <a-collapse
@@ -251,6 +251,7 @@
     border: 'none',
     overflow: 'hidden',
   })
+
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',

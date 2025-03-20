@@ -84,7 +84,7 @@
       >
         <template #title> 编辑代码</template>
         <div>
-          <CodeEditor v-model="data.codeText" :lineHeight="600" placeholder="输入python代码"/>
+          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
         </div>
       </a-drawer>
     </template>

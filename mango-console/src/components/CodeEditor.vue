@@ -1,5 +1,11 @@
 <template>
-  <Codemirror v-model="codeValue" :style="codeStyle" :extensions="extensions" v-bind="$attrs" :placeholder="placeholder" />
+  <Codemirror
+    v-model="codeValue"
+    :style="codeStyle"
+    :extensions="extensions"
+    v-bind="$attrs"
+    :placeholder="placeholder"
+  />
 </template>
 
 <script setup lang="ts">
@@ -51,7 +57,7 @@
   // 根据传入的 lineHeight 设置代码编辑器的高度
   const codeStyle = {
     ...props.codeStyle,
-    height: `${props.lineHeight}px`,
+    height: '98%',
   }
 </script>
 
