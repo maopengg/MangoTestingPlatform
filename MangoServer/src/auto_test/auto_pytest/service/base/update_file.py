@@ -10,6 +10,7 @@ from git import Repo
 
 from src.enums.pytest_enum import PytestFileTypeEnum
 from src.models.pytest_model import FileModel, UpdateFileModel
+from src.tools import project_dir
 
 
 class UpdateFile:
@@ -32,17 +33,30 @@ class UpdateFile:
         for root, dirs, files in os.walk(directory):
             if '__pycache__' not in dirs and '__pycache__' not in root:
                 for file in files:
-                    path = os.path.abspath(os.path.join(root, file))
+                    abs_path = os.path.join(root, file)
                     parent_dir = os.path.basename(os.path.normpath(root))
                     if file not in '.pyc':
-                        file_name_with_parent = f"{parent_dir}/{file}"
-                        time = self.get_git_update_time(path)
                         if is_upload or tools:
-                            file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
+                            file_list.append(FileModel(
+                                name=os.path.join(parent_dir, file),
+                                path=os.path.join('mango_pytest',
+                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                time=self.get_git_update_time(abs_path)
+                            ))
                         if components and file != "__init__.py":
-                            file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
+                            file_list.append(FileModel(
+                                name=os.path.join(parent_dir, file),
+                                path=os.path.join('mango_pytest',
+                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                time=self.get_git_update_time(abs_path)
+                            ))
                         if test_case and (file.startswith('test') or file.endswith('test')):
-                            file_list.append(FileModel(name=file_name_with_parent, path=path, time=time))
+                            file_list.append(FileModel(
+                                name=os.path.join(parent_dir, file),
+                                path=os.path.join('mango_pytest',
+                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                time=self.get_git_update_time(abs_path)
+                            ))
 
         return file_list
 
@@ -81,14 +95,14 @@ class UpdateFile:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py')),
+                        init_file_path=os.path.join('mango_pytest', auto_test_dir, item, '__init__.py'),
                         module_name=module_name
                     ))
                 else:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.normpath(os.path.join(item_path, '__init__.py')),
+                        init_file_path=os.path.join('mango_pytest', auto_test_dir, item, '__init__.py'),
                         module_name=module_name
 
                     ))
@@ -96,7 +110,7 @@ class UpdateFile:
 
 
 if __name__ == '__main__':
-    for project in UpdateFile(PytestFileTypeEnum.TEST_CASE).find_test_files():
-        print(project.project_name)
-        print(project.auto_test)
-        print(project.init_file_path)
+    local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
+    update_file = UpdateFile(PytestFileTypeEnum.TEST_CASE, local_warehouse_path).find_test_files(True)
+    for i in update_file:
+        print(i.model_dump_json())
