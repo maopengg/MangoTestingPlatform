@@ -94,5 +94,6 @@ class UiCaseFlow:
             send_case.test_case(
                 case_id=case_model.case_id,
                 test_suite=case_model.test_suite,
-                test_suite_details=case_model.test_suite_details
+                test_suite_details=case_model.test_suite_details,
+
             )

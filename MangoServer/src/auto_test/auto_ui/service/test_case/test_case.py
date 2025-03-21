@@ -38,7 +38,8 @@ class TestCase:
     def test_case(self,
                   case_id: int,
                   test_suite: int | None = None,
-                  test_suite_details: int | None = None) -> CaseModel:
+                  test_suite_details: int | None = None,
+                  parametrize: list[dict] = None) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
         objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_model = CaseModel(

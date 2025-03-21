@@ -26,3 +26,4 @@ class ConsumerCaseModel(BaseModel):
     test_env: int
     user_id: int
     tasks_id: int | None = None
+    parametrize: list[dict] | list = []
