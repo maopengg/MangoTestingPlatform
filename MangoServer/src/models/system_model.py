@@ -23,6 +23,7 @@ class ConsumerCaseModel(BaseModel):
     test_suite_details: int
     test_suite: int
     case_id: int
+    case_name: str
     test_env: int
     user_id: int
     tasks_id: int | None = None

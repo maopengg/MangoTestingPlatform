@@ -11,7 +11,11 @@
           <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
-                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+                <a-input
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  @blur="() => doRefresh()"
+                />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                 <a-select
@@ -198,62 +202,12 @@
           </a-table-column>
         </template>
       </a-table>
-      <a-drawer
-        :width="800"
+      <ParametrizeDrawer
+        v-model:initial-data="data.row.parametrize"
         :visible="data.drawerVisible"
         @ok="drawerOk"
         @cancel="data.drawerVisible = false"
-        unmountOnClose
-      >
-        <template #title> 用例套件</template>
-        <div>
-          <a-space>
-            <a-button size="mini" @click.stop="data.row.parametrize.push([{ key: '', value: '' }])"
-              >增加测试套
-            </a-button>
-          </a-space>
-          <a-collapse :default-active-key="[0]" accordion :bordered="false">
-            <!-- 遍历 row 数组，生成每一行 -->
-            <a-collapse-item
-              :header="'循环第 ' + (index + 1) + ' 次'"
-              :key="index"
-              v-for="(item, index) of data.row.parametrize"
-            >
-              <template #extra>
-                <a-space>
-                  <a-button
-                    size="mini"
-                    @click.stop="data.row.parametrize[index].push({ key: '', value: '' })"
-                    >增加一行
-                  </a-button>
-                  <a-button
-                    status="danger"
-                    size="mini"
-                    @click.stop="data.row.parametrize.splice(index, 1)"
-                    >删除
-                  </a-button>
-                </a-space>
-              </template>
-              <a-space direction="vertical" fill>
-                <a-space v-for="(items, index1) in item" :key="index1">
-                  <span>key：</span>
-                  <a-input placeholder="请输入key" v-model="items.key" />
-                  <span>value：</span>
-                  <a-input placeholder="请输入value" v-model="items.value" />
-                  <a-button
-                    type="text"
-                    size="small"
-                    status="danger"
-                    @click="item.splice(index1, 1)"
-                  >
-                    移除
-                  </a-button>
-                </a-space>
-              </a-space>
-            </a-collapse-item>
-          </a-collapse>
-        </div>
-      </a-drawer>
+      />
     </template>
     <template #footer>
       <TableFooter :pagination="pagination" />
@@ -346,7 +300,6 @@
   import { getUserName } from '@/api/user/user'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
-  import { putUiConfigPutStatus } from '@/api/uitest/config'
 
   const enumStore = useEnum()
 
@@ -570,16 +523,36 @@
   }
 
   function clickSuite(record: any) {
+    data.row = JSON.parse(JSON.stringify(record))
+
+    if (
+      !data.row.parametrize ||
+      !Array.isArray(data.row.parametrize) ||
+      data.row.parametrize.length === 0
+    ) {
+      data.row.parametrize = [
+        {
+          name: '',
+          parametrize: [{ key: '', value: '' }],
+        },
+      ]
+    }
+
     data.drawerVisible = true
-    data.row = record
   }
 
-  function drawerOk() {
+  function drawerOk(paramData: any) {
     data.drawerVisible = false
+
+    const hasValidData = paramData.some(
+      (suite: any) => suite.name || suite.parametrize.some((param: any) => param.key || param.value)
+    )
+
     let value = {
-      id: data.row['id'],
-      parametrize: data.row['parametrize'],
+      id: data.row.id,
+      parametrize: hasValidData ? paramData : [],
     }
+
     putUiCase(value)
       .then((res) => {
         Message.success(res.msg)

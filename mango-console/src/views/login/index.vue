@@ -36,10 +36,10 @@
           <div class="flex-1"></div>
           <div class="mt-10">
             <a-button type="primary" class="login" :loading="baseData.loading" @click="onLogin">
-              登录</a-button
-            >
-          </div></div
-        >
+              登录
+            </a-button>
+          </div>
+        </div>
         <div v-else>
           <div class="title">注册用户</div>
           <div class="item-wrapper mt-6">
@@ -91,8 +91,8 @@
           <div class="flex-1"></div>
           <div class="mt-10">
             <a-button type="primary" class="login" :loading="baseData.loading" @click="onRegister">
-              注册</a-button
-            >
+              注册
+            </a-button>
           </div>
         </div>
         <div class="my-width flex-1 mt-4 mb-8">
@@ -103,15 +103,15 @@
               :underline="false"
               type="primary"
               @click="register1"
-              >注册用户</a-link
-            >
+              >注册用户
+            </a-link>
             <a-link
               v-if="baseData.isLogin === false"
               :underline="false"
               type="primary"
               @click="returnToLogin"
-              >返回登录</a-link
-            >
+              >返回登录
+            </a-link>
           </div>
         </div>
       </div>
@@ -134,6 +134,7 @@
   import setting from '../../setting'
   import useAppInfo from '@/hooks/useAppInfo'
   import useUserStore from '@/store/modules/user'
+
   const projectName = setting.projectName
   const { version } = useAppInfo()
   const router = useRouter()
@@ -172,15 +173,17 @@
       })
       .catch((error) => {
         baseData.loading = false
-        Message.error(error.message)
       })
   }
+
   function register1() {
     baseData.isLogin = false
   }
+
   function returnToLogin() {
     baseData.isLogin = true
   }
+
   function onRegister() {
     if (
       baseData.username === '' ||

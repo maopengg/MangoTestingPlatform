@@ -11,7 +11,6 @@ from src.auto_test.auto_system.models import Tasks, TasksDetails, TimeTasks
 from src.auto_test.auto_system.service.tasks.add_tasks import AddTasks
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
 from src.tools.decorator.retry import orm_retry
-from src.tools.log_collector import log
 
 
 class RunTasks:

@@ -54,9 +54,11 @@ class UiCaseFlow:
                 test_suite_details=test_suite_details.id,
                 test_suite=test_suite_details.test_suite.id,
                 case_id=test_suite_details.case_id,
+                case_name=test_suite_details.case_name,
                 test_env=test_suite_details.test_env,
                 user_id=test_suite.user.id,
                 tasks_id=test_suite.tasks.id if test_suite.tasks else None,
+                parametrize=test_suite_details.parametrize,
             )
             cls.send_case(model.id, model.username, case_model)
             cls.update_status_proceed(test_suite, test_suite_details)
@@ -93,7 +95,8 @@ class UiCaseFlow:
         else:
             send_case.test_case(
                 case_id=case_model.case_id,
+                case_name=case_model.case_name,
                 test_suite=case_model.test_suite,
                 test_suite_details=case_model.test_suite_details,
-
+                parametrize=case_model.parametrize
             )

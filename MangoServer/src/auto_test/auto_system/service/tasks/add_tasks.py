@@ -42,7 +42,7 @@ class AddTasks:
                 'test_env': self.test_env,
                 'case_id': case_id,
                 'case_name': case_name,
-                'parametrize': parametrize if parametrize else None,
+                'parametrize': parametrize if parametrize else [],
                 'status': TaskEnum.STAY_BEGIN.value,
                 'error_message': None,
                 'result': None,
@@ -52,15 +52,15 @@ class AddTasks:
         if _type == TestCaseTypeEnum.UI:
             case = UiCase.objects.get(id=case_id)
             if case.parametrize:
-                for index, i in enumerate(case.parametrize):
-                    set_task(case.id, f'{case.name}-{index}', case.project_product.id, i)
+                for i in case.parametrize:
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
             else:
                 set_task(case.id, case.name, case.project_product.id)
         elif _type == TestCaseTypeEnum.API:
             case = ApiCase.objects.get(id=case_id)
             if case.parametrize:
-                for index, i in enumerate(case.parametrize):
-                    set_task(case.id, f'{case.name}-{index}', case.project_product.id, i)
+                for i in case.parametrize:
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
             else:
                 set_task(case.id, case.name, case.project_product.id)
         else:
