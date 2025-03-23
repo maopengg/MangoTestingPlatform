@@ -7,10 +7,9 @@ import os
 from datetime import datetime
 from urllib.parse import unquote
 
-import time
 from django.forms import model_to_dict
 from django.http import FileResponse
-from playwright import sync_playwright
+from playwright.sync_api import sync_playwright
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
