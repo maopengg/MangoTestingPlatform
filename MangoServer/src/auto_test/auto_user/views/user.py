@@ -10,6 +10,7 @@ from urllib.parse import unquote
 import time
 from django.forms import model_to_dict
 from django.http import FileResponse
+from playwright import sync_playwright
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -213,8 +214,15 @@ class LoginViews(ViewSet):
                 main_4_7()
             return ResponseData.success(RESPONSE_MSG_0045)
         else:
-            time.sleep(5)
-            return ResponseData.success(RESPONSE_MSG_0044, ad_routes())
+            title = None
+            with sync_playwright() as p:
+                browser = p.chromium.connect("ws://172.21.222.119:3000/")
+                context = browser.new_context()
+                page = context.new_page()
+                page.goto('https://www.baidu.com/')
+                title = page.title()
+                browser.close()
+            return ResponseData.success(RESPONSE_MSG_0044, {'title': title})
 
     @error_response('user')
     @action(methods=['get'], detail=False)
