@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-
+from mangokit.tools.assertion import Assertion
 from mangoui import *
 
 from src.enums.system_enum import ClientTypeEnum, CacheDataKey2Enum
@@ -11,7 +11,6 @@ from src.models import queue_notification
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
-from src.tools.assertion import Assertion
 from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
@@ -132,8 +131,6 @@ class SettingPage(QWidget):
     def debug(self, value):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
         log.set_debug(settings.IS_DEBUG)
-
-
 
     def click_send_redis_data(self):
         r = GetClassMethod()

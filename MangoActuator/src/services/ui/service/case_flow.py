@@ -14,7 +14,7 @@ from src.services.ui.service.test_case import TestCase
 from src.settings import settings
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
-from ..bases.driver_object import DriverObject
+from mangokit.uidrive.driver_object import DriverObject
 
 
 class CaseFlow:

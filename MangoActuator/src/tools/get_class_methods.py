@@ -2,16 +2,19 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-05-11 22:17
 # @Author : 毛鹏
+from mangokit.enums.ui_enum import ElementOperationEnum
+from mangokit.tools.assertion import WhatIsItAssertion, ContainAssertion, MatchingAssertion, WhatIsEqualToAssertion
+from mangokit.tools.assertion.sql_assertion import SqlAssertion
+from mangokit.uidrive.android import UiautomatorAssertion, UiautomatorPage, UiautomatorEquipment, UiautomatorElement, \
+    UiautomatorApplication
+from mangokit.uidrive.web import PlaywrightAssertion, PlaywrightCustomization, PlaywrightPage, PlaywrightBrowser, \
+    PlaywrightDeviceInput, PlaywrightElement
 from mangoui import CascaderModel
 from mangokit import ClassMethodModel
 from mangokit.tools.method import class_own_methods
 
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.ui_enum import DriveTypeEnum
-from src.services.ui.bases.android import *
-from src.services.ui.bases.web import *
-from src.tools.assertion import *
-from src.tools.assertion.sql_assertion import SqlAssertion
 
 
 class GetClassMethod:

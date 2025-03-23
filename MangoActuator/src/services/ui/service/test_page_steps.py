@@ -3,7 +3,7 @@
 # @Description: # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 import asyncio
-from mangokit import singleton
+from mangokit import singleton, MangoKitError
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
@@ -11,10 +11,11 @@ from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, EquipmentModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
-from src.services.ui.bases.base_data import BaseData
-from src.services.ui.bases.driver_object import DriverObject
+from mangokit.uidrive.base_data import BaseData
+from mangokit.uidrive.driver_object import DriverObject
 from src.services.ui.service.page_steps import PageSteps
 from src.tools.decorator.error_handle import async_error_handle
+from src.tools.obtain_test_data import ObtainTestData
 
 
 @singleton
@@ -25,7 +26,8 @@ class TestPageSteps:
         self.driver_object = DriverObject()
         self.parent = parent
         self.project_product_id = project_product
-        self.base_data = BaseData(self.parent, self.project_product_id)
+        self.test_data = ObtainTestData()
+        self.base_data = BaseData(self.parent, self.project_product_id, self.test_data)
 
         self.lock = asyncio.Lock()
 
@@ -52,8 +54,8 @@ class TestPageSteps:
                     TipsTypeEnum.SUCCESS if page_steps_result_model.status else TipsTypeEnum.ERROR,
                     page_steps_result_model
                 )
-            except MangoActuatorError as error:
-                await self.base_data.base_close()
+            except (MangoActuatorError, MangoKitError) as error:
+                await self.base_data.base_close(self.test_data)
                 await self.send_steps_result(
                     error.code,
                     error.msg,
@@ -61,7 +63,7 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
-                await self.base_data.base_close()
+                await self.base_data.base_close(self.test_data)
                 await self.send_steps_result(
                     300,
                     f'执行步骤未知错误，请联系管理员，报错内容：{error}',
@@ -87,10 +89,10 @@ class TestPageSteps:
 
             await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS, )
         except MangoActuatorError as error:
-            await self.base_data.base_close()
+            await self.base_data.base_close(self.test_data)
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
-            await self.base_data.base_close()
+            await self.base_data.base_close(self.test_data)
             await self.send_steps_result(
                 300,
                 f'创建浏览器异常，请联系管理员，报错内容：{error}',

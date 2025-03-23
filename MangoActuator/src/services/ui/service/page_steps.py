@@ -5,15 +5,18 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
+from mangokit import MangoKitError
+from mangokit.tools.decorator.retry import async_retry
 from playwright._impl._errors import TargetClosedError
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
-from src.services.ui.bases import ElementOperation
-from src.services.ui.bases.base_data import BaseData
-from src.services.ui.bases.driver_object import DriverObject
+from mangokit.uidrive import ElementOperation
+from mangokit.uidrive.base_data import BaseData
+from mangokit.uidrive.driver_object import DriverObject
+
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
@@ -57,23 +60,28 @@ class PageSteps:
                         element_data = _element_data.page_step_details_data
                 if element_data is None:
                     raise UiError(*ERROR_MSG_0025)
-            element_ope = ElementOperation(self.base_data, element_model, element_data, self.page_steps_model.type)
-            try:
-                if not is_open_device:
-                    await element_ope.open_device()
-                    is_open_device = True
-                element_result = await element_ope.element_main()
-                self.set_page_step_result(StatusEnum.SUCCESS, )
-                self.set_element_test_result(element_result)
-            except UiError as error:
-                self.set_page_step_result(StatusEnum.FAIL, error.msg)
-                self.set_element_test_result(element_ope.element_test_result)
-                raise error
-            except Exception as error:
-                self.set_page_step_result(StatusEnum.FAIL, str(error))
-                self.set_element_test_result(element_ope.element_test_result)
-                raise error
+                is_open_device = await self.ope_steps(is_open_device, element_model, element_data)
         return self.page_step_result_model
+
+    @async_retry(15, 0.2)
+    async def ope_steps(self, is_open_device, element_model, element_data):
+        element_ope = ElementOperation(self.base_data, element_model, element_data, self.page_steps_model.type)
+        try:
+            if not is_open_device:
+                await element_ope.open_device()
+                is_open_device = True
+            element_result = await element_ope.element_main()
+            self.set_page_step_result(StatusEnum.SUCCESS, )
+            self.set_element_test_result(element_result)
+        except (UiError, MangoKitError) as error:
+            self.set_page_step_result(StatusEnum.FAIL, error.msg)
+            self.set_element_test_result(element_ope.element_test_result)
+            raise error
+        except Exception as error:
+            self.set_page_step_result(StatusEnum.FAIL, str(error))
+            self.set_element_test_result(element_ope.element_test_result)
+            raise error
+        return is_open_device
 
     def set_page_step_result(self, status: StatusEnum, error_message: str = None):
         self.page_step_result_model.status = status.value
@@ -83,7 +91,7 @@ class PageSteps:
         self.page_step_result_model.equipment = self.base_data.equipment_config
 
     def set_element_test_result(self, element_result):
-        self.base_data.progress.emit(element_result)
+        # self.base_data.progress.emit(element_result)
         self.page_step_result_model.element_result_list.append(element_result)
 
     @async_memory
@@ -100,9 +108,16 @@ class PageSteps:
 
     async def web_init(self, data: EquipmentModel | None = None):
         if data:
-            self.driver_object.web.config = data
+            self.driver_object.set_web(data.web_type, data.web_path, data.web_max, data.web_headers, data.web_recording,
+                                       data.web_h5, data.is_header_intercept)
         else:
-            self.driver_object.web.config = self.base_data.equipment_config
+            self.driver_object.set_web(self.base_data.equipment_config.web_type,
+                                       self.base_data.equipment_config.web_path,
+                                       self.base_data.equipment_config.web_max,
+                                       self.base_data.equipment_config.web_headers,
+                                       self.base_data.equipment_config.web_recording,
+                                       self.base_data.equipment_config.web_h5,
+                                       self.base_data.equipment_config.is_header_intercept)
             self.base_data.url = urljoin(self.base_data.environment_config.test_object_value, self.page_steps_model.url)
             self.test_object = self.base_data.url
         try:
@@ -119,7 +134,7 @@ class PageSteps:
         self.test_object = self.base_data.url
 
         if self.base_data.android is None:
-            self.driver_object.android.config = self.base_data.equipment_config
+            self.driver_object.android.and_equipment = self.base_data.equipment_config
             self.base_data.android = self.driver_object.android.new_android()
 
     def desktop_init(self, ):
