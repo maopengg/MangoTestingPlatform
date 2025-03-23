@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from mangokit import MysqlConnect, MysqlConingModel, MangoKitError
 from src.auto_test.auto_system.models import Database
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.tools_enum import StatusEnum
@@ -15,7 +16,6 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from mangokit import MysqlConnect, MysqlConingModel, MangoKitError
 
 
 class DatabaseSerializers(serializers.ModelSerializer):

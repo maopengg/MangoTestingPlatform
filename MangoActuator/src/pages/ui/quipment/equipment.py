@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 import copy
 
-from mangoui import *
 from mangokit import Mango
+from mangoui import *
 
 from src.enums.tools_enum import Status5Enum
 from src.enums.ui_enum import DriveTypeEnum

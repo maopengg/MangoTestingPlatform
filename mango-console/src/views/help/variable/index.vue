@@ -1,19 +1,19 @@
 <template>
   <TableBody ref="tableBody">
-    <template #header> </template>
+    <template #header></template>
     <template #default>
-      <a-card title="公共变量" :bordered="false">
+      <a-card :bordered="false" title="公共变量">
         <a-space>
-          <a-input :style="{ width: '320px' }" placeholder="请直接输入函数试一试" v-model="input" />
+          <a-input v-model="input" :style="{ width: '320px' }" placeholder="请直接输入函数试一试" />
           <a-button type="primary" @click="obtain">测试一下</a-button>
         </a-space>
         <a-card
-          :body-style="{ padding: '10px' }"
-          :bordered="false"
           v-for="item of randomList"
           :key="item.label"
+          :body-style="{ padding: '10px' }"
+          :bordered="false"
         >
-          <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
+          <a-descriptions :bordered="true" :column="3" :data="item.children" :title="item.label" />
         </a-card>
       </a-card>
     </template>

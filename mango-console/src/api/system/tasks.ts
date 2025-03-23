@@ -17,6 +17,7 @@ export function postSystemTasks(data: object) {
     },
   })
 }
+
 export function putSystemTasks(data: object) {
   return put({
     url: 'system/tasks',
@@ -36,6 +37,7 @@ export function deleteSystemTasks(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getSystemTriggerTiming(id: number) {
   return get({
     url: 'system/tasks/trigger/timing',
@@ -46,6 +48,7 @@ export function getSystemTriggerTiming(id: number) {
     },
   })
 }
+
 export function getSystemTasksName() {
   return get({
     url: 'system/tasks/name',
@@ -54,6 +57,7 @@ export function getSystemTasksName() {
     },
   })
 }
+
 export function putSystemScheduledPutStatus(id: number, status: number) {
   return put({
     url: 'system/tasks/status',
@@ -65,6 +69,7 @@ export function putSystemScheduledPutStatus(id: number, status: number) {
     },
   })
 }
+
 export function putSystemScheduledPutNotice(id: number, status: number) {
   return put({
     url: 'system/tasks/notice',

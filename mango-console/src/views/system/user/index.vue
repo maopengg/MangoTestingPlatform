@@ -8,21 +8,21 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="project.data"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="project.data"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
@@ -34,7 +34,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -57,11 +57,11 @@
       </a-tabs>
       <a-table
         :bordered="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
       >
@@ -70,10 +70,10 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -83,10 +83,10 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -101,19 +101,19 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'textarea'">
             <a-textarea
               v-model="item.value"
-              :placeholder="item.placeholder"
               :auto-size="{ minRows: 3, maxRows: 5 }"
+              :placeholder="item.placeholder"
             />
           </template>
           <template v-else-if="item.type === 'input-tag'">
@@ -122,12 +122,12 @@
           <template v-else-if="item.type === 'select' && item.key === 'role'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="userData.allRole"
               :field-names="fieldNames"
-              value-key="key"
+              :options="userData.allRole"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>
@@ -147,6 +147,7 @@
   import { conditionItems, formItems, tableColumns } from './config'
   import { deleteUserInfo, getUserInfo, postUserInfo, putUserInfo } from '@/api/user/user'
   import { getUserAllRole } from '@/api/user/role'
+
   const modalDialogRef = ref<ModalDialogType | null>(null)
   const pagination = usePagination(doRefresh)
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()

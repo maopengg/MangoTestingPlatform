@@ -1,4 +1,4 @@
-import { list } from 'postcss'
+import { FormItem } from '@/types/components'
 
 interface Option {
   key: number
@@ -57,8 +57,6 @@ export function convertEmptyStringToNull(obj: any): any {
   }
   return obj
 }
-
-import { FormItem } from '@/types/components'
 
 type KeyValueObject = {
   [key: string]: any

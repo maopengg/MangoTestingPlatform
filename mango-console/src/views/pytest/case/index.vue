@@ -3,7 +3,7 @@
     <template #header>
       <a-card :bordered="false" title="测试用例">
         <template #extra>
-          <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+          <a-button size="small" type="primary" @click="clickUpdate">更新目录</a-button>
         </template>
       </a-card>
     </template>
@@ -11,11 +11,11 @@
     <template #default>
       <a-table
         :bordered="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
       >
@@ -24,12 +24,12 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
-            :fixed="item.fixed"
             :ellipsis="item.ellipsis"
+            :fixed="item.fixed"
+            :title="item.title"
             :tooltip="item.tooltip"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -72,19 +72,19 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onRun(record)">执行</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">文件</a-button>
+              <a-button size="mini" type="text" @click="onRun(record)">执行</a-button>
+              <a-button size="mini" type="text" @click="onClick(record)">文件</a-button>
               <a-dropdown trigger="hover">
-                <a-button type="text" size="mini">···</a-button>
+                <a-button size="mini" type="text">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onResult(record)">结果</a-button>
+                    <a-button size="mini" type="text" @click="onResult(record)">结果</a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -95,11 +95,11 @@
         </template>
       </a-table>
       <a-drawer
-        :width="1000"
         :visible="data.drawerVisible"
-        @ok="drawerOk"
-        @cancel="data.drawerVisible = false"
+        :width="1000"
         unmountOnClose
+        @cancel="data.drawerVisible = false"
+        @ok="drawerOk"
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
@@ -108,15 +108,15 @@
         <div v-else>
           <a-collapse
             v-for="item of data?.codeText"
-            :bordered="false"
             :key="item.uuid"
+            :bordered="false"
             accordion
             destroy-on-hide
           >
             <a-collapse-item
+              :key="item.uuid"
               :header="item.name + '-' + item.status"
               :style="customStyle"
-              :key="item.uuid"
             >
               <PytestTestReport :resultData="item" />
             </a-collapse-item>
@@ -133,65 +133,65 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              @change="onPytestProjectName(item.value)"
-              :placeholder="item.placeholder"
               :options="data.projectPytest"
-              allow-search
+              :placeholder="item.placeholder"
               allow-clear
+              allow-search
+              @change="onPytestProjectName(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
               :options="data.moduleList"
-              value-key="key"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'file_status'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.file_status"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.file_status"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'level'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.case_level"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.case_level"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.userList"
               :field-names="fieldNames"
-              value-key="key"
+              :options="data.userList"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
               @change="doRefresh"
             />
           </template>
@@ -251,6 +251,7 @@
     border: 'none',
     overflow: 'hidden',
   })
+
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',

@@ -2,13 +2,13 @@
   <a-tabs default-active-key="1">
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
-        :default-active-key="['1']"
         v-for="(attachments, index) of resultData.attachments"
         :key="index"
         :bordered="false"
+        :default-active-key="['1']"
         destroy-on-hide
       >
-        <a-collapse-item :header="attachments.name" :key="index">
+        <a-collapse-item :key="index" :header="attachments.name">
           <div>{{ attachments.source }}</div>
         </a-collapse-item>
       </a-collapse>
@@ -19,7 +19,7 @@
   </a-tabs>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
   defineProps({
     resultData: {
       type: Object as () => any,

@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function postApiImportUrl(data: object) {
   return post({
     url: '/api/info/import/api',
@@ -18,6 +19,7 @@ export function getApiInfoName(moduleId: any) {
     },
   })
 }
+
 export function getApiInfo(data: object) {
   return get({
     url: '/api/info',
@@ -55,6 +57,7 @@ export function deleteApiInfo(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getApiCaseInfoRun(id: number | string[], testObj: any) {
   return get({
     url: '/api/info/test',
@@ -66,6 +69,7 @@ export function getApiCaseInfoRun(id: number | string[], testObj: any) {
     },
   })
 }
+
 export function putApiPutApiInfoType(idList: string[], type: number) {
   return put({
     url: '/api/info/type',

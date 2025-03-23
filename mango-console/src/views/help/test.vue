@@ -1,7 +1,7 @@
 <template>
   <div class="test-report-container">
     <a-row :gutter="2" class="summary-cards">
-      <a-col :span="6" v-for="(item, index) in summaryCards" :key="index">
+      <a-col v-for="(item, index) in summaryCards" :key="index" :span="6">
         <a-card :class="['summary-card', item.class]">
           <template #title>
             <a-space>
@@ -24,34 +24,34 @@
             <div class="progress-item">
               <div class="progress-label">API测试 ({{ data.summary.api_count }})：</div>
               <a-progress
-                :percent="data.summary.api_in_progress_count / data.summary.api_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.api_in_progress_count / data.summary.api_count"
+                :style="{ width: '50%' }"
               />
             </div>
             <div class="progress-item">
               <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
               <a-progress
-                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
+                :style="{ width: '50%' }"
               />
             </div>
             <div class="progress-item">
               <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
               <a-progress
-                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
+                :style="{ width: '50%' }"
               />
             </div>
           </div>
@@ -64,34 +64,34 @@
             <div class="progress-item">
               <div class="progress-label">API测试 ({{ data.summary.api_count }})：</div>
               <a-progress
-                :percent="data.summary.api_in_progress_count / data.summary.api_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.api_in_progress_count / data.summary.api_count"
+                :style="{ width: '50%' }"
               />
             </div>
             <div class="progress-item">
               <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
               <a-progress
-                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
+                :style="{ width: '50%' }"
               />
             </div>
             <div class="progress-item">
               <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
               <a-progress
-                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
-                :style="{ width: '50%' }"
                 :color="{
                   '0%': 'rgb(var(--primary-6))',
                   '100%': 'rgb(var(--success-6))',
                 }"
+                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
+                :style="{ width: '50%' }"
               />
             </div>
           </div>
@@ -101,10 +101,10 @@
         <a-card title="测试结果统计">
           <div class="chart-container">
             <a-progress
-              type="circle"
-              :percent="(data.summary.success_count / data.summary.count) * 100"
               :color="'#52C41A'"
+              :percent="(data.summary.success_count / data.summary.count) * 100"
               style="margin-right: 32px"
+              type="circle"
             >
               <template #text>
                 <div class="circle-progress-text">
@@ -128,13 +128,13 @@
         </a-space>
       </template>
       <a-table
-        :draggable="{ type: 'handle', width: 40 }"
         :bordered="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :draggable="{ type: 'handle', width: 40 }"
+        :loading="table.tableLoading.value"
         :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
       >
         <template #columns>
@@ -142,10 +142,10 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -196,17 +196,17 @@
         </a-descriptions>
         <div>
           <div v-if="data.caseType === 0">
-            <a-card :title="data?.selectedCase.resultData?.name" :bordered="false">
+            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
               <ElementTestReport :resultData="data?.selectedCase.resultData" />
             </a-card>
           </div>
           <div v-else-if="data.caseType === 1">
-            <a-card :title="data?.selectedCase.resultData?.name" :bordered="false">
+            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
               <ApiTestReport :resultData="data?.selectedCase.resultData" />
             </a-card>
           </div>
           <div v-else-if="data.caseType === 2">
-            <a-card :title="data?.selectedCase.resultData?.name" :bordered="false">
+            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
               <PytestTestReport :resultData="data?.selectedCase.resultData"
                 >pytest
               </PytestTestReport>
@@ -218,8 +218,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-  import { ref, computed, reactive, onMounted } from 'vue'
+<script lang="ts" setup>
+  import { computed, onMounted, reactive, ref } from 'vue'
   import {
     IconApps,
     IconCheckCircle,

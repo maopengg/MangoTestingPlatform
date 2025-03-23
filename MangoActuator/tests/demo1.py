@@ -6,11 +6,12 @@
 import asyncio
 
 from mangokit import Mango
+
+from src import test_process
+from src.consumer import SocketConsumer
 from src.models.socket_model import QueueModel
 from src.network import HTTP
 from src.settings import settings
-from src.consumer import SocketConsumer
-from src import test_process
 
 
 class LinuxLoop:

@@ -32,4 +32,3 @@ class ApiHeaders(HttpBase):
         return cls.delete(ApiHeaders._url, params={
             'id': _id
         })
-

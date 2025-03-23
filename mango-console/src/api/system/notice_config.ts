@@ -17,6 +17,7 @@ export function postSystemNotice(data: object) {
     },
   })
 }
+
 export function putSystemNotice(data: object) {
   return put({
     url: '/system/notice',
@@ -25,6 +26,7 @@ export function putSystemNotice(data: object) {
     },
   })
 }
+
 export function deleteSystemNotice(id: number | string[] | number[]) {
   return deleted({
     url: '/system/notice',
@@ -35,6 +37,7 @@ export function deleteSystemNotice(id: number | string[] | number[]) {
     },
   })
 }
+
 export function putSystemNoticePutStatus(id: number, status: number) {
   return put({
     url: '/system/notice/status',
@@ -46,6 +49,7 @@ export function putSystemNoticePutStatus(id: number, status: number) {
     },
   })
 }
+
 export function getSystemNoticeTest(id: number) {
   return get({
     url: 'system/notice/test',

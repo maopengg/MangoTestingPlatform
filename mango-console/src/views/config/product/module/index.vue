@@ -1,29 +1,29 @@
 <template>
   <TableBody ref="tableBody">
     <template #default>
-      <a-card :title="'产品名称：' + route.query.name" :bordered="false">
+      <a-card :bordered="false" :title="'产品名称：' + route.query.name">
         <template #extra>
           <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" type="primary" @click="doAppend">增加</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
-        <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
+        <a-table :bordered="false" :columns="columns" :data="data.data" :pagination="false">
           <template #columns>
             <a-table-column
-              :key="item.key"
               v-for="item of columns"
+              :key="item.key"
               :align="item.align"
-              :title="item.title"
-              :width="item.width"
               :data-index="item.dataIndex"
               :fixed="item.fixed"
+              :title="item.title"
+              :width="item.width"
             >
               <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </template>
             </a-table-column>
           </template>
@@ -35,13 +35,13 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
         </a-form-item>
       </a-form>

@@ -6,18 +6,18 @@
           <span>测试文件</span>
         </div>
         <a-upload
-          @before-upload="beforeUpload"
-          :show-file-list="false"
           :before-upload="beforeUpload"
+          :show-file-list="false"
+          @before-upload="beforeUpload"
         />
       </a-space>
 
       <a-tabs />
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -27,17 +27,17 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onDownload(record)">下载</a-button>
-              <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+              <a-button size="mini" type="text" @click="onDownload(record)">下载</a-button>
+              <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                 >删除
               </a-button>
             </template>

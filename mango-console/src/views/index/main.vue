@@ -29,12 +29,12 @@
           <a-card>
             <div style="flex: 1; overflow: auto">
               <a-space direction="vertical" fill>
-                <Title title="正在准备执行的自动化任务" style="height: 65px" />
+                <Title style="height: 65px" title="正在准备执行的自动化任务" />
                 <a-table
                   :bordered="true"
-                  :loading="table.tableLoading.value"
-                  :data="table.dataList"
                   :columns="tableColumns"
+                  :data="table.dataList"
+                  :loading="table.tableLoading.value"
                   :pagination="false"
                   :rowKey="rowKey"
                   @selection-change="onSelectionChange"
@@ -44,12 +44,12 @@
                       v-for="item of tableColumns"
                       :key="item.key"
                       :align="item.align"
-                      :title="item.title"
-                      :width="item.width"
                       :data-index="item.key"
-                      :fixed="item.fixed"
                       :ellipsis="item.ellipsis"
+                      :fixed="item.fixed"
+                      :title="item.title"
                       :tooltip="item.tooltip"
+                      :width="item.width"
                     >
                       <template v-if="item.key === 'index'" #cell="{ record }">
                         <span style="width: 110px; display: inline-block">{{ record.id }}</span>
@@ -69,7 +69,7 @@
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
-                          <a-button type="text" size="mini" @click="onClick(record)"
+                          <a-button size="mini" type="text" @click="onClick(record)"
                             >查看结果
                           </a-button>
                         </a-space>
@@ -87,8 +87,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-  import { computed, ref, unref, watch, onMounted, nextTick, reactive } from 'vue'
+<script lang="ts" setup>
+  import { computed, nextTick, onMounted, reactive, ref, unref, watch } from 'vue'
   import Title from '@/views/index/components/Title'
   import useAppConfigStore from '@/store/modules/app-config'
   import CenterTitle from '@/views/index/components/CenterTitle.vue'

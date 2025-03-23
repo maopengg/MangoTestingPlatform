@@ -4,8 +4,10 @@
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
 from mangokit.tools.assertion import Assertion
+from mangokit.tools.method import class_methods
 from mangoui import *
 
+from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum, CacheDataKey2Enum
 from src.models import queue_notification
 from src.network import HTTP
@@ -15,8 +17,6 @@ from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
 from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
-from src.enums.gui_enum import TipsTypeEnum
-from mangokit.tools.method import class_methods
 
 
 class SettingPage(QWidget):

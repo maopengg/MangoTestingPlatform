@@ -8,7 +8,7 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
@@ -21,7 +21,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -40,16 +40,16 @@
               <span>注意：新增的定时策略需要联系管理员重启服务才会生效！</span>
             </div>
             <div>
-              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -59,20 +59,20 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -87,16 +87,16 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input' && item.key === 'trigger_type'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" disabled />
+            <a-input v-model="item.value" :placeholder="item.placeholder" disabled />
           </template>
           <template v-else-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
         </a-form-item>
       </a-form>

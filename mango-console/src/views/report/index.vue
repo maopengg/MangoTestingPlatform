@@ -8,35 +8,35 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.task_status"
-                  @change="doRefresh"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="enumStore.task_status"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'type'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.auto_test_type"
-                  @change="doRefresh"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="enumStore.auto_test_type"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
                 />
               </template>
             </a-form-item>
@@ -48,39 +48,39 @@
     <template #default>
       <a-space direction="vertical" fill>
         <div style="margin-bottom: 10px">
-          <a-card style="float: left; width: 30%" :bordered="false">
+          <a-card :bordered="false" style="float: left; width: 30%">
             <Title title="接口数&用例数" />
-            <StatusChart :success="data.successSum" :fail="data.failSum" />
+            <StatusChart :fail="data.failSum" :success="data.successSum" />
           </a-card>
 
-          <a-card style="float: right; width: 70%" :bordered="false">
+          <a-card :bordered="false" style="float: right; width: 70%">
             <Title title="近三个季度执行用例趋势图" />
-            <BarChart :success="data.weekSuccessData" :fail="data.weekFailData" />
+            <BarChart :fail="data.weekFailData" :success="data.weekSuccessData" />
           </a-card>
         </div>
         <a-table
-          :scrollbar="true"
           :bordered="false"
-          :row-selection="{ selectedRowKeys, showCheckedAll }"
-          :loading="table.tableLoading.value"
-          :data="table.dataList"
           :columns="tableColumns"
+          :data="table.dataList"
+          :loading="table.tableLoading.value"
           :pagination="false"
+          :row-selection="{ selectedRowKeys, showCheckedAll }"
           :rowKey="rowKey"
-          @selection-change="onSelectionChange"
           :scroll="{ x: 1100, y: tableScrollHeight() }"
+          :scrollbar="true"
+          @selection-change="onSelectionChange"
         >
           <template #columns>
             <a-table-column
               v-for="item of tableColumns"
               :key="item.key"
               :align="item.align"
-              :title="item.title"
-              :width="item.width"
               :data-index="item.key"
-              :fixed="item.fixed"
               :ellipsis="item.ellipsis"
+              :fixed="item.fixed"
+              :title="item.title"
               :tooltip="item.tooltip"
+              :width="item.width"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 <span style="width: 110px; display: inline-block">{{ record.id }}</span>
@@ -107,10 +107,10 @@
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
-                  <a-button type="text" size="mini" @click="onRetry(record)">重试</a-button>
+                  <a-button size="mini" type="text" @click="onRetry(record)">重试</a-button>
                 </a-space>
                 <a-space>
-                  <a-button type="text" size="mini" @click="onClick(record)">查看结果</a-button>
+                  <a-button size="mini" type="text" @click="onClick(record)">查看结果</a-button>
                 </a-space>
               </template>
             </a-table-column>

@@ -6,15 +6,15 @@
       <a-tabs>
         <template #extra>
           <a-space>
-            <div> </div>
+            <div></div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -24,24 +24,24 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
-            <template v-if="item.key === 'index'" :class="record" #cell="{ record }">
+            <template v-if="item.key === 'index'" #cell="{ record }" :class="record">
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <template v-if="record.username === 'admin'">
                 <a-space>
-                  <a-button type="text" size="mini" @click="onReceive(record)">领取</a-button>
+                  <a-button size="mini" type="text" @click="onReceive(record)">领取</a-button>
                   <a-button
+                    disabled
+                    size="mini"
                     status="danger"
                     type="text"
-                    size="mini"
                     @click="onDelete(record)"
-                    disabled
                     >下线
                   </a-button>
                 </a-space>
@@ -49,11 +49,11 @@
               <template v-if="record.username !== 'admin'">
                 <a-space>
                   <a-button
+                    disabled
+                    size="mini"
                     status="danger"
                     type="text"
-                    size="mini"
                     @click="onDelete(record)"
-                    disabled
                     >下线
                   </a-button>
                 </a-space>
@@ -75,6 +75,7 @@
   import { onMounted, nextTick } from 'vue'
   import { tableColumns } from './config'
   import { getSystemSocketUserList } from '@/api/system/socket_api'
+
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
@@ -91,6 +92,7 @@
       })
       .catch(console.log)
   }
+
   function onReceive() {
     Message.warning('开发中.....')
   }

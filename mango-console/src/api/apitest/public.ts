@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function getApiPublic(data: object) {
   return get({
     url: '/api/public',
@@ -16,6 +17,7 @@ export function postApiPublic(data: object) {
     },
   })
 }
+
 export function putApiPublic(data: object) {
   return put({
     url: '/api/public',
@@ -24,6 +26,7 @@ export function putApiPublic(data: object) {
     },
   })
 }
+
 export function deleteApiPublic(id: number | string[] | number[]) {
   return deleted({
     url: '/api/public',
@@ -34,6 +37,7 @@ export function deleteApiPublic(id: number | string[] | number[]) {
     },
   })
 }
+
 export function putApiPublicPutStatus(id: number, status: number) {
   return put({
     url: '/api/public/status',

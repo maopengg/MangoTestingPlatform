@@ -15,7 +15,6 @@ from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.service.test_case.test_case import TestCase
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
-from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response

@@ -5,16 +5,16 @@
         <span>系统设置</span>
       </template>
       <template #extra>
-        <a-button type="primary" size="small" @click="handleClick">{{
-          settingsData.editing ? '保存' : '修改'
-        }}</a-button>
+        <a-button size="small" type="primary" @click="handleClick"
+          >{{ settingsData.editing ? '保存' : '修改' }}
+        </a-button>
       </template>
       <a-space direction="vertical">
         <a-space v-for="item of settingsData.data" :key="item.key" direction="horizontal">
           <span
             >{{ item.describe }}:
             <template v-if="settingsData.editing">
-              <a-input placeholder="请输入对应的配置" v-model="item.value" />
+              <a-input v-model="item.value" placeholder="请输入对应的配置" />
             </template>
             <template v-else>
               {{ item.value }}
@@ -51,6 +51,7 @@
     }
     settingsData.editing = !settingsData.editing
   }
+
   function doRefresh() {
     getSystemCacheData()
       .then((res) => {

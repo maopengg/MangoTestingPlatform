@@ -1,10 +1,10 @@
 <template>
-  <div id="tableHeaderContainer" class="relative" :style="{ zIndex: 9 }">
-    <a-card :title="title" size="small" :bordered="isBordered">
-      <template #extra v-if="showFilter">
+  <div id="tableHeaderContainer" :style="{ zIndex: 9 }" class="relative">
+    <a-card :bordered="isBordered" :title="title" size="small">
+      <template v-if="showFilter" #extra>
         <a-space>
-          <a-button type="primary" size="small" @click="doSearch">搜索</a-button>
-          <a-button status="danger" size="small" @click="doResetSearch">重置</a-button>
+          <a-button size="small" type="primary" @click="doSearch">搜索</a-button>
+          <a-button size="small" status="danger" @click="doResetSearch">重置</a-button>
         </a-space>
       </template>
       <slot name="search-content"></slot>
@@ -41,13 +41,16 @@
           target.value = document.getElementById('tableHeaderContainer')
         })
       })
+
       function doSearch() {
         showSearchContent.value = false
         emit('search')
       }
+
       function doResetSearch() {
         emit('reset-search')
       }
+
       return {
         showFilter,
         isBordered,

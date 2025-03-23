@@ -15,7 +15,7 @@
       </a-space>
     </a-tab-pane>
     <a-tab-pane key="2" title="请求信息">
-      <a-tabs default-active-key="21" size="small" position="left">
+      <a-tabs default-active-key="21" position="left" size="small">
         <a-tab-pane key="21" title="请求头">
           <pre>{{ strJson(resultData?.request?.headers) }}</pre>
         </a-tab-pane>
@@ -34,7 +34,7 @@
       </a-tabs>
     </a-tab-pane>
     <a-tab-pane key="3" title="响应信息">
-      <a-tabs default-active-key="31" size="small" position="left">
+      <a-tabs default-active-key="31" position="left" size="small">
         <a-tab-pane key="31" title="响应头">
           <pre>{{ strJson(resultData?.response?.headers) }}</pre>
         </a-tab-pane>
@@ -56,7 +56,7 @@
   </a-tabs>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
   import { strJson } from '@/utils/tools'
 
   defineProps({

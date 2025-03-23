@@ -1,22 +1,22 @@
 <template>
-  <a-drawer :width="800" :visible="visible" @ok="handleOk" @cancel="handleCancel" unmountOnClose>
+  <a-drawer :visible="visible" :width="800" unmountOnClose @cancel="handleCancel" @ok="handleOk">
     <template #title> 用例套件</template>
     <div>
       <a-space>
         <a-button size="mini" type="primary" @click.stop="addTestSuite"> 增加测试套</a-button>
       </a-space>
-      <a-collapse :default-active-key="[0]" accordion :bordered="false">
+      <a-collapse :bordered="false" :default-active-key="[0]" accordion>
         <a-collapse-item
-          :header="'循环第 ' + (index + 1) + ' 次 - ' + (item.name || '未命名')"
-          :key="index"
           v-for="(item, index) in parametrizeData"
+          :key="index"
+          :header="'循环第 ' + (index + 1) + ' 次 - ' + (item.name || '未命名')"
         >
           <template #extra>
             <a-space>
               <a-button size="mini" type="primary" @click.stop="addParametrizeRow(item)">
                 增加一行
               </a-button>
-              <a-button status="danger" size="mini" @click.stop="removeTestSuite(index)">
+              <a-button size="mini" status="danger" @click.stop="removeTestSuite(index)">
                 删除
               </a-button>
             </a-space>
@@ -25,8 +25,8 @@
             <a-space>
               <span>名称：</span>
               <a-input
-                placeholder="请输入套件名称"
                 :model-value="item.name"
+                placeholder="请输入套件名称"
                 @update:model-value="
                   (val) => {
                     item.name = val
@@ -38,8 +38,8 @@
             <a-space v-for="(items, index1) in item.parametrize" :key="index1">
               <span>key：</span>
               <a-input
-                placeholder="请输入key"
                 :model-value="items.key"
+                placeholder="请输入key"
                 @update:model-value="
                   (val) => {
                     items.key = val
@@ -49,8 +49,8 @@
               />
               <span>value：</span>
               <a-input
-                placeholder="请输入value"
                 :model-value="items.value"
+                placeholder="请输入value"
                 @update:model-value="
                   (val) => {
                     items.value = val
@@ -59,9 +59,9 @@
                 "
               />
               <a-button
-                type="text"
                 size="small"
                 status="danger"
+                type="text"
                 @click="removeParametrizeRow(item, index1)"
               >
                 移除

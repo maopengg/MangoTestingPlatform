@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
+
 class RequestModel(BaseModel):
     method: str | None
     url: str | None

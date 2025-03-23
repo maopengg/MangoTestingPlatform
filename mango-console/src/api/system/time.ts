@@ -17,6 +17,7 @@ export function postSystemTime(data: object) {
     },
   })
 }
+
 export function putSystemTime(data: object) {
   return put({
     url: 'system/time',
@@ -36,6 +37,7 @@ export function deleteSystemTime(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getSystemTimingList() {
   return get({
     url: 'system/time/name',

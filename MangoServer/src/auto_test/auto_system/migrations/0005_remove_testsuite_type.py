@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0004_remove_cachedata_case_id_remove_cachedata_case_type_and_more'),
     ]

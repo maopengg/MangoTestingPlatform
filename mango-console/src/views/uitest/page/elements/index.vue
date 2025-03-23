@@ -1,18 +1,18 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card title="页面元素详情" :bordered="false">
+      <a-card :bordered="false" title="页面元素详情">
         <template #extra>
           <a-space>
             <a-upload
-              type="primary"
-              size="small"
-              @before-upload="beforeUpload"
               :show-file-list="false"
+              size="small"
+              type="primary"
+              @before-upload="beforeUpload"
             />
-            <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" type="primary" @click="onDownload">下载模版</a-button>
+            <a-button size="small" type="primary" @click="doAppend">增加</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -33,36 +33,36 @@
     </template>
     <template #default>
       <a-card :bordered="false">
-        <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
+        <a-table :bordered="false" :columns="columns" :data="data.data" :pagination="false">
           <template #columns>
             <a-table-column
-              :key="item.key"
               v-for="item of columns"
+              :key="item.key"
               :align="item.align"
-              :title="item.title"
-              :width="item.width"
               :data-index="item.dataIndex"
-              :fixed="item.fixed"
               :ellipsis="item.ellipsis"
+              :fixed="item.fixed"
+              :title="item.title"
               :tooltip="item.tooltip"
+              :width="item.width"
             >
               <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.exp]" size="small">{{
-                  enumStore.element_exp[record.exp].title
-                }}</a-tag>
+                <a-tag :color="enumStore.colors[record.exp]" size="small"
+                  >{{ enumStore.element_exp[record.exp].title }}
+                </a-tag>
               </template>
               <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
                 <a-switch
-                  :default-checked="record.is_iframe === 1"
                   :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                  :default-checked="record.is_iframe === 1"
                 />
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onDebug(record)">调试</a-button>
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </template>
             </a-table-column>
           </template>
@@ -74,23 +74,23 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'select'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.element_exp"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.element_exp"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>
@@ -101,36 +101,36 @@
     <template #content>
       <a-form :model="formModel1">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems1"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ope"
                 :default-value="item.value"
-                expand-trigger="hover"
+                :options="data.ope"
                 :placeholder="item.placeholder"
-                @change="upDataOpeValue(item.value)"
-                value-key="key"
-                style="width: 380px"
-                allow-search
                 allow-clear
+                allow-search
+                expand-trigger="hover"
+                style="width: 380px"
+                value-key="key"
+                @change="upDataOpeValue(item.value)"
               />
             </a-space>
           </template>
           <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
             <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
               v-model="item.value"
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :default-value="item.value"
+              :placeholder="item.placeholder"
               allow-clear
             />
           </template>
@@ -138,23 +138,23 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ass"
                 :default-value="item.value"
-                expand-trigger="hover"
+                :options="data.ass"
                 :placeholder="item.placeholder"
-                @change="upDataAssValue(item.value)"
-                value-key="key"
-                style="width: 380px"
-                allow-search
                 allow-clear
+                allow-search
+                expand-trigger="hover"
+                style="width: 380px"
+                value-key="key"
+                @change="upDataAssValue(item.value)"
               />
             </a-space>
           </template>
           <template v-else-if="item.type === 'radio' && item.key === 'type'">
             <a-radio-group
-              @change="changeStatus"
               v-model="data.type"
               :options="data.plainOptions"
+              @change="changeStatus"
             />
           </template>
         </a-form-item>
@@ -188,6 +188,7 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { baseURL } from '@/api/axios.config'
+
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -227,6 +228,7 @@
       }
     })
   }
+
   const beforeUpload = (file: any) => {
     return new Promise((resolve, reject) => {
       Modal.confirm({
@@ -249,6 +251,7 @@
       })
     })
   }
+
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
@@ -377,6 +380,7 @@
       }
     }
   }
+
   function upDataAssValue(value: any) {
     const inputItem = findItemByValue(data.ass, value)
     if (inputItem) {
@@ -439,6 +443,7 @@
       }
     }
   }
+
   function onDataForm1() {
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
@@ -502,6 +507,7 @@
       })
     })
   }
+
   function onDownload() {
     const file_name = '元素批量上传模版.xlsx'
     const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
@@ -513,6 +519,7 @@
     aLink.click()
     document.body.removeChild(aLink)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

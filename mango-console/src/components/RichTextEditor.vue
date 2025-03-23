@@ -1,11 +1,12 @@
 <template>
-  <div id="richTextEditor" :style="{ height: height + 'px' }"> </div>
+  <div id="richTextEditor" :style="{ height: height + 'px' }"></div>
 </template>
 
 <script lang="ts">
   import { defineComponent, onMounted } from 'vue'
   import Quill from 'quill'
   import 'quill/dist/quill.snow.css'
+
   export default defineComponent({
     name: 'RichTextEditor',
     props: {

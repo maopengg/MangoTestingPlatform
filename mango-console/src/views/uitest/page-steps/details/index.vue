@@ -1,12 +1,12 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card title="页面步骤详情" style="border-radius: 10px; overflow: hidden" :bordered="false">
+      <a-card :bordered="false" style="border-radius: 10px; overflow: hidden" title="页面步骤详情">
         <template #extra>
           <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
-            <a-button status="success" size="small" @click="onRunCase">调试</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" type="primary" @click="doAppend">增加</a-button>
+            <a-button size="small" status="success" @click="onRunCase">调试</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -29,26 +29,26 @@
     <template #default>
       <div class="box">
         <div class="left">
-          <a-card style="border-radius: 10px; overflow: hidden" :bordered="false">
+          <a-card :bordered="false" style="border-radius: 10px; overflow: hidden">
             <a-table
+              :bordered="false"
               :columns="columns"
               :data="data.dataList"
-              @change="handleChange"
               :draggable="{ type: 'handle', width: 40 }"
               :pagination="false"
-              :bordered="false"
+              @change="handleChange"
             >
               <template #columns>
                 <a-table-column
                   v-for="item of columns"
                   :key="item.key"
                   :align="item.align"
-                  :title="item.title"
-                  :width="item.width"
                   :data-index="item.dataIndex"
-                  :fixed="item.fixed"
                   :ellipsis="item.ellipsis"
+                  :fixed="item.fixed"
+                  :title="item.title"
                   :tooltip="item.tooltip"
+                  :width="item.width"
                 >
                   <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
                     {{ record.page_step?.name }}
@@ -79,9 +79,9 @@
                     </a-tag>
                   </template>
                   <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                    <a-button type="text" size="mini" @click="onTest(record)">调试</a-button>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    <a-button size="mini" type="text" @click="onTest(record)">调试</a-button>
+                    <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                       >删除
                     </a-button>
                   </template>
@@ -100,23 +100,23 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'ele_name'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.uiPageName"
               :field-names="fieldNames"
-              value-key="key"
+              :options="data.uiPageName"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
 
@@ -124,15 +124,15 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ope"
                 :default-value="item.value"
-                expand-trigger="hover"
+                :options="data.ope"
                 :placeholder="item.placeholder"
-                @change="upDataOpeValue(item.value)"
-                value-key="key"
-                style="width: 380px"
-                allow-search
                 allow-clear
+                allow-search
+                expand-trigger="hover"
+                style="width: 380px"
+                value-key="key"
+                @change="upDataOpeValue(item.value)"
               />
             </a-space>
           </template>
@@ -140,24 +140,24 @@
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
-                :options="data.ass"
                 :default-value="item.value"
-                expand-trigger="hover"
+                :options="data.ass"
                 :placeholder="item.placeholder"
-                @change="upDataAssValue(item.value)"
-                value-key="key"
-                style="width: 380px"
-                allow-search
                 allow-clear
+                allow-search
+                expand-trigger="hover"
+                style="width: 380px"
+                value-key="key"
+                @change="upDataAssValue(item.value)"
               />
             </a-space>
           </template>
           <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
             <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
               v-model="item.value"
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :default-value="item.value"
+              :placeholder="item.placeholder"
               allow-clear
             />
           </template>
@@ -165,31 +165,31 @@
           <template v-else-if="item.type === 'radio' && item.key === 'type'">
             <a-select
               v-model="data.type"
-              :placeholder="item.placeholder"
-              :options="enumStore.element_ope"
               :field-names="fieldNames"
-              @change="changeStatus"
-              value-key="key"
+              :options="enumStore.element_ope"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
+              @change="changeStatus"
             />
           </template>
           <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
             <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
               v-model="item.value"
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :default-value="item.value"
+              :placeholder="item.placeholder"
               allow-clear
             />
           </template>
 
           <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
             <a-textarea
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :placeholder="item.placeholder"
-              :default-value="item.value"
               v-model="item.value"
+              :auto-size="{ minRows: 4, maxRows: 7 }"
+              :default-value="item.value"
+              :placeholder="item.placeholder"
               allow-clear
             />
           </template>

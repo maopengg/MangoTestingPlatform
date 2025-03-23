@@ -8,34 +8,34 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'user'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.userList"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="data.userList"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'source_type'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.cline_type"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="enumStore.cline_type"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
@@ -47,7 +47,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -61,9 +61,9 @@
     <template #default>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
       >
@@ -72,10 +72,10 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -84,9 +84,9 @@
               {{ record.user?.name }}
             </template>
             <template v-else-if="item.key === 'source_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.source_type]" size="small">{{
-                enumStore.cline_type[record.source_type].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.source_type]" size="small"
+                >{{ enumStore.cline_type[record.source_type].title }}
+              </a-tag>
             </template>
           </a-table-column>
         </template>
@@ -107,6 +107,7 @@
   import { getUserName } from '@/api/user/user'
   import { getUserLogs } from '@/api/user/user-logs'
   import { useEnum } from '@/store/modules/get-enum'
+
   const enumStore = useEnum()
 
   const pagination = usePagination(doRefresh)

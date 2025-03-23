@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function postApiImportUrl(data: object) {
   return post({
     url: '/api/import/api',
@@ -7,6 +8,7 @@ export function postApiImportUrl(data: object) {
     },
   })
 }
+
 export function getApiCase(data: object) {
   return get({
     url: '/api/case',
@@ -33,6 +35,7 @@ export function putApiCase(data: object) {
     },
   })
 }
+
 export function deleteApiCase(id: number | string[] | number[]) {
   return deleted({
     url: '/api/case',

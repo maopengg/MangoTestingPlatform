@@ -136,6 +136,7 @@ export function mapTwoLevelRouter(srcRoutes: Array<RouteRecordRaw>) {
       }
     })
   }
+
   if (srcRoutes && srcRoutes.length > 0) {
     const tempRoutes = [] as Array<any>
     srcRoutes.forEach((it) => {

@@ -30,25 +30,31 @@
     emits: ['confirm', 'cancel'],
     setup(props, { emit }) {
       const showModal = ref(false)
+
       function toggle() {
         showModal.value = !showModal.value
         return Promise.resolve(showModal.value)
       }
+
       function show() {
         showModal.value = true
         return Promise.resolve(true)
       }
+
       function close() {
         showModal.value = false
         return Promise.resolve(false)
       }
+
       function onConfirm() {
         emit('confirm')
       }
+
       function onCancel() {
         showModal.value = false
         emit('cancel')
       }
+
       return {
         showModal,
         toggle,

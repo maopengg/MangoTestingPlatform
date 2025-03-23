@@ -4,8 +4,8 @@
 # @Time   : 2024-10-30 15:35
 # @Author : 毛鹏
 
-from mangoui import *
 from mangokit import Mango
+from mangoui import *
 
 from src.tools.components.message import response_message
 from src.tools.methods import Methods

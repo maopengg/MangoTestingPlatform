@@ -8,21 +8,21 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="project.data"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="project.data"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
@@ -34,7 +34,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -50,16 +50,16 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
             </div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -69,10 +69,10 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -81,23 +81,23 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
-                enumStore.auto_type[record.auto_type].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.auto_type]" size="small"
+                >{{ enumStore.auto_type[record.auto_type].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
               {{ record.executor_name ? record.executor_name.name : '-' }}
             </template>
             <template v-else-if="item.key === 'db_c_status'" #cell="{ record }">
               <a-switch
-                :default-checked="record.db_c_status === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'db_c_status')"
+                :default-checked="record.db_c_status === 1"
               />
             </template>
             <template v-else-if="item.key === 'db_rud_status'" #cell="{ record }">
               <a-switch
-                :default-checked="record.db_rud_status === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, 'db_rud_status')"
+                :default-checked="record.db_rud_status === 1"
               />
             </template>
             <template v-else-if="item.key === 'environment'" #cell="{ record }">
@@ -107,12 +107,12 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button type="text" size="mini" @click="clickNotice(record)">通知</a-button>
-                <a-button type="text" size="mini" @click="clickDataBase(record)">数据库</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" type="text" @click="clickNotice(record)">通知</a-button>
+                <a-button size="mini" type="text" @click="clickDataBase(record)">数据库</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -127,54 +127,54 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
             <a-cascader
               v-model="item.value"
-              :placeholder="item.placeholder"
               :options="projectInfo.projectProduct"
-              allow-search
+              :placeholder="item.placeholder"
               allow-clear
+              allow-search
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'environment'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.environment_type"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.environment_type"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'auto_type'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.auto_type"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.auto_type"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'executor_name'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.nickname"
               :field-names="fieldNames"
-              value-key="key"
+              :options="data.nickname"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>
@@ -203,6 +203,7 @@
   import { usePageData } from '@/store/page-data'
   import { useRouter } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
+
   const router = useRouter()
   const projectInfo = useProject()
   const enumStore = useEnum()
@@ -366,6 +367,7 @@
       },
     })
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

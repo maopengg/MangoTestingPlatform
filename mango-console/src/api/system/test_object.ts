@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function getUserTestObject(data: object) {
   return get({
     url: '/system/test/object',

@@ -1,6 +1,7 @@
 import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
+
 export const columns = reactive([
   {
     title: '序号',

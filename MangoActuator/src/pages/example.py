@@ -1,4 +1,3 @@
-from PySide6.QtCore import QTimer
 from mangoui import *
 
 

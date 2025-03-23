@@ -1,12 +1,12 @@
 <template>
   <a-popover :style="{ width: '200px' }" trigger="click" @popup-visible-change="onPopVisibleChange">
     <template #content>
-      <div style="border-bottom: 1px solid #f5f5f5" class="flex items-center justify-between">
-        <a-checkbox v-model="allChecked" @change="onAllChange"> 全选 </a-checkbox>
-        <a-button type="text" class="text-right" @click="onReset"> 重置 </a-button>
+      <div class="flex items-center justify-between" style="border-bottom: 1px solid #f5f5f5">
+        <a-checkbox v-model="allChecked" @change="onAllChange"> 全选</a-checkbox>
+        <a-button class="text-right" type="text" @click="onReset"> 重置</a-button>
       </div>
-      <div class="pt-2 pb-2" id="sortColumnWrapper">
-        <div class="column-item" v-for="item of innerTableProps" :key="item.key">
+      <div id="sortColumnWrapper" class="pt-2 pb-2">
+        <div v-for="item of innerTableProps" :key="item.key" class="column-item">
           <a-checkbox v-model="item.checked" :label="item.title" @change="onChange">
             {{ item.title }}
           </a-checkbox>
@@ -15,7 +15,7 @@
         </div>
       </div>
     </template>
-    <a-button type="primary" size="small" shape="circle">
+    <a-button shape="circle" size="small" type="primary">
       <template #icon>
         <icon-settings />
       </template>
@@ -28,6 +28,7 @@
   import { defineComponent, PropType, reactive, ref, toRef, nextTick } from 'vue'
   import Sortable from 'sortablejs'
   import { cloneDeep, isUndefined } from 'lodash-es'
+
   export default defineComponent({
     name: 'SortableTable',
     props: {
@@ -54,10 +55,12 @@
         innerTableProps.filter((it) => it.checked).length !== innerTableProps.length
       )
       const allChecked = ref(innerTableProps.every((it) => it.checked))
+
       function onAllChange(value: any) {
         innerTableProps.forEach((it) => (it.checked = value))
         onUpdateValue(innerTableProps.filter((it) => it.checked))
       }
+
       const onChange = () => {
         const checkedItems = innerTableProps.filter((it) => it.checked)
         allChecked.value = checkedItems.length === innerTableProps.length
@@ -72,12 +75,14 @@
         allChecked.value = true
         onUpdateValue(innerTableProps)
       }
+
       function onUpdateValue(columns: TablePropsType[]) {
         emit(
           'update',
           columns.filter((it) => it.checked)
         )
       }
+
       function onPopVisibleChange(visible: boolean) {
         if (visible) {
           nextTick(() => {
@@ -103,6 +108,7 @@
           })
         }
       }
+
       return {
         innerTableProps,
         isIndeterminate,
@@ -122,6 +128,7 @@
     display: flex;
     align-items: center;
     padding: 8px 0;
+
     .handle-icon {
       &:hover {
         cursor: move;

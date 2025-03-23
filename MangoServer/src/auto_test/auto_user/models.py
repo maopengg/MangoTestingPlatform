@@ -1,6 +1,5 @@
 from django.db import models
 
-
 from src.exceptions import ToolsError
 
 """

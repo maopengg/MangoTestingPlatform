@@ -1,4 +1,5 @@
 import { useTableColumn, useTable } from '@/hooks/table'
+
 const table = useTable()
 
 export const tableColumns = useTableColumn([

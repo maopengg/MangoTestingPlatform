@@ -17,6 +17,7 @@ export function postUiPage(data: object) {
     },
   })
 }
+
 export function putUiPage(data: object) {
   return put({
     url: '/ui/page',
@@ -25,6 +26,7 @@ export function putUiPage(data: object) {
     },
   })
 }
+
 export function deleteUiPage(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/page',
@@ -46,6 +48,7 @@ export function getUiPageName(moduleId: number) {
     },
   })
 }
+
 export function postUiPageCopy(pageId: number | string) {
   return post({
     url: '/ui/page/copy',

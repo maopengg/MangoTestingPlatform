@@ -1,4 +1,5 @@
 import { deleted, get, post, put, Response } from '@/api/http'
+
 export function getUserModule(data: object) {
   return get({
     url: '/system/module',
@@ -36,6 +37,7 @@ export function deleteUserModule(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getUserModuleName(projectProductId: any): Promise<Response> {
   return get({
     url: '/system/module/name',

@@ -1,16 +1,16 @@
 <template>
   <a-card>
-    <a-space direction="vertical" class="w-full">
+    <a-space class="w-full" direction="vertical">
       <div class="container">
         <span>断言策略</span>
       </div>
       <a-card
-        :body-style="{ padding: '10px' }"
-        :bordered="false"
         v-for="item of randomList"
         :key="item.title"
+        :body-style="{ padding: '10px' }"
+        :bordered="false"
       >
-        <a-descriptions :column="3" :title="item.label" :data="item.children" :bordered="true" />
+        <a-descriptions :bordered="true" :column="3" :data="item.children" :title="item.label" />
       </a-card>
     </a-space>
   </a-card>

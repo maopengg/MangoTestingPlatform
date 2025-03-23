@@ -17,6 +17,7 @@ export function postUiCase(data: object) {
     },
   })
 }
+
 export function putUiCase(data: object) {
   return put({
     url: '/ui/case',
@@ -25,6 +26,7 @@ export function putUiCase(data: object) {
     },
   })
 }
+
 export function deleteUiCase(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/case',
@@ -35,6 +37,7 @@ export function deleteUiCase(id: number | string[] | number[]) {
     },
   })
 }
+
 export function postUiCaseCopy(caseId: number) {
   return post({
     url: '/ui/case/copy',
@@ -45,6 +48,7 @@ export function postUiCaseCopy(caseId: number) {
     },
   })
 }
+
 export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvironment: any) {
   return post({
     url: 'ui/case/batch',
@@ -56,6 +60,7 @@ export function postUiRunCaseBatch(caseIdList: number[] | string[], testingEnvir
     },
   })
 }
+
 export function getUiCaseRun(caseId: any, testingEnvironment: any) {
   return get({
     url: '/ui/case/test',

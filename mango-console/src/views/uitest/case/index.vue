@@ -8,7 +8,7 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input
@@ -19,53 +19,53 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="projectInfo.projectProductList"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="projectInfo.projectProductList"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh(item.value, true)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="productModule.data"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="productModule.data"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'case_people'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="data.userList"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="data.userList"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'status'">
                 <a-select
-                  style="width: 150px"
                   v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.task_status"
                   :field-names="fieldNames"
-                  value-key="key"
+                  :options="enumStore.task_status"
+                  :placeholder="item.placeholder"
                   allow-clear
                   allow-search
+                  style="width: 150px"
+                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
@@ -77,7 +77,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -93,32 +93,32 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button status="success" size="small" @click="onConcurrency('批量执行')"
+              <a-button size="small" status="success" @click="onConcurrency('批量执行')"
                 >批量执行
               </a-button>
             </div>
             <div>
-              <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
-              <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
+              <a-button size="small" status="warning" @click="handleClick">设为定时任务</a-button>
+              <a-modal v-model:visible="data.visible" @cancel="handleCancel" @ok="handleOk">
                 <template #title> 设为定时任务</template>
                 <div>
                   <a-select
                     v-model="data.value"
-                    placeholder="请选择定时任务进行绑定"
-                    :options="data.scheduledName"
                     :field-names="fieldNames"
-                    value-key="key"
+                    :options="data.scheduledName"
                     allow-clear
                     allow-search
+                    placeholder="请选择定时任务进行绑定"
+                    value-key="key"
                   />
                 </div>
               </a-modal>
             </div>
             <div>
-              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
             <div>
-              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
+              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
             </div>
           </a-space>
         </template>
@@ -126,11 +126,11 @@
 
       <a-table
         :bordered="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
       >
@@ -139,12 +139,12 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
-            :fixed="item.fixed"
             :ellipsis="item.ellipsis"
+            :fixed="item.fixed"
+            :title="item.title"
             :tooltip="item.tooltip"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -166,8 +166,8 @@
             </template>
             <template v-else-if="item.key === 'switch_step_open_url'" #cell="{ record }">
               <a-switch
-                :default-checked="record.switch_step_open_url === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
+                :default-checked="record.switch_step_open_url === 1"
               />
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
@@ -177,21 +177,21 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onCaseRun(record.id)">执行</a-button>
-                <a-button type="text" size="mini" @click="onClick(record)">步骤</a-button>
-                <a-button type="text" size="mini" @click="clickSuite(record)">套件</a-button>
+                <a-button size="mini" type="text" @click="onCaseRun(record.id)">执行</a-button>
+                <a-button size="mini" type="text" @click="onClick(record)">步骤</a-button>
+                <a-button size="mini" type="text" @click="clickSuite(record)">套件</a-button>
 
                 <a-dropdown trigger="hover">
-                  <a-button type="text" size="mini">···</a-button>
+                  <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                      <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button type="text" size="mini" @click="caseCody(record)">复制</a-button>
+                      <a-button size="mini" type="text" @click="caseCody(record)">复制</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                         >删除
                       </a-button>
                     </a-doption>
@@ -205,8 +205,8 @@
       <ParametrizeDrawer
         v-model:initial-data="data.row.parametrize"
         :visible="data.drawerVisible"
-        @ok="drawerOk"
         @cancel="data.drawerVisible = false"
+        @ok="drawerOk"
       />
     </template>
     <template #footer>
@@ -217,55 +217,55 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader'">
             <a-cascader
               v-model="item.value"
-              @change="onModuleSelect(item.value)"
-              :placeholder="item.placeholder"
               :options="projectInfo.projectProduct"
-              allow-search
+              :placeholder="item.placeholder"
               allow-clear
+              allow-search
+              @change="onModuleSelect(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="productModule.data"
               :field-names="fieldNames"
-              value-key="key"
+              :options="productModule.data"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.userList"
               :field-names="fieldNames"
-              value-key="key"
+              :options="data.userList"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'level'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.case_level"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.case_level"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>

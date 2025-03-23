@@ -20,6 +20,7 @@ export function getUiConfigNewBrowserObj(id: number | null, is_recording: number
     },
   })
 }
+
 export function getUiConfig(data: object) {
   return get({
     url: '/ui/config',
@@ -37,6 +38,7 @@ export function postUiConfig(data: object) {
     },
   })
 }
+
 export function putUiConfig(data: object) {
   return put({
     url: '/ui/config',
@@ -45,6 +47,7 @@ export function putUiConfig(data: object) {
     },
   })
 }
+
 export function deleteUiConfig(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/config',

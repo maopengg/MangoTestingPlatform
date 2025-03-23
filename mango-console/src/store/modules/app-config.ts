@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import defaultSetting from '@/setting'
-import { LayoutMode, PageAnim, SideTheme, ThemeMode, DeviceType } from '../types'
+import { DeviceType, LayoutMode, PageAnim, SideTheme, ThemeMode } from '../types'
 
 import { useChangeMenuWidth } from '@/hooks/useMenuWidth'
 import usePrimaryColor from '@/hooks/usePrimaryColor'

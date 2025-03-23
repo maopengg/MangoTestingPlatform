@@ -3,37 +3,39 @@
 @tailwind utilities;
 
 :root {
-  --menu-width: 210px;
+    --menu-width: 210px;
 }
+
 html,
 body,
 #app {
-  height: 100vh;
-  overflow: hidden;
+    height: 100vh;
+    overflow: hidden;
 }
+
 * {
-  box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 #nprogress .bar {
-  background: rgb(var(--primary-6)) !important;
+    background: rgb(var(--primary-6)) !important;
 }
 
 .arco-trigger-menu-icon-suffix::before {
-  content: '';
-  display: inline-block;
-  flex: 1;
+    content: '';
+    display: inline-block;
+    flex: 1;
 }
 
 .form-item__require label::before {
-  content: '*';
-  color: #f00;
-  margin-right: 5px;
+    content: '*';
+    color: #f00;
+    margin-right: 5px;
 }
 
 .form-item__no_require label::before {
-  content: '';
-  margin-right: 10px;
+    content: '';
+    margin-right: 10px;
 }
 
 img,
@@ -44,32 +46,34 @@ audio,
 iframe,
 embed,
 object {
-  display: inline-block;
-  vertical-align: baseline;
+    display: inline-block;
+    vertical-align: baseline;
 }
 
 .card-border-radius {
-  border-radius: var(--border-radius-large) !important;
-}
-.card-border-radius:hover{
-  box-shadow: 0px 0px 10px #ddd;
+    border-radius: var(--border-radius-large) !important;
 }
 
-.arco-pagination-item-active{
-  color: var(--color-white) !important;
+.card-border-radius:hover {
+    box-shadow: 0px 0px 10px #ddd;
+}
+
+.arco-pagination-item-active {
+    color: var(--color-white) !important;
 }
 
 .arco-pagination-item-active:hover {
-  color: var(--color-white) !important;
+    color: var(--color-white) !important;
 }
 
-.arco-btn-disabled{
-  background-color: rgba(var(--primary-1), 0.6) !important;
+.arco-btn-disabled {
+    background-color: rgba(var(--primary-1), 0.6) !important;
 }
 
 .arco-switch {
-  background-color: var(--color-fill-4);
+    background-color: var(--color-fill-4);
 }
-.arco-switch-checked{
-  background-color: rgb(var(--primary-6));
+
+.arco-switch-checked {
+    background-color: rgb(var(--primary-6));
 }

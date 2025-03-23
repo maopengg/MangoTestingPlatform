@@ -1,17 +1,17 @@
 <template>
   <div
-    class="vaw-tab-split-side-bar-wrapper"
     :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
+    class="vaw-tab-split-side-bar-wrapper"
   >
     <div class="tab-split-tab-wrapper">
-      <Logo class="tab-split-logo-wrapper" :show-title="false" />
+      <Logo :show-title="false" class="tab-split-logo-wrapper" />
       <Scrollbar class="tab-split-slidebar__wrapper">
         <div class="tab-split-content-wrapper">
           <div
             v-for="item of tabs"
             :key="item.fullPath"
-            class="label-item-wrapper"
             :class="{ 'vaw-tab-split-item-is-active': item.checked.value }"
+            class="label-item-wrapper"
             @click="changeTab(item)"
           >
             <component :is="item.icon || 'icon-menu'" style="font-size: 18px" />
@@ -21,7 +21,7 @@
       </Scrollbar>
     </div>
     <div class="tab-split-menu-wrapper">
-      <Logo class="tab-split-logo-wrapper" :show-logo="false" />
+      <Logo :show-logo="false" class="tab-split-logo-wrapper" />
       <ScrollerMenu :routes="routes" />
     </div>
   </div>
@@ -36,6 +36,7 @@
   import useAppConfigStore from '@/store/modules/app-config'
   import { transformSplitTabMenu } from '@/store/help'
   import { SideTheme, SplitTab } from '@/store/types'
+
   export default defineComponent({
     name: 'TabSplitSideBar',
     components: { IconMenu },
@@ -63,6 +64,7 @@
         tabs.push(...transformSplitTabMenu(permissionStore.getPermissionSplitTabs))
         doChangeTab(route)
       })
+
       function doChangeTab(route: RouteLocationNormalizedLoaded) {
         const matchedRoutes = route.matched
         if (matchedRoutes && matchedRoutes.length > 0) {
@@ -79,12 +81,14 @@
           })
         }
       }
+
       function changeTab(item: SplitTab) {
         tabs.forEach((it) => {
           it.checked.value = it.fullPath === item.fullPath
         })
         findPath(item)
       }
+
       function findPath(item: SplitTab) {
         if (item.children && item.children.length > 0) {
           const firstItem = item.children[0]
@@ -115,6 +119,7 @@
           }
         }
       }
+
       const bgColor = computed(() => {
         if (appStore.sideTheme === SideTheme.IMAGE) {
           return 'sidebar-bg-img'
@@ -142,65 +147,80 @@
   }
 </style>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   @--primary-color: #1890ff;
   @--dark-color: #000c16;
   .sidebar-bg-img {
     background-image: url('../../assets/bg_img.webp') !important;
     background-size: cover;
+
     :deep(.ant-menu) {
       background: transparent !important;
     }
+
     :deep(.logo-wrapper .logo-title) {
       color: #fff !important;
     }
+
     .tab-split-tab-wrapper {
       .label-item-wrapper {
         color: #fff;
       }
     }
   }
+
   .sidebar-bg-dark {
     :deep(.logo-wrapper .logo-title) {
       color: #fff !important;
     }
+
     .tab-split-tab-wrapper {
       background-color: @--dark-color;
+
       .label-item-wrapper {
         color: #fff;
       }
     }
   }
+
   .sidebar-bg-light {
     background-color: #fff;
+
     .tab-split-tab-wrapper {
       background-color: #f5f5f5;
+
       .label-item-wrapper {
         color: #333;
       }
+
       .vaw-tab-split-item-is-active {
         color: #fff;
       }
     }
   }
+
   .light .sidebar-bg-dark {
     background-color: @--dark-color;
   }
+
   .dark .sidebar-bg-dark {
     :deep(.ant-menu) {
       background: transparent !important;
     }
   }
+
   .open-status {
     width: @menuWidth;
     box-shadow: 2px 5px 10px rgba(0, 0, 0, 0.12);
     transition: all @transitionTime;
   }
+
   .close-status {
     width: @minMenuWidth;
     box-shadow: none;
     transition: all @transitionTime;
   }
+
   .vaw-tab-split-side-bar-wrapper {
     position: fixed;
     top: 0;
@@ -209,6 +229,7 @@
     height: 100vh;
     box-sizing: border-box;
     z-index: 999;
+
     .tab-split-tab-wrapper {
       position: relative;
       top: 0;
@@ -219,12 +240,15 @@
       overflow: hidden;
       height: 100vh;
       box-sizing: border-box;
+
       .tab-split-logo-wrapper {
         max-width: @tabSplitMenuWidth;
         min-width: @tabSplitMenuWidth;
       }
+
       .tab-split-content-wrapper {
         position: relative;
+
         .after {
           content: '';
           position: absolute;
@@ -235,6 +259,7 @@
           border-radius: 3px;
           z-index: -1;
         }
+
         .label-item-wrapper {
           position: relative;
           min-height: @logoHeight * 1.2;
@@ -246,6 +271,7 @@
           justify-content: center;
           box-sizing: border-box;
           z-index: 1;
+
           .title {
             display: inline-block;
             width: 80%;
@@ -257,22 +283,27 @@
             line-height: 14px;
             margin-top: 5px;
           }
+
           &:hover {
             cursor: pointer;
           }
+
           &::after {
             .after;
           }
         }
+
         .label-item-wrapper:hover::after {
           background-color: @--primary-color;
         }
+
         .vaw-tab-split-item-is-active::after {
           background-color: @--primary-color;
           .after;
         }
       }
     }
+
     .tab-split-menu-wrapper {
       position: absolute;
       top: 0;
@@ -281,17 +312,20 @@
       left: @tabSplitMenuWidth;
       overflow-x: hidden;
     }
+
     .vaw-menu-wrapper {
       overflow-x: hidden;
       color: white;
     }
   }
+
   .is-mobile {
     .open-status {
       width: @menuWidth;
       transform: translateX(0);
       transition: transform @transitionTime;
     }
+
     .close-status {
       width: @menuWidth;
       transform: translateX(calc(@menuWidth * -1));

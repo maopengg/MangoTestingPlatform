@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from mangokit import NoticeEnum
 from src.auto_test.auto_system.models import NoticeConfig
 from src.auto_test.auto_system.views.project import ProjectSerializers
 from src.auto_test.auto_user.models import User
@@ -19,7 +20,6 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from mangokit import NoticeEnum
 
 
 class NoticeConfigSerializers(serializers.ModelSerializer):

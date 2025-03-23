@@ -37,6 +37,7 @@ export function putPytestTools(data: object) {
     },
   })
 }
+
 export function getPytestToolsUpdate() {
   return get({
     url: 'pytest/tools/update',
@@ -45,6 +46,7 @@ export function getPytestToolsUpdate() {
     },
   })
 }
+
 export function getPytestToolsRead(id: any) {
   return get({
     url: 'pytest/tools/read',
@@ -53,6 +55,7 @@ export function getPytestToolsRead(id: any) {
     },
   })
 }
+
 export function postPytestToolsWrite(id: any, file_content: any) {
   return post({
     url: 'pytest/tools/write',

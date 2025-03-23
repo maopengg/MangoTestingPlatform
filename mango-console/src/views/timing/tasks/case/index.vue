@@ -4,19 +4,19 @@
       <a-card :bordered="false" :title="'定时任务：' + route.query.name">
         <template #extra>
           <a-space>
-            <a-button type="primary" size="small" @click="doAppend">增加用例</a-button>
-            <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" type="primary" @click="doAppend">增加用例</a-button>
+            <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <a-table
-          :draggable="{ type: 'handle', width: 40 }"
           :bordered="false"
-          :row-selection="{ selectedRowKeys, showCheckedAll }"
-          :loading="table.tableLoading.value"
-          :data="table.dataList"
           :columns="tableColumns"
+          :data="table.dataList"
+          :draggable="{ type: 'handle', width: 40 }"
+          :loading="table.tableLoading.value"
           :pagination="false"
+          :row-selection="{ selectedRowKeys, showCheckedAll }"
           :rowKey="rowKey"
           @selection-change="onSelectionChange"
         >
@@ -25,10 +25,10 @@
               v-for="item of tableColumns"
               :key="item.key"
               :align="item.align"
-              :title="item.title"
-              :width="item.width"
               :data-index="item.key"
               :fixed="item.fixed"
+              :title="item.title"
+              :width="item.width"
             >
               <template v-if="item.key === 'index'" #cell="{ record }">
                 {{ record.id }}
@@ -42,7 +42,7 @@
                 {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>
@@ -57,43 +57,43 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of data.formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
-              @change="tasksTypeCaseName(item.value)"
-              :placeholder="item.placeholder"
-              :options="data.moduleList"
-              allow-search
-              allow-clear
               :disabled="data.isModule"
+              :options="data.moduleList"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              @change="tasksTypeCaseName(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'type'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.test_case_type"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.test_case_type"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
               @change="changeType(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_id'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.caseList"
               :field-names="fieldNames"
+              :options="data.caseList"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
             />

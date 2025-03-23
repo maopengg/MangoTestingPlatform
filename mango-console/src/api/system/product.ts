@@ -10,6 +10,7 @@ export function getUserProductAllModuleName(projectId: number | string | null): 
     },
   })
 }
+
 export function getUserProductName(projectId: number | null = null) {
   return get({
     url: '/system/product/name',
@@ -20,6 +21,7 @@ export function getUserProductName(projectId: number | null = null) {
     },
   })
 }
+
 export function getUserProduct(data: object) {
   return get({
     url: '/system/product',
@@ -28,6 +30,7 @@ export function getUserProduct(data: object) {
     },
   })
 }
+
 export function postUserProduct(data: object) {
   return post({
     url: '/system/product',

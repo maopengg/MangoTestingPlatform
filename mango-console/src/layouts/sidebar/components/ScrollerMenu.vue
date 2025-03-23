@@ -1,13 +1,13 @@
 <template>
   <component :is="tag">
     <a-menu
+      v-model:openKeys="defaultExpandKeys"
+      v-model:selectedKeys="defaultPath"
+      :collapsed="menuMode === 'horizontal' ? false : appStore.isCollapse"
       :mode="menuMode"
       :theme="theme"
-      :collapsed="menuMode === 'horizontal' ? false : appStore.isCollapse"
-      v-model:selectedKeys="defaultPath"
-      v-model:openKeys="defaultExpandKeys"
-      @menu-item-click="onMenuClick"
       v-bind="menuProps"
+      @menu-item-click="onMenuClick"
     >
       <template v-for="item of menuOptions" :key="item.key">
         <template v-if="!item.children">
@@ -88,11 +88,13 @@
           : 'dark'
       })
       handleExpandPath()
+
       function handleMenu(routes?: Array<RouteRecordRaw>) {
         menuOptions.length = 0
         const tempMenus = transfromMenu(routes || [])
         menuOptions.push(...tempMenus)
       }
+
       function handleExpandPath() {
         const paths = currentRoute.fullPath.split('/')
         const resultPaths = paths
@@ -110,6 +112,7 @@
           }
         })
       }
+
       function onMenuClick(key: string) {
         if (menuMode.value === 'horizontal') {
           emit('top-item-click', key)
@@ -124,6 +127,7 @@
           }
         }
       }
+
       watch(
         () => currentRoute.fullPath,
         (newVal) => {
@@ -171,12 +175,15 @@
   :deep(.arco-menu-collapsed) {
     margin: 0 auto;
   }
+
   :deep(.arco-menu-vertical .arco-menu-item) {
     max-height: 40px;
   }
+
   .scrollbar {
     height: calc(100vh - @logoHeight) !important;
     overflow-y: auto;
+
     &::-webkit-scrollbar {
       width: 0;
     }

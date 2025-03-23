@@ -17,6 +17,7 @@ export function postSystemDatabase(data: object) {
     },
   })
 }
+
 export function putSystemDatabase(data: object) {
   return put({
     url: '/system/database',
@@ -25,6 +26,7 @@ export function putSystemDatabase(data: object) {
     },
   })
 }
+
 export function deleteSystemDatabase(id: number | string[] | number[]) {
   return deleted({
     url: '/system/database',
@@ -35,6 +37,7 @@ export function deleteSystemDatabase(id: number | string[] | number[]) {
     },
   })
 }
+
 export function getSystemDatabaseTest(data: object) {
   return get({
     url: '/system/database/test',
@@ -43,6 +46,7 @@ export function getSystemDatabaseTest(data: object) {
     },
   })
 }
+
 export function putSystemDatabaseStatus(data: object) {
   return put({
     url: '/system/database/status',

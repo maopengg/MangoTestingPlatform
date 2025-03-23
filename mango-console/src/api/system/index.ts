@@ -8,6 +8,7 @@ export function getSystemActivityLevel() {
     },
   })
 }
+
 export function getSystemCaseResultWeekSum() {
   return get({
     url: 'system/index/result/week/sum',
@@ -16,6 +17,7 @@ export function getSystemCaseResultWeekSum() {
     },
   })
 }
+
 export function getSystemCaseRunSum() {
   return get({
     url: 'system/index/run/sum',
@@ -24,6 +26,7 @@ export function getSystemCaseRunSum() {
     },
   })
 }
+
 export function getSystemCaseSum() {
   return get({
     url: 'system/index/sum',

@@ -1,4 +1,5 @@
 import { deleted, get, post, put } from '@/api/http'
+
 export function getApiHeaders(data: object) {
   return get({
     url: '/api/headers',
@@ -16,6 +17,7 @@ export function postApiHeaders(data: object) {
     },
   })
 }
+
 export function putApiHeaders(data: object) {
   return put({
     url: '/api/headers',
@@ -24,6 +26,7 @@ export function putApiHeaders(data: object) {
     },
   })
 }
+
 export function deleteApiHeaders(id: number | string[] | number[]) {
   return deleted({
     url: '/api/headers',
@@ -34,6 +37,7 @@ export function deleteApiHeaders(id: number | string[] | number[]) {
     },
   })
 }
+
 export function putApiHeadersPutStatus(id: number, status: number) {
   return put({
     url: '/api/headers/status',

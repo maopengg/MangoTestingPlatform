@@ -1,5 +1,5 @@
 <template>
-  <a-card class="footer-container" :bordered="false"> Copyright © {{ projectName }} 2023 </a-card>
+  <a-card :bordered="false" class="footer-container"> Copyright © {{ projectName }} 2023</a-card>
 </template>
 
 <script lang="ts">

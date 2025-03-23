@@ -6,16 +6,16 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
             </div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -25,10 +25,10 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -48,14 +48,14 @@
             </template>
             <template v-else-if="item.key === 'web_max'" #cell="{ record }">
               <a-switch
-                :default-checked="record.config?.web_max === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
+                :default-checked="record.config?.web_max === 1"
               />
             </template>
             <template v-else-if="item.key === 'web_recording'" #cell="{ record }">
               <a-switch
-                :default-checked="record.config?.web_recording === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
+                :default-checked="record.config?.web_recording === 1"
               />
             </template>
             <template v-else-if="item.key === 'web_parallel'" #cell="{ record }">
@@ -72,40 +72,40 @@
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
-                :default-checked="record.status === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
+                :default-checked="record.status === 1"
               />
             </template>
             <template v-else-if="item.key === 'web_headers'" #cell="{ record }">
               <a-switch
-                :default-checked="record.config?.web_headers === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
+                :default-checked="record.config?.web_headers === 1"
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <template v-if="record.type === 0">
-                  <a-button type="text" size="mini" @click="onTakeOver(record.id)" disabled
+                  <a-button disabled size="mini" type="text" @click="onTakeOver(record.id)"
                     >接管端口
                   </a-button>
-                  <a-button type="text" size="mini" @click="onDebugWEB(record.id)"
+                  <a-button size="mini" type="text" @click="onDebugWEB(record.id)"
                     >启动浏览器
                   </a-button>
                 </template>
                 <template v-if="record.type === 1">
-                  <a-button type="text" size="mini" @click="onDebugAndroid(record.id)"
+                  <a-button size="mini" type="text" @click="onDebugAndroid(record.id)"
                     >调试安卓
                   </a-button>
-                  <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                  <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
                 </template>
                 <a-dropdown trigger="hover">
-                  <a-button type="text" size="mini">···</a-button>
+                  <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption v-if="record.type !== 1">
-                      <a-button type="text" size="mini" @click="onUpdate(record)">编辑 </a-button>
+                      <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                         >删除
                       </a-button>
                     </a-doption>
@@ -125,51 +125,50 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'type'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.drive_type"
               :field-names="fieldNames"
-              value-key="key"
-              @change="changeStatus(item.value)"
+              :options="enumStore.drive_type"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
+              @change="changeStatus(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'web_type'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.browser_type"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.browser_type"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'web_h5'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
               :options="enumStore.device"
-              value-key="key"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'web_parallel'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
               :options="[
                 { value: 1, label: '1' },
                 { value: 2, label: '2' },
@@ -180,9 +179,10 @@
                 { value: 20, label: '20' },
                 { value: 30, label: '30' },
               ]"
-              value-key="key"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'switch' && item.key === 'web_headers'">

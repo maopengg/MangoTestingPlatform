@@ -46,6 +46,7 @@ export function getPytestActUpdate() {
     },
   })
 }
+
 export function getPytestActRead(id: any) {
   return get({
     url: 'pytest/act/read',
@@ -54,6 +55,7 @@ export function getPytestActRead(id: any) {
     },
   })
 }
+
 export function postPytestActWrite(id: any, file_content: any) {
   return post({
     url: 'pytest/act/write',

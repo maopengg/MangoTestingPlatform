@@ -3,13 +3,10 @@
 # @Time   : 2023-09-28 15:49
 # @Author : 毛鹏
 
-from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
-from PySide6.QtSvgWidgets import *
 from mangoui import show_info_message
-from mangoui.resources.app_rc import *
-from mangoui.settings.settings import THEME
+
 from src.pages.window.window_logic import WindowLogic
 
 

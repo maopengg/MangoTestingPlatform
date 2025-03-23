@@ -3,11 +3,11 @@
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
         v-for="item of resultData?.element_result_list"
-        :bordered="false"
         :key="item.id"
+        :bordered="false"
         destroy-on-hide
       >
-        <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+        <a-collapse-item :key="item.id" :header="item.name" :style="customStyle">
           <div>
             <a-space direction="vertical" style="width: 50%">
               <p>
@@ -32,11 +32,11 @@
               <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
               <div v-if="item.status === 0">
                 <a-image
+                  :preview-visible="visible"
                   :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
+                  style="margin-right: 67px; vertical-align: top"
                   title="失败截图"
                   width="260"
-                  style="margin-right: 67px; vertical-align: top"
-                  :preview-visible="visible"
                   @preview-visible-change="visible = false"
                 >
                   <template #extra>
@@ -91,7 +91,7 @@
   </a-tabs>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
   import { onMounted, reactive, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'

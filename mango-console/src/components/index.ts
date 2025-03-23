@@ -1,5 +1,6 @@
 import { App } from 'vue'
 import { toHump } from '../utils'
+
 export default {
   install(app: App, options: any) {
     const { getComponentName } = options

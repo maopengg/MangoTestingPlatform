@@ -3,7 +3,7 @@
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
-    <a-popover placement="bottom" trigger="click" :width="300">
+    <a-popover :width="300" placement="bottom" trigger="click">
       <a-badge v-if="appStore.actionBar.isShowMessage" :count="badgeValue" class="action-item">
         <NotificationsIcon />
       </a-badge>
@@ -41,6 +41,7 @@
   import { useDebounceFn, useFullscreen } from '@vueuse/core'
   import useEmit from '@/hooks/useEmit'
   import useAppConfigStore from '@/store/modules/app-config'
+
   export default defineComponent({
     name: 'ActionItems',
     components: {
@@ -59,10 +60,13 @@
       const router = useRouter()
       const route = useRoute()
       const emitter = useEmit()
+
       function onShowSearch() {
         emitter?.emit('show-search')
       }
+
       const { isSupported, enter, isFullscreen, exit } = useFullscreen(document.documentElement)
+
       function onScreenFull() {
         if (!isSupported) {
           Message.error('当前浏览器不支持全屏操作')
@@ -74,15 +78,19 @@
           enter()
         }
       }
+
       const debouncedFn = useDebounceFn(() => {
         router.replace({ path: '/redirect' + route.path, query: route.query })
       }, 200)
+
       function onRefrehRoute() {
         debouncedFn()
       }
+
       function onShowSetting() {
         emitter?.emit('show-setting')
       }
+
       return {
         settingRef,
         showSearchContent,
@@ -105,6 +113,7 @@
     display: flex;
     align-items: center;
     z-index: 1;
+
     .action-item {
       min-width: 40px;
       display: flex;
@@ -112,10 +121,12 @@
       align-items: center;
       font-size: 18px;
       height: 100%;
+
       &:hover {
         cursor: pointer;
         background-color: var(--color-secondary-hover);
       }
+
       :deep(.arco-badge-number, .arco-badge-dot, .arco-badge-text, .arco-badge-custom-dot) {
         transform: translate(10%, 20%);
       }

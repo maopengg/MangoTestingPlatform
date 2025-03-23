@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0006_remove_projectproduct_auto_type'),
     ]

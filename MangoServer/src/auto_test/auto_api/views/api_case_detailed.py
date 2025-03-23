@@ -3,14 +3,12 @@
 # @Description: 
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
-import json
 
 from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiCaseDetailedParameter
 from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
@@ -20,6 +18,7 @@ from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
+
 
 class ApiCaseDetailedSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -59,14 +58,14 @@ class ApiCaseDetailedCRUD(ModelCRUD):
         case_id = request.query_params.get('case_id')
         api_info_id = request.query_params.get('api_info_id')
         if api_info_id:
-            api_case_detailed = ApiCaseDetailed\
-                .objects\
-                .filter(case=case_id, api_info=api_info_id)\
+            api_case_detailed = ApiCaseDetailed \
+                .objects \
+                .filter(case=case_id, api_info=api_info_id) \
                 .order_by('case_sort')
         else:
-            api_case_detailed = ApiCaseDetailed\
-                .objects\
-                .filter(case=case_id)\
+            api_case_detailed = ApiCaseDetailed \
+                .objects \
+                .filter(case=case_id) \
                 .order_by('case_sort')
 
         try:

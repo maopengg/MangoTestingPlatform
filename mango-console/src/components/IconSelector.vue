@@ -3,17 +3,17 @@
     <template #content>
       <div class="icon-container">
         <a-input-search
+          allowClear
           placeholder="搜索图标名称"
           press-enter
+          search-button
           style="width: 100%"
           @search="onSearch"
-          allowClear
-          search-button
         />
         <div class="mt-4"></div>
         <div class="icon-wrapper">
           <a-row :wrap="true">
-            <a-col :span="4" v-for="item of iconNames" :key="item">
+            <a-col v-for="item of iconNames" :key="item" :span="4">
               <div
                 class="flex justify-center items-center flex-col icon-item"
                 @click="onSelectItem(item)"
@@ -26,16 +26,16 @@
         </div>
         <div class="mt-1"></div>
         <a-pagination
-          size="mini"
           :pageSize="pageSize"
-          :total="total"
           :show-size-changer="false"
+          :total="total"
+          size="mini"
           @change="onPageChange"
         />
       </div>
     </template>
     <a-button v-if="!seletedItem" type="primary">请选择图标</a-button>
-    <a-button status="success" v-else>
+    <a-button v-else status="success">
       已选择
       <component :is="seletedItem" />
     </a-button>
@@ -47,6 +47,7 @@
   import { useClipboard } from '@vueuse/core'
   import { Message } from '@arco-design/web-vue'
   import { ref, watch } from 'vue'
+
   const emit = defineEmits(['onSelect', 'update:value'])
   const props = defineProps({
     value: {
@@ -72,6 +73,7 @@
       seletedItem.value = newVal
     }
   )
+
   function onPageChange(page: number) {
     currentPage.value = page
     iconNames.value =
@@ -79,6 +81,7 @@
         ? iconList.slice((page - 1) * pageSize, page * pageSize)
         : searchList.value.slice((page - 1) * pageSize, page * pageSize)
   }
+
   function onSearch(searchValue: string) {
     if (searchValue) {
       const temp = searchValue.toLowerCase()
@@ -96,6 +99,7 @@
       )
     }
   }
+
   async function onSelectItem(item: string) {
     emit('onSelect', item)
     emit('update:value', item)
@@ -116,16 +120,20 @@
   :deep(.arco-pagination) {
     justify-content: center;
   }
+
   .icon-container {
     width: 360px;
     overflow: hidden;
     text-align: center;
+
     .icon-wrapper {
       min-height: 300px;
+
       .icon-item {
         height: 60px;
         overflow: hidden;
         text-align: center;
+
         .label-name {
           width: 70%;
           margin: 0 auto;
@@ -136,12 +144,15 @@
           overflow: hidden;
           word-wrap: normal;
         }
+
         .arco-icon {
           transform: scale(1);
           transition: transform 0.2s linear;
         }
+
         &:hover {
           cursor: pointer;
+
           .arco-icon {
             transform: scale(1.5);
             transition: transform 0.2s linear;

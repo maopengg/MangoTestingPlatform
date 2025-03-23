@@ -1,11 +1,11 @@
 <template>
   <div class="flex justify-between items-center mt-1.5">
-    <span class="tip" :class="[item.status]" v-for="(item, index) of stronger" :key="index"></span>
+    <span v-for="(item, index) of stronger" :key="index" :class="[item.status]" class="tip"></span>
     <span class="ml-1 mr-1">{{ tipValue }}</span>
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
   import { reactive } from 'vue'
   import { watch, ref } from 'vue'
 
@@ -67,7 +67,7 @@
     }
   )
 </script>
-<style scoped lang="less">
+<style lang="less" scoped>
   .tip {
     height: 10px;
     border-radius: 2px;

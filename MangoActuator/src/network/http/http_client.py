@@ -58,6 +58,9 @@ class HttpClientApi(HttpBase):
     def user_register(cls, json_data: dict):
         return cls.post('/register', json=json_data)
 
+
 if __name__ == '__main__':
     HttpClientApi.set_host('')
-    HttpClientApi.upload_file('D:\GitCode\MangoTestingPlatform\MangoActuator\screenshot\失败截图-下载铃铛1741762773000.jpg', '失败截图-下载铃铛1741762773000.jpg')
+    HttpClientApi.upload_file(
+        'D:\GitCode\MangoTestingPlatform\MangoActuator\screenshot\失败截图-下载铃铛1741762773000.jpg',
+        '失败截图-下载铃铛1741762773000.jpg')

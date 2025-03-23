@@ -1,11 +1,11 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card title="接口详情" :bordered="false">
+      <a-card :bordered="false" title="接口详情">
         <template #extra>
           <a-space>
-            <a-button status="success" size="small" @click="onRunCase">执行</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button size="small" status="success" @click="onRunCase">执行</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -25,54 +25,54 @@
     </template>
     <template #default>
       <a-card :bordered="false">
-        <a-tabs @tab-click="(key) => switchType(key)" :active-key="data.pageType">
+        <a-tabs :active-key="data.pageType" @tab-click="(key) => switchType(key)">
           <template #extra>
             <a-space v-if="data.addButton">
-              <a-button type="primary" size="small" @click="addData">增加</a-button>
+              <a-button size="small" type="primary" @click="addData">增加</a-button>
             </a-space>
           </template>
           <a-tab-pane key="0" title="请求头">
             <a-textarea
-              placeholder="请输入请求头，字符串形式"
               v-model="data.header"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="请输入请求头，字符串形式"
               @blur="upDate('header', data.header)"
             />
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
             <a-textarea
-              placeholder="请输入json格式的数据"
               v-model="data.params"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="请输入json格式的数据"
               @blur="upDate('params', data.params)"
             />
           </a-tab-pane>
           <a-tab-pane key="2" title="表单">
             <a-textarea
-              placeholder="请输入json格式的表单"
               v-model="data.data"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="请输入json格式的表单"
               @blur="upDate('data', data.data)"
             />
           </a-tab-pane>
           <a-tab-pane key="3" title="JSON">
             <a-textarea
-              placeholder="请输入json格式的JSON"
               v-model="data.json"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="请输入json格式的JSON"
               @blur="upDate('json', data.json)"
             />
           </a-tab-pane>
           <a-tab-pane key="4" title="文件">
             <a-textarea
-              placeholder="请输入json格式的文件上传数据"
               v-model="data.file"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="请输入json格式的文件上传数据"
               @blur="upDate('file', data.file)"
             />
           </a-tab-pane>
@@ -80,20 +80,20 @@
             <a-space direction="vertical">
               <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
                 <a-input
-                  placeholder="请输入缓存key"
                   v-model="data.posterior_json_path[index].key"
+                  placeholder="请输入缓存key"
                   @blur="upDate('posterior_json_path', data.posterior_json_path)"
                 />
                 <a-input
-                  placeholder="请输入jsonpath语法"
                   v-model="data.posterior_json_path[index].value"
+                  placeholder="请输入jsonpath语法"
                   @blur="upDate('posterior_json_path', data.posterior_json_path)"
                 />
 
                 <a-button
-                  type="text"
                   size="small"
                   status="danger"
+                  type="text"
                   @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
                   >移除
                 </a-button>
@@ -104,20 +104,20 @@
             <a-space direction="vertical">
               <a-space v-for="(value, index) of data.posterior_re" :key="index">
                 <a-input
-                  placeholder="请输入缓存key"
                   v-model="data.posterior_re[index].key"
+                  placeholder="请输入缓存key"
                   @blur="upDate('posterior_re', data.posterior_re)"
                 />
                 <a-input
-                  placeholder="请输入jsonpath语法"
                   v-model="data.posterior_re[index].value"
+                  placeholder="请输入jsonpath语法"
                   @blur="upDate('posterior_re', data.posterior_re)"
                 />
 
                 <a-button
-                  type="text"
                   size="small"
                   status="danger"
+                  type="text"
                   @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
                   >移除
                 </a-button>
@@ -126,10 +126,10 @@
           </a-tab-pane>
           <a-tab-pane key="7" title="后置函数">
             <a-textarea
-              placeholder="根据帮助文档，输入自定义后置函数"
               v-model="data.posterior_func"
-              allow-clear
               :auto-size="{ minRows: 28, maxRows: 28 }"
+              allow-clear
+              placeholder="根据帮助文档，输入自定义后置函数"
               @blur="upDate('posterior_func', data.posterior_func)"
             />
           </a-tab-pane>

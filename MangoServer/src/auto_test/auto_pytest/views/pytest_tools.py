@@ -13,7 +13,6 @@ from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
-from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import PytestFileTypeEnum, FileStatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD

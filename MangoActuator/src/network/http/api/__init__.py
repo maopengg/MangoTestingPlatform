@@ -9,6 +9,7 @@ from .api_info import ApiInfo
 from .api_pulic import ApiPublic
 from .api_headers import ApiHeaders
 
+
 class ApiApi:
     info = ApiInfo
     case = ApiCase

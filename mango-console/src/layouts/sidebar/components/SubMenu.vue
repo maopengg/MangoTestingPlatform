@@ -19,7 +19,7 @@
         </a-menu-item>
       </template>
       <template v-else>
-        <SubMenu :menu-info="item" :key="item.key" />
+        <SubMenu :key="item.key" :menu-info="item" />
       </template>
     </template>
   </a-sub-menu>

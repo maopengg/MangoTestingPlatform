@@ -21,6 +21,7 @@ export function postUiCaseStepsDetailed(data: object, parent_id: any) {
     },
   })
 }
+
 export function putUiCaseStepsDetailed(data: object, parent_id: any) {
   // @ts-ignore
   data['parent_id'] = parent_id
@@ -31,6 +32,7 @@ export function putUiCaseStepsDetailed(data: object, parent_id: any) {
     },
   })
 }
+
 export function deleteUiCaseStepsDetailed(id: number | string[] | number[], parentId: number) {
   return deleted({
     url: '/ui/case/steps/detailed',
@@ -53,6 +55,7 @@ export function getUiCaseStepsRefreshCacheData(id: number) {
     },
   })
 }
+
 export function putUiCasePutCaseSort(caseSortList: any) {
   return put({
     url: '/ui/case/steps/detailed/sort',

@@ -8,6 +8,7 @@ export function getUiPublic(data: object) {
     },
   })
 }
+
 export function postUiPublic(data: object) {
   return post({
     url: '/ui/public',
@@ -16,6 +17,7 @@ export function postUiPublic(data: object) {
     },
   })
 }
+
 export function putUiPublic(data: object) {
   return put({
     url: '/ui/public',
@@ -24,6 +26,7 @@ export function putUiPublic(data: object) {
     },
   })
 }
+
 export function deleteUiPublic(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/public',
@@ -34,6 +37,7 @@ export function deleteUiPublic(id: number | string[] | number[]) {
     },
   })
 }
+
 export function putUiPublicPutStatus(id: number, status: number) {
   return put({
     url: '/ui/public/status',

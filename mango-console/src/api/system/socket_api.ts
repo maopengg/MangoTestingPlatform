@@ -17,6 +17,7 @@ export function getSystemSocketUserList(data: object) {
     },
   })
 }
+
 export function getSystemSocketAllUserList(data: object) {
   return get({
     url: '/system/socket/all/user/list',

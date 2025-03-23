@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -53,7 +52,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64, verbose_name='产品名称')),
                 ('client_type', models.SmallIntegerField(verbose_name='客户端类型')),
                 ('auto_type', models.SmallIntegerField(verbose_name='自动化类型')),
-                ('project', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.project')),
+                ('project',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.project')),
             ],
             options={
                 'db_table': 'project_product',
@@ -71,8 +71,11 @@ class Migration(migrations.Migration):
                 ('type', models.SmallIntegerField(verbose_name='任务类型')),
                 ('status', models.SmallIntegerField(verbose_name='任务状态')),
                 ('is_notice', models.SmallIntegerField(verbose_name='是否发送通知')),
-                ('case_people', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user', verbose_name='用例责任人')),
-                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.projectproduct')),
+                ('case_people',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user',
+                                   verbose_name='用例责任人')),
+                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                      to='auto_system.projectproduct')),
             ],
             options={
                 'db_table': 'tasks',
@@ -89,9 +92,12 @@ class Migration(migrations.Migration):
                 ('test_env', models.SmallIntegerField(verbose_name='测试环境')),
                 ('status', models.SmallIntegerField(verbose_name='测试结果')),
                 ('is_notice', models.SmallIntegerField(verbose_name='是否发送通知')),
-                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.projectproduct')),
-                ('tasks', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.tasks')),
-                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user', verbose_name='用例执行人')),
+                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                      to='auto_system.projectproduct')),
+                ('tasks',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.tasks')),
+                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user',
+                                           verbose_name='用例执行人')),
             ],
             options={
                 'db_table': 'test_suite',
@@ -127,8 +133,10 @@ class Migration(migrations.Migration):
                 ('result_data', models.JSONField(null=True, verbose_name='用例缓存数据')),
                 ('retry', models.SmallIntegerField(verbose_name='重试次数')),
                 ('push_time', models.DateTimeField(null=True, verbose_name='修改时间')),
-                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.projectproduct')),
-                ('test_suite', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.testsuite')),
+                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                      to='auto_system.projectproduct')),
+                ('test_suite', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                 to='auto_system.testsuite')),
             ],
             options={
                 'db_table': 'test_suite_details',
@@ -147,8 +155,10 @@ class Migration(migrations.Migration):
                 ('db_c_status', models.SmallIntegerField(verbose_name='查询权限')),
                 ('db_rud_status', models.SmallIntegerField(verbose_name='增删改权限')),
                 ('auto_type', models.SmallIntegerField(verbose_name='自动化使用类型')),
-                ('executor_name', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user')),
-                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.projectproduct')),
+                ('executor_name',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_user.user')),
+                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                      to='auto_system.projectproduct')),
             ],
             options={
                 'db_table': 'test_object',
@@ -162,7 +172,8 @@ class Migration(migrations.Migration):
                 ('create_time', models.DateTimeField(auto_now_add=True, verbose_name='创建时间')),
                 ('update_time', models.DateTimeField(auto_now=True, verbose_name='修改时间')),
                 ('case_id', models.SmallIntegerField(verbose_name='用例ID')),
-                ('task', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.tasks')),
+                ('task',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.tasks')),
             ],
             options={
                 'db_table': 'tasks_details',
@@ -172,7 +183,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='tasks',
             name='timing_strategy',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.timetasks'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    to='auto_system.timetasks'),
         ),
         migrations.CreateModel(
             name='ProductModule',
@@ -183,7 +195,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64, verbose_name='模块名称')),
                 ('superior_module_1', models.CharField(max_length=64, null=True, verbose_name='一级模块模块名称')),
                 ('superior_module_2', models.CharField(max_length=64, null=True, verbose_name='二级模块模块名称')),
-                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.projectproduct')),
+                ('project_product', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                      to='auto_system.projectproduct')),
             ],
             options={
                 'db_table': 'product_module',
@@ -199,7 +212,8 @@ class Migration(migrations.Migration):
                 ('type', models.SmallIntegerField(verbose_name='类型')),
                 ('config', models.CharField(max_length=1028, verbose_name='通知配置')),
                 ('status', models.SmallIntegerField(default=0, verbose_name='是否选中发送')),
-                ('test_object', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.testobject')),
+                ('test_object', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                  to='auto_system.testobject')),
             ],
             options={
                 'db_table': 'notice_config',
@@ -216,7 +230,8 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=64, verbose_name='文件名称')),
                 ('price', models.DecimalField(decimal_places=2, max_digits=10, verbose_name='文件大小')),
                 ('file', models.FileField(upload_to='files/', verbose_name='文件')),
-                ('project', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.project')),
+                ('project',
+                 models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.project')),
             ],
             options={
                 'db_table': 'file_data',
@@ -234,7 +249,8 @@ class Migration(migrations.Migration):
                 ('host', models.CharField(max_length=64, verbose_name='数据库地址')),
                 ('port', models.IntegerField(verbose_name='端口')),
                 ('status', models.SmallIntegerField(default=0, verbose_name='是否启用')),
-                ('test_object', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auto_system.testobject')),
+                ('test_object', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                                  to='auto_system.testobject')),
             ],
             options={
                 'db_table': 'data_base',

@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 from pydantic import ValidationError
 
+from mangokit import MysqlConingModel
 from src.auto_test.auto_system.models import Database, TestObject
 from src.enums.tools_enum import AutoTypeEnum
 from src.exceptions import *
-from mangokit import MysqlConingModel
 
 
 def func_mysql_config(test_object_id: int) -> MysqlConingModel:

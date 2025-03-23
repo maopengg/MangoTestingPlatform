@@ -96,6 +96,7 @@ export interface OriginRoute {
   localFilePath?: string
   children?: Array<OriginRoute>
 }
+
 export interface Props {
   codeStyle?: CSSProperties // 代码样式
   dark?: boolean // 是否暗黑主题

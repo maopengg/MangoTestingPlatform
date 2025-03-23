@@ -1,7 +1,7 @@
 <template>
-  <a-list :bordered="false" size="small" :style="{ width: '350px' }">
+  <a-list :bordered="false" :style="{ width: '350px' }" size="small">
     <a-list-item v-for="(item, index) of data" :key="index">
-      <a-list-item-meta :title="item.title" :description="item.description">
+      <a-list-item-meta :description="item.description" :title="item.title">
         <template #avatar>
           <template v-if="item.status === 1">
             <a-avatar :style="{ backgroundColor: '#2ECC71' }">

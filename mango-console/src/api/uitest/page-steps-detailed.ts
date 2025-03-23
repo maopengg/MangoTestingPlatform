@@ -21,6 +21,7 @@ export function postUiPageStepsDetailed(data: object, parent_id: any) {
     },
   })
 }
+
 export function putUiPageStepsDetailed(data: object, parent_id: any) {
   // @ts-ignore
   data['parent_id'] = parent_id
@@ -31,6 +32,7 @@ export function putUiPageStepsDetailed(data: object, parent_id: any) {
     },
   })
 }
+
 export function deleteUiPageStepsDetailed(id: number | string[] | number[], parentId: number) {
   return deleted({
     url: '/ui/page/steps/detailed',
@@ -53,6 +55,7 @@ export function getUiPageStepsDetailedOpe(pageType: any) {
     },
   })
 }
+
 export function getUiPageStepsDetailedAss(pageType: any) {
   return get({
     url: '/ui/page/steps/detailed/ass',
@@ -63,6 +66,7 @@ export function getUiPageStepsDetailedAss(pageType: any) {
     },
   })
 }
+
 export function getUiPageAssMethod() {
   return get({
     url: '/ui/page/steps/detailed/ass/method',
@@ -71,6 +75,7 @@ export function getUiPageAssMethod() {
     },
   })
 }
+
 export function putUiPagePutStepSort(data: any) {
   return put({
     url: '/ui/page/steps/detailed/sort',
@@ -81,6 +86,7 @@ export function putUiPagePutStepSort(data: any) {
     },
   })
 }
+
 export function getUiPageStepsDetailedTest(id: any, test_env: any) {
   return get({
     url: '/ui/page/steps/detailed/test',

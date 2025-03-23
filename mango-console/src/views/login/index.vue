@@ -1,9 +1,9 @@
 <template>
   <div class="login-container">
-    <img src="../../assets/bg.png" class="bg-img" />
+    <img class="bg-img" src="../../assets/bg.png" />
     <div class="center">
       <div class="left">
-        <img src="../../assets/bg_left.png" class="left-bg-img" />
+        <img class="left-bg-img" src="../../assets/bg_left.png" />
       </div>
       <div class="form-wrapper">
         <div v-if="baseData.isLogin === true">
@@ -11,8 +11,8 @@
           <div class="item-wrapper mt-6">
             <a-input
               v-model="baseData.username"
-              placeholder="请输入用户名/手机号"
               allow-clear
+              placeholder="请输入用户名/手机号"
               size="large"
             >
               <template #prefix>
@@ -23,8 +23,8 @@
           <div class="item-wrapper mt-4">
             <a-input-password
               v-model="baseData.password"
-              placeholder="请输入密码"
               allow-clear
+              placeholder="请输入密码"
               size="large"
               @keyup.enter="onLogin"
             >
@@ -35,7 +35,7 @@
           </div>
           <div class="flex-1"></div>
           <div class="mt-10">
-            <a-button type="primary" class="login" :loading="baseData.loading" @click="onLogin">
+            <a-button :loading="baseData.loading" class="login" type="primary" @click="onLogin">
               登录
             </a-button>
           </div>
@@ -45,16 +45,16 @@
           <div class="item-wrapper mt-6">
             <a-input
               v-model="baseData.name"
-              placeholder="请输入用户昵称"
               allow-clear
+              placeholder="请输入用户昵称"
               size="large"
             />
           </div>
           <div class="item-wrapper mt-6">
             <a-input
               v-model="baseData.username"
-              placeholder="请输入登录用户名"
               allow-clear
+              placeholder="请输入登录用户名"
               size="large"
             >
               <template #prefix>
@@ -65,8 +65,8 @@
           <div class="item-wrapper mt-4">
             <a-input-password
               v-model="baseData.password"
-              placeholder="请输入密码"
               allow-clear
+              placeholder="请输入密码"
               size="large"
               @keyup.enter="onLogin"
             >
@@ -78,8 +78,8 @@
           <div class="item-wrapper mt-4">
             <a-input-password
               v-model="baseData.confirm_password"
-              placeholder="再次输入密码"
               allow-clear
+              placeholder="再次输入密码"
               size="large"
               @keyup.enter="onLogin"
             >
@@ -90,7 +90,7 @@
           </div>
           <div class="flex-1"></div>
           <div class="mt-10">
-            <a-button type="primary" class="login" :loading="baseData.loading" @click="onRegister">
+            <a-button :loading="baseData.loading" class="login" type="primary" @click="onRegister">
               注册
             </a-button>
           </div>

@@ -1,25 +1,25 @@
 <template>
   <a-card
     :body-style="{ padding: 0, width: '100%' }"
-    class="table-footer-container"
     :bordered="isBordered"
+    class="table-footer-container"
   >
-    <div class="flex items-center" :class="[innerPosition]">
+    <div :class="[innerPosition]" class="flex items-center">
       <a-pagination
         v-model:current="pagination.page"
         v-model:pageSize="pagination.pageSize"
         :show-page-size="pagination.showSizePicker"
         :total="pagination?.pageCount"
         show-total
-        @page-size-change="onPageSizeChange"
-        @change="onChange"
         size="small"
+        @change="onChange"
+        @page-size-change="onPageSizeChange"
       />
       <a-button
         v-if="showRefresh"
-        style="margin-left: 10px"
         shape="circle"
         size="small"
+        style="margin-left: 10px"
         type="primary"
         @click="refresh"
       >
@@ -61,17 +61,21 @@
       const innerPosition = computed(() => {
         return 'justify-' + props.position
       })
+
       function onChange(page: number) {
         ;(pagination as any).value.page = page
         ;(pagination as any).value.onChange()
       }
+
       function onPageSizeChange(pageSize: number) {
         ;(pagination as any).value.pageSize = pageSize
         ;(pagination as any).value.onChange()
       }
+
       function refresh() {
         ;(pagination as any).value.onChange()
       }
+
       return {
         isBordered,
         innerPosition,
@@ -86,9 +90,11 @@
   :deep(.arco-pagination-item-active) {
     color: var(--color-white);
   }
+
   :deep(.arco-pagination-item-active:hover) {
     color: var(--color-white);
   }
+
   .table-footer-container {
     height: 45px;
     display: flex;

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_system', '0002_tasksdetails_command_alter_tasksdetails_case_id'),
     ]

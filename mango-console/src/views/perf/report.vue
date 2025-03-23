@@ -8,6 +8,8 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue'
+
   const name = ref('')
+
   function f() {}
 </script>

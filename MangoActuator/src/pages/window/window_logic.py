@@ -11,10 +11,9 @@ from PySide6.QtCore import QThread, Signal, QTimer
 from mangoui import warning_notification, error_notification, success_notification, info_notification, \
     MangoMain1Window, DialogWidget, FormDataModel
 
-from src.consumer import SocketConsumer
+from src import process
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
-from src.network.web_socket.websocket_client import WebSocketClient
 from src.settings.settings import STYLE, MENUS
 from ..api import *
 from ..config import *
@@ -31,7 +30,6 @@ from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
 from ...tools.components.message import response_message
 from ...tools.methods import Methods
-from src import process
 
 
 class NotificationTask(QThread):

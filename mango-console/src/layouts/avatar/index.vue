@@ -1,6 +1,6 @@
 <template>
   <div class="vaw-avatar-container">
-    <a-dropdown trigger="hover" size="large" @select="handleSelect">
+    <a-dropdown size="large" trigger="hover" @select="handleSelect">
       <div class="action-wrapper">
         <!--        <div class="avatar">-->
         <!--          <a-avatar :size="30">-->
@@ -23,7 +23,7 @@
     </a-dropdown>
   </div>
   <template>
-    <a-modal v-model:visible="visible" @ok="handleOk" @cancel="handleCancel">
+    <a-modal v-model:visible="visible" @cancel="handleCancel" @ok="handleOk">
       <template #title> 扫描二维码加群</template>
       <a-space>
         <img alt="作者微信" src="/static/images/author.jpg" />

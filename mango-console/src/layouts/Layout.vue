@@ -1,7 +1,7 @@
 <template>
   <div
-    class="vaw-layout-container"
     :class="[appStore.deviceType === 'mobile' && 'is-mobile', appStore.theme]"
+    class="vaw-layout-container"
   >
     <template v-if="appStore.layoutMode === 'ttb'">
       <VAWHeader />
@@ -18,8 +18,8 @@
     </template>
     <div
       v-if="appStore.deviceType === 'mobile'"
-      class="mobile-shadow"
       :class="[appStore.isCollapse ? 'close-shadow' : 'show-shadow']"
+      class="mobile-shadow"
       @click="closeMenu"
     ></div>
   </div>
@@ -39,6 +39,7 @@
   import useTheme from '@/hooks/useTheme'
   import { DeviceType } from '@/store/types'
   import CustomRequestInterceptor from '@/api/interceptors/CustomRequestInterceptor'
+
   export default defineComponent({
     name: 'Layout',
     setup() {
@@ -69,6 +70,7 @@
       onBeforeUnmount(() => {
         window.removeEventListener('resize', handleScreenResize)
       })
+
       function handleScreenResize() {
         const width = document.body.clientWidth
         if (width <= 768) {
@@ -85,9 +87,11 @@
           appStore.toggleCollapse(false)
         }
       }
+
       function closeMenu() {
         appStore.toggleCollapse(true)
       }
+
       return {
         settingRef,
         searchContentRef,
@@ -104,14 +108,17 @@
     max-width: 100%;
     position: relative;
     overflow-x: hidden;
+
     .mobile-shadow {
       display: none;
     }
+
     .layout-mode-ttb {
       margin-top: @logoHeight;
       transition: all @transitionTime;
     }
   }
+
   .is-mobile {
     .mobile-shadow {
       background-color: #000000;
@@ -122,9 +129,11 @@
       height: 100vh;
       z-index: 997;
     }
+
     .close-shadow {
       display: none;
     }
+
     .show-shadow {
       display: block;
       opacity: 0.5;

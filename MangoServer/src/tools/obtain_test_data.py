@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
-from src.exceptions import ERROR_MSG_0026, ToolsError
 from mangokit import DataProcessor
+from src.exceptions import ERROR_MSG_0026, ToolsError
 
 
 class ObtainTestData(DataProcessor):

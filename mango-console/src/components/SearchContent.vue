@@ -1,17 +1,17 @@
 <template>
-  <a-modal v-model:visible="visible" :closable="false" :align-center="false">
+  <a-modal v-model:visible="visible" :align-center="false" :closable="false">
     <a-tabs default-active-key="1" size="small">
       <a-tab-pane key="1" title="站内">
         <div class="p-4">
           <a-tree-select
             v-model:value="innerValue"
-            show-search
-            style="width: 100%"
-            :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-            placeholder="请输入菜单名称"
-            allow-clear
-            size="large"
             :data="searchList"
+            :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
+            allow-clear
+            placeholder="请输入菜单名称"
+            show-search
+            size="large"
+            style="width: 100%"
             @change="onSelectItem"
           />
         </div>
@@ -24,6 +24,7 @@
   import usePermissionStore from '@/store/modules/permission'
   import { defineComponent, onMounted, ref } from 'vue'
   import { RouteRecordRaw, useRouter } from 'vue-router'
+
   interface InnerSearchItem {
     title: string
     key: string
@@ -38,14 +39,17 @@
       const outValue = ref('')
       const innerValue = ref(undefined)
       const searchList = ref<Array<InnerSearchItem>>([])
+
       function show() {
         visible.value = true
       }
+
       function close() {
         visible.value = false
       }
 
       const permissionStore = usePermissionStore()
+
       function transformRoutes(routes: RouteRecordRaw[], parentPath = '/'): InnerSearchItem[] {
         const list: InnerSearchItem[] = []
         routes
@@ -64,13 +68,16 @@
           })
         return list
       }
+
       const router = useRouter()
+
       function onSelectItem(value: any) {
         const items = value.split(':')
         router.push(items[1]).then(() => {
           visible.value = false
         })
       }
+
       onMounted(() => {
         searchList.value = transformRoutes(permissionStore.getPermissionSideBar)
       })

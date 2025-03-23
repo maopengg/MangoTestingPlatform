@@ -1,5 +1,5 @@
 <template>
-  <a-button status="danger" size="mini" @click="onDelete">
+  <a-button size="mini" status="danger" @click="onDelete">
     <template #icon>
       <IconDelete />
     </template>
@@ -17,6 +17,7 @@
       function onDelete() {
         emit('delete')
       }
+
       return {
         onDelete,
       }

@@ -11,11 +11,13 @@
   import { isExternal } from '@/utils'
   import { defineComponent, onMounted, reactive, watch } from 'vue'
   import { RouteRecordRaw, useRoute, useRouter } from 'vue-router'
+
   interface DropItem {
     label: string
     key: string
     children?: DropItem[]
   }
+
   export default defineComponent({
     name: 'Breadcrumb',
     setup() {
@@ -23,6 +25,7 @@
       const route = useRoute()
       const router = useRouter()
       const permissionStore = usePermissionStore()
+
       function handlePath(path: string) {
         return path.split('/').reduce((pre: string[], cur: string) => {
           if (cur) {
@@ -36,6 +39,7 @@
           return pre
         }, [])
       }
+
       function generatorDropdown(routes: Array<RouteRecordRaw> | undefined, parentPath = '/') {
         if (!routes) return
         const tempArray: DropItem[] = []
@@ -60,6 +64,7 @@
         })
         return tempArray
       }
+
       function findRoute(paths: string[]) {
         const selectRoutes: Array<RouteRecordRaw> = []
         let tempOrigin = permissionStore.permissionRoutes
@@ -72,6 +77,7 @@
         })
         return selectRoutes
       }
+
       function generatorBreadcrumb() {
         breadcrumbs.length = 0
         const matchedPath = route.matched.map((it) => {
@@ -82,9 +88,11 @@
         })
         breadcrumbs.push(...matchedPath)
       }
+
       function handleSelect(key: string) {
         router.push(key)
       }
+
       onMounted(() => {
         generatorBreadcrumb()
       })

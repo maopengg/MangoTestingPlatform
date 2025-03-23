@@ -1,12 +1,12 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card title="用例详情" :bordered="false">
+      <a-card :bordered="false" title="用例详情">
         <template #extra>
           <a-space>
-            <a-button type="primary" size="small" @click="doRefresh" disabled>刷新页面</a-button>
-            <a-button status="success" size="small" @click="onCaseRun">执行</a-button>
-            <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
+            <a-button disabled size="small" type="primary" @click="doRefresh">刷新页面</a-button>
+            <a-button size="small" status="success" @click="onCaseRun">执行</a-button>
+            <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
         <div class="container">
@@ -42,14 +42,14 @@
             <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
               <template #extra>
                 <a-space>
-                  <a-button type="primary" size="small" @click="addData">增加</a-button>
+                  <a-button size="small" type="primary" @click="addData">增加</a-button>
                 </a-space>
               </template>
               <a-tab-pane key="1" title="前置数据">
                 <a-tabs
                   :default-active-key="data.uiSonType"
-                  @tab-click="(key) => switchSonType(key)"
                   position="left"
+                  @tab-click="(key) => switchSonType(key)"
                 >
                   <a-tab-pane key="11" title="自定义变量">
                     <a-space direction="vertical">
@@ -70,9 +70,9 @@
                           @blur="upDataCase"
                         />
                         <a-button
-                          type="text"
                           size="small"
                           status="danger"
+                          type="text"
                           @click="removeFrontSql(pageData.record.front_custom, index)"
                           >移除
                         </a-button>
@@ -95,9 +95,9 @@
                           @blur="upDataCase"
                         />
                         <a-button
-                          type="text"
                           size="small"
                           status="danger"
+                          type="text"
                           @click="removeFrontSql(pageData.record.front_sql, index)"
                           >移除
                         </a-button>
@@ -111,9 +111,9 @@
                 <a-table
                   :columns="columns"
                   :data="data.data"
-                  @change="handleChange"
                   :draggable="{ type: 'handle', width: 40 }"
                   :pagination="false"
+                  @change="handleChange"
                   @row-click="select"
                 >
                   <template #columns>
@@ -121,12 +121,12 @@
                       v-for="item of columns"
                       :key="item.key"
                       :align="item.align"
-                      :title="item.title"
-                      :width="item.width"
                       :data-index="item.dataIndex"
-                      :fixed="item.fixed"
                       :ellipsis="item.ellipsis"
+                      :fixed="item.fixed"
+                      :title="item.title"
                       :tooltip="item.tooltip"
+                      :width="item.width"
                     >
                       <template v-if="item.dataIndex === 'page_step_name'" #cell="{ record }">
                         {{ record.page_step?.name }}
@@ -137,13 +137,13 @@
                         </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <a-button type="text" size="mini" @click="onPageStep(record)"
+                        <a-button size="mini" type="text" @click="onPageStep(record)"
                           >单步执行
                         </a-button>
-                        <a-button type="text" size="mini" @click="oeFreshSteps(record)"
+                        <a-button size="mini" type="text" @click="oeFreshSteps(record)"
                           >更新数据
                         </a-button>
-                        <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                        <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                           >删除
                         </a-button>
                       </template>
@@ -154,8 +154,8 @@
               <a-tab-pane key="3" title="后置清除">
                 <a-tabs
                   :default-active-key="data.uiSonType"
-                  @tab-click="(key) => switchSonType(key)"
                   position="left"
+                  @tab-click="(key) => switchSonType(key)"
                 >
                   <a-tab-pane key="31" title="sql清除">
                     <a-space direction="vertical">
@@ -170,9 +170,9 @@
                           @blur="upDataCase"
                         />
                         <a-button
-                          type="text"
                           size="small"
                           status="danger"
+                          type="text"
                           @click="removeFrontSql(pageData.record.posterior_sql, index)"
                           >移除
                         </a-button>
@@ -231,9 +231,9 @@
                             </span>
                             <a-textarea
                               v-model="item.page_step_details_data[key]"
-                              @blur="onUpdate"
                               :auto-size="{ minRows: 1, maxRows: 5 }"
                               style="flex: 1; margin-left: 12px"
+                              @blur="onUpdate"
                             />
                           </div>
                         </template>
@@ -256,42 +256,42 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'cascader' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
-              @change="doUiPageNameAll(item.value)"
-              :placeholder="item.placeholder"
               :options="data.productModuleName"
-              allow-search
+              :placeholder="item.placeholder"
               allow-clear
+              allow-search
+              @change="doUiPageNameAll(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'page'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.pageName"
               :field-names="fieldNames"
-              @change="doUiStepsPageStepsName(item.value)"
-              value-key="key"
+              :options="data.pageName"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
+              @change="doUiStepsPageStepsName(item.value)"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'page_step'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="data.pageStepsName"
               :field-names="fieldNames"
-              value-key="key"
+              :options="data.pageStepsName"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
             />
           </template>
         </a-form-item>

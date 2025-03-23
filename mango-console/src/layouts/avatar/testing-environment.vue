@@ -1,6 +1,6 @@
 <template>
   <div class="vaw-avatar-container">
-    <a-dropdown trigger="hover" size="large" @select="handleSelect">
+    <a-dropdown size="large" trigger="hover" @select="handleSelect">
       <div class="action-wrapper">
         <span class="nick-name"> {{ userStore.selected_environment_title }} </span>
         <icon-caret-down class="tip" />

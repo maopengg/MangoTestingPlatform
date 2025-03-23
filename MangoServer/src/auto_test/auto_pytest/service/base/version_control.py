@@ -7,9 +7,9 @@ import os
 
 from git import Repo, GitCommandError
 
-from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
+from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016
 from src.tools import project_dir
 from src.tools.decorator.singleton import singleton
 from src.tools.log_collector import log

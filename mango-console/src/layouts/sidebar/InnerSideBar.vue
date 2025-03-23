@@ -1,8 +1,8 @@
 <template>
   <div
-    class="vaw-inner-side-bar-wrapper"
-    :style="{ borderRadius: '0px' }"
     :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
+    :style="{ borderRadius: '0px' }"
+    class="vaw-inner-side-bar-wrapper"
   >
     <ScrollerMenu :routes="routes" />
     <div class="humburger-wrapper">
@@ -59,7 +59,7 @@
   })
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .sidebar-bg-img {
     background-image: url('../../assets/bg_img.webp') !important;
     background-size: cover;

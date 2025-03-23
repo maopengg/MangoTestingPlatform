@@ -1,8 +1,14 @@
 <template>
-  <Codemirror v-model="codeValue" :style="codeStyle" :extensions="extensions" v-bind="$attrs" :placeholder="placeholder" />
+  <Codemirror
+    v-model="codeValue"
+    :extensions="extensions"
+    :placeholder="placeholder"
+    :style="codeStyle"
+    v-bind="$attrs"
+  />
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
   import { CSSProperties, ref, watch } from 'vue'
   import { Codemirror } from 'vue-codemirror'
   import { python } from '@codemirror/lang-python'

@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-18 15:07
 # @Author : 毛鹏
-from PySide6.QtCore import QThread
 from mangoui import *
 
 from src.pages.parent.parent import Parent

@@ -1,10 +1,10 @@
 <template>
   <a-drawer
     v-model:visible="opened"
+    :width="appStore.deviceType === 'mobile' ? '75%' : '280px'"
+    closable
     placement="right"
     title="系统设置"
-    closable
-    :width="appStore.deviceType === 'mobile' ? '75%' : '280px'"
   >
     <Scrollbar class="wrapper">
       <a-divider dashed>主题设置</a-divider>
@@ -13,8 +13,8 @@
           <StyleExample
             :checked="item.checked"
             :left-bg="item.leftBg"
-            :right-top-bg="item.rightTopBg"
             :right-bottom-bg="item.rightBottomBg"
+            :right-top-bg="item.rightTopBg"
             :tip-text="item.tipText"
             @click="themeClick(item)"
           />
@@ -31,8 +31,8 @@
           <StyleExample
             :checked="item.checked"
             :left-bg="item.leftBg"
-            :right-top-bg="item.rightTopBg"
             :right-bottom-bg="item.rightBottomBg"
+            :right-top-bg="item.rightTopBg"
             @click="exampleClick(item)"
           />
         </div>
@@ -42,10 +42,10 @@
         <div v-for="(item, index) of layoutExampleList" :key="index" class="example-wrapper">
           <StyleExample
             :checked="item.checked"
-            :left-bg="item.leftBg"
-            :right-top-bg="item.rightTopBg"
-            :right-bottom-bg="item.rightBottomBg"
             :class="[item.class || '']"
+            :left-bg="item.leftBg"
+            :right-bottom-bg="item.rightBottomBg"
+            :right-top-bg="item.rightTopBg"
             :tip-text="item.tipText"
             @click="layoutExampleClick(item)"
           />
@@ -56,9 +56,9 @@
       <a-row :gutter="[10, 10]">
         <a-col v-for="(item, index) of primartyColorList" :key="index" :span="4">
           <div
-            class="color-wrapper"
             :class="{ circle: item.checked }"
             :style="{ backgroundColor: item.value }"
+            class="color-wrapper"
             @click="colorClick(item)"
           ></div>
         </a-col>
@@ -67,7 +67,7 @@
       <a-divider dashed>菜单设置</a-divider>
       <div class="setting-item-wrapper">
         <span style="width: 100px">菜单宽度</span>
-        <a-input-number v-model="menuWidth" size="small" :min="200" :max="400" :step="10" />
+        <a-input-number v-model="menuWidth" :max="400" :min="200" :step="10" size="small" />
       </div>
       <a-divider dashed>页面切换动画</a-divider>
       <div class="setting-item-wrapper">
@@ -108,6 +108,7 @@
   import LeftBg from '@/assets/bg_img.webp'
   import useAppConfigStore from '@/store/modules/app-config'
   import { ThemeMode } from '@/store/types'
+
   export default defineComponent({
     name: 'Setting',
     setup() {
@@ -309,9 +310,11 @@
           it.checked = appStore.themeColor === it.value
         })
       })
+
       function openDrawer() {
         opened.value = true
       }
+
       function themeClick(item: any) {
         themeList.forEach((it) => {
           it.checked = it === item
@@ -321,6 +324,7 @@
         }
         appStore.changeTheme(item.themeId)
       }
+
       function exampleClick(item: any) {
         if (appStore.theme === ThemeMode.DARK) {
           Message.error('深色模式下不能更改侧边栏颜色')
@@ -331,27 +335,33 @@
         })
         appStore.changeSideBarTheme(item.themeId)
       }
+
       function layoutExampleClick(item: any) {
         layoutExampleList.forEach((it) => {
           it.checked = it === item
         })
         appStore.changeLayoutMode(item.layoutId)
       }
+
       function colorClick(item: any) {
         primartyColorList.forEach((it) => {
           it.checked = it === item
         })
         appStore.changePrimaryColor(item.value)
       }
+
       function onShowTabbar(val: boolean) {
         // appStore.changeShowTabbar(val)
       }
+
       function openAppInfo() {
         appInfoDialog.value?.toggle()
       }
+
       function onAnimUpdate(val: any) {
         appStore.changePageAnim(val)
       }
+
       watch(
         () => menuWidth.value,
         (newVal) => {

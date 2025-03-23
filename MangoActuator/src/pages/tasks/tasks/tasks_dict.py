@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from mangoui import THEME
 
-from src.enums.tools_enum import Status5Enum, EnvironmentEnum, AutoTestTypeEnum
+from src.enums.tools_enum import Status5Enum, EnvironmentEnum
 from src.network import HTTP
 from src.tools.methods import Methods
 

@@ -8,6 +8,7 @@ export function getSystemTestSuite(data: object) {
     },
   })
 }
+
 export function postSystemTestSuite(data: object) {
   return post({
     url: 'system/test/suite',
@@ -16,6 +17,7 @@ export function postSystemTestSuite(data: object) {
     },
   })
 }
+
 export function putSystemTestSuite(data: object) {
   return put({
     url: 'system/test/suite',

@@ -20,7 +20,7 @@
         </a-row>
         <a-row :gutter="16" class="chart-section">
           <a-col :span="8">
-            <a-card title="基础信息" class="info-card">
+            <a-card class="info-card" title="基础信息">
               <div class="chart-container">
                 <a-space direction="vertical" style="width: 100%">
                   <div class="info-item">
@@ -57,54 +57,54 @@
           </a-col>
 
           <a-col :span="8">
-            <a-card title="测试进度" class="progress-card">
+            <a-card class="progress-card" title="测试进度">
               <div class="chart-container">
                 <div class="progress-item">
                   <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
                   <a-progress
-                    :percent="data.summary.api_in_progress_count / data.summary.api_count"
-                    :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
                       '100%': 'rgb(var(--success-6))',
                     }"
+                    :percent="data.summary.api_in_progress_count / data.summary.api_count"
                     :stroke-width="8"
+                    :style="{ width: '80%' }"
                   />
                 </div>
                 <div class="progress-item">
                   <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
                   <a-progress
-                    :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
-                    :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
                       '100%': 'rgb(var(--success-6))',
                     }"
+                    :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
                     :stroke-width="8"
+                    :style="{ width: '80%' }"
                   />
                 </div>
                 <div class="progress-item">
                   <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
                   <a-progress
-                    :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
-                    :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
                       '100%': 'rgb(var(--success-6))',
                     }"
+                    :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
                     :stroke-width="8"
+                    :style="{ width: '80%' }"
                   />
                 </div>
               </div>
             </a-card>
           </a-col>
           <a-col :span="8">
-            <a-card title="统计" class="result-card">
+            <a-card class="result-card" title="统计">
               <div class="chart-container">
                 <StatusChart
-                  :success="data.summary.success_count"
                   :fail="data.summary.fail_count"
                   :pending="data.summary.proceed_count"
+                  :success="data.summary.success_count"
                   :todo="data.summary.stay_begin_count"
                 />
               </div>
@@ -121,36 +121,36 @@
           </template>
           <template #extra>
             <a-space>
-              <a-button type="primary" size="small" @click="doRefresh(null)">全部</a-button>
-              <a-button status="danger" size="small" @click="doRefresh(0)">失败</a-button>
-              <a-button status="success" size="small" @click="doRefresh(1)">成功</a-button>
-              <a-button status="warning" size="small" @click="doRefresh(2)">进行中</a-button>
-              <a-button status="normal" size="small" @click="doRefresh(3)">待开始</a-button>
+              <a-button size="small" type="primary" @click="doRefresh(null)">全部</a-button>
+              <a-button size="small" status="danger" @click="doRefresh(0)">失败</a-button>
+              <a-button size="small" status="success" @click="doRefresh(1)">成功</a-button>
+              <a-button size="small" status="warning" @click="doRefresh(2)">进行中</a-button>
+              <a-button size="small" status="normal" @click="doRefresh(3)">待开始</a-button>
             </a-space>
           </template>
           <a-table
             :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
             :columns="tableColumns"
+            :data="table.dataList"
+            :expand-row-keys="expandedKeys"
+            :loading="table.tableLoading.value"
             :pagination="false"
             :row-key="rowKey"
-            :expand-row-keys="expandedKeys"
           >
             <template #columns>
-              <a-table-column title="ID" data-index="id">
+              <a-table-column data-index="id" title="ID">
                 <template #cell="{ record }">
                   {{ record.id }}
                 </template>
               </a-table-column>
-              <a-table-column title="用例名称" data-index="case_name">
+              <a-table-column data-index="case_name" title="用例名称">
                 <template #cell="{ record }">
                   {{ record.case_name }}
                 </template>
               </a-table-column>
-              <a-table-column title="测试类型" data-index="type">
+              <a-table-column data-index="type" title="测试类型">
                 <template #cell="{ record }">
-                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
+                  <a-tag :color="enumStore.colors[record?.type]" class="custom-tag" size="small"
                     >{{
                       record?.type || record.type === 0
                         ? enumStore.test_case_type[record?.type].title
@@ -159,24 +159,24 @@
                   </a-tag>
                 </template>
               </a-table-column>
-              <a-table-column title="步骤名称" data-index="name" />
-              <a-table-column title="测试结果" data-index="status">
+              <a-table-column data-index="name" title="步骤名称" />
+              <a-table-column data-index="status" title="测试结果">
                 <template #cell="{ record }">
                   <a-tag
                     :color="enumStore.status_colors[record?.status]"
-                    size="small"
                     class="custom-tag"
+                    size="small"
                   >
                     {{ enumStore.task_status[record?.status].title }}
                   </a-tag>
                 </template>
               </a-table-column>
-              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+              <a-table-column :width="130" data-index="actions" fixed="right" title="操作">
                 <template #cell="{ record }">
                   <a-button
                     v-if="!record.children"
-                    type="text"
                     class="detail-button"
+                    type="text"
                     @click="showDetails(record)"
                     >查看详情
                   </a-button>
@@ -191,8 +191,8 @@
         <a-drawer
           v-model:visible="drawerVisible"
           :width="1000"
-          title="测试用例详情"
           class="custom-drawer"
+          title="测试用例详情"
         >
           <template v-if="data.selectedCase">
             <a-descriptions :column="1" bordered class="custom-descriptions">
@@ -206,8 +206,8 @@
               <a-descriptions-item label="执行状态">
                 <a-tag
                   :color="enumStore.status_colors[data?.selectedCase?.status]"
-                  size="small"
                   class="custom-tag"
+                  size="small"
                 >
                   {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}
                 </a-tag>
@@ -215,17 +215,17 @@
             </a-descriptions>
             <div class="report-cards">
               <div v-if="data.selectedCase.case_type === 0">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+                <a-card :bordered="false" :title="data?.selectedCase?.name" class="report-card">
                   <ElementTestReport :resultData="data?.selectedCase" />
                 </a-card>
               </div>
               <div v-else-if="data.selectedCase.case_type === 1">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+                <a-card :bordered="false" :title="data?.selectedCase?.name" class="report-card">
                   <ApiTestReport :resultData="data?.selectedCase" />
                 </a-card>
               </div>
               <div v-else-if="data.selectedCase.case_type === 2">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+                <a-card :bordered="false" :title="data?.selectedCase?.name" class="report-card">
                   <PytestTestReport :resultData="data?.selectedCase">pytest</PytestTestReport>
                 </a-card>
               </div>

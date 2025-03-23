@@ -5,12 +5,12 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-from src.exceptions import *
-from src.models.api_model import RequestModel, ResponseModel
 from mangokit import MangoKitError
 from src.auto_test.auto_api.models import ApiInfo
-from src.enums.api_enum import MethodEnum
 from src.auto_test.auto_api.service.base.public_base import PublicBase
+from src.enums.api_enum import MethodEnum
+from src.exceptions import *
+from src.models.api_model import RequestModel, ResponseModel
 
 
 class ApiInfoBase(PublicBase):

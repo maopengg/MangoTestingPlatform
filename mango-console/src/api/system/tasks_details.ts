@@ -17,6 +17,7 @@ export function postSystemTasksRunCase(data: object) {
     },
   })
 }
+
 export function putSystemTasksRunCase(data: object) {
   return put({
     url: 'system/tasks/details',
@@ -36,6 +37,7 @@ export function deleteSystemTasksRunCase(id: number | string[] | number[]) {
     },
   })
 }
+
 export function postSystemTasksBatchSetCases(caseIdList: string[], scheduledTasksId: any) {
   return post({
     url: 'system/tasks/details/batch/set/cases',
@@ -47,6 +49,7 @@ export function postSystemTasksBatchSetCases(caseIdList: string[], scheduledTask
     },
   })
 }
+
 export function getSystemTasksTypeCaseName(type: any, moduleId: number) {
   return get({
     url: 'system/tasks/details/type/case/name',

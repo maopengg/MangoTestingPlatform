@@ -1,5 +1,5 @@
 <template>
-  <div class="logo-wrapper" :style="{ 'background-color': bgColor }">
+  <div :style="{ 'background-color': bgColor }" class="logo-wrapper">
     <img v-if="showLogo" class="logo-img" src="../../assets/logo.png" />
     <div
       v-if="showTitle"
@@ -15,6 +15,7 @@
   import { projectName } from '../../setting'
   import useAppConfigStore from '@/store/modules/app-config'
   import { SideTheme, ThemeMode } from '@/store/types'
+
   export default defineComponent({
     name: 'Logo',
     props: {
@@ -68,17 +69,21 @@
     align-items: center;
     color: var(--color-text-1);
     border-bottom: 1px dashed var(--color-border);
+
     .logo-img {
       width: 30px;
     }
+
     .logo-title {
       font-weight: bold;
     }
+
     .show-title {
       transform: scale(1);
       width: auto;
       transition: transform 0.2s ease-in;
     }
+
     .close-title {
       transform: scale(0);
       width: 0;

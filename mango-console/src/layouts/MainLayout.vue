@@ -1,6 +1,5 @@
 <template>
   <div
-    class="vaw-main-layout-container scrollbar"
     :class="[
       appStore.isCollapse ? 'main-layout-close-status' : 'main-layout-open-status',
       appStore.isFixedNavBar ? 'main-layout_fixed-nav-bar' : 'main-layout',
@@ -10,6 +9,7 @@
           // ? 'main-layout_padding-top__all'
           'main-layout_padding-top__logo',
     ]"
+    class="vaw-main-layout-container scrollbar"
   >
     <section
       :class="[
@@ -27,12 +27,12 @@
     </section>
     <component
       :is="appStore.isFixedNavBar ? 'Scrollbar' : 'div'"
-      class="main-base-style"
       :class="[appStore.theme === 'light' ? 'main-base-light-theme' : 'main-base-dark-theme']"
+      class="main-base-style"
     >
       <section
-        class="main-section"
         :class="[appStore.flexMainHeight ? 'flex-height' : 'min-height']"
+        class="main-section"
       >
         <Main />
       </section>
@@ -51,6 +51,7 @@
   import { useTitle } from '@vueuse/core'
   import { projectName } from '@/setting'
   import useAppConfigStore from '@/store/modules/app-config'
+
   export default defineComponent({
     name: 'MainLayout',
     props: {
@@ -83,21 +84,27 @@
   .scrollbar::-webkit-scrollbar {
     width: 0;
   }
+
   .main-layout-open-status {
     margin-left: @menuWidth;
   }
+
   .main-layout-close-status {
     margin-left: @minMenuWidth;
   }
+
   .nav-bar-open-status.fixed-nav-bar {
     width: calc(100% - @menuWidth);
   }
+
   .nav-bar-close-status.fixed-nav-bar {
     width: calc(100% - @minMenuWidth);
   }
+
   .nav-bar-open-status__ttb {
     width: 100%;
   }
+
   :deep(.main-base-style .scrollbar__view) {
     height: 100%;
   }
@@ -105,8 +112,10 @@
   .main-layout {
     overflow-y: auto;
   }
+
   .main-layout_fixed-nav-bar {
     overflow-y: hidden;
+
     .main-base-style {
       overflow-y: auto;
     }
@@ -128,37 +137,46 @@
     height: 100%;
     box-sizing: border-box;
     transition: margin-left @transitionTime;
+
     .main-base-style {
       height: 100%;
       box-sizing: border-box;
       padding: 5px;
     }
+
     .main-base-light-theme {
       // background-color: #f0f2f5;
       background-image: linear-gradient(#f0f2f5, rgba(var(--primary-1), 0.05), #f0f2f5);
     }
+
     .main-base-dark-theme {
       background-color: #333333;
     }
+
     .main-section {
       overflow-x: hidden;
     }
+
     .flex-height {
       height: calc(100% - @footerHeight - 10px);
     }
+
     .min-height {
       min-height: calc(100% - @footerHeight - 10px);
     }
+
     .fixed-nav-bar {
       position: fixed;
       top: 0;
       transition: width @transitionTime;
       z-index: 99;
     }
+
     .tab-bar-top {
       padding-top: @logoHeight;
     }
   }
+
   .footer-wrapper {
     margin-top: 6px;
     position: fixed;
@@ -166,12 +184,14 @@
     right: 5px;
     bottom: 5px;
   }
+
   .is-mobile {
     .main-layout-open-status,
     .main-layout-close-status {
       margin-left: 0;
       transition: none;
     }
+
     .nav-bar-open-status,
     .nav-bar-close-status {
       width: 100%;

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-10-24 17:03
 # @Author : 毛鹏
-from src.enums.tools_enum import EnvironmentEnum, AutoTestTypeEnum
+from src.enums.tools_enum import EnvironmentEnum
 
 table_column = [
     {

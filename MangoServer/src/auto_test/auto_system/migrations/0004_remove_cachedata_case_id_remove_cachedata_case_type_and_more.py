@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('auto_user', '0002_alter_user_config_alter_user_mailbox_and_more'),
         ('auto_api', '0002_remove_apicasedetailed_ass_response_value_and_more'),
@@ -79,19 +78,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='database',
             name='test_object',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.testobject'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.testobject'),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='noticeconfig',
             name='test_object',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.testobject'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.testobject'),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='productmodule',
             name='project_product',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.projectproduct'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.projectproduct'),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -108,7 +110,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tasks',
             name='case_people',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_user.user', verbose_name='用例责任人'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_user.user',
+                                    verbose_name='用例责任人'),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -119,7 +122,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='tasks',
             name='project_product',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.projectproduct'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.projectproduct'),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -168,13 +172,15 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='testobject',
             name='project_product',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.projectproduct'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.projectproduct'),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='testsuite',
             name='project_product',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.projectproduct'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.projectproduct'),
             preserve_default=False,
         ),
         migrations.AlterField(
@@ -186,13 +192,15 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='testsuite',
             name='user',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_user.user', verbose_name='用例执行人'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_user.user',
+                                    verbose_name='用例执行人'),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='testsuitedetails',
             name='project_product',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, to='auto_system.projectproduct'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT,
+                                    to='auto_system.projectproduct'),
             preserve_default=False,
         ),
         migrations.AlterField(

@@ -4,22 +4,19 @@
 # @Time   : 2024-05-17 12:32
 # @Author : 毛鹏
 import json
-import os
 
-from django.http import FileResponse
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import FileData
-from src import settings
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from src.tools import project_dir
+
 
 class FileDataSerializers(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -89,4 +86,3 @@ class FileDataViews(ViewSet):
         )
         file_data.save()
         return ResponseData.success(RESPONSE_MSG_0031, self.serializer_class(file_data).data)
-

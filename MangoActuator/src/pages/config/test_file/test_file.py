@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 import os
 
-from mangoui import *
 from mangokit import requests
+from mangoui import *
 
 from src.network import HTTP
 from src.settings.settings import FILE_PATH

@@ -8,6 +8,7 @@ export function getUiSteps(data: object) {
     },
   })
 }
+
 export function deleteUiSteps(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/page/steps',
@@ -18,6 +19,7 @@ export function deleteUiSteps(id: number | string[] | number[]) {
     },
   })
 }
+
 export function postUiSteps(data: object) {
   return post({
     url: '/ui/page/steps',
@@ -26,6 +28,7 @@ export function postUiSteps(data: object) {
     },
   })
 }
+
 export function putUiSteps(data: object) {
   return put({
     url: '/ui/page/steps',
@@ -57,6 +60,7 @@ export function getUiStepsPageStepsName(pageId: number) {
     },
   })
 }
+
 export function getUiPageStepsCopy(pageId: number) {
   return post({
     url: '/ui/page/steps/copy',

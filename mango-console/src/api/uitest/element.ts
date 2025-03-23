@@ -10,6 +10,7 @@ export function getUiElement(pageId: any) {
     },
   })
 }
+
 export function deleteUiElement(id: number | string[] | number[]) {
   return deleted({
     url: '/ui/element',
@@ -20,6 +21,7 @@ export function deleteUiElement(id: number | string[] | number[]) {
     },
   })
 }
+
 export function postUiElement(data: object) {
   return post({
     url: '/ui/element',
@@ -28,6 +30,7 @@ export function postUiElement(data: object) {
     },
   })
 }
+
 export function putUiElement(data: object) {
   return put({
     url: '/ui/element',
@@ -36,6 +39,7 @@ export function putUiElement(data: object) {
     },
   })
 }
+
 export function putUiUiElementPutIsIframe(id: number, isIframe: number) {
   return put({
     url: '/ui/element/iframe',

@@ -8,7 +8,7 @@
         @reset-search="onResetSearch"
       >
         <template #search-content>
-          <a-form layout="inline" :model="{}" @keyup.enter="doRefresh">
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
             <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
@@ -21,7 +21,7 @@
               </template>
               <template v-if="item.type === 'check-group'">
                 <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :value="it.value" :key="it.value">
+                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
                     {{ item.label }}
                   </a-checkbox>
                 </a-checkbox-group>
@@ -37,16 +37,16 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
             </div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :loading="table.tableLoading.value"
-        :data="table.dataList"
         :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
         :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
@@ -56,35 +56,35 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :title="item.title"
-            :width="item.width"
             :data-index="item.key"
             :fixed="item.fixed"
+            :title="item.title"
+            :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
             </template>
             <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.type]" size="small">{{
-                enumStore.notice[record.type].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.type]" size="small"
+                >{{ enumStore.notice[record.type].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'config'" #cell="{ record }">
               {{ record.config }}
             </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-switch
-                :default-checked="record.status === 1"
                 :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+                :default-checked="record.status === 1"
               />
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onTest(record)">测试一下</a-button>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                <a-button size="mini" type="text" @click="onTest(record)">测试一下</a-button>
+                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
               </a-space>
             </template>
           </a-table-column>
@@ -99,30 +99,30 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of data.formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
           <template v-else-if="item.type === 'textarea' && item.key === 'config'">
             <a-textarea
               v-model="item.value"
-              :placeholder="item.placeholder"
               :auto-size="{ minRows: 5, maxRows: 9 }"
+              :placeholder="item.placeholder"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'type'">
             <a-select
               v-model="item.value"
-              :placeholder="item.placeholder"
-              :options="enumStore.notice"
               :field-names="fieldNames"
-              value-key="key"
+              :options="enumStore.notice"
+              :placeholder="item.placeholder"
               allow-clear
               allow-search
+              value-key="key"
               @change="onChange(item.value)"
             />
           </template>
@@ -130,8 +130,8 @@
             <a-select
               v-model="item.value"
               :placeholder="item.placeholder"
-              multiple
               :scrollbar="true"
+              multiple
             >
               <a-option v-for="user of data.userList" :key="user.key">{{ user.title }}</a-option>
             </a-select>
@@ -161,6 +161,7 @@
   import { getUserName } from '@/api/user/user'
   import { useRoute } from 'vue-router'
   import { useEnum } from '@/store/modules/get-enum'
+
   const route = useRoute()
   const enumStore = useEnum()
 
@@ -191,6 +192,7 @@
       })
       .catch(console.log)
   }
+
   function onChange(value: number) {
     data.formItems = []
     data.formItems.push(...formItems)
@@ -202,6 +204,7 @@
       data.formItems.push(...configForm)
     }
   }
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
@@ -305,6 +308,7 @@
       }, 300)
     })
   }
+
   function getNickName() {
     getUserName()
       .then((res) => {
@@ -312,6 +316,7 @@
       })
       .catch(console.log)
   }
+
   function onTest(record: any) {
     getSystemNoticeTest(record.id)
       .then((res) => {

@@ -1,7 +1,7 @@
-from mangoui import *
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from mangokit import SQLiteConnect, Mango, EncryptionTool
+from mangoui import *
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
 from src.network import HTTP

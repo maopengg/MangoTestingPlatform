@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios'
-import { Message } from '@arco-design/web-vue'
 import useUserStore from '@/store/modules/user'
 
 export default function (response: AxiosResponse): AxiosResponse {

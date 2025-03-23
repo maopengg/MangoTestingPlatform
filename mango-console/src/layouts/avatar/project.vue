@@ -1,6 +1,6 @@
 <template>
   <div class="vaw-avatar-container">
-    <a-dropdown trigger="hover" size="large" @select="handleSelect">
+    <a-dropdown size="large" trigger="hover" @select="handleSelect">
       <div class="action-wrapper">
         <span class="nick-name"> {{ project.selectTitle }} </span>
         <icon-caret-down class="tip" />
@@ -43,6 +43,7 @@
       .catch(console.log)
     debouncedFn()
   }
+
   const debouncedFn = useDebounceFn(() => {
     router.replace({ path: '/redirect' + route.path, query: route.query })
   }, 200)
@@ -59,6 +60,7 @@
     })
     project.projectProductNameList(project.selectValue)
   }
+
   watchEffect(() => {
     if (project.data.length > 0) {
       setTitle(userStore.selected_project)

@@ -1,8 +1,8 @@
 <template>
   <div
-    class="vaw-side-bar-wrapper"
-    :style="{ borderRadius: '0px', marginTop: appStore.layoutMode === 'ttb' ? '48px' : 0 }"
     :class="[!appStore.isCollapse ? 'open-status' : 'close-status', bgColor]"
+    :style="{ borderRadius: '0px', marginTop: appStore.layoutMode === 'ttb' ? '48px' : 0 }"
+    class="vaw-side-bar-wrapper"
   >
     <transition name="logo">
       <Logo v-if="showLogo" />
@@ -46,7 +46,7 @@
   })
 </script>
 
-<style scoped lang="less">
+<style lang="less" scoped>
   .sidebar-bg-img {
     background-image: url('../../assets/bg_img.webp') !important;
     background-size: cover;

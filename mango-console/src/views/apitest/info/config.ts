@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
+
 const table = useTable()
 import parseCurl from 'parse-curl'
 
@@ -199,6 +200,7 @@ export const formItemsImport: FormItem[] = reactive([
     },
   },
 ])
+
 function parseDataRaw(curlCommand: string) {
   const dataRawIndex = curlCommand.indexOf('--data-raw')
   if (dataRawIndex !== -1) {
@@ -208,6 +210,7 @@ function parseDataRaw(curlCommand: string) {
   }
   return {}
 }
+
 export const tableColumns = useTableColumn([
   table.indexColumn,
   {

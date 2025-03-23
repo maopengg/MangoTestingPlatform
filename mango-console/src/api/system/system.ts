@@ -17,6 +17,7 @@ export function getSystemRandomList() {
     },
   })
 }
+
 export function getSystemRandomData(name: string) {
   return get({
     url: '/system/variable/value',

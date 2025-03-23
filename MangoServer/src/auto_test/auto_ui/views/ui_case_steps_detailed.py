@@ -16,7 +16,6 @@ from src.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
 from src.enums.ui_enum import ElementOperationEnum
 from src.models.ui_model import StepsDataModel
 from src.tools.decorator.error_response import error_response
-from src.tools.log_collector import log
 from src.tools.view import *
 from src.tools.view.model_crud import ModelCRUD
 
@@ -108,7 +107,8 @@ class UiCaseStepsDetailedViews(ViewSet):
                     if 'value' in steps_data_model.page_step_details_data:
                         steps_data_model.page_step_details_data.pop('value')
             elif steps_detailed.type == ElementOperationEnum.SQL.value:
-                steps_data_model.page_step_details_data = {'sql': steps_detailed.sql, 'key_list': steps_detailed.key_list}
+                steps_data_model.page_step_details_data = {'sql': steps_detailed.sql,
+                                                           'key_list': steps_detailed.key_list}
             elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
                 steps_data_model.page_step_details_data = {'key': steps_detailed.key, 'value': steps_detailed.value}
             else:

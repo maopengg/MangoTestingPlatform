@@ -1,5 +1,5 @@
 <template>
-  <a-button type="primary" status="success" size="mini" @click="onAdd">
+  <a-button size="mini" status="success" type="primary" @click="onAdd">
     <template #icon>
       <IconPlus />
     </template>
@@ -17,6 +17,7 @@
       function onAdd() {
         emit('add')
       }
+
       return {
         onAdd,
       }

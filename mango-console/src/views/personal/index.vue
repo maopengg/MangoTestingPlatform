@@ -4,9 +4,9 @@
       <div class="box-wrapper">
         <div class="flex">
           <a-card
+            :body-style="{ padding: '10px' }"
             :bordered="false"
             class="card-border-radius personal-box"
-            :body-style="{ padding: '10px' }"
           >
             <div class="info-wrapper">
               <div class="avatar-wrapper">
@@ -49,7 +49,7 @@
                 <div class="value">{{ personalCenterData.data.mailbox }}</div>
               </div>
               <div class="mt-4">
-                <a-button type="text" size="mini" @click="onUpdate">修改密码</a-button>
+                <a-button size="mini" type="text" @click="onUpdate">修改密码</a-button>
               </div>
             </div>
           </a-card>
@@ -61,13 +61,13 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
           v-for="item of formItems"
           :key="item.key"
+          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+          :label="item.label"
         >
           <template v-if="item.type === 'input'">
-            <a-input :placeholder="item.placeholder" v-model="item.value" />
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
         </a-form-item>
       </a-form>
@@ -84,6 +84,7 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { websocket } from '@/utils/socket'
   import { getUserInfo, postUserPassword } from '@/api/user/user'
+
   const userStore = useUserStore()
   const touched = ref(false)
   const uploaded = ref(false)
@@ -151,6 +152,7 @@
       uploaded.value = false
     }, 1000)
   }
+
   function onUpdate() {
     modalDialogRef.value?.toggle()
     nextTick(() => {
@@ -159,6 +161,7 @@
       })
     })
   }
+
   function doRefresh() {
     getUserInfo({
       id: userStore.userId,
@@ -170,6 +173,7 @@
       })
       .catch(console.log)
   }
+
   function onDataForm() {
     if (formItems.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
@@ -188,6 +192,7 @@
         .catch(console.log)
     }
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

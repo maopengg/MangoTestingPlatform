@@ -2,6 +2,7 @@ import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 import { Message } from '@arco-design/web-vue'
+
 const table = useTable()
 
 export const formItems: FormItem[] = reactive([
