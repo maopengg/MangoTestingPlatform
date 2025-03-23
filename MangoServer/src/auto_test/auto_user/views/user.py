@@ -215,7 +215,7 @@ class LoginViews(ViewSet):
         else:
             title = None
             with sync_playwright() as p:
-                browser = p.chromium.connect("ws://172.21.222.119:3000/")
+                browser = p.chromium.launch()
                 context = browser.new_context()
                 page = context.new_page()
                 page.goto('https://www.baidu.com/')

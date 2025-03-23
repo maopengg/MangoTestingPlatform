@@ -6,6 +6,7 @@
 import asyncio
 
 from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 
 
 async def main():
@@ -20,4 +21,11 @@ async def main():
         await browser.close()
 
 
-asyncio.run(main())
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    context = browser.new_context()
+    page = context.new_page()
+    page.goto('https://www.baidu.com/')
+    title = page.title()
+    print(title)
+    browser.close()
