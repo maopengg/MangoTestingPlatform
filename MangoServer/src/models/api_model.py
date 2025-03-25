@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
+
 class RequestModel(BaseModel):
     method: str | None
     url: str | None
@@ -24,7 +25,7 @@ class ResponseModel(BaseModel):
     code: int
     time: float
     headers: dict
-    json: dict | None = None
+    json: dict | list | None = None
     text: str | None = None
 
 
