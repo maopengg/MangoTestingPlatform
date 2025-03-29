@@ -47,9 +47,9 @@
               :tooltip="item.tooltip"
             >
               <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.exp]" size="small">{{
-                  enumStore.element_exp[record.exp].title
-                }}</a-tag>
+                <a-tag :color="enumStore.colors[record.exp]" size="small">
+                  {{ enumStore.element_exp.find((item) => item.key === record.exp)?.title }}
+                </a-tag>
               </template>
               <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
                 <a-switch
@@ -61,8 +61,8 @@
                 <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
                 <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                 <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
-                  >删除</a-button
-                >
+                  >删除
+                </a-button>
               </template>
             </a-table-column>
           </template>
@@ -188,6 +188,7 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { baseURL } from '@/api/axios.config'
+
   const userStore = useUserStore()
   const enumStore = useEnum()
 
@@ -227,6 +228,7 @@
       }
     })
   }
+
   const beforeUpload = (file: any) => {
     return new Promise((resolve, reject) => {
       Modal.confirm({
@@ -249,6 +251,7 @@
       })
     })
   }
+
   function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
@@ -377,6 +380,7 @@
       }
     }
   }
+
   function upDataAssValue(value: any) {
     const inputItem = findItemByValue(data.ass, value)
     if (inputItem) {
@@ -439,6 +443,7 @@
       }
     }
   }
+
   function onDataForm1() {
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
@@ -502,6 +507,7 @@
       })
     })
   }
+
   function onDownload() {
     const file_name = '元素批量上传模版.xlsx'
     const file_path = `${baseURL}/download?file_name=${encodeURIComponent(file_name)}`
@@ -513,6 +519,7 @@
     aLink.click()
     document.body.removeChild(aLink)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

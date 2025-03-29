@@ -17,7 +17,11 @@
                     : getLabelByValue(data.ope, item.ope_key)
                 }}
               </p>
-              <p> 表达式类型：{{ item.exp ? enumStore.element_exp[item.exp].title : item.exp }} </p>
+              <p>
+                表达式类型：{{
+                  enumStore.element_exp.find((item1) => item1.key === item.exp)?.title
+                }}
+              </p>
               <p>
                 测试结果：{{ item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试' }}
               </p>
