@@ -39,13 +39,21 @@ async def process(parent):
 
 
 async def test_process(parent):
+    consumer_task = None
+    case_flow_task = None
     try:
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
     except Exception as error:
+        if consumer_task:
+            consumer_task.cancel()
+        if case_flow_task:
+            case_flow_task.cancel()
+        if WebSocketClient.websocket:
+            WebSocketClient.websocket = None
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")
         await asyncio.sleep(5)
-        await process(parent)
+        await test_process(parent)

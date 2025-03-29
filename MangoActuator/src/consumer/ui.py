@@ -10,6 +10,7 @@ from src.services.ui.service.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
 import copy
 
+
 class UI:
     lock = asyncio.Lock()
     parent = None
