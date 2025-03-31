@@ -37,26 +37,21 @@ asyncio.run(main())
 # 下面是需要打包成exe的人看的
 """
 pyinstaller `
---add-data="src/settings/settings.json;src/settings" `
---add-data="src/settings/menus.json;src/settings" `
---add-data="E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000" `
---add-data="E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000" `
---hidden-import="email.mime.multipart" --name="执行器" -F -w --icon="app_icon.ico" main.py
-"""
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
-"""
-pyinstaller `
 --name "执行器" `
 --onefile `
 --noconsole `
 --icon "app_icon.ico" `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
---add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;mangokit/mangos/pyarmor_runtime_windows" `
---add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;mangokit/mangos/pyarmor_runtime_linux" `
---hidden-import "email.mime.multipart" `
---hidden-import "mangokit.mangos" `
---paths "E:\DevTool\python-venv\MangoActuator\Lib\site-packages" `
+--add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
+--add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
+--hidden-import "mango" `
+--hidden-import "pyarmor_runtime" `
+--hidden-import "pyarmor_runtime_000000" `
+--clean `
+--noconfirm `
 main.py
 """
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
+

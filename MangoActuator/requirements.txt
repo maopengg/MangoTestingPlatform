@@ -4,7 +4,7 @@ uiautomator2==3.2.5
 uiautodev==0.5.0
 locust==2.27.0
 uiautomation==2.0.20
-mangokit==2.0.1
+mangokit==2.0.2
 mangoui==3.7.1
 
 websockets==10.4
