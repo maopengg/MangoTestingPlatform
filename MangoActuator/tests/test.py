@@ -3,19 +3,18 @@
 # @Description: 
 # @Time   : 2025-01-06 18:32
 # @Author : 毛鹏
-import asyncio
 
-from playwright.async_api import async_playwright
-
-
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.connect("ws://172.21.222.119:3000/")
-        context = await browser.new_context()
-        page = await context.new_page()
-        await page.goto('https://www.baidu.com/')
-        print(await page.title())
-        await browser.close()
+from playwright.sync_api import sync_playwright
 
 
-asyncio.run(main())
+def main():
+    with sync_playwright() as p:
+        browser = p.chromium.connect("ws://172.21.222.119:3000/")
+        context = browser.new_context()
+        page = context.new_page()
+        page.goto('https://www.baidu.com/')
+        print(page.title())
+        browser.close()
+
+
+main()
