@@ -53,7 +53,6 @@ class TestPageSteps:
                     page_steps_result_model
                 )
             except MangoActuatorError as error:
-                await self.base_data.base_close()
                 await self.send_steps_result(
                     error.code,
                     error.msg,
