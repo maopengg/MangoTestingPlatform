@@ -15,12 +15,16 @@ export const columns = reactive([
     dataIndex: 'update_time',
   },
   {
-    title: '模块名称',
+    title: '模块名称(实际模块)',
     dataIndex: 'name',
   },
   {
+    title: '上级模块(二级模块)',
+    dataIndex: 'superior_module_1',
+  },
+  {
     title: '上级模块(一级模块)',
-    dataIndex: 'superior_module',
+    dataIndex: 'superior_module_2',
   },
   {
     title: '操作',
@@ -32,7 +36,7 @@ export const columns = reactive([
 
 export const formItems: FormItem[] = reactive([
   {
-    label: '模块名称',
+    label: '模块名称(实际模块)',
     key: 'name',
     value: ref(''),
     placeholder: '请输入模块名称',
@@ -47,17 +51,24 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '上级模块',
-    key: 'superior_module',
+    label: '上级模块(二级模块)',
+    key: 'superior_module_1',
     value: ref(''),
     placeholder: '请输入上级模块',
     required: false,
     type: 'input',
     validator: function () {
-      // if (!this.value) {
-      //   Message.error(this.placeholder || '')
-      // return false
-      // }
+      return true
+    },
+  },
+  {
+    label: '上级模块(一级模块)',
+    key: 'superior_module_1',
+    value: ref(''),
+    placeholder: '请输入上级模块',
+    required: false,
+    type: 'input',
+    validator: function () {
       return true
     },
   },
