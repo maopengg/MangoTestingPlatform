@@ -129,11 +129,14 @@
             <a-space>
               <icon-unordered-list />
               <span>测试套用例列表</span>
-              <span style="font-size: 12px; opacity: 0.7;  margin-left: 4px;">请在左侧展开查看步骤结果</span>
+              <span style="font-size: 12px; opacity: 0.7; margin-left: 4px"
+                >请在左侧展开查看步骤结果</span
+              >
             </a-space>
           </template>
           <template #extra>
             <a-space>
+<!--              <span  style="font-size: 16px; opacity: 0.6;  color: black ">只看某个状态</span>-->
               <a-button type="primary" size="small" @click="doRefresh(null)">全部</a-button>
               <a-button status="danger" size="small" @click="doRefresh(0)">失败</a-button>
               <a-button status="success" size="small" @click="doRefresh(1)">成功</a-button>
