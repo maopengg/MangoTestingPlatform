@@ -5,6 +5,9 @@
         v-for="item of resultData?.element_result_list"
         :bordered="false"
         :key="item.id"
+        :default-active-key="
+          resultData.element_result_list.filter((i) => i.status === 0).map((i) => i.id)
+        "
         destroy-on-hide
       >
         <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">

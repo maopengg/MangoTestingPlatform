@@ -138,7 +138,8 @@
     getSystemTestSuiteDetailsReport,
   } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
-  import { Message } from '@arco-design/web-vue'
+  import { Message, Modal } from '@arco-design/web-vue'
+  import { deleteApiInfo } from '@/api/apitest/info'
 
   const enumStore = useEnum()
 
@@ -191,11 +192,19 @@
   }
 
   function onRetry(record: any) {
-    getSystemTestSuiteDetailsAllRetry(record.id)
-      .then((res) => {
-        Message.success(res.msg)
-      })
-      .catch(console.log)
+    Modal.confirm({
+      title: '提示',
+      content: '是否要重试这个测试套的全部用例？',
+      cancelText: '取消',
+      okText: '重试',
+      onOk: () => {
+        getSystemTestSuiteDetailsAllRetry(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+          })
+          .catch(console.log)
+      },
+    })
   }
 
   onMounted(() => {

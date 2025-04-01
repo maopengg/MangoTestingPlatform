@@ -20,7 +20,7 @@
         </a-row>
         <a-row :gutter="16" class="chart-section">
           <a-col :span="8">
-            <a-card title="基础信息" class="info-card">
+            <a-card title="测试套基础信息" class="info-card">
               <div class="chart-container">
                 <a-space direction="vertical" style="width: 100%">
                   <div class="info-item">
@@ -57,12 +57,16 @@
           </a-col>
 
           <a-col :span="8">
-            <a-card title="测试进度" class="progress-card">
+            <a-card title="用例执行进度" class="progress-card">
               <div class="chart-container">
                 <div class="progress-item">
                   <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
                   <a-progress
-                    :percent="data.summary.api_in_progress_count / data.summary.api_count"
+                    :percent="
+                      data.summary.api_count > 0
+                        ? data.summary.api_in_progress_count / data.summary.api_count
+                        : 0
+                    "
                     :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
@@ -74,7 +78,11 @@
                 <div class="progress-item">
                   <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
                   <a-progress
-                    :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
+                    :percent="
+                      data.summary.ui_count > 0
+                        ? data.summary.ui_in_progress_count / data.summary.ui_count
+                        : 0
+                    "
                     :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
@@ -86,7 +94,11 @@
                 <div class="progress-item">
                   <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
                   <a-progress
-                    :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
+                    :percent="
+                      data.summary.pytest_count > 0
+                        ? data.summary.pytest_in_progress_count / data.summary.pytest_count
+                        : 0
+                    "
                     :style="{ width: '80%' }"
                     :color="{
                       '0%': 'rgb(var(--primary-6))',
@@ -99,7 +111,7 @@
             </a-card>
           </a-col>
           <a-col :span="8">
-            <a-card title="统计" class="result-card">
+            <a-card title="测试结果分布图" class="result-card">
               <div class="chart-container">
                 <StatusChart
                   :success="data.summary.success_count"
@@ -116,7 +128,8 @@
           <template #title>
             <a-space>
               <icon-unordered-list />
-              <span>测试用例详情</span>
+              <span>测试套用例列表</span>
+              <span style="font-size: 12px; opacity: 0.7;  margin-left: 4px;">请在左侧展开查看步骤结果</span>
             </a-space>
           </template>
           <template #extra>
@@ -173,13 +186,25 @@
               </a-table-column>
               <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
                 <template #cell="{ record }">
-                  <a-button
-                    v-if="!record.children"
-                    type="text"
-                    class="detail-button"
-                    @click="showDetails(record)"
-                    >查看详情
-                  </a-button>
+                  <a-space>
+                    <a-button
+                      v-if="record.children"
+                      type="text"
+                      size="mini"
+                      @click="onRetry(record)"
+                      >重试</a-button
+                    >
+                  </a-space>
+
+                  <a-space>
+                    <a-button
+                      v-if="!record.children"
+                      type="text"
+                      size="mini"
+                      @click="showDetails(record)"
+                      >查看详细报告
+                    </a-button>
+                  </a-space>
                 </template>
               </a-table-column>
             </template>
@@ -212,6 +237,9 @@
                   {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}
                 </a-tag>
               </a-descriptions-item>
+              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"
+                >{{ data.selectedCase?.error_message }}
+              </a-descriptions-item>
             </a-descriptions>
             <div class="report-cards">
               <div v-if="data.selectedCase.case_type === 0">
@@ -241,6 +269,7 @@
   import { usePageData } from '@/store/page-data'
   import {
     getSystemTestSuiteDetails,
+    getSystemTestSuiteDetailsRetry,
     getSystemTestSuiteDetailsSummary,
   } from '@/api/system/test_sute_details'
   import ElementTestReport from '@/components/ElementTestReport.vue'
@@ -251,10 +280,12 @@
     IconApps,
     IconCheckCircle,
     IconCloseCircle,
+    IconHistory,
     IconSync,
     IconUnorderedList,
   } from '@arco-design/web-vue/es/icon'
   import { usePagination, useRowKey, useTable, useTableColumn } from '@/hooks/table'
+  import { Message, Modal } from '@arco-design/web-vue'
 
   const pageData: any = usePageData()
   const pagination = usePagination(doRefresh)
@@ -307,14 +338,14 @@
       class: '',
     },
     {
-      title: '进行中',
-      value: data.summary.proceed_count,
-      icon: IconSync,
-      class: 'running',
-    },
-    {
       title: '待开始',
       value: data.summary.stay_begin_count,
+      icon: IconHistory,
+      class: 'wait',
+    },
+    {
+      title: '进行中',
+      value: data.summary.proceed_count,
       icon: IconSync,
       class: 'running',
     },
@@ -335,7 +366,6 @@
 
   const showDetails = (record: any) => {
     data.selectedCase = record
-    console.log(data.selectedCase)
     drawerVisible.value = true
   }
 
@@ -362,7 +392,21 @@
       })
       .catch(console.log)
   }
-
+  function onRetry(record: any) {
+    Modal.confirm({
+      title: '提示',
+      content: '是否要重试这个测试？',
+      cancelText: '取消',
+      okText: '重试',
+      onOk: () => {
+        getSystemTestSuiteDetailsRetry(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+          })
+          .catch(console.log)
+      },
+    })
+  }
   onMounted(() => {
     doRefresh(null)
     doRefreshSummary()
@@ -467,6 +511,19 @@
     }
   }
 
+  .running {
+    :deep(.arco-card-header) {
+      color: #d46b08;
+      background: rgba(255, 247, 232, 3);
+    }
+
+    .number {
+      background: linear-gradient(45deg, #d46b08, #ffa940);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+
   .error {
     :deep(.arco-card-header) {
       color: #f5222d;
@@ -480,10 +537,10 @@
     }
   }
 
-  .running {
+  .wait {
     :deep(.arco-card-header) {
       color: #1890ff;
-      background: rgba(24, 144, 255, 0.1);
+      background: rgba(24, 144, 255, 0.05);
     }
 
     .number {
@@ -506,7 +563,6 @@
     padding: 1px;
   }
 
-  // 基础信息卡片
   .info-card {
     .chart-container {
       align-items: flex-start;
@@ -564,7 +620,6 @@
     }
   }
 
-  // 结果统计卡片
   .result-card {
     :deep(.arco-progress-circle) {
       .arco-progress-circle-path {
@@ -606,21 +661,21 @@
     margin-bottom: 24px;
 
     :deep(.arco-descriptions-item-label) {
-      background-color: rgba(var(--primary-1), 0.2);
+      background-color: rgba(var(--primary-1), 0.3);
       font-weight: 600;
     }
 
     :deep(.arco-descriptions-item-value) {
-      padding: 12px 16px;
+      padding: 8px 12px;
     }
   }
 
   .report-cards {
-    margin-top: 24px;
+    margin-top: 8px;
   }
 
   .report-card {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
 
   // 表格样式

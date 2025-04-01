@@ -11,6 +11,7 @@ from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_user.models import User
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
+from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
 from src.models.ui_model import GetTaskModel
 from src.tools.log_collector import log
@@ -48,20 +49,25 @@ class UiCaseFlow:
             retry__lt=cls.retry_frequency,
             type=TestCaseTypeEnum.UI.value
         ).first()
-        if test_suite_details:
-            test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
-            case_model = ConsumerCaseModel(
-                test_suite_details=test_suite_details.id,
-                test_suite=test_suite_details.test_suite.id,
-                case_id=test_suite_details.case_id,
-                case_name=test_suite_details.case_name,
-                test_env=test_suite_details.test_env,
-                user_id=test_suite.user.id,
-                tasks_id=test_suite.tasks.id if test_suite.tasks else None,
-                parametrize=test_suite_details.parametrize,
-            )
-            cls.send_case(model.id, model.username, case_model)
-            cls.update_status_proceed(test_suite, test_suite_details)
+        try:
+            if test_suite_details:
+                test_suite = TestSuite.objects.get(id=test_suite_details.test_suite.id)
+                case_model = ConsumerCaseModel(
+                    test_suite_details=test_suite_details.id,
+                    test_suite=test_suite_details.test_suite.id,
+                    case_id=test_suite_details.case_id,
+                    case_name=test_suite_details.case_name,
+                    test_env=test_suite_details.test_env,
+                    user_id=test_suite.user.id,
+                    tasks_id=test_suite.tasks.id if test_suite.tasks else None,
+                    parametrize=test_suite_details.parametrize,
+                )
+                cls.send_case(model.id, model.username, case_model)
+                cls.update_status_proceed(test_suite, test_suite_details)
+        except MangoServerError as error:
+            log.system.warning(f'执行器主动拉取任务失败：{error}')
+            test_suite_details.status = TaskEnum.FAIL.value
+            test_suite_details.save()
 
     @classmethod
     def update_status_proceed(cls, test_suite, test_suite_details):
