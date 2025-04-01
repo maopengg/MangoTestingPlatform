@@ -66,21 +66,27 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+
   },
   {
     title: '每年某月',
     key: 'cron',
     dataIndex: 'cron',
+    align: 'left',
   },
   {
     title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
+        width: 170,
+
   },
   {
     title: '更新时间',
     key: 'update_time',
     dataIndex: 'update_time',
+        width: 170,
+
   },
   {
     title: '操作',

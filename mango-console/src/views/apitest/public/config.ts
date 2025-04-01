@@ -111,7 +111,8 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 180,
+    align: 'left',
+    width: 200,
   },
   {
     title: '类型',
@@ -123,13 +124,15 @@ export const tableColumns = useTableColumn([
     title: '参数名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
     width: 200,
   },
   {
     title: 'key',
     key: 'key',
     dataIndex: 'key',
-    width: 200,
+    align: 'left',
+    width: 300,
   },
   {
     title: 'value',

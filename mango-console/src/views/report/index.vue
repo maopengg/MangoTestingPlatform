@@ -76,7 +76,7 @@
               :key="item.key"
               :align="item.align"
               :title="item.title"
-              :width="item.width"
+              :width="item.width + 50"
               :data-index="item.key"
               :fixed="item.fixed"
               :ellipsis="item.ellipsis"
@@ -139,7 +139,6 @@
   } from '@/api/system/test_sute_details'
   import { useEnum } from '@/store/modules/get-enum'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { deleteApiInfo } from '@/api/apitest/info'
 
   const enumStore = useEnum()
 

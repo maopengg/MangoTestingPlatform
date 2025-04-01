@@ -120,7 +120,8 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 180,
+        align: 'left',
+    width: 200,
   },
   {
     title: '类型',

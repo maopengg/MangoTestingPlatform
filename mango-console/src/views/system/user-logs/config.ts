@@ -8,16 +8,20 @@ export const tableColumns = useTableColumn([
     title: '昵称',
     key: 'user',
     dataIndex: 'user',
+    align: 'left',
+  },
+
+  {
+    title: 'IP',
+    key: 'ip',
+    dataIndex: 'ip',
+    align: 'left',
   },
   {
     title: '来源',
     key: 'source_type',
     dataIndex: 'source_type',
-  },
-  {
-    title: 'IP',
-    key: 'ip',
-    dataIndex: 'ip',
+    width: 70,
   },
   {
     title: '登录时间',

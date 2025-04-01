@@ -49,21 +49,25 @@ export const tableColumns = useTableColumn([
     title: '创建时间',
     key: 'create_time',
     dataIndex: 'create_time',
+    width: 170,
   },
   {
     title: '更新时间',
     key: 'update_time',
     dataIndex: 'update_time',
+    width: 170,
   },
   {
     title: '项目名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
   },
   {
     title: '状态',
     key: 'status',
     dataIndex: 'status',
+    width: 70,
   },
   {
     title: '操作',

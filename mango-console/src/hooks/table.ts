@@ -109,7 +109,7 @@ export const useTableIndexColumn = function () {
   return {
     title: 'ID',
     key: 'index',
-    width: 80,
+    width: 70,
     dataIndex: 'index',
   }
 }

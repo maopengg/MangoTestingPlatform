@@ -70,7 +70,7 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 180,
+    width: 200,
   },
   {
     title: '客户端',
@@ -82,6 +82,7 @@ export const tableColumns = useTableColumn([
     title: 'key',
     key: 'key',
     dataIndex: 'key',
+    align: 'left',
     width: 200,
   },
   {
