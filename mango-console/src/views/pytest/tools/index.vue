@@ -309,6 +309,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      onPytestProjectName(null)
     })
   })
 </script>
