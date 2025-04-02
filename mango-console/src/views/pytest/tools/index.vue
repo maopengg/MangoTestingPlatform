@@ -112,7 +112,7 @@
               allow-clear
             />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
               :placeholder="item.placeholder"
