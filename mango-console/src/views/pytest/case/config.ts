@@ -103,21 +103,21 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-        align: 'left',
+    align: 'left',
     width: 200,
   },
   {
     title: '模块',
     key: 'module',
     dataIndex: 'module',
-        align: 'left',
+    align: 'left',
     width: 180,
   },
   {
     title: '名称',
     key: 'name',
     dataIndex: 'name',
-            align: 'left',
+    align: 'left',
     width: 300,
   },
   {
@@ -128,12 +128,12 @@ export const tableColumns = useTableColumn([
     ellipsis: true,
     tooltip: true,
   },
-  {
-    title: '修改时间',
-    key: 'file_update_time',
-    dataIndex: 'file_update_time',
-    width: 170,
-  },
+  // {
+  //   title: '修改时间',
+  //   key: 'file_update_time',
+  //   dataIndex: 'file_update_time',
+  //   width: 170,
+  // },
   {
     title: '用例负责人',
     key: 'case_people',
