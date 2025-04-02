@@ -64,7 +64,9 @@
                   <a-progress
                     :percent="
                       data.summary.api_count > 0
-                        ? (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
+                        ? Number(
+                            (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
+                          )
                         : 0
                     "
                     :style="{ width: '80%' }"
@@ -80,7 +82,9 @@
                   <a-progress
                     :percent="
                       data.summary.ui_count > 0
-                        ? (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
+                        ? Number(
+                            (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
+                          )
                         : 0
                     "
                     :style="{ width: '80%' }"
@@ -96,9 +100,11 @@
                   <a-progress
                     :percent="
                       data.summary.pytest_count > 0
-                        ? (
-                            data.summary.pytest_in_progress_count / data.summary.pytest_count
-                          ).toFixed(2)
+                        ? Number(
+                            (
+                              data.summary.pytest_in_progress_count / data.summary.pytest_count
+                            ).toFixed(2)
+                          )
                         : 0
                     "
                     :style="{ width: '80%' }"
