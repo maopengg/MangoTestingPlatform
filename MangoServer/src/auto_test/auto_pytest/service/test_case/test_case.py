@@ -38,6 +38,7 @@ class TestCase:
             '-p', 'no:warnings',
             '--alluredir', allure_results_dir
         ]
+        report_data = None
         pytest.main(pytest_args)
         report_data = self.read_allure_json_results(allure_results_dir)
         self.result_data(report_data, obj)
