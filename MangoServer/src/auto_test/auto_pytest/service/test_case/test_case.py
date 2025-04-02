@@ -35,6 +35,7 @@ class TestCase:
         pytest_args = [
             obj.file_path,
             '-q',
+            '-p', 'no:warnings',
             '--alluredir', allure_results_dir
         ]
         pytest.main(pytest_args)

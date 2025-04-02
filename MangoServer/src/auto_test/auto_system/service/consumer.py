@@ -67,9 +67,9 @@ class ConsumerThread:
                 close_old_connections()
                 connection.ensure_connection()
             except Exception as error:
-                log.system.error(f'自动化任务失败：{error}')
                 trace = traceback.format_exc()
-                print(trace)
+                log.system.error(f'自动化任务失败：{error}，报错：{trace}')
+
                 if IS_SEND_MAIL:
                     # Mango.s(self.consumer, error, trace, )
                     pass
@@ -116,9 +116,6 @@ class ConsumerThread:
             .objects \
             .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency + 1)
         for test_suite_detail in test_suite_details_list:
-            print(test_suite_detail.push_time and (
-                    timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)),
-                  test_suite_detail.test_suite.id)
             if test_suite_detail.push_time and (
                     timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
                 test_suite_detail.status = TaskEnum.STAY_BEGIN.value
