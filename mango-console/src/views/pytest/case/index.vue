@@ -9,6 +9,29 @@
     </template>
 
     <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
+              <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
+                <template #title> 设为定时任务</template>
+                <div>
+                  <a-select
+                    v-model="data.value"
+                    placeholder="请选择定时任务进行绑定"
+                    :options="data.scheduledName"
+                    :field-names="fieldNames"
+                    value-key="key"
+                    allow-clear
+                    allow-search
+                  />
+                </div>
+              </a-modal>
+            </div>
+          </a-space>
+        </template>
+      </a-tabs>
       <a-table
         :bordered="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
@@ -223,6 +246,8 @@
   import CodeEditor from '@/components/CodeEditor.vue'
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
+  import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
+  import { getSystemTasksName } from '@/api/system/tasks'
 
   const projectInfo = useProject()
 
@@ -242,7 +267,9 @@
     codeText: '',
     projectPytest: [],
     moduleList: [],
+    scheduledName: [],
     isResult: false,
+    visible: false,
   })
 
   const customStyle = reactive({
@@ -251,6 +278,24 @@
     border: 'none',
     overflow: 'hidden',
   })
+  const handleClick = () => {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要添加定时任务的用例')
+      return
+    }
+    data.visible = true
+  }
+  const handleOk = () => {
+    postSystemTasksBatchSetCases(selectedRowKeys.value, data.value, 2)
+      .then((res) => {
+        Message.success(res.msg)
+        data.visible = false
+      })
+      .catch(console.log)
+  }
+  const handleCancel = () => {
+    data.visible = false
+  }
 
   function onDelete(data: any) {
     Modal.confirm({
@@ -404,12 +449,19 @@
       })
       .catch(console.log)
   }
-
+  function scheduledName() {
+    getSystemTasksName()
+      .then((res) => {
+        data.scheduledName = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getNickName()
       onPytestProjectName(null)
+      scheduledName()
     })
   })
 </script>

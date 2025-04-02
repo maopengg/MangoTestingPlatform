@@ -101,14 +101,19 @@ class TasksDetailsViews(ViewSet):
     @action(methods=['post'], detail=False)
     @error_response('system')
     def batch_set_cases(self, request: Request):
-        ### 要修改代码
         case_id_list = request.data.get('case_id_list')
+        _type = request.data.get('type')
         scheduled_tasks_id = request.data.get('scheduled_tasks_id')
-        tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list('case_id')
-        tasks_run_case_list = [i[0] for i in list(tasks_run_case_list)]
+        if _type == TestCaseTypeEnum.UI.value:
+            case_name = 'ui_case'
+        elif _type == TestCaseTypeEnum.API.value:
+            case_name = 'api_case'
+        else:
+            case_name = 'pytest_case'
+        tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list(case_name, flat=True)
         for case_id in case_id_list:
-            if case_id not in tasks_run_case_list:
-                serializer = self.serializer_class(data={'task': scheduled_tasks_id, 'case_id': case_id})
+            if case_id not in list(tasks_run_case_list):
+                serializer = self.serializer_class(data={'task': scheduled_tasks_id, 'type': _type, case_name: case_id})
                 if serializer.is_valid():
                     serializer.save()
                 else:
