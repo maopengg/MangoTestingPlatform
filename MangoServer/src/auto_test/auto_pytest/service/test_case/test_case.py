@@ -16,6 +16,7 @@ from src.enums.pytest_enum import AllureStatusEnum
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.tools import project_dir
+from src.tools.log_collector import log
 
 
 class TestCase:
@@ -35,11 +36,15 @@ class TestCase:
             'pytest',
             obj.file_path,
             '-q',
-            '-p', 'no:warnings',
-            '--alluredir', allure_results_dir
+            '-p',
+            'no:warnings',
+            '--alluredir',
+            allure_results_dir
         ]
+        log.pytest.debug('启动命令：{}'.format(pytest_cmd))
         subprocess.run(pytest_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         report_data = self.read_allure_json_results(allure_results_dir)
+        log.pytest.debug(f'{obj.name}测试结果：{report_data}')
         self.result_data(report_data, obj)
         self.delete_allure_results(allure_results_dir)
         return report_data
