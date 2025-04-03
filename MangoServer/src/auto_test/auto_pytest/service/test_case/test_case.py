@@ -36,10 +36,8 @@ class TestCase:
             'pytest',
             obj.file_path,
             '-q',
-            '-p',
-            'no:warnings',
-            '--alluredir',
-            allure_results_dir
+            # '-p', 'no:warnings',
+            '--alluredir', allure_results_dir
         ]
         log.pytest.debug('启动命令：{}'.format(pytest_cmd))
         subprocess.run(pytest_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
