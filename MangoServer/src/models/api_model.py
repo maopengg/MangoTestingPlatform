@@ -25,7 +25,7 @@ class ResponseModel(BaseModel):
     code: int
     time: float
     headers: dict
-    json: dict | None = None
+    json: dict | list | None = None
     text: str | None = None
 
 

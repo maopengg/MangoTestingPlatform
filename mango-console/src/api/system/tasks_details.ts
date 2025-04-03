@@ -17,7 +17,6 @@ export function postSystemTasksRunCase(data: object) {
     },
   })
 }
-
 export function putSystemTasksRunCase(data: object) {
   return put({
     url: 'system/tasks/details',
@@ -37,14 +36,18 @@ export function deleteSystemTasksRunCase(id: number | string[] | number[]) {
     },
   })
 }
-
-export function postSystemTasksBatchSetCases(caseIdList: string[], scheduledTasksId: any) {
+export function postSystemTasksBatchSetCases(
+  caseIdList: string[],
+  scheduledTasksId: any,
+  type: number
+) {
   return post({
     url: 'system/tasks/details/batch/set/cases',
     data: () => {
       return {
         case_id_list: caseIdList,
         scheduled_tasks_id: scheduledTasksId,
+        type: type,
       }
     },
   })

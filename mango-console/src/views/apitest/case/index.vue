@@ -527,7 +527,7 @@
     data.visible = true
   }
   const handleOk = () => {
-    postSystemTasksBatchSetCases(selectedRowKeys.value, data.value)
+    postSystemTasksBatchSetCases(selectedRowKeys.value, data.value, 1)
       .then((res) => {
         Message.success(res.msg)
         data.visible = false

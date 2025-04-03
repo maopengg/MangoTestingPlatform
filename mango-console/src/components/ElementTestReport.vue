@@ -3,11 +3,14 @@
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
         v-for="item of resultData?.element_result_list"
-        :key="item.id"
         :bordered="false"
+        :key="item.id"
+        :default-active-key="
+          resultData.element_result_list.filter((i) => i.status === 0).map((i) => i.id)
+        "
         destroy-on-hide
       >
-        <a-collapse-item :key="item.id" :header="item.name" :style="customStyle">
+        <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
           <div>
             <a-space direction="vertical" style="width: 50%">
               <p>
@@ -17,7 +20,11 @@
                     : getLabelByValue(data.ope, item.ope_key)
                 }}
               </p>
-              <p> 表达式类型：{{ item.exp ? enumStore.element_exp[item.exp].title : item.exp }} </p>
+              <p>
+                表达式类型：{{
+                  enumStore.element_exp.find((item1) => item1.key === item.exp)?.title
+                }}
+              </p>
               <p>
                 测试结果：{{ item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试' }}
               </p>
@@ -32,11 +39,11 @@
               <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
               <div v-if="item.status === 0">
                 <a-image
-                  :preview-visible="visible"
-                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
-                  style="margin-right: 67px; vertical-align: top"
+                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
                   title="失败截图"
                   width="260"
+                  style="margin-right: 67px; vertical-align: top"
+                  :preview-visible="visible"
                   @preview-visible-change="visible = false"
                 >
                   <template #extra>
@@ -91,7 +98,7 @@
   </a-tabs>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
   import { onMounted, reactive, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'

@@ -115,6 +115,8 @@ class TestCase:
         await self.send_case_result(f'用例<{self.case_model.name}>测试完成')
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
+        front_custom = self.base_data.test_data.replace(front_custom)
+        front_sql = self.base_data.test_data.replace(front_sql)
         for i in front_custom:
             self.base_data.test_data.set_cache(i.get('key'), i.get('value'))
         for i in front_sql:

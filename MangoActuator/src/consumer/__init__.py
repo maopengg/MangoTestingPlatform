@@ -35,8 +35,9 @@ class SocketConsumer(UI, API, Perf, Tools):
         while cls.running:
             if not cls.queue.empty():
                 data: QueueModel = await cls.queue.get()
-                task = cls.parent.loop.create_task(getattr(cls, data.func_name)(data.func_args))
-                task.add_done_callback(cls.handle_task_result)
+                await getattr(cls, data.func_name)(data.func_args)
+                # task = cls.parent.loop.create_task(getattr(cls, data.func_name)(data.func_args))
+                # task.add_done_callback(cls.handle_task_result)
             else:
                 await asyncio.sleep(0.1)
 
@@ -51,19 +52,3 @@ class SocketConsumer(UI, API, Perf, Tools):
     @classmethod
     def stop(cls):
         cls.running = False
-
-    @classmethod
-    async def test(cls):
-        from src.tools import project_dir
-        from src.consumer.ui import UI
-        with open(fr'{project_dir.root_path()}tests\user_config.json', 'r', encoding='utf-8') as f:
-            out = json.load(f)
-            UserModel(**out)
-        with open(fr'{project_dir.root_path()}\test.json', 'r', encoding='utf-8') as f:
-            out = json.load(f)
-            if out.get('func_name'):
-                await getattr(cls, out['func_name'])(out['func_args'])
-            else:
-                await cls.u_case(out)
-        while True:
-            await asyncio.sleep(1)

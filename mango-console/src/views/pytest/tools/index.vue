@@ -82,7 +82,7 @@
       >
         <template #title> 编辑代码</template>
         <div>
-          <CodeEditor v-model="data.codeText" :lineHeight="600" placeholder="输入python代码" />
+          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
         </div>
       </a-drawer>
     </template>
@@ -112,7 +112,7 @@
               @change="onPytestProjectName(item.value)"
             />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+          <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
               :options="data.moduleList"
@@ -309,6 +309,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
+      onPytestProjectName(null)
     })
   })
 </script>

@@ -31,7 +31,7 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 220,
+    width: 200,
   },
   {
     title: '任务名称',

@@ -15,27 +15,27 @@
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'project_product'">
                 <a-select
+                  style="width: 150px"
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="projectInfo.projectProductList"
                   :placeholder="item.placeholder"
+                  :options="projectInfo.projectProductList"
+                  :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
-                  style="width: 150px"
-                  value-key="key"
                   @change="doRefresh(item.value, true)"
                 />
               </template>
               <template v-else-if="item.type === 'select' && item.key === 'module'">
                 <a-select
+                  style="width: 150px"
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="productModule.data"
                   :placeholder="item.placeholder"
+                  :options="productModule.data"
+                  :field-names="fieldNames"
+                  value-key="key"
                   allow-clear
                   allow-search
-                  style="width: 150px"
-                  value-key="key"
                   @change="doRefresh"
                 />
               </template>
@@ -50,21 +50,21 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
             </div>
             <div>
-              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+              <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
             </div>
           </a-space>
         </template>
       </a-tabs>
       <a-table
         :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
+        :loading="table.tableLoading.value"
+        :data="table.dataList"
+        :columns="tableColumns"
+        :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
       >
@@ -73,10 +73,12 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
             :title="item.title"
             :width="item.width"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -94,16 +96,16 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-              <a-button size="mini" type="text" @click="onClick(record)">添加元素</a-button>
+              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+              <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
               <a-dropdown trigger="hover">
-                <a-button size="mini" type="text">···</a-button>
+                <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button size="mini" type="text" @click="onPageCopy(record.id)">复制</a-button>
+                    <a-button type="text" size="mini" @click="onPageCopy(record.id)">复制</a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -122,40 +124,40 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
         >
           <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
           <template v-else-if="item.type === 'textarea'">
             <a-textarea
               v-model="item.value"
-              :auto-size="{ minRows: 3, maxRows: 5 }"
               :placeholder="item.placeholder"
+              :auto-size="{ minRows: 3, maxRows: 5 }"
             />
           </template>
           <template v-else-if="item.type === 'cascader'">
             <a-cascader
               v-model="item.value"
-              :options="projectInfo.projectProduct"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
               @change="onModuleSelect(item.value)"
+              :placeholder="item.placeholder"
+              :options="projectInfo.projectProduct"
+              allow-search
+              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="productModule.data"
               :placeholder="item.placeholder"
+              :options="productModule.data"
+              :field-names="fieldNames"
+              value-key="key"
               allow-clear
               allow-search
-              value-key="key"
             />
           </template>
         </a-form-item>

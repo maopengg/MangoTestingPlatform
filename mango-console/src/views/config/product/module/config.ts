@@ -21,11 +21,11 @@ export const columns = reactive([
   },
   {
     title: '上级模块(二级模块)',
-    dataIndex: 'superior_module_1',
+    dataIndex: 'superior_module_2',
   },
   {
     title: '上级模块(一级模块)',
-    dataIndex: 'superior_module_2',
+    dataIndex: 'superior_module_1',
   },
   {
     title: '操作',
@@ -53,7 +53,7 @@ export const formItems: FormItem[] = reactive([
   },
   {
     label: '上级模块(二级模块)',
-    key: 'superior_module_1',
+    key: 'superior_module_2',
     value: ref(''),
     placeholder: '请输入上级模块',
     required: false,

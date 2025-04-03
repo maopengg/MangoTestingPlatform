@@ -3,19 +3,42 @@
     <template #header>
       <a-card :bordered="false" title="测试用例">
         <template #extra>
-          <a-button size="small" type="primary" @click="clickUpdate">更新目录</a-button>
+          <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
         </template>
       </a-card>
     </template>
 
     <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
+              <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
+                <template #title> 设为定时任务</template>
+                <div>
+                  <a-select
+                    v-model="data.value"
+                    placeholder="请选择定时任务进行绑定"
+                    :options="data.scheduledName"
+                    :field-names="fieldNames"
+                    value-key="key"
+                    allow-clear
+                    allow-search
+                  />
+                </div>
+              </a-modal>
+            </div>
+          </a-space>
+        </template>
+      </a-tabs>
       <a-table
         :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
         :row-selection="{ selectedRowKeys, showCheckedAll }"
+        :loading="table.tableLoading.value"
+        :data="table.dataList"
+        :columns="tableColumns"
+        :pagination="false"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
       >
@@ -24,12 +47,12 @@
             v-for="item of tableColumns"
             :key="item.key"
             :align="item.align"
-            :data-index="item.key"
-            :ellipsis="item.ellipsis"
-            :fixed="item.fixed"
             :title="item.title"
-            :tooltip="item.tooltip"
             :width="item.width"
+            :data-index="item.key"
+            :fixed="item.fixed"
+            :ellipsis="item.ellipsis"
+            :tooltip="item.tooltip"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
               {{ record.id }}
@@ -72,19 +95,19 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" @click="onRun(record)">执行</a-button>
-              <a-button size="mini" type="text" @click="onClick(record)">文件</a-button>
+              <a-button type="text" size="mini" @click="onRun(record)">执行</a-button>
+              <a-button type="text" size="mini" @click="onClick(record)">文件</a-button>
               <a-dropdown trigger="hover">
-                <a-button size="mini" type="text">···</a-button>
+                <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button size="mini" type="text" @click="onResult(record)">结果</a-button>
+                    <a-button type="text" size="mini" @click="onResult(record)">结果</a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -95,28 +118,28 @@
         </template>
       </a-table>
       <a-drawer
-        :visible="data.drawerVisible"
         :width="1000"
-        unmountOnClose
-        @cancel="data.drawerVisible = false"
+        :visible="data.drawerVisible"
         @ok="drawerOk"
+        @cancel="data.drawerVisible = false"
+        unmountOnClose
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
-          <CodeEditor v-model="data.codeText" :lineHeight="600" placeholder="输入python代码" />
+          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
         </div>
         <div v-else>
           <a-collapse
             v-for="item of data?.codeText"
-            :key="item.uuid"
             :bordered="false"
+            :key="item.uuid"
             accordion
             destroy-on-hide
           >
             <a-collapse-item
-              :key="item.uuid"
               :header="item.name + '-' + item.status"
               :style="customStyle"
+              :key="item.uuid"
             >
               <PytestTestReport :resultData="item" />
             </a-collapse-item>
@@ -133,65 +156,65 @@
     <template #content>
       <a-form :model="formModel">
         <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
+          v-for="item of formItems"
+          :key="item.key"
         >
           <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
+            <a-input :placeholder="item.placeholder" v-model="item.value" />
           </template>
           <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              :options="data.projectPytest"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
               @change="onPytestProjectName(item.value)"
+              :placeholder="item.placeholder"
+              :options="data.projectPytest"
+              allow-search
+              allow-clear
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'module'">
             <a-select
               v-model="item.value"
-              :options="data.moduleList"
               :placeholder="item.placeholder"
+              :options="data.moduleList"
+              value-key="key"
               allow-clear
               allow-search
-              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'file_status'">
             <a-select
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.file_status"
               :placeholder="item.placeholder"
+              :options="enumStore.file_status"
+              :field-names="fieldNames"
+              value-key="key"
               allow-clear
               allow-search
-              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'level'">
             <a-select
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.case_level"
               :placeholder="item.placeholder"
+              :options="enumStore.case_level"
+              :field-names="fieldNames"
+              value-key="key"
               allow-clear
               allow-search
-              value-key="key"
             />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'case_people'">
             <a-select
               v-model="item.value"
-              :field-names="fieldNames"
-              :options="data.userList"
               :placeholder="item.placeholder"
+              :options="data.userList"
+              :field-names="fieldNames"
+              value-key="key"
               allow-clear
               allow-search
-              value-key="key"
               @change="doRefresh"
             />
           </template>
@@ -223,6 +246,8 @@
   import CodeEditor from '@/components/CodeEditor.vue'
   import { getUserName } from '@/api/user/user'
   import { useProject } from '@/store/modules/get-project'
+  import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
+  import { getSystemTasksName } from '@/api/system/tasks'
 
   const projectInfo = useProject()
 
@@ -242,7 +267,9 @@
     codeText: '',
     projectPytest: [],
     moduleList: [],
+    scheduledName: [],
     isResult: false,
+    visible: false,
   })
 
   const customStyle = reactive({
@@ -251,6 +278,24 @@
     border: 'none',
     overflow: 'hidden',
   })
+  const handleClick = () => {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要添加定时任务的用例')
+      return
+    }
+    data.visible = true
+  }
+  const handleOk = () => {
+    postSystemTasksBatchSetCases(selectedRowKeys.value, data.value, 2)
+      .then((res) => {
+        Message.success(res.msg)
+        data.visible = false
+      })
+      .catch(console.log)
+  }
+  const handleCancel = () => {
+    data.visible = false
+  }
 
   function onDelete(data: any) {
     Modal.confirm({
@@ -404,12 +449,19 @@
       })
       .catch(console.log)
   }
-
+  function scheduledName() {
+    getSystemTasksName()
+      .then((res) => {
+        data.scheduledName = res.data
+      })
+      .catch(console.log)
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
       getNickName()
       onPytestProjectName(null)
+      scheduledName()
     })
   })
 </script>

@@ -51,6 +51,7 @@ class PytestCaseFlow:
             return test_case.test_case_main(case_model.case_id)
         except Exception as error:
             trace = traceback.format_exc()
+            log.pytest.error(f'pytest线程池任务异常：{trace}')
             if IS_SEND_MAIL:
                 Mango.s(cls.execute_task, error, trace, case_model=case_model)
             log.system.error(f'Pytest线程池发生异常：{error}，错误内容：{trace}')

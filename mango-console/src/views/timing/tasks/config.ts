@@ -120,6 +120,7 @@ export const tableColumns = useTableColumn([
     key: 'project_product',
     dataIndex: 'project_product',
     align: 'left',
+    width: 200,
   },
   {
     title: '任务名称',
@@ -128,32 +129,41 @@ export const tableColumns = useTableColumn([
     align: 'left',
   },
   {
-    title: '定时器介绍',
+    title: '定时器',
     key: 'timing_strategy',
     dataIndex: 'timing_strategy',
     align: 'left',
+    width: 300,
   },
   {
     title: '测试环境',
     key: 'test_env',
     dataIndex: 'test_env',
     align: 'left',
+        width: 100,
+
   },
   {
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
     align: 'left',
+            width: 110,
+
   },
   {
     title: '任务状态',
     key: 'status',
     dataIndex: 'status',
+            width: 100,
+
   },
   {
     title: '通知',
     key: 'is_notice',
     dataIndex: 'is_notice',
+            width: 70,
+
   },
   {
     title: '操作',

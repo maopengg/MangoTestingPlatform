@@ -57,13 +57,15 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 180,
+    align: 'left',
+    width: 200,
   },
   {
     title: '名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 300,
   },
   {
     title: '文件名称',
@@ -72,7 +74,6 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
-    width: 250,
   },
   {
     title: '自动化类型',

@@ -55,6 +55,14 @@ export function getSystemTestSuiteDetailsAllRetry(test_suite_id: number) {
     },
   })
 }
+export function getSystemTestSuiteDetailsRetry(id: number) {
+  return get({
+    url: 'system/test/suite/details/retry',
+    data: () => {
+      return { id: id }
+    },
+  })
+}
 
 export function getSystemTestSuiteDetailsSummary(test_suite_id: number) {
   return get({

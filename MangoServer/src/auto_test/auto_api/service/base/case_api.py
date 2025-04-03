@@ -52,7 +52,7 @@ class CaseApiBase(ApiCaseBase):
     def posterior_main(self, response: ResponseModel,
                        case_detailed_parameter: ApiCaseDetailedParameter) -> ResponseModel:
         if case_detailed_parameter.posterior_response:
-            self.__posterior_response(response.response_json,
+            self.__posterior_response(response.json,
                                       self.replace(case_detailed_parameter.posterior_response))  # type: ignore
         if case_detailed_parameter.posterior_sql:
             self.__posterior_sql(self.replace(case_detailed_parameter.posterior_sql))  # type: ignore

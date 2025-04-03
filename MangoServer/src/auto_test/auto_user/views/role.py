@@ -16,6 +16,8 @@ from ..models import Role
 
 
 class RoleSerializers(serializers.ModelSerializer):
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     class Meta:
         model = Role
         fields = '__all__'  # 全部进行序列化

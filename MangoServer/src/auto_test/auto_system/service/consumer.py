@@ -15,7 +15,6 @@ from mangokit import Mango
 from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
 from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
 from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
-from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
@@ -27,7 +26,7 @@ class ConsumerThread:
     def __init__(self):
         self.running = True
         self.clean_time = 1  # 每隔1分钟，就检查一次全部数据是否有可以回写的状态
-        self.reset_time = 10  # 执行中超过10分钟的用例，会被重新设置为待执行
+        self.reset_time = 15  # 执行中超过n分钟的用例，会被重新设置为待执行
         self.consumer_sleep = 1  # 每次循环等待1秒
         self.retry_frequency = 3  # 重试次数
 
@@ -37,10 +36,11 @@ class ConsumerThread:
     def consumer(self):
         reset_tims = time.time()
         while self.running:
+            time.sleep(self.consumer_sleep)
             try:
                 test_suite_details = TestSuiteDetails.objects.filter(
                     status=TaskEnum.STAY_BEGIN.value,
-                    retry__lt=self.retry_frequency,
+                    retry__lt=self.retry_frequency + 1,
                     type__in=[TestCaseTypeEnum.API.value, TestCaseTypeEnum.PYTEST.value]
                 ).first()
                 if test_suite_details:
@@ -62,15 +62,17 @@ class ConsumerThread:
                     reset_tims = time.time()
                     self.clean_proceed()
                     self.clean_proceed_set_fail()
-                time.sleep(self.consumer_sleep)
+                    self.clean_test_suite_status()
             except Error:
                 close_old_connections()
                 connection.ensure_connection()
             except Exception as error:
-                log.system.error(error)
                 trace = traceback.format_exc()
+                log.system.error(f'自动化任务失败：{error}，报错：{trace}')
+
                 if IS_SEND_MAIL:
-                    Mango.s(self.consumer, error, trace, )
+                    # Mango.s(self.consumer, error, trace, )
+                    pass
 
     def send_case(self, test_suite, test_suite_details, case_model: ConsumerCaseModel, retry=0, max_retry=3):
         retry += 1
@@ -93,19 +95,33 @@ class ConsumerThread:
             else:
                 self.send_case(test_suite, test_suite_details, case_model, retry, max_retry)
 
+    def clean_test_suite_status(self):
+        test_suite = TestSuite.objects.filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value])
+        for i in test_suite:
+            status_list = TestSuiteDetails \
+                .objects \
+                .filter(test_suite=i).values_list('status', flat=True)
+            if TaskEnum.STAY_BEGIN.value not in status_list and TaskEnum.PROCEED.value not in status_list:
+                if TaskEnum.FAIL.value in status_list:
+                    i.status = TaskEnum.FAIL.value
+                else:
+                    i.status = TaskEnum.SUCCESS.value
+                i.save()
+
     def clean_proceed(self):
         """
-        把进行中的，修改为待开始
+        把进行中的，修改为待开始,或者失败
         """
         test_suite_details_list = TestSuiteDetails \
             .objects \
-            .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency)
+            .filter(status=TaskEnum.PROCEED.value, retry__lt=self.retry_frequency + 1)
         for test_suite_detail in test_suite_details_list:
             if test_suite_detail.push_time and (
                     timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
                 test_suite_detail.status = TaskEnum.STAY_BEGIN.value
                 test_suite_detail.save()
-                log.system.info(f'推送时间超过30分钟，状态已重置为：待执行，用例ID：{test_suite_detail.case_id}')
+                log.system.info(
+                    f'推送时间超过{self.reset_time}分钟，状态重置为：待执行，用例ID：{test_suite_detail.case_id}')
 
     def clean_proceed_set_fail(self):
         """
@@ -113,13 +129,14 @@ class ConsumerThread:
         """
         test_suite_details_list = TestSuiteDetails \
             .objects \
-            .filter(status=TaskEnum.STAY_BEGIN.value, retry=self.retry_frequency)
+            .filter(status__in=[TaskEnum.PROCEED.value, TaskEnum.STAY_BEGIN.value], retry__gte=self.retry_frequency + 1)
         for test_suite_detail in test_suite_details_list:
-            if test_suite_detail \
-                    .push_time and (timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
-                test_suite_detail.retry = 0
+            if test_suite_detail.push_time and (
+                    timezone.now() - test_suite_detail.push_time > timedelta(minutes=self.reset_time)):
+                test_suite_detail.status = TaskEnum.FAIL.value
                 test_suite_detail.save()
-                log.system.info(f'连续3次都是待执行，重新把重试次数设置为0，用例ID：{test_suite_detail.case_id}')
+                log.system.info(
+                    f'重试次数超过{self.retry_frequency + 1}次的任务状态重置为：失败，用例ID：{test_suite_detail.case_id}')
 
     def update_status_proceed(self, test_suite, test_suite_details):
         test_suite.status = TaskEnum.PROCEED.value

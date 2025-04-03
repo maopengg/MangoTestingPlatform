@@ -16,6 +16,7 @@ class AutoPytestConfig(AppConfig):
         def run():
             time.sleep(5)
             self.test_case_consumption()
+            self.pull_code()
 
         task = Thread(target=run)
         task.start()
@@ -28,12 +29,11 @@ class AutoPytestConfig(AppConfig):
         self.pytest_task.start()
 
     def pull_code(self):
-        time.sleep(5)
         from src.auto_test.auto_pytest.service.base.version_control import GitRepo
         from src.auto_test.auto_system.models import CacheData
 
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
-        if repo_url:
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name)
+        if repo_url and repo_url.value:
             repo = GitRepo()
             repo.pull_repo()
 

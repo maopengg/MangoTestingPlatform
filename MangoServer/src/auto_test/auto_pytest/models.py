@@ -1,8 +1,9 @@
 from django.db import models
 
-from src.auto_test.auto_system.models import ProductModule
-from src.auto_test.auto_system.models import ProjectProduct
+from src.auto_test.auto_system.models import ProjectProduct, TasksDetails
 from src.auto_test.auto_user.models import User
+from src.auto_test.auto_system.models import ProductModule
+from src.exceptions import ToolsError
 
 
 class PytestProduct(models.Model):
@@ -59,6 +60,8 @@ class PytestCase(models.Model):
         db_table = 'pytest_case'
 
     def delete(self, *args, **kwargs):
+        if TasksDetails.objects.filter(pytest_case=self).exists():
+            raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
 

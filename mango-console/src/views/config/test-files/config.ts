@@ -8,6 +8,7 @@ export const tableColumns = useTableColumn([
     title: '文件名称',
     key: 'name',
     dataIndex: 'name',
+    align: 'left',
   },
   {
     title: '操作',

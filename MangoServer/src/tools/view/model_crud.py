@@ -22,12 +22,13 @@ from src.tools.view import *
 
 class ModelCRUD(GenericAPIView):
     model = None
+    project_model = None
     serializer = None
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
-        'module', 'project_product', 'case_people', 'test_object', 'project', 'user'
-                                                                              'pytest_product'
+        'module', 'project_product', 'case_people', 'test_object', 'project', 'user',
+        'pytest_product'
     ]
 
     @error_response('system')
@@ -84,11 +85,11 @@ class ModelCRUD(GenericAPIView):
         except S3Error as error:
             log.system.error(f'GET请求发送异常，请排查问题：{error}')
             traceback.print_exc()
-            ResponseData.fail(RESPONSE_MSG_0026, )
+            return ResponseData.fail(RESPONSE_MSG_0026, )
         except Exception as error:
             log.system.error(f'GET请求发送异常，请排查问题：{error}')
             traceback.print_exc()
-            ResponseData.fail(RESPONSE_MSG_0027, )
+            return ResponseData.fail(RESPONSE_MSG_0027, )
 
     @error_response('system')
     def post(self, request: Request):

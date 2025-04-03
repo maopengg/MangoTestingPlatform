@@ -72,12 +72,14 @@ export const tableColumns = useTableColumn([
     title: '项目/产品',
     key: 'project_product',
     dataIndex: 'project_product',
-    width: 180,
+    align: 'left',
+    width: 200,
   },
   {
     title: '模块',
     key: 'module',
     dataIndex: 'module',
+    align: 'left',
     width: 180,
   },
   {
@@ -85,6 +87,7 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    width: 300,
   },
   {
     title: '文件名称',
@@ -93,7 +96,6 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
-    width: 250,
   },
   {
     title: '修改时间',

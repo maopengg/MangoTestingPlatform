@@ -70,7 +70,7 @@ class ApiCase(models.Model):
         if ApiCaseDetailed.objects.filter(case=self).exists():
             raise ToolsError(300, "测试用例详情-有关联数据，请先删除绑定的数据后再删除！")
         from src.auto_test.auto_system.models import TasksDetails
-        if TasksDetails.objects.filter(case=self).exists():
+        if TasksDetails.objects.filter(api_case=self).exists():
             raise ToolsError(300, "定时任务详情-有关联数据，请先删除绑定的数据后再删除！")
         super().delete(*args, **kwargs)
 
