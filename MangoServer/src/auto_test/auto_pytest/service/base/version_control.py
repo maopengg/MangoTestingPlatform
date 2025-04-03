@@ -35,14 +35,13 @@ class GitRepo:
         origin = self.repo.remotes.origin
         origin.fetch()
 
-        if 'master' not in self.repo.heads:
-            self.repo.git.checkout('-B', 'master', 'origin/master')
+        if 'master' in self.repo.heads:
+            self.repo.git.reset('--hard', 'origin/master')
         else:
-            if not self.repo.active_branch.tracking_branch():
-                self.repo.git.branch("--set-upstream-to", "origin/master", "master")
-        origin.pull()
+            self.repo.git.checkout('-B', 'master', 'origin/master')
 
     def push_repo(self):
+        self.pull_repo()
         status = self.repo.git.status()
         log.pytest.info(f"提交前的存储库状态：{status}")
         if "nothing to commit" not in status:
