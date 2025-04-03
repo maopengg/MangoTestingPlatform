@@ -19,7 +19,7 @@ from src.tools.log_collector import log
 class GitRepo:
     def __init__(self):
         self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
-        log.pytest.info(f'git路径：{self.local_warehouse_path}')
+        log.pytest.warning(f'git路径：{self.local_warehouse_path}')
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not self.repo_url:
             raise PytestError(*ERROR_MSG_0015)
@@ -32,9 +32,14 @@ class GitRepo:
         Repo.clone_from(self.repo_url, self.local_warehouse_path)
 
     def pull_repo(self):
-        if not self.repo.active_branch.tracking_branch():
-            self.repo.git.branch("--set-upstream-to", "origin/master", "master")
         origin = self.repo.remotes.origin
+        origin.fetch()
+
+        if 'master' not in self.repo.heads:
+            self.repo.git.checkout('-B', 'master', 'origin/master')
+        else:
+            if not self.repo.active_branch.tracking_branch():
+                self.repo.git.branch("--set-upstream-to", "origin/master", "master")
         origin.pull()
 
     def push_repo(self):
