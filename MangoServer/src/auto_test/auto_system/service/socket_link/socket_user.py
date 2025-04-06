@@ -7,7 +7,6 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from src.auto_test.auto_user.models import User
 from src.enums.system_enum import ClientNameEnum
 from src.exceptions import *
 
@@ -23,22 +22,22 @@ class SocketUser:
     user: list[SocketUserModel] = []
 
     @classmethod
-    def set_user_web_obj(cls, username, web_obj):
+    def set_user_web_obj(cls, username, web_obj, user_id):
         for i in cls.user:
             if i.username == username:
                 i.web_obj = web_obj
                 return
         cls.user.append(
-            SocketUserModel(user_id=User.objects.get(username=username).id, username=username, web_obj=web_obj))
+            SocketUserModel(user_id=user_id, username=username, web_obj=web_obj))
 
     @classmethod
-    def set_user_client_obj(cls, username, client_obj):
+    def set_user_client_obj(cls, username, client_obj, user_id):
         for i in cls.user:
             if i.username == username:
                 i.client_obj = client_obj
                 return
         cls.user.append(
-            SocketUserModel(user_id=User.objects.get(username=username).id, username=username, client_obj=client_obj))
+            SocketUserModel(user_id=user_id, username=username, client_obj=client_obj))
 
     @classmethod
     def delete_user_web_obj(cls, username):

@@ -186,7 +186,7 @@
             window.localStorage.removeItem('visited-routes')
             window.location.reload()
             localStorage.clear()
-            websocket(13213, false)
+            websocket(13213, '231', false)
           })
         })
         .catch(console.log)

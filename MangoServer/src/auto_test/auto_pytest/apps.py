@@ -31,11 +31,13 @@ class AutoPytestConfig(AppConfig):
     def pull_code(self):
         from src.auto_test.auto_pytest.service.base.version_control import GitRepo
         from src.auto_test.auto_system.models import CacheData
-
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name)
-        if repo_url and repo_url.value:
-            repo = GitRepo()
-            repo.pull_repo()
+        try:
+            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name)
+            if repo_url and repo_url.value:
+                repo = GitRepo()
+                repo.pull_repo()
+        except Exception:
+            pass
 
     def shutdown(self):
         self.case_flow.stop()

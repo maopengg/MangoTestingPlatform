@@ -9,6 +9,7 @@ import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
+from mangokit import EncryptionTool
 from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 
@@ -57,7 +58,7 @@ class WebSocketClient:
         进行websocket连接
         @return:
         """
-        server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?{settings.USERNAME}"
+        server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?username={settings.USERNAME}&password={EncryptionTool.md5_32_small(**{'data': settings.PASSWORD})}"
         log.debug(str(f"websockets server url:{server_url}"))
         retry = 1
         while cls.running:

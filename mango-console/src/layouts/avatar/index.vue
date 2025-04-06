@@ -73,7 +73,7 @@
           window.localStorage.removeItem('visited-routes')
           window.location.reload()
           localStorage.clear()
-          websocket(13213, false)
+          websocket(13213, '123', false)
         })
         // const params = new URLSearchParams(window.location.search)
         // params.delete('redirect')
@@ -100,7 +100,9 @@
       return // 如果正在连接中，则不执行重复连接操作
     }
     if (!socket.value) {
-      socket.value = new WebSocket(webSocketURL + userStore.userName)
+      socket.value = new WebSocket(
+        `${webSocketURL}username=${userStore.userName}&password=${userStore.password}`
+      )
     }
     socket.value.binaryType = 'arraybuffer'
 

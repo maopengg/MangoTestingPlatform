@@ -37,7 +37,7 @@ class ClientNameEnum(BaseEnum):
 class SocketEnum(BaseEnum):
     WEB_PATH = '/web/socket'
     CLIENT_PATH = '/client/socket'
-    ADMIN = 'admin'
+    OPEN = 'open'
     CLIENT_CONN_OBJ = 'client_obj'
     WEB_CONN_OBJ = 'web_obj'
 

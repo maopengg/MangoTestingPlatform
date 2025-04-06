@@ -116,39 +116,33 @@ export const tableColumns = useTableColumn([
     title: '更新时间',
     key: 'update_time',
     dataIndex: 'update_time',
-        width: 170,
-
+    width: 170,
   },
   {
     title: '项目名称',
     key: 'project',
     dataIndex: 'project',
-        align: 'left',
+    align: 'left',
 
-        width: 200,
-
+    width: 200,
   },
   {
     title: '产品名称',
     key: 'name',
     dataIndex: 'name',
-        align: 'left',
-
-
+    align: 'left',
   },
   {
     title: 'UI产品类型',
     key: 'ui_client_type',
     dataIndex: 'ui_client_type',
-        width: 120,
-
+    width: 120,
   },
   {
     title: 'API产品类型',
     key: 'api_client_type',
     dataIndex: 'api_client_type',
-        width:120,
-
+    width: 120,
   },
   {
     title: '操作',

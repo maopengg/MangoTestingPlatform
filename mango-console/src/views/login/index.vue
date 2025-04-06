@@ -160,7 +160,7 @@
       },
     })
       .then(({ data }: Response) => {
-        userStore.saveUser(data as UserState).then(() => {
+        userStore.saveUser(data as UserState, md5(baseData.password)).then(() => {
           router
             .replace({
               path: route.query.redirect ? (route.query.redirect as string) : '/index/home',

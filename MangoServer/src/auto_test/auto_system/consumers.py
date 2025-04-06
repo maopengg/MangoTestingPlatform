@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import json
 from typing import Union, Optional, TypeVar
+from urllib.parse import parse_qsl
 
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
@@ -15,7 +16,7 @@ from src.auto_test.auto_user.models import User
 from src.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
-from src.settings import DEBUG, IS_DEBUG_LOG
+from src.settings import IS_DEBUG_LOG
 
 T = TypeVar('T')
 
@@ -24,7 +25,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user = ''
+        self.username = ''
         self.api_reflection = ServerInterfaceReflection()
 
     def websocket_connect(self, message):
@@ -33,32 +34,25 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        self.user = self.scope.get('query_string').decode()
-        try:
-            User.objects.get(username=self.user)
-            self.accept()
-        except User.DoesNotExist:
+        is_verify, user_id = self.verify_user(True)
+        if not is_verify:
             self.close()
+            return
+        self.accept()
+        if self.scope.get('path') == SocketEnum.WEB_PATH.value:
+            SocketUser.set_user_web_obj(self.username, self, user_id)
+            self.inside_send(f"心跳已连接！IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
+        elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
+            SocketUser.set_user_web_obj(self.username, self, user_id)
+            self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
+            try:
+                self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
+                                 is_notice=ClientTypeEnum.WEB.value)
+            except SystemEError:
+                self.inside_send(
+                    f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
         else:
-            if self.scope.get('path') == SocketEnum.WEB_PATH.value:
-                SocketUser.set_user_web_obj(self.user, self)
-                self.inside_send(f"您的IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
-            elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
-                if self.user == SocketEnum.ADMIN.value:
-                    self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
-                else:
-                    self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
-                    try:
-                        self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
-                                         is_notice=ClientTypeEnum.WEB.value)
-
-                    except SystemEError:
-                        self.inside_send(
-                            f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')
-                SocketUser.set_user_client_obj(self.user, self)
-
-            else:
-                log.system.error('请使用正确的链接域名访问！')
+            log.system.error('请使用正确的链接域名访问！')
 
     def websocket_receive(self, message):
         """
@@ -66,7 +60,10 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        self.user = self.scope.get('query_string').decode()
+        is_verify, user_id = self.verify_user()
+        if not is_verify:
+            self.close()
+            return
         try:
             msg = SocketDataModel(**json.loads(message.get('text')))
         except json.decoder.JSONDecodeError as e:
@@ -84,15 +81,17 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        self.user = self.scope.get('query_string').decode()
+        is_verify, user_id = self.verify_user()
+        if not is_verify:
+            self.close()
+            return
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
-            SocketUser.delete_user_web_obj(self.user)
+            SocketUser.delete_user_web_obj(self.username)
             raise StopConsumer()
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
-            SocketUser.delete_user_client_obj(self.user)
+            SocketUser.delete_user_client_obj(self.username)
             try:
-                self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！',
-                                 is_notice=ClientTypeEnum.WEB.value)
+                self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！', is_notice=ClientTypeEnum.WEB.value)
             except SystemEError:
                 pass
             raise StopConsumer()
@@ -135,7 +134,7 @@ class ChatConsumer(WebsocketConsumer):
         send_data = SocketDataModel(
             code=code,
             msg=msg,
-            user=self.user,
+            user=self.username,
             is_notice=is_notice,
             data=None
         )
@@ -156,3 +155,19 @@ class ChatConsumer(WebsocketConsumer):
             if IS_DEBUG_LOG:
                 log.system.debug(f"发送的数据：{data_json}")
             return data_json
+
+    def verify_user(self, is_verify: bool = False) -> tuple[bool, int]:
+        user = dict(parse_qsl(self.scope.get('query_string').decode()))
+        if user.get('username', None) or user.get('password', None):
+            self.username = user.get('username')
+        else:
+            self.inside_send(f"账号或密码错误，不允许连接！")
+            return False, 0
+        try:
+            if is_verify or self.username != SocketEnum.OPEN.value:
+                user = User.objects.get(username=self.username, password=user.get('password'))
+                return True, user.id
+            else:
+                return True, 0
+        except User.DoesNotExist:
+            return False, 0

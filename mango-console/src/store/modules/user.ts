@@ -15,13 +15,14 @@ const useUserStore = defineStore('user-info', {
       userName: '',
       nickName: '',
       avatar: defaultAvatar,
+      password: '',
       selected_project: null,
       selected_environment: null,
       selected_environment_title: '选择测试环境',
     }
   },
   actions: {
-    saveUser(userInfo: UserState) {
+    saveUser(userInfo: UserState, password: string) {
       console.log(userInfo)
       return new Promise<UserState>((resolve) => {
         this.userId = userInfo.userId
@@ -29,6 +30,7 @@ const useUserStore = defineStore('user-info', {
         this.token = userInfo.token
         this.userName = userInfo.userName
         this.nickName = userInfo.name
+        this.password = password
         this.avatar = userInfo.avatar || defaultAvatar
         this.selected_project = userInfo.selected_project
         this.selected_environment = userInfo.selected_environment

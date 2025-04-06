@@ -140,30 +140,26 @@ export const tableColumns = useTableColumn([
     key: 'test_env',
     dataIndex: 'test_env',
     align: 'left',
-        width: 100,
-
+    width: 100,
   },
   {
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
     align: 'left',
-            width: 110,
-
+    width: 110,
   },
   {
     title: '任务状态',
     key: 'status',
     dataIndex: 'status',
-            width: 100,
-
+    width: 100,
   },
   {
     title: '通知',
     key: 'is_notice',
     dataIndex: 'is_notice',
-            width: 70,
-
+    width: 70,
   },
   {
     title: '操作',

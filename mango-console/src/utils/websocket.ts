@@ -38,9 +38,9 @@ export default class WebSocketService {
     this.state.socket.onmessage = (event) => {
       const res = JSON.parse(event.data)
       if (res.code == 200) {
-        Notification.success('消息：' + res.msg)
+        Notification.success(res.msg)
       } else {
-        Notification.error('消息:' + res.msg)
+        Notification.error(res.msg)
       }
     }
 

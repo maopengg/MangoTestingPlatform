@@ -9,12 +9,15 @@ from playwright.sync_api import sync_playwright
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.connect("ws://172.21.222.119:3000/")
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto('https://www.baidu.com/')
-        print(page.title())
-        browser.close()
+        for i in range(3):
+            browser = p.chromium.connect("ws://localhost:3000")
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto('https://www.baidu.com/')
+            print(page.title())
+            page.close()
+            context.close()
+            browser.close()
 
 
 main()
