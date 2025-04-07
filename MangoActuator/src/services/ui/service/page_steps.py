@@ -63,8 +63,13 @@ class PageSteps:
                     await element_ope.open_device()
                     is_open_device = True
                 element_result = await element_ope.element_main()
-                self.set_page_step_result(StatusEnum.SUCCESS, )
                 self.set_element_test_result(element_result)
+                if element_result.status == StatusEnum.FAIL.value:
+                    self.set_page_step_result(StatusEnum.FAIL, element_result.error_message)
+                    break
+                else:
+                    self.set_page_step_result(StatusEnum.SUCCESS, )
+
             except UiError as error:
                 self.set_page_step_result(StatusEnum.FAIL, error.msg)
                 self.set_element_test_result(element_ope.element_test_result)

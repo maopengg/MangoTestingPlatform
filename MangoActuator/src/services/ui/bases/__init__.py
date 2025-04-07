@@ -76,7 +76,6 @@ class ElementOperation(WebDevice, AndroidDriver):
             self.element_test_result.status = StatusEnum.FAIL.value
             self.element_test_result.error_message = f'未捕获的异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
             raise error
-
         except Exception as error:
             self.element_test_result.status = StatusEnum.FAIL.value
             self.element_test_result.error_message = f'未知异常，可以联系管理来添加异常提示。或者你可以根据异常提示进行修改测试内容。异常内容：{error}'
@@ -143,6 +142,7 @@ class ElementOperation(WebDevice, AndroidDriver):
                 if key == 'locating':
                     self.element_model.ope_value[key] = await self.__find_element()
                 else:
+                    print(self.element_model.name, self.element_model.ope_value)
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
         except AttributeError:
             traceback.print_exc()

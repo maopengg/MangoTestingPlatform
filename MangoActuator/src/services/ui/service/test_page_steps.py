@@ -6,7 +6,7 @@ import asyncio
 from mangokit import singleton
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.exceptions import MangoActuatorError
+from src.exceptions import MangoActuatorError, UiError
 from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, EquipmentModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
