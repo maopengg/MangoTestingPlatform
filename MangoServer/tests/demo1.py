@@ -3,15 +3,18 @@
 # @Description: 
 # @Time   : 2025-03-25 22:22
 # @Author : 毛鹏
+import socket
+import socks
 
-if __name__ == '__main__':
-    from playwright.sync_api import sync_playwright
+# 设置全局代理
+socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 1080)
+socket.socket = socks.socksocket
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe")
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto('https://www.baidu.com/')
-        title = page.title()
-        browser.close()
-    print(title)
+# 测试连接
+try:
+    s = socket.socket()
+    s.connect(("example.com", 80))
+    s.sendall(b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+    print(s.recv(4096))
+finally:
+    s.close()
