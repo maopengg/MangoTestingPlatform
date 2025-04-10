@@ -23,7 +23,7 @@ class TestPageSteps:
     """用例分发"""
 
     def __init__(self, parent, project_product):
-        self.driver_object = DriverObject()
+        self.driver_object = DriverObject(True)
         self.parent = parent
         self.project_product_id = project_product
         self.test_data = ObtainTestData()

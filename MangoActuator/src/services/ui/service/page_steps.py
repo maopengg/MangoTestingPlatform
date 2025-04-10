@@ -3,22 +3,45 @@
 # @Description:
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
+from typing import Callable
 from urllib.parse import urljoin
 
 from mangokit import MangoKitError
+from mangokit.tools.decorator.method_callback import async_method_callback, async_func_info
 from mangokit.tools.decorator.retry import async_retry
+from mangokit.uidrive import ElementOperation
+from mangokit.uidrive.base_data import BaseData
+from mangokit.uidrive.driver_object import DriverObject
+from mangokit.uidrive.web.async_web import AsyncWebCustomization
 from playwright._impl._errors import TargetClosedError
 
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
-from mangokit.uidrive import ElementOperation
-from mangokit.uidrive.base_data import BaseData
-from mangokit.uidrive.driver_object import DriverObject
-
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
+
+
+@async_method_callback('定制开发', [{'v': 'log', 'p': '', 'd': True}])
+def custom_method1(self, log):
+    print(log)
+
+
+def inject_methods_to_existing_class(cls: type, methods: dict[str, Callable]) -> None:
+    """直接向现有类注入方法（原地修改）"""
+    for name, func in methods.items():
+        setattr(cls, name, func)
+
+
+# 使用示例
+inject_methods_to_existing_class(
+    AsyncWebCustomization,
+    {
+        "click_element": custom_method1,
+    }
+)
+print(async_func_info)
 
 
 class PageSteps:

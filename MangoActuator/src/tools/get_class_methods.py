@@ -7,8 +7,8 @@ from mangokit.tools.assertion import WhatIsItAssertion, ContainAssertion, Matchi
 from mangokit.tools.assertion.sql_assertion import SqlAssertion
 from mangokit.uidrive.android import UiautomatorAssertion, UiautomatorPage, UiautomatorEquipment, UiautomatorElement, \
     UiautomatorApplication
-from mangokit.uidrive.web import PlaywrightAssertion, PlaywrightCustomization, PlaywrightPage, PlaywrightBrowser, \
-    PlaywrightDeviceInput, PlaywrightElement
+from mangokit.uidrive.web.async_web import AsyncWebBrowser, AsyncWebCustomization, AsyncWebPage, AsyncWebElement, \
+    AsyncWebDeviceInput, AsyncWebAssertion
 from mangoui import CascaderModel
 from mangokit import ClassMethodModel
 from mangokit.tools.method import class_own_methods
@@ -26,12 +26,12 @@ class GetClassMethod:
         UiautomatorPage
     ]
     web_ope = [
-        PlaywrightElement,
-        PlaywrightDeviceInput,
-        PlaywrightBrowser,
-        PlaywrightPage,
-        PlaywrightCustomization]
-    web_ass = [PlaywrightAssertion]
+        AsyncWebElement,
+        AsyncWebDeviceInput,
+        AsyncWebBrowser,
+        AsyncWebPage,
+        AsyncWebCustomization]
+    web_ass = [AsyncWebAssertion]
     android_ass = [UiautomatorAssertion]
     sql_all = [SqlAssertion]
     public_ass = [

@@ -9,7 +9,6 @@ import traceback
 
 from PySide6.QtWidgets import QApplication
 from mangokit import Mango
-
 from src.pages.login.login_window import LoginLogic
 from src.tools import project_dir
 from src.tools.log_collector import log
@@ -54,4 +53,3 @@ main.py
 """
 # --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
 # --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
-
