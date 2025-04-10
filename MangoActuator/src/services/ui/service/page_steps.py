@@ -3,11 +3,11 @@
 # @Description:
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
-from typing import Callable
 from urllib.parse import urljoin
 
 from mangokit import MangoKitError
-from mangokit.tools.decorator.method_callback import async_method_callback, async_func_info
+from mangokit.tools.decorator.inject_to_class import inject_to_class
+from mangokit.tools.decorator.method_callback import async_method_callback
 from mangokit.tools.decorator.retry import async_retry
 from mangokit.uidrive import ElementOperation
 from mangokit.uidrive.base_data import BaseData
@@ -24,24 +24,9 @@ from src.tools.log_collector import log
 
 
 @async_method_callback('定制开发', [{'v': 'log', 'p': '', 'd': True}])
-def custom_method1(self, log):
+@inject_to_class(AsyncWebCustomization)
+async def custom_method1(self, log):
     print(log)
-
-
-def inject_methods_to_existing_class(cls: type, methods: dict[str, Callable]) -> None:
-    """直接向现有类注入方法（原地修改）"""
-    for name, func in methods.items():
-        setattr(cls, name, func)
-
-
-# 使用示例
-inject_methods_to_existing_class(
-    AsyncWebCustomization,
-    {
-        "click_element": custom_method1,
-    }
-)
-print(async_func_info)
 
 
 class PageSteps:
@@ -89,6 +74,7 @@ class PageSteps:
     @async_retry(15, 0.2)
     async def ope_steps(self, is_open_device, element_model, element_data):
         element_ope = ElementOperation(self.base_data, element_model, element_data, self.page_steps_model.type)
+        await getattr(element_ope, 'custom_method1')('123123123')
         try:
             if not is_open_device:
                 await element_ope.open_device()
