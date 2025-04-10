@@ -3,19 +3,15 @@
 # @Description: 
 # @Time   : 2025-03-25 22:22
 # @Author : 毛鹏
-import asyncio
 
-from playwright.async_api import async_playwright
+if __name__ == '__main__':
+    from playwright.sync_api import sync_playwright
 
-
-async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.connect("ws://172.21.222.119:3000/")
-        context = await browser.new_context()
-        page = await context.new_page()
-        await page.goto('https://www.baidu.com/')
-        print(await page.title())
-        await browser.close()
-
-
-asyncio.run(main())
+    with sync_playwright() as p:
+        browser = p.chromium.launch(executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe")
+        context = browser.new_context()
+        page = context.new_page()
+        page.goto('https://www.baidu.com/')
+        title = page.title()
+        browser.close()
+    print(title)
