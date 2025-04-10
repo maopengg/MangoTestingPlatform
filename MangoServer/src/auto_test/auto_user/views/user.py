@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
+import asyncio
 import os
 import threading
 from datetime import datetime
@@ -10,6 +11,7 @@ from urllib.parse import unquote
 
 from django.forms import model_to_dict
 from django.http import FileResponse
+from playwright.async_api import async_playwright
 from playwright.sync_api import sync_playwright
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -238,15 +240,21 @@ class LoginViews(ViewSet):
             return ResponseData.success(RESPONSE_MSG_0045, )
 
         else:
-            from playwright.sync_api import sync_playwright
-            with sync_playwright() as p:
-                browser = p.chromium.launch()
-                context = browser.new_context()
-                page = context.new_page()
-                page.goto('https://www.baidu.com/')
-                title = page.title()
-                browser.close()
-            return ResponseData.success(RESPONSE_MSG_0044, {'title': title})
+            def run():
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(
+                        executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                        headless=True,  # 启用 Headless 模式（可选）
+                        args=["--headless=new"]  # 强制使用新的 Headless 模式
+                    )
+                    context = browser.new_context()
+                    page = context.new_page()
+                    page.goto('https://www.baidu.com/')
+                    title = page.title()
+                    print(title)
+                    return title
+
+            return ResponseData.success(RESPONSE_MSG_0044, {'title': run()})
 
     @error_response('user')
     @action(methods=['get'], detail=False)
