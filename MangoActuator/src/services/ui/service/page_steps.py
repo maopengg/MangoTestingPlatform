@@ -74,7 +74,6 @@ class PageSteps:
     @async_retry(15, 0.2)
     async def ope_steps(self, is_open_device, element_model, element_data):
         element_ope = ElementOperation(self.base_data, element_model, element_data, self.page_steps_model.type)
-        await getattr(element_ope, 'custom_method1')('123123123')
         try:
             if not is_open_device:
                 await element_ope.open_device()
