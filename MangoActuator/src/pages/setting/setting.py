@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-from mangokit.tools.assertion import Assertion
-from mangokit.tools.method import class_methods
+from mangokit.assertion import Assertion
+from mangokit.method import class_methods
 from mangoui import *
 
 from src.enums.gui_enum import TipsTypeEnum
@@ -15,7 +15,7 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
-from src.tools.get_class_methods import GetClassMethod
+# from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 
 

@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import traceback
 
-from mangokit import Mango
+from mangokit.mangos import Mango
 
 from src.enums.system_enum import ClientTypeEnum
 from src.network.web_socket.websocket_client import WebSocketClient

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-24 16:55
 # @Author : 毛鹏
-from mangokit import NoticeEnum
+from mangokit.enums import NoticeEnum
 from mangoui import THEME, ComboBoxDataModel
 
 right_data = [

@@ -5,10 +5,9 @@
 import asyncio
 
 from src.models.ui_model import PageStepsModel, CaseModel, EquipmentModel
-from src.services.ui.service.case_flow import CaseFlow
-from src.services.ui.service.test_page_steps import TestPageSteps
+from src.services.ui.case_flow import CaseFlow
+from src.services.ui.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
-import copy
 
 
 class UI:

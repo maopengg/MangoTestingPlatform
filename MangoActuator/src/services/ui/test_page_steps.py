@@ -3,17 +3,20 @@
 # @Description: # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 import asyncio
-from mangokit import singleton, MangoKitError
+
+from mangokit.decorator import singleton
+from mangokit.exceptions import MangoKitError
+from mangokit.uidrive import DriverObject, BaseData
+
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.exceptions import MangoActuatorError
+from src.enums.ui_enum import UiPublicTypeEnum
+from src.exceptions import MangoActuatorError, ERROR_MSG_0038, UiError, ERROR_MSG_0036
 from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, EquipmentModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
-from mangokit.uidrive.base_data import BaseData
-from mangokit.uidrive.driver_object import DriverObject
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.page_steps import PageSteps
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.obtain_test_data import ObtainTestData
 
@@ -27,17 +30,28 @@ class TestPageSteps:
         self.parent = parent
         self.project_product_id = project_product
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.parent, self.project_product_id, self.test_data)
+        self.base_data = BaseData(self.test_data)
 
         self.lock = asyncio.Lock()
 
     async def page_init(self, data: PageStepsModel):
-        self.base_data = self.base_data \
-            .set_is_step(True) \
-            .set_project_product_id(data.project_product) \
-            .set_environment_config(data.environment_config) \
-            .set_equipment_config(data.equipment_config)
-        await self.base_data.public_front(data.public_data_list)
+        for cache_data in data.public_data_list:
+            if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
+                self.test_data.set_cache(cache_data.key, cache_data.value)
+            elif cache_data.type == UiPublicTypeEnum.SQL.value:
+                if self.base_data.mysql_connect:
+                    sql = self.test_data.replace(cache_data.value)
+                    result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
+                    if isinstance(result_list, list):
+                        for result in result_list:
+                            try:
+                                for value, key in zip(result, eval(cache_data.key)):
+                                    self.test_data.set_cache(key, result.get(value))
+                            except SyntaxError:
+                                raise UiError(*ERROR_MSG_0038)
+
+                        if not result_list:
+                            raise UiError(*ERROR_MSG_0036, value=(sql,))
 
     @async_error_handle()
     async def page_steps_mian(self, data: PageStepsModel) -> None:
@@ -47,7 +61,6 @@ class TestPageSteps:
             try:
                 await page_steps.driver_init()
                 page_steps_result_model = await page_steps.steps_main()
-                self.base_data.finished.emit(True)
                 await self.send_steps_result(
                     200 if page_steps_result_model.status else 300,
                     f'步骤<{data.name}>测试完成' if page_steps_result_model.status else f'步骤<{data.name}>测试失败，错误提示：{page_steps_result_model.error_message}',
@@ -55,7 +68,7 @@ class TestPageSteps:
                     page_steps_result_model
                 )
             except (MangoActuatorError, MangoKitError) as error:
-                await self.base_data.base_close(self.test_data)
+                await self.base_data.async_base_close()
                 await self.send_steps_result(
                     error.code,
                     error.msg,
@@ -63,7 +76,7 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
-                await self.base_data.base_close(self.test_data)
+                await self.base_data.async_base_close()
                 await self.send_steps_result(
                     300,
                     f'执行步骤未知错误，请联系管理员，报错内容：{error}',
@@ -89,10 +102,10 @@ class TestPageSteps:
 
             await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS, )
         except MangoActuatorError as error:
-            await self.base_data.base_close(self.test_data)
+            await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
-            await self.base_data.base_close(self.test_data)
+            await self.base_data.async_base_close()
             await self.send_steps_result(
                 300,
                 f'创建浏览器异常，请联系管理员，报错内容：{error}',

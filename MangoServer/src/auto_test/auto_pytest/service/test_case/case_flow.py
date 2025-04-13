@@ -9,7 +9,7 @@ from queue import Queue
 
 import time
 
-from mangokit import Mango
+from mangokit.mangos import Mango
 from src.models.system_model import ConsumerCaseModel
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log

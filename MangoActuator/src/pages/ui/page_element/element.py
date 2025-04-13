@@ -13,7 +13,7 @@ from src.models.user_model import UserModel
 from src.network import HTTP
 from src.pages.parent.sub import SubPage
 from src.tools.components.message import response_message
-from src.tools.get_class_methods import GetClassMethod
+# from src.tools.get_class_methods import GetClassMethod
 from .element_dict import *
 
 

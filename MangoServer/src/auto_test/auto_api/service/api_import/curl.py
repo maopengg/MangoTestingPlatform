@@ -4,7 +4,7 @@
 # @Time   : 2024-05-20 18:02
 # @Author : 毛鹏
 
-from mangokit import requests
+from mangokit.apidrive import requests
 
 
 class Curl:

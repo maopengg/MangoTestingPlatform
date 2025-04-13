@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-from mangokit import requests
+from mangokit.apidrive import requests
 from requests import Response
 
 from src.models.socket_model import ResponseModel

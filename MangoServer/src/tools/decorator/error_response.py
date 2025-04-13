@@ -7,8 +7,8 @@ import traceback
 
 from rest_framework.request import Request
 
-from mangokit import Mango
-from mangokit import MangoKitError
+from mangokit.mangos import Mango
+from mangokit.exceptions import MangoKitError
 from src.exceptions import MangoServerError
 from src.exceptions.error_msg import ERROR_MSG_0000
 from src.settings import IS_SEND_MAIL

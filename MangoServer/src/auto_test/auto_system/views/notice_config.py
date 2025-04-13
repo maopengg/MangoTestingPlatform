@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangokit import NoticeEnum
+from mangokit.enums import NoticeEnum
 from src.auto_test.auto_system.models import NoticeConfig
 from src.auto_test.auto_system.views.project import ProjectSerializers
 from src.auto_test.auto_user.models import User

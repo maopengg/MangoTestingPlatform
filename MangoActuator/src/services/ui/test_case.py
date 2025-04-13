@@ -6,7 +6,9 @@
 import os
 import shutil
 
-from mangokit import RandomTimeData, MangoKitError
+from mangokit.data_processor import RandomTimeData
+from mangokit.exceptions import MangoKitError
+from mangokit.uidrive import DriverObject, BaseData
 
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
@@ -15,12 +17,10 @@ from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
-from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultModel, UiPublicModel
+from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
-from mangokit.uidrive.base_data import BaseData
-from mangokit.uidrive.driver_object import DriverObject
-from src.services.ui.service.page_steps import PageSteps
+from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.decorator.memory import async_memory
@@ -35,9 +35,7 @@ class TestCase:
         self.case_model: CaseModel = case_model
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.parent, case_model.project_product, self.test_data) \
-            .set_case_id(case_model.id) \
-            .set_test_suite_id(case_model.test_suite_id) \
+        self.base_data = BaseData(self.test_data) \
             .set_step_open_url(case_model.switch_step_open_url) \
             .set_log(log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
@@ -63,10 +61,7 @@ class TestCase:
             self.case_result.video_path = video_path
 
     async def case_init(self):
-        await self.public_front(self.case_model.public_data_list)
-
-    async def public_front(self, public_model: list[UiPublicModel]):
-        for cache_data in public_model:
+        for cache_data in self.case_model.public_data_list:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
                 self.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
@@ -79,10 +74,10 @@ class TestCase:
                                 for value, key in zip(result, eval(cache_data.key)):
                                     self.test_data.set_cache(key, result.get(value))
                             except SyntaxError:
-                                raise ToolsError(*ERROR_MSG_0038)
+                                raise UiError(*ERROR_MSG_0038)
 
                         if not result_list:
-                            raise ToolsError(*ERROR_MSG_0036, value=(sql,))
+                            raise UiError(*ERROR_MSG_0036, value=(sql,))
 
     @async_error_handle()
     @async_memory

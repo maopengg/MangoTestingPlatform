@@ -4,7 +4,7 @@
 # @Author : 毛鹏
 import copy
 
-from mangokit import requests
+from mangokit.apidrive import requests
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError

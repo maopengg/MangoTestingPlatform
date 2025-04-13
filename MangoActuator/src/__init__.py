@@ -8,7 +8,7 @@ import traceback
 
 from .consumer import SocketConsumer
 from .network.web_socket.websocket_client import WebSocketClient
-from .services.ui.service.case_flow import CaseFlow
+from src.services.ui.case_flow import CaseFlow
 from .tools.log_collector import log
 
 

@@ -3,7 +3,6 @@
 # @Description:
 # @Time   : 2023-06-04 12:24
 # @Author : 毛鹏
-import asyncio
 import os
 import threading
 from datetime import datetime
@@ -11,14 +10,12 @@ from urllib.parse import unquote
 
 from django.forms import model_to_dict
 from django.http import FileResponse
-from playwright.async_api import async_playwright
-from playwright.sync_api import sync_playwright
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangokit import EncryptionTool
+from mangokit.data_processor import EncryptionTool
 from src import settings
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
@@ -214,47 +211,9 @@ class LoginViews(ViewSet):
             if v == '4.7':
                 from data_cleanup_scripts.v_4_7_2025_01_24 import main_4_7
                 main_4_7()
-            elif v == 'test1':
-                def run_ssserver():
-                    """修正后的服务端启动方法"""
-                    import sys
-                    from shadowsocks import shell, daemon, eventloop, tcprelay
-
-                    # 手动加载配置避免警告
-                    config = shell.get_config(True)
-                    config.update({
-                        'server': '0.0.0.0',
-                        'server_port': 8388,
-                        'password': 'your_password',
-                        'method': 'aes-256-cfb',
-                        'timeout': 300
-                    })
-
-                    # 创建服务实例
-                    tcp_server = tcprelay.TCPRelay(config)
-                    daemon.daemon_exec(config)
-                    eventloop.run()
-                threading.Thread(target=run_ssserver, daemon=True).start()
-                print("Shadowsocks服务端已启动 (端口: 8388)")
-
             return ResponseData.success(RESPONSE_MSG_0045, )
-
         else:
-            def run():
-                with sync_playwright() as p:
-                    browser = p.chromium.launch(
-                        executable_path=r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                        headless=True,  # 启用 Headless 模式（可选）
-                        args=["--headless=new"]  # 强制使用新的 Headless 模式
-                    )
-                    context = browser.new_context()
-                    page = context.new_page()
-                    page.goto('https://www.baidu.com/')
-                    title = page.title()
-                    print(title)
-                    return title
-
-            return ResponseData.success(RESPONSE_MSG_0044, {'title': run()})
+            return ResponseData.success(RESPONSE_MSG_0044, {'title': ''})
 
     @error_response('user')
     @action(methods=['get'], detail=False)

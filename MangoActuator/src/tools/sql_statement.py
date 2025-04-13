@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import sqlite3
 
-from mangokit import SQLiteConnect
+from mangokit.database import SQLiteConnect
 
 from src.tools import project_dir
 

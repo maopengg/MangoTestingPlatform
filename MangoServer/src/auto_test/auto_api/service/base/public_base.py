@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 from typing import Optional
 
-from mangokit import MysqlConnect, MangoKitError
+from mangokit.database import MysqlConnect
+from mangokit.exceptions import MangoKitError
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.base_request import BaseRequest

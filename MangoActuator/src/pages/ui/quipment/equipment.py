@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import copy
 
-from mangokit import Mango
+from mangokit.mangos import Mango
 from mangoui import *
 
 from src.enums.tools_enum import Status5Enum
@@ -14,7 +14,7 @@ from src.models.socket_model import ResponseModel
 from src.models.ui_model import EquipmentModel
 from src.models.user_model import UserModel
 from src.network import HTTP
-from src.services.ui.service.test_page_steps import TestPageSteps
+from src.services.ui.test_page_steps import TestPageSteps
 from src.tools.components.message import response_message
 from src.tools.methods import Methods
 from .equipment_dict import *

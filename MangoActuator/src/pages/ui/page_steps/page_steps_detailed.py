@@ -11,9 +11,9 @@ from mangoui import *
 from src.models.socket_model import ResponseModel
 from src.models.ui_model import PageStepsModel, ElementResultModel
 from src.models.user_model import UserModel
-from src.services.ui.service.test_page_steps import TestPageSteps
+from src.services.ui.test_page_steps import TestPageSteps
 from src.tools.components.message import response_message
-from src.tools.get_class_methods import GetClassMethod
+# from src.tools.get_class_methods import GetClassMethod
 from .page_steps_detailed_dict import *
 from ...parent.sub import SubPage
 

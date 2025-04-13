@@ -54,7 +54,7 @@ form_data = [
 table_column = [
     {'key': 'type', 'name': '操作类型', 'width': 70, 'option': ElementOperationEnum.get_option('value', 'label')},
     {'key': 'ele_name', 'name': '元素名称', 'width': 120},
-    {'key': 'ope_key', 'name': '操作名称', 'width': 120, 'option': Methods.base_dict.ui_option},
+    # {'key': 'ope_key', 'name': '操作名称', 'width': 120, 'option': Methods.base_dict.ui_option},
     {'key': 'ope_value', 'name': '操作输入', },
     {'key': 'ope', 'name': '操作', 'type': 1, 'width': 120},
 

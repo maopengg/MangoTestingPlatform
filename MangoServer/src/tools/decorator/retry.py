@@ -9,7 +9,7 @@ import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error
 
-from mangokit import Mango
+from mangokit.mangos import Mango
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 

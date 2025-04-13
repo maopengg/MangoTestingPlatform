@@ -9,7 +9,7 @@ import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
-from mangokit import EncryptionTool
+from mangokit.data_processor import EncryptionTool
 from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 

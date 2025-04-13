@@ -9,11 +9,15 @@ from mangoui import *
 
 from src.models.tools_model import BaseDictModel
 from src.network import HTTP
-from src.tools.get_class_methods import GetClassMethod
+
+
+# from src.tools.get_class_methods import GetClassMethod
 
 
 class Methods:
-    base_dict: BaseDictModel = BaseDictModel(ui_option=GetClassMethod().option())
+    base_dict: BaseDictModel = None
+
+    # base_dict: BaseDictModel = BaseDictModel(ui_option=GetClassMethod().option())
 
     @classmethod
     def get_product_module(cls, parent, data: DialogCallbackModel) -> list[ComboBoxDataModel]:

@@ -8,13 +8,13 @@ import asyncio
 import traceback
 
 import time
+from mangokit.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel
-from src.services.ui.service.test_case import TestCase
+from src.services.ui.test_case import TestCase
 from src.settings import settings
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
-from mangokit.uidrive.driver_object import DriverObject
 
 
 class CaseFlow:

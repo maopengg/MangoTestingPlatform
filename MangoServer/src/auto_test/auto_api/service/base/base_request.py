@@ -8,7 +8,7 @@ import time
 from requests import Response
 from requests.exceptions import *
 
-from mangokit import requests
+from mangokit.apidrive import requests
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *

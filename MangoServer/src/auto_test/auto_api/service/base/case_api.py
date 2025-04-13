@@ -7,7 +7,7 @@ import json
 
 import time
 
-from mangokit import MangoKitError
+from mangokit.exceptions import MangoKitError
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.case_data import ApiCaseBase
 from src.enums.tools_enum import StatusEnum

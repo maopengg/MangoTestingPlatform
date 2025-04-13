@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from datetime import datetime
 
-from mangokit import singleton
+from mangokit.decorator import singleton
 from pydantic import BaseModel
 
 

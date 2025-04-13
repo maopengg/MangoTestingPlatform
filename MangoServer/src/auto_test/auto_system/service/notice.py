@@ -5,14 +5,16 @@
 # @Author : 毛鹏
 import json
 
+from mangokit.enums import NoticeEnum
+from mangokit.exceptions import MangoKitError
+from mangokit.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
+from mangokit.notice import EmailSend, WeChatSend
 from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails, TestSuite, TestObject
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
 from src.enums.tools_enum import StatusEnum, EnvironmentEnum
 from src.exceptions import *
 from src.tools.log_collector import log
-from mangokit import EmailSend, WeChatSend, TestReportModel, WeChatNoticeModel, EmailNoticeModel, NoticeEnum, \
-    MangoKitError
 
 
 class NoticeMain:

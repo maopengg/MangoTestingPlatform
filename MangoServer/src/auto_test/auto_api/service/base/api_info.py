@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-from mangokit import MangoKitError
+from mangokit.exceptions import MangoKitError
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.public_base import PublicBase
 from src.enums.api_enum import MethodEnum
