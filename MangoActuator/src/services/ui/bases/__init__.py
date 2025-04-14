@@ -142,7 +142,6 @@ class ElementOperation(WebDevice, AndroidDriver):
                 if key == 'locating':
                     self.element_model.ope_value[key] = await self.__find_element()
                 else:
-                    print(self.element_model.name, self.element_model.ope_value)
                     self.element_model.ope_value[key] = await self.__input_value(key, value)
         except AttributeError:
             traceback.print_exc()

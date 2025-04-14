@@ -2,12 +2,9 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2023-04-26 22:22
 # @Author : 毛鹏
-import asyncio
-from typing import Optional
 
 from playwright.async_api import Locator
 
-from src.exceptions import UiError, ERROR_MSG_0022
 from src.services.ui.bases.base_data import BaseData
 
 
@@ -17,27 +14,19 @@ class PlaywrightCustomization:
     def __init__(self, base_data: BaseData):
         self.base_data = base_data
 
-    async def w_list_input(self, locating: list[Locator], input_list_value: list[str], element_loc: str):
-        """DESK定开-列表输入"""
+    async def web_click_and_drag_horizontally(self, locating: Locator, x: int, y: int, drag_distance: int):
+        """拖动小时稳定图标滑块"""
+        box = await locating.bounding_box()
+        if not box:
+            raise ValueError("无法获取元素边界框，元素可能不可见或不存在")
+        start_x = box['x'] + float(x)
+        start_y = box['y'] + float(y)
+        await locating.page.mouse.move(start_x, start_y)
+        await locating.page.mouse.down()
+        steps = 20
+        for step in range(1, steps + 1):
+            x = start_x + (int(drag_distance) * step / steps)
+            await locating.page.mouse.move(x, start_y)
+            await locating.page.wait_for_timeout(50)  # 每步间隔50ms
 
-        async def find_ele(page) -> Locator:
-            return page.locator(f'xpath={element_loc}')
-
-        for loc, data in zip(locating, input_list_value):
-            await loc.click()
-            locator: Optional[Locator] = None
-            for i in self.base_data.page.frames:
-                locator = await find_ele(i)
-                if await locator.count() > 0:
-                    break
-            if locator is None:
-                raise UiError(*ERROR_MSG_0022)
-            await locator.fill(str(data))
-
-    async def w_click_right_coordinate(self, locating: Locator):
-        """CDP定开-总和坐标点击"""
-        button_position = await locating.bounding_box()
-        x = button_position['x'] + button_position['width'] + 50
-        y = button_position['y'] - 40
-        await asyncio.sleep(1)
-        await self.base_data.page.mouse.click(x, y)
+        await locating.page.mouse.up()

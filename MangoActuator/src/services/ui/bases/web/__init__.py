@@ -129,6 +129,7 @@ class WebDevice(PlaywrightBrowser,
             await self.base_data.setup()
             raise UiError(*ERROR_MSG_0010)
         except Error as error:
+            log.error(f'web异常：{traceback.print_exc()}')
             raise UiError(*ERROR_MSG_0052, value=(self.element_model.name,), error=error, )
 
     @async_retry

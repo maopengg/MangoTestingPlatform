@@ -17,6 +17,13 @@ class PlaywrightAssertion:
         await exp(actual).not_to_be_empty()
 
     @staticmethod
+    async def w_all_not_to_be_empty(actual: Locator):
+        """元素存在"""
+        count = await actual.count()
+        if count == 0:
+            assert False
+
+    @staticmethod
     async def w_not_to_be_enabled(actual: Locator):
         """元素不启用"""
         await exp(actual).not_to_be_enabled()

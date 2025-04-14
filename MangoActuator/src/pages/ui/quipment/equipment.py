@@ -163,7 +163,6 @@ class EquipmentPage(TableParent):
         dialog = DialogWidget('添加WEB配置', form_data)
         dialog.exec()
         if dialog.data:
-            print(dialog.data)
             data = {
                 'user': self.user_info.id,
                 'type': DriveTypeEnum.WEB.value,

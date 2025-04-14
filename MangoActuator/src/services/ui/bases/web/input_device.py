@@ -3,7 +3,6 @@
 # @Description: # @Time   : 2023-04-29 12:11
 # @Author : 毛鹏
 import asyncio
-from typing import Optional
 
 from playwright.async_api import Locator
 
@@ -24,11 +23,15 @@ class PlaywrightDeviceInput:
 
     async def w_wheel(self, y):
         """鼠标上下滚动像素，负数代表向上"""
-        await self.base_data.page.mouse.wheel(0, y)
+        await self.base_data.page.mouse.wheel(0, int(y))
+
+    async def w_element_wheel(self, locating: Locator):
+        """滚动到元素位置"""
+        await locating.scroll_into_view_if_needed()
 
     async def w_mouse_click(self, x: float, y: float):
         """鼠标点击坐标"""
-        await self.base_data.page.mouse.click(x, y)
+        await self.base_data.page.mouse.click(float(x), float(y))
 
     async def w_mouse_center(self):
         """移动鼠标到浏览器中间"""
