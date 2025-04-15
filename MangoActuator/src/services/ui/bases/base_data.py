@@ -65,9 +65,10 @@ class BaseData(QObject):
         self.is_open_url = False
         self.switch_step_open_url = False
         self.package_name: Optional[str | None] = None
-
         self.page: Optional[Page | None] = None
         self.context: Optional[BrowserContext | None] = None
+
+        self.is_open_app: bool = False
         self.android: Optional[Device | None] = None
         self.windows: Optional[None | WindowControl] = None
 
