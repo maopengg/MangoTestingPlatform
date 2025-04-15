@@ -354,7 +354,7 @@
             }
           })
         }
-        console.log(it)
+
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
