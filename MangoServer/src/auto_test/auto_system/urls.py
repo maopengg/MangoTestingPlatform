@@ -6,7 +6,7 @@
 from django.urls import path
 
 from src.auto_test.auto_system.views.time_tasks import TimeTasksCRUD, TimeTasksViews
-from .views.cache_data import CacheDataCRUD
+from .views.cache_data import CacheDataCRUD, CacheDataViews
 from .views.socket_api import SocketApiViews
 from .views.tasks import TasksCRUD, TasksViews, TasksNoPermissionViews
 from .views.tasks_details import TasksDetailsCRUD, TasksDetailsViews
@@ -70,6 +70,7 @@ urlpatterns = [
     path('index/activity/level', IndexViews.as_view({'get': 'activity_level'})),
     #
     path('cache/data', CacheDataCRUD.as_view()),
+    path('cache/data/key/value', CacheDataViews.as_view({'get': 'get_key_value'})),
     #
     path('test/object', TestObjectCRUD.as_view()),
     path('test/object/status', TestObjectViews.as_view({'put': 'put_status'})),

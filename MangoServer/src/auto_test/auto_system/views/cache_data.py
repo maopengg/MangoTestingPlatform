@@ -3,8 +3,11 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+import json
+
 from django.core.exceptions import FieldError
 from rest_framework import serializers
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
@@ -82,3 +85,14 @@ class CacheDataCRUD(ModelCRUD):
 class CacheDataViews(ViewSet):
     model = CacheData
     serializer_class = CacheDataSerializers
+
+    @error_response('system')
+    @action(methods=['GET'], detail=False)
+    def get_key_value(self, request: Request):
+        """
+        上传文件
+        @param request:
+        @return:
+        """
+        model = self.model.objects.get(key=request.query_params.get('key'))
+        return ResponseData.success(RESPONSE_MSG_0031, json.loads(model.value))

@@ -7,6 +7,7 @@ import json
 
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
+from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.tools_enum import CacheValueTypeEnum
 
 
@@ -14,32 +15,20 @@ class SystemConsumer:
 
     @classmethod
     def t_set_operation_options(cls, data: list[dict]):
-        # redis = RedisBase('default')
-        for i in data:
-            for key, value in i.items():
-                try:
-                    cache_data = CacheData.objects.get(key=key)
-                except CacheData.DoesNotExist:
-                    CacheDataCRUD.inside_post({
-                        'describe': key,
-                        'key': key,
-                        'value': json.dumps(value, ensure_ascii=False),
-                        'value_type': CacheValueTypeEnum.DICT.value,
-                    })
-                except CacheData.MultipleObjectsReturned:
-                    cache_data_list = CacheData.objects.filter(key=key)
-                    for cache_data in cache_data_list:
-                        cache_data.delete()
-                    CacheDataCRUD.inside_post({
-                        'describe': key,
-                        'key': key,
-                        'value': json.dumps(value, ensure_ascii=False),
-                        'value_type': CacheValueTypeEnum.DICT.value,
-                    })
-                else:
-                    CacheDataCRUD.inside_put(cache_data.id, {
-                        'describe': key,
-                        'key': key,
-                        'value': json.dumps(value, ensure_ascii=False),
-                        'value_type': CacheValueTypeEnum.DICT.value,
-                    })
+        data = {
+            'describe': CacheDataKey2Enum.SELECT_VALUE.value,
+            'key': CacheDataKey2Enum.SELECT_VALUE.value,
+            'value': json.dumps(data, ensure_ascii=False),
+            'value_type': CacheValueTypeEnum.DICT.value,
+        }
+        try:
+            cache_data = CacheData.objects.get(key=CacheDataKey2Enum.SELECT_VALUE.value)
+        except CacheData.DoesNotExist:
+            CacheDataCRUD.inside_post(data)
+        except CacheData.MultipleObjectsReturned:
+            cache_data_list = CacheData.objects.filter(key=CacheDataKey2Enum.SELECT_VALUE.value)
+            for cache_data in cache_data_list:
+                cache_data.delete()
+            CacheDataCRUD.inside_post(data)
+        else:
+            CacheDataCRUD.inside_put(cache_data.id, data)

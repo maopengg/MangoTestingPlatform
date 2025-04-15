@@ -69,7 +69,15 @@
                   </template>
                   <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
                     {{
-                      record.ope_value ? record.ope_value : record.value ? record.value : record.sql
+                      record.ope_value
+                        ? JSON.stringify(
+                            Object.fromEntries(
+                              record.ope_value
+                                .filter((item) => item.d === true)
+                                .map((item) => [item.f, item.v])
+                            )
+                          )
+                        : record.value || record.sql
                     }}
                   </template>
 
@@ -108,7 +116,7 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'select' && item.key === 'ele_name'">
+          <template v-else-if="item.type === 'select' && item.label === '选择元素'">
             <a-select
               v-model="item.value"
               :field-names="fieldNames"
@@ -132,7 +140,7 @@
                 expand-trigger="hover"
                 style="width: 380px"
                 value-key="key"
-                @change="upDataOpeValue(item.value)"
+                @change="upDataOpeValue(data.ope, item.value)"
               />
             </a-space>
           </template>
@@ -148,11 +156,13 @@
                 expand-trigger="hover"
                 style="width: 380px"
                 value-key="key"
-                @change="upDataAssValue(item.value)"
+                @change="upDataOpeValue(data.ass, item.value)"
               />
             </a-space>
           </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+          <template
+            v-else-if="item.type === 'textarea' && item.key !== 'key_list' && item.key !== 'sql'"
+          >
             <a-textarea
               v-model="item.value"
               :auto-size="{ minRows: 4, maxRows: 7 }"
@@ -207,12 +217,10 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { assForm, columns, customForm, eleForm, formItems, Item, sqlForm } from './config'
+  import { assForm, columns, customForm, eleForm, formItems, sqlForm } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
     getUiPageStepsDetailedTest,
     postUiPageStepsDetailed,
     putUiPagePutStepSort,
@@ -223,6 +231,7 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
   const enumStore = useEnum()
 
@@ -243,6 +252,7 @@
     result_data: {},
     ass: [],
     ope: [],
+    opeSelect: [],
   })
 
   function changeStatus(event: number) {
@@ -263,6 +273,7 @@
         formItems.push(...eleForm)
       }
     } else if (event === 1) {
+      assForm
       if (!formItems.some((item) => item.key === 'ope_key' && item.label == '断言操作')) {
         formItems.push(...assForm)
       }
@@ -323,11 +334,9 @@
     data.type = item.type
     changeStatus(item.type)
     if (item.ope_key && item.type === 0) {
-      upDataOpeValue(item.ope_key)
-    }
-
-    if (item.ope_key && item.type === 1) {
-      upDataAssValue(item.ope_key)
+      upDataOpeValue(data.ope, item.ope_key)
+    } else {
+      upDataOpeValue(data.ass, item.ope_key)
     }
     data.actionTitle = '编辑详细步骤'
     data.isAdd = false
@@ -335,13 +344,19 @@
     modalDialogRef.value?.toggle()
     nextTick(() => {
       formItems.forEach((it: any) => {
-        const propName = item[it.key]
+        let propName: any = item[it.key]
+        if (it.key === 'locating' || it.key === 'actual') {
+          propName = item.ele_name
+        } else if (typeof propName === 'undefined') {
+          item.ope_value.forEach((item: any) => {
+            if (item.f === it.key) {
+              propName = item.v
+            }
+          })
+        }
+        console.log(it)
         if (typeof propName === 'object' && propName !== null) {
-          if (it.key === 'ope_value' || it.key === 'key_list') {
-            it.value = JSON.stringify(propName)
-          } else {
-            it.value = propName.id
-          }
+          it.value = propName.id
         } else {
           it.value = propName
         }
@@ -371,6 +386,44 @@
       let value = getFormItems(formItems)
       value['page_step'] = route.query.id
       value['type'] = data.type
+      const extractedValues = []
+
+      for (const key in value) {
+        if (key.includes('-ope_value')) {
+          const newKey = key.replace('-ope_value', '')
+          console.log(findItemByValue(data.ope, value.ope_key))
+          if (newKey && data.type === 0) {
+            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
+              if (newKey === 'locating') {
+                value['ele_name'] = value[key]
+              }
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          } else {
+            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
+              if (newKey === 'actual') {
+                value['ele_name'] = value[key]
+              }
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          }
+          delete value[key]
+        }
+      }
+      value['ope_value'] = extractedValues
+
       if (data.isAdd) {
         value['step_sort'] = data.dataList.length
         postUiPageStepsDetailed(value, route.query.id)
@@ -411,79 +464,54 @@
       .catch(console.log)
   }
 
-  function upDataAssValue(value: any) {
-    const inputItem = findItemByValue(data.ass, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
-      })
-      if (!formItems.some((item) => item.key === 'ope_value')) {
-        formItems.push({
-          label: '断言值',
-          key: 'ope_value',
-          value: JSON.stringify(parameter),
-          type: 'textarea',
-          required: true,
-          placeholder: '请输入断言内容',
-          validator: function () {
-            if (this.value !== '') {
-              try {
-                this.value = JSON.parse(this.value)
-              } catch (e) {
+  function upDataOpeValue(selectData: any, value: any) {
+    formItems.forEach((item) => {
+      if (item.key == 'type') {
+        changeStatus(item.value)
+      }
+    })
+
+    const inputItem = findItemByValue(selectData, value)
+    if (inputItem && inputItem.parameter) {
+      inputItem.parameter.forEach((select: any) => {
+        if (select.d === true && !formItems.some((item) => item.key === select.f)) {
+          formItems.push({
+            label: select.f,
+            key: `${select.f}-ope_value`,
+            value: select.v,
+            type: 'textarea',
+            required: true,
+            placeholder: select.p,
+            validator: function () {
+              if (!this.value && this.value !== 0) {
                 Message.error(this.placeholder || '')
                 return false
               }
-            }
-            return true
-          },
-        })
-      } else {
-        const existingItem = formItems.find((item: any) => item.key === 'ope_value')
-        if (existingItem) {
-          existingItem.value = JSON.stringify(parameter)
-        }
-      }
-    }
-  }
-
-  function upDataOpeValue(value: any) {
-    const inputItem = findItemByValue(data.ope, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
-      })
-      if (!formItems.some((item) => item.key === 'ope_value')) {
-        formItems.push({
-          label: '元素操作值',
-          key: 'ope_value',
-          value: JSON.stringify(parameter),
-          type: 'textarea',
-          required: true,
-          placeholder: '请输入对元素的操作内容',
-          validator: function () {
-            if (this.value !== '') {
-              try {
-                this.value = JSON.parse(this.value)
-              } catch (e) {
-                Message.error('元素操作值请输入json数据类型')
+              return true
+            },
+          })
+        } else if (select.d === false && !formItems.some((item) => item.key === select.f)) {
+          formItems.push({
+            label: '选择元素',
+            key: `${select.f}-ope_value`,
+            value: ref(''),
+            placeholder: '请选择一个元素',
+            required: true,
+            type: 'select',
+            validator: function () {
+              if (!this.value && this.value !== 0) {
+                Message.error(this.placeholder || '')
                 return false
               }
-            }
-            return true
-          },
-        })
-      } else {
-        const existingItem = formItems.find((item: any) => item.key === 'ope_value')
-        if (existingItem) {
-          existingItem.value = JSON.stringify(parameter)
+              return true
+            },
+          })
         }
-      }
+      })
     }
   }
 
-  function findItemByValue(data: Item[], value: string): Item | undefined {
+  function findItemByValue(data: any, value: string) {
     for (let i = 0; i < data.length; i++) {
       const item = data[i]
       if (item.value === value) {
@@ -531,18 +559,30 @@
       .catch(console.log)
   }
 
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(route.query.pageType)
-      .then((res) => {
-        data.ass = res.data
-      })
-      .catch(console.log)
-  }
-
   function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(route.query.pageType)
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        data.ope = res.data
+        res.data.forEach((item: any) => {
+          if (item.value === 'web') {
+            if (route.query.pageType === '0') {
+              data.ope.push(...item.children)
+            }
+          } else if (item.value === 'android') {
+            if (route.query.pageType === '1') {
+              data.ope.push(...item.children)
+            }
+          } else if (item.value === 'ass_android') {
+            if (route.query.pageType === '1') {
+              data.ass.push(...item.children)
+            }
+          } else if (item.value === 'ass_web') {
+            if (route.query.pageType === '0') {
+              data.ass.push(...item.children)
+            }
+          } else {
+            data.ass.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   }
@@ -561,7 +601,6 @@
     doRefresh()
     doRefreshSteps(pageData.record.id)
     getEleName()
-    getUiRunSortAss()
     getUiRunSortOpe()
   })
 </script>

@@ -3,8 +3,7 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-from mangokit.assertion import Assertion
-from mangokit.method import class_methods
+from mangokit.decorator import func_info
 from mangoui import *
 
 from src.enums.gui_enum import TipsTypeEnum
@@ -15,7 +14,6 @@ from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.command.command import CommandThread
 from src.tools.components.message import response_message
-# from src.tools.get_class_methods import GetClassMethod
 from src.tools.log_collector import log
 
 
@@ -133,15 +131,12 @@ class SettingPage(QWidget):
         log.set_debug(settings.IS_DEBUG)
 
     def click_send_redis_data(self):
-        r = GetClassMethod()
-        send_list: list = r.main()
-        send_list.append({CacheDataKey2Enum.ASSERTION_METHOD.value: [i.model_dump() for i in class_methods(Assertion)]})
         from src.network.web_socket.websocket_client import WebSocketClient
         WebSocketClient().sync_send(
             '设置缓存数据成功',
             func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
             is_notice=ClientTypeEnum.WEB,
-            func_args=send_list
+            func_args=func_info
         )
         queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
 

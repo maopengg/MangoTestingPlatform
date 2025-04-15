@@ -37,3 +37,12 @@ export function putSystemCacheData(data: object) {
     },
   })
 }
+
+export function getSystemCacheDataKeyValue(key: string) {
+  return get({
+    url: 'system/cache/data/key/value',
+    data: () => {
+      return { key: key }
+    },
+  })
+}

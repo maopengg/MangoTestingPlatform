@@ -211,6 +211,9 @@ class LoginViews(ViewSet):
             if v == '4.7':
                 from data_cleanup_scripts.v_4_7_2025_01_24 import main_4_7
                 main_4_7()
+            elif v == '5.5':
+                from data_cleanup_scripts.v_5_2_2025_04_13 import main_5_5
+                main_5_5()
             return ResponseData.success(RESPONSE_MSG_0045, )
         else:
             return ResponseData.success(RESPONSE_MSG_0044, {'title': ''})

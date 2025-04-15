@@ -76,6 +76,7 @@ class CacheDataKey2Enum(BaseEnum):
     SQL_ASSERTION_METHOD = 'sql_assertion_method'
 
     ASSERTION_METHOD = 'assertion_method'
+    SELECT_VALUE = 'select_value'
 
     @classmethod
     def obj(cls):

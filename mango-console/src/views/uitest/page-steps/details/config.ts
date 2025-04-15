@@ -1,15 +1,6 @@
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 
-export interface Item {
-  value: string
-  label: string
-  parameter?: {
-    [key: string]: any
-  }
-  children?: Item[]
-}
-
 export const columns: any = reactive([
   {
     title: '元素名称',
@@ -48,6 +39,10 @@ export const customForm = reactive([
     required: true,
     placeholder: '请输入key',
     validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
@@ -59,6 +54,10 @@ export const customForm = reactive([
     required: true,
     placeholder: '请输入value',
     validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
@@ -91,6 +90,10 @@ export const sqlForm = reactive([
     required: true,
     placeholder: '请输入sql',
     validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
@@ -104,17 +107,10 @@ export const assForm = reactive([
     required: true,
     placeholder: '请选择断言类型',
     validator: function () {
-      return true
-    },
-  },
-  {
-    label: '选择元素',
-    key: 'ele_name',
-    value: ref(''),
-    placeholder: '请选择locating',
-    required: false,
-    type: 'select',
-    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
@@ -128,17 +124,10 @@ export const eleForm = reactive([
     required: true,
     placeholder: '请选择对元素的操作',
     validator: function () {
-      return true
-    },
-  },
-  {
-    label: '选择元素',
-    key: 'ele_name',
-    value: ref(''),
-    placeholder: '请选择locating',
-    required: false,
-    type: 'select',
-    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
@@ -153,6 +142,10 @@ export const formItems: any = reactive([
     required: true,
     placeholder: '请选择对元素的操作类型',
     validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
       return true
     },
   },
