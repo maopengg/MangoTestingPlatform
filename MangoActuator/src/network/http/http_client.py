@@ -3,12 +3,15 @@
 # @Description: # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
+import traceback
 
+import time
 from mangokit.apidrive import requests
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
+from src.settings import settings
 from src.settings.settings import FILE_PATH
 from src.tools import project_dir
 from src.tools.log_collector import log
@@ -44,15 +47,23 @@ class HttpClientApi(HttpBase):
 
     @classmethod
     def login(cls, username: str = None, password=None):
-        response = cls.post('/login', data={
-            'username': username,
-            'password': password,
-            'type': ClientTypeEnum.ACTUATOR.value
-        })
-        log.info(response.data)
-        if response.data:
-            cls.headers['Authorization'] = response.data.get('token')
-        return response
+        try:
+            response = cls.post('/login', data={
+                'username': username,
+                'password': password,
+                'type': ClientTypeEnum.ACTUATOR.value
+            })
+            log.info(response.data)
+            if response.data:
+                cls.headers['Authorization'] = response.data.get('token')
+            return response
+        except Exception as error:
+            traceback.print_exc()
+            if settings.IS_OPEN:
+                time.sleep(3)
+                cls.login(username, password)
+            else:
+                raise error
 
     @classmethod
     def user_register(cls, json_data: dict):

@@ -6,13 +6,13 @@
 import asyncio
 import traceback
 
+from src.services.ui.case_flow import CaseFlow
 from .consumer import SocketConsumer
 from .network.web_socket.websocket_client import WebSocketClient
-from src.services.ui.case_flow import CaseFlow
 from .tools.log_collector import log
 
 
-async def process(parent):
+async def process(parent, is_login=False):
     websocket_task = None
     consumer_task = None
     case_flow_task = None
@@ -23,6 +23,11 @@ async def process(parent):
         websocket_task = asyncio.create_task(WebSocketClient.client_run())
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
+        if is_login:
+            from src.network import HTTP
+            from src.settings import settings
+            from mangokit.data_processor import EncryptionTool
+            HTTP.not_auth.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD})
     except Exception as error:
         if websocket_task:
             websocket_task.cancel()
