@@ -34,7 +34,7 @@ class ChatConsumer(WebsocketConsumer):
         :param message:
         :return:
         """
-        is_verify, user_id = self.verify_user(True)
+        is_verify, user_id = self.verify_user()
         if not is_verify:
             self.close()
             return
@@ -156,7 +156,7 @@ class ChatConsumer(WebsocketConsumer):
                 log.system.debug(f"发送的数据：{data_json}")
             return data_json
 
-    def verify_user(self, is_verify: bool = False) -> tuple[bool, int]:
+    def verify_user(self) -> tuple[bool, int]:
         user = dict(parse_qsl(self.scope.get('query_string').decode()))
         if user.get('username', None) or user.get('password', None):
             self.username = user.get('username')
@@ -164,7 +164,7 @@ class ChatConsumer(WebsocketConsumer):
             self.inside_send(f"账号或密码错误，不允许连接！")
             return False, 0
         try:
-            if is_verify or self.username != SocketEnum.OPEN.value:
+            if self.username != SocketEnum.OPEN.value:
                 user = User.objects.get(username=self.username, password=user.get('password'))
                 return True, user.id
             else:
