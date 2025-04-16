@@ -57,7 +57,7 @@ class TestPageSteps:
     async def page_steps_mian(self, data: PageStepsModel) -> None:
         await self.page_init(data)
         async with self.lock:
-            page_steps = PageSteps(self.base_data, self.driver_object, data)
+            page_steps = PageSteps(self.base_data, self.driver_object, data, True)
             try:
                 await page_steps.driver_init()
                 page_steps_result_model = await page_steps.steps_main()

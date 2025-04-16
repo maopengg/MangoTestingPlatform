@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
+import traceback
 from urllib.parse import urljoin
 
 from mangokit.decorator import inject_to_class, async_retry
@@ -51,7 +52,6 @@ class PageSteps:
                 element_result_list=[]
             )
 
-    @async_memory
     async def steps_main(self) -> PageStepsResultModel:
         is_open_device = False
         for element_model in self.page_steps_model.element_list:
@@ -62,10 +62,11 @@ class PageSteps:
                         element_data = _element_data.page_step_details_data
                 if element_data is None:
                     raise UiError(*ERROR_MSG_0025)
-                is_open_device = await self.ope_steps(is_open_device, element_model, element_data)
+            is_open_device = await self.ope_steps(is_open_device, element_model, element_data)
+            if self.page_step_result_model.status == StatusEnum.FAIL.value:
+                break
         return self.page_step_result_model
 
-    @async_retry(15, 0.2)
     async def ope_steps(self, is_open_device, element_model, element_data):
         element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
         try:
@@ -79,16 +80,17 @@ class PageSteps:
                 self.set_page_step_result(StatusEnum.FAIL, element_result.error_message)
             else:
                 self.set_page_step_result(StatusEnum.SUCCESS, )
-
+            return is_open_device
         except (UiError, MangoKitError) as error:
+            log.warning(f'步骤测试失败，类型：{type(error)}-{error}，错误详情：{traceback.format_exc()}')
             self.set_page_step_result(StatusEnum.FAIL, error.msg)
             self.set_element_test_result(element_ope.element_test_result)
             raise error
         except Exception as error:
+            log.error(f'步骤测试失败，类型：{error}，错误详情：{traceback.format_exc()}')
             self.set_page_step_result(StatusEnum.FAIL, str(error))
             self.set_element_test_result(element_ope.element_test_result)
             raise error
-        return is_open_device
 
     def set_page_step_result(self, status: StatusEnum, error_message: str = None):
         self.page_step_result_model.status = status.value
@@ -100,7 +102,6 @@ class PageSteps:
     def set_element_test_result(self, element_result):
         self.page_step_result_model.element_result_list.append(element_result)
 
-    @async_memory
     async def driver_init(self):
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:

@@ -5,6 +5,7 @@
 
 import os
 import shutil
+import traceback
 
 from mangokit.data_processor import RandomTimeData
 from mangokit.exceptions import MangoKitError
@@ -86,6 +87,7 @@ class TestCase:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
             await self.case_parametrize()
         except Exception as error:
+            log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
             self.case_result.status = StatusEnum.FAIL.value
             await self.send_case_result(f'初始化用例前置数据发生未知异常，请联系管理员来解决!')
             raise error
@@ -100,11 +102,12 @@ class TestCase:
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
                     break
             except (MangoActuatorError, MangoKitError) as error:
-                log.warning(error.msg)
+                log.warning(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 await self.send_case_result(error.msg)
                 break
             except Exception as error:
+                log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
                 await self.send_case_result(self.case_result.error_message)

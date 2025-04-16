@@ -10,12 +10,12 @@ from src.tools.log_collector import log
 class MangoServerError(Exception):
 
     def __init__(self, code: int, msg: str, value: tuple = None, error: str = None):
+        self.msg = msg.format(*value) if value else msg
         self.code = code
-        if value:
-            self.msg = msg.format(*value)
-        else:
-            self.msg = msg
         log.system.error(f'报错提示：{self.msg}， 报错内容：{error}')
+
+    def __str__(self):
+        return f"[{self.code}] {self.msg}"
 
 
 class UiError(MangoServerError):

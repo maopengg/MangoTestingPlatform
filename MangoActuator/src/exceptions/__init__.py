@@ -10,16 +10,16 @@ from src.tools.log_collector import log
 class MangoActuatorError(Exception):
 
     def __init__(self, code: int, msg: str, value: tuple = None, error: any = None):
+        self.msg = msg.format(*value) if value else msg
         self.code = code
-        if value:
-            self.msg = msg.format(*value)
-        else:
-            self.msg = msg
         if settings.IS_DEBUG:
             if error:
                 log.error(f'{self.msg}，报错内容：{error}')
             else:
                 log.error(self.msg)
+
+    def __str__(self):
+        return f"[{self.code}] {self.msg}"
 
 
 class UiError(MangoActuatorError):
