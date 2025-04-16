@@ -138,7 +138,7 @@ class ChatConsumer(WebsocketConsumer):
             is_notice=is_notice,
             data=None
         )
-        if func_name:
+        if func_name is not None:
             send_data.data = QueueModel(func_name=func_name, func_args=func_args)
         if send_data.is_notice:
             self.active_send(send_data)
@@ -164,10 +164,7 @@ class ChatConsumer(WebsocketConsumer):
             self.inside_send(f"账号或密码错误，不允许连接！")
             return False, 0
         try:
-            if self.username != SocketEnum.OPEN.value:
-                user = User.objects.get(username=self.username, password=user.get('password'))
-                return True, user.id
-            else:
-                return True, 0
+            user = User.objects.get(username=self.username, password=user.get('password'))
+            return True, user.id
         except User.DoesNotExist:
             return False, 0

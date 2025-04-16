@@ -16,6 +16,7 @@ class SocketUserModel(BaseModel):
     username: str
     web_obj: Any | None = None
     client_obj: Any | None = None
+    is_open: bool = False
 
 
 class SocketUser:
@@ -91,3 +92,11 @@ class SocketUser:
     @classmethod
     def get_all_user_list(cls):
         return cls.user
+
+    @classmethod
+    def set_user_open_status(cls, username, is_open: bool):
+        for i in cls.user:
+            if i.username == username:
+                i.is_open = is_open
+                return
+        raise SystemEError(*ERROR_MSG_0027, )

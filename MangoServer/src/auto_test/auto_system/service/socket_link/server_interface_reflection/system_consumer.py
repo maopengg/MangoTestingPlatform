@@ -32,3 +32,8 @@ class SystemConsumer:
             CacheDataCRUD.inside_post(data)
         else:
             CacheDataCRUD.inside_put(cache_data.id, data)
+
+    @classmethod
+    def t_set_actuator_open_state(cls, data: list[dict]):
+        from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
+        SocketUser.set_user_open_status(data['username'], data['is_open'])

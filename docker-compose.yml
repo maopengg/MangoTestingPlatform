@@ -66,7 +66,7 @@ services:
       - "8001:80"
     networks:
       - app_network
-      -
+
   mango_actuator:
     build:
       context: ./MangoActuator
@@ -81,6 +81,7 @@ services:
         condition: service_started
     networks:
       - app_network
+
 networks:
   app_network:
     driver: bridge
