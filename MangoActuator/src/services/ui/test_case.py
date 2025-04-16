@@ -55,7 +55,7 @@ class TestCase:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.base_data.base_close(self.test_data)
+        await self.base_data.async_base_close(self.test_data)
         if self.driver_object.web.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_time_for_min()}.webm'
             shutil.move(self.case_result.video_path, os.path.join(f'{project_dir.videos()}/', video_path))
@@ -100,17 +100,20 @@ class TestCase:
                     .steps \
                     .append(page_steps_result_model)
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
+                    await self.base_data.async_base_close()
                     break
             except (MangoActuatorError, MangoKitError) as error:
                 log.warning(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 await self.send_case_result(error.msg)
+                await self.base_data.async_base_close()
                 break
             except Exception as error:
                 log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
                 await self.send_case_result(self.case_result.error_message)
+                await self.base_data.async_base_close()
                 break
         await self.case_posterior(self.case_model.posterior_sql)
         await self.send_case_result(f'用例<{self.case_model.name}>测试完成')

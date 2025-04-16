@@ -68,7 +68,6 @@ class TestPageSteps:
                     page_steps_result_model
                 )
             except (MangoActuatorError, MangoKitError) as error:
-                await self.base_data.async_base_close()
                 await self.send_steps_result(
                     error.code,
                     error.msg,
@@ -79,7 +78,7 @@ class TestPageSteps:
                 await self.base_data.async_base_close()
                 await self.send_steps_result(
                     300,
-                    f'执行步骤未知错误，请联系管理员，报错内容：{error}',
+                    f'执行步骤未知错误，请联系管理员来捕获异常完善异常提示，报错内容：{error}',
                     TipsTypeEnum.ERROR,
                     page_steps.page_step_result_model
                 )

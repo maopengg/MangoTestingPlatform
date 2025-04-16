@@ -13,7 +13,7 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
 from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from src.enums.socket_api_enum import UiSocketEnum
-from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
+from src.enums.system_enum import ClientTypeEnum, ClientNameEnum, SocketEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
@@ -67,14 +67,14 @@ class TestCase:
                 case_model_1.parametrize = i.get('parametrize')
                 case_model_1.name = f'{case.name} - {i.get("name")}'
                 self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                                   data_model=case_model_1)
+                                   data_model=case_model_1, is_open=True)
         elif test_suite and test_suite_details and parametrize:
             case_model.parametrize = parametrize
             self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                               data_model=case_model)
+                               data_model=case_model, is_open=True)
         else:
             self.__socket_send(func_name=UiSocketEnum.CASE_BATCH.value,
-                               data_model=case_model)
+                               data_model=case_model, is_open=True)
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
@@ -186,16 +186,30 @@ class TestCase:
                 is_iframe=steps_element.is_iframe,
             )
 
-    def __socket_send(self, data_model, func_name: str) -> None:
-        if self.is_send:
-            data = QueueModel(func_name=func_name, func_args=data_model)
-            ChatConsumer.active_send(SocketDataModel(
-                code=200,
-                msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                user=self.username,
-                is_notice=ClientTypeEnum.ACTUATOR.value,
-                data=data,
-            ))
+    def __socket_send(self, data_model, func_name: str, is_open=False) -> None:
+        try:
+            if self.is_send:
+                data = QueueModel(func_name=func_name, func_args=data_model)
+                ChatConsumer.active_send(SocketDataModel(
+                    code=200,
+                    msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
+                    user=self.username,
+                    is_notice=ClientTypeEnum.ACTUATOR.value,
+                    data=data,
+                ))
+        except MangoServerError as error:
+            if error.code == 328 and is_open:
+                if self.is_send:
+                    data = QueueModel(func_name=func_name, func_args=data_model)
+                    ChatConsumer.active_send(SocketDataModel(
+                        code=200,
+                        msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
+                        user=SocketEnum.OPEN.value,
+                        is_notice=ClientTypeEnum.ACTUATOR.value,
+                        data=data,
+                    ))
+            else:
+                raise error
 
     @classmethod
     def __get_case_executor(cls, case_executor):

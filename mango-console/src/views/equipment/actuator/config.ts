@@ -6,8 +6,8 @@ export const tableColumns = useTableColumn([
   table.indexColumn,
   {
     title: '所有者',
-    key: 'nickname',
-    dataIndex: 'nickname',
+    key: 'name',
+    dataIndex: 'name',
   },
   {
     title: '账号',

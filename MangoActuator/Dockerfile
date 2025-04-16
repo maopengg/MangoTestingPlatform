@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:latest
+FROM mcr.microsoft.com/playwright/python:v1.43.0
 
 WORKDIR /app
 
@@ -8,4 +8,4 @@ RUN pip install --no-cache-dir --user -r linux_requirements.txt -i https://pypi.
 
 COPY . .
 
-CMD ["python", "start_linux.py", "--ip=172.19.85.178", "--port=8000", "--username=admin", "--password=123456"]
+CMD ["python", "linux_main.py", "--ip=127.19.85.178", "--port=8000", "--username=open", "--password=123456"]

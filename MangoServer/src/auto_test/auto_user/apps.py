@@ -5,9 +5,11 @@
 # @Author : 毛鹏
 import os
 import threading
-
 import time
+
 from django.apps import AppConfig
+
+from src.enums.system_enum import SocketEnum
 
 
 class AutoUserConfig(AppConfig):
@@ -17,13 +19,14 @@ class AutoUserConfig(AppConfig):
     def ready(self):
         def run():
             time.sleep(5)
+            self.new_role()
             self.new_user()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
             task1.start()
 
-    def new_user(self):
+    def new_role(self):
         from src.auto_test.auto_user.models import Role
         if not Role.objects.exists():
             Role.objects.create(name="项目管理员", description="我是超管，嘻嘻~")
@@ -37,3 +40,16 @@ class AutoUserConfig(AppConfig):
             Role.objects.create(name="测试开发工程师", description="测试开发工程师")
             Role.objects.create(name="自动化工程师", description="自动化工程师")
             Role.objects.create(name="测试工程师", description="测试工程师")
+
+    def new_user(self):
+        from src.auto_test.auto_user.models import User
+        from mangokit.data_processor import EncryptionTool
+        User.objects.get_or_create(
+            username=SocketEnum.OPEN.value,
+            defaults={
+                'name': SocketEnum.OPEN.value,
+                'password': EncryptionTool.md5_32_small(**{'data': '123456'}),
+                'mailbox': [],
+                'config': {}
+            }
+        )

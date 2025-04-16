@@ -109,7 +109,6 @@ class WindowLogic(MangoMain1Window):
                 traceback.print_exc()
                 print(f"运行process协程时出现异常: {e}")
 
-        # 启动线程
         threading.Thread(
             target=run_process,
             daemon=True

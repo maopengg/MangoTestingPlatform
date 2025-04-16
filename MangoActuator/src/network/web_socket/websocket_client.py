@@ -59,7 +59,7 @@ class WebSocketClient:
         @return:
         """
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?username={settings.USERNAME}&password={EncryptionTool.md5_32_small(**{'data': settings.PASSWORD})}"
-        log.debug(str(f"websockets server url:{server_url}"))
+        log.debug(str(f"websocketURL:{server_url}"))
         retry = 1
         while cls.running:
             try:

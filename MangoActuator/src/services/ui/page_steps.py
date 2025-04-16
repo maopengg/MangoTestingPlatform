@@ -4,20 +4,26 @@
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 import traceback
+from urllib import parse
 from urllib.parse import urljoin
 
-from mangokit.decorator import inject_to_class, async_retry
+from mangokit.decorator import inject_to_class
 from mangokit.exceptions import MangoKitError
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from mangokit.uidrive.web.async_web import AsyncWebCustomization
-from playwright._impl._errors import TargetClosedError
+from playwright._impl._errors import TargetClosedError, Error
+from playwright.async_api import Request, Route
 
+from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
 from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
+from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
-from src.tools.decorator.memory import async_memory
+from src.network import ApiSocketEnum, socket_conn
+from src.settings import settings
+from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 
 
@@ -118,16 +124,21 @@ class PageSteps:
             self.driver_object.set_web(data.web_type, data.web_path, data.web_max, data.web_headers, data.web_recording,
                                        data.web_h5, data.is_header_intercept)
         else:
-            self.driver_object.set_web(self.page_steps_model.equipment_config.web_type,
-                                       self.page_steps_model.equipment_config.web_path,
-                                       self.page_steps_model.equipment_config.web_max,
-                                       self.page_steps_model.equipment_config.web_headers,
-                                       self.page_steps_model.equipment_config.web_recording,
-                                       self.page_steps_model.equipment_config.web_h5,
-                                       self.page_steps_model.equipment_config.is_header_intercept)
+            self.driver_object.set_web(
+                self.page_steps_model.equipment_config.web_type,
+                self.page_steps_model.equipment_config.web_path,
+                self.page_steps_model.equipment_config.web_max,
+                self.page_steps_model.equipment_config.web_headers,
+                self.page_steps_model.equipment_config.web_recording,
+                self.page_steps_model.equipment_config.web_h5,
+                self.page_steps_model.equipment_config.is_header_intercept,
+                settings.IS_OPEN
+            )
             self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
                                          self.page_steps_model.url)
             self.test_object = self.base_data.url
+            self.driver_object.web.wen_intercept_request = self.__intercept_request
+            self.driver_object.web.wen_recording_api = self.__send_recording_api
         try:
             if self.base_data.context is None or self.base_data.page is None:
                 self.base_data.context, self.base_data.page = await self.driver_object.web.new_web_page()
@@ -147,3 +158,43 @@ class PageSteps:
 
     def desktop_init(self, ):
         pass
+
+    async def __intercept_request(self, route: Route, request: Request):
+        if self.page_steps_model.equipment_config.host_list is None:
+            await route.continue_()
+            return
+        if request.resource_type in ("document", "xhr", "fetch"):
+            for host_dict in self.page_steps_model.equipment_config.host_list:
+                if host_dict.get('value') in request.url:
+                    await self.__send_recording_api(request, host_dict.get('project_product_id'))
+        await route.continue_()
+
+    @classmethod
+    @async_error_handle()
+    async def __send_recording_api(cls, request: Request, project_product: int):
+        parsed_url = parse.urlsplit(request.url)
+        try:
+            json_data = request.post_data_json
+        except Error:
+            json_data = None
+        data = {key: value[0] for key, value in
+                parse.parse_qs(request.post_data).items()} if json_data is None else None
+        params = {key: value[0] for key, value in
+                  parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
+        api_info = RecordingApiModel(
+            project_product=project_product,
+            username=settings.USERNAME,
+            type=ApiTypeEnum.batch.value,
+            name=parsed_url.path,
+            client=ClientEnum.WEB.value,
+            url=parsed_url.path,
+            method=MethodEnum.get_key(request.method),
+            params=None if params == {} else params,
+            data=None if data == {} else data,
+            json=None if json_data == {} else json_data
+        )
+        await socket_conn.async_send(
+            msg="发送录制接口",
+            func_name=ApiSocketEnum.RECORDING_API.value,
+            func_args=api_info
+        )
