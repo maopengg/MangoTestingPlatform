@@ -80,7 +80,7 @@ class TestPageSteps:
                 await self.send_steps_result(
                     300,
                     f'执行步骤未知错误，请联系管理员，报错内容：{error}',
-                    TipsTypeEnum.SUCCESS if page_steps_result_model.status else TipsTypeEnum.ERROR,
+                    TipsTypeEnum.ERROR,
                     page_steps.page_step_result_model
                 )
                 raise error

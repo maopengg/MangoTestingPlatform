@@ -75,6 +75,11 @@ class PageSteps:
             element_result = await element_ope.element_main()
             self.set_page_step_result(StatusEnum.SUCCESS, )
             self.set_element_test_result(element_result)
+            if element_result.status == StatusEnum.FAIL.value:
+                self.set_page_step_result(StatusEnum.FAIL, element_result.error_message)
+            else:
+                self.set_page_step_result(StatusEnum.SUCCESS, )
+
         except (UiError, MangoKitError) as error:
             self.set_page_step_result(StatusEnum.FAIL, error.msg)
             self.set_element_test_result(element_ope.element_test_result)

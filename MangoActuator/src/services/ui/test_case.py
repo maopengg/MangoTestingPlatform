@@ -97,15 +97,18 @@ class TestCase:
                 self.case_result \
                     .steps \
                     .append(page_steps_result_model)
+                if page_steps_result_model.status == StatusEnum.FAIL.value:
+                    break
             except (MangoActuatorError, MangoKitError) as error:
                 log.warning(error.msg)
                 self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 await self.send_case_result(error.msg)
+                break
             except Exception as error:
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
                 await self.send_case_result(self.case_result.error_message)
-                raise error
+                break
         await self.case_posterior(self.case_model.posterior_sql)
         await self.send_case_result(f'用例<{self.case_model.name}>测试完成')
 
