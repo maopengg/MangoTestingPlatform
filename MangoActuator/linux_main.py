@@ -39,3 +39,5 @@ async def main():
 
 
 asyncio.run(main())
+# docker build -t mango_actuator .
+# docker run -it mango_actuator
