@@ -37,7 +37,8 @@ class ChatConsumer(WebsocketConsumer):
         is_verify, user_id = self.verify_user()
         if not is_verify:
             self.close()
-            return
+            raise StopConsumer()
+
         self.accept()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.set_user_web_obj(self.username, self, user_id)
@@ -63,7 +64,8 @@ class ChatConsumer(WebsocketConsumer):
         is_verify, user_id = self.verify_user()
         if not is_verify:
             self.close()
-            return
+            raise StopConsumer()
+
         try:
             msg = SocketDataModel(**json.loads(message.get('text')))
         except json.decoder.JSONDecodeError as e:
