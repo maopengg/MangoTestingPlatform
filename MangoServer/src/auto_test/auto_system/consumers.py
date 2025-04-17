@@ -86,7 +86,7 @@ class ChatConsumer(WebsocketConsumer):
         is_verify, user_id = self.verify_user()
         if not is_verify:
             self.close()
-            return
+            raise StopConsumer()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.delete_user_web_obj(self.username)
             raise StopConsumer()
