@@ -159,7 +159,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def verify_user(self) -> tuple[bool, int]:
         user = dict(parse_qsl(self.scope.get('query_string').decode()))
-        log.system.info(f'连接对象：{user}')
+        log.system.info(f'连接对象：{self.scope.get("query_string").decode()}')
         if user.get('username', None) or user.get('password', None):
             self.username = user.get('username')
         else:
