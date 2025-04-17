@@ -53,7 +53,8 @@ class LoginLogic(LoginWindow):
             response = HTTP.not_auth.login(settings.USERNAME,
                                            EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
             if response.code == 200:
-                Methods.set_project()
+                if not settings.IS_NEW:
+                    Methods.set_project()
                 self.main_window = MainWindow(self.loop)
                 self.close()
                 self.main_window.show()

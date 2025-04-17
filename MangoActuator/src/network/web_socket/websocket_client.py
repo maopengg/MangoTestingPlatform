@@ -15,6 +15,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.models.socket_model import SocketDataModel, QueueModel
+from src.models.system_model import SetUserOpenSatusModel
 from src.settings import settings
 from src.tools import project_dir
 from src.tools.log_collector import log
@@ -48,6 +49,14 @@ class WebSocketClient:
                     is_notice=ClientTypeEnum.WEB
                 )
                 cls.parent.set_tips_info("心跳已连接")
+                model = SetUserOpenSatusModel(username=settings.USERNAME, status=bool(settings.IS_OPEN))
+                from src.network import ToolsSocketEnum
+                await cls.async_send(
+                    '设置执行器状态',
+                    func_name=ToolsSocketEnum.SET_USER_OPEN_STATUS_OPTIONS.value,
+                    func_args=model,
+                    is_notice=ClientTypeEnum.WEB
+                )
                 return True
             else:
                 return False

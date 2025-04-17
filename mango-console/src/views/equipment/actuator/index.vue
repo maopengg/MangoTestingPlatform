@@ -32,32 +32,18 @@
             <template v-if="item.key === 'index'" #cell="{ record }" :class="record">
               {{ record.id }}
             </template>
+            <template v-else-if="item.key === 'is_open'" #cell="{ record }">
+              <a-switch
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.username)"
+                :default-checked="record.is_open === true"
+              />
+            </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <template v-if="record.username === 'admin'">
-                <a-space>
-                  <a-button size="mini" type="text" @click="onReceive(record)">领取</a-button>
-                  <a-button
-                    disabled
-                    size="mini"
-                    status="danger"
-                    type="text"
-                    @click="onDelete(record)"
-                    >下线
-                  </a-button>
-                </a-space>
-              </template>
-              <template v-if="record.username !== 'admin'">
-                <a-space>
-                  <a-button
-                    disabled
-                    size="mini"
-                    status="danger"
-                    type="text"
-                    @click="onDelete(record)"
-                    >下线
-                  </a-button>
-                </a-space>
-              </template>
+              <a-space>
+                <a-button disabled size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >下线
+                </a-button>
+              </a-space>
             </template>
           </a-table-column>
         </template>
@@ -71,10 +57,10 @@
 
 <script lang="ts" setup>
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { Message } from '@arco-design/web-vue'
   import { onMounted, nextTick } from 'vue'
   import { tableColumns } from './config'
-  import { getSystemSocketUserList } from '@/api/system/socket_api'
+  import { getSystemSocketUserList, getSystemSocketPutOpenStatus } from '@/api/system/socket_api'
 
   const pagination = usePagination(doRefresh)
   const { onSelectionChange } = useRowSelection()
@@ -96,24 +82,24 @@
   function onReceive() {
     Message.warning('开发中.....')
   }
-
-  // function onDelete(data: any) {
-  //   Modal.confirm({
-  //     title: '提示',
-  //     content: '是否要下线此执行器？',
-  //     cancelText: '取消',
-  //     okText: '删除',
-  //     onOk: () => {
-  //       deleteSystemSocketUserList(data.id)
-  //         .then((res) => {
-  //           Message.success(res.msg)
-  //           doRefresh()
-  //         })
-  //         .catch(console.log)
-  //     },
-  //   })
-  // }
-
+  const onModifyStatus = async (newValue: any, id: string) => {
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await getSystemSocketPutOpenStatus(id, newValue ? 1 : 0)
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

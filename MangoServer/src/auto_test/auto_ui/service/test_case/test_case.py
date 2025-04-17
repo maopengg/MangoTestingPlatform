@@ -4,6 +4,7 @@
 # @Time   : 2023/4/28 11:56
 # @Author : 毛鹏
 import copy
+import random
 
 from pydantic import ValidationError
 
@@ -13,7 +14,7 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
 from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from src.enums.socket_api_enum import UiSocketEnum
-from src.enums.system_enum import ClientTypeEnum, ClientNameEnum, SocketEnum
+from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
@@ -194,18 +195,22 @@ class TestCase:
                     code=200,
                     msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
                     user=self.username,
-                    is_notice=ClientTypeEnum.ACTUATOR.value,
+                    is_notice=ClientTypeEnum.ACTUATOR,
                     data=data,
                 ))
         except MangoServerError as error:
-            if error.code == 328 and is_open:
+            user_list = []
+            for i in SocketUser.user:
+                if i.is_open:
+                    user_list.append(i.username)
+            if error.code == 328 and is_open and user_list:
                 if self.is_send:
                     data = QueueModel(func_name=func_name, func_args=data_model)
                     ChatConsumer.active_send(SocketDataModel(
                         code=200,
                         msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                        user=SocketEnum.OPEN.value,
-                        is_notice=ClientTypeEnum.ACTUATOR.value,
+                        user=user_list[random.randint(0, len(user_list) - 1)],
+                        is_notice=ClientTypeEnum.ACTUATOR,
                         data=data,
                     ))
             else:

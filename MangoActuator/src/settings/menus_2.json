@@ -1,0 +1,48 @@
+{
+  "left_menus": [
+    {
+      "btn_icon": ":/icons/home.svg",
+      "btn_id": "home",
+      "btn_text": "首页",
+      "btn_tooltip": "首页",
+      "show_top": true,
+      "is_active": true
+    },
+    {
+      "btn_icon": ":/icons/robot.svg",
+      "btn_id": "ui_settings",
+      "btn_text": "UI配置",
+      "btn_tooltip": "前端自动化设置",
+      "show_top": true,
+      "is_active": false
+    },
+    {
+      "btn_icon": ":/icons/tool.svg",
+      "btn_id": "tools",
+      "btn_text": "测试工具",
+      "btn_tooltip": "测试小工具",
+      "show_top": true,
+      "is_active": false
+    },
+    {
+      "btn_icon": ":/icons/compass.svg",
+      "btn_id": "help",
+      "btn_text": "帮助",
+      "btn_tooltip": "帮助",
+      "show_top": true,
+      "is_active": false,
+      "url": "http://121.37.174.56:8002/"
+    },
+    {
+      "btn_icon": ":/icons/user.svg",
+      "btn_id": "user",
+      "btn_text": "用户",
+      "btn_tooltip": "用户",
+      "show_top": false,
+      "is_active": false
+    }
+  ],
+  "title_bar_menus": [
+
+  ]
+}

@@ -64,10 +64,6 @@ class SocketUser:
                     return i.web_obj
                 else:
                     return False
-        #             raise SocketClientNotPresentError(*ERROR_MSG_0028,
-        #                                               value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
-        # raise SocketClientNotPresentError(*ERROR_MSG_0028,
-        #                                   value=(ClientNameEnum.WEB.value, ClientNameEnum.SERVER.value))
 
     @classmethod
     def get_user_client_obj(cls, username):
@@ -84,6 +80,12 @@ class SocketUser:
     @classmethod
     def get_all_user(cls):
         return [i.username for i in cls.user if i.client_obj]
+
+    @classmethod
+    def get_user_obj(cls, username):
+        for i in cls.user:
+            if i.username == username:
+                return i
 
     @classmethod
     def all_keys(cls):

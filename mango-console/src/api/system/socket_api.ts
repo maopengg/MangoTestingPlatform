@@ -1,4 +1,4 @@
-import { get } from '@/api/http'
+import { get, put } from '@/api/http'
 
 export function getSystemSocketAllUserSum() {
   return get({
@@ -23,6 +23,18 @@ export function getSystemSocketAllUserList(data: object) {
     url: '/system/socket/all/user/list',
     data: () => {
       return data
+    },
+  })
+}
+
+export function getSystemSocketPutOpenStatus(username: string, status: number) {
+  return put({
+    url: '/system/socket/put/user/open/status',
+    data: () => {
+      return {
+        username: username,
+        status: status,
+      }
     },
   })
 }

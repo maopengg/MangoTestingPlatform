@@ -42,6 +42,7 @@ pyinstaller `
 --icon "app_icon.ico" `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
+--add-data "src/settings/menus_2.json;src/settings" `
 --add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
 --add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
 --hidden-import "mango" `

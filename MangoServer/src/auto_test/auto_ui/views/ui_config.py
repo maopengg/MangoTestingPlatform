@@ -152,7 +152,7 @@ class UiConfigViews(ViewSet):
             code=200,
             msg="实例化web对象",
             user=request.user.get('username'),
-            is_notice=ClientTypeEnum.ACTUATOR.value,
+            is_notice=ClientTypeEnum.ACTUATOR,
             data=QueueModel(
                 func_name=UiSocketEnum.NEW_PAGE_OBJ.value,
                 func_args=web_config

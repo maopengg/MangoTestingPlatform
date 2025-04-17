@@ -23,3 +23,4 @@ class SocketDataModel(BaseModel):
     user: str | None = None
     is_notice: ClientTypeEnum | None | int = None
     data: QueueModel | None = None
+    send_user: str | None = None

@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-10-11 10:53
 # @Author : 毛鹏
-
 import asyncio
 import threading
 
@@ -14,16 +13,8 @@ from mangoui import warning_notification, error_notification, success_notificati
 from src import process
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
+from src.settings import settings
 from src.settings.settings import STYLE, MENUS
-from ..api import *
-from ..config import *
-from ..home import *
-from ..report import *
-from ..setting import *
-from ..tasks import *
-from ..tools import *
-from ..ui import *
-from ..user import *
 from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
 from ...models.socket_model import ResponseModel
@@ -49,54 +40,75 @@ class NotificationTask(QThread):
 
 class WindowLogic(MangoMain1Window):
     def __init__(self, loop):
-        page_dict = {
-            'home': HomePage,
-            'page': PagePage,
-            'page_element': ElementPage,
-            'page_steps': PageStepsPage,
-            'page_steps_detailed': PageStepsDetailedPage,
-            'case': CasePage,
-            'case_steps': CaseStepsPage,
-            'public': PublicPage,
-            'equipment': EquipmentPage,
+        from ..tools import SmallToolsPage
+        if settings.IS_NEW:
+            from ..home2 import HomePage
+            from ..ui_settings import SettingPage
+            page_dict = {
+                'home': HomePage,
+                'ui_settings': SettingPage,
+                'tools': SmallToolsPage,
+            }
+        else:
+            from src.pages.api import ApiCasePage, ApiInfoPage, ApiHeadersPage, ApiPublicPage, ApiInfoDetailedPage, \
+                ApiCaseDetailedPage
+            from ..config import EnvConfigPage, ProductPage, ProjectPage, ModulePage, TestEnvPage, TestFilePage
+            from ..home import HomePage
+            from ..report import TestSuitePage, TestSuiteDetailedPage
+            from ..setting import SettingPage, RolePage, UserLogPage, UserAdministrationPage
+            from ..tasks import TasksPage, TasksDetailsPage, TimePage
+            from ..ui import PagePage, PublicPage, PageStepsPage, PageStepsDetailedPage, CasePage, ElementPage, \
+                CaseStepsPage, EquipmentPage
+            from ..user import UserPage
 
-            'api_info': ApiInfoPage,
-            'api_info_detailed': ApiInfoDetailedPage,
-            'api_case': ApiCasePage,
-            'api_case_detailed': ApiCaseDetailedPage,
-            'api_public': ApiPublicPage,
-            'api_headers': ApiHeadersPage,
+            page_dict = {
+                'home': HomePage,
+                'page': PagePage,
+                'page_element': ElementPage,
+                'page_steps': PageStepsPage,
+                'page_steps_detailed': PageStepsDetailedPage,
+                'case': CasePage,
+                'case_steps': CaseStepsPage,
+                'public': PublicPage,
+                'equipment': EquipmentPage,
 
-            'test_suite': TestSuitePage,
-            'test_suite_detailed': TestSuiteDetailedPage,
+                'api_info': ApiInfoPage,
+                'api_info_detailed': ApiInfoDetailedPage,
+                'api_case': ApiCasePage,
+                'api_case_detailed': ApiCaseDetailedPage,
+                'api_public': ApiPublicPage,
+                'api_headers': ApiHeadersPage,
 
-            'project': ProjectPage,
-            'product': ProductPage,
-            'module': ModulePage,
-            'test_env': TestEnvPage,
-            'env_config': EnvConfigPage,
-            'test_file': TestFilePage,
+                'test_suite': TestSuitePage,
+                'test_suite_detailed': TestSuiteDetailedPage,
 
-            'user_administration': UserAdministrationPage,
-            'role': RolePage,
-            'user_log': UserLogPage,
+                'project': ProjectPage,
+                'product': ProductPage,
+                'module': ModulePage,
+                'test_env': TestEnvPage,
+                'env_config': EnvConfigPage,
+                'test_file': TestFilePage,
 
-            'time': TimePage,
-            'tasks': TasksPage,
-            'tasks_details': TasksDetailsPage,
+                'user_administration': UserAdministrationPage,
+                'role': RolePage,
+                'user_log': UserLogPage,
 
-            'tools': SmallToolsPage,
-            'settings': SettingPage,
-            'user': UserPage,
-        }
+                'time': TimePage,
+                'tasks': TasksPage,
+                'tasks_details': TasksDetailsPage,
+
+                'tools': SmallToolsPage,
+                'settings': SettingPage,
+                'user': UserPage,
+            }
         super().__init__(
             STYLE,
             MENUS,
             page_dict,
             loop,
             page='home',
-            width_coefficient=0.7,
-            height_coefficient=0.815
+            width_coefficient=0.55,
+            height_coefficient=0.65
         )
         self.loop = loop
 

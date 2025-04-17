@@ -35,9 +35,10 @@ if platform.system() != "Linux":
 
     with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
         STYLE = AppConfig(**json.loads(f.read()))
-    with open(project_dir.resource_path('src/settings/menus.json'), "r", encoding='utf-8') as f:
+    with open(project_dir.resource_path('src/settings/menus_2.json'), "r", encoding='utf-8') as f:
         MENUS = MenusModel(**json.loads(f.read()))
 
 MEMORY_THRESHOLD = 100  # 控制内存高于多少就不可以执行用例，防止崩溃
 LOOP_MIX = 10  # 最大检查内存次数
+IS_NEW = True
 # **************************************** 上面不用管 **************************************** #

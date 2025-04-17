@@ -5,10 +5,13 @@
 # @Author : 毛鹏
 import json
 
+from mangokit.decorator import convert_args
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
-from src.enums.system_enum import CacheDataKey2Enum
+from src.enums.system_enum import CacheDataKey2Enum, SocketEnum, ClientTypeEnum
 from src.enums.tools_enum import CacheValueTypeEnum
+from src.models.socket_model import SocketDataModel
+from src.models.system_model import SetUserOpenSatusModel
 
 
 class SystemConsumer:
@@ -34,6 +37,13 @@ class SystemConsumer:
             CacheDataCRUD.inside_put(cache_data.id, data)
 
     @classmethod
-    def t_set_actuator_open_state(cls, data: list[dict]):
+    def t_set_actuator_open_state(cls, data):
         from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
-        SocketUser.set_user_open_status(data['username'], data['is_open'])
+        from src.auto_test.auto_system.consumers import ChatConsumer
+        SocketUser.set_user_open_status(data.get('username'), data.get('status'))
+        ChatConsumer.active_send(SocketDataModel(
+            code=200,
+            msg=f'设置执行的状态为OPEN成功！当前状态：{SocketUser.get_user_obj(data.get("username")).is_open}',
+            user=data.get("username"),
+            is_notice=ClientTypeEnum.WEB,
+        ))

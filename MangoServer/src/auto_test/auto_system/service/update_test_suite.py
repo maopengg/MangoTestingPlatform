@@ -65,5 +65,5 @@ class UpdateTestSuite:
             code=200 if test_suite.status else 300,
             msg=msg if msg else f'测试套ID：{test_suite_id} 执行完成',
             user=test_suite.user.username,
-            is_notice=ClientTypeEnum.WEB.value,
+            is_notice=ClientTypeEnum.WEB,
         ))

@@ -37,5 +37,5 @@ class Recording:
             code=200,
             msg=msg,
             user=username,
-            is_notice=ClientTypeEnum.WEB.value,
+            is_notice=ClientTypeEnum.WEB,
         ))

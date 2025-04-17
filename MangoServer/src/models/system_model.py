@@ -28,3 +28,8 @@ class ConsumerCaseModel(BaseModel):
     user_id: int
     tasks_id: int | None = None
     parametrize: list[dict] | list = []
+
+
+class SetUserOpenSatusModel(BaseModel):
+    username: str
+    status: bool

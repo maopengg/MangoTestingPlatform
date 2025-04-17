@@ -104,7 +104,7 @@ class ChatConsumer(WebsocketConsumer):
         :return:
         """
         if send_data.is_notice is not None:
-            if send_data.is_notice == ClientTypeEnum.WEB.value:
+            if send_data.is_notice == ClientTypeEnum.WEB:
                 obj = SocketUser.get_user_web_obj(send_data.user)
                 if not obj:
                     pass
@@ -115,7 +115,7 @@ class ChatConsumer(WebsocketConsumer):
                         f'发送的客户端类型：{ClientTypeEnum.get_value(1)}'
                         f'发送的数据：{send_data.model_dump_json() if send_data.data else None}'
                     )
-            elif send_data.is_notice == ClientTypeEnum.ACTUATOR.value:
+            elif send_data.is_notice == ClientTypeEnum.ACTUATOR:
                 obj = SocketUser.get_user_client_obj(send_data.user)
                 obj.send(send_data.model_dump_json())
                 log.system.warning(

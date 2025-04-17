@@ -25,3 +25,19 @@ class CmdTestModel(BaseModel):
     project_product_name: str
     test_env: int
     cmd: list
+
+
+class ConsumerCaseModel(BaseModel):
+    test_suite_details: int
+    test_suite: int
+    case_id: int
+    case_name: str
+    test_env: int
+    user_id: int
+    tasks_id: int | None = None
+    parametrize: list[dict] | list = []
+
+
+class SetUserOpenSatusModel(BaseModel):
+    username: str
+    status: bool

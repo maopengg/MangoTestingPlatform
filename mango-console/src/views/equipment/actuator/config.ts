@@ -15,9 +15,9 @@ export const tableColumns = useTableColumn([
     dataIndex: 'username',
   },
   {
-    title: 'IP端口',
-    key: 'ip',
-    dataIndex: 'ip',
+    title: 'OPEN状态',
+    key: 'is_open',
+    dataIndex: 'is_open',
   },
   {
     title: '操作',

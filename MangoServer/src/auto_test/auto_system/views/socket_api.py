@@ -19,10 +19,10 @@ class SocketApiViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_user_list(self, request: Request):
-        data = SocketUser.get_all_user()
-        res = User.objects.filter(username__in=data).values_list('id', 'name', 'username', 'ip')
-        data = [{'id': _id, 'name': name, 'username': username, 'ip': ip} for _id, name, username, ip in
-                res]
+        data = []
+        for i in SocketUser.user:
+            res = User.objects.get(id=i.user_id)
+            data.append({'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)
@@ -43,3 +43,16 @@ class SocketApiViews(ViewSet):
                 'client_obj': id(i.client_obj) if i.client_obj else None
             })
         return ResponseData.success(RESPONSE_MSG_0102, data, )
+
+    @action(methods=['put'], detail=False)
+    @error_response('system')
+    def set_user_open_status(self, request: Request):
+        status = request.data.get('status')
+        username = request.data.get('username')
+        SocketUser.set_user_open_status(username, bool(status))
+        user_obj = SocketUser.get_user_obj(username)
+        return ResponseData.success(RESPONSE_MSG_0113, {
+            'user_id': user_obj.user_id,
+            'username': user_obj.username,
+            'is_open': user_obj.is_open
+        })
