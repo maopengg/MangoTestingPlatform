@@ -7,8 +7,9 @@ import traceback
 from urllib import parse
 from urllib.parse import urljoin
 
-from mangokit.decorator import inject_to_class
+from mangokit.decorator import inject_to_class, async_method_callback
 from mangokit.exceptions import MangoKitError
+from mangokit.models import MethodModel
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from mangokit.uidrive.web.async_web import AsyncWebCustomization
@@ -26,10 +27,23 @@ from src.settings import settings
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 
+"""
+示例，自定义方法
+
+规则：
+1.必须使用：@inject_to_class(AsyncWebCustomization)
+2.必须使用：async_method_callback装饰。参考如下，type可以输入：web， android， web_ass, android_ass
+3.函数必须写注释，方法如下。不可以加回车和空格
+4.写完了点击发送缓存数据按钮
+"""
+
 
 @inject_to_class(AsyncWebCustomization)
-async def w_list_input(self, locating, ):
-    """XX项目定开方法请写在这"""
+@async_method_callback('web', '元素操作', 3, [
+    MethodModel(f='locating'),
+    MethodModel(f='input_value', p='请输入输入内容', d=True)])
+async def w_input(self, locating, input_value: str):
+    """xx项目自定义方法"""
     pass
 
 
