@@ -161,7 +161,6 @@ class ChatConsumer(WebsocketConsumer):
         if user.get('username', None) or user.get('password', None):
             self.username = user.get('username')
         else:
-            self.inside_send(f"账号或密码错误，不允许连接！")
             return False, 0
         try:
             user = User.objects.get(username=self.username, password=user.get('password'))
