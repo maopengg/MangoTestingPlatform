@@ -4,6 +4,7 @@
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
 import json
+import logging
 from typing import Union, Optional, TypeVar
 from urllib.parse import parse_qsl
 
@@ -158,6 +159,7 @@ class ChatConsumer(WebsocketConsumer):
 
     def verify_user(self) -> tuple[bool, int]:
         user = dict(parse_qsl(self.scope.get('query_string').decode()))
+        log.system.info(f'连接对象：{user}')
         if user.get('username', None) or user.get('password', None):
             self.username = user.get('username')
         else:
