@@ -160,10 +160,10 @@ class ChatConsumer(WebsocketConsumer):
 
     def verify_user(self) -> tuple[bool, int]:
         if 'username' not in self.scope.get("query_string").decode():
-            log.system.error('您的执行器代码是旧的，请使用新的执行器再来进行连接！')
+            log.system.debug('您的执行器代码是旧的，请使用新的执行器再来进行连接！')
             return False, 0
         user = dict(parse_qsl(self.scope.get('query_string').decode()))
-        log.system.info(f'连接对象：{self.scope.get("query_string").decode()}')
+        log.system.debug(f'连接对象：{self.scope.get("query_string").decode()}')
         if user.get('username', None) or user.get('password', None):
             self.username = user.get('username')
         else:

@@ -13,7 +13,8 @@ class System:
 
     @classmethod
     def debug(cls, msg: str):
-        cls.log.debug(msg)
+        if IS_DEBUG_LOG:
+            cls.log.debug(msg)
 
     @classmethod
     def info(cls, msg: str):

@@ -43,13 +43,16 @@ pyinstaller `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
 --add-data "src/settings/menus_2.json;src/settings" `
---add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
---add-data "E:\DevTool\python-venv\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
 --hidden-import "mango" `
 --hidden-import "pyarmor_runtime" `
 --hidden-import "pyarmor_runtime_000000" `
 --clean `
 --noconfirm `
+--hidden-import "email.mime.text" `
+--hidden-import "email.mime.base" `
+--hidden-import "email.mime.multipart" `
 main.py
 """
 # --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
