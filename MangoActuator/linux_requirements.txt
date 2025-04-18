@@ -3,7 +3,7 @@ uiautomator2==3.2.5
 
 uiautodev==0.5.0
 uiautomation==2.0.20
-mangokit==2.5.2
+mangokit==2.5.4
 
 websockets==10.4
 websocket-client==1.5.1

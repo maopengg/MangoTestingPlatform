@@ -43,9 +43,11 @@ class UpdateTestSuite:
                                                                  status__in=[TaskEnum.STAY_BEGIN.value,
                                                                              TaskEnum.PROCEED.value])
 
+        print(1)
         if data.type == TestCaseTypeEnum.UI:
             TestReportWriting.update_test_case(data.result_data)
         if not test_suite_detail_list.exists():
+            print(2)
             test_suite = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
             if not test_suite.exists():
                 cls.update_test_suite(data.test_suite, StatusEnum.SUCCESS.value)
@@ -58,7 +60,9 @@ class UpdateTestSuite:
     def send_test_result(cls, test_suite_id: int, msg):
         connection.ensure_connection()
         test_suite = TestSuite.objects.get(id=test_suite_id)
+        print(3, test_suite.is_notice)
         if test_suite.is_notice == StatusEnum.SUCCESS.value:
+            print(4)
             NoticeMain.notice_main(test_suite.test_env, test_suite.project_product.id, test_suite_id)
         from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
