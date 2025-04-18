@@ -92,7 +92,7 @@ class NoticeMain:
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
-        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=test_suite.type)
+        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
         case_sum = case_result.count()
         success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
         create_time = test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S")
