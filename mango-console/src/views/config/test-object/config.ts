@@ -148,25 +148,25 @@ export const tableColumns = useTableColumn([
     title: '部署环境',
     key: 'environment',
     dataIndex: 'environment',
-    width: 100,
+    width: 90,
   },
   {
     title: '自动化类型',
     key: 'auto_type',
     dataIndex: 'auto_type',
-    width: 130,
+    width: 120,
   },
   {
     title: '负责人',
     key: 'executor_name',
     dataIndex: 'executor_name',
-    width: 120,
+    width: 110,
   },
   {
     title: '查询权限',
     key: 'db_c_status',
     dataIndex: 'db_c_status',
-    width: 100,
+    width: 90,
   },
   {
     title: '增删改权限',
@@ -179,6 +179,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 150,
+    width: 190,
   },
 ])

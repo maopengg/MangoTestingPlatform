@@ -41,18 +41,17 @@ class CaseFlow:
 
     @classmethod
     async def get_case_task(cls):
-        pass
-        # try:
-        #     from src.network import UiSocketEnum, WebSocketClient
-        #     await WebSocketClient.async_send(
-        #         '请求获取任务',
-        #         func_name=UiSocketEnum.GET_TASK.value,
-        #         func_args=GetTaskModel(username=settings.USERNAME)
-        #     )
-        #     # cls.parent.set_tips_info('正在主动获取任务')
-        # except Exception as error:
-        #     traceback.print_exc()
-        #     log.error(f'get_case_task，类型：{error}，错误：{traceback.print_exc()}')
+        try:
+            from src.network import UiSocketEnum, WebSocketClient
+            await WebSocketClient.async_send(
+                '请求获取任务',
+                func_name=UiSocketEnum.GET_TASK.value,
+                func_args=GetTaskModel(username=settings.USERNAME)
+            )
+            # cls.parent.set_tips_info('正在主动获取任务')
+        except Exception as error:
+            traceback.print_exc()
+            log.error(f'get_case_task，类型：{error}，错误：{traceback.print_exc()}')
 
     @classmethod
     @async_memory
