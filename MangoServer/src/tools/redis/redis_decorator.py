@@ -7,7 +7,7 @@ from functools import wraps
 
 from django.core.cache import cache
 
-from mangokit import requests
+from mangokit.apidrive import requests
 
 
 # 创建缓存
