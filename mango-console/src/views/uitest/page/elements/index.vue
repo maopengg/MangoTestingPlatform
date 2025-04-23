@@ -344,7 +344,6 @@
   }
 
   function getCacheDataKeyValue() {
-    console.log(pageData.record.project_product.ui_client_type)
     getSystemCacheDataKeyValue('select_value')
       .then((res) => {
         res.data.forEach((item: any) => {
