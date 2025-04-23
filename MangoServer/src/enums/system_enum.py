@@ -65,17 +65,6 @@ class CacheDataKeyEnum(BaseEnum):
 
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""
-    PLAYWRIGHT_OPERATION_METHOD = 'playwright_operation_method'  # Playwright的操作
-    UIAUTOMATOR_OPERATION_METHOD = 'uiautomator_operation_method'
-    DESKTOP_OPERATION_METHOD = 'desktop_operation_method'
-    IOS_OPERATION_METHOD = 'ios_operation_method'
-
-    PLAYWRIGHT_ASSERTION_METHOD = 'playwright_assertion_method'
-    UIAUTOMATOR_ASSERTION_METHOD = 'uiautomator_assertion_method'
-    PUBLIC_ASSERTION_METHOD = 'public_assertion_method'
-    SQL_ASSERTION_METHOD = 'sql_assertion_method'
-
-    ASSERTION_METHOD = 'assertion_method'
     SELECT_VALUE = 'select_value'
 
     @classmethod

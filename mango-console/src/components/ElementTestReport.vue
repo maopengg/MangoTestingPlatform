@@ -102,10 +102,6 @@
   import { onMounted, reactive, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'
-  import {
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
-  } from '@/api/uitest/page-steps-detailed'
 
   defineProps({
     resultData: {
