@@ -117,7 +117,7 @@
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="upDataOpeValue(item.value)"
+                @change="upDataOpeValue(data.ope, item.value)"
                 value-key="key"
                 style="width: 380px"
                 allow-search
@@ -125,7 +125,7 @@
               />
             </a-space>
           </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'ope_value'">
+          <template v-else-if="item.type === 'textarea'">
             <a-textarea
               :auto-size="{ minRows: 4, maxRows: 7 }"
               :placeholder="item.placeholder"
@@ -142,7 +142,7 @@
                 :default-value="item.value"
                 expand-trigger="hover"
                 :placeholder="item.placeholder"
-                @change="upDataAssValue(item.value)"
+                @change="upDataOpeValue(data.ass, item.value)"
                 value-key="key"
                 style="width: 380px"
                 allow-search
@@ -180,14 +180,12 @@
     putUiUiElementPutIsIframe,
     putUiUiElementTest,
   } from '@/api/uitest/element'
-  import {
-    getUiPageStepsDetailedOpe,
-    getUiPageStepsDetailedAss,
-  } from '@/api/uitest/page-steps-detailed'
+
   import { assForm, eleForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { baseURL } from '@/api/axios.config'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -195,6 +193,7 @@
   const pageData: any = usePageData()
 
   const route = useRoute()
+
   const formModel = ref({})
   const formModel1 = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
@@ -214,6 +213,7 @@
       { label: '操作', value: 0 },
       { label: '断言', value: 1 },
     ],
+    select: [],
   })
 
   function doAppend() {
@@ -343,22 +343,34 @@
     })
   }
 
-  function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(pageData.record.project_product.ui_client_type)
+  function getCacheDataKeyValue() {
+    console.log(pageData.record.project_product.ui_client_type)
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        data.ope = res.data
+        res.data.forEach((item: any) => {
+          if (item.value === 'web') {
+            if (String(pageData.record.project_product.ui_client_type) === '0') {
+              data.ope.push(...item.children)
+            }
+          } else if (item.value === 'android') {
+            if (String(pageData.record.project_product.ui_client_type) === '1') {
+              data.ope.push(...item.children)
+            }
+          } else if (item.value === 'ass_android') {
+            if (String(pageData.record.project_product.ui_client_type) === '1') {
+              data.ass.push(...item.children)
+            }
+          } else if (item.value === 'ass_web') {
+            if (String(pageData.ui_client_type) === '0') {
+              data.ass.push(...item.children)
+            }
+          } else {
+            data.ass.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   }
-
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(pageData.record.project_product.ui_client_type)
-      .then((res) => {
-        data.ass = res.data
-      })
-      .catch(console.log)
-  }
-
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems1.length - 1; i >= 0; i--) {
@@ -381,66 +393,32 @@
     }
   }
 
-  function upDataAssValue(value: any) {
-    const inputItem = findItemByValue(data.ass, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
-      })
-      if (!formItems1.some((item) => item.key === 'ope_value')) {
-        formItems1.push({
-          label: '断言值',
-          key: 'ope_value',
-          value: JSON.stringify(parameter),
-          type: 'textarea',
-          required: true,
-          placeholder: '请输入断言内容',
-          validator: function () {
-            if (this.value !== '') {
-              try {
-                this.value = JSON.parse(this.value)
-              } catch (e) {
+  function upDataOpeValue(selectData: any, value: any) {
+    const inputItem = findItemByValue(selectData, value)
+    if (inputItem && inputItem.parameter) {
+      inputItem.parameter.forEach((select: any) => {
+        if (select.d === true && !formItems1.some((item) => item.key === select.f)) {
+          formItems1.push({
+            label: select.f,
+            key: `${select.f}-ope_value`,
+            value: select.v,
+            type: 'textarea',
+            required: true,
+            placeholder: select.p,
+            validator: function () {
+              if (!this.value && this.value !== 0) {
                 Message.error(this.placeholder || '')
                 return false
               }
-            }
-            return true
-          },
-        })
-      }
-    }
-  }
-
-  function upDataOpeValue(value: any) {
-    const inputItem = findItemByValue(data.ope, value)
-    if (inputItem) {
-      const parameter: any = inputItem.parameter
-      Object.keys(parameter).forEach((key) => {
-        parameter[key] = ''
+              return true
+            },
+          })
+        } else if (select.d === false && !formItems.some((item) => item.key === select.f)) {
+          data.select = select
+        } else {
+          data.select = []
+        }
       })
-
-      if (!formItems1.some((item) => item.key === 'ope_value')) {
-        formItems1.push({
-          label: '元素操作值',
-          key: 'ope_value',
-          value: JSON.stringify(parameter),
-          type: 'textarea',
-          required: true,
-          placeholder: '请输入对元素的操作内容',
-          validator: function () {
-            if (this.value !== '') {
-              try {
-                this.value = JSON.parse(this.value)
-              } catch (e) {
-                Message.error('元素操作值请输入json数据类型')
-                return false
-              }
-            }
-            return true
-          },
-        })
-      }
     }
   }
 
@@ -448,6 +426,47 @@
     if (formItems1.every((it) => (it.validator ? it.validator() : true))) {
       modalDialogRef1.value?.toggle()
       let value = getFormItems(formItems1)
+      const extractedValues = []
+
+      for (const key in value) {
+        if (key.includes('-ope_value')) {
+          const newKey = key.replace('-ope_value', '')
+          console.log(findItemByValue(data.ope, value.ope_key))
+          if (newKey && data.type === 0) {
+            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
+              if (newKey === 'locating') {
+                value['ele_name'] = value[key]
+              }
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          } else {
+            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
+              if (newKey === 'actual') {
+                value['ele_name'] = value[key]
+              }
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          }
+          delete value[key]
+        }
+      }
+      value['ope_value'] = extractedValues
+      if (data.select && typeof data.select === 'object' && !Array.isArray(data.select)) {
+        value['ope_value'] = value['ope_value'] || []
+        value['ope_value'].push(data.select)
+      }
       value['test_env'] = userStore.selected_environment
       value['id'] = data.id
       value['page_id'] = pageData.record.id
@@ -523,8 +542,7 @@
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      getUiRunSortOpe()
-      getUiRunSortAss()
+      getCacheDataKeyValue()
     })
   })
 </script>

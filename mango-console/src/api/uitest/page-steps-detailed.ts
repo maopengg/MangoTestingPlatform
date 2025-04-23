@@ -45,27 +45,27 @@ export function deleteUiPageStepsDetailed(id: number | string[] | number[], pare
   })
 }
 
-export function getUiPageStepsDetailedOpe(pageType: any) {
-  return get({
-    url: '/ui/page/steps/detailed/ope',
-    data: () => {
-      return {
-        page_type: pageType,
-      }
-    },
-  })
-}
-
-export function getUiPageStepsDetailedAss(pageType: any) {
-  return get({
-    url: '/ui/page/steps/detailed/ass',
-    data: () => {
-      return {
-        page_type: pageType,
-      }
-    },
-  })
-}
+// export function getUiPageStepsDetailedOpe(pageType: any) {
+//   return get({
+//     url: '/ui/page/steps/detailed/ope',
+//     data: () => {
+//       return {
+//         page_type: pageType,
+//       }
+//     },
+//   })
+// }
+//
+// export function getUiPageStepsDetailedAss(pageType: any) {
+//   return get({
+//     url: '/ui/page/steps/detailed/ass',
+//     data: () => {
+//       return {
+//         page_type: pageType,
+//       }
+//     },
+//   })
+// }
 
 export function getUiPageAssMethod() {
   return get({

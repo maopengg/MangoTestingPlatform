@@ -15,6 +15,7 @@ from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.project import ProjectSerializers
 from src.auto_test.auto_system.views.test_object import TestObjectSerializers
 from src.enums.system_enum import CacheDataKeyEnum
+from src.exceptions import SystemEError, ERROR_MSG_0038
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -94,5 +95,8 @@ class CacheDataViews(ViewSet):
         @param request:
         @return:
         """
-        model = self.model.objects.get(key=request.query_params.get('key'))
+        try:
+            model = self.model.objects.get(key=request.query_params.get('key'))
+        except CacheData.DoesNotExist:
+            raise SystemEError(*ERROR_MSG_0038)
         return ResponseData.success(RESPONSE_MSG_0031, json.loads(model.value))

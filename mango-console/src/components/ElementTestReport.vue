@@ -102,12 +102,9 @@
   import { onMounted, reactive, ref } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'
-  import {
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
-  } from '@/api/uitest/page-steps-detailed'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
-  defineProps({
+  const props = defineProps({
     resultData: {
       type: Array as () => any,
       required: true,
@@ -137,28 +134,30 @@
     return list.find((item: any) => item.value === value)?.label
   }
 
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(null)
+  function getCacheDataKeyValue() {
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        data.ass = res.data
+        res.data.forEach((item: any) => {
+          if (item.value === 'web') {
+            data.ope.push(...item.children)
+          } else if (item.value === 'android') {
+            data.ope.push(...item.children)
+          } else if (item.value === 'ass_android') {
+            data.ass.push(...item.children)
+          } else if (item.value === 'ass_web') {
+            data.ass.push(...item.children)
+          } else {
+            data.ass.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   }
-
-  function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(null)
-      .then((res) => {
-        data.ope = res.data
-      })
-      .catch(console.log)
-  }
-
   defineExpose({
     getLabelByValue,
   })
   onMounted(() => {
-    getUiRunSortOpe()
-    getUiRunSortAss()
+    getCacheDataKeyValue()
   })
 </script>
 

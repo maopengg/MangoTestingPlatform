@@ -202,14 +202,18 @@
                           }}</span>
                         </a-space>
                         <a-space style="width: 30%">
+                          <span v-if="item.type === 0">步骤：操作</span>
+                          <span v-if="item.type === 1">步骤：断言</span>
+                          <span v-if="item.type === 2">步骤：SQL</span>
+                          <span v-if="item.type === 3">步骤：自定义参数</span>
+                        </a-space>
+                        <a-space style="width: 30%">
                           <span v-if="item.type === 0"
-                            >类型：操作->{{ getLabelByValue(data.ope, item.ope_key) }}</span
+                            >操作：{{ getLabelByValue(data.ope, item.ope_key) }}</span
                           >
                           <span v-if="item.type === 1"
-                            >类型：断言->{{ getLabelByValue(data.ass, item.ope_key) }}</span
+                            >操作：{{ getLabelByValue(data.ass, item.ope_key) }}</span
                           >
-                          <span v-if="item.type === 2">类型：SQL</span>
-                          <span v-if="item.type === 3">类型：自定义参数</span>
                         </a-space>
                       </div>
                       <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
@@ -325,10 +329,7 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
-  import {
-    getUiPageStepsDetailedAss,
-    getUiPageStepsDetailedOpe,
-  } from '@/api/uitest/page-steps-detailed'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -571,18 +572,22 @@
     return list.find((item: any) => item.value === value)?.label
   }
 
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(null)
+  function getCacheDataKeyValue() {
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        data.ass = res.data
-      })
-      .catch(console.log)
-  }
-
-  function getUiRunSortOpe() {
-    getUiPageStepsDetailedOpe(null)
-      .then((res) => {
-        data.ope = res.data
+        res.data.forEach((item: any) => {
+          if (item.value === 'web') {
+            data.ope.push(...item.children)
+          } else if (item.value === 'android') {
+            data.ope.push(...item.children)
+          } else if (item.value === 'ass_android') {
+            data.ass.push(...item.children)
+          } else if (item.value === 'ass_web') {
+            data.ass.push(...item.children)
+          } else {
+            data.ass.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   }
@@ -591,8 +596,7 @@
     nextTick(async () => {
       doRefresh()
       onProductModuleName()
-      getUiRunSortAss()
-      getUiRunSortOpe()
+      getCacheDataKeyValue()
     })
   })
 </script>

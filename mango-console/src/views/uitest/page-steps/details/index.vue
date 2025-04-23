@@ -391,7 +391,6 @@
       for (const key in value) {
         if (key.includes('-ope_value')) {
           const newKey = key.replace('-ope_value', '')
-          console.log(findItemByValue(data.ope, value.ope_key))
           if (newKey && data.type === 0) {
             findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
               if (newKey === 'locating') {
