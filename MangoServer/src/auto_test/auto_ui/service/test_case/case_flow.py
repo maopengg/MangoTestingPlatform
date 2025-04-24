@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 
 import time
+
 from django.utils import timezone
 
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
@@ -46,7 +47,7 @@ class UiCaseFlow:
         model = User.objects.get(username=data.username)
         test_suite_details = TestSuiteDetails.objects.filter(
             status=TaskEnum.STAY_BEGIN.value,
-            retry__lt=cls.retry_frequency,
+            retry__lt=cls.retry_frequency + 1,
             type=TestCaseTypeEnum.UI.value
         ).first()
         try:
