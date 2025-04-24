@@ -5,11 +5,13 @@
 # @Author : 毛鹏
 import os
 import threading
-import time
 
+import time
 from django.apps import AppConfig
 
 from src.enums.system_enum import SocketEnum
+from src.enums.tools_enum import StatusEnum
+from src.enums.ui_enum import DriveTypeEnum
 
 
 class AutoUserConfig(AppConfig):
@@ -43,8 +45,9 @@ class AutoUserConfig(AppConfig):
 
     def new_user(self):
         from src.auto_test.auto_user.models import User
+        from src.auto_test.auto_ui.views.ui_config import UiConfigCRUD
         from mangokit.data_processor import EncryptionTool
-        User.objects.get_or_create(
+        user, created = User.objects.get_or_create(
             username=SocketEnum.OPEN.value,
             defaults={
                 'name': SocketEnum.OPEN.value,
@@ -53,3 +56,11 @@ class AutoUserConfig(AppConfig):
                 'config': {}
             }
         )
+        if created:
+            UiConfigCRUD.inside_post({
+                'user': user.id,
+                'type': DriveTypeEnum.WEB.value,
+                'config': {"web_h5": None, "web_max": 0, "web_path": None, "web_type": 0, "web_headers": 0,
+                           "web_parallel": 2, "web_recording": 0},
+                'status': StatusEnum.SUCCESS.value,
+            })
