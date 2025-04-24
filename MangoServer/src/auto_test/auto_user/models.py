@@ -71,6 +71,9 @@ class UserLogs(models.Model):
     user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
     source_type = models.CharField(verbose_name="来源类型", max_length=64, null=True)
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)
+    # url = models.CharField(verbose_name="url", max_length=64, null=True)
+    # request_data = models.TextField(verbose_name="请求数据", null=True)
+    # response_data = models.TextField(verbose_name="响应数据", null=True)
 
     class Meta:
         db_table = 'user_logs'
