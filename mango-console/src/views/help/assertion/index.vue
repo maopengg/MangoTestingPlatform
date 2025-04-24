@@ -10,7 +10,10 @@
         :body-style="{ padding: '10px' }"
         :bordered="false"
       >
-        <a-descriptions :bordered="true" :column="3" :data="item.children" :title="item.label" />
+        <a-descriptions :bordered="true" :column="3" :data="item.children" :title="item.label">
+          <template #label="{ data }">{{ data.value }}</template>
+          <template #value="{ data }">{{ data.label }}</template>
+        </a-descriptions>
       </a-card>
     </a-space>
   </a-card>
@@ -18,13 +21,17 @@
 
 <script lang="ts" setup>
   import { onMounted, ref } from 'vue'
-  import { getUiPageAssMethod } from '@/api/uitest/page-steps-detailed'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
   const randomList = ref([])
   onMounted(() => {
-    getUiPageAssMethod()
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        randomList.value = res.data
+        res.data.forEach((item: any) => {
+          if (item.value.includes('ass')) {
+            randomList.value.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   })

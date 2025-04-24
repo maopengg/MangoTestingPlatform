@@ -30,7 +30,7 @@ urlpatterns = [
     path("page/steps/detailed/test", PageStepsDetailedView.as_view({'get': 'get_test_page_steps_detailed'})),
     # path("page/steps/detailed/ope", PageStepsDetailedView.as_view({'get': 'get_ope_type'})),
     # path("page/steps/detailed/ass", PageStepsDetailedView.as_view({'get': 'get_ass_type'})),
-    path("page/steps/detailed/ass/method", PageStepsDetailedView.as_view({'get': 'get_ass_method'})),
+    # path("page/steps/detailed/ass/method", PageStepsDetailedView.as_view({'get': 'get_ass_method'})),
     path("page/steps/detailed/sort", PageStepsDetailedView.as_view({'put': 'put_step_sort'})),
     #
     path("page/steps", PageStepsCRUD.as_view()),

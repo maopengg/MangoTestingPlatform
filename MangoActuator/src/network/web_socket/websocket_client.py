@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 import json
+import os
 import traceback
 from typing import Union, Optional, TypeVar
 
@@ -69,21 +70,28 @@ class WebSocketClient:
         """
         server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?username={settings.USERNAME}&password={EncryptionTool.md5_32_small(**{'data': settings.PASSWORD})}"
         log.debug(str(f"websocketURL:{server_url}"))
-        retry = 1
+        retry = 0
+        max_retries = 720
         while cls.running:
+            retry += 1
             try:
                 async with websockets.connect(server_url, max_size=50000000) as cls.websocket:
                     if await cls.client_hands():
+                        retry = 0
                         await cls.client_recv()
                     await asyncio.sleep(2)
-                    retry = 1
             except Exception as error:
-                log.error(f'错误类型：{error}，错误详情：{traceback.print_exc()}')
-                cls.parent.set_tips_info(
-                    f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
-                retry += 1
-                await asyncio.sleep(5)
-                await cls.client_run()
+                if retry >= max_retries:
+                    log.error(f"已达到最大重试次数({max_retries})，程序将退出")
+                    cls.parent.set_tips_info("连接失败，已达到最大重试次数，程序将退出")
+                    cls.running = False
+                    os._exit(1)
+                else:
+                    log.error(f'错误类型：{error}，错误详情：{traceback.print_exc()}')
+                    cls.parent.set_tips_info(
+                        f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
+                    await asyncio.sleep(5)
+                    await cls.client_run()
 
     @classmethod
     async def client_recv(cls):
@@ -97,7 +105,7 @@ class WebSocketClient:
             data = cls.__output_method(recv_json)
             if data.data:
                 await SocketConsumer.add_task(data.data)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
 
     @classmethod
     async def async_send(cls,

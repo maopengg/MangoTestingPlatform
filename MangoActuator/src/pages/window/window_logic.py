@@ -42,7 +42,7 @@ class WindowLogic(MangoMain1Window):
     def __init__(self, loop):
         from ..tools import SmallToolsPage
         if settings.IS_NEW:
-            from ..home2 import HomePage
+            from ..home import HomePage
             from ..ui_settings import SettingPage
             page_dict = {
                 'home': HomePage,

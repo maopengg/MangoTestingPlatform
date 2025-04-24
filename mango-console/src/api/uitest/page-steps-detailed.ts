@@ -67,14 +67,14 @@ export function deleteUiPageStepsDetailed(id: number | string[] | number[], pare
 //   })
 // }
 
-export function getUiPageAssMethod() {
-  return get({
-    url: '/ui/page/steps/detailed/ass/method',
-    data: () => {
-      return {}
-    },
-  })
-}
+// export function getUiPageAssMethod() {
+//   return get({
+//     url: '/ui/page/steps/detailed/ass/method',
+//     data: () => {
+//       return {}
+//     },
+//   })
+// }
 
 export function putUiPagePutStepSort(data: any) {
   return put({
