@@ -204,6 +204,7 @@ class TestCase:
                 if i.is_open:
                     user_list.append(i.username)
             if error.code == 328 and is_open and user_list:
+                log.ui.info(f'heihei:{user_list}, {user_list[random.randint(0, len(user_list) - 1)]}')
                 if self.is_send:
                     data = QueueModel(func_name=func_name, func_args=data_model)
                     ChatConsumer.active_send(SocketDataModel(
