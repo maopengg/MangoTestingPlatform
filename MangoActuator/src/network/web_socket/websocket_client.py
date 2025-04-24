@@ -100,6 +100,7 @@ class WebSocketClient:
         @return:
         """
         from src.consumer import SocketConsumer
+        log.info('ws连接成功，开始获取数据！')
         while cls.running:
             recv_json = await cls.websocket.recv()
             data = cls.__output_method(recv_json)
