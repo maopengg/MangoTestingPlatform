@@ -157,7 +157,7 @@ class PageSteps:
             if self.base_data.context is None or self.base_data.page is None:
                 self.base_data.context, self.base_data.page = await self.driver_object.web.new_web_page()
         except TargetClosedError as error:
-            self.base_data.setup(self.base_data.test_data)
+            self.base_data.setup()
             self.page_step_result_model.status = StatusEnum.FAIL.value
             self.page_step_result_model.error_message = error.message
             raise UiError(*ERROR_MSG_0010)
