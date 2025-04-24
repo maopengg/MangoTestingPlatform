@@ -647,7 +647,6 @@
     putApiPutRefreshApiInfo,
   } from '@/api/apitest/case_detailed'
   import { getApiInfoName } from '@/api/apitest/info'
-  import { getUiPageStepsDetailedAss } from '@/api/uitest/page-steps-detailed'
   import { getUserProductAllModuleName } from '@/api/system/product'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
@@ -658,6 +657,7 @@
     putApiCaseDetailedParameter,
     deleteApiCaseDetailedParameter,
   } from '@/api/apitest/case-detailed-parameter'
+  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
   const userStore = useUserStore()
 
@@ -884,10 +884,14 @@
     blurSave(key, item, id)
   }
 
-  function getUiRunSortAss() {
-    getUiPageStepsDetailedAss(null)
+  function getCacheDataKeyValue() {
+    getSystemCacheDataKeyValue('select_value')
       .then((res) => {
-        data.ass = res.data
+        res.data.forEach((item: any) => {
+          if (item.value === 'ass') {
+            data.ass.push(...item.children)
+          }
+        })
       })
       .catch(console.log)
   }
@@ -1088,7 +1092,7 @@
       doRefresh()
       doRefreshHeaders()
       onProductModuleName()
-      getUiRunSortAss()
+      getCacheDataKeyValue()
     })
   })
 </script>
