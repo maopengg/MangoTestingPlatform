@@ -17,8 +17,10 @@ from src.models.ui_model import PageStepsModel, EquipmentModel, PageStepsResultM
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.page_steps import PageSteps
+from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.obtain_test_data import ObtainTestData
+from src.tools.log_collector import log
 
 
 @singleton
@@ -30,7 +32,9 @@ class TestPageSteps:
         self.parent = parent
         self.project_product_id = project_product
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.test_data)
+        self.base_data = BaseData(self.test_data) \
+            .set_log(log) \
+            .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
 
         self.lock = asyncio.Lock()
 
