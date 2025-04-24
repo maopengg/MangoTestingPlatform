@@ -17,7 +17,7 @@ async def async_global_exception(fun_name: str, error, func_name=None, func_args
         await WebSocketClient().async_send(
             code=300,
             msg="发生未知异常！请联系管理员",
-            is_notice=ClientTypeEnum.WEB.value,
+            is_notice=ClientTypeEnum.WEB,
             func_name=func_name,
             func_args=func_args,
         )
@@ -31,7 +31,7 @@ def sync_global_exception(fun_name: str, error, _is=True):
         WebSocketClient().sync_send(
             code=300,
             msg="发生未知异常！请联系管理员",
-            is_notice=ClientTypeEnum.WEB.value
+            is_notice=ClientTypeEnum.WEB
         )
     else:
         raise error

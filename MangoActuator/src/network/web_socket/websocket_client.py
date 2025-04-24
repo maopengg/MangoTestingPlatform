@@ -120,7 +120,7 @@ class WebSocketClient:
             code=code,
             msg=msg,
             user=settings.USERNAME,
-            is_notice=is_notice.value if is_notice else None,
+            is_notice=is_notice if is_notice else None,
             data=None
         )
         if func_name:
