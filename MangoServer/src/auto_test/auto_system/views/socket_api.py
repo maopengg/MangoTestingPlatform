@@ -21,8 +21,9 @@ class SocketApiViews(ViewSet):
     def get_user_list(self, request: Request):
         data = []
         for i in SocketUser.user:
-            res = User.objects.get(id=i.user_id)
-            data.append({'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
+            if i.client_obj:
+                res = User.objects.get(id=i.user_id)
+                data.append({'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)

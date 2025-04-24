@@ -43,7 +43,7 @@ class SystemConsumer:
         SocketUser.set_user_open_status(data.get('username'), data.get('status'))
         ChatConsumer.active_send(SocketDataModel(
             code=200,
-            msg=f'设置执行的状态为OPEN成功！当前状态：{SocketUser.get_user_obj(data.get("username")).is_open}',
+            msg=f'执行器连接成功，当前OPEN状态：{SocketUser.get_user_obj(data.get("username")).is_open}',
             user=data.get("username"),
             is_notice=ClientTypeEnum.WEB,
         ))

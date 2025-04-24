@@ -4,6 +4,7 @@
 # @Time   : 2023-03-09 8:26
 # @Author : 毛鹏
 import json
+import traceback
 from typing import Union, Optional, TypeVar
 from urllib.parse import parse_qsl
 
@@ -89,13 +90,17 @@ class ChatConsumer(WebsocketConsumer):
             raise StopConsumer()
         if self.scope.get('path') == SocketEnum.WEB_PATH.value:
             SocketUser.delete_user_web_obj(self.username)
+            self.close()
             raise StopConsumer()
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.username)
             try:
                 self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！', is_notice=ClientTypeEnum.WEB.value)
-            except SystemEError:
+            except SystemEError as error:
+                log.system.error(f'socker关闭发送错误：{error}')
+                traceback.print_exc()
                 pass
+            self.close()
             raise StopConsumer()
 
     @classmethod

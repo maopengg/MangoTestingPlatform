@@ -21,6 +21,6 @@ class SocketDataModel(BaseModel):
     code: int
     msg: str
     user: str | None = None
-    is_notice: ClientTypeEnum | None | int = None
+    is_notice: ClientTypeEnum | None = None
     data: QueueModel | None = None
     send_user: str | None = None
