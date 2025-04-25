@@ -104,7 +104,6 @@ class UiCaseStepsDetailedViews(ViewSet):
                 steps_data_model.page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
                 if steps_detailed.ope_value:
                     steps_data_model.page_step_details_data = {i.get('f'): i.get('v') for i in steps_detailed.ope_value}
-                    print(steps_data_model.page_step_details_data)
                     if 'value' in steps_data_model.page_step_details_data:
                         steps_data_model.page_step_details_data.pop('value')
             elif steps_detailed.type == ElementOperationEnum.SQL.value:
