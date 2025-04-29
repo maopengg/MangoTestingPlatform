@@ -98,24 +98,8 @@ export const sqlForm = reactive([
     },
   },
 ])
-export const assForm = reactive([
-  {
-    label: '断言操作',
-    key: 'ope_key',
-    value: ref(''),
-    type: 'cascader',
-    required: true,
-    placeholder: '请选择断言类型',
-    validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
-      return true
-    },
-  },
-])
-export const eleForm = reactive([
+
+export const opeForm = reactive([
   {
     label: '元素操作',
     key: 'ope_key',

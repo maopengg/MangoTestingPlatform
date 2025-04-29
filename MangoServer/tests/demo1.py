@@ -3,18 +3,8 @@
 # @Description: 
 # @Time   : 2025-03-25 22:22
 # @Author : 毛鹏
-import socket
-import socks
+from datetime import datetime
 
-# 设置全局代理
-socks.set_default_proxy(socks.SOCKS5, "127.0.0.1", 1080)
-socket.socket = socks.socksocket
-
-# 测试连接
-try:
-    s = socket.socket()
-    s.connect(("example.com", 80))
-    s.sendall(b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-    print(s.recv(4096))
-finally:
-    s.close()
+# 格式：YYYY-MM-DD HH:MM:SS（24小时制）
+current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+print(current_time, type(current_time))  # 示例输出：2023-10-25 14:30:45

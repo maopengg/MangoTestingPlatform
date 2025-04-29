@@ -15,7 +15,7 @@ MYSQL_PORT = 3306
 MYSQL_DB_NAME = 'dev_mango_server'
 MYSQL_USER = 'root'
 MYSQL_PASSWORD = 'mP123456&'
-MYSQL_IP = '172.24.113.188'
+MYSQL_IP = '172.31.231.92'
 
 # ************************ DEBUG配置 ************************ #
 # 这里也控制了是否使用minio
@@ -42,8 +42,9 @@ IS_DELETE = True
 IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
+IS_TRUE = False
 file_name = 'src/settings/database.json'
-if os.path.exists(file_name):
+if os.path.exists(file_name) and IS_TRUE:
     # 读取数据
     with open(file_name, 'r') as file:
         data = json.load(file)

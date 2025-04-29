@@ -1,5 +1,8 @@
 <template>
   <a-tabs default-active-key="1">
+    <template #extra>
+      <a-tag v-if="resultData?.test_time">执行时间：{{ resultData?.test_time }}</a-tag>
+    </template>
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
         v-for="item of resultData?.element_result_list"
@@ -37,9 +40,10 @@
               <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
               <p>元素个数：{{ item.ele_quantity }}</p>
               <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
+              <p v-if="item?.element_text">文本信息：{{ item?.element_text }}</p>
               <div v-if="item.status === 0">
                 <a-image
-                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
+                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
                   title="失败截图"
                   width="260"
                   style="margin-right: 67px; vertical-align: top"
