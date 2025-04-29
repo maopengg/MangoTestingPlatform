@@ -6,6 +6,7 @@
 import os
 import shutil
 import traceback
+from datetime import datetime
 
 from mangokit.data_processor import RandomTimeData
 from mangokit.exceptions import MangoKitError
@@ -18,7 +19,7 @@ from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
-from src.models.ui_model import CaseModel, UiCaseResultModel, PageStepsResultModel
+from src.models.ui_model import CaseModel, PageStepsResultModel, UiCaseResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.page_steps import PageSteps
@@ -47,6 +48,7 @@ class TestCase:
             project_product_id=self.case_model.project_product,
             project_product_name=self.case_model.project_product_name,
             module_name=self.case_model.module_name,
+            test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             test_env=self.case_model.test_env,
             status=StatusEnum.SUCCESS.value,
         )

@@ -48,8 +48,7 @@ class ChatConsumer(WebsocketConsumer):
             SocketUser.set_user_client_obj(self.username, self, user_id)
             self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
             try:
-                self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！',
-                                 is_notice=ClientTypeEnum.WEB.value)
+                self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
             except SystemEError:
                 self.inside_send(
                     f'{ClientNameEnum.WEB.value}未登录，如有需要可以先选择登录{ClientNameEnum.WEB.value}端以便查看执行日志')

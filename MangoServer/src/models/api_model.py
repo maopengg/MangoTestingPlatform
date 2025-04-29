@@ -72,6 +72,7 @@ class ApiCaseResultModel(BaseModel):
     name: str
     test_env: int
     user_id: int
+    test_time: str | None = None
     status: int
     error_message: str | None = None
     steps: list[ApiCaseStepsResultModel] = []

@@ -1,5 +1,8 @@
 <template>
   <a-tabs default-active-key="1">
+    <template #extra>
+      <a-tag v-if="resultData?.test_time">执行时间：{{ resultData?.test_time }}</a-tag>
+    </template>
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
         v-for="item of resultData?.element_result_list"
@@ -29,17 +32,20 @@
                 测试结果：{{ item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试' }}
               </p>
               <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-              <p v-if="item.status === 0">错误提示：{{ item.error_message }}</p>
+              <p v-if="item.status === 0 && item?.error_message"
+                >错误提示：{{ item.error_message }}</p
+              >
               <p v-if="item.expect">预期：{{ item.expect }}</p>
-              <p v-if="item.status === 0">视频路径：{{ item.video_path }}</p>
+              <p v-if="item.status === 0 && item?.video_path">视频路径：{{ item.video_path }}</p>
             </a-space>
             <a-space direction="vertical" style="width: 50%">
               <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
               <p>元素个数：{{ item.ele_quantity }}</p>
               <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-              <div v-if="item.status === 0">
+              <p v-if="item?.element_text">文本信息：{{ item?.element_text }}</p>
+              <div v-if="item.status === 0 && item?.picture_name">
                 <a-image
-                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_path"
+                  :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
                   title="失败截图"
                   width="260"
                   style="margin-right: 67px; vertical-align: top"
