@@ -221,25 +221,27 @@
                           v-for="key in Object.keys(item.page_step_details_data)"
                           :key="key"
                         >
-                          <div style="display: flex; align-items: center; margin-bottom: 12px">
-                            <span
-                              style="
-                                width: 120px;
-                                flex-shrink: 0;
-                                font-size: 14px;
-                                color: #333;
-                                font-weight: 500;
-                              "
-                            >
-                              {{ key + '：' }}
-                            </span>
-                            <a-textarea
-                              v-model="item.page_step_details_data[key]"
-                              :auto-size="{ minRows: 1, maxRows: 5 }"
-                              style="flex: 1; margin-left: 12px"
-                              @blur="onUpdate"
-                            />
-                          </div>
+                          <template v-if="!['actual', 'locating'].includes(key)">
+                            <div style="display: flex; align-items: center; margin-bottom: 12px">
+                              <span
+                                style="
+                                  width: 120px;
+                                  flex-shrink: 0;
+                                  font-size: 14px;
+                                  color: #333;
+                                  font-weight: 500;
+                                "
+                              >
+                                {{ key + '：' }}
+                              </span>
+                              <a-textarea
+                                v-model="item.page_step_details_data[key]"
+                                :auto-size="{ minRows: 1, maxRows: 5 }"
+                                style="flex: 1; margin-left: 12px"
+                                @blur="onUpdate"
+                              />
+                            </div>
+                          </template>
                         </template>
                       </a-space>
                     </div>
