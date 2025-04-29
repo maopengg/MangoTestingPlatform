@@ -69,17 +69,19 @@
                   </template>
                   <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
                     {{
-                      record.type === 0 || record.type === 1
-                        ? JSON.stringify(
-                            Object.fromEntries(
-                              record.ope_value
-                                .filter((item) => item.d === true)
-                                .map((item) => [item.f, item.v])
-                            )
+                      (() => {
+                        if (record.type === 0 || record.type === 1) {
+                          const filteredData = Object.fromEntries(
+                            record.ope_value
+                              ?.filter((item) => item.d === true)
+                              ?.map((item) => [item.f, item.v]) || []
                           )
-                        : record.type === 2
-                        ? record.sql
-                        : record.value
+                          return Object.keys(filteredData).length
+                            ? JSON.stringify(filteredData)
+                            : ''
+                        }
+                        return record.type === 2 ? record.sql : record.value
+                      })()
                     }}
                   </template>
 
