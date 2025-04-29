@@ -32,13 +32,22 @@ class GitRepo:
         Repo.clone_from(self.repo_url, self.local_warehouse_path)
 
     def pull_repo(self):
-        origin = self.repo.remotes.origin
+        try:
+            origin = self.repo.remotes.origin
+        except AttributeError:
+            origin = self.repo.create_remote('origin', self.repo_url)
         origin.fetch()
 
-        if 'master' in self.repo.heads:
-            self.repo.git.reset('--hard', 'origin/master')
+        if 'origin/master' in self.repo.references:
+            if 'master' in self.repo.heads:
+                self.repo.heads.master.set_tracking_branch(self.repo.remotes.origin.refs.master)
+                self.repo.heads.master.checkout()
+                self.repo.git.reset('--hard', 'origin/master')
+            else:
+                self.repo.create_head('master', self.repo.remotes.origin.refs.master)
+                self.repo.heads.master.checkout()
         else:
-            self.repo.git.checkout('-B', 'master', 'origin/master')
+            raise PytestError(*ERROR_MSG_0016)
 
     def push_repo(self):
         self.pull_repo()

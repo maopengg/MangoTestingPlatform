@@ -4,15 +4,13 @@
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 import traceback
+from datetime import datetime
 from urllib import parse
 from urllib.parse import urljoin
 
-from mangokit.decorator import inject_to_class, async_method_callback
 from mangokit.exceptions import MangoKitError
-from mangokit.models import MethodModel
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
-from mangokit.uidrive.web.async_web import AsyncWebCustomization
 from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
 
@@ -22,29 +20,10 @@ from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
-from src.network import ApiSocketEnum, socket_conn
+from src.network import ApiSocketEnum, socket_conn, HTTP
 from src.settings import settings
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
-
-"""
-示例，自定义方法
-
-规则：
-1.必须使用：@inject_to_class(AsyncWebCustomization)
-2.必须使用：async_method_callback装饰。参考如下，type可以输入：web， android， web_ass, android_ass
-3.函数必须写注释，方法如下。不可以加回车和空格
-4.写完了点击发送缓存数据按钮
-"""
-
-
-@inject_to_class(AsyncWebCustomization)
-@async_method_callback('web', '元素操作', 3, [
-    MethodModel(f='locating'),
-    MethodModel(f='input_value', p='请输入输入内容', d=True)])
-async def w_input(self, locating, input_value: str):
-    """xx项目自定义方法"""
-    pass
 
 
 class PageSteps:
@@ -65,6 +44,7 @@ class PageSteps:
                 project_product_id=self.page_steps_model.project_product,
                 project_product_name=self.page_steps_model.project_product_name,
                 case_step_details_id=self.page_steps_model.case_step_details_id,
+                test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 cache_data={},
                 test_object='',
                 equipment=self.page_steps_model.equipment_config,
@@ -120,6 +100,8 @@ class PageSteps:
         self.page_step_result_model.equipment = self.page_steps_model.equipment_config
 
     def set_element_test_result(self, element_result):
+        if element_result.picture_name and element_result.picture_path:
+            HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
         self.page_step_result_model.element_result_list.append(element_result)
 
     async def driver_init(self):

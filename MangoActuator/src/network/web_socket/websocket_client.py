@@ -47,7 +47,6 @@ class WebSocketClient:
             if res.code == 200:
                 await cls.async_send(
                     f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
-                    is_notice=ClientTypeEnum.WEB
                 )
                 cls.parent.set_tips_info("心跳已连接")
                 model = SetUserOpenSatusModel(username=settings.USERNAME, status=bool(settings.IS_OPEN))

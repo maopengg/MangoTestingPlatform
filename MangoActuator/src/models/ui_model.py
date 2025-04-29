@@ -87,6 +87,7 @@ class PageStepsResultModel(BaseModel):
     project_product_id: int
     project_product_name: str
     case_step_details_id: int | None = None
+    test_time: str | None = None
 
     cache_data: dict
     test_object: str
@@ -103,6 +104,7 @@ class UiCaseResultModel(BaseModel):
     project_product_id: int
     project_product_name: str
     module_name: str
+    test_time: str | None = None
     test_env: int
     status: int
     error_message: str | None = None

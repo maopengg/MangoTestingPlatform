@@ -79,6 +79,7 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
+                self.base_data.is_open_url = False
                 await self.base_data.async_base_close()
                 await self.send_steps_result(
                     300,
@@ -105,9 +106,11 @@ class TestPageSteps:
 
             await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS, )
         except MangoActuatorError as error:
+            self.base_data.is_open_url = False
             await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
+            self.base_data.is_open_url = False
             await self.base_data.async_base_close()
             await self.send_steps_result(
                 300,

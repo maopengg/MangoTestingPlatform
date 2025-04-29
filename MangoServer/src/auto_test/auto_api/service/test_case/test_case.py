@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import traceback
 from copy import deepcopy
+from datetime import datetime
 from typing import Optional
 from urllib.parse import urljoin
 
@@ -51,6 +52,7 @@ class TestCase(CaseApiBase):
             user_id=self.user_id,
             status=StatusEnum.FAIL.value,
             error_message=self.error_message,
+            test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
         try:
             self.init_test_object(api_case.project_product.id)
@@ -117,7 +119,7 @@ class TestCase(CaseApiBase):
             except Exception as error:
                 traceback.print_exc()
                 self.status = StatusEnum.FAIL
-                log.api.error(error)
+                log.api.error(str(error))
                 self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
                 raise error
             case_detailed.status = self.status.value

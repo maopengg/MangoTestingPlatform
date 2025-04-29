@@ -62,15 +62,9 @@ class ProjectProduct(models.Model):
             raise ToolsError(300, "UI全局参数-有关联数据，请先删除绑定的数据后再删除！")
         if Tasks.objects.filter(project_product=self).exists():
             raise ToolsError(300, "定时任务-有关联数据，请先删除绑定的数据后再删除！")
-        from src.auto_test.auto_pytest.models import PytestCase, PytestTools, PytestAct, PytestProduct
+        from src.auto_test.auto_pytest.models import PytestProduct
         if PytestProduct.objects.filter(project_product=self).exists():
             raise ToolsError(300, "项目绑定-有关联数据，请先删除绑定的数据后再删除！")
-        if PytestAct.objects.filter(project_product=self).exists():
-            raise ToolsError(300, "过程对象-有关联数据，请先删除绑定的数据后再删除！")
-        if PytestCase.objects.filter(project_product=self).exists():
-            raise ToolsError(300, "测试用例-有关联数据，请先删除绑定的数据后再删除！")
-        if PytestTools.objects.filter(project_product=self).exists():
-            raise ToolsError(300, "工具文件-有关联数据，请先删除绑定的数据后再删除！")
         if TestSuiteDetails.objects.filter(project_product=self).exists():
             TestSuiteDetails.objects.filter(project_product=self).delete()
         if TestSuite.objects.filter(project_product=self).exists():

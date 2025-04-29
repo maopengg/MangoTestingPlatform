@@ -63,21 +63,25 @@
                         : record.type === 1
                         ? getLabelByValue(data.ass, record.ope_key)
                         : record.type === 2
-                        ? record.key
-                        : record.key_list
+                        ? record.key_list
+                        : record.key
                     }}
                   </template>
                   <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
                     {{
-                      record.ope_value
-                        ? JSON.stringify(
-                            Object.fromEntries(
-                              record.ope_value
-                                .filter((item) => item.d === true)
-                                .map((item) => [item.f, item.v])
-                            )
+                      (() => {
+                        if (record.type === 0 || record.type === 1) {
+                          const filteredData = Object.fromEntries(
+                            record.ope_value
+                              ?.filter((item) => item.d === true)
+                              ?.map((item) => [item.f, item.v]) || []
                           )
-                        : record.value || record.sql
+                          return Object.keys(filteredData).length
+                            ? JSON.stringify(filteredData)
+                            : ''
+                        }
+                        return record.type === 2 ? record.sql : record.value
+                      })()
                     }}
                   </template>
 
@@ -217,7 +221,7 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { assForm, columns, customForm, eleForm, formItems, sqlForm } from './config'
+  import { columns, customForm, opeForm, formItems, sqlForm } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
@@ -263,34 +267,27 @@
       }
     }
     if (event === 0) {
-      if (
-        !formItems.some(
-          (item) =>
-            item.key === 'ele_name' ||
-            formItems.some((item) => item.key === 'ope_key' && item.label == '元素操作')
-        )
-      ) {
-        formItems.push(...eleForm)
-      }
+      formItems.push(...opeForm)
     } else if (event === 1) {
-      assForm
-      if (!formItems.some((item) => item.key === 'ope_key' && item.label == '断言操作')) {
-        formItems.push(...assForm)
-      }
+      formItems.push({
+        label: '断言操作',
+        key: 'ope_key',
+        value: ref(''),
+        type: 'cascader',
+        required: true,
+        placeholder: '请选择断言类型',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
     } else if (event === 2) {
-      if (
-        !formItems.some((item) => item.key === 'sql') ||
-        !formItems.some((item) => item.key === 'key_list')
-      ) {
-        formItems.push(...sqlForm)
-      }
+      formItems.push(...sqlForm)
     } else {
-      if (
-        !formItems.some((item) => item.key === 'key') ||
-        !formItems.some((item) => item.key === 'value')
-      ) {
-        formItems.push(...customForm)
-      }
+      formItems.push(...customForm)
     }
   }
 
@@ -345,8 +342,16 @@
     nextTick(() => {
       formItems.forEach((it: any) => {
         let propName: any = item[it.key]
-        if (it.key === 'locating' || it.key === 'actual') {
+        if (it.key.includes('locating') || it.key.includes('actual')) {
           propName = item.ele_name
+        } else if (it.key.includes('ope_value')) {
+          if (item.ope_value) {
+            item.ope_value.forEach((item1: any) => {
+              if (item1.d && it.key.includes(it.key)) {
+                propName = item1.v
+              }
+            })
+          }
         } else if (typeof propName === 'undefined') {
           item.ope_value.forEach((item: any) => {
             if (item.f === it.key) {
@@ -354,7 +359,6 @@
             }
           })
         }
-
         if (typeof propName === 'object' && propName !== null) {
           it.value = propName.id
         } else {
@@ -387,15 +391,19 @@
       value['page_step'] = route.query.id
       value['type'] = data.type
       const extractedValues = []
-
       for (const key in value) {
-        if (key.includes('-ope_value')) {
+        if (key == 'locating' || key == 'actual') {
+          value['ele_name'] = value[key]
+          extractedValues.push({
+            f: key,
+            v: '',
+            d: false,
+          })
+          delete value[key]
+        } else if (key.includes('-ope_value')) {
           const newKey = key.replace('-ope_value', '')
           if (newKey && data.type === 0) {
             findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
-              if (newKey === 'locating') {
-                value['ele_name'] = value[key]
-              }
               if (item.f === newKey) {
                 extractedValues.push({
                   f: newKey,
@@ -404,11 +412,8 @@
                 })
               }
             })
-          } else {
+          } else if (newKey && data.type === 1) {
             findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
-              if (newKey === 'actual') {
-                value['ele_name'] = value[key]
-              }
               if (item.f === newKey) {
                 extractedValues.push({
                   f: newKey,
@@ -464,23 +469,20 @@
   }
 
   function upDataOpeValue(selectData: any, value: any) {
-    formItems.forEach((item) => {
-      if (item.key == 'type') {
-        changeStatus(item.value)
-      }
-    })
-
     const inputItem = findItemByValue(selectData, value)
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
-        if (select.d === true && !formItems.some((item) => item.key === select.f)) {
+        if (
+          (select.f === 'actual' || select.f === 'locating') &&
+          !formItems.some((item) => item.key === select.f)
+        ) {
           formItems.push({
-            label: select.f,
-            key: `${select.f}-ope_value`,
-            value: select.v,
-            type: 'textarea',
+            label: '选择元素',
+            key: select.f,
+            value: ref(''),
+            placeholder: '请选择一个元素',
             required: true,
-            placeholder: select.p,
+            type: 'select',
             validator: function () {
               if (!this.value && this.value !== 0) {
                 Message.error(this.placeholder || '')
@@ -489,14 +491,14 @@
               return true
             },
           })
-        } else if (select.d === false && !formItems.some((item) => item.key === select.f)) {
+        } else if (select.d === true && !formItems.some((item) => item.key === select.f)) {
           formItems.push({
-            label: '选择元素',
+            label: select.f,
             key: `${select.f}-ope_value`,
-            value: ref(''),
-            placeholder: '请选择一个元素',
+            value: select.v,
+            type: 'textarea',
             required: true,
-            type: 'select',
+            placeholder: select.p,
             validator: function () {
               if (!this.value && this.value !== 0) {
                 Message.error(this.placeholder || '')
@@ -572,11 +574,11 @@
             }
           } else if (item.value === 'ass_android') {
             if (route.query.pageType === '1') {
-              data.ass.push(...item.children)
+              data.ass.unshift(...item.children)
             }
           } else if (item.value === 'ass_web') {
             if (route.query.pageType === '0') {
-              data.ass.push(...item.children)
+              data.ass.unshift(...item.children)
             }
           } else {
             data.ass.push(...item.children)

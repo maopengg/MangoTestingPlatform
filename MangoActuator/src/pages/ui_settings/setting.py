@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-from mangokit.decorator import func_info
 from mangoui import *
 
 from src.enums.gui_enum import TipsTypeEnum
@@ -126,6 +125,7 @@ class SettingPage(QWidget):
 
     def click_send_redis_data(self):
         from src.network.web_socket.websocket_client import WebSocketClient
+        from src.services.customization import func_info
         WebSocketClient().sync_send(
             '设置缓存数据成功',
             func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,

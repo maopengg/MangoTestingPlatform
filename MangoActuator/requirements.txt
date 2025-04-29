@@ -1,5 +1,5 @@
 locust==2.27.0
-mangokit==2.5.8
+mangokit==2.5.9
 mangoui==3.7.1
 
 websockets==10.4
