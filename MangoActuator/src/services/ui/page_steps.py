@@ -82,12 +82,12 @@ class PageSteps:
                 self.set_page_step_result(StatusEnum.SUCCESS, )
             return is_open_device
         except (UiError, MangoKitError) as error:
-            log.warning(f'步骤测试失败，类型：{type(error)}-{error}，错误详情：{traceback.format_exc()}')
+            log.debug(f'步骤测试失败，类型：{type(error)}，失败详情：{error}')
             self.set_page_step_result(StatusEnum.FAIL, error.msg)
             self.set_element_test_result(element_ope.element_test_result)
             raise error
         except Exception as error:
-            log.error(f'步骤测试失败，类型：{error}，错误详情：{traceback.format_exc()}')
+            log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.set_page_step_result(StatusEnum.FAIL, str(error))
             self.set_element_test_result(element_ope.element_test_result)
             raise error
@@ -132,9 +132,9 @@ class PageSteps:
             )
             self.driver_object.web.wen_intercept_request = self.__intercept_request
             self.driver_object.web.wen_recording_api = self.__send_recording_api
-            self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
-                                         self.page_steps_model.url)
-            self.test_object = self.base_data.url
+        self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
+                                     self.page_steps_model.url)
+        self.test_object = self.base_data.url
         try:
             if self.base_data.context is None or self.base_data.page is None:
                 self.base_data.context, self.base_data.page = await self.driver_object.web.new_web_page()
@@ -142,6 +142,7 @@ class PageSteps:
             self.base_data.setup()
             self.page_step_result_model.status = StatusEnum.FAIL.value
             self.page_step_result_model.error_message = error.message
+            log.error(f'浏览器异常关闭-1，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             raise UiError(*ERROR_MSG_0010)
 
     def android_init(self):

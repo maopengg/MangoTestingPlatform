@@ -76,7 +76,9 @@ class TestCase:
                             try:
                                 for value, key in zip(result, eval(cache_data.key)):
                                     self.test_data.set_cache(key, result.get(value))
-                            except SyntaxError:
+                            except SyntaxError as error:
+                                log.error(
+                                    f'初始化用例数据失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                                 raise UiError(*ERROR_MSG_0038)
 
                         if not result_list:
@@ -105,13 +107,13 @@ class TestCase:
                     await self.base_data.async_base_close()
                     break
             except (MangoActuatorError, MangoKitError) as error:
-                log.warning(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
+                log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
                 self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 await self.send_case_result(error.msg)
                 await self.base_data.async_base_close()
                 break
             except Exception as error:
-                log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
+                log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
                 await self.send_case_result(self.case_result.error_message)
@@ -134,7 +136,9 @@ class TestCase:
                         try:
                             for value, key in zip(result, eval(i.get('value'))):
                                 self.base_data.test_data.set_cache(key, result.get(value))
-                        except SyntaxError:
+                        except SyntaxError as error:
+                            log.error(
+                                f'初始化用例数据失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                             raise ToolsError(*ERROR_MSG_0039)
                     if not result_list:
                         raise ToolsError(*ERROR_MSG_0037, value=(sql,))
