@@ -10,7 +10,7 @@ from git import Repo, GitCommandError
 
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
-from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016
+from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016, ERROR_MSG_0017, ERROR_MSG_0018
 from src.tools import project_dir
 from src.tools.decorator.singleton import singleton
 from src.tools.log_collector import log
@@ -24,34 +24,31 @@ class GitRepo:
         self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
         if not self.repo_url:
             raise PytestError(*ERROR_MSG_0015)
-        if not os.path.exists(self.local_warehouse_path):
-            self.clone_repo()
-        self.repo = Repo(self.local_warehouse_path)
-        self.remote_url = self.repo.remotes.origin.url
-        self._repo_lock = threading.Lock()
 
-    def clone_repo(self):
-        Repo.clone_from(self.repo_url, self.local_warehouse_path)
+        self._repo_lock = threading.Lock()
+        self._init_repo()
+
+    def _init_repo(self):
+        """初始化或克隆仓库"""
+        with self._repo_lock:
+            if not os.path.exists(self.local_warehouse_path):
+                os.makedirs(self.local_warehouse_path, exist_ok=True)
+                self.repo = Repo.clone_from(self.repo_url, self.local_warehouse_path)
+            else:
+                try:
+                    self.repo = Repo(self.local_warehouse_path)
+                except Exception:
+                    raise PytestError(*ERROR_MSG_0018)
 
     def pull_repo(self):
         with self._repo_lock:
-
             try:
-                origin = self.repo.remotes.origin
-            except AttributeError:
-                origin = self.repo.create_remote('origin', self.repo_url)
-            origin.fetch()
-
-            if 'origin/master' in self.repo.references:
-                if 'master' in self.repo.heads:
-                    self.repo.heads.master.set_tracking_branch(self.repo.remotes.origin.refs.master)
-                    self.repo.heads.master.checkout()
-                    self.repo.git.reset('--hard', 'origin/master')
-                else:
-                    self.repo.create_head('master', self.repo.remotes.origin.refs.master)
-                    self.repo.heads.master.checkout()
-            else:
-                raise PytestError(*ERROR_MSG_0016)
+                if 'origin' not in self.repo.remotes:
+                    self.repo.create_remote('origin', self.repo_url)
+                self.repo.remotes.origin.fetch()
+                self.repo.git.reset('--hard', 'origin/HEAD')
+            except GitCommandError:
+                raise PytestError(*ERROR_MSG_0017)
 
     def push_repo(self):
         self.pull_repo()
