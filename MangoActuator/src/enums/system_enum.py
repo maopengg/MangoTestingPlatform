@@ -16,22 +16,22 @@ class ClientTypeEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "服务端", 1: "控制端", 2: "执行端"}
+        return {0: "芒果服务端", 1: "芒果用户端", 2: "芒果执行端"}
 
 
 class ClientNameEnum(BaseEnum):
     """
     端名称
     """
-    DRIVER = 'Mango Actuator'
-    SERVER = 'Mango Server'
-    WEB = 'mango-console'
+    DRIVER = '芒果执行器'
+    SERVER = '芒果服务器'
+    WEB = '芒果用户端'
     PLATFORM_CHINESE = '芒果测试平台'
     PLATFORM_ENGLISH = 'MangoTestPlatform'
 
     @classmethod
     def obj(cls):
-        return {'DRIVER': "Mango Actuator", 'SERVER': "Mango Server", 'WEB': "mango-console"}
+        return {'DRIVER': "芒果执行器", 'SERVER': "芒果服务器", 'WEB': "芒果用户端"}
 
 
 class SocketEnum(BaseEnum):
