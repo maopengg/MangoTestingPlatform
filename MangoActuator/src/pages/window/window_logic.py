@@ -10,7 +10,7 @@ from PySide6.QtCore import QThread, Signal, QTimer
 from mangoui import warning_notification, error_notification, success_notification, info_notification, \
     MangoMain1Window, DialogWidget, FormDataModel
 
-from src import process
+from src import process, log
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
 from src.settings import settings
@@ -119,7 +119,7 @@ class WindowLogic(MangoMain1Window):
             except Exception as e:
                 import traceback
                 traceback.print_exc()
-                print(f"运行process协程时出现异常: {e}")
+                log.error(f"运行process协程时出现异常: {e}")
 
         threading.Thread(
             target=run_process,

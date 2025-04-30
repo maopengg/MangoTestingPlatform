@@ -3,8 +3,10 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
+from mangokit.data_processor import SqlCache
 from mangoui import *
 
+from src import CacheKeyEnum, project_dir
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.models import queue_notification
@@ -151,7 +153,7 @@ class SettingPage(QWidget):
 
     def is_open(self):
         settings.IS_OPEN = bool(self.toggle2.get_value())
-        model = SetUserOpenSatusModel(username=settings.USERNAME, status=settings.IS_OPEN)
+        model = SetUserOpenSatusModel(username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value), status=settings.IS_OPEN)
         from src.network import socket_conn
         socket_conn.sync_send(
             '设置执行器状态',

@@ -10,11 +10,12 @@ import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
-from mangokit.data_processor import EncryptionTool
+from mangokit.data_processor import EncryptionTool, SqlCache
 from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
+from src.enums.tools_enum import CacheKeyEnum
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.system_model import SetUserOpenSatusModel
 from src.settings import settings
@@ -49,7 +50,8 @@ class WebSocketClient:
                     f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
                 )
                 cls.parent.set_tips_info("心跳已连接")
-                model = SetUserOpenSatusModel(username=settings.USERNAME, status=bool(settings.IS_OPEN))
+                model = SetUserOpenSatusModel(username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                                              status=bool(settings.IS_OPEN))
                 from src.network import ToolsSocketEnum
                 await cls.async_send(
                     '设置执行器状态',
@@ -67,8 +69,8 @@ class WebSocketClient:
         进行websocket连接
         @return:
         """
-        server_url = f"ws://{settings.IP}:{settings.PORT}/client/socket?username={settings.USERNAME}&password={EncryptionTool.md5_32_small(**{'data': settings.PASSWORD})}"
-        log.debug(str(f"websocketURL:{server_url}"))
+        server_url = f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}client/socket?username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}&password={EncryptionTool.md5_32_small(**{'data': SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value)})}"
+        log.info(f"websocketURL:{server_url}")
         retry = 0
         max_retries = 720
         while cls.running:
@@ -118,7 +120,7 @@ class WebSocketClient:
         send_data = SocketDataModel(
             code=code,
             msg=msg,
-            user=settings.USERNAME,
+            user=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
             is_notice=is_notice if is_notice else None,
             data=None
         )
@@ -150,7 +152,7 @@ class WebSocketClient:
         cls.parent.loop.create_task(send_message())
 
     @staticmethod
-    def __output_method(recv_json) -> SocketDataModel:
+    def __output_method(recv_json) -> SocketDataModel | None:
         """
         输出函数
         :param recv_json:

@@ -4,13 +4,9 @@ import platform
 from src.tools import project_dir
 
 # ****************************************** 用户信息 ****************************************** #
-IP = None
-PORT = None
-USERNAME = None
-PASSWORD = None
 IS_OPEN = False
 # ****************************************** DEBUG ****************************************** #
-IS_DEBUG = False
+IS_DEBUG = True
 # ************************************** 是否弹出首页弹窗 ************************************** #
 IS_WINDOW = True
 

@@ -16,18 +16,16 @@ def request_log(is_serialize=True):
     def decorator(func):
 
         def wrapper(*args, **kwargs) -> ResponseModel:
-            if settings.IS_DEBUG:
-                log.debug(f'HTTP发送的数据：{args}, {kwargs}')
+            log.debug(f'HTTP发送的数据：{args}, {kwargs}')
             response = func(*args, **kwargs)
-            if settings.IS_DEBUG:
-                log.debug(f'HTTP接收的数据：{response.text}')
+            log.debug(f'HTTP接收的数据：{response.text}')
             try:
                 if not is_serialize:
                     return response
                 else:
                     return ResponseModel(**response.json())
             except requests.exceptions.JSONDecodeError:
-                return ResponseModel(code=300, msg='响应的数据费json，请检查后端服务是否可以正常运行~')
+                return ResponseModel(code=300, msg='响应的数据非json格式，请检查后端服务是否可以正常运行~')
             except Exception as error:
                 traceback.print_exc()
                 log.error(traceback.print_exc())

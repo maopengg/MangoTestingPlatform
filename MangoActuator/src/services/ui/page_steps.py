@@ -8,6 +8,7 @@ from datetime import datetime
 from urllib import parse
 from urllib.parse import urljoin
 
+from mangokit.data_processor import SqlCache
 from mangokit.exceptions import MangoKitError
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
@@ -15,13 +16,14 @@ from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
 
 from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
-from src.enums.tools_enum import StatusEnum
+from src.enums.tools_enum import StatusEnum, CacheKeyEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
 from src.network import ApiSocketEnum, socket_conn, HTTP
 from src.settings import settings
+from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 
@@ -180,7 +182,7 @@ class PageSteps:
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
         api_info = RecordingApiModel(
             project_product=project_product,
-            username=settings.USERNAME,
+            username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
             type=ApiTypeEnum.batch.value,
             name=parsed_url.path,
             client=ClientEnum.WEB.value,

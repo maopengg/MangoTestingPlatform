@@ -7,6 +7,7 @@ import traceback
 
 import time
 from mangokit.apidrive import requests
+from mangokit.data_processor import EncryptionTool
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
@@ -50,10 +51,9 @@ class HttpClientApi(HttpBase):
         try:
             response = cls.post('/login', data={
                 'username': username,
-                'password': password,
+                'password': EncryptionTool.md5_32_small(**{'data': password}),
                 'type': ClientTypeEnum.ACTUATOR.value
             })
-            log.info(response.data)
             if response.data:
                 cls.headers['Authorization'] = response.data.get('token')
             return response
@@ -69,9 +69,3 @@ class HttpClientApi(HttpBase):
     def user_register(cls, json_data: dict):
         return cls.post('/register', json=json_data)
 
-
-if __name__ == '__main__':
-    HttpClientApi.set_host('')
-    HttpClientApi.upload_file(
-        'D:\GitCode\MangoTestingPlatform\MangoActuator\screenshot\失败截图-下载铃铛1741762773000.jpg',
-        '失败截图-下载铃铛1741762773000.jpg')

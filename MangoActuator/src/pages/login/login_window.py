@@ -1,18 +1,88 @@
-from mangokit.data_processor import EncryptionTool
-from mangokit.database import SQLiteConnect
+import re
+import socket
+from urllib.parse import urlparse, urlunparse
+
+from mangokit.data_processor import EncryptionTool, SqlCache
 from mangokit.mangos import Mango
 from mangoui import *
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 
+from src.enums.tools_enum import CacheKeyEnum
 from src.network import HTTP
 from src.pages.login.login import LoginWindow
 from src.pages.window.mian_window import MainWindow
 from src.settings import settings
 from src.tools import project_dir
 from src.tools.methods import Methods
-from src.tools.sql_statement import sql_statement_1, sql_statement_2, sql_statement_3
 from .login_dict import form_data
+from ... import log
 from ...tools.components.message import response_message
+
+
+def http_to_ws_url(http_url):
+    """
+    将HTTP/HTTPS URL转换为WebSocket URL
+    :param http_url: 原始HTTP/HTTPS URL
+    :return: 对应的WebSocket URL，如果输入不合法则返回None
+    """
+    try:
+        parsed = urlparse(http_url)
+        if parsed.scheme not in ('http', 'https'):
+            return None
+        new_scheme = 'wss' if parsed.scheme == 'https' else 'ws'
+        path = parsed.path
+        if not path.endswith('/'):
+            path = path + '/'
+        ws_url = urlunparse((
+            new_scheme,
+            parsed.netloc,
+            path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment
+        ))
+
+        return ws_url
+
+    except Exception:
+        return None
+
+
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        if result.scheme not in ('http', 'https'):
+            return None
+        netloc = result.netloc
+        if not netloc:
+            return None
+        host = netloc.split(':')[0]
+        if ':' in netloc:
+            try:
+                port = int(netloc.split(':')[1])
+                if not (1 <= port <= 65535):
+                    return None
+            except ValueError:
+                return None
+        try:
+            if host.startswith('[') and host.endswith(']'):
+                host = host[1:-1]
+                socket.inet_pton(socket.AF_INET6, host)
+            else:
+                socket.inet_pton(socket.AF_INET, host)
+            return url
+        except socket.error:
+            pass
+        if not re.match(
+                r'^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$',
+                host):
+            return None
+        if host.endswith('.tencent.com'):
+            if not re.match(r'^[a-zA-Z0-9-]+\.tencent\.com$', host):
+                return None
+        return url
+    except Exception:
+        return None
 
 
 class LoginLogic(LoginWindow):
@@ -26,63 +96,66 @@ class LoginLogic(LoginWindow):
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
         self.main_window = None
-        self.conn = SQLiteConnect(project_dir.cache_file())
-        user_info = self.conn.execute(sql_statement_1)
-        if user_info:
-            self.ip_edit.setText(user_info[0].get("ip"))
-            self.prot_edit.setText(user_info[0].get("port"))
-            self.username_edit.setText(user_info[0].get('username'))
-            self.password_edit.setText(user_info[0].get('password'))
-        else:
-            self.ip_edit.setText('121.37.174.56')
-            self.prot_edit.setText('8000')
+        self.cache = SqlCache(project_dir.cache_file())
+        host = self.cache.get_sql_cache(CacheKeyEnum.HOST.value)
+        username = self.cache.get_sql_cache(CacheKeyEnum.REMEMBER_USERNAME.value)
+        password = self.cache.get_sql_cache(CacheKeyEnum.REMEMBER_PASSWORD.value)
+        self.ip_edit.setText(host if host else '')
+        self.username_edit.setText(username if username else '')
+        self.password_edit.setText(password if password else '')
 
     @Slot()
     def on_pushButtonLogin_clicked(self):
-        self.login_but.setEnabled(False)
-        settings.IP = self.ip_edit.text()
-        settings.PORT = self.prot_edit.text()
-        settings.USERNAME = self.username_edit.text()
-        settings.PASSWORD = self.password_edit.text()
-        if not settings.IP or not settings.PORT:
-            show_failed_message('请先输入IP或端口后再进行登录')
-        if not settings.USERNAME or not settings.PASSWORD:
-            show_failed_message('请先输入账号或密码后再进行登录')
-        HTTP.api.info.set_host(settings.IP, settings.PORT)
+        self.login_but.setEnabled(True)
+        if not self.ip_edit.text() or self.ip_edit.text() == '':
+            show_failed_message('请输入域名后再进行登录')
+            self.login_but.setEnabled(True)
+            return
+        if not is_valid_url(str(self.ip_edit.text())) and not http_to_ws_url(str(self.ip_edit.text())):
+            show_failed_message('请输入合法的域名地址，如：http://127.0.0.1:8000/')
+            self.login_but.setEnabled(True)
+            return
+        else:
+            self.cache.set_sql_cache(CacheKeyEnum.WS.value, http_to_ws_url(str(self.ip_edit.text())))
+            self.cache.set_sql_cache(CacheKeyEnum.HOST.value, is_valid_url(str(self.ip_edit.text())))
+        if not self.username_edit.text() or self.username_edit.text() == '' or not self.password_edit.text() or self.password_edit.text() == '':
+            show_failed_message('请输入账号或密码后再进行登录')
+            self.login_but.setEnabled(True)
+            return
+        remember = self.remember_box.isChecked()
+        self.cache.set_sql_cache(CacheKeyEnum.USERNAME.value, self.username_edit.text())
+        self.cache.set_sql_cache(CacheKeyEnum.PASSWORD.value, self.password_edit.text())
+        if remember:
+            self.cache.set_sql_cache(CacheKeyEnum.REMEMBER_USERNAME.value, self.username_edit.text())
+            self.cache.set_sql_cache(CacheKeyEnum.REMEMBER_PASSWORD.value, self.password_edit.text())
         try:
-            response = HTTP.not_auth.login(settings.USERNAME,
-                                           EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
+            response = HTTP.not_auth.login(self.username_edit.text(), self.password_edit.text())
             if response.code == 200:
                 if not settings.IS_NEW:
                     Methods.set_project()
                 self.main_window = MainWindow(self.loop)
                 self.close()
                 self.main_window.show()
-                remember = self.remember_box.isChecked()
-                if remember:
-                    self.conn.execute(sql_statement_3)
-                    self.conn.execute(sql_statement_2,
-                                      (settings.USERNAME, settings.PASSWORD, settings.IP, settings.PORT))
                 HTTP.user.info.get_userinfo(response.data.get('userId'))
             else:
                 show_failed_message('账号或密码错误')
-
         except (JSONDecodeError, InvalidURL):
             show_failed_message('IP或端口不正确')
         except ConnectionError:
             show_failed_message('IP或端口不正确或服务未启动')
+        except Exception as e:
+            show_failed_message('发生未知错误，请联系管理员！')
+            import traceback
+            log.error(f'发生未知错误，请联系管理员！错误类型：{type(e)}, 错误详情：{e}，错误明细：{traceback.format_exc()}')
         self.login_but.setEnabled(True)
 
     def register(self, ):
-        settings.IP = self.ip_edit.text()
-        settings.PORT = self.prot_edit.text()
-        if not settings.IP:
-            show_failed_message('请先输入IP再使用注册功能！')
+        if not self.ip_edit.text() or self.ip_edit.text() == '':
+            show_failed_message('请输入域名后再进行注册')
             return
-        if not settings.PORT:
-            show_failed_message('请先输入端口再使用注册功能！')
+        if not is_valid_url(str(self.ip_edit.text())):
+            show_failed_message('请输入合法的域名地址再进行注册，如：http://127.0.0.1:8000/')
             return
-        HTTP.api.info.set_host(settings.IP, settings.PORT)
         form_data = Mango.add_from_data(self)
         dialog = DialogWidget('新增用户', form_data)
         dialog.exec()

@@ -9,10 +9,11 @@ import traceback
 
 import time
 from mangokit.uidrive import DriverObject
+from mangokit.data_processor import SqlCache
 
 from src.models.ui_model import CaseModel, GetTaskModel
 from src.services.ui.test_case import TestCase
-from src.settings import settings
+from src.tools import project_dir
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 
@@ -43,10 +44,11 @@ class CaseFlow:
     async def get_case_task(cls):
         try:
             from src.network import UiSocketEnum, WebSocketClient
+            from src import CacheKeyEnum
             await WebSocketClient.async_send(
                 '请求获取任务',
                 func_name=UiSocketEnum.GET_TASK.value,
-                func_args=GetTaskModel(username=settings.USERNAME)
+                func_args=GetTaskModel(username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value))
             )
         except Exception as error:
             log.error(f'get_case_task失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
