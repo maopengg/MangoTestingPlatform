@@ -18,6 +18,7 @@ class TestReportWriting:
     @orm_retry('update_page_step_status')
     def update_page_step_status(cls, data: PageStepsResultModel) -> None:
         try:
+            log.ui.debug(f'开始写入步骤测试结果，步骤数据是：{data.model_dump_json()}')
             res = PageSteps.objects.get(id=data.id)
             res.status = data.status
             res.result_data = data.model_dump()
@@ -29,6 +30,7 @@ class TestReportWriting:
     @classmethod
     @orm_retry('update_test_case')
     def update_test_case(cls, data: UiCaseResultModel):
+        log.ui.debug(f'开始写入用例测试结果，用例的测试状态是：{data.status}')
         connection.ensure_connection()
         case = UiCase.objects.get(id=data.id)
         case.status = data.status
@@ -39,12 +41,14 @@ class TestReportWriting:
     @classmethod
     @orm_retry('update_step')
     def update_step(cls, step_data: PageStepsResultModel):
+        log.ui.debug(f'开始写入用例中步骤测试结果，步骤数据是：{step_data.model_dump_json()}')
+
         case_step_detailed = UiCaseStepsDetailed.objects.get(id=step_data.case_step_details_id)
         case_step_detailed.status = step_data.status
         case_step_detailed.error_message = step_data.error_message
         case_step_detailed.result_data = step_data.model_dump()
         case_step_detailed.save()
-        #
+
         page_step = PageSteps.objects.get(id=step_data.id)
         page_step.status = step_data.status
         page_step.result_data = step_data.model_dump()

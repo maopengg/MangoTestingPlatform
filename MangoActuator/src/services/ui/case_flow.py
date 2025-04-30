@@ -48,10 +48,8 @@ class CaseFlow:
                 func_name=UiSocketEnum.GET_TASK.value,
                 func_args=GetTaskModel(username=settings.USERNAME)
             )
-            # cls.parent.set_tips_info('正在主动获取任务')
         except Exception as error:
-            traceback.print_exc()
-            log.error(f'get_case_task，类型：{error}，错误：{traceback.print_exc()}')
+            log.error(f'get_case_task失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
 
     @classmethod
     @async_memory

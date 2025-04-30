@@ -5,7 +5,7 @@
       <a-space>
         <a-button size="mini" type="primary" @click.stop="addTestSuite"> 增加测试套</a-button>
       </a-space>
-      <a-collapse :bordered="false" :default-active-key="[0]" accordion>
+      <a-collapse :bordered="false" :default-active-key="[0]">
         <a-collapse-item
           v-for="(item, index) in parametrizeData"
           :key="index"

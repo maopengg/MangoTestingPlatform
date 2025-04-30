@@ -93,7 +93,7 @@ class ConsumerThread:
             log.system.info(
                 f'推送{TestCaseTypeEnum.get_value(test_suite_details.type)}任务成功，test_suite_details":{test_suite_details.id}')
         except MangoServerError as error:
-            log.system.warning(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
+            log.system.debug(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
             if retry > max_retry:
                 self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
