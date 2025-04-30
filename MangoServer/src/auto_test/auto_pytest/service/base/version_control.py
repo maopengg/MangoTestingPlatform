@@ -10,7 +10,7 @@ from git import Repo, GitCommandError
 
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
-from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0016, ERROR_MSG_0017, ERROR_MSG_0018
+from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0017, ERROR_MSG_0018
 from src.tools import project_dir
 from src.tools.decorator.singleton import singleton
 from src.tools.log_collector import log
@@ -51,18 +51,14 @@ class GitRepo:
                 raise PytestError(*ERROR_MSG_0017)
 
     def push_repo(self):
-        self.pull_repo()
-        status = self.repo.git.status()
-        log.pytest.info(f"提交前的存储库状态：{status}")
-        if "nothing to commit" not in status:
-            self.repo.git.add(self.local_warehouse_path)
-            self.repo.git.commit("-m", "自动提交")
-        try:
-            self.repo.git.pull("origin", "master", strategy_option="theirs")
-        except GitCommandError as e:
-            log.pytest.error(f"拉取远程更改时发生冲突，自动解决失败: {e}")
-            raise PytestError(*ERROR_MSG_0016)
-
-        origin = self.repo.remotes.origin
-        push_result = origin.push("master")
-        log.pytest.info(f"推送结果: {push_result}")
+        with self._repo_lock:
+            self.repo.git.add('.')
+            self.repo.remotes.origin.fetch()
+            try:
+                self.repo.git.merge('origin/master', strategy_option='theirs')
+            except GitCommandError:
+                self.repo.git.checkout('--theirs', '.')
+                self.repo.git.add('.')
+            self.repo.git.commit('-m', '芒果测试平台自动提交')
+            push_result = self.repo.git.push('origin', 'master', '--force-with-lease')
+            log.pytest.info(f'推送完成: {push_result}')
