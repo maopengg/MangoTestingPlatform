@@ -3,14 +3,14 @@
     <span v-if="appStore.actionBar.isShowSearch" class="action-item" @click="onShowSearch">
       <SearchIcon />
     </span>
-    <a-popover :width="300" placement="bottom" trigger="click">
-      <a-badge v-if="appStore.actionBar.isShowMessage" :count="badgeValue" class="action-item">
-        <NotificationsIcon />
-      </a-badge>
-      <template #content>
-        <MessageContent />
-      </template>
-    </a-popover>
+    <!--    <a-popover :width="300" placement="bottom" trigger="click">-->
+    <!--      <a-badge v-if="appStore.actionBar.isShowMessage" :count="badgeValue" class="action-item">-->
+    <!--        <NotificationsIcon />-->
+    <!--      </a-badge>-->
+    <!--      <template #content>-->
+    <!--        <MessageContent />-->
+    <!--      </template>-->
+    <!--    </a-popover>-->
     <span v-if="appStore.actionBar.isShowRefresh" class="action-item" @click="onRefrehRoute">
       <RefreshIcon />
     </span>
