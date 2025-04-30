@@ -4,6 +4,7 @@
 # @Time   : 2025-02-18 13:04
 # @Author : 毛鹏
 import os
+import threading
 
 from git import Repo, GitCommandError
 
@@ -27,27 +28,30 @@ class GitRepo:
             self.clone_repo()
         self.repo = Repo(self.local_warehouse_path)
         self.remote_url = self.repo.remotes.origin.url
+        self._repo_lock = threading.Lock()
 
     def clone_repo(self):
         Repo.clone_from(self.repo_url, self.local_warehouse_path)
 
     def pull_repo(self):
-        try:
-            origin = self.repo.remotes.origin
-        except AttributeError:
-            origin = self.repo.create_remote('origin', self.repo_url)
-        origin.fetch()
+        with self._repo_lock:
 
-        if 'origin/master' in self.repo.references:
-            if 'master' in self.repo.heads:
-                self.repo.heads.master.set_tracking_branch(self.repo.remotes.origin.refs.master)
-                self.repo.heads.master.checkout()
-                self.repo.git.reset('--hard', 'origin/master')
+            try:
+                origin = self.repo.remotes.origin
+            except AttributeError:
+                origin = self.repo.create_remote('origin', self.repo_url)
+            origin.fetch()
+
+            if 'origin/master' in self.repo.references:
+                if 'master' in self.repo.heads:
+                    self.repo.heads.master.set_tracking_branch(self.repo.remotes.origin.refs.master)
+                    self.repo.heads.master.checkout()
+                    self.repo.git.reset('--hard', 'origin/master')
+                else:
+                    self.repo.create_head('master', self.repo.remotes.origin.refs.master)
+                    self.repo.heads.master.checkout()
             else:
-                self.repo.create_head('master', self.repo.remotes.origin.refs.master)
-                self.repo.heads.master.checkout()
-        else:
-            raise PytestError(*ERROR_MSG_0016)
+                raise PytestError(*ERROR_MSG_0016)
 
     def push_repo(self):
         self.pull_repo()
