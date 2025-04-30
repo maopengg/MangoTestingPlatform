@@ -76,12 +76,9 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_push(self, request: Request):
-        try:
-            repo = GitRepo()
-            repo.push_repo()
-            return ResponseData.success(RESPONSE_MSG_0090)
-        except Exception as error:
-            return ResponseData.fail(RESPONSE_MSG_0091, data=str(error))
+        repo = GitRepo()
+        repo.push_repo()
+        return ResponseData.success(RESPONSE_MSG_0090)
 
     @action(methods=['get'], detail=False)
     @error_response('pytest')
