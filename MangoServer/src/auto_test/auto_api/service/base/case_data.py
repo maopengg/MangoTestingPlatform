@@ -60,4 +60,4 @@ class ApiCaseBase(ApiInfoBase):
     def case_parametrize(self, parametrize: dict):
         if parametrize:
             for i in parametrize:
-                self.set_cache(i.get('key'), i.get('value'))
+                self.set_cache(i.get('key'), self.replace(i.get('value')))

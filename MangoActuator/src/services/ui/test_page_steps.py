@@ -3,6 +3,7 @@
 # @Description: # @Time   : 2023/3/23 11:31
 # @Author : 毛鹏
 import asyncio
+import traceback
 
 from mangokit.decorator import singleton
 from mangokit.exceptions import MangoKitError
@@ -19,8 +20,8 @@ from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
-from src.tools.obtain_test_data import ObtainTestData
 from src.tools.log_collector import log
+from src.tools.obtain_test_data import ObtainTestData
 
 
 @singleton
@@ -72,6 +73,7 @@ class TestPageSteps:
                     page_steps_result_model
                 )
             except (MangoActuatorError, MangoKitError) as error:
+                log.debug(f'步骤测试失败，类型：{type(error)}，失败详情：{error}')
                 await self.send_steps_result(
                     error.code,
                     error.msg,
@@ -79,6 +81,7 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
+                log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.base_data.is_open_url = False
                 await self.base_data.async_base_close()
                 await self.send_steps_result(
@@ -105,11 +108,13 @@ class TestPageSteps:
                 await page_steps.web_init(data)
 
             await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS, )
-        except MangoActuatorError as error:
+        except (MangoActuatorError, MangoKitError) as error:
+            log.debug(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
+            log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
             await self.send_steps_result(

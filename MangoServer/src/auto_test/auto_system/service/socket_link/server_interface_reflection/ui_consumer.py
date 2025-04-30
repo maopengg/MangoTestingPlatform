@@ -6,8 +6,7 @@
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
-from src.exceptions import MangoServerError
-from src.tools.log_collector import log
+
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import PageStepsResultModel, UiCaseResultModel, GetTaskModel
 from src.tools.decorator.convert_args import convert_args
@@ -34,4 +33,3 @@ class UIConsumer:
     @convert_args(GetTaskModel)
     def u_get_task(cls, data: GetTaskModel):
         UiCaseFlow.get_case(data)
-
