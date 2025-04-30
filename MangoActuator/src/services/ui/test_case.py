@@ -142,7 +142,7 @@ class TestCase:
     async def case_parametrize(self):
         if self.case_model.parametrize:
             for i in self.case_model.parametrize:
-                self.base_data.test_data.set_cache(i.get('key'), i.get('value'))
+                self.base_data.test_data.set_cache(i.get('key'), self.base_data.test_data.replace(i.get('value')))
 
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:

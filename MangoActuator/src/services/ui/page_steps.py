@@ -119,7 +119,7 @@ class PageSteps:
         if data:
             self.driver_object.set_web(data.web_type, data.web_path, data.web_max, data.web_headers, data.web_recording,
                                        data.web_h5, data.is_header_intercept)
-        else:
+        elif self.driver_object.web is None:
             self.driver_object.set_web(
                 self.page_steps_model.equipment_config.web_type,
                 self.page_steps_model.equipment_config.web_path,
@@ -130,11 +130,11 @@ class PageSteps:
                 self.page_steps_model.equipment_config.is_header_intercept,
                 settings.IS_OPEN
             )
+            self.driver_object.web.wen_intercept_request = self.__intercept_request
+            self.driver_object.web.wen_recording_api = self.__send_recording_api
             self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
                                          self.page_steps_model.url)
             self.test_object = self.base_data.url
-            self.driver_object.web.wen_intercept_request = self.__intercept_request
-            self.driver_object.web.wen_recording_api = self.__send_recording_api
         try:
             if self.base_data.context is None or self.base_data.page is None:
                 self.base_data.context, self.base_data.page = await self.driver_object.web.new_web_page()

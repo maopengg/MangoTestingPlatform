@@ -27,7 +27,7 @@ class UiCaseFlow:
         retry += 1
         user_list = [i for i in SocketUser.user if i.client_obj]
         if not user_list:
-            log.system.warning('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
+            log.system.debug('用户列表为空，无法发送任务，请先保持至少一个执行器是登录状态~')
             time.sleep(5)
             return
         try:
@@ -66,7 +66,7 @@ class UiCaseFlow:
                 cls.send_case(model.id, model.username, case_model)
                 cls.update_status_proceed(test_suite, test_suite_details)
         except MangoServerError as error:
-            log.system.warning(f'执行器主动拉取任务失败：{error}')
+            log.system.debug(f'执行器主动拉取任务失败：{error}')
             test_suite_details.status = TaskEnum.FAIL.value
             test_suite_details.save()
 
