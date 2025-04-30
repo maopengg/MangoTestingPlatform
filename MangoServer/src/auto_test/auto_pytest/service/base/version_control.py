@@ -27,6 +27,7 @@ class GitRepo:
 
         self._repo_lock = threading.Lock()
         self._init_repo()
+        self._configure_git_identity()
 
     def _init_repo(self):
         """初始化或克隆仓库"""
@@ -49,6 +50,15 @@ class GitRepo:
                 self.repo.git.reset('--hard', 'origin/HEAD')
             except GitCommandError:
                 raise PytestError(*ERROR_MSG_0017)
+
+    def _configure_git_identity(self):
+        with self._repo_lock:
+            self.repo.config_writer().set_value(
+                "user", "name", "芒果"
+            ).release()
+            self.repo.config_writer().set_value(
+                "user", "email", "729164035@qq.com"
+            ).release()
 
     def push_repo(self):
         with self._repo_lock:
