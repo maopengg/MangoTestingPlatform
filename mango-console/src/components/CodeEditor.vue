@@ -31,7 +31,6 @@
     modelValue: '',
     indentWithTab: true,
     autoDestroy: true,
-    lineHeight: 20, // 默认行数高度
     placeholder: '', // 默认占位符文本
   })
 
