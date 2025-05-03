@@ -1,5 +1,3 @@
-import re
-import socket
 from urllib.parse import urlparse, urlunparse
 
 from mangokit.data_processor import EncryptionTool, SqlCache
@@ -50,37 +48,12 @@ def http_to_ws_url(http_url):
 
 def is_valid_url(url):
     try:
-        result = urlparse(url)
-        if result.scheme not in ('http', 'https'):
+        parsed = urlparse(url)
+        if not all([parsed.scheme, parsed.netloc]):
             return None
-        netloc = result.netloc
-        if not netloc:
+        if parsed.scheme not in ('http', 'https', 'ftp'):
             return None
-        host = netloc.split(':')[0]
-        if ':' in netloc:
-            try:
-                port = int(netloc.split(':')[1])
-                if not (1 <= port <= 65535):
-                    return None
-            except ValueError:
-                return None
-        try:
-            if host.startswith('[') and host.endswith(']'):
-                host = host[1:-1]
-                socket.inet_pton(socket.AF_INET6, host)
-            else:
-                socket.inet_pton(socket.AF_INET, host)
-            return url
-        except socket.error:
-            pass
-        if not re.match(
-                r'^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$',
-                host):
-            return None
-        if host.endswith('.tencent.com'):
-            if not re.match(r'^[a-zA-Z0-9-]+\.tencent\.com$', host):
-                return None
-        return url
+        return urlunparse((parsed.scheme, parsed.netloc, "", "", "", ""))
     except Exception:
         return None
 
@@ -111,13 +84,15 @@ class LoginLogic(LoginWindow):
             show_failed_message('请输入域名后再进行登录')
             self.login_but.setEnabled(True)
             return
-        if not is_valid_url(str(self.ip_edit.text())) and not http_to_ws_url(str(self.ip_edit.text())):
+        http_url = is_valid_url(str(self.ip_edit.text()))
+        ws_url = http_to_ws_url(http_url)
+        if not http_url or not ws_url:
             show_failed_message('请输入合法的域名地址，如：http://127.0.0.1:8000/')
             self.login_but.setEnabled(True)
             return
         else:
-            self.cache.set_sql_cache(CacheKeyEnum.WS.value, http_to_ws_url(str(self.ip_edit.text())))
-            self.cache.set_sql_cache(CacheKeyEnum.HOST.value, is_valid_url(str(self.ip_edit.text())))
+            self.cache.set_sql_cache(CacheKeyEnum.WS.value, ws_url)
+            self.cache.set_sql_cache(CacheKeyEnum.HOST.value, http_url)
         if not self.username_edit.text() or self.username_edit.text() == '' or not self.password_edit.text() or self.password_edit.text() == '':
             show_failed_message('请输入账号或密码后再进行登录')
             self.login_but.setEnabled(True)
