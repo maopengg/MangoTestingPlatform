@@ -9,11 +9,12 @@ from urllib import parse
 from urllib.parse import urljoin
 
 from mangokit.data_processor import SqlCache
+from mangokit.mangos import Mango
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
-from mangokit.mangos import Mango
+
 from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
 from src.enums.tools_enum import StatusEnum, CacheKeyEnum
 from src.enums.ui_enum import DriveTypeEnum
@@ -72,6 +73,8 @@ class PageSteps:
             self.page_step_result_model.equipment = self.page_steps_model.equipment_config
             return self.page_step_result_model
         except Exception as error:
+            Mango.s(self.steps_main, error, traceback.format_exc(),
+                    SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value))
             log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             raise error
 
