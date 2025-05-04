@@ -38,7 +38,7 @@ class CaseFlow:
             else:
                 if time.time() - s > 5:
                     s = time.time()
-                    await cls.get_case_task()
+                    # await cls.get_case_task()
 
     @classmethod
     async def get_case_task(cls):

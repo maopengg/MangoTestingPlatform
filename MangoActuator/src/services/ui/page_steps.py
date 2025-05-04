@@ -50,7 +50,7 @@ class PageSteps:
                 cache_data={},
                 test_object='',
                 equipment=self.page_steps_model.equipment_config,
-                status=StatusEnum.FAIL.value,
+                status=StatusEnum.SUCCESS.value,
                 element_result_list=[]
             )
 
@@ -64,6 +64,8 @@ class PageSteps:
                         element_data = _element_data.page_step_details_data
                 if element_data is None:
                     raise UiError(*ERROR_MSG_0025)
+            if element_model.name == '结果内容':
+                pass
             is_open_device = await self.ope_steps(is_open_device, element_model, element_data)
             if self.page_step_result_model.status == StatusEnum.FAIL.value:
                 break
@@ -76,8 +78,7 @@ class PageSteps:
                 await element_ope.open_device()
                 is_open_device = True
             element_result = await element_ope.element_main()
-            self.set_page_step_result(StatusEnum.SUCCESS, )
-            self.set_element_test_result(element_result)
+            self.page_step_result_model.element_result_list.append(element_result)
             if element_result.status == StatusEnum.FAIL.value:
                 self.set_page_step_result(StatusEnum.FAIL, element_result.error_message)
             else:
@@ -86,12 +87,12 @@ class PageSteps:
         except (UiError, MangoKitError) as error:
             log.debug(f'步骤测试失败，类型：{type(error)}，失败详情：{error}')
             self.set_page_step_result(StatusEnum.FAIL, error.msg)
-            self.set_element_test_result(element_ope.element_test_result)
+            self.set_element_test_result(element_ope.element_result_model)
             raise error
         except Exception as error:
             log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.set_page_step_result(StatusEnum.FAIL, str(error))
-            self.set_element_test_result(element_ope.element_test_result)
+            self.set_element_test_result(element_ope.element_result_model)
             raise error
 
     def set_page_step_result(self, status: StatusEnum, error_message: str = None):
@@ -151,8 +152,9 @@ class PageSteps:
         self.base_data.package_name = self.page_steps_model.environment_config.test_object_value
         self.test_object = self.base_data.url
 
+        if self.driver_object.android is None:
+            self.driver_object.set_android(self.page_steps_model.equipment_config.and_equipment)
         if self.base_data.android is None:
-            self.driver_object.android.and_equipment = self.page_steps_model.equipment_config
             self.base_data.android = self.driver_object.android.new_android()
 
     def desktop_init(self, ):

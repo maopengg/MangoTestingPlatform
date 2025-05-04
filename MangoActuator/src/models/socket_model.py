@@ -40,5 +40,5 @@ class LoginModel(BaseModel):
 class ResponseModel(BaseModel):
     code: int
     msg: str
-    data: list[dict] | dict | None = None
+    data: list[dict] | dict | str | None = None
     totalSize: int | None = None

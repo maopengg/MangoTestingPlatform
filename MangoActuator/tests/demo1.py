@@ -30,7 +30,16 @@ async def run():
         data = json.load(f)
         await SocketConsumer.add_task(QueueModel(func_name=data.get('func_name'), func_args=data.get('func_args')))
     while True:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
 
 
-asyncio.run(run())
+async def run_func():
+    from src.models.ui_model import CaseModel
+    from src.services.ui.case_flow import CaseFlow
+    CaseFlow.parent = LinuxLoop()
+    with open('test.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        await CaseFlow.execute_task(CaseModel(**data.get('func_args')))
+
+
+asyncio.run(run_func())

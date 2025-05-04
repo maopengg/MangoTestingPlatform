@@ -16,7 +16,7 @@
           status="success"
           size="mini"
           @click="notificationMessage.addBadgeValue(true)"
-          >已读</a-button
+          >全部已读</a-button
         >
         <a-button type="outline" status="warning" size="mini" @click="clearMsg"
           >清空消息</a-button

@@ -37,9 +37,8 @@ class TestCase:
         self.case_model: CaseModel = case_model
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.test_data) \
+        self.base_data = BaseData(self.test_data, log) \
             .set_step_open_url(case_model.switch_step_open_url) \
-            .set_log(log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
 
         self.case_result = UiCaseResultModel(
@@ -100,9 +99,7 @@ class TestCase:
             try:
                 await page_steps.driver_init()
                 page_steps_result_model = await page_steps.steps_main()
-                self.case_result \
-                    .steps \
-                    .append(page_steps_result_model)
+                self.set_page_steps(page_steps_result_model)
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
                     await self.base_data.async_base_close()
                     break
@@ -184,9 +181,12 @@ class TestCase:
             'value': msg
         })
 
-    def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg: str):
-        self.case_result.error_message = msg
-        self.case_result.status = StatusEnum.FAIL.value
+    def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg=None):
+        if msg:
+            self.case_result.error_message = msg
+            self.case_result.status = StatusEnum.FAIL.value
+        else:
+            self.case_result.error_message = page_steps_result_model.error_message
         self.case_result \
             .steps \
             .append(page_steps_result_model)

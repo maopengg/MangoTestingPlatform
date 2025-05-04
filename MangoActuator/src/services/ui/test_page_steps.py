@@ -33,8 +33,7 @@ class TestPageSteps:
         self.parent = parent
         self.project_product_id = project_product
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.test_data) \
-            .set_log(log) \
+        self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
 
         self.lock = asyncio.Lock()

@@ -50,8 +50,9 @@ class WebSocketClient:
                     f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
                 )
                 cls.parent.set_tips_info("心跳已连接")
-                model = SetUserOpenSatusModel(username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                                              status=bool(settings.IS_OPEN))
+                model = SetUserOpenSatusModel(
+                    username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                    status=bool(settings.IS_OPEN))
                 from src.network import ToolsSocketEnum
                 await cls.async_send(
                     '设置执行器状态',
@@ -134,9 +135,6 @@ class WebSocketClient:
                 await cls.client_run()
                 if cls.websocket and cls.websocket.open:
                     await cls.websocket.send(cls.__serialize(send_data))
-        else:
-            if settings.IS_DEBUG:
-                log.debug(f"调试模式：序列化数据 ->{cls.__serialize(send_data)}")
 
     @classmethod
     def sync_send(cls,
