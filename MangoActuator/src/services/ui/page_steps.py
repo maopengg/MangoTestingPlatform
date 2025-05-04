@@ -9,12 +9,11 @@ from urllib import parse
 from urllib.parse import urljoin
 
 from mangokit.data_processor import SqlCache
-from mangokit.exceptions import MangoKitError
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
-
+from mangokit.mangos import Mango
 from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
 from src.enums.tools_enum import StatusEnum, CacheKeyEnum
 from src.enums.ui_enum import DriveTypeEnum
@@ -37,6 +36,7 @@ class PageSteps:
         self.base_data = base_data
         self.page_steps_model = page_steps_model
         self.is_step = is_step
+        self._device_opened = False
 
         if page_steps_model:
             self.page_step_result_model = PageStepsResultModel(
@@ -55,57 +55,42 @@ class PageSteps:
             )
 
     async def steps_main(self) -> PageStepsResultModel:
-        is_open_device = False
-        for element_model in self.page_steps_model.element_list:
-            element_data = None
-            if not self.is_step:
-                for _element_data in self.page_steps_model.case_data:
-                    if _element_data.page_step_details_id == element_model.id:
-                        element_data = _element_data.page_step_details_data
-                if element_data is None:
-                    raise UiError(*ERROR_MSG_0025)
-            if element_model.name == '结果内容':
-                pass
-            is_open_device = await self.ope_steps(is_open_device, element_model, element_data)
-            if self.page_step_result_model.status == StatusEnum.FAIL.value:
-                break
-        return self.page_step_result_model
-
-    async def ope_steps(self, is_open_device, element_model, element_data):
-        element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
+        self._device_opened = False
         try:
-            if not is_open_device:
-                await element_ope.open_device()
-                is_open_device = True
-            element_result = await element_ope.element_main()
-            self.page_step_result_model.element_result_list.append(element_result)
-            if element_result.status == StatusEnum.FAIL.value:
-                self.set_page_step_result(StatusEnum.FAIL, element_result.error_message)
-            else:
-                self.set_page_step_result(StatusEnum.SUCCESS, )
-            return is_open_device
-        except (UiError, MangoKitError) as error:
-            log.debug(f'步骤测试失败，类型：{type(error)}，失败详情：{error}')
-            self.set_page_step_result(StatusEnum.FAIL, error.msg)
-            self.set_element_test_result(element_ope.element_result_model)
-            raise error
+            for element_model in self.page_steps_model.element_list:
+                element_data = self._get_element_data(element_model.id)
+                element_result = await self._ope_steps(element_model, element_data)
+                self.page_step_result_model.status = element_result.status
+                self.page_step_result_model.error_message = element_result.error_message
+                self.page_step_result_model.element_result_list.append(element_result)
+                if self.page_step_result_model.status == StatusEnum.FAIL.value:
+                    if element_result.picture_name and element_result.picture_path:
+                        HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                    break
+            self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
+            self.page_step_result_model.test_object = self.test_object
+            self.page_step_result_model.equipment = self.page_steps_model.equipment_config
+            return self.page_step_result_model
         except Exception as error:
             log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
-            self.set_page_step_result(StatusEnum.FAIL, str(error))
-            self.set_element_test_result(element_ope.element_result_model)
             raise error
 
-    def set_page_step_result(self, status: StatusEnum, error_message: str = None):
-        self.page_step_result_model.status = status.value
-        self.page_step_result_model.error_message = error_message
-        self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
-        self.page_step_result_model.test_object = self.test_object
-        self.page_step_result_model.equipment = self.page_steps_model.equipment_config
+    async def _get_element_data(self, _id):
+        element_data = None
+        if not self.is_step:
+            for _element_data in self.page_steps_model.case_data:
+                if _element_data.page_step_details_id == _id:
+                    element_data = _element_data.page_step_details_data
+        if element_data is None:
+            raise UiError(*ERROR_MSG_0025)
+        return element_data
 
-    def set_element_test_result(self, element_result):
-        if element_result.picture_name and element_result.picture_path:
-            HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-        self.page_step_result_model.element_result_list.append(element_result)
+    async def _ope_steps(self, element_model, element_data):
+        element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
+        if not self._device_opened:
+            await element_ope.open_device()
+            self._device_opened = True
+        return await element_ope.element_main()
 
     async def driver_init(self):
         match self.page_steps_model.type:
