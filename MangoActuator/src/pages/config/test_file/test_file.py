@@ -9,7 +9,6 @@ from mangokit.apidrive import requests
 from mangoui import *
 
 from src.network import HTTP
-from src.settings.settings import FILE_PATH
 from .test_file_dict import *
 from ...parent.table import TableParent
 

@@ -4,7 +4,11 @@
       <SearchIcon />
     </span>
     <a-popover :width="300" placement="bottom" trigger="click">
-      <a-badge v-if="appStore.actionBar.isShowMessage" :count="badgeValue" class="action-item">
+      <a-badge
+        v-if="appStore.actionBar.isShowMessage"
+        :count="notificationMessage.badgeValue"
+        class="action-item"
+      >
         <NotificationsIcon />
       </a-badge>
       <template #content>
@@ -41,6 +45,7 @@
   import { useDebounceFn, useFullscreen } from '@vueuse/core'
   import useEmit from '@/hooks/useEmit'
   import useAppConfigStore from '@/store/modules/app-config'
+  import { useNotificationMessage } from '@/store/modules/notification-message'
 
   export default defineComponent({
     name: 'ActionItems',
@@ -55,7 +60,7 @@
       const showSearchContent = ref(false)
       const searchContent = ref('')
       const settingRef = ref()
-      const badgeValue = ref(3)
+      const notificationMessage = useNotificationMessage()
       const appStore = useAppConfigStore()
       const router = useRouter()
       const route = useRoute()
@@ -95,7 +100,7 @@
         settingRef,
         showSearchContent,
         searchContent,
-        badgeValue,
+        notificationMessage,
         appStore,
         onShowSearch,
         onScreenFull,

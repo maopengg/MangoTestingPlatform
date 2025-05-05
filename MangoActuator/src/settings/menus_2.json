@@ -17,10 +17,10 @@
       "is_active": false
     },
     {
-      "btn_icon": ":/icons/tool.svg",
-      "btn_id": "tools",
-      "btn_text": "测试工具",
-      "btn_tooltip": "测试小工具",
+      "btn_icon": ":/icons/robot.svg",
+      "btn_id": "settings",
+      "btn_text": "系统配置",
+      "btn_tooltip": "系统配置",
       "show_top": true,
       "is_active": false
     },

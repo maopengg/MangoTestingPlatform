@@ -7,22 +7,6 @@ from mangokit.models import MysqlConingModel, ElementResultModel, ElementModel
 from pydantic import BaseModel
 
 
-class EquipmentModel(BaseModel):
-    type: int
-    web_max: bool | None = None
-    web_recording: bool | None = None
-    web_parallel: int | None = None
-    web_type: int | None = None
-    web_h5: str | None = None
-    web_path: str | None = None
-    web_headers: bool | None = None
-    and_equipment: str | None = None
-    win_path: str | None = None
-    win_title: str | None = None
-    host_list: list[dict] | None = None
-    is_header_intercept: bool | None = None
-
-
 class UiPublicModel(BaseModel):
     type: int
     key: str
@@ -54,7 +38,6 @@ class PageStepsModel(BaseModel):
     type: int
     url: str
     element_list: list[ElementModel] = []
-    equipment_config: EquipmentModel
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
     case_step_details_id: int | None = None
@@ -91,7 +74,6 @@ class PageStepsResultModel(BaseModel):
 
     cache_data: dict
     test_object: str
-    equipment: EquipmentModel  # 设备名称或者浏览器类型
 
     status: int
     error_message: str | None = None

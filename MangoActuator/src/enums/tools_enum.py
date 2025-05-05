@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-12-08 9:50
 # @Author : 毛鹏
-from enum import Enum
 
 from src.enums import BaseEnum
 
@@ -117,23 +116,6 @@ class CaseLevelEnum(BaseEnum):
         return {0: "高", 1: "中", 2: "低", 3: "极低"}
 
 
-class CacheValueTypeEnum(BaseEnum):
-    """缓存数据类型"""
-    STR = 0
-    INT = 1
-    FLOAT = 2
-    BOOL = 3
-    NONE = 4
-    LIST = 5
-    DICT = 6
-    TUPLE = 7
-    JSON = 8
-
-    @classmethod
-    def obj(cls):
-        return {0: "字符串", 1: "整数", 2: "小数", 3: "布尔", 4: "null", 5: "列表", 6: "字典", 7: "元组", 8: "JSON"}
-
-
 class Status3Enum(BaseEnum):
     """状态枚举"""
     SUCCESS = 1
@@ -164,8 +146,33 @@ class Status5Enum(BaseEnum):
         return {0: "关闭", 1: "启用"}
 
 
-class CacheKeyEnum(Enum):
+class CacheKeyEnum(BaseEnum):
     """参数"""
-    BROWSER_IS_MAXIMIZE = 'BROWSER_IS_MAXIMIZE'
-    TEST_CASE_PARALLELISM = 'TEST_CASE_PARALLELISM'
-    IS_RECORDING = 'IS_RECORDING'
+    HOST = 'host'
+    WS = 'ws'
+    MINIO_URL = 'minio_url'
+
+    REMEMBER_USERNAME = 'remember_username'
+    USERNAME = 'username'
+    REMEMBER_PASSWORD = 'remember_password'
+    PASSWORD = 'password'
+
+    WEB_MAX = 'web_max'
+    WEB_RECORDING = 'web_recording'
+    WEB_PARALLEL = 'web_parallel'
+    WEB_TYPE = 'web_type'
+    WEB_H5 = 'web_h5'
+    WEB_PATH = 'web_path'
+    WEB_HEADERS = 'web_headers'
+
+    AND_EQUIPMENT = 'and_equipment'
+
+    WIN_PATH = 'win_path'
+    WIN_TITLE = 'win_title'
+
+    @classmethod
+    def obj(cls):
+        from mangokit.enums import CacheValueTypeEnum
+        return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
+                'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
+                'web_type': CacheValueTypeEnum.INT}

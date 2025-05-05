@@ -11,8 +11,6 @@ from mangokit.mangos import Mango
 from src import test_process
 from src.consumer import SocketConsumer
 from src.models.socket_model import QueueModel
-from src.network import HTTP
-from src.settings import settings
 
 
 class LinuxLoop:
@@ -26,18 +24,22 @@ class LinuxLoop:
 
 async def run():
     loop = LinuxLoop()
-    settings.IP = '127.0.0.1'
-    settings.PORT = '8000'
-    settings.IS_DEBUG = True
-    settings.USERNAME = 'admin'
-    settings.PASSWORD = '123456'
-    HTTP.api.public.set_host(settings.IP, settings.PORT)
+
     await test_process(loop)
     with open('test.json', 'r', encoding='utf-8') as f:
         data = json.load(f)
         await SocketConsumer.add_task(QueueModel(func_name=data.get('func_name'), func_args=data.get('func_args')))
     while True:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
+
+
+async def run_func():
+    from src.models.ui_model import CaseModel
+    from src.services.ui.case_flow import CaseFlow
+    CaseFlow.parent = LinuxLoop()
+    with open('test.json', 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        await CaseFlow.execute_task(CaseModel(**data.get('func_args')))
 
 
 asyncio.run(run())

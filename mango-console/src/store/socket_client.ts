@@ -2,8 +2,6 @@ import { defineStore } from 'pinia'
 import WebSocketService from '@/utils/websocket'
 import { webSocketURL } from '@/api/axios.config'
 
-// const userStore = useUserStore()
-// 1.定义容器
 export const useSocketClient = defineStore('socket-client', {
   state: (): { socket_obj: WebSocketService | null; username: number; password: string } => {
     return {
@@ -15,7 +13,6 @@ export const useSocketClient = defineStore('socket-client', {
   getters: {},
   actions: {
     created() {
-      // 在created生命周期钩子函数中创建socket_obj
       this.socket_obj = new WebSocketService(
         `${webSocketURL}username=${this.userName}&password=${this.password}`
       )

@@ -249,7 +249,7 @@
                 </a-list>
               </a-tab-pane>
               <a-tab-pane key="2" title="测试结果">
-                <ElementTestReport :result-data="data.selectData.result_data" />
+                <ElementTestReport :result-data="data.selectData?.result_data" />
               </a-tab-pane>
             </a-tabs>
           </div>

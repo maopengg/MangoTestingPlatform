@@ -42,6 +42,7 @@
   import { websocket } from '@/utils/socket'
   import { webSocketURL } from '@/api/axios.config'
   import { SERVER } from '@/setting'
+  import { useNotificationMessage } from '@/store/modules/notification-message'
 
   const userStore = useUserStore()
   const options = [
@@ -94,6 +95,7 @@
   }
 
   const socket = ref<WebSocket | null>(null)
+  const notificationMessage = useNotificationMessage()
 
   const connectWebSocket = () => {
     if (socket.value) {
@@ -123,8 +125,12 @@
       // 在这里处理收到的消息
       const res = JSON.parse(event.data)
       if (res.code == 200) {
+        notificationMessage.addBadgeValue()
+        notificationMessage.addMessageContentList('消息', res.msg, 1)
         Notification.success('消息：' + res.msg)
       } else {
+        notificationMessage.addBadgeValue()
+        notificationMessage.addMessageContentList('消息', res.msg, 0)
         Notification.error('消息：' + res.msg)
       }
     }
