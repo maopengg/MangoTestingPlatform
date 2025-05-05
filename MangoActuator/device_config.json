@@ -1,6 +1,6 @@
 {
-  "host": "http://mango_server",
-  "minio_url": "http://minio",
+  "host": "http://172.31.155.73:8000",
+  "minio_url": "http://172.31.155.73:9000",
   "username": "open",
   "password": "123456",
   "web_max": null,
