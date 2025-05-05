@@ -111,7 +111,7 @@
   }
 
   function onDownload(record: any) {
-    const file_path = minioURL + record.test_file
+    const file_path = minioURL + record.name
     const file_name = record.name
     if (file_name.includes('jpg') || file_name.includes('png')) {
       window.open(file_path, '_blank')
