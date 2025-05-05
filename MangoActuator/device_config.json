@@ -1,8 +1,8 @@
 {
-  "host": "http://127.0.0.1:8000",
-  "minio_url": "http://127.0.0.1:9000",
-  "username": "admin",
-  "password": "as123456",
+  "host": "http://mango_server",
+  "minio_url": "http://minio",
+  "username": "open",
+  "password": "123456",
   "web_max": null,
   "web_recording": null,
   "web_parallel": 5,
