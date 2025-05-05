@@ -111,7 +111,11 @@
   }
 
   function onDownload(record: any) {
-    const file_path = minioURL + '/mango-file/test_file/' + record.name
+    const fullUrl =
+      'http://minio:9000/mango-file/test_file/%E7%AC%94%E8%AE%B0-%E6%8A%95%E6%94%BE%E6%95%B0%E6%8D%AE_6.csv'
+    const urlObj = new URL(fullUrl)
+    const pathOnly = urlObj.pathname
+    const file_path = minioURL + pathOnly
     const file_name = record.name
     if (file_name.includes('jpg') || file_name.includes('png')) {
       window.open(file_path, '_blank')
