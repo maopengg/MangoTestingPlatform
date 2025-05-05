@@ -42,4 +42,4 @@ async def run_func():
         await CaseFlow.execute_task(CaseModel(**data.get('func_args')))
 
 
-asyncio.run(run_func())
+asyncio.run(run())

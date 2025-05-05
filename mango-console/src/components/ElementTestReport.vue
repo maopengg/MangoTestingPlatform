@@ -77,28 +77,17 @@
     </a-tab-pane>
     <a-tab-pane key="2" title="其他信息">
       <a-space direction="vertical" size="large">
-        <div v-if="resultData?.status === 0">
+        <a-space v-if="resultData?.status === 0">
           <span>失败描述：{{ resultData?.error_message || '无' }}</span>
-        </div>
-
-        <div>
-          <span
-            >测试对象：{{
-              resultData?.test_object?.url
-                ? resultData?.test_object?.url
-                : resultData?.test_object?.package_name
-            }}</span
-          >
-        </div>
-
-        <div>
+        </a-space>
+        <a-space>
+          <span>测试对象：{{ resultData?.test_object }}</span>
+        </a-space>
+        <a-space>
           <span>缓存数据：</span>
           <pre>{{ resultData?.cache_data }}</pre>
-        </div>
-
-        <div>
-          <span>浏览器路径：{{ resultData?.equipment?.web_path || '无' }}</span>
-        </div>
+        </a-space>
+        <a-space v-if="resultData?.video_path">视频路径：{{ resultData?.video_path }}</a-space>
       </a-space>
     </a-tab-pane>
   </a-tabs>

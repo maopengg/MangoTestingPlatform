@@ -1,0 +1,16 @@
+{
+  "host": "http://127.0.0.1:8000",
+  "minio_url": "http://127.0.0.1:9000",
+  "username": "admin",
+  "password": "as123456",
+  "web_max": null,
+  "web_recording": null,
+  "web_parallel": 5,
+  "web_type": 0,
+  "web_h5": null,
+  "web_path": null,
+  "web_headers": null,
+  "and_equipment": null,
+  "win_path": null,
+  "win_title": null
+}

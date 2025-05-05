@@ -13,15 +13,14 @@ from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
 from src.settings import settings
-from src.settings.settings import FILE_PATH
 from src.tools import project_dir
 from src.tools.log_collector import log
-
+from src.tools.set_config import SetConfig
 
 class HttpClientApi(HttpBase):
     @classmethod
     def download_file(cls, file_name):
-        response = requests.get(f'{FILE_PATH()}/test_file/{file_name}', cls.headers)
+        response = requests.get(f'{SetConfig.get_minio_url()}/test_file/{file_name}', cls.headers)
         file_path = project_dir.upload()
         try:
             with open(fr'{file_path}\{file_name}', 'wb') as f:

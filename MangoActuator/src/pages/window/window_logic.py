@@ -43,11 +43,14 @@ class WindowLogic(MangoMain1Window):
         from ..tools import SmallToolsPage
         if settings.IS_NEW:
             from ..home import HomePage
-            from ..ui_settings import SettingPage
+            from ..setting import SettingPage, UiSettingPage
+            from ..user import UserPage
+
             page_dict = {
                 'home': HomePage,
-                'ui_settings': SettingPage,
-                'tools': SmallToolsPage,
+                'settings': SettingPage,
+                'ui_settings': UiSettingPage,
+                'user': UserPage,
             }
         else:
             from src.pages.api import ApiCasePage, ApiInfoPage, ApiHeadersPage, ApiPublicPage, ApiInfoDetailedPage, \

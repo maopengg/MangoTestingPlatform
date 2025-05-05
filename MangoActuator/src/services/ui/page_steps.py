@@ -8,24 +8,22 @@ from datetime import datetime
 from urllib import parse
 from urllib.parse import urljoin
 
-from mangokit.data_processor import SqlCache
-from mangokit.mangos import Mango
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
 
 from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
-from src.enums.tools_enum import StatusEnum, CacheKeyEnum
+from src.enums.tools_enum import StatusEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.exceptions import *
 from src.models.api_model import RecordingApiModel
-from src.models.ui_model import PageStepsResultModel, PageStepsModel, EquipmentModel
+from src.models.ui_model import PageStepsResultModel, PageStepsModel
 from src.network import ApiSocketEnum, socket_conn, HTTP
 from src.settings import settings
-from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
+from src.tools.set_config import SetConfig
 
 
 class PageSteps:
@@ -50,33 +48,27 @@ class PageSteps:
                 test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 cache_data={},
                 test_object='',
-                equipment=self.page_steps_model.equipment_config,
+                # equipment=self.page_steps_model.equipment_config,
                 status=StatusEnum.SUCCESS.value,
                 element_result_list=[]
             )
 
     async def steps_main(self) -> PageStepsResultModel:
         self._device_opened = False
-        try:
-            for element_model in self.page_steps_model.element_list:
-                element_data = self._get_element_data(element_model.id)
-                element_result = await self._ope_steps(element_model, element_data)
-                self.page_step_result_model.status = element_result.status
-                self.page_step_result_model.error_message = element_result.error_message
-                self.page_step_result_model.element_result_list.append(element_result)
-                if self.page_step_result_model.status == StatusEnum.FAIL.value:
-                    if element_result.picture_name and element_result.picture_path:
-                        HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                    break
-            self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
-            self.page_step_result_model.test_object = self.test_object
-            self.page_step_result_model.equipment = self.page_steps_model.equipment_config
-            return self.page_step_result_model
-        except Exception as error:
-            Mango.s(self.steps_main, error, traceback.format_exc(),
-                    SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value))
-            log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
-            raise error
+        for element_model in self.page_steps_model.element_list:
+            element_data = await self._get_element_data(element_model.id)
+            element_result = await self._ope_steps(element_model, element_data)
+            self.page_step_result_model.status = element_result.status
+            self.page_step_result_model.error_message = element_result.error_message
+            self.page_step_result_model.element_result_list.append(element_result)
+            if self.page_step_result_model.status == StatusEnum.FAIL.value:
+                if element_result.picture_name and element_result.picture_path:
+                    HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                break
+        self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
+        self.page_step_result_model.test_object = self.test_object
+        # self.page_step_result_model.equipment = self.page_steps_model.equipment_config
+        return self.page_step_result_model
 
     async def _get_element_data(self, _id):
         element_data = None
@@ -106,20 +98,16 @@ class PageSteps:
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
-    async def web_init(self, data: EquipmentModel | None = None):
-        if data:
-            self.driver_object.set_web(data.web_type, data.web_path, data.web_max, data.web_headers, data.web_recording,
-                                       data.web_h5, data.is_header_intercept)
-        elif self.driver_object.web is None:
+    async def web_init(self):
+        if self.driver_object.web is None:
             self.driver_object.set_web(
-                self.page_steps_model.equipment_config.web_type,
-                self.page_steps_model.equipment_config.web_path,
-                self.page_steps_model.equipment_config.web_max,
-                self.page_steps_model.equipment_config.web_headers,
-                self.page_steps_model.equipment_config.web_recording,
-                self.page_steps_model.equipment_config.web_h5,
-                self.page_steps_model.equipment_config.is_header_intercept,
-                settings.IS_OPEN
+                SetConfig.get_web_type(),  # type: ignore
+                SetConfig.get_web_path(),  # type: ignore
+                SetConfig.get_web_max(),  # type: ignore
+                SetConfig.get_web_headers(),  # type: ignore
+                SetConfig.get_web_recording(),  # type: ignore
+                SetConfig.get_web_h5(),  # type: ignore
+                web_is_default=settings.IS_OPEN
             )
             self.driver_object.web.wen_intercept_request = self.__intercept_request
             self.driver_object.web.wen_recording_api = self.__send_recording_api
@@ -141,7 +129,7 @@ class PageSteps:
         self.test_object = self.base_data.url
 
         if self.driver_object.android is None:
-            self.driver_object.set_android(self.page_steps_model.equipment_config.and_equipment)
+            self.driver_object.set_android(SetConfig.get_and_equipment())
         if self.base_data.android is None:
             self.base_data.android = self.driver_object.android.new_android()
 
@@ -172,7 +160,7 @@ class PageSteps:
                   parse.parse_qs(parsed_url.query).items()} if parsed_url.query else None
         api_info = RecordingApiModel(
             project_product=project_product,
-            username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+            username=SetConfig.get_username(),  # type: ignore
             type=ApiTypeEnum.batch.value,
             name=parsed_url.path,
             client=ClientEnum.WEB.value,

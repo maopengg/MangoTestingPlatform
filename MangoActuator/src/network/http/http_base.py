@@ -6,12 +6,10 @@
 from urllib.parse import urljoin
 
 from mangokit.apidrive import requests
-from mangokit.data_processor import SqlCache
 from requests import Response
 
-from src.enums.tools_enum import CacheKeyEnum
 from src.models.socket_model import ResponseModel
-from src.tools import project_dir
+from src.tools.set_config import SetConfig
 from src.tools.decorator.request_log import request_log
 
 
@@ -21,29 +19,25 @@ class HttpBase:
     }
 
     @classmethod
-    def get_host(cls):
-        return SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.HOST.value)
-
-    @classmethod
     @request_log()
     def get(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.get(urljoin(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.HOST.value), url),
+        return requests.get(urljoin(SetConfig.get_host(), url),  # type: ignore
                             headers if headers else cls.headers, **kwargs)
 
     @classmethod
     @request_log()
     def post(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.post(urljoin(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.HOST.value), url),
+        return requests.post(urljoin(SetConfig.get_host(), url),  # type: ignore
                              headers if headers else cls.headers, **kwargs)
 
     @classmethod
     @request_log()
     def put(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.put(urljoin(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.HOST.value), url),
+        return requests.put(urljoin(SetConfig.get_host(), url),  # type: ignore
                             headers if headers else cls.headers, **kwargs)
 
     @classmethod
     @request_log()
     def delete(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        return requests.delete(urljoin(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.HOST.value), url),
+        return requests.delete(urljoin(SetConfig.get_host(), url),  # type: ignore
                                headers if headers else cls.headers, **kwargs)

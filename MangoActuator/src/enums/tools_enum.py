@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-12-08 9:50
 # @Author : 毛鹏
-from enum import Enum
 
 from src.enums import BaseEnum
 
@@ -147,13 +146,33 @@ class Status5Enum(BaseEnum):
         return {0: "关闭", 1: "启用"}
 
 
-class CacheKeyEnum(Enum):
+class CacheKeyEnum(BaseEnum):
     """参数"""
     HOST = 'host'
-    REMEMBER_USERNAME = 'username'
-    USERNAME = 'username'
-    REMEMBER_PASSWORD = 'password'
-    PASSWORD = 'password'
     WS = 'ws'
+    MINIO_URL = 'minio_url'
 
+    REMEMBER_USERNAME = 'remember_username'
+    USERNAME = 'username'
+    REMEMBER_PASSWORD = 'remember_password'
+    PASSWORD = 'password'
 
+    WEB_MAX = 'web_max'
+    WEB_RECORDING = 'web_recording'
+    WEB_PARALLEL = 'web_parallel'
+    WEB_TYPE = 'web_type'
+    WEB_H5 = 'web_h5'
+    WEB_PATH = 'web_path'
+    WEB_HEADERS = 'web_headers'
+
+    AND_EQUIPMENT = 'and_equipment'
+
+    WIN_PATH = 'win_path'
+    WIN_TITLE = 'win_title'
+
+    @classmethod
+    def obj(cls):
+        from mangokit.enums import CacheValueTypeEnum
+        return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
+                'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
+                'web_type': CacheValueTypeEnum.INT}
