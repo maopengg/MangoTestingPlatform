@@ -54,6 +54,7 @@ class HttpClientApi(HttpBase):
                 'type': ClientTypeEnum.ACTUATOR.value
             })
             if response.data:
+                log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
             return response
         except Exception as error:
