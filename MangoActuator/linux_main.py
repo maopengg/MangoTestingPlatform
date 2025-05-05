@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import asyncio
 import json
+import time
 
 from mangokit.mangos import Mango
 
@@ -26,6 +27,7 @@ class LinuxLoop:
 
 async def main():
     settings.IS_OPEN = True
+    await asyncio.sleep(5)
     with open('device_config.json', 'r', encoding='utf-8') as f:
         for key, value in json.load(f).items():
             if value:
