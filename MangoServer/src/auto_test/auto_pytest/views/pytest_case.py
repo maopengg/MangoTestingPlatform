@@ -74,8 +74,11 @@ class PytestCaseViews(ViewSet):
         @param request:
         @return:
         """
+        file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
+        _file_path_list = []
         for project in UpdateFile(PytestFileTypeEnum.TEST_CASE, GitRepo().local_warehouse_path).find_test_files():
             for file in project.auto_test:
+                _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
                     defaults={
@@ -89,6 +92,11 @@ class PytestCaseViews(ViewSet):
                 if not created:
                     pytest_act.file_update_time = file.time.replace(tzinfo=None)
                     pytest_act.save()
+        deleted_files = set(file_path_list) - set(_file_path_list)
+        if deleted_files:
+            self.model.objects.filter(file_path__in=deleted_files).update(
+                file_status=FileStatusEnum.DELETED.value,
+            )
         return ResponseData.success(RESPONSE_MSG_0078)
 
     @action(methods=['get'], detail=False)

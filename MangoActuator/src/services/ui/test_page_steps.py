@@ -14,7 +14,7 @@ from src.enums.system_enum import ClientTypeEnum
 from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import MangoActuatorError, ERROR_MSG_0038, UiError, ERROR_MSG_0036
 from src.models import queue_notification
-from src.models.ui_model import PageStepsModel, EquipmentModel, PageStepsResultModel
+from src.models.ui_model import PageStepsModel, PageStepsResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network.web_socket.websocket_client import WebSocketClient
 from src.services.ui.page_steps import PageSteps
@@ -33,8 +33,7 @@ class TestPageSteps:
         self.parent = parent
         self.project_product_id = project_product
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.test_data) \
-            .set_log(log) \
+        self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
 
         self.lock = asyncio.Lock()
@@ -81,6 +80,8 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
+                from mangokit.mangos import Mango  # type: ignore
+                Mango.s(self.page_steps_mian, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
                 log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.base_data.is_open_url = False
                 await self.base_data.async_base_close()
@@ -90,10 +91,9 @@ class TestPageSteps:
                     TipsTypeEnum.ERROR,
                     page_steps.page_step_result_model
                 )
-                raise error
 
     @async_error_handle()
-    async def new_web_obj(self, data: EquipmentModel):
+    async def new_web_obj(self, data):
         try:
             if self.base_data.page is None or self.base_data.context is None:
                 page_steps = PageSteps(self.base_data, self.driver_object, None)
@@ -114,6 +114,8 @@ class TestPageSteps:
             await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
+            from mangokit.mangos import Mango  # type: ignore
+            Mango.s(self.steps_main, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
             log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
@@ -122,7 +124,6 @@ class TestPageSteps:
                 f'创建浏览器异常，请联系管理员，报错内容：{error}',
                 TipsTypeEnum.ERROR,
             )
-            raise error
 
     @classmethod
     async def send_steps_result(cls, code: int, msg: str, _type: TipsTypeEnum,

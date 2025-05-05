@@ -1,14 +1,38 @@
-# -*- coding: utf-8 -*-
-# @Project: 芒果测试平台
-# @Description: 
-# @Time   : 2025-01-06 18:32
-# @Author : 毛鹏
+import subprocess
 
-from mangokit.database import MysqlConnect
-from mangokit.models import MysqlConingModel
-mysql = MysqlConnect(MysqlConingModel(host='localhost', port=3306, user='root', password='mP123456&', database='dev_mango_server'))
-sql = """
-INSERT INTO `dev_mango_server`.`ui_case` (`id`, `create_time`, `update_time`, `name`, `case_flow`, `status`, `level`, `front_custom`, `front_sql`, `posterior_sql`, `case_people_id`, `module_id`, `project_product_id`, `parametrize`, `switch_step_open_url`) VALUES (4, '2025-12-02 16:40:32.106722', '2025-04-29 09:22:18.292501', '断言演示', '->测试切换', 0, 0, '[]', '[]', '[]', 1, 1, 1, '[]', 0);
+def get_adb_devices():
+    """获取ADB设备列表，并将状态转为中文"""
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=10
+        )
+        devices = []
+        for line in result.stdout.splitlines():
+            if "List of devices" in line or line.strip() == "":
+                continue
+            parts = line.strip().split("\t")
+            if len(parts) == 2:
+                device_id = parts[0]
+                status_en = parts[1]
+                # 将状态转为中文
+                status_cn = {
+                    "device": "已连接",
+                    "unauthorized": "未授权",
+                    "offline": "离线",
+                    "no permissions": "无权限",
+                }.get(status_en, status_en)  # 默认保留原值（如果不在字典中）
+                devices.append({"device_id": device_id, "status": status_cn})
 
-"""
-print(mysql.execute(sql))
+        return devices
+    except Exception as e:
+        print(f"执行ADB命令出错: {e}")
+        return []
+
+# 示例调用
+devices = get_adb_devices()
+for device in devices:
+    print(f"设备ID: {device['device_id']}, 状态: {device['status']}")

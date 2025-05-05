@@ -4,7 +4,7 @@
 # @Author : 毛鹏
 import asyncio
 
-from src.models.ui_model import PageStepsModel, CaseModel, EquipmentModel
+from src.models.ui_model import PageStepsModel, CaseModel
 from src.services.ui.case_flow import CaseFlow
 from src.services.ui.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
@@ -28,8 +28,8 @@ class UI:
             await test_page_steps.page_steps_mian(data)
 
     @classmethod
-    @convert_args(EquipmentModel)
-    async def u_page_new_obj(cls, data: EquipmentModel):
+    # @convert_args(EquipmentModel)
+    async def u_page_new_obj(cls, data):
         """
         实例化浏览器对象
         @param data:
@@ -48,7 +48,4 @@ class UI:
         @param data:
         @return:
         """
-        max_tasks = next((i.equipment_config.web_parallel for i in data.steps if i and i.equipment_config), None)
-        if max_tasks:
-            CaseFlow.max_tasks = max_tasks
         await CaseFlow.add_task(data)

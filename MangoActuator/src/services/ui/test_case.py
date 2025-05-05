@@ -21,7 +21,7 @@ from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, PageStepsResultModel, UiCaseResultModel
 from src.network.web_socket.socket_api_enum import UiSocketEnum
-from src.network.web_socket.websocket_client import WebSocketClient
+from src.network import socket_conn
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
@@ -37,9 +37,8 @@ class TestCase:
         self.case_model: CaseModel = case_model
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
-        self.base_data = BaseData(self.test_data) \
+        self.base_data = BaseData(self.test_data, log) \
             .set_step_open_url(case_model.switch_step_open_url) \
-            .set_log(log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
 
         self.case_result = UiCaseResultModel(
@@ -100,27 +99,24 @@ class TestCase:
             try:
                 await page_steps.driver_init()
                 page_steps_result_model = await page_steps.steps_main()
-                self.case_result \
-                    .steps \
-                    .append(page_steps_result_model)
+                self.set_page_steps(page_steps_result_model)
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
-                    await self.base_data.async_base_close()
                     break
             except (MangoActuatorError, MangoKitError) as error:
-                log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
-                self.set_page_steps(page_steps.page_step_result_model, error.msg)
-                await self.send_case_result(error.msg)
-                await self.base_data.async_base_close()
+                log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
+                self.set_page_steps(page_steps.page_step_result_model)
                 break
             except Exception as error:
+                from mangokit.mangos import Mango  # type: ignore
+                Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
-                                    f'执行用例发生未知错误，请联系管理员检查测试用例数据{error}')
-                await self.send_case_result(self.case_result.error_message)
-                await self.base_data.async_base_close()
+                                    f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')
                 break
         await self.case_posterior(self.case_model.posterior_sql)
-        await self.send_case_result(f'用例<{self.case_model.name}>测试完成')
+        await self.send_case_result(
+            f'用例<{self.case_model.name}>执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
+        await self.base_data.async_base_close()
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         front_custom = self.base_data.test_data.replace(front_custom)
@@ -172,7 +168,7 @@ class TestCase:
         else:
             func_name = UiSocketEnum.TEST_CASE.value
             func_args = self.case_result
-        await WebSocketClient().async_send(
+        await socket_conn.async_send(
             code=200 if self.case_result.status else 300,
             msg=msg,
             is_notice=ClientTypeEnum.WEB,
@@ -184,9 +180,11 @@ class TestCase:
             'value': msg
         })
 
-    def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg: str):
-        self.case_result.error_message = msg
-        self.case_result.status = StatusEnum.FAIL.value
-        self.case_result \
-            .steps \
-            .append(page_steps_result_model)
+    def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg=None):
+        if msg:
+            self.case_result.error_message = msg
+            self.case_result.status = StatusEnum.FAIL.value
+        else:
+            self.case_result.status = page_steps_result_model.status
+            self.case_result.error_message = page_steps_result_model.error_message
+        self.case_result.steps.append(page_steps_result_model)

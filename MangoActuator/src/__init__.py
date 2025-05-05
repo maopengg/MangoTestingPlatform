@@ -6,9 +6,13 @@
 import asyncio
 import traceback
 
+
 from src.services.ui.case_flow import CaseFlow
 from .consumer import SocketConsumer
+from .enums.tools_enum import CacheKeyEnum
 from .network.web_socket.websocket_client import WebSocketClient
+from src.tools.set_config import SetConfig
+from .tools import project_dir
 from .tools.log_collector import log
 
 
@@ -27,7 +31,7 @@ async def process(parent, is_login=False):
             from src.network import HTTP
             from src.settings import settings
             from mangokit.data_processor import EncryptionTool
-            HTTP.not_auth.login(settings.USERNAME, EncryptionTool.md5_32_small(**{'data': settings.PASSWORD}))
+            HTTP.not_auth.login(SetConfig.get_username(), SetConfig.get_password())  # type: ignore
     except Exception as error:
         if websocket_task:
             websocket_task.cancel()

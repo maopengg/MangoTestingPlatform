@@ -71,11 +71,6 @@ services:
     build:
       context: ./MangoActuator
       dockerfile: Dockerfile
-    environment:
-      - ACTUATOR_IP=${ACTUATOR_IP}
-      - ACTUATOR_PORT=${ACTUATOR_PORT}
-      - ACTUATOR_USERNAME=${ACTUATOR_USERNAME}
-      - ACTUATOR_PASSWORD=${ACTUATOR_PASSWORD}
     depends_on:
       mango_server:
         condition: service_started

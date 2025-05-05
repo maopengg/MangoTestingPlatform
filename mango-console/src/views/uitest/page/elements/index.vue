@@ -134,7 +134,7 @@
               allow-clear
             />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.label === '断言类型'">
+          <template v-else-if="item.type === 'cascader' && item.label === '断言操作'">
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
@@ -181,7 +181,7 @@
     putUiUiElementTest,
   } from '@/api/uitest/element'
 
-  import { assForm, eleForm } from '@/views/uitest/page/elements/config'
+  import { opeForm } from '@/views/uitest/page/elements/config'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import { baseURL } from '@/api/axios.config'
@@ -357,11 +357,11 @@
             }
           } else if (item.value === 'ass_android') {
             if (String(pageData.record.project_product.ui_client_type) === '1') {
-              data.ass.push(...item.children)
+              data.ass.unshift(...item.children)
             }
           } else if (item.value === 'ass_web') {
-            if (String(pageData.ui_client_type) === '0') {
-              data.ass.push(...item.children)
+            if (String(pageData.record.project_product.ui_client_type) === '0') {
+              data.ass.unshift(...item.children)
             }
           } else {
             data.ass.push(...item.children)
@@ -378,17 +378,23 @@
       }
     }
     if (event === 0) {
-      if (
-        !formItems1.some(
-          (item) => item.key === 'ele_name' || formItems1.some((item) => item.key === 'ope_type')
-        )
-      ) {
-        formItems1.push(...eleForm)
-      }
-    } else {
-      if (!formItems1.some((item) => item.key === 'ass_type')) {
-        formItems1.push(...assForm)
-      }
+      formItems1.push(...opeForm)
+    } else if (event === 1) {
+      formItems1.push({
+        label: '断言操作',
+        key: 'ope_key',
+        value: ref(''),
+        type: 'cascader',
+        required: true,
+        placeholder: '请选择断言类型',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
     }
   }
 

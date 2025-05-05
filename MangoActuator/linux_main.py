@@ -3,13 +3,17 @@
 # @Description: 
 # @Time   : 2025-04-16 15:07
 # @Author : 毛鹏
-import argparse
 import asyncio
+import json
+import time
 
 from mangokit.mangos import Mango
 
 from src import process
+from src.enums.tools_enum import CacheKeyEnum
 from src.settings import settings
+from src.tools.set_config import SetConfig
+from src.tools.url import is_valid_url, http_to_ws_url
 
 
 class LinuxLoop:
@@ -22,20 +26,27 @@ class LinuxLoop:
 
 
 async def main():
-    parser = argparse.ArgumentParser(description="接收命令行参数示例")
-    parser.add_argument("--ip", required=True, help="服务器IP地址")
-    parser.add_argument("--port", required=True, type=int, help="服务器端口")
-    parser.add_argument("--username", required=True, help="用户名")
-    parser.add_argument("--password", required=True, help="密码")
-    args = parser.parse_args()
-    settings.IP = args.ip
-    settings.PORT = args.port
-    settings.USERNAME = args.username
-    settings.PASSWORD = args.password
     settings.IS_OPEN = True
-    await process(LinuxLoop())
+    await asyncio.sleep(5)
+    with open('device_config.json', 'r', encoding='utf-8') as f:
+        for key, value in json.load(f).items():
+            if value:
+                method_name = f"set_{key}"
+                set_method = getattr(SetConfig, method_name, None)
+                if set_method:
+                    if key == CacheKeyEnum.HOST.value:
+                        if is_valid_url(value):
+                            SetConfig.set_host(is_valid_url(value))  # type: ignore
+                            SetConfig.set_ws(http_to_ws_url(value))  # type: ignore
+                        else:
+                            raise Exception('请设置正确的HOST')
+                    else:
+                        set_method(value)
+                else:
+                    raise Exception(f"Warning: Method '{method_name}' not found in SetConfig")
+    await process(LinuxLoop(), True)
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
 
 
 asyncio.run(main())

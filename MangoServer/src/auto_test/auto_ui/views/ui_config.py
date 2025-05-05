@@ -20,7 +20,6 @@ from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.socket_model import SocketDataModel, QueueModel
-from src.models.ui_model import EquipmentModel
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData

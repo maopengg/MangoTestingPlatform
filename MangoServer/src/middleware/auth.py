@@ -15,7 +15,7 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
     def authenticate(self, request):
         token = request.META.get('HTTP_AUTHORIZATION')
         if not token:
-            raise AuthenticationFailed({'code': 300, 'msg': '未提供 token', 'data': ''})
+            raise AuthenticationFailed({'code': 300, 'msg': '未提供 token', 'data': None})
         salt = settings.SECRET_KEY
         # 1.切割
         # 2.解密第二段，判断过期
@@ -23,13 +23,13 @@ class JwtQueryParamsAuthentication(BaseAuthentication):
         try:
             payload = jwt.decode(token, salt, algorithms='HS256')
         except exceptions.ExpiredSignatureError:
-            raise AuthenticationFailed({'code': 301, 'msg': '当前用户登录已过期，请重新登录', 'data': ''})
+            raise AuthenticationFailed({'code': 301, 'msg': '当前用户登录已过期，请重新登录', 'data': None})
         except jwt.DecodeError:
-            raise AuthenticationFailed({'code': 302, 'msg': 'token 无效，请检查后重试', 'data': ''})
+            raise AuthenticationFailed({'code': 302, 'msg': 'token 无效，请检查后重试', 'data': None})
         except jwt.InvalidTokenError:
-            raise AuthenticationFailed({'code': 303, 'msg': 'token 非法，请使用有效的 token', 'data': ''})
+            raise AuthenticationFailed({'code': 303, 'msg': 'token 非法，请使用有效的 token', 'data': None})
         except Exception as e:
-            raise AuthenticationFailed({'code': 304, 'msg': f'token 验证失败: {str(e)}', 'data': ''})
+            raise AuthenticationFailed({'code': 304, 'msg': f'token 验证失败: {str(e)}', 'data': None})
         return payload, token
 
     def authenticate_header(self, request):

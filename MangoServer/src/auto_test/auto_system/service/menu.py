@@ -50,11 +50,11 @@ def ad_routes():
                     "menuName": "公共参数",
                     "cacheable": True,
                 },
-                {
-                    "parentPath": "/uitest",
-                    "menuUrl": "/uitest/equipment/index",
-                    "menuName": "设备配置",
-                },
+                # {
+                #     "parentPath": "/uitest",
+                #     "menuUrl": "/uitest/equipment/index",
+                #     "menuName": "设备配置",
+                # },
             ],
         },
         {

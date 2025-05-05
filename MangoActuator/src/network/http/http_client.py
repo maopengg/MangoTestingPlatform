@@ -7,20 +7,20 @@ import traceback
 
 import time
 from mangokit.apidrive import requests
+from mangokit.data_processor import EncryptionTool
 
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import ERROR_MSG_0007, ToolsError
 from src.network.http.http_base import HttpBase
 from src.settings import settings
-from src.settings.settings import FILE_PATH
 from src.tools import project_dir
 from src.tools.log_collector import log
-
+from src.tools.set_config import SetConfig
 
 class HttpClientApi(HttpBase):
     @classmethod
     def download_file(cls, file_name):
-        response = requests.get(f'{FILE_PATH()}/test_file/{file_name}', cls.headers)
+        response = requests.get(f'{SetConfig.get_minio_url()}/test_file/{file_name}', cls.headers)
         file_path = project_dir.upload()
         try:
             with open(fr'{file_path}\{file_name}', 'wb') as f:
@@ -50,11 +50,11 @@ class HttpClientApi(HttpBase):
         try:
             response = cls.post('/login', data={
                 'username': username,
-                'password': password,
+                'password': EncryptionTool.md5_32_small(**{'data': password}),
                 'type': ClientTypeEnum.ACTUATOR.value
             })
-            log.info(response.data)
             if response.data:
+                log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
             return response
         except Exception as error:
@@ -69,9 +69,3 @@ class HttpClientApi(HttpBase):
     def user_register(cls, json_data: dict):
         return cls.post('/register', json=json_data)
 
-
-if __name__ == '__main__':
-    HttpClientApi.set_host('')
-    HttpClientApi.upload_file(
-        'D:\GitCode\MangoTestingPlatform\MangoActuator\screenshot\失败截图-下载铃铛1741762773000.jpg',
-        '失败截图-下载铃铛1741762773000.jpg')
