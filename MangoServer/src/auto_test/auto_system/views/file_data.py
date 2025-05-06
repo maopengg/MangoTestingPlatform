@@ -4,7 +4,9 @@
 # @Time   : 2024-05-17 12:32
 # @Author : 毛鹏
 import json
+import socket
 
+import urllib3
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -48,15 +50,18 @@ class FileDataCRUD(ModelCRUD):
 
     @error_response('user')
     def post(self, request: Request):
-        if self.model.objects.filter(name=request.data.get('name')):
-            return ResponseData.fail(RESPONSE_MSG_0022)
-        serializer = self.serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
-        else:
-            log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
-            return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
+        try:
+            if self.model.objects.filter(name=request.data.get('name')):
+                return ResponseData.fail(RESPONSE_MSG_0022)
+            serializer = self.serializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
+            else:
+                log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
+                return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
+        except (urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError):
+            return ResponseData.fail(RESPONSE_MSG_0026)
 
 
 class FileDataViews(ViewSet):

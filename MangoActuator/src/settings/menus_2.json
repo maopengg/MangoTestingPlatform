@@ -17,7 +17,7 @@
       "is_active": false
     },
     {
-      "btn_icon": ":/icons/robot.svg",
+      "btn_icon": ":/icons/settings.svg",
       "btn_id": "settings",
       "btn_text": "系统配置",
       "btn_tooltip": "系统配置",
