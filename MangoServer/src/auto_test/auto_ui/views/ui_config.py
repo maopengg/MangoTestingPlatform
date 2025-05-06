@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2023-03-25 18:54
 # @Author : 毛鹏
-import urllib
+from urllib.parse import urlparse
 
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -18,8 +18,8 @@ from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
-from src.enums.ui_enum import DriveTypeEnum
 from src.models.socket_model import SocketDataModel, QueueModel
+from src.models.ui_model import RecordingModel
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -107,17 +107,6 @@ class UiConfigViews(ViewSet):
         is_recording = request.query_params.get('is_recording')
         if is_recording == '1':
             user_obj = User.objects.get(id=request.user['id'])
-            try:
-                config_obj = UiConfig.objects.get(user_id=request.user['id'],
-                                                  status=StatusEnum.SUCCESS.value,
-                                                  type=DriveTypeEnum.WEB.value)
-            except UiConfig.DoesNotExist:
-                return ResponseData.fail(RESPONSE_MSG_0106, )
-            if user_obj.selected_environment is None:
-                return ResponseData.fail(RESPONSE_MSG_0120, )
-            if user_obj.selected_project is None:
-                return ResponseData.fail(RESPONSE_MSG_0058, )
-
             host_list: list[dict] = list(TestObject.objects
                                          .filter(project_product_id__in=ProjectProduct
                                                  .objects
@@ -131,31 +120,29 @@ class UiConfigViews(ViewSet):
             host_list_dict = []
             for i in host_list:
                 host_list_dict.append({
-                    'value': urllib.parse.urlparse(i.get('value')).netloc,
+                    'value': urlparse(i.get('value')).netloc,
                     'project_product_id': i.get('project_product_id')
                 })
-            if config_obj.config is None:
-                return ResponseData.fail(RESPONSE_MSG_0124, )
-            web_config = EquipmentModel(
-                type=config_obj.type,
-                **config_obj.config,
-                is_header_intercept=True,
-                host_list=host_list_dict)
-        else:
-            config_obj = self.model.objects.get(id=request.query_params.get('id'))
-            if config_obj.config is None:
-                return ResponseData.fail(RESPONSE_MSG_0124, )
-            web_config = EquipmentModel(type=config_obj.type, **config_obj.config)
-
-        send_socket_data = SocketDataModel(
-            code=200,
-            msg="实例化web对象",
-            user=request.user.get('username'),
-            is_notice=ClientTypeEnum.ACTUATOR,
-            data=QueueModel(
-                func_name=UiSocketEnum.NEW_PAGE_OBJ.value,
-                func_args=web_config
+            send_socket_data = SocketDataModel(
+                code=200,
+                msg="实例化web对象",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.ACTUATOR,
+                data=QueueModel(
+                    func_name=UiSocketEnum.RECORDING.value,
+                    func_args=RecordingModel(url_list=host_list)
+                )
             )
-        )
+        else:
+            send_socket_data = SocketDataModel(
+                code=200,
+                msg="实例化web对象",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.ACTUATOR,
+                data=QueueModel(
+                    func_name=UiSocketEnum.NEW_PAGE_OBJ.value,
+                    func_args={}
+                )
+            )
         ChatConsumer.active_send(send_socket_data)
         return ResponseData.success(RESPONSE_MSG_0059, )
