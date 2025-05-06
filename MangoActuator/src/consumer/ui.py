@@ -4,7 +4,7 @@
 # @Author : 毛鹏
 import asyncio
 
-from src.models.ui_model import PageStepsModel, CaseModel
+from src.models.ui_model import PageStepsModel, CaseModel, RecordingModel
 from src.services.ui.case_flow import CaseFlow
 from src.services.ui.test_page_steps import TestPageSteps
 from src.tools.decorator.convert_args import convert_args
@@ -17,35 +17,27 @@ class UI:
     @classmethod
     @convert_args(PageStepsModel)
     async def u_page_step(cls, data: PageStepsModel):
-        """
-        执行页面步骤
-        @param data:
-        @return:
-        """
         async with cls.lock:
             test_page_steps = TestPageSteps(cls.parent, data.project_product)
             cls.parent.set_tips_info(f'开始执行页面步骤：{data.name}')
             await test_page_steps.page_steps_mian(data)
 
     @classmethod
-    # @convert_args(EquipmentModel)
-    async def u_page_new_obj(cls, data):
-        """
-        实例化浏览器对象
-        @param data:
-        @return:
-        """
+    async def u_page_new_obj(cls):
         async with cls.lock:
             test_page_steps = TestPageSteps(cls.parent, None)
             cls.parent.set_tips_info(f'开始打开浏览器')
+            await test_page_steps.new_web_obj()
+
+    @classmethod
+    @convert_args(RecordingModel)
+    async def u_recording(cls, data):
+        async with cls.lock:
+            test_page_steps = TestPageSteps(cls.parent, None)
+            cls.parent.set_tips_info(f'开始准备录制，请手动访问需要录制的网页')
             await test_page_steps.new_web_obj(data)
 
     @classmethod
     @convert_args(CaseModel)
     async def u_case(cls, data: CaseModel):
-        """
-        执行测试用例
-        @param data:
-        @return:
-        """
         await CaseFlow.add_task(data)
