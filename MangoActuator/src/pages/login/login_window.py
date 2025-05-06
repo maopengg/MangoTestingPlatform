@@ -11,6 +11,7 @@ from src.tools.methods import Methods
 from src.tools.set_config import SetConfig
 from .login_dict import form_data
 from ... import log
+from ...exceptions import ToolsError
 from ...tools.components.message import response_message
 from ...tools.url import is_valid_url, http_to_ws_url
 
@@ -74,6 +75,8 @@ class LoginLogic(LoginWindow):
             show_failed_message('IP或端口不正确')
         except ConnectionError:
             show_failed_message('IP或端口不正确或服务未启动')
+        except ToolsError as error:
+            show_failed_message(error.msg)
         except Exception as e:
             show_failed_message('发生未知错误，请联系管理员！')
             import traceback

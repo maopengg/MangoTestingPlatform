@@ -14,9 +14,7 @@ from src.tools.decorator.request_log import request_log
 
 
 class HttpBase:
-    headers = {
-        'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsInR5cGUiOiJqd3QifQ.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsIm5hbWUiOiJhZG1pbiIsImV4cCI6MTc0NjMyMDM0NH0.jGuk5UcEdeIYQ-3HS1TZR7JcZQmRqfVyH2zvlhCjsl4'
-    }
+    headers = {}
 
     @classmethod
     @request_log()
