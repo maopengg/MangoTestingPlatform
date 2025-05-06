@@ -8,11 +8,14 @@ from pydantic import BaseModel
 from mangokit.models import MysqlConingModel, ElementModel, ElementResultModel
 
 
-
 class UiPublicModel(BaseModel):
     type: int
     key: str
     value: str
+
+
+class RecordingModel(BaseModel):
+    url_list: list[dict]
 
 
 class EnvironmentConfigModel(BaseModel):

@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import traceback
 from datetime import datetime
+from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
 
@@ -28,7 +29,10 @@ from src.tools.set_config import SetConfig
 
 class PageSteps:
 
-    def __init__(self, base_data: BaseData, driver_object: DriverObject, page_steps_model: PageStepsModel | None,
+    def __init__(self,
+                 base_data: BaseData,
+                 driver_object: DriverObject,
+                 page_steps_model: PageStepsModel | None,
                  is_step=False):
         self.driver_object = driver_object
         self.test_object: str = ''
@@ -36,6 +40,7 @@ class PageSteps:
         self.page_steps_model = page_steps_model
         self.is_step = is_step
         self._device_opened = False
+        self.host_list: list[dict] = []
 
         if page_steps_model:
             self.page_step_result_model = PageStepsResultModel(
@@ -98,7 +103,7 @@ class PageSteps:
             case _:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
-    async def web_init(self):
+    async def web_init(self, is_recording: bool = False, host_list: list | None = None):
         if self.driver_object.web is None:
             self.driver_object.set_web(
                 SetConfig.get_web_type(),  # type: ignore
@@ -109,11 +114,15 @@ class PageSteps:
                 SetConfig.get_web_h5(),  # type: ignore
                 web_is_default=settings.IS_OPEN
             )
-            self.driver_object.web.wen_intercept_request = self.__intercept_request
+        if is_recording and host_list:
+            self.driver_object.web.is_header_intercept = True
+            self.driver_object.web.wen_intercept_request = partial(self.__intercept_request, self)
             self.driver_object.web.wen_recording_api = self.__send_recording_api
-        self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
-                                     self.page_steps_model.url)
-        self.test_object = self.base_data.url
+            self.host_list = host_list
+        else:
+            self.base_data.url = urljoin(self.page_steps_model.environment_config.test_object_value,
+                                         self.page_steps_model.url)
+            self.test_object = self.base_data.url
         try:
             if self.base_data.context is None or self.base_data.page is None:
                 self.base_data.context, self.base_data.page = await self.driver_object.web.new_web_page()
@@ -136,12 +145,12 @@ class PageSteps:
     def desktop_init(self, ):
         pass
 
-    async def __intercept_request(self, route: Route, request: Request):
-        if self.page_steps_model.equipment_config.host_list is None:
+    async def __intercept_request(self, obj, route: Route, request: Request):
+        if self.host_list is None:
             await route.continue_()
             return
         if request.resource_type in ("document", "xhr", "fetch"):
-            for host_dict in self.page_steps_model.equipment_config.host_list:
+            for host_dict in self.host_list:
                 if host_dict.get('value') in request.url:
                     await self.__send_recording_api(request, host_dict.get('project_product_id'))
         await route.continue_()
