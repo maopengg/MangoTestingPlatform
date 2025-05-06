@@ -81,9 +81,9 @@ class PageSteps:
             for _element_data in self.page_steps_model.case_data:
                 if _element_data.page_step_details_id == _id:
                     element_data = _element_data.page_step_details_data
-        if element_data is None:
-            raise UiError(*ERROR_MSG_0025)
-        return element_data
+            if element_data is None:
+                raise UiError(*ERROR_MSG_0025)
+            return element_data
 
     async def _ope_steps(self, element_model, element_data):
         element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
@@ -105,12 +105,15 @@ class PageSteps:
 
     async def web_init(self, is_recording: bool = False, host_list: list | None = None):
         if self.driver_object.web is None:
+            web_max = SetConfig.get_web_max()  # type: ignore
+            web_headers = SetConfig.get_web_headers()  # type: ignore
+            web_recording = SetConfig.get_web_recording()  # type: ignore
             self.driver_object.set_web(
                 SetConfig.get_web_type(),  # type: ignore
                 SetConfig.get_web_path(),  # type: ignore
-                SetConfig.get_web_max(),  # type: ignore
-                SetConfig.get_web_headers(),  # type: ignore
-                SetConfig.get_web_recording(),  # type: ignore
+                web_max if web_max else False,  # type: ignore
+                web_headers if web_headers else False,  # type: ignore
+                web_recording if web_recording else False,  # type: ignore
                 SetConfig.get_web_h5(),  # type: ignore
                 web_is_default=settings.IS_OPEN
             )

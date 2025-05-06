@@ -3,7 +3,7 @@
 # @Description: 错误消息统一管理
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏
-ERROR_MSG_0001 = (301, '')
+ERROR_MSG_0001 = (301, '登录失败，请检查输入的域名是否正确！')
 ERROR_MSG_0002 = (302, '')
 ERROR_MSG_0003 = (303, '')
 ERROR_MSG_0004 = (304, '')

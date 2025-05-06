@@ -6,7 +6,6 @@
 import asyncio
 import json
 import os
-import traceback
 from typing import Union, Optional, TypeVar
 
 import websockets
@@ -89,7 +88,7 @@ class WebSocketClient:
                     cls.running = False
                     os._exit(1)
                 else:
-                    log.error(f'错误类型：{error}，错误详情：{traceback.print_exc()}')
+                    log.error(f'错误类型：{error}')
                     cls.parent.set_tips_info(
                         f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                     await asyncio.sleep(5)
