@@ -22,6 +22,7 @@ from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel
 from src.network import ApiSocketEnum, socket_conn, HTTP
 from src.settings import settings
+from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
@@ -68,7 +69,9 @@ class PageSteps:
             self.page_step_result_model.element_result_list.append(element_result)
             if self.page_step_result_model.status == StatusEnum.FAIL.value:
                 if element_result.picture_name and element_result.picture_path:
-                    HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                    upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                    if not upload and self.page_step_result_model.error_message:
+                        self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
                 break
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
         self.page_step_result_model.test_object = self.test_object
@@ -115,7 +118,8 @@ class PageSteps:
                 web_headers if web_headers else False,  # type: ignore
                 web_recording if web_recording else False,  # type: ignore
                 SetConfig.get_web_h5(),  # type: ignore
-                web_is_default=settings.IS_OPEN
+                web_is_default=settings.IS_OPEN,
+                videos_path=project_dir.videos()
             )
         if is_recording and host_list:
             self.driver_object.web.is_header_intercept = True

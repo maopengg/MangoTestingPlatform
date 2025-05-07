@@ -26,7 +26,6 @@ from src.tools.obtain_test_data import ObtainTestData
 
 @singleton
 class TestPageSteps:
-    """用例分发"""
 
     def __init__(self, parent, project_product):
         self.driver_object = DriverObject(True)
@@ -153,3 +152,9 @@ class TestPageSteps:
             'type': _type,
             'value': msg
         })
+
+    def reset_driver_object(self):
+        self.driver_object = DriverObject(True)
+        asyncio.run_coroutine_threadsafe(self.base_data.async_base_close(), self.parent.loop)
+        self.base_data = BaseData(self.test_data, log) \
+            .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
