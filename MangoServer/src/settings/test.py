@@ -20,8 +20,8 @@ MYSQL_PORT = 3306
 # True开启debug就不会使用minio
 # 生产环境=True，生产环境=False，使用minio
 
-DEBUG = True
-IS_DEBUG_LOG = True
+DEBUG = False
+IS_DEBUG_LOG = False
 
 # ************************ REDIS配置 ************************ #
 

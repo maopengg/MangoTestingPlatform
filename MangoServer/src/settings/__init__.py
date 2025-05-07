@@ -36,7 +36,6 @@ USE_TZ = True
 
 TIME_ZONE = 'Asia/Shanghai'
 # **********************************************************************************************************************
-CSRF_TRUSTED_ORIGINS = ['http://mango_server:8000']  # 如果使用CSRF
 ALLOWED_HOSTS = ["*"]
 # **********************************************************************************************************************
 
@@ -68,7 +67,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # 跨域
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
