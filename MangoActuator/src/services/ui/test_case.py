@@ -158,7 +158,7 @@ class TestCase:
                 self.base_data.mysql_connect.condition_execute(sql.get('sql'))
 
     async def sava_videos(self):
-        if self.driver_object.web.web_recording:
+        if self.driver_object.web and self.driver_object.web.web_recording:
             self.case_result.video_path = await self.base_data.page.video.path()
 
     async def send_case_result(self, msg):
