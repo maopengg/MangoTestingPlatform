@@ -20,7 +20,7 @@ services:
     networks:
       app_network:
         aliases:
-          - db.internal  # 添加内部域名
+          - db.internal
 
   minio:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z.fips
@@ -41,7 +41,7 @@ services:
     networks:
       app_network:
         aliases:
-          - minio.internal  # 添加内部域名
+          - minio.internal
 
   mango_server:
     build:
@@ -61,8 +61,8 @@ services:
     networks:
       app_network:
         aliases:
-          - mango.internal  # 关键点：为 mango_server 添加合法域名
-    hostname: mango.internal  # 显式设置容器主机名
+          - mango.internal
+    hostname: mango.internal
 
   mango-console:
     build:
@@ -86,8 +86,6 @@ services:
       app_network:
         aliases:
           - actuator.internal
-    extra_hosts:
-      - "mango.internal:mango_server"  # 确保 mango.internal 解析到 mango_server
 
 networks:
   app_network:
