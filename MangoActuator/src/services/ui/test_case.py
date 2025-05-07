@@ -20,8 +20,8 @@ from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, PageStepsResultModel, UiCaseResultModel
-from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.network import socket_conn
+from src.network.web_socket.socket_api_enum import UiSocketEnum
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
@@ -113,10 +113,14 @@ class TestCase:
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')
                 break
-        await self.case_posterior(self.case_model.posterior_sql)
-        await self.send_case_result(
-            f'用例<{self.case_model.name}>执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
-        await self.base_data.async_base_close()
+        try:
+            await self.case_posterior(self.case_model.posterior_sql)
+            await self.sava_videos()
+            await self.send_case_result(
+                f'用例<{self.case_model.name}>执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
+        except Exception:
+            await self.send_case_result(
+                f'用例后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         front_custom = self.base_data.test_data.replace(front_custom)
@@ -148,10 +152,9 @@ class TestCase:
         for sql in posterior_sql:
             if self.base_data.mysql_connect and sql.get('sql', None) is not None:
                 self.base_data.mysql_connect.condition_execute(sql.get('sql'))
-        await self.sava_videos()
 
     async def sava_videos(self):
-        if self.driver_object.web.web_recording:
+        if self.driver_object.web and self.driver_object.web.web_recording:
             self.case_result.video_path = await self.base_data.page.video.path()
 
     async def send_case_result(self, msg):
