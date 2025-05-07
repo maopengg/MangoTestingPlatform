@@ -20,7 +20,7 @@ services:
     networks:
       app_network:
         aliases:
-          - db.internal
+          - db
 
   minio:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z.fips
@@ -41,7 +41,7 @@ services:
     networks:
       app_network:
         aliases:
-          - minio.internal
+          - minio
 
   mango_server:
     build:
@@ -61,8 +61,8 @@ services:
     networks:
       app_network:
         aliases:
-          - mango.internal
-    hostname: mango.internal
+          - server
+    hostname: server
 
   mango-console:
     build:
@@ -85,7 +85,7 @@ services:
     networks:
       app_network:
         aliases:
-          - actuator.internal
+          - actuator
 
 networks:
   app_network:
