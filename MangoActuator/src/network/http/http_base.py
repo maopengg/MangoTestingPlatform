@@ -27,7 +27,6 @@ class HttpBase:
     @classmethod
     @request_log()
     def post(cls, url, headers=None, **kwargs) -> ResponseModel | Response:
-        headers['Host'] = urlparse(SetConfig.get_host()).hostname
         return requests.post(urljoin(SetConfig.get_host(), url),  # type: ignore
                              headers if headers else cls.headers, **kwargs)
 
