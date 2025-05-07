@@ -3,9 +3,10 @@
 # @Description: # @Time   : 2023-08-28 21:23
 # @Author : 毛鹏
 import copy
-import time
 import traceback
+from urllib.parse import urljoin
 
+import time
 from mangokit.apidrive import requests
 from mangokit.data_processor import EncryptionTool
 
@@ -58,7 +59,8 @@ class HttpClientApi(HttpBase):
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
             else:
-                raise ToolsError(*ERROR_MSG_0001)
+                raise ToolsError(*ERROR_MSG_0001,
+                                 value=(urljoin(SetConfig.get_host(), '/login'), response.model_dump_json()))
             return response
         except Exception as error:
             traceback.print_exc()
@@ -75,7 +77,6 @@ class HttpClientApi(HttpBase):
 
 if __name__ == '__main__':
     import requests
-    import json
 
     url = "http://121.37.174.56:8000/login"
 

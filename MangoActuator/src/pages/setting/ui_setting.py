@@ -27,6 +27,10 @@ class UiSettingPage(QWidget):
                                        is_form=False)
         self.combo_box.click.connect(SetConfig.set_web_type)  # type: ignore
         card_layout1.addRow('*选择浏览器：', self.combo_box)
+        line_edit_2 = MangoLineEdit('请输入浏览器的路径，这个是非必填，可以不填，不填我会自己找路径',
+                                    SetConfig.get_web_path())  # type: ignore
+        line_edit_2.click.connect(SetConfig.set_web_path)  # type: ignore
+        card_layout1.addRow('选择浏览器：', line_edit_2)
         self.combo_box_2 = MangoComboBox('请选择需要并行的浏览器数量', [
             ComboBoxDataModel(id=str(i), name=str(i)) for i in range(20)], SetConfig.get_web_parallel(),  # type: ignore
                                          is_form=False)  # type: ignore
@@ -47,6 +51,10 @@ class UiSettingPage(QWidget):
         self.toggle3 = MangoToggle(SetConfig.get_web_headers())  # type: ignore
         self.toggle3.clicked.connect(SetConfig.set_web_headers)  # type: ignore
         card_layout1.addRow('无头模式：', self.toggle3)
+        push_button_1 = MangoPushButton(
+            '如果修改的设置需要立马生效，则点击这个。如果执行器浏览器有假死情况，也可以点击这个')
+        push_button_1.clicked.connect(self.clicked_push_button_1)
+        card_layout1.addRow('重置缓存对象：', push_button_1)
 
         card_layout2 = MangoFormLayout()
         card_widget_2 = MangoCard(card_layout2, '安卓自动化配置')
@@ -79,6 +87,12 @@ class UiSettingPage(QWidget):
 
     def clicked_push_button(self):
         self.label_2.setText(','.join([f"{d['device_id']}({d['status']})" for d in self.get_adb_devices()]))
+
+    def clicked_push_button_1(self):
+        from src.services.ui.test_page_steps import TestPageSteps
+        from src.services.ui.case_flow import CaseFlow
+        CaseFlow.reset_driver_object()
+        TestPageSteps().reset_driver_object()
 
     @staticmethod
     def get_adb_devices():

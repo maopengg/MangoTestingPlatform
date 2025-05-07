@@ -1,5 +1,5 @@
 {
-  "host": "http://mango_server:8000",
+  "host": "http://server:8000",
   "minio_url": "http://minio:9000",
   "username": "open",
   "password": "123456",

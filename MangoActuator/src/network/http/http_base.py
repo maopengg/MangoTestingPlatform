@@ -3,18 +3,20 @@
 # @Description: 
 # @Time   : 2024-09-12 18:09
 # @Author : 毛鹏
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from mangokit.apidrive import requests
 from requests import Response
 
 from src.models.socket_model import ResponseModel
-from src.tools.set_config import SetConfig
 from src.tools.decorator.request_log import request_log
+from src.tools.set_config import SetConfig
 
 
 class HttpBase:
-    headers = {}
+    headers = {
+        'Authorization': '',
+    }
 
     @classmethod
     @request_log()

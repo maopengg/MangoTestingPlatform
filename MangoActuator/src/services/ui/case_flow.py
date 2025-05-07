@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 import asyncio
-import time
 import traceback
 
+import time
 from mangokit.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel
@@ -15,6 +15,7 @@ from src.services.ui.test_case import TestCase
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
+
 
 class CaseFlow:
     queue = asyncio.Queue()
@@ -30,7 +31,7 @@ class CaseFlow:
 
         while cls.running:
             await asyncio.sleep(0.1)
-            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():# type: ignore
+            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 task = asyncio.create_task(cls.execute_task(case_model))
@@ -69,3 +70,7 @@ class CaseFlow:
     @classmethod
     def stop(cls):
         cls.running = False
+
+    @classmethod
+    def reset_driver_object(cls):
+        cls.driver_object = DriverObject(True)
