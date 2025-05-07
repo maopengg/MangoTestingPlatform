@@ -16,7 +16,6 @@ from src.tools.set_config import SetConfig
 class HttpBase:
     headers = {
         'Authorization': '',
-        'Content-Type': 'application/json',
     }
 
     @classmethod
