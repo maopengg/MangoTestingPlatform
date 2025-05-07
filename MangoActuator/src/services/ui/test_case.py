@@ -95,7 +95,6 @@ class TestCase:
             await self.send_case_result(f'初始化用例前置数据发生未知异常，请联系管理员来解决!')
             raise error
         for steps in self.case_model.steps:
-            print(1, steps.url)
             page_steps = PageSteps(self.base_data, self.driver_object, steps)
             try:
                 await page_steps.driver_init()
@@ -104,13 +103,10 @@ class TestCase:
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
                     break
             except (MangoActuatorError, MangoKitError) as error:
-                print(2, steps.url)
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
                 self.set_page_steps(page_steps.page_step_result_model)
                 break
             except Exception as error:
-                print(3, steps.url)
-
                 from mangokit.mangos import Mango  # type: ignore
                 Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
