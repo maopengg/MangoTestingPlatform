@@ -60,7 +60,7 @@ class HttpClientApi(HttpBase):
                 cls.headers['Authorization'] = response.data.get('token')
             else:
                 raise ToolsError(*ERROR_MSG_0001,
-                                 value=(urljoin(SetConfig.get_host(), url), response.model_dump_json()))
+                                 value=(urljoin(SetConfig.get_host(), '/login'), response.model_dump_json()))
             return response
         except Exception as error:
             traceback.print_exc()
