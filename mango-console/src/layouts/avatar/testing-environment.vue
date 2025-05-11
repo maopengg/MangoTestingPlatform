@@ -52,9 +52,7 @@
   watchEffect(() => {
     setTitle(userStore.selected_environment)
   })
-  onMounted(() => {
-    enumStore.getEnum()
-  })
+  onMounted(() => {})
 </script>
 
 <style lang="less" scoped>
