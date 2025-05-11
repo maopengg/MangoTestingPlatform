@@ -8,13 +8,12 @@ from mangoui import *
 
 from src import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
-from src.enums.system_enum import ClientTypeEnum, CacheDataKey2Enum
+from src.enums.system_enum import ClientTypeEnum
 from src.models import queue_notification
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.command.command import CommandThread
-from src.tools.components.message import response_message
 from src.tools.log_collector import log
 
 
@@ -39,7 +38,7 @@ class SettingPage(QWidget):
         self.minio_ = MangoLabel('minio配置，如果没有就不管，主要是测试用例中有上传文件时候使用的')
         card_layout1.addRow('MINIO配置说明：', self.minio_, )
         self.minio = MangoLineEdit('请输入minio的url')
-        self.minio.click.connect(SetConfig.set_minio_url)# type: ignore
+        self.minio.click.connect(SetConfig.set_minio_url)  # type: ignore
         card_layout1.addRow('MINIO_URL：', self.minio, )
 
         # card_layout2 = MangoVBoxLayout()
@@ -146,7 +145,6 @@ class SettingPage(QWidget):
             func_args=func_info
         )
         queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
-
 
     def test_but(self):
         self.command_thread = CommandThread(self, 'python D:\GitCode\PytestAutoTest\main.py')

@@ -7,7 +7,6 @@ from mangoui import THEME
 
 from src.enums.ui_enum import ElementOperationEnum
 from src.network import HTTP
-from src.tools.methods import Methods
 
 right_data = [
     {'name': '新增', 'theme': THEME.group.info, 'action': 'add'},

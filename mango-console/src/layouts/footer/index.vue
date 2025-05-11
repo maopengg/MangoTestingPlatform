@@ -1,19 +1,13 @@
 <template>
-  <a-card :bordered="false" class="footer-container"> Copyright © {{ projectName }} 2023</a-card>
+  <a-card :bordered="false" class="footer-container">
+    Copyright © 芒果味 2022-至今 Version：{{ version }}</a-card
+  >
+  <!--  禁止修改作者署名-->
 </template>
 
-<script lang="ts">
-  import { defineComponent } from 'vue'
-  import { projectName } from '../../setting'
-
-  export default defineComponent({
-    name: 'Footer',
-    setup() {
-      return {
-        projectName,
-      }
-    },
-  })
+<script lang="ts" setup>
+  import useAppInfo from '@/hooks/useAppInfo'
+  const { version } = useAppInfo()
 </script>
 
 <style lang="less" scoped>

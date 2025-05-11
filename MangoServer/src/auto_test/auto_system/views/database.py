@@ -9,8 +9,8 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from mangokit.database import MysqlConnect
-from mangokit.models import MysqlConingModel
 from mangokit.exceptions import MangoKitError
+from mangokit.models import MysqlConingModel
 from src.auto_test.auto_system.models import Database
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.tools_enum import StatusEnum

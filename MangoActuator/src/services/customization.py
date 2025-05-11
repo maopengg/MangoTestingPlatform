@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2025-04-29 14:06
 # @Author : 毛鹏
-from mangokit.decorator import inject_to_class, async_method_callback, func_info
+from mangokit.decorator import inject_to_class, async_method_callback
 from mangokit.models import MethodModel
 from mangokit.uidrive.web.async_web import AsyncWebCustomization
 

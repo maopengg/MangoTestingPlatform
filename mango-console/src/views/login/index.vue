@@ -116,9 +116,8 @@
         </div>
       </div>
     </div>
-    <div class="bottom">
-      {{ '©   ' + projectName + '    ' + version + ' · 芒果味' }}
-    </div>
+    <div class="bottom"> Copyright © 芒果味 2022-至今 Version：{{ version }} </div>
+    <!--  禁止修改作者署名-->
   </div>
 </template>
 

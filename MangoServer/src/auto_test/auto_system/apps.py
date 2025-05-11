@@ -3,9 +3,10 @@
 # @Description:
 # @Time   : 2023/1/17 10:20
 # @Author : 毛鹏
-import atexit
 import os
 import threading
+
+import atexit
 import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError

@@ -23,7 +23,8 @@ class SocketApiViews(ViewSet):
         for i in SocketUser.user:
             if i.client_obj:
                 res = User.objects.get(id=i.user_id)
-                data.append({'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
+                data.append(
+                    {'id': res.id, 'name': res.name, 'username': res.username, 'ip': res.ip, 'is_open': i.is_open})
         return ResponseData.success(RESPONSE_MSG_0101, data, len(data))
 
     @action(methods=['get'], detail=False)
