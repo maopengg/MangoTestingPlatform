@@ -9,6 +9,7 @@ from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
 
+from mangokit.exceptions import MangoKitError
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from playwright._impl._errors import TargetClosedError, Error
@@ -62,16 +63,25 @@ class PageSteps:
     async def steps_main(self) -> PageStepsResultModel:
         self._device_opened = False
         for element_model in self.page_steps_model.element_list:
-            element_data = await self._get_element_data(element_model.id)
-            element_result = await self._ope_steps(element_model, element_data)
-            self.page_step_result_model.status = element_result.status
-            self.page_step_result_model.error_message = element_result.error_message
-            self.page_step_result_model.element_result_list.append(element_result)
-            if self.page_step_result_model.status == StatusEnum.FAIL.value:
-                if element_result.picture_name and element_result.picture_path:
-                    upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                    if not upload and self.page_step_result_model.error_message:
-                        self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+            try:
+                element_data = await self._get_element_data(element_model.id)
+                element_result = await self._ope_steps(element_model, element_data)
+                self.page_step_result_model.status = element_result.status
+                self.page_step_result_model.error_message = element_result.error_message
+                self.page_step_result_model.element_result_list.append(element_result)
+                if self.page_step_result_model.status == StatusEnum.FAIL.value:
+                    if element_result.picture_name and element_result.picture_path:
+                        upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                        if not upload and self.page_step_result_model.error_message:
+                            self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+                    break
+            except MangoKitError as error:
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = error.msg
+                break
+            except Exception as error:
+                self.page_step_result_model.status = StatusEnum.FAIL.value
+                self.page_step_result_model.error_message = str(error)
                 break
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
         self.page_step_result_model.test_object = self.test_object

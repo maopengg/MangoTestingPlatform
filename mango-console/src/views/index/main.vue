@@ -102,9 +102,7 @@
     useTableColumn,
   } from '@/hooks/table'
   import { useRouter } from 'vue-router'
-  import { useProductModule } from '@/store/modules/project_module'
   import { getSystemTasks } from '@/api/system/tasks'
-  import { useProject } from '@/store/modules/get-project'
   import { useEnum } from '@/store/modules/get-enum'
   import PieChart from '@/components/chart/PieChart.vue'
   import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
@@ -113,8 +111,7 @@
   const mainHeight = computed(() => {
     return appStore.mainHeight + 'px'
   })
-  const projectInfo = useProject()
-  const productModule = useProductModule()
+
   const enumStore = useEnum()
   const hotProductChart = ref()
   const fullYearSalesChart = ref()
@@ -186,9 +183,6 @@
         pagination.setTotalSize((res as any).totalSize)
         caseSum()
         getAllReportSum()
-        productModule.getProjectModule()
-        projectInfo.getProject()
-        projectInfo.projectProductName()
       })
       .catch(console.log)
   }
