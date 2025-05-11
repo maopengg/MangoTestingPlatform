@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 import asyncio
+import time
 import traceback
 
-import time
 from mangokit.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel

@@ -8,7 +8,6 @@ from mangokit.models import MethodModel
 from src.auto_test.auto_ui.models import PageStepsDetailed
 
 
-
 def page_steps_detailed():
     for i in PageStepsDetailed.objects.all():
         ope_value_list = []

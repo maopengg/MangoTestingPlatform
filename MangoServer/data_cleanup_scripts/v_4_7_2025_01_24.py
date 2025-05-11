@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2025-01-24 11:36
 # @Author : 毛鹏
-import json
 import re
 
 from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiInfo, ApiPublic
