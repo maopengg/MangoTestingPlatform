@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 from .api_case import ApiCase
 from .api_case_detailed import ApiCaseDetailed
+from .api_headers import ApiHeaders
 from .api_info import ApiInfo
 from .api_pulic import ApiPublic
-from .api_headers import ApiHeaders
 
 
 class ApiApi:

@@ -3,7 +3,6 @@
 # @Time   : 2023/5/10 11:34
 # @Author : 毛鹏
 import asyncio
-import json
 import traceback
 
 from src.consumer.api import API
@@ -11,7 +10,6 @@ from src.consumer.perf import Perf
 from src.consumer.tools import Tools
 from src.consumer.ui import UI
 from src.models.socket_model import QueueModel
-from src.models.user_model import UserModel
 from src.settings import settings
 from src.tools.log_collector import log
 

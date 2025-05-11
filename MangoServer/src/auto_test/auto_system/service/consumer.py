@@ -3,10 +3,10 @@
 # @Description: 
 # @Time   : 2024-11-23 22:49
 # @Author : 毛鹏
-import time
 import traceback
 from datetime import timedelta
 
+import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error
 from django.utils import timezone

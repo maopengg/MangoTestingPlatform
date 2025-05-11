@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 
 import time
-
 from django.utils import timezone
 
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails

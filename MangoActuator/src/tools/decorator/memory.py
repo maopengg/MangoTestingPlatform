@@ -4,9 +4,9 @@
 # @Time   : 2024-05-24 11:51
 # @Author : 毛鹏
 import asyncio
+import time
 
 import psutil
-import time
 
 from src.settings import settings
 from src.tools.log_collector import log

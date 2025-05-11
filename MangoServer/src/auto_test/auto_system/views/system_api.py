@@ -9,8 +9,8 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangokit.enums import NoticeEnum
 from mangokit.data_processor import ObtainRandomData
+from mangokit.enums import NoticeEnum
 from mangokit.method import class_methods
 from src.enums.api_enum import *
 from src.enums.pytest_enum import *

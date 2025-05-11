@@ -17,7 +17,6 @@ class RecordingModel(BaseModel):
     url_list: list[dict]
 
 
-
 class EnvironmentConfigModel(BaseModel):
     id: int
     test_object_value: str
