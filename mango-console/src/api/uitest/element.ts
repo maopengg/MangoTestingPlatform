@@ -75,6 +75,9 @@ export function getUiUiElementName(id: any) {
 export function getUiElementUpload(data: any) {
   return post({
     url: '/ui/element/upload',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
     data: () => {
       return data
     },
