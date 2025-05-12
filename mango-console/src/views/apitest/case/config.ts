@@ -183,7 +183,7 @@ export const tableColumns = useTableColumn([
     title: '负责人',
     key: 'case_people',
     dataIndex: 'case_people',
-    width: 80,
+    width: 120,
   },
   {
     title: '状态',
