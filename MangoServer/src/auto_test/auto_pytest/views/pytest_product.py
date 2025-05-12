@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
+import os
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -14,6 +15,7 @@ from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_system.models import ProductModule
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.enums.pytest_enum import PytestFileTypeEnum
+from src.tools import project_dir
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
@@ -84,7 +86,7 @@ class PytestProductViews(ViewSet):
     @error_response('pytest')
     def pytest_read(self, request: Request):
         file_path = self.model.objects.get(id=request.query_params.get('id')).init_file
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(os.path.join(project_dir.root_path(), file_path), 'r', encoding='utf-8') as file:
             file_content = file.read()
         return ResponseData.success(RESPONSE_MSG_0084, data=file_content)
 
@@ -93,7 +95,7 @@ class PytestProductViews(ViewSet):
     def pytest_write(self, request: Request):
         file_path = self.model.objects.get(id=request.data.get('id')).init_file
         file_content = request.data.get('file_content')
-        with open(file_path, 'w', encoding='utf-8') as file:
+        with open(os.path.join(project_dir.root_path(), file_path), 'w', encoding='utf-8') as file:
             file.write(file_content)
         return ResponseData.success(RESPONSE_MSG_0085)
 

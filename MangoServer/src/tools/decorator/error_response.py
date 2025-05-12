@@ -39,7 +39,8 @@ def error_response(app: str):
                 return ResponseData.fail((error.code, error.msg))
             except MangoKitError as error:
                 return ResponseData.fail((error.code, error.msg))
-            except FileNotFoundError:
+            except FileNotFoundError as error:
+                log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')
                 return ResponseData.fail(RESPONSE_MSG_0107)
             except Exception as error:
                 try:
