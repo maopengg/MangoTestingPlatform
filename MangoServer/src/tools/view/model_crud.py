@@ -28,8 +28,8 @@ class ModelCRUD(GenericAPIView):
         'pageSize', 'page',
         'type', 'status',
         'module', 'project_product', 'case_people', 'test_object', 'project', 'user',
-        'pytest_product'
     ]
+    pytest_model = ['PytestAct', 'PytestCase', 'PytestTools', 'PytestTestFile']
 
     @error_response('system')
     def get(self, request: Request):
@@ -44,7 +44,11 @@ class ModelCRUD(GenericAPIView):
         if project_id and hasattr(self.model, 'project_product'):
             from src.auto_test.auto_system.models import ProjectProduct
             project_product = ProjectProduct.objects.filter(project_id=project_id)
-            if project_product:
+            if project_product and type(self.model) not in self.pytest_model:
+                from src.auto_test.auto_pytest.models import PytestProduct
+                product = PytestProduct.objects.filter(project_product_id__in=project_product.values_list('id', flat=True))
+                query_dict['project_product_id__in'] = product.values_list('id', flat=True)
+            elif project_product:
                 query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
         try:
             if request.query_params.get("pageSize") and request.query_params.get("page"):
