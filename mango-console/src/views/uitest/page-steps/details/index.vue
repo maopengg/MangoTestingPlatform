@@ -221,7 +221,7 @@
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { columns, customForm, opeForm, formItems, sqlForm } from './config'
+  import { columns, formItems } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
@@ -259,7 +259,7 @@
     opeSelect: [],
   })
 
-  function changeStatus(event: number) {
+  function changeStatus(event: number, value: any = null) {
     data.type = event
     for (let i = formItems.length - 1; i >= 0; i--) {
       if (formItems[i].key !== 'type') {
@@ -267,12 +267,26 @@
       }
     }
     if (event === 0) {
-      formItems.push(...opeForm)
+      formItems.push({
+        label: '元素操作',
+        key: 'ope_key',
+        value: value ? value : ref(''),
+        type: 'cascader',
+        required: true,
+        placeholder: '请选择对元素的操作',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
     } else if (event === 1) {
       formItems.push({
         label: '断言操作',
         key: 'ope_key',
-        value: ref(''),
+        value: value ? value : ref(''),
         type: 'cascader',
         required: true,
         placeholder: '请选择断言类型',
@@ -285,9 +299,79 @@
         },
       })
     } else if (event === 2) {
-      formItems.push(...sqlForm)
+      formItems.push(
+        ...[
+          {
+            label: 'key_list',
+            key: 'key_list',
+            value: ref(''),
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql查询结果的key_list',
+            validator: function () {
+              if (this.value !== '') {
+                try {
+                  this.value = JSON.parse(this.value)
+                } catch (e) {
+                  Message.error('key_list值请输入json数据类型')
+                  return false
+                }
+              }
+              return true
+            },
+          },
+          {
+            label: 'sql语句',
+            key: 'sql',
+            value: ref(''),
+            type: 'textarea',
+            required: true,
+            placeholder: '请输入sql',
+            validator: function () {
+              if (!this.value && this.value !== 0) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+              return true
+            },
+          },
+        ]
+      )
     } else {
-      formItems.push(...customForm)
+      formItems.push(
+        ...[
+          {
+            label: 'key',
+            key: 'key',
+            value: ref(''),
+            type: 'input',
+            required: true,
+            placeholder: '请输入key',
+            validator: function () {
+              if (!this.value && this.value !== 0) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+              return true
+            },
+          },
+          {
+            label: 'value',
+            key: 'value',
+            value: ref(''),
+            type: 'input',
+            required: true,
+            placeholder: '请输入value',
+            validator: function () {
+              if (!this.value && this.value !== 0) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+              return true
+            },
+          },
+        ]
+      )
     }
   }
 
@@ -329,7 +413,6 @@
 
   function onUpdate(item: any) {
     data.type = item.type
-    changeStatus(item.type)
     if (item.ope_key && item.type === 0) {
       upDataOpeValue(data.ope, item.ope_key)
     } else {
@@ -469,6 +552,7 @@
   }
 
   function upDataOpeValue(selectData: any, value: any) {
+    changeStatus(data.type, value)
     const inputItem = findItemByValue(selectData, value)
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
