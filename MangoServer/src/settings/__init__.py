@@ -240,7 +240,7 @@ LOGGING = {
         'pytest': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR / 'logs/auto_ui/log.log',
+            'filename': BASE_DIR / 'logs/auto_pytest/log.log',
             'formatter': 'verbose',
             'maxBytes': 1024 * 1024 * 10,
             'backupCount': 30,

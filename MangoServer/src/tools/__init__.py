@@ -32,7 +32,7 @@ class ProjectDir:
             if not os.path.exists(file):
                 os.makedirs(file)
         logs_dir = os.path.join(self._root_path, 'logs')
-        for i in ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user']:
+        for i in ['auto_api', 'auto_perf', 'auto_system', 'auto_ui', 'auto_user', 'auto_pytest']:
             subdirectory = os.path.join(logs_dir, i)
             if not os.path.exists(subdirectory):
                 os.makedirs(subdirectory)
