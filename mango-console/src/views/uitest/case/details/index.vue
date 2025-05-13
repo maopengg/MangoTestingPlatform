@@ -37,7 +37,7 @@
     </template>
     <template #default>
       <a-card :bordered="false">
-        <div class="box">
+        <div class="main_box">
           <div class="left">
             <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
               <template #extra>
@@ -613,22 +613,20 @@
     white-space: nowrap;
   }
 
-  .box {
+  .main_box {
     width: 100%;
     margin: 0 auto;
     padding: 5px;
     box-sizing: border-box;
     display: flex;
-  }
-
-  .left {
-    flex: 5;
-    padding: 5px;
-  }
-
-  .right {
-    flex: 5;
-    padding: 5px;
-    max-width: 60%;
+    .left {
+      flex: 5;
+      padding: 5px;
+    }
+    .right {
+      flex: 5;
+      padding: 5px;
+      max-width: 60%;
+    }
   }
 </style>
