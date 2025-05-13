@@ -551,3 +551,13 @@
     })
   })
 </script>
+<style>
+  .container .a-space span {
+    font-size: 14px !important;
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>
