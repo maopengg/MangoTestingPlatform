@@ -3,6 +3,7 @@
 # @Description:
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
+import asyncio
 import traceback
 from datetime import datetime
 from functools import partial
@@ -10,6 +11,7 @@ from urllib import parse
 from urllib.parse import urljoin
 
 from mangokit.exceptions import MangoKitError
+from mangokit.models import ElementResultModel
 from mangokit.uidrive import AsyncElement
 from mangokit.uidrive import BaseData, DriverObject
 from playwright._impl._errors import TargetClosedError, Error
@@ -55,37 +57,34 @@ class PageSteps:
                 test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 cache_data={},
                 test_object='',
-                # equipment=self.page_steps_model.equipment_config,
-                status=StatusEnum.SUCCESS.value,
+                status=StatusEnum.FAIL.value,
                 element_result_list=[]
             )
 
     async def steps_main(self) -> PageStepsResultModel:
-        self._device_opened = False
-        for element_model in self.page_steps_model.element_list:
-            try:
-                element_data = await self._get_element_data(element_model.id)
-                element_result = await self._ope_steps(element_model, element_data)
-                self.page_step_result_model.status = element_result.status
-                self.page_step_result_model.error_message = element_result.error_message
-                self.page_step_result_model.element_result_list.append(element_result)
-                if self.page_step_result_model.status == StatusEnum.FAIL.value:
-                    if element_result.picture_name and element_result.picture_path:
-                        upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
-                        if not upload and self.page_step_result_model.error_message:
-                            self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+        error_retry = 0
+        self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
+        while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
+            error_retry += 1
+            for element_model in self.page_steps_model.element_list:
+                try:
+                    if error_retry != 1:
+                        log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
+                        await self._steps_retry()
+                    element_data = await self._get_element_data(element_model.id)
+                    element_result = await self._ope_steps(element_model, element_data)
+                    if element_result.status == StatusEnum.FAIL.value:
+                        break
+                except MangoKitError as error:
+                    self.page_step_result_model.status = StatusEnum.FAIL.value
+                    self.page_step_result_model.error_message = error.msg
                     break
-            except MangoKitError as error:
-                self.page_step_result_model.status = StatusEnum.FAIL.value
-                self.page_step_result_model.error_message = error.msg
-                break
-            except Exception as error:
-                self.page_step_result_model.status = StatusEnum.FAIL.value
-                self.page_step_result_model.error_message = str(error)
-                break
+                except Exception as error:
+                    self.page_step_result_model.status = StatusEnum.FAIL.value
+                    self.page_step_result_model.error_message = str(error)
+                    break
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
         self.page_step_result_model.test_object = self.test_object
-        # self.page_step_result_model.equipment = self.page_steps_model.equipment_config
         return self.page_step_result_model
 
     async def _get_element_data(self, _id):
@@ -98,12 +97,36 @@ class PageSteps:
                 raise UiError(*ERROR_MSG_0025)
             return element_data
 
-    async def _ope_steps(self, element_model, element_data):
+    async def _ope_steps(self, element_model, element_data) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
-        if not self._device_opened:
+        if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
+            if self.page_steps_model.switch_step_open_url:
+                await asyncio.sleep(1)
+            await element_ope.open_device(is_open=self.page_steps_model.switch_step_open_url)
+        else:
             await element_ope.open_device()
-            self._device_opened = True
-        return await element_ope.element_main()
+        self._device_opened = True
+        element_result = await element_ope.element_main()
+        self.page_step_result_model.status = element_result.status
+        self.page_step_result_model.error_message = element_result.error_message
+        self.page_step_result_model.element_result_list.append(element_result)
+        if self.page_step_result_model.status == StatusEnum.FAIL.value:
+            if element_result.picture_name and element_result.picture_path:
+                upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
+                if not upload and self.page_step_result_model.error_message:
+                    self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
+        return element_result
+
+    async def _steps_retry(self):
+        match self.page_steps_model.type:
+            case DriveTypeEnum.WEB.value:
+                self.base_data.page.w_refresh()
+            case DriveTypeEnum.ANDROID.value:
+                pass
+            case DriveTypeEnum.DESKTOP.value:
+                pass
+            case _:
+                log.error('自动化类型不存在，请联系管理员检查！')
 
     async def driver_init(self):
         match self.page_steps_model.type:

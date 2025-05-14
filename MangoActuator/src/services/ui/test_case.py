@@ -12,6 +12,7 @@ from mangokit.data_processor import RandomTimeData
 from mangokit.exceptions import MangoKitError
 from mangokit.uidrive import DriverObject, BaseData
 
+from src.tools.set_config import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
@@ -38,8 +39,7 @@ class TestCase:
         self.driver_object: DriverObject = driver_object
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
-            .set_step_open_url(case_model.switch_step_open_url) \
-            .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
+            .set_file_path(project_dir.download(), project_dir.screenshot())
 
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,

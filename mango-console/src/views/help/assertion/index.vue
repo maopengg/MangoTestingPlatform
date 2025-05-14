@@ -36,7 +36,7 @@
       .catch(console.log)
   })
 </script>
-<style>
+<style scoped>
   .container span {
     font-size: 25px;
   }
