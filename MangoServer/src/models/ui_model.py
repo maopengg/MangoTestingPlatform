@@ -42,9 +42,10 @@ class PageStepsModel(BaseModel):
     module_name: str
     type: int
     url: str
+    switch_step_open_url: bool
+    error_retry: int | None = None
     element_list: list[ElementModel] = []
     environment_config: EnvironmentConfigModel
-
     public_data_list: list[UiPublicModel] = []
     case_step_details_id: int | None = None
     case_data: list[StepsDataModel] = []
@@ -66,7 +67,6 @@ class CaseModel(BaseModel):
     parametrize: list[dict] | list
     steps: list[PageStepsModel]
     public_data_list: list[UiPublicModel] = []
-    switch_step_open_url: bool = True
 
 
 class PageStepsResultModel(BaseModel):

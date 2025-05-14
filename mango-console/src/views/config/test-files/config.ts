@@ -3,7 +3,6 @@ import { useTable, useTableColumn } from '@/hooks/table'
 const table = useTable()
 export const tableColumns = useTableColumn([
   table.indexColumn,
-
   {
     title: '文件名称',
     key: 'name',

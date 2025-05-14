@@ -45,12 +45,13 @@ export function deleteUiCaseStepsDetailed(id: number | string[] | number[], pare
   })
 }
 
-export function getUiCaseStepsRefreshCacheData(id: number) {
+export function getUiCaseStepsRefreshCacheData(id: number, case_id = null) {
   return get({
     url: '/ui/case/steps/detailed/refresh',
     data: () => {
       return {
         id: id,
+        case_id: case_id,
       }
     },
   })

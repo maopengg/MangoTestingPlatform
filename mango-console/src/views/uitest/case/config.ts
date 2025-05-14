@@ -172,12 +172,6 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '切换URL',
-    key: 'switch_step_open_url',
-    dataIndex: 'switch_step_open_url',
-    width: 100,
-  },
-  {
     title: '级别',
     key: 'level',
     dataIndex: 'level',

@@ -164,12 +164,6 @@
             <template v-else-if="item.key === 'case_people'" #cell="{ record }">
               {{ record.case_people.name }}
             </template>
-            <template v-else-if="item.key === 'switch_step_open_url'" #cell="{ record }">
-              <a-switch
-                :beforeChange="(newValue) => onModifyStatus(newValue, record.id, item.key)"
-                :default-checked="record.switch_step_open_url === 1"
-              />
-            </template>
             <template v-else-if="item.key === 'status'" #cell="{ record }">
               <a-tag :color="enumStore.status_colors[record.status]" size="small"
                 >{{ enumStore.task_status[record.status].title }}
@@ -584,31 +578,6 @@
       if (item.key === 'module') {
         item.value = ''
       }
-    })
-  }
-
-  const onModifyStatus = async (newValue: any, id: number, key: string) => {
-    let obj: any = {
-      id: id,
-    }
-    if (key) {
-      obj[key] = newValue ? 1 : 0
-    }
-    return new Promise<any>((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          let value: any = false
-          await putUiCase(obj)
-            .then((res) => {
-              Message.success(res.msg)
-              value = res.code === 200
-            })
-            .catch(reject)
-          resolve(value)
-        } catch (error) {
-          reject(error)
-        }
-      }, 300)
     })
   }
 

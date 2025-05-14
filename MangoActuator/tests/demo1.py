@@ -11,7 +11,7 @@ from mangokit.mangos import Mango
 from src import test_process
 from src.consumer import SocketConsumer
 from src.models.socket_model import QueueModel
-
+from src.settings import settings
 
 class LinuxLoop:
 
@@ -24,7 +24,7 @@ class LinuxLoop:
 
 async def run():
     loop = LinuxLoop()
-
+    settings.IS_DEBUG = True
     await test_process(loop)
     with open('test.json', 'r', encoding='utf-8') as f:
         data = json.load(f)

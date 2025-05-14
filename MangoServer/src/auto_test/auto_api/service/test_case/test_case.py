@@ -151,7 +151,9 @@ class TestCase(CaseApiBase):
                 ass=self.ass_main(response_model, case_detailed_parameter),
                 request=request_model,
                 response=response_model,
-                cache_data=self.get_all()
+                cache_data=self.get_all(),
+                test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+
             )
             self.api_case_result.steps.append(case_steps_result)
             model = ApiCaseDetailedParameter.objects.get(id=case_detailed_parameter.id)

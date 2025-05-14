@@ -381,7 +381,7 @@
   }
 
   function onRun(record: any) {
-    Message.loading('准备开始执行，请前往测试任务中查看测试结果~')
+    Message.loading('准备开始执行，执行完成之后，请在右侧按钮结果中查看执行结果~')
     getPytestCaseTest(record.id)
       .then((res) => {
         Message.success(res.msg)

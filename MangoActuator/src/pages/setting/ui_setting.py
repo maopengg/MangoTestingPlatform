@@ -92,7 +92,10 @@ class UiSettingPage(QWidget):
         from src.services.ui.test_page_steps import TestPageSteps
         from src.services.ui.case_flow import CaseFlow
         CaseFlow.reset_driver_object()
-        TestPageSteps().reset_driver_object()
+        try:
+            TestPageSteps().reset_driver_object()
+        except TypeError:
+            pass
 
     @staticmethod
     def get_adb_devices():

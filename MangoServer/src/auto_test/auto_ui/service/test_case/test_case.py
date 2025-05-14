@@ -60,7 +60,6 @@ class TestCase:
             parametrize=case.parametrize,
             steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
             public_data_list=self.__public_data(case.project_product_id),
-            switch_step_open_url=True if case.switch_step_open_url else False
         )
         if case.parametrize and test_suite is None:
             for i in case.parametrize:
@@ -93,6 +92,8 @@ class TestCase:
             module_name=page_steps_detailed.page_step.module.name,
             type=page_steps_detailed.page_step.project_product.ui_client_type,
             url=page_steps_detailed.ele_name.page.url,
+            switch_step_open_url=False,
+            error_retry=None,
             element_list=[self.element_model(page_steps_detailed, )],
             # equipment_config=self.__equipment_config(page_steps_detailed.page_step.project_product.ui_client_type),
             environment_config=self.__environment_config(page_steps_detailed.page_step.project_product.id),
@@ -115,6 +116,8 @@ class TestCase:
             module_name=page.module.name,
             type=page.project_product.ui_client_type,
             url=page.url,
+            switch_step_open_url=False,
+            error_retry=None,
             element_list=[self.element_model(element_obj, True, data)],
             # equipment_config=self.__equipment_config(page.project_product.ui_client_type),
             environment_config=self.__environment_config(page.project_product.id),
@@ -134,19 +137,24 @@ class TestCase:
             module_name=page_steps.module.name,
             type=page_steps.project_product.ui_client_type,
             url=page_steps.page.url,
+            switch_step_open_url=False,
+            error_retry=None,
             # equipment_config=self.__equipment_config(page_steps.project_product.ui_client_type),
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
             case_step_details_id=case_step_details_id,
         )
         if case_step_details_id:
-            for case_data in UiCaseStepsDetailed.objects.get(id=case_step_details_id).case_data:
+            case_step_details = UiCaseStepsDetailed.objects.get(id=case_step_details_id)
+            page_steps_model.switch_step_open_url = bool(case_step_details.switch_step_open_url)
+            page_steps_model.error_retry = case_step_details.error_retry
+            for case_data in case_step_details.case_data:
                 try:
                     page_steps_model.case_data.append(StepsDataModel(**case_data))
                 except ValidationError:
                     raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
-        page_steps_element: list[PageStepsDetailed] = PageStepsDetailed \
-            .objects.filter(page_step=page_steps.id).order_by('step_sort')
+
+        page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id).order_by('step_sort')
         for i in page_steps_element:
             page_steps_model.element_list.append(self.element_model(i))
         return page_steps_model
@@ -250,25 +258,6 @@ class TestCase:
         else:
             return False
 
-    def __equipment_config(self, _type: int):
-        try:
-            if _type == DriveTypeEnum.WEB.value:
-                user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                                      status=StatusEnum.SUCCESS.value,
-                                                      type=DriveTypeEnum.WEB.value)
-            elif _type == DriveTypeEnum.ANDROID.value:
-                user_ui_config = UiConfig.objects.get(user_id=self.user_id,
-                                                      status=StatusEnum.SUCCESS.value,
-                                                      type=DriveTypeEnum.ANDROID.value)
-            elif _type == DriveTypeEnum.DESKTOP.value:
-                raise UiError(*ERROR_MSG_0040)
-            else:
-                raise UiError(*ERROR_MSG_0040)
-            if user_ui_config.config is None:
-                raise UiError(*ERROR_MSG_0055)
-            return EquipmentModel(type=user_ui_config.type, **user_ui_config.config)
-        except UiConfig.DoesNotExist:
-            raise UiError(*ERROR_MSG_0029)
 
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)

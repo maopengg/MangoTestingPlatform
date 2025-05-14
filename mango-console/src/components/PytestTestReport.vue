@@ -1,5 +1,21 @@
 <template>
   <a-tabs default-active-key="1">
+    <template #extra>
+      <a-tag v-if="resultData?.start">
+        执行时间：{{
+          (() => {
+            const d = new Date(Number(resultData.start))
+            return `${d.getFullYear()}年${(d.getMonth() + 1).toString().padStart(2, '0')}月${d
+              .getDate()
+              .toString()
+              .padStart(2, '0')}日 ${d.getHours().toString().padStart(2, '0')}时${d
+              .getMinutes()
+              .toString()
+              .padStart(2, '0')}分${d.getSeconds().toString().padStart(2, '0')}秒`
+          })()
+        }}</a-tag
+      >
+    </template>
     <a-tab-pane key="1" title="执行过程">
       <a-collapse
         v-for="(attachments, index) of resultData.attachments"

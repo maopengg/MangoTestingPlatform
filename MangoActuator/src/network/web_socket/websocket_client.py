@@ -70,7 +70,7 @@ class WebSocketClient:
         @return:
         """
         server_url = f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}client/socket?username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}&password={EncryptionTool.md5_32_small(**{'data': SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value)})}"
-        log.info(f"websocketURL:{server_url}")
+        log.debug(f"websocketURL:{server_url}")
         retry = 0
         max_retries = 720
         while cls.running:

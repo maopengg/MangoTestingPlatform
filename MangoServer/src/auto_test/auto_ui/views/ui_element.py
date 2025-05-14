@@ -94,7 +94,7 @@ class PageElementViews(ViewSet):
             '表达式类型': 'exp',
             '定位表达式': 'loc',
             '等待时间（秒）': 'sleep',
-            '元素下班（1开始）': 'sub',
+            '元素下标（1开始）': 'sub',
         })
         for index, row in df.iterrows():
             record = row.to_dict()

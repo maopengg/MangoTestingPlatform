@@ -1,51 +1,56 @@
 <template>
-  <a-card>
-    <a-space direction="vertical" fill>
-      <a-space :style="{ width: '100%' }">
-        <div class="container">
-          <span>测试文件</span>
-        </div>
-        <a-upload
-          :before-upload="beforeUpload"
-          :show-file-list="false"
-          @before-upload="beforeUpload"
-        />
-      </a-space>
-
-      <a-tabs />
-      <a-table
-        :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :rowKey="rowKey"
-        @selection-change="onSelectionChange"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of tableColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
-            :title="item.title"
-            :width="item.width"
-          >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" @click="onDownload(record)">下载</a-button>
-              <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
-                >删除
-              </a-button>
-            </template>
-          </a-table-column>
+  <TableBody ref="tableBody">
+    <template #header>
+      <TableHeader :show-filter="true" title="测试文件" />
+    </template>
+    <template #default>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-upload
+                :before-upload="beforeUpload"
+                :show-file-list="false"
+                @before-upload="beforeUpload"
+              />
+            </div>
+          </a-space>
         </template>
-      </a-table>
-    </a-space>
-  </a-card>
+        <a-table
+          style="width: 100%"
+          :bordered="false"
+          :columns="tableColumns"
+          :data="table.dataList"
+          :loading="table.tableLoading.value"
+          :pagination="false"
+          :rowKey="rowKey"
+          @selection-change="onSelectionChange"
+        >
+          <template #columns>
+            <a-table-column
+              v-for="item of tableColumns"
+              :key="item.key"
+              :align="item.align"
+              :data-index="item.key"
+              :fixed="item.fixed"
+              :title="item.title"
+              :width="item.width"
+            >
+              <template v-if="item.key === 'index'" #cell="{ record }">
+                {{ record.id }}
+              </template>
+              <template v-else-if="item.key === 'actions'" #cell="{ record }">
+                <a-button size="mini" type="text" @click="onDownload(record)">下载</a-button>
+                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                  >删除
+                </a-button>
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+      </a-tabs>
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>
@@ -134,8 +139,4 @@
     })
   })
 </script>
-<style>
-  .container span {
-    font-size: 25px;
-  }
-</style>
+<style></style>

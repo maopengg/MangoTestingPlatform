@@ -113,7 +113,6 @@ class UiCase(models.Model):
     case_flow = models.TextField(verbose_name="步骤顺序", null=True)
     case_people = models.ForeignKey(to=User, to_field="id", verbose_name='用例责任人', on_delete=models.PROTECT)
     parametrize = models.JSONField(verbose_name="参数化", default=list)
-    switch_step_open_url = models.SmallIntegerField(verbose_name="是否在切换步骤的时候切换url", default=0)
     # 0失败，1成功，2待开始，3，进行中
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     level = models.SmallIntegerField(verbose_name="用例级别", default=0)
@@ -141,9 +140,9 @@ class UiCaseStepsDetailed(models.Model):
     case = models.ForeignKey(to=UiCase, to_field="id", on_delete=models.PROTECT)
     page_step = models.ForeignKey(to=PageSteps, to_field="id", on_delete=models.PROTECT)
     case_sort = models.SmallIntegerField(verbose_name="用例排序")
-    case_cache_data = models.JSONField(verbose_name="用例缓存数据", null=True)
-    case_cache_ass = models.JSONField(verbose_name="步骤缓存断言", null=True)
     case_data = models.JSONField(verbose_name="用例步骤数据", null=True)
+    switch_step_open_url = models.SmallIntegerField(verbose_name="是否在执行页面的时候切换url", default=0)
+    error_retry = models.SmallIntegerField(verbose_name="失败重试", null=True)
     # 0失败，1成功
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     error_message = models.TextField(verbose_name="错误提示", null=True)

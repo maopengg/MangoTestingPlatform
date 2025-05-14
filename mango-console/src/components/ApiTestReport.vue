@@ -1,5 +1,8 @@
 <template>
   <a-tabs default-active-key="1">
+    <template #extra>
+      <a-tag v-if="resultData?.test_time">执行时间：{{ resultData?.test_time }}</a-tag>
+    </template>
     <a-tab-pane key="1" title="基础信息">
       <a-space direction="vertical">
         <h1>接口ID：{{ resultData?.id }}</h1>
