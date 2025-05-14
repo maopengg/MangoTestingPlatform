@@ -82,40 +82,52 @@ class UiCaseStepsDetailedViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('ui')
     def post_case_cache_data(self, request: Request):
-        books = self.model.objects.get(id=request.query_params.get('id'))
-        ui_page_steps_detailed_obj = PageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
-            'step_sort')
-        case_data_list = []
-        for steps_detailed in ui_page_steps_detailed_obj:
-            steps_data_model = StepsDataModel(
-                type=steps_detailed.type,
-                ope_key=steps_detailed.ope_key,
-                page_step_details_id=steps_detailed.id,
-                page_step_details_data={},
+        def m(_id):
+            books = self.model.objects.get(id=_id)
+            ui_page_steps_detailed_obj = PageStepsDetailed.objects.filter(page_step=books.page_step).order_by(
+                'step_sort')
+            case_data_list = []
+            for steps_detailed in ui_page_steps_detailed_obj:
+                steps_data_model = StepsDataModel(
+                    type=steps_detailed.type,
+                    ope_key=steps_detailed.ope_key,
+                    page_step_details_id=steps_detailed.id,
+                    page_step_details_data={},
 
-            )
-            if steps_detailed.type == ElementOperationEnum.OPE.value:
-                steps_data_model.page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
-                if steps_detailed.ope_value:
-                    steps_data_model.page_step_details_data = {i.get('f'): i.get('v') for i in steps_detailed.ope_value}
-                    if 'locating' in steps_data_model.page_step_details_data:
-                        steps_data_model.page_step_details_data.pop('locating')
-            elif steps_detailed.type == ElementOperationEnum.ASS.value:
-                steps_data_model.page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
-                if steps_detailed.ope_value:
-                    steps_data_model.page_step_details_data = {i.get('f'): i.get('v') for i in steps_detailed.ope_value}
-                    if 'actual' in steps_data_model.page_step_details_data:
-                        steps_data_model.page_step_details_data.pop('actual')
-            elif steps_detailed.type == ElementOperationEnum.SQL.value:
-                steps_data_model.page_step_details_data = {'sql': steps_detailed.sql,
-                                                           'key_list': steps_detailed.key_list}
-            elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
-                steps_data_model.page_step_details_data = {'key': steps_detailed.key, 'value': steps_detailed.value}
-            else:
-                return ResponseData.fail(RESPONSE_MSG_0048)
-            case_data_list.append(steps_data_model.model_dump())
-        books.case_data = case_data_list
-        books.save()
+                )
+                if steps_detailed.type == ElementOperationEnum.OPE.value:
+                    steps_data_model.page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
+                    if steps_detailed.ope_value:
+                        steps_data_model.page_step_details_data = {i.get('f'): i.get('v') for i in
+                                                                   steps_detailed.ope_value}
+                        if 'locating' in steps_data_model.page_step_details_data:
+                            steps_data_model.page_step_details_data.pop('locating')
+                elif steps_detailed.type == ElementOperationEnum.ASS.value:
+                    steps_data_model.page_step_details_name = steps_detailed.ele_name.name if steps_detailed.ele_name else steps_detailed.ope_key
+                    if steps_detailed.ope_value:
+                        steps_data_model.page_step_details_data = {i.get('f'): i.get('v') for i in
+                                                                   steps_detailed.ope_value}
+                        if 'actual' in steps_data_model.page_step_details_data:
+                            steps_data_model.page_step_details_data.pop('actual')
+                elif steps_detailed.type == ElementOperationEnum.SQL.value:
+                    steps_data_model.page_step_details_data = {'sql': steps_detailed.sql,
+                                                               'key_list': steps_detailed.key_list}
+                elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
+                    steps_data_model.page_step_details_data = {'key': steps_detailed.key, 'value': steps_detailed.value}
+                else:
+                    return ResponseData.fail(RESPONSE_MSG_0048)
+                case_data_list.append(steps_data_model.model_dump())
+            books.case_data = case_data_list
+            books.save()
+
+        _id = request.query_params.get('id', None)
+        if _id:
+            m(_id)
+        else:
+            case_id = request.query_params.get('case_id', None)
+            _books = self.model.objects.filter(case_id=case_id)
+            for i in _books:
+                m(i.id)
         return ResponseData.success(RESPONSE_MSG_0050)
 
     @action(methods=['put'], detail=False)

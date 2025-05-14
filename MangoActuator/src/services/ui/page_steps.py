@@ -65,21 +65,23 @@ class PageSteps:
         error_retry = 0
         self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            error_retry += 1
+            if error_retry != 0:
+                log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
+                await self._steps_retry()
             for element_model in self.page_steps_model.element_list:
                 try:
-                    if error_retry != 1:
-                        log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
-                        await self._steps_retry()
                     element_data = await self._get_element_data(element_model.id)
                     element_result = await self._ope_steps(element_model, element_data)
                     if element_result.status == StatusEnum.FAIL.value:
+                        error_retry += 1
                         break
                 except MangoKitError as error:
+                    error_retry += 1
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.msg
                     break
                 except Exception as error:
+                    error_retry += 1
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = str(error)
                     break
@@ -120,7 +122,7 @@ class PageSteps:
     async def _steps_retry(self):
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:
-                self.base_data.page.w_refresh()
+                await self.base_data.page.reload()
             case DriveTypeEnum.ANDROID.value:
                 pass
             case DriveTypeEnum.DESKTOP.value:

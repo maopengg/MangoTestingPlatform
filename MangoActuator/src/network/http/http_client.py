@@ -69,10 +69,6 @@ class HttpClientApi(HttpBase):
             if response.data and response.code == 200:
                 log.info(response.model_dump())
                 cls.headers['Authorization'] = response.data.get('token')
-            else:
-                raise ToolsError(*ERROR_MSG_0001, value=(
-                    urljoin(SetConfig.get_host(), '/login'),  # type: ignore
-                    response.model_dump_json()))
             return response
         except Exception as error:
             traceback.print_exc()

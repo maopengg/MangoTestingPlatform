@@ -42,7 +42,9 @@
               <template #extra>
                 <a-space>
                   <div>
-                    <a-button size="small" type="primary" @click="addData">全部同步</a-button>
+                    <a-button size="small" type="primary" @click="addSynchronous"
+                      >全部同步</a-button
+                    >
                   </div>
                   <div>
                     <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
@@ -536,11 +538,27 @@
   function oeFreshSteps(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否确实要刷新这个用例的步骤数据？刷新会导致丢失原始数据，请先保存原始数据！',
+      content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
       okText: '刷新',
       onOk: () => {
         getUiCaseStepsRefreshCacheData(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+  function addSynchronous() {
+    Modal.confirm({
+      title: '提示',
+      content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
+      cancelText: '取消',
+      okText: '刷新',
+      onOk: () => {
+        getUiCaseStepsRefreshCacheData(null, route.query.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
