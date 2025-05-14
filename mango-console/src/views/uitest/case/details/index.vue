@@ -4,7 +4,6 @@
       <a-card :bordered="false" title="用例详情">
         <template #extra>
           <a-space>
-            <a-button disabled size="small" type="primary" @click="doRefresh">刷新页面</a-button>
             <a-button size="small" status="success" @click="onCaseRun">执行</a-button>
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
@@ -37,12 +36,19 @@
     </template>
     <template #default>
       <a-card :bordered="false">
-        <div class="box">
+        <div class="main_box">
           <div class="left">
             <a-tabs default-active-key="2" @tab-click="(key) => switchType(key)">
               <template #extra>
                 <a-space>
-                  <a-button size="small" type="primary" @click="addData">增加</a-button>
+                  <div>
+                    <a-button size="small" type="primary" @click="addSynchronous"
+                      >全部同步</a-button
+                    >
+                  </div>
+                  <div>
+                    <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
+                  </div>
                 </a-space>
               </template>
               <a-tab-pane key="1" title="前置数据">
@@ -109,6 +115,7 @@
 
               <a-tab-pane key="2" title="用例步骤">
                 <a-table
+                  :key="tableKey"
                   :columns="columns"
                   :data="data.data"
                   :draggable="{ type: 'handle', width: 40 }"
@@ -136,16 +143,42 @@
                           >{{ enumStore.task_status[record.status].title }}
                         </a-tag>
                       </template>
+                      <template v-else-if="item.key === 'switch_step_open_url'" #cell="{ record }">
+                        <a-switch
+                          :beforeChange="
+                            (newValue) => onModifyStatus(newValue, record.id, item.key)
+                          "
+                          :default-checked="record.switch_step_open_url === 1"
+                        />
+                      </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
                         <a-button size="mini" type="text" @click="onPageStep(record)"
                           >单步执行
                         </a-button>
-                        <a-button size="mini" type="text" @click="oeFreshSteps(record)"
-                          >更新数据
-                        </a-button>
-                        <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
-                          >删除
-                        </a-button>
+                        <a-dropdown trigger="hover">
+                          <a-button size="mini" type="text">···</a-button>
+                          <template #content>
+                            <a-doption>
+                              <a-button size="mini" type="text" @click="oeFreshSteps(record)"
+                                >同步数据
+                              </a-button>
+                            </a-doption>
+                            <a-doption>
+                              <a-button size="mini" type="text" @click="onUpdate1(record)"
+                                >编辑</a-button
+                              >
+                            </a-doption>
+                            <a-doption>
+                              <a-button
+                                size="mini"
+                                status="danger"
+                                type="text"
+                                @click="onDelete(record)"
+                                >删除
+                              </a-button>
+                            </a-doption>
+                          </template>
+                        </a-dropdown>
                       </template>
                     </a-table-column>
                   </template>
@@ -267,7 +300,10 @@
           :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
           :label="item.label"
         >
-          <template v-if="item.type === 'cascader' && item.key === 'module'">
+          <template v-if="item.type === 'input'">
+            <a-input v-model="item.value" :placeholder="item.placeholder" />
+          </template>
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
               :options="data.productModuleName"
@@ -288,6 +324,9 @@
               value-key="key"
               @change="doUiStepsPageStepsName(item.value)"
             />
+          </template>
+          <template v-else-if="item.type === 'switch' && item.key === 'switch_step_open_url'">
+            <a-switch v-model="item.value" :checked-value="1" :unchecked-value="0" />
           </template>
           <template v-else-if="item.type === 'select' && item.key === 'page_step'">
             <a-select
@@ -340,7 +379,10 @@
   const route = useRoute()
   const formModel = ref({})
   const modalDialogRef = ref<ModalDialogType | null>(null)
+  const tableKey = ref(0)
   const data: any = reactive({
+    isAdd: true,
+    updateId: null,
     productModuleName: [],
     pageName: [],
     pageStepsName: [],
@@ -367,6 +409,8 @@
   }
 
   function addData() {
+    data.isAdd = true
+
     if (data.uiType == '2') {
       doAppend()
       return
@@ -440,6 +484,7 @@
     putUiCasePutCaseSort(data1)
       .then((res) => {
         Message.success(res.msg)
+        tableKey.value++
       })
       .catch(console.log)
   }
@@ -448,21 +493,30 @@
     if (formItems.every((it: any) => (it.validator ? it.validator() : true))) {
       modalDialogRef.value?.toggle()
       let value = getFormItems(formItems)
-      value['case'] = route.query.id
-      value['case_cache_data'] = []
-      value['case_cache_ass'] = []
-      value['case_sort'] = data.data.length
-      postUiCaseStepsDetailed(value, route.query.id)
-        .then((res) => {
-          Message.success(res.msg)
-          getUiCaseStepsRefreshCacheData(res.data.id)
-            .then((res) => {
-              Message.success(res.msg)
-              doRefresh()
-            })
-            .catch(console.log)
-        })
-        .catch(console.log)
+      if (data.isAdd) {
+        value['case'] = route.query.id
+        value['case_cache_data'] = []
+        value['case_cache_ass'] = []
+        value['case_sort'] = data.data.length
+        postUiCaseStepsDetailed(value, route.query.id)
+          .then((res) => {
+            Message.success(res.msg)
+            getUiCaseStepsRefreshCacheData(res.data.id)
+              .then((res) => {})
+              .catch(console.log)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        value['id'] = data.updateId
+        putUiCaseStepsDetailed(value, route.query.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+
+          .catch(console.log)
+      }
     }
   }
 
@@ -484,11 +538,27 @@
   function oeFreshSteps(record: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否确实要刷新这个用例的步骤数据？刷新会导致丢失原始数据，请先保存原始数据！',
+      content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
       okText: '刷新',
       onOk: () => {
         getUiCaseStepsRefreshCacheData(record.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+  function addSynchronous() {
+    Modal.confirm({
+      title: '提示',
+      content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
+      cancelText: '取消',
+      okText: '刷新',
+      onOk: () => {
+        getUiCaseStepsRefreshCacheData(null, route.query.id)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
@@ -537,7 +607,28 @@
   function select(record: any) {
     data.selectData = record
   }
-
+  function onUpdate1(item: any) {
+    data.actionTitle = '编辑用例步骤'
+    data.isAdd = false
+    data.updateId = item.id
+    modalDialogRef.value?.toggle()
+    nextTick(() => {
+      formItems.forEach((it) => {
+        const propName = item[it.key]
+        if (it.key === 'module') {
+          it.value = item.page_step.module
+          doUiPageNameAll(item.page_step.module)
+        } else if (it.key === 'page') {
+          it.value = item.page_step.page
+          doUiStepsPageStepsName(item.page_step.page)
+        } else if (it.key === 'page_step') {
+          it.value = item.page_step.id
+        } else {
+          it.value = propName
+        }
+      })
+    })
+  }
   function onUpdate() {
     putUiCaseStepsDetailed(
       {
@@ -593,7 +684,30 @@
       })
       .catch(console.log)
   }
-
+  const onModifyStatus = async (newValue: any, id: number, key: string) => {
+    let obj: any = {
+      id: id,
+    }
+    if (key) {
+      obj[key] = newValue ? 1 : 0
+    }
+    return new Promise<any>((resolve, reject) => {
+      setTimeout(async () => {
+        try {
+          let value: any = false
+          await putUiCaseStepsDetailed(obj, route.query.id)
+            .then((res) => {
+              Message.success(res.msg)
+              value = res.code === 200
+            })
+            .catch(reject)
+          resolve(value)
+        } catch (error) {
+          reject(error)
+        }
+      }, 300)
+    })
+  }
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
@@ -604,26 +718,28 @@
 </script>
 
 <style>
-  .container {
-    display: flex;
+  .container .a-space span {
+    font-size: 14px !important;
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .box {
+  .main_box {
     width: 100%;
     margin: 0 auto;
     padding: 5px;
     box-sizing: border-box;
     display: flex;
-  }
-
-  .left {
-    flex: 5;
-    padding: 5px;
-  }
-
-  .right {
-    flex: 5;
-    padding: 5px;
-    max-width: 60%;
+    .left {
+      padding: 5px;
+      width: 60%;
+    }
+    .right {
+      padding: 5px;
+      width: 40%;
+    }
   }
 </style>

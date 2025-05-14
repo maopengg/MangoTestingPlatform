@@ -64,6 +64,7 @@ class ApiCaseStepsResultModel(BaseModel):
     request: RequestModel
     response: ResponseModel
     cache_data: dict
+    test_time: str | None = None
 
 
 class ApiCaseResultModel(BaseModel):

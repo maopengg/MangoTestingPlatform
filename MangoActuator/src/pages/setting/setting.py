@@ -37,7 +37,7 @@ class SettingPage(QWidget):
 
         self.minio_ = MangoLabel('minio配置，如果没有就不管，主要是测试用例中有上传文件时候使用的')
         card_layout1.addRow('MINIO配置说明：', self.minio_, )
-        self.minio = MangoLineEdit('请输入minio的url')
+        self.minio = MangoLineEdit('请输入minio的url', SetConfig.get_minio_url())  # type: ignore
         self.minio.click.connect(SetConfig.set_minio_url)  # type: ignore
         card_layout1.addRow('MINIO_URL：', self.minio, )
 

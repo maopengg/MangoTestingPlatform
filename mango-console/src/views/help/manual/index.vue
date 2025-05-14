@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup></script>
-<style>
+<style scoped>
   .container span {
     font-size: 25px;
   }

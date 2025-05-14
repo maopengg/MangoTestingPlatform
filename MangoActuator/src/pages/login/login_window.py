@@ -70,6 +70,7 @@ class LoginLogic(LoginWindow):
                 self.main_window.show()
                 HTTP.user.info.get_userinfo(response.data.get('userId'))
             else:
+                log.error(f'登录失败，失败信息：{response.model_dump_json()}')
                 show_failed_message('账号或密码错误')
         except (JSONDecodeError, InvalidURL):
             show_failed_message('IP或端口不正确')

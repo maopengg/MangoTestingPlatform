@@ -224,7 +224,7 @@
 
   .main-container {
     display: flex;
-    height: v-bind(mainHeight);
+    height: 100%;
     overflow: hidden;
 
     .left {

@@ -690,10 +690,13 @@
   })
 </script>
 <style>
-  .container {
-    display: grid;
-    grid-template-columns: 60% 40%; /* 左侧60%，右侧40% */
-    gap: 10px; /* 添加间距 */
+  .container .a-space span {
+    font-size: 14px !important;
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .box {
