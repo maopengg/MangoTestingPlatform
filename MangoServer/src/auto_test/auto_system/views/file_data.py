@@ -6,6 +6,7 @@
 import json
 import socket
 
+import minio
 import urllib3
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -48,7 +49,7 @@ class FileDataCRUD(ModelCRUD):
     serializer_class = FileDataSerializersC
     serializer = FileDataSerializers
 
-    @error_response('user')
+    @error_response('system')
     def post(self, request: Request):
         try:
             if self.model.objects.filter(name=request.data.get('name')):
@@ -60,7 +61,8 @@ class FileDataCRUD(ModelCRUD):
             else:
                 log.system.error(f'执行保存时报错，请检查！数据：{request.data}, 报错信息：{json.dumps(serializer.errors)}')
                 return ResponseData.fail(RESPONSE_MSG_0003, serializer.errors)
-        except (urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError):
+        except (
+        urllib3.exceptions.MaxRetryError, socket.gaierror, urllib3.exceptions.NameResolutionError, minio.error.S3Error):
             return ResponseData.fail(RESPONSE_MSG_0026)
 
 
