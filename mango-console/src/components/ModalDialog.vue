@@ -66,7 +66,7 @@
     },
   })
 </script>
-<style>
+<style scoped>
   .modal-dialog__wrap {
     max-height: 80vh;
   }
