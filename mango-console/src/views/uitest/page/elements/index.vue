@@ -551,7 +551,7 @@
     })
   })
 </script>
-<style>
+<style scoped>
   .container .a-space span {
     font-size: 14px !important;
     display: block;
