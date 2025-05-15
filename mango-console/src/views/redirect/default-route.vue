@@ -22,7 +22,7 @@
   })
 </script>
 
-<style>
+<style scoped>
   .default-route-contianer {
     display: flex;
     justify-content: center;

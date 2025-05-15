@@ -130,11 +130,9 @@
   import { login, register } from '@/api/url'
   import { Message } from '@arco-design/web-vue'
   import { UserState } from '@/store/types'
-  import setting from '../../setting'
   import useAppInfo from '@/hooks/useAppInfo'
   import useUserStore from '@/store/modules/user'
 
-  const projectName = setting.projectName
   const { version } = useAppInfo()
   const router = useRouter()
   const route = useRoute()
