@@ -1,4 +1,4 @@
-mangokit==2.6.19
+mangokit==2.6.20
 
 websockets==10.4
 websocket-client==1.5.1
