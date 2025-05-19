@@ -5,9 +5,9 @@
 # @Author : 毛鹏
 
 import asyncio
-import time
 import traceback
 
+import time
 from mangokit.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel
@@ -34,7 +34,8 @@ class CaseFlow:
             if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
-                task = asyncio.create_task(cls.execute_task(case_model))
+                asyncio.create_task(cls.execute_task(case_model))
+                await asyncio.sleep(0.1)
             else:
                 if time.time() - s > 5:
                     s = time.time()
