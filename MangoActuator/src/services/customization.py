@@ -6,6 +6,7 @@
 from mangokit.decorator import inject_to_class, async_method_callback
 from mangokit.models import MethodModel
 from mangokit.uidrive.web.async_web import AsyncWebCustomization
+from playwright.async_api import Locator
 
 """
 示例，自定义方法
@@ -25,3 +26,4 @@ from mangokit.uidrive.web.async_web import AsyncWebCustomization
 async def w_demo(self, locating, input_value: str):
     """xx项目自定义方法"""
     pass
+
