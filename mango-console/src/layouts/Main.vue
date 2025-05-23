@@ -26,7 +26,7 @@
   })
 </script>
 
-<style>
+<style scoped>
   .h-full-vh {
     height: calc(94vh - 45px);
   }

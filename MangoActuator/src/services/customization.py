@@ -6,6 +6,8 @@
 from mangokit.decorator import inject_to_class, async_method_callback
 from mangokit.models import MethodModel
 from mangokit.uidrive.web.async_web import AsyncWebCustomization
+from playwright.async_api import Locator
+from src.network.web_socket.websocket_client import WebSocketClient
 
 """
 示例，自定义方法
@@ -19,9 +21,18 @@ from mangokit.uidrive.web.async_web import AsyncWebCustomization
 
 
 @inject_to_class(AsyncWebCustomization)
-@async_method_callback('web', '定制开发', 3, [
+@async_method_callback('web', '定制开发', 1, [
     MethodModel(f='locating'),
     MethodModel(f='input_value', p='请输入输入内容', d=True)])
 async def w_demo(self, locating, input_value: str):
     """xx项目自定义方法"""
     pass
+
+
+@inject_to_class(AsyncWebCustomization)
+@async_method_callback('web', '定制开发', 2, [
+    MethodModel(f='locating')])
+async def w_is_click(self, locating: Locator):
+    """元素在页面则点击"""
+    if await locating.count() >= 1:
+        await locating.click()
