@@ -29,7 +29,7 @@ async def process(parent, is_login=False, retry=0):
         if is_login:
             from src.network import HTTP
             from src.settings import settings
-            from mangokit.data_processor import EncryptionTool
+            from mangotools.data_processor import EncryptionTool
             HTTP.not_auth.login(SetConfig.get_username(), SetConfig.get_password())  # type:
         retry = 0
     except Exception as error:

@@ -6,7 +6,7 @@
 import json
 import os
 
-from mangokit.data_processor import DataProcessor, ObtainRandomData
+from mangotools.data_processor import DataProcessor, ObtainRandomData
 
 from src.exceptions import ToolsError, ERROR_MSG_0026
 from src.network import HTTP

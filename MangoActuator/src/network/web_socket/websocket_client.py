@@ -9,7 +9,7 @@ import os
 from typing import Union, Optional, TypeVar
 
 import websockets
-from mangokit.data_processor import EncryptionTool, SqlCache
+from mangotools.data_processor import EncryptionTool, SqlCache
 from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 

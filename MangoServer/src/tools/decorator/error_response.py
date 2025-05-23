@@ -7,8 +7,8 @@ import traceback
 
 from rest_framework.request import Request
 
-from mangokit.exceptions import MangoKitError
-from mangokit.mangos import Mango
+from mangotools.exceptions import MangoToolsError
+from mangotools.mangos import Mango
 from src.exceptions import MangoServerError
 from src.exceptions.error_msg import ERROR_MSG_0000
 from src.settings import IS_SEND_MAIL
@@ -37,7 +37,7 @@ def error_response(app: str):
                 return func(self, request, *args, **kwargs)
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg))
-            except MangoKitError as error:
+            except MangoToolsError as error:
                 return ResponseData.fail((error.code, error.msg))
             except FileNotFoundError as error:
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{traceback.format_exc()}')

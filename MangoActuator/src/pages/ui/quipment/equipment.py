@@ -5,13 +5,12 @@
 # @Author : 毛鹏
 import copy
 
-from mangokit.mangos import Mango
+from mangotools.mangos import Mango
 from mangoui import *
 
 from src.enums.tools_enum import Status5Enum
 from src.enums.ui_enum import DriveTypeEnum
 from src.models.socket_model import ResponseModel
-from src.models.ui_model import EquipmentModel
 from src.models.user_model import UserModel
 from src.network import HTTP
 from src.services.ui.test_page_steps import TestPageSteps

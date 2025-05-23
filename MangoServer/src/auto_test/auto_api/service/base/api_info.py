@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
-from mangokit.exceptions import MangoKitError
+from mangotools.exceptions import MangoToolsError
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.public_base import PublicBase
 from src.enums.api_enum import MethodEnum
@@ -35,7 +35,7 @@ class ApiInfoBase(PublicBase):
                 self.api_info_posterior_json_path(api_info.posterior_json_path, response)
             if api_info.posterior_func:
                 self.analytic_func(api_info.posterior_func)(self, response)
-        except MangoKitError as error:
+        except MangoToolsError as error:
             if is_error:
                 raise ApiError(error.code, error.msg)
         except Exception as error:

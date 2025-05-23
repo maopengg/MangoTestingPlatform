@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from pydantic import ValidationError
 
-from mangokit.models import MysqlConingModel
+from mangotools.models import MysqlConingModel
 from src.auto_test.auto_system.models import Database, TestObject
 from src.enums.tools_enum import AutoTypeEnum
 from src.exceptions import *

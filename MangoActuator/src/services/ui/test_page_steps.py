@@ -5,9 +5,10 @@
 import asyncio
 import traceback
 
-from mangokit.decorator import singleton
-from mangokit.exceptions import MangoKitError
-from mangokit.uidrive import DriverObject, BaseData
+from mangoautomation.exceptions import MangoAutomationError
+from mangoautomation.uidrive import DriverObject, BaseData
+from mangotools.decorator import singleton
+from mangotools.exceptions import MangoToolsError
 
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
@@ -70,7 +71,7 @@ class TestPageSteps:
                     TipsTypeEnum.SUCCESS if page_steps_result_model.status else TipsTypeEnum.ERROR,
                     page_steps_result_model
                 )
-            except (MangoActuatorError, MangoKitError) as error:
+            except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'步骤测试失败，类型：{type(error)}，失败详情：{error}')
                 await self.send_steps_result(
                     error.code,
@@ -79,7 +80,7 @@ class TestPageSteps:
                     page_steps.page_step_result_model
                 )
             except Exception as error:
-                from mangokit.mangos import Mango  # type: ignore
+                from mangotools.mangos import Mango  # type: ignore
                 Mango.s(self.page_steps_mian, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
                 log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.base_data.is_open_url = False
@@ -114,13 +115,13 @@ class TestPageSteps:
                 else:
                     await page_steps.web_init()
             await self.send_steps_result(200, msg, TipsTypeEnum.SUCCESS, )
-        except (MangoActuatorError, MangoKitError) as error:
+        except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
             log.debug(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
             await self.send_steps_result(error.code, error.msg, TipsTypeEnum.ERROR, )
         except Exception as error:
-            from mangokit.mangos import Mango  # type: ignore
+            from mangotools.mangos import Mango  # type: ignore
             Mango.s(self.new_web_obj, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
             log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.base_data.is_open_url = False
@@ -157,4 +158,4 @@ class TestPageSteps:
         self.driver_object = DriverObject(True)
         asyncio.run_coroutine_threadsafe(self.base_data.async_base_close(), self.parent.loop)
         self.base_data = BaseData(self.test_data, log) \
-            .set_file_path(project_dir.download(), project_dir.screenshot(), project_dir.videos())
+            .set_file_path(project_dir.download(), project_dir.screenshot(), )

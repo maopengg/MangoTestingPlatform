@@ -3,8 +3,8 @@
 # @Description: 
 # @Time   : 2025-05-04 20:34
 # @Author : 毛鹏
-from mangokit.data_processor import SqlCache
-from mangokit.enums import CacheValueTypeEnum
+from mangotools.data_processor import SqlCache
+from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.tools_enum import CacheKeyEnum
 from src.tools import project_dir

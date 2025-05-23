@@ -10,10 +10,11 @@ from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
 
-from mangokit.exceptions import MangoKitError
-from mangokit.models import ElementResultModel
-from mangokit.uidrive import AsyncElement
-from mangokit.uidrive import BaseData, DriverObject
+from mangoautomation.exceptions import MangoAutomationError
+from mangoautomation.models import ElementResultModel
+from mangoautomation.uidrive import AsyncElement
+from mangoautomation.uidrive import BaseData, DriverObject
+from mangotools.exceptions import MangoToolsError
 from playwright._impl._errors import TargetClosedError, Error
 from playwright.async_api import Request, Route
 
@@ -75,7 +76,7 @@ class PageSteps:
                     if element_result.status == StatusEnum.FAIL.value:
                         error_retry += 1
                         break
-                except MangoKitError as error:
+                except (MangoToolsError, MangoAutomationError) as error:
                     error_retry += 1
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.msg

@@ -3,12 +3,11 @@
 # @Description: 
 # @Time   : 2024-11-25 20:10
 # @Author : 毛鹏
-
+import requests
 import time
 from requests import Response
 from requests.exceptions import *
 
-from mangokit.apidrive import requests
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import *
@@ -32,7 +31,8 @@ class BaseRequest:
                 data=request_data.data,
                 json=request_data.json,
                 files=request_data.file,
-                timeout=int(self.timeout)
+                timeout=int(self.timeout),
+                proxies={'http': None, 'https': None}
             )
             end = time.time() - s
         except ProxyError:
