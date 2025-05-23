@@ -8,6 +8,8 @@ from mangotools.decorator import inject_to_class, async_method_callback
 from mangotools.models import MethodModel
 from playwright.async_api import Locator
 
+from src.network import WebSocketClient
+
 """
 示例，自定义方法
 
