@@ -4,16 +4,16 @@
 # @Author : 毛鹏
 import copy
 import os.path
+import time
 import traceback
 from urllib.parse import urljoin
 
-import time
-from mangokit.apidrive import requests
-from mangokit.data_processor import EncryptionTool
+import requests
+from mangotools.data_processor import EncryptionTool
 from requests.exceptions import MissingSchema
 
 from src.enums.system_enum import ClientTypeEnum
-from src.exceptions import ERROR_MSG_0007, ToolsError, ERROR_MSG_0001, ERROR_MSG_0002, ERROR_MSG_0003
+from src.exceptions import ERROR_MSG_0007, ToolsError, ERROR_MSG_0002, ERROR_MSG_0003
 from src.network.http.http_base import HttpBase
 from src.settings import settings
 from src.tools import project_dir
@@ -28,7 +28,8 @@ class HttpClientApi(HttpBase):
         minio_host = SetConfig.get_minio_url()  # type: ignore
         if minio_host is None:
             raise ToolsError(*ERROR_MSG_0002)
-        response = requests.get(urljoin(minio_host, f'/mango-file/test_file/{file_name}'))
+        response = requests.get(urljoin(minio_host, f'/mango-file/test_file/{file_name}'),
+                                proxies={'http': None, 'https': None}, )
         try:
             if response.status_code != 200:
                 raise ToolsError(*ERROR_MSG_0003)

@@ -3,7 +3,8 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
-from mangokit.models import MysqlConingModel, ElementResultModel, ElementModel
+from mangoautomation.models import ElementModel, ElementResultModel
+from mangotools.models import MysqlConingModel
 from pydantic import BaseModel
 
 

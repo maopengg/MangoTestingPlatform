@@ -4,7 +4,7 @@
 # @Time   : 2025-01-24 11:36
 # @Author : 毛鹏
 
-from mangokit.models import MethodModel
+from mangotools.models import MethodModel
 from src.auto_test.auto_ui.models import PageStepsDetailed
 
 

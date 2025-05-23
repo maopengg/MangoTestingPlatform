@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from mangokit.models import MysqlConingModel, ElementModel, ElementResultModel
+from mangotools.models import MysqlConingModel
+from mangoautomation.models import ElementModel, ElementResultModel
 
 
 class UiPublicModel(BaseModel):

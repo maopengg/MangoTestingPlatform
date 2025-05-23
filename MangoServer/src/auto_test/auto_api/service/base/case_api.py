@@ -7,7 +7,7 @@ import json
 
 import time
 
-from mangokit.exceptions import MangoKitError
+from mangotools.exceptions import MangoToolsError
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.case_data import ApiCaseBase
 from src.enums.tools_enum import StatusEnum
@@ -65,7 +65,7 @@ class CaseApiBase(ApiCaseBase):
     def __posterior_func(self, posterior_func: str, response: ResponseModel) -> RequestModel:
         try:
             return self.analytic_func(posterior_func)(self, response)
-        except (KeyError, MangoKitError) as error:
+        except (KeyError, MangoToolsError) as error:
             log.api.debug(f"数据报错，函数：{posterior_func}, request:{response.model_dump_json()}, error：{error}")
             raise ApiError(*ERROR_MSG_0013)
 
@@ -132,7 +132,7 @@ class CaseApiBase(ApiCaseBase):
         try:
             self.ass_response_whole(actual, ass_json_all)
         except AssertionError as error:
-            log.api.debug(error)
+            log.api.debug(str(error))
             self.ass_result.append(AssResultModel(
                 type='全匹配断言',
                 expect=json.dumps(ass_json_all, ensure_ascii=False),
@@ -165,6 +165,6 @@ class CaseApiBase(ApiCaseBase):
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:
             return self.analytic_func(front_func)(self, request)
-        except (KeyError, MangoKitError) as error:
+        except (KeyError, MangoToolsError) as error:
             log.api.debug(f"数据报错，函数：{front_func}, request:{request.model_dump_json()}, error：{error}")
             raise ApiError(*ERROR_MSG_0010)

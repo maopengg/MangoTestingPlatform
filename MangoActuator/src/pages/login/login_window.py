@@ -1,5 +1,5 @@
-from mangokit.data_processor import EncryptionTool
-from mangokit.mangos import Mango
+from mangotools.data_processor import EncryptionTool
+from mangotools.mangos import Mango
 from mangoui import *
 from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 

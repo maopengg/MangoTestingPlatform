@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 
 import jsonpath
+import requests
 
-from mangokit.apidrive import requests
 from src.enums.api_enum import ApiTypeEnum, ApiClientEnum, MethodEnum
 from src.enums.tools_enum import StatusEnum
 from src.tools.view.model_crud import ModelCRUD

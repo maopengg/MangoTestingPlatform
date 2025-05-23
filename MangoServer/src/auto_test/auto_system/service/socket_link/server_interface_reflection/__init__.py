@@ -9,7 +9,7 @@ import traceback
 
 from django.dispatch import Signal
 
-from mangokit.decorator import singleton
+from mangotools.decorator import singleton
 from src.models.socket_model import QueueModel
 from src.settings import IS_DEBUG_LOG
 from src.tools.log_collector import log

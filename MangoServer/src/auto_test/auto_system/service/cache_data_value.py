@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import json
 
-from mangokit.enums import CacheValueTypeEnum
+from mangotools.enums import CacheValueTypeEnum
 from src.auto_test.auto_system.models import CacheData
 from src.exceptions import *
 

@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
-from mangokit.data_processor import DataProcessor
+from mangotools.data_processor import DataProcessor
 from src.exceptions import ERROR_MSG_0026, ToolsError
 
 

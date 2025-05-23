@@ -11,7 +11,7 @@ from django.db import connection, close_old_connections
 from django.db.utils import Error
 from django.utils import timezone
 
-from mangokit.mangos import Mango
+from mangotools.mangos import Mango
 from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
 from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
 from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite, Tasks

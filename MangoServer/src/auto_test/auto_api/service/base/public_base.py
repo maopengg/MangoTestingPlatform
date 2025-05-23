@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 from typing import Optional
 
-from mangokit.database import MysqlConnect
-from mangokit.exceptions import MangoKitError
+from mangotools.database import MysqlConnect
+from mangotools.exceptions import MangoToolsError
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.base_request import BaseRequest
@@ -91,7 +91,7 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
                 else:
                     value = self.replace(value)
                     setattr(request_data_model, key, value)
-        except MangoKitError as error:
+        except MangoToolsError as error:
             raise ApiError(error.code, error.msg)
         return request_data_model
 

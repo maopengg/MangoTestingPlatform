@@ -8,11 +8,11 @@ import shutil
 import traceback
 from datetime import datetime
 
-from mangokit.data_processor import RandomTimeData
-from mangokit.exceptions import MangoKitError
-from mangokit.uidrive import DriverObject, BaseData
+from mangoautomation.exceptions import MangoAutomationError
+from mangoautomation.uidrive import DriverObject, BaseData
+from mangotools.data_processor import RandomTimeData
+from mangotools.exceptions import MangoToolsError
 
-from src.tools.set_config import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
@@ -29,6 +29,7 @@ from src.tools.decorator.error_handle import async_error_handle
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
+from src.tools.set_config import SetConfig
 
 
 class TestCase:
@@ -102,12 +103,12 @@ class TestCase:
                 self.set_page_steps(page_steps_result_model)
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
                     break
-            except (MangoActuatorError, MangoKitError) as error:
+            except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
                 self.set_page_steps(page_steps.page_step_result_model)
                 break
             except Exception as error:
-                from mangokit.mangos import Mango  # type: ignore
+                from mangotools.mangos import Mango  # type: ignore
                 Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,

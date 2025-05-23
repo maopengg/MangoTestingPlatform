@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import traceback
 
-from mangokit.mangos import Mango
+from mangotools.mangos import Mango
 
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import CacheKeyEnum

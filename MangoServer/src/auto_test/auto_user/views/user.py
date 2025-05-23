@@ -14,7 +14,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangokit.data_processor import EncryptionTool
+from mangotools.data_processor import EncryptionTool
 from src import settings
 from src.auto_test.auto_system.service.menu import ad_routes
 from src.auto_test.auto_user.models import User
