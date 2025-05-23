@@ -3,11 +3,10 @@
 # @Description: 
 # @Time   : 2025-04-29 14:06
 # @Author : 毛鹏
-from mangokit.decorator import inject_to_class, async_method_callback
-from mangokit.models import MethodModel
-from mangokit.uidrive.web.async_web import AsyncWebCustomization
+from mangoautomation.uidrive.web.async_web import AsyncWebCustomization
+from mangotools.decorator import inject_to_class, async_method_callback
+from mangotools.models import MethodModel
 from playwright.async_api import Locator
-from src.network.web_socket.websocket_client import WebSocketClient
 
 """
 示例，自定义方法

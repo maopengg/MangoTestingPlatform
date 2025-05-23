@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 import json
 
-from mangokit.enums import NoticeEnum
-from mangokit.exceptions import MangoKitError
-from mangokit.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
-from mangokit.notice import EmailSend, WeChatSend
+from mangotools.enums import NoticeEnum
+from mangotools.exceptions import MangoToolsError
+from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
+from mangotools.notice import EmailSend, WeChatSend
 from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails, TestSuite, TestObject
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
@@ -32,7 +32,7 @@ class NoticeMain:
                     cls.__we_chat_send(i, cls.test_report(test_suite_id))
                 else:
                     log.system.error('暂不支持钉钉打卡')
-            except MangoKitError as error:
+            except MangoToolsError as error:
                 raise ToolsError(error.code, error.msg)
 
     @classmethod

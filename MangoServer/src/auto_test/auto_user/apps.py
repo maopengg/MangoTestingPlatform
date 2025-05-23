@@ -46,7 +46,7 @@ class AutoUserConfig(AppConfig):
     def new_user(self):
         from src.auto_test.auto_user.models import User
         from src.auto_test.auto_ui.views.ui_config import UiConfigCRUD
-        from mangokit.data_processor import EncryptionTool
+        from mangotools.data_processor import EncryptionTool
         user, created = User.objects.get_or_create(
             username=SocketEnum.OPEN.value,
             defaults={

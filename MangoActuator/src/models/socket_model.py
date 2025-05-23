@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 from typing import Union, Optional, TypeVar
 
-from mangokit.decorator import singleton
+from mangotools.decorator import singleton
 from pydantic import BaseModel
 
 from src.enums.system_enum import ClientTypeEnum

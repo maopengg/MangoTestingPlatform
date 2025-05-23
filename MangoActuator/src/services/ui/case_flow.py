@@ -5,10 +5,10 @@
 # @Author : 毛鹏
 
 import asyncio
+import time
 import traceback
 
-import time
-from mangokit.uidrive import DriverObject
+from mangoautomation.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel
 from src.services.ui.test_case import TestCase

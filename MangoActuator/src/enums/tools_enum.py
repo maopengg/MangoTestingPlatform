@@ -172,7 +172,7 @@ class CacheKeyEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        from mangokit.enums import CacheValueTypeEnum
+        from mangotools.enums import CacheValueTypeEnum
         return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
                 'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
                 'web_type': CacheValueTypeEnum.INT}

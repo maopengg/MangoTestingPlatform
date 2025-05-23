@@ -6,7 +6,7 @@
 import asyncio
 import json
 
-from mangokit.mangos import Mango
+from mangotools.mangos import Mango
 
 from src import process
 from src.enums.tools_enum import CacheKeyEnum
