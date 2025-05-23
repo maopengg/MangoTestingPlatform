@@ -26,7 +26,7 @@
     </template>
     <template #default>
       <a-card :bordered="false">
-        <div class="container">
+        <div class="main_box">
           <div class="left">
             <a-tabs :active-key="data.apiType" @tab-click="(key) => switchType(key)">
               <template #extra>
@@ -1106,14 +1106,19 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  .left {
-    width: 45%; /* 左边区域占据50%的宽度 */
-    margin-right: 10px; /* 设置左边盒子的右边距 */
-  }
-
-  .right {
-    width: 55%; /* 右边区域占据50%的宽度 */
-    margin-left: 10px; /* 设置右边盒子的左边距 */
+  .main_box {
+    width: 100%;
+    margin: 0 auto;
+    padding: 5px;
+    box-sizing: border-box;
+    display: flex;
+    .left {
+      padding: 5px;
+      width: 45%;
+    }
+    .right {
+      padding: 5px;
+      width: 55%;
+    }
   }
 </style>
