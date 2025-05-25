@@ -52,6 +52,7 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
+    send_user: str
     test_suite_details: int | None
     test_suite_id: int | None
     id: int

@@ -64,13 +64,14 @@ class TasksDetailsCRUD(ModelCRUD):
     @error_response('system')
     def post(self, request: Request):
         _type = int(request.data.get('type'))
+        task = int(request.data.get('task'))
         try:
             if _type == TestCaseTypeEnum.UI.value:
-                tasks_details = TasksDetails.objects.filter(ui_case_id=request.data.get('ui_case'))
+                tasks_details = TasksDetails.objects.filter(task_id=task, ui_case_id=request.data.get('ui_case'))
             elif _type == TestCaseTypeEnum.API.value:
-                tasks_details = TasksDetails.objects.filter(api_case_id=request.data.get('api_case'))
+                tasks_details = TasksDetails.objects.filter(task_id=task, api_case_id=request.data.get('api_case'))
             else:
-                tasks_details = TasksDetails.objects.filter(pytest_case_id=request.data.get('pytest_case'))
+                tasks_details = TasksDetails.objects.filter(task_id=task, pytest_case_id=request.data.get('pytest_case'))
             if tasks_details.exists():
                 return ResponseData.fail(RESPONSE_MSG_0112)
             else:

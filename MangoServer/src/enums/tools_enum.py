@@ -14,7 +14,7 @@ class StatusEnum(BaseEnum):
 
     @classmethod
     def obj(cls):
-        return {0: "关闭&进行中&失败", 1: "启用&已完成&通过"}
+        return {0: "关闭&失败", 1: "启用&通过"}
 
 
 class TaskEnum(BaseEnum):

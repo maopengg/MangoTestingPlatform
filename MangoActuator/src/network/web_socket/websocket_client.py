@@ -104,9 +104,9 @@ class WebSocketClient:
         log.info('ws连接成功，开始获取数据！')
         while cls.running:
             recv_json = await cls.websocket.recv()
-            data = cls.__output_method(recv_json)
-            if data.data:
-                await SocketConsumer.add_task(data.data)
+            receive_data = cls.__output_method(recv_json)
+            if receive_data.data:
+                await SocketConsumer.add_task(receive_data.data)
             await asyncio.sleep(0.2)
 
     @classmethod
@@ -116,11 +116,12 @@ class WebSocketClient:
                          func_name: None | str = None,
                          func_args: Optional[Union[list[T], T]] | None = None,
                          is_notice: ClientTypeEnum | None = None,
+                         user: str | None = None
                          ):
         send_data = SocketDataModel(
             code=code,
             msg=msg,
-            user=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+            user=user if user else SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
             is_notice=is_notice if is_notice else None,
             data=None
         )
@@ -142,9 +143,10 @@ class WebSocketClient:
                   func_name: None = None,
                   func_args: Optional[Union[list[T], T]] | None = None,
                   is_notice: ClientTypeEnum | None = None,
+                  user: str | None = None
                   ):
         async def send_message():
-            await cls.async_send(msg, code, func_name, func_args, is_notice)
+            await cls.async_send(msg, code, func_name, func_args, is_notice, user)
 
         cls.parent.loop.create_task(send_message())
 

@@ -35,7 +35,6 @@ class CaseFlow:
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-                await asyncio.sleep(0.1)
             else:
                 if time.time() - s > 5:
                     s = time.time()
@@ -44,10 +43,10 @@ class CaseFlow:
     @classmethod
     async def get_case_task(cls):
         try:
-            from src.network import UiSocketEnum, WebSocketClient
+            from src.network import UiSocketEnum, socket_conn
             from src import CacheKeyEnum
             from src.tools.set_config import SetConfig
-            await WebSocketClient.async_send(
+            await socket_conn.async_send(
                 '请求获取任务',
                 func_name=UiSocketEnum.GET_TASK.value,
                 func_args=GetTaskModel(username=SetConfig.get_username())  # type: ignore

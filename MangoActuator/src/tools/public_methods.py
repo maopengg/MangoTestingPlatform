@@ -6,7 +6,7 @@
 import traceback
 
 from src.enums.system_enum import ClientTypeEnum
-from src.network.web_socket.websocket_client import WebSocketClient
+from src.network import socket_conn
 from src.tools.log_collector import log
 
 
@@ -14,7 +14,7 @@ async def async_global_exception(fun_name: str, error, func_name=None, func_args
     if _is:
         traceback.print_exc()  # 打印异常追踪信息
         log.error(f'函数：{fun_name}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
-        await WebSocketClient().async_send(
+        await socket_conn.async_send(
             code=300,
             msg="发生未知异常！请联系管理员",
             is_notice=ClientTypeEnum.WEB,
@@ -28,7 +28,7 @@ async def async_global_exception(fun_name: str, error, func_name=None, func_args
 def sync_global_exception(fun_name: str, error, _is=True):
     if _is:
         log.error(f'函数：{fun_name}，发送未知异常，请联系管理员！异常类型：{type(error)}，错误详情：{str(error)}')
-        WebSocketClient().sync_send(
+        socket_conn.sync_send(
             code=300,
             msg="发生未知异常！请联系管理员",
             is_notice=ClientTypeEnum.WEB

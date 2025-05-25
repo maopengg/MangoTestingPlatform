@@ -5,8 +5,8 @@
 # @Author : 毛鹏
 from pydantic import BaseModel
 
-from mangotools.models import MysqlConingModel
 from mangoautomation.models import ElementModel, ElementResultModel
+from mangotools.models import MysqlConingModel
 
 
 class UiPublicModel(BaseModel):
@@ -53,6 +53,7 @@ class PageStepsModel(BaseModel):
 
 
 class CaseModel(BaseModel):
+    send_user: str
     test_suite_details: int | None
     test_suite_id: int | None
     id: int
