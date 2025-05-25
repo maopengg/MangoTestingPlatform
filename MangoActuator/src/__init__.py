@@ -10,7 +10,7 @@ from src.services.ui.case_flow import CaseFlow
 from src.tools.set_config import SetConfig
 from .consumer import SocketConsumer
 from .enums.tools_enum import CacheKeyEnum
-from .network.web_socket.websocket_client import WebSocketClient
+from .network.web_socket import WebSocketClient
 from .tools import project_dir
 from .tools.log_collector import log
 
@@ -39,8 +39,8 @@ async def process(parent, is_login=False, retry=0):
             consumer_task.cancel()
         if case_flow_task:
             case_flow_task.cancel()
-        if WebSocketClient.websocket:
-            WebSocketClient.websocket = None
+        if socket_conn.websocket:
+            socket_conn.websocket = None
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")
         await asyncio.sleep(5)
@@ -63,8 +63,8 @@ async def test_process(parent):
             consumer_task.cancel()
         if case_flow_task:
             case_flow_task.cancel()
-        if WebSocketClient.websocket:
-            WebSocketClient.websocket = None
+        if socket_conn.websocket:
+            socket_conn.websocket = None
         traceback.print_exc()
         log.error(f"启动永久循环协程任务时出现异常：{error}")
         await asyncio.sleep(5)

@@ -21,12 +21,10 @@ from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, PageStepsResultModel, UiCaseResultModel
-from src.network import socket_conn
-from src.network.web_socket.socket_api_enum import UiSocketEnum
+from src.network import socket_conn, UiSocketEnum
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
-from src.tools.decorator.error_handle import async_error_handle
-from src.tools.decorator.memory import async_memory
+from src.tools.decorator import async_error_handle, async_memory
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
 from src.tools.set_config import SetConfig
@@ -177,7 +175,8 @@ class TestCase:
             msg=msg,
             is_notice=ClientTypeEnum.WEB,
             func_name=func_name,
-            func_args=func_args
+            func_args=func_args,
+            user=self.case_model.send_user,
         )
         queue_notification.put({
             'type': TipsTypeEnum.SUCCESS if self.case_result.status else TipsTypeEnum.ERROR,

@@ -16,8 +16,7 @@ from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import MangoActuatorError, ERROR_MSG_0038, UiError, ERROR_MSG_0036
 from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, PageStepsResultModel, RecordingModel
-from src.network.web_socket.socket_api_enum import UiSocketEnum
-from src.network.web_socket.websocket_client import WebSocketClient
+from src.network import socket_conn, UiSocketEnum
 from src.services.ui.page_steps import PageSteps
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
@@ -136,7 +135,7 @@ class TestPageSteps:
     async def send_steps_result(cls, code: int, msg: str, _type: TipsTypeEnum,
                                 page_step_result_model: PageStepsResultModel | None = None):
         if page_step_result_model:
-            await WebSocketClient().async_send(
+            await socket_conn.async_send(
                 code=code,
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB,
@@ -144,7 +143,7 @@ class TestPageSteps:
                 func_args=page_step_result_model
             )
         else:
-            await WebSocketClient().async_send(
+            await socket_conn.async_send(
                 code=code,
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB
