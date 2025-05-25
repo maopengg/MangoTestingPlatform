@@ -11,14 +11,15 @@ from src.pages.home.home_dict import table_column
 from src.settings.settings import IS_WINDOW
 
 
-class HomePage(QWidget):
+class HomePage(MangoWidget):
     def __init__(self, parent=None):
-        super().__init__()
+        super().__init__(parent)
         self.page = 1
         self.page_size = 10
         self.parent = parent
-        self.layout = MangoHBoxLayout(self)
-
+        self._layout = MangoHBoxLayout()
+        self.layout.addLayout(self._layout)
+        self.layout.setContentsMargins(5, 5, 5, 5)
         self.layout_v_1 = MangoVBoxLayout()
         self.layout_v_2 = MangoVBoxLayout()
         self.layout_v_2_1 = MangoVBoxLayout()
@@ -29,8 +30,8 @@ class HomePage(QWidget):
         self.layout_v_1_2 = MangoVBoxLayout()
         self.layout_v_1.addLayout(self.layout_v_1_1)
         self.layout_v_1.addLayout(self.layout_v_1_2)
-        self.layout.addLayout(self.layout_v_1, 3)
-        self.layout.addLayout(self.layout_v_2, 7)
+        self._layout.addLayout(self.layout_v_1, 3)
+        self._layout.addLayout(self.layout_v_2, 7)
 
         self.label_6 = MangoLabel(f'用例执行数')
         self.pie_plot_1 = MangoPiePlot()
@@ -62,7 +63,7 @@ class HomePage(QWidget):
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # type: ignore
             self.mango_dialog.layout.addWidget(label)
 
-    def show_data(self, ):
+    def load_page_data(self, ):
         pie_plot_1_data = HTTP.system.index.case_sum().data
         if pie_plot_1_data:
             self.pie_plot_1.draw(pie_plot_1_data)

@@ -10,7 +10,7 @@ from src.services.ui.case_flow import CaseFlow
 from src.tools.set_config import SetConfig
 from .consumer import SocketConsumer
 from .enums.tools_enum import CacheKeyEnum
-from .network import socket_conn
+from .network.web_socket import WebSocketClient
 from .tools import project_dir
 from .tools.log_collector import log
 
@@ -20,10 +20,10 @@ async def process(parent, is_login=False, retry=0):
     consumer_task = None
     case_flow_task = None
     try:
-        socket_conn.parent = parent
+        WebSocketClient.parent = parent
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
-        websocket_task = asyncio.create_task(socket_conn.client_run())
+        websocket_task = asyncio.create_task(WebSocketClient.client_run())
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
         if is_login:

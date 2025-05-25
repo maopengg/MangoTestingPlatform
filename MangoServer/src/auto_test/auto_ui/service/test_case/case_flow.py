@@ -62,7 +62,7 @@ class UiCaseFlow:
                     tasks_id=test_suite.tasks.id if test_suite.tasks else None,
                     parametrize=test_suite_details.parametrize,
                 )
-                cls.send_case(model.id, model.username, case_model)
+                cls.send_case(model.id, model.username, case_model, test_suite.user.username)
                 cls.update_status_proceed(test_suite, test_suite_details)
         except MangoServerError as error:
             log.system.debug(f'执行器主动拉取任务失败：{error}')
@@ -80,7 +80,7 @@ class UiCaseFlow:
         test_suite_details.save()
 
     @classmethod
-    def send_case(cls, user_id, username, case_model):
+    def send_case(cls, user_id, username, case_model, send_case_user):
         from src.auto_test.auto_ui.service.test_case.test_case import TestCase
         send_case = TestCase(
             user_id=user_id,
@@ -94,5 +94,6 @@ class UiCaseFlow:
             case_name=case_model.case_name,
             test_suite=case_model.test_suite,
             test_suite_details=case_model.test_suite_details,
-            parametrize=case_model.parametrize
+            parametrize=case_model.parametrize,
+            send_case_user=send_case_user
         )

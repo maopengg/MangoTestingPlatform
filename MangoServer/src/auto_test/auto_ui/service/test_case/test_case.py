@@ -30,7 +30,7 @@ class TestCase:
                  tasks_id: int = None,
                  is_send: bool = False):
         self.user_id = user_id
-        self.username = username
+        self.send_user = username
         self.test_env = test_env
         self.tasks_id = tasks_id
         self.is_send = is_send
@@ -40,12 +40,14 @@ class TestCase:
                   case_name: str = None,
                   test_suite: int | None = None,
                   test_suite_details: int | None = None,
-                  parametrize: list[dict] | list = None) -> CaseModel:
+                  parametrize: list[dict] | list = None,
+                  send_case_user: str = None) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_model = CaseModel(
+            send_user=send_case_user if send_case_user else self.send_user,
             test_suite_details=test_suite_details,
             test_suite_id=test_suite,
             id=case.id,
@@ -59,7 +61,7 @@ class TestCase:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
-            steps=[self.steps_model(i.page_step.id, case_steps_detailed) for i in case_steps_detailed],
+            steps=[self.steps_model(i.page_step.id, i) for i in case_steps_detailed],
             public_data_list=self.__public_data(case.project_product_id),
         )
         if case.parametrize and test_suite is None:
@@ -200,7 +202,7 @@ class TestCase:
             send_data = SocketDataModel(
                 code=200,
                 msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                user=self.username,
+                user=self.send_user,
                 is_notice=ClientTypeEnum.ACTUATOR,
                 data=QueueModel(func_name=func_name, func_args=data_model),
             )

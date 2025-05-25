@@ -175,7 +175,8 @@ class TestCase:
             msg=msg,
             is_notice=ClientTypeEnum.WEB,
             func_name=func_name,
-            func_args=func_args
+            func_args=func_args,
+            user=self.case_model.send_user,
         )
         queue_notification.put({
             'type': TipsTypeEnum.SUCCESS if self.case_result.status else TipsTypeEnum.ERROR,

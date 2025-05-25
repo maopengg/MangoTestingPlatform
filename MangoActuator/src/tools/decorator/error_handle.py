@@ -10,7 +10,6 @@ from mangotools.mangos import Mango  # type: ignore
 
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import CacheKeyEnum
-from src.network import socket_conn
 from src.settings.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
@@ -27,6 +26,7 @@ def async_error_handle(is_error=False):
                 if IS_SEND_MAIL:
                     from src import project_dir
                     Mango.s(func, error, trace, SetConfig.get_username(), args, kwargs)
+                from src.network import socket_conn
                 await socket_conn.async_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
@@ -52,6 +52,7 @@ def sync_error_handle(is_error=False):
                     from src import project_dir
                     Mango.s(func, error, trace,
                             SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value), args, kwargs)
+                from src.network import socket_conn
                 socket_conn.sync_send(
                     code=300,
                     msg=f"发生未知异常，请先自行查看错误信息后联系管理员！错误信息：{error}",
