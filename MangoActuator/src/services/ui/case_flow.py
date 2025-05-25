@@ -35,7 +35,6 @@ class CaseFlow:
                 case_model: CaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
-                await asyncio.sleep(0)
             else:
                 if time.time() - s > 5:
                     s = time.time()
