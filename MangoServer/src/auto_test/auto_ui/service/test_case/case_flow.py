@@ -89,20 +89,10 @@ class UiCaseFlow:
             tasks_id=case_model.tasks_id,
             is_send=True
         )
-        inspect = send_case.inspect_environment_config(case_model.case_id)
-        if not inspect:
-            test_suite = TestSuite.objects.get(id=case_model.test_suite)
-            test_suite.status = TaskEnum.FAIL.value
-            test_suite.save()
-            test_suite_details = TestSuiteDetails.objects.get(id=case_model.test_suite_details)
-            test_suite_details.status = TaskEnum.FAIL.value
-            test_suite_details.error_message = f'你配置了不同UI自动化类型，但是你没有准备好UI设备配置，请先前往界面自动化->设备配置中添加配置！'
-            test_suite.save()
-        else:
-            send_case.test_case(
-                case_id=case_model.case_id,
-                case_name=case_model.case_name,
-                test_suite=case_model.test_suite,
-                test_suite_details=case_model.test_suite_details,
-                parametrize=case_model.parametrize
-            )
+        send_case.test_case(
+            case_id=case_model.case_id,
+            case_name=case_model.case_name,
+            test_suite=case_model.test_suite,
+            test_suite_details=case_model.test_suite_details,
+            parametrize=case_model.parametrize
+        )

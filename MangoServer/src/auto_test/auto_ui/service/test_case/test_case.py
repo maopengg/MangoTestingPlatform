@@ -15,8 +15,7 @@ from src.auto_test.auto_ui.models import *
 from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
-from src.enums.tools_enum import StatusEnum, AutoTypeEnum
-from src.enums.ui_enum import DriveTypeEnum
+from src.enums.tools_enum import StatusEnum, AutoTypeEnum, TaskEnum
 from src.exceptions import *
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.ui_model import *
@@ -43,7 +42,9 @@ class TestCase:
                   test_suite_details: int | None = None,
                   parametrize: list[dict] | list = None) -> CaseModel:
         case = UiCase.objects.get(id=case_id)
-        objects_filter = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
+        case.status = TaskEnum.PROCEED.value
+        case.save()
+        case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
         case_model = CaseModel(
             test_suite_details=test_suite_details,
             test_suite_id=test_suite,
@@ -58,7 +59,7 @@ class TestCase:
             front_sql=case.front_sql,
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
-            steps=[self.steps_model(i.page_step.id, i.id) for i in objects_filter],
+            steps=[self.steps_model(i.page_step.id, case_steps_detailed) for i in case_steps_detailed],
             public_data_list=self.__public_data(case.project_product_id),
         )
         if case.parametrize and test_suite is None:
@@ -127,8 +128,10 @@ class TestCase:
 
     def steps_model(self,
                     page_steps_id: id,
-                    case_step_details_id: int | None = None) -> PageStepsModel:
+                    case_steps_detailed: UiCaseStepsDetailed | None = None) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
+        page_steps.status = TaskEnum.PROCEED.value
+        page_steps.save()
         page_steps_model = PageStepsModel(
             id=page_steps.id,
             name=page_steps.name,
@@ -139,24 +142,21 @@ class TestCase:
             url=page_steps.page.url,
             switch_step_open_url=False,
             error_retry=None,
-            # equipment_config=self.__equipment_config(page_steps.project_product.ui_client_type),
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
-            case_step_details_id=case_step_details_id,
+            case_step_details_id=case_steps_detailed.id if case_steps_detailed else None,
         )
-        if case_step_details_id:
-            case_step_details = UiCaseStepsDetailed.objects.get(id=case_step_details_id)
-            page_steps_model.switch_step_open_url = bool(case_step_details.switch_step_open_url)
-            page_steps_model.error_retry = case_step_details.error_retry
-            for case_data in case_step_details.case_data:
-                try:
-                    page_steps_model.case_data.append(StepsDataModel(**case_data))
-                except ValidationError:
-                    raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
-
+        if case_steps_detailed:
+            case_steps_detailed.status = TaskEnum.PROCEED.value
+            case_steps_detailed.save()
+            page_steps_model.switch_step_open_url = bool(case_steps_detailed.switch_step_open_url)
+            page_steps_model.error_retry = case_steps_detailed.error_retry
+            try:
+                page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]
+            except ValidationError:
+                raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
         page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id).order_by('step_sort')
-        for i in page_steps_element:
-            page_steps_model.element_list.append(self.element_model(i))
+        page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
 
     @classmethod
@@ -196,68 +196,23 @@ class TestCase:
             )
 
     def __socket_send(self, data_model, func_name: str, is_open=False) -> None:
-        try:
-            if self.is_send:
-                data = QueueModel(func_name=func_name, func_args=data_model)
-                ChatConsumer.active_send(SocketDataModel(
-                    code=200,
-                    msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                    user=self.username,
-                    is_notice=ClientTypeEnum.ACTUATOR,
-                    data=data,
-                ))
-        except MangoServerError as error:
-            user_list = []
-            for i in SocketUser.user:
-                if i.is_open:
-                    user_list.append(i.username)
-            if error.code == 328 and is_open and user_list:
-                if self.is_send:
-                    data = QueueModel(func_name=func_name, func_args=data_model)
-                    ChatConsumer.active_send(SocketDataModel(
-                        code=200,
-                        msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
-                        user=user_list[random.randint(0, len(user_list) - 1)],
-                        is_notice=ClientTypeEnum.ACTUATOR,
-                        data=data,
-                    ))
-            else:
-                raise error
-
-    @classmethod
-    def __get_case_executor(cls, case_executor):
-        error = None
-        if case_executor:
-            case_executor = []
-            for name in case_executor:
-                try:
-                    user_obj = User.objects.get(name=name)
-                except User.DoesNotExist:
-                    raise UiError(*ERROR_MSG_0050)
-                try:
-                    SocketUser.get_user_client_obj(user_obj.username)
-                except UiError as error:
-                    error = error
-                else:
-                    case_executor.append(user_obj.username)
-            if case_executor:
-                return case_executor
-            else:
-                raise error
-
-    def inspect_environment_config(self, case_id: int) -> bool:
-        objects_filter = UiCaseStepsDetailed.objects.filter(case=case_id).first()
-        if objects_filter:
+        if self.is_send:
+            send_data = SocketDataModel(
+                code=200,
+                msg=f'{ClientNameEnum.DRIVER.value}：收到用例数据，准备开始执行自动化任务！',
+                user=self.username,
+                is_notice=ClientTypeEnum.ACTUATOR,
+                data=QueueModel(func_name=func_name, func_args=data_model),
+            )
             try:
-                page_steps = PageSteps.objects.get(id=objects_filter.page_step.id)
-                # self.__equipment_config(page_steps.project_product.ui_client_type)
-            except UiError:
-                return False
-            else:
-                return True
-        else:
-            return False
-
+                ChatConsumer.active_send(send_data)
+            except MangoServerError as error:
+                user_list = [i.username for i in SocketUser.user if i.is_open]
+                if error.code == 328 and is_open and user_list:
+                    send_data.user = user_list[random.randint(0, len(user_list) - 1)]
+                    ChatConsumer.active_send(send_data)
+                else:
+                    raise error
 
     def __environment_config(self, project_product_id: int, ) -> EnvironmentConfigModel:
         test_object: TestObject = func_test_object_value(self.test_env, project_product_id, AutoTypeEnum.UI.value)
