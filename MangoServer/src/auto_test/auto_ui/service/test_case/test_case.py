@@ -81,7 +81,7 @@ class TestCase:
         return case_model
 
     def test_steps(self, steps_id: int) -> PageStepsModel:
-        page_steps_model = self.steps_model(steps_id)
+        page_steps_model = self.steps_model(steps_id, switch_step_open_url=True)
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
         return page_steps_model
 
@@ -95,7 +95,7 @@ class TestCase:
             module_name=page_steps_detailed.page_step.module.name,
             type=page_steps_detailed.page_step.project_product.ui_client_type,
             url=page_steps_detailed.ele_name.page.url,
-            switch_step_open_url=True,
+            switch_step_open_url=False,
             error_retry=None,
             element_list=[self.element_model(page_steps_detailed, )],
             # equipment_config=self.__equipment_config(page_steps_detailed.page_step.project_product.ui_client_type),
@@ -130,7 +130,8 @@ class TestCase:
 
     def steps_model(self,
                     page_steps_id: id,
-                    case_steps_detailed: UiCaseStepsDetailed | None = None) -> PageStepsModel:
+                    case_steps_detailed: UiCaseStepsDetailed | None = None,
+                    switch_step_open_url=False) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
         page_steps.status = TaskEnum.PROCEED.value
         page_steps.save()
@@ -142,7 +143,7 @@ class TestCase:
             module_name=page_steps.module.name,
             type=page_steps.project_product.ui_client_type,
             url=page_steps.page.url,
-            switch_step_open_url=False,
+            switch_step_open_url=switch_step_open_url,
             error_retry=None,
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
