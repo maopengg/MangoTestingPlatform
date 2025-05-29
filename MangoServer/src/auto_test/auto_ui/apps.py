@@ -19,9 +19,10 @@ class AutoUiConfig(AppConfig):
         self.refresh_status()
 
     def refresh_status(self):
-        while True:
-            time.sleep(30)
-            from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
-            UiCase.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
-            UiCaseStepsDetailed.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
-            PageSteps.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
+        pass
+        # while True:
+        #     time.sleep(30)
+        #     from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+        #     UiCase.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
+        #     UiCaseStepsDetailed.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
+        #     PageSteps.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
