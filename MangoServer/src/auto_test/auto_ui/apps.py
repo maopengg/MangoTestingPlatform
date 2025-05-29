@@ -3,6 +3,8 @@ from threading import Thread
 import time
 from django.apps import AppConfig
 
+from src.enums.tools_enum import TaskEnum
+
 
 class AutoUiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -14,7 +16,13 @@ class AutoUiConfig(AppConfig):
 
     def start_consumer(self):
         time.sleep(5)
-        self.run_tests()
+        self.refresh_status()
 
-    def run_tests(self):
+    def refresh_status(self):
         pass
+        # while True:
+        #     time.sleep(30)
+        #     from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+        #     UiCase.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
+        #     UiCaseStepsDetailed.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
+        #     PageSteps.objects.filter(status=TaskEnum.PROCEED.value).update(status=TaskEnum.FAIL)
