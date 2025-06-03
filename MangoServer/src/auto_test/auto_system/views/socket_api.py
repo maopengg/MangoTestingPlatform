@@ -3,12 +3,22 @@
 # @Description: 
 # @Time   : 2023-05-13 23:00
 # @Author : 毛鹏
+
+from urllib.parse import urlparse
+
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.auto_test.auto_system.consumers import ChatConsumer
+from src.auto_test.auto_system.models import TestObject, ProjectProduct
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_user.models import User
+from src.enums.socket_api_enum import UiSocketEnum
+from src.enums.system_enum import ClientTypeEnum
+from src.enums.tools_enum import AutoTypeEnum
+from src.models.socket_model import SocketDataModel, QueueModel
+from src.models.ui_model import RecordingModel
 from src.tools.decorator.error_response import error_response
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
@@ -58,3 +68,53 @@ class SocketApiViews(ViewSet):
             'username': user_obj.username,
             'is_open': user_obj.is_open
         })
+
+    @action(methods=['get'], detail=False)
+    @error_response('ui')
+    def get_new_browser_obj(self, request: Request):
+        """
+        @param request:
+        @return:
+        """
+        is_recording = request.query_params.get('is_recording')
+        if is_recording == '1':
+            user_obj = User.objects.get(id=request.user['id'])
+            host_list: list[dict] = list(TestObject.objects
+                                         .filter(project_product_id__in=ProjectProduct
+                                                 .objects
+                                                 .filter(project_id=user_obj.selected_project)
+                                                 .values_list('id', flat=True),
+                                                 environment=user_obj.selected_environment,
+                                                 auto_type__in=[AutoTypeEnum.API.value, AutoTypeEnum.CURRENCY.value])
+                                         .values('value', 'project_product_id'))
+            if not host_list:
+                return ResponseData.fail(RESPONSE_MSG_0121, )
+            host_list_dict = []
+            for i in host_list:
+                host_list_dict.append({
+                    'value': urlparse(i.get('value')).netloc,
+                    'project_product_id': i.get('project_product_id')
+                })
+            send_socket_data = SocketDataModel(
+                code=200,
+                msg="实例化web对象",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.ACTUATOR,
+                data=QueueModel(
+                    func_name=UiSocketEnum.RECORDING.value,
+                    func_args=RecordingModel(url_list=host_list)
+                )
+            )
+        else:
+            send_socket_data = SocketDataModel(
+                code=200,
+                msg="实例化web对象",
+                user=request.user.get('username'),
+                is_notice=ClientTypeEnum.ACTUATOR,
+                data=QueueModel(
+                    func_name=UiSocketEnum.NEW_PAGE_OBJ.value,
+                    func_args={}
+                )
+            )
+        ChatConsumer.active_send(send_socket_data)
+        return ResponseData.success(RESPONSE_MSG_0059, )

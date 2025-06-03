@@ -38,3 +38,15 @@ export function getSystemSocketPutOpenStatus(username: string, status: number) {
     },
   })
 }
+
+export function getSystemSocketNewBrowser(id: number | null, is_recording: number) {
+  return get({
+    url: '/system/socket/new/browser',
+    data: () => {
+      return {
+        id: id,
+        is_recording: is_recording,
+      }
+    },
+  })
+}
