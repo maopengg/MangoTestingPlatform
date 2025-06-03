@@ -1,4 +1,4 @@
-mangoautomation==1.0.1
+mangoautomation==1.0.02
 mangotools==1.0.1
 
 websockets==10.4
