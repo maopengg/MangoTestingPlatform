@@ -20,6 +20,7 @@ elif DJANGO_ENV == SystemEnvEnum.MASTER.value:
 elif DJANGO_ENV == SystemEnvEnum.TEST.value:
     from .test import *
 else:
+    print(f'测试环境：{DJANGO_ENV}')
     raise Exception(
         '你选择的环境不在系统默认的环境中，无法启动！！！如果你有能力修改代码请自行解决，如果没有能力请使用master即可')
 # **********************************************************************************************************************
