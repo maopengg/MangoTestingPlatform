@@ -7,7 +7,7 @@ from django.urls import path
 
 from src.auto_test.auto_ui.views.ui_case import UiCaseCRUD, UiCaseViews
 from src.auto_test.auto_ui.views.ui_case_steps_detailed import UiCaseStepsDetailedCRUD, UiCaseStepsDetailedViews
-from src.auto_test.auto_ui.views.ui_config import UiConfigCRUD, UiConfigViews
+# from src.auto_test.auto_ui.views.ui_config import UiConfigCRUD, UiConfigViews
 from src.auto_test.auto_ui.views.ui_element import PageElementCRUD, PageElementViews
 from src.auto_test.auto_ui.views.ui_page import PageCRUD, PageViews
 from src.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD, PageStepsViews
@@ -50,7 +50,7 @@ urlpatterns = [
     path("case/steps/detailed/refresh", UiCaseStepsDetailedViews.as_view({'get': 'post_case_cache_data'})),
     path("case/steps/detailed/sort", UiCaseStepsDetailedViews.as_view({'put': 'put_case_sort'})),
     #
-    path("config", UiConfigCRUD.as_view()),
-    path("config/status", UiConfigViews.as_view({'put': 'put_status'})),
-    path("config/new/browser", UiConfigViews.as_view({'get': 'new_browser_obj'})),
+    # path("config", UiConfigCRUD.as_view()),
+    # path("config/status", UiConfigViews.as_view({'put': 'put_status'})),
+    # path("config/new/browser", UiConfigViews.as_view({'get': 'new_browser_obj'})),
 ]

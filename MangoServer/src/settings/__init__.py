@@ -43,12 +43,9 @@ SECRET_KEY = 'django-insecure-)7248+$v^i-e@u$=+jzwl1u(vvw0d$n5mepritgniru(&8gmu1
 # **********************************************************************************************************************
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+
     'src.auto_test.auto_ui',
     'src.auto_test.auto_api',
     'src.auto_test.auto_system',

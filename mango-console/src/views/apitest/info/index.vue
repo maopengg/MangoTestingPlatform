@@ -279,10 +279,10 @@
     putApiInfo,
     putApiPutApiInfoType,
   } from '@/api/apitest/info'
-  import { getUiConfigNewBrowserObj } from '@/api/uitest/config'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import { strJson } from '@/utils/tools'
+  import { getSystemSocketNewBrowser } from '@/api/system/socket_api'
 
   const router = useRouter()
   const enumStore = useEnum()
@@ -404,17 +404,13 @@
       cancelText: '取消',
       okText: '确定',
       onOk: () => {
-        getUiConfigNewBrowserObj(null, 1)
+        getSystemSocketNewBrowser(null, 1)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
       },
     })
-  }
-
-  function onSynchronization() {
-    Message.warning('功能开发中...')
   }
 
   function onDelete(data: any) {

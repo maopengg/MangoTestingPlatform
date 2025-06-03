@@ -7,12 +7,12 @@ import os
 import threading
 
 from git import Repo, GitCommandError
+from mangotools.decorator import singleton
 
 from src.auto_test.auto_system.models import CacheData
 from src.enums.system_enum import CacheDataKeyEnum
 from src.exceptions import ERROR_MSG_0015, PytestError, ERROR_MSG_0017, ERROR_MSG_0018
 from src.tools import project_dir
-from src.tools.decorator.singleton import singleton
 from src.tools.log_collector import log
 
 

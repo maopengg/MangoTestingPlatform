@@ -167,17 +167,17 @@ class UiPublic(models.Model):
         db_table = 'ui_public'
         ordering = ['-id']
 
-
-class UiConfig(models.Model):
-    create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
-    # 0是web，1是安卓
-    type = models.SmallIntegerField(verbose_name="什么客户端")
-    config = models.JSONField(verbose_name="配置json")
-    # 是否开启
-    status = models.SmallIntegerField(verbose_name="状态", default=0)
-
-    class Meta:
-        db_table = 'ui_config'
-        ordering = ['-id']
+#
+# class UiConfig(models.Model):
+#     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
+#     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
+#     user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
+#     # 0是web，1是安卓
+#     type = models.SmallIntegerField(verbose_name="什么客户端")
+#     config = models.JSONField(verbose_name="配置json")
+#     # 是否开启
+#     status = models.SmallIntegerField(verbose_name="状态", default=0)
+#
+#     class Meta:
+#         db_table = 'ui_config'
+#         ordering = ['-id']

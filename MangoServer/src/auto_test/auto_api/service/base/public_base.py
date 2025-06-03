@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from typing import Optional
 
+from mangotools.assertion import PublicAssertion
 from mangotools.database import MysqlConnect
 from mangotools.exceptions import MangoToolsError
 from src.auto_test.auto_api.models import ApiHeaders
@@ -16,7 +17,6 @@ from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel
-from src.tools.assertion.public_assertion import PublicAssertion
 from src.tools.obtain_test_data import ObtainTestData
 
 
