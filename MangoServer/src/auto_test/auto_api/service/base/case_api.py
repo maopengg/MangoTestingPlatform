@@ -100,11 +100,11 @@ class CaseApiBase(ApiCaseBase):
                     method = i.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.api.debug(error)
+            log.api.debug(str(error))
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0005)
         except ToolsError as error:
-            log.api.debug(error)
+            log.api.debug(str(error))
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise error
 
@@ -124,7 +124,7 @@ class CaseApiBase(ApiCaseBase):
                     method = sql.get('method')
                     getattr(self, method)(**_dict)
         except AssertionError as error:
-            log.api.debug(error)
+            log.api.debug(str(error))
             self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0006)
 
@@ -144,7 +144,7 @@ class CaseApiBase(ApiCaseBase):
         try:
             assert actual.strip() == ass_test_all.strip()
         except AssertionError as error:
-            log.api.debug(error)
+            log.api.debug(str(error))
             self.ass_result.append(AssResultModel(
                 type='响应文本全匹配',
                 expect=ass_test_all,
