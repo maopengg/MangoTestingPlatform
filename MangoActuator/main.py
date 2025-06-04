@@ -44,8 +44,8 @@ pyinstaller `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
 --add-data "src/settings/menus_2.json;src/settings" `
---add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
---add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangokit\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
 --hidden-import "mango" `
 --hidden-import "pyarmor_runtime" `
 --hidden-import "pyarmor_runtime_000000" `
@@ -56,30 +56,5 @@ pyinstaller `
 --hidden-import "email.mime.multipart" `
 main.py
 """
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\mangokit\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
-"""
-#!/bin/bash
-
-# 确保脚本在任何错误时退出
-set -e
-
-# 1. 合并test到master
-echo "切换到master分支并合并test..."
-git checkout master
-git pull origin master  # 确保master是最新的
-git merge origin/test --no-ff -m "合并test分支到master"
-git push origin master
-echo "test分支已合并到master并推送到远程"
-
-# 2. 合并master到prod
-echo "切换到prod分支并合并master..."
-git checkout prod
-git pull origin prod  # 确保prod是最新的
-git merge origin/master --no-ff -m "合并master分支到prod"
-git push origin prod
-echo "master分支已合并到prod并推送到远程"
-
-echo "所有操作已完成！"
-
-"""
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\angotools\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
+# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\angotools\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
