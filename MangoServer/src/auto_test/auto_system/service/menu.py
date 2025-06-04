@@ -249,7 +249,7 @@ def ad_routes():
             "children": [
                 {
                     "parentPath": "/help",
-                    "menuUrl": "http://121.37.174.56:8002/",
+                    "menuUrl": "http://118.196.24.189:8002/",
                     "menuName": "帮助文档",
                 },
                 {
