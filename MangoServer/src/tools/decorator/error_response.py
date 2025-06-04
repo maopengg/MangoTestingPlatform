@@ -50,6 +50,8 @@ def error_response(app: str):
                 trace = traceback.format_exc()
                 log_dict.get(app, log.system).error(f'错误内容：{error}-错误详情：{trace}')
                 if IS_SEND_MAIL:
+                    from src.settings import VERSION
+                    kwargs['version'] = VERSION
                     Mango.s(func, error, trace, username, args, kwargs)
                 return ResponseData.fail(ERROR_MSG_0000, data=str(error))
 

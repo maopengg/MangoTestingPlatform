@@ -140,7 +140,7 @@ class LoginViews(ViewSet):
     @action(methods=['post'], detail=False)
     def login(self, request: Request):
         username = request.data.get('username')
-        password = request.data.get('password')
+        password = int(request.data.get('password'))
         source_type = request.data.get('type')
         try:
             user_info = User.objects.get(username=username, password=password)

@@ -18,7 +18,7 @@ if platform.system() != "Linux":
     from mangoui import AppConfig, MenusModel
 
     with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
-        STYLE = AppConfig(**json.loads(f.read()))
+        SETTINGS = AppConfig(**json.loads(f.read()))
     with open(project_dir.resource_path('src/settings/menus_2.json'), "r", encoding='utf-8') as f:
         MENUS = MenusModel(**json.loads(f.read()))
 

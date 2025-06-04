@@ -160,4 +160,5 @@ class ConsumerThread:
         test_suite_details.error_message = f'测试{TestCaseTypeEnum.get_value(test_suite_details.type)}类型：，异常类型：{error}，报错内容：{trace}'
         test_suite.save()
         if IS_SEND_MAIL:
-            Mango.s(self.consumer_error, error, trace)
+            from src.settings import VERSION
+            Mango.s(self.consumer_error, error, trace, version=VERSION)

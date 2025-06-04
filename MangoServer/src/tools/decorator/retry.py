@@ -33,6 +33,8 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
                     time.sleep(delay)  # 等待一段时间后重试
             else:
                 if error is not None and IS_SEND_MAIL:
+                    from src.settings import VERSION
+                    kwargs['version'] = VERSION
                     Mango.s(func, error, trace, args, kwargs)
 
         return wrapper

@@ -107,7 +107,8 @@ class TestCase:
                 break
             except Exception as error:
                 from mangotools.mangos import Mango  # type: ignore
-                Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username())  # type: ignore
+                from src.settings.settings import SETTINGS
+                Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username(), version=SETTINGS.version)  # type: ignore
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')

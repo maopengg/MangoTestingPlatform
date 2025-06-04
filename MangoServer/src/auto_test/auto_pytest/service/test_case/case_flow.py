@@ -37,7 +37,8 @@ class PytestCaseFlow:
                 trace = traceback.format_exc()
                 log.system.error(f'Pytest线程池发生异常：{error}，报错：{trace}')
                 if IS_SEND_MAIL:
-                    Mango.s(cls.process_tasks, error, trace)
+                    from src.settings import VERSION
+                    Mango.s(cls.process_tasks, error, trace, version=VERSION)
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
@@ -53,7 +54,8 @@ class PytestCaseFlow:
             trace = traceback.format_exc()
             log.pytest.error(f'pytest线程池任务异常：{trace}')
             if IS_SEND_MAIL:
-                Mango.s(cls.execute_task, error, trace, case_model=case_model)
+                from src.settings import VERSION
+                Mango.s(cls.execute_task, error, trace, case_model=case_model, version=VERSION)
             log.system.error(f'Pytest线程池发生异常：{error}，错误内容：{trace}')
 
     @classmethod

@@ -14,7 +14,7 @@ from src import process, log
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
 from src.settings import settings
-from src.settings.settings import STYLE, MENUS
+from src.settings.settings import SETTINGS, MENUS
 from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
 from ...models.socket_model import ResponseModel
@@ -105,7 +105,7 @@ class WindowLogic(MangoMain1Window):
                 'user': UserPage,
             }
         super().__init__(
-            STYLE,
+            SETTINGS,
             MENUS,
             page_dict,
             loop,
