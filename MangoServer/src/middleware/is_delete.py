@@ -19,38 +19,38 @@ class IsDeleteMiddleWare(MiddlewareMixin):
         if not IS_DELETE:
             token = request.META.get('HTTP_AUTHORIZATION')
             if token:
-                payload = jwt.decode(token, settings.SECRET_KEY, algorithms='HS256')
-                if payload.get('username') not in ['admin', ]:
-                    if request.method == 'DELETE':
-                        return JsonResponse({
-                            "code": 300,
-                            "msg": "演示环境非管理员权限禁止删除，只能执行测试任务",
-                            "data": None
-                        }, status=200)
-                    elif request.method == 'POST':
-                        if request.path not in [
-                            '/ui/config',
-                            '/api/case/batch',
-                            '/ui/case/batch',
-                            '/ui/element/test',
-                        ]:
+                try:
+                    payload = jwt.decode(token, settings.SECRET_KEY, algorithms='HS256')
+                    if payload.get('username') not in ['admin', ]:
+                        if request.method == 'DELETE':
                             return JsonResponse({
                                 "code": 300,
-                                "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
+                                "msg": "演示环境非管理员权限禁止删除，只能执行测试任务",
                                 "data": None
                             }, status=200)
-                    elif request.method == 'PUT':
-                        if request.path not in [
-                            '/user/info/project',
-                            '/user/info/environment',
-                            '/ui/config',
-                            '/ui/config/status',
-                        ]:
-                            return JsonResponse({
-                                "code": 300,
-                                "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
-                                "data": None
-                            }, status=200)
+                        elif request.method == 'POST':
+                            if request.path not in [
+                                '/api/case/batch',
+                                '/ui/case/batch',
+                                '/ui/element/test',
+                            ]:
+                                return JsonResponse({
+                                    "code": 300,
+                                    "msg": "演示环境非管理员权限禁止新增，只能执行测试任务",
+                                    "data": None
+                                }, status=200)
+                        elif request.method == 'PUT':
+                            if request.path not in [
+                                '/user/info/project',
+                                '/user/info/environment',
+                            ]:
+                                return JsonResponse({
+                                    "code": 300,
+                                    "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
+                                    "data": None
+                                }, status=200)
+                except Exception as e:
+                    pass
 
     def process_response(self, request, response):
         return response

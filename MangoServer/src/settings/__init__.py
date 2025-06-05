@@ -66,12 +66,12 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # 跨域
     'django.middleware.common.CommonMiddleware',
-    'src.middleware.is_delete.IsDeleteMiddleWare',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'src.middleware.log_collector.LogMiddleWare',
+    'src.middleware.is_delete.IsDeleteMiddleWare',
 ]
 # **********************************************************************************************************************
 

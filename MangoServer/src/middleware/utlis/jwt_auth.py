@@ -9,7 +9,7 @@ import jwt
 from django.conf import settings
 
 
-def create_token(payload, timeout=720):
+def create_token(payload, timeout=24 * 60):
     salt = settings.SECRET_KEY
     headers = {
         'type': 'jwt',
