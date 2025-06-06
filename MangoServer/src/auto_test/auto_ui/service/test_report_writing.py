@@ -7,6 +7,7 @@
 from django.db import connection
 
 from src.auto_test.auto_ui.models import PageSteps, UiCase, UiCaseStepsDetailed
+from src.enums.tools_enum import TaskEnum
 from src.exceptions import *
 from src.models.ui_model import UiCaseResultModel, PageStepsResultModel
 from src.tools.decorator.retry import orm_retry
@@ -37,6 +38,10 @@ class TestReportWriting:
         case.save()
         for i in data.steps:
             cls.update_step(i)
+
+        UiCaseStepsDetailed.objects \
+            .filter(case_id=case.id, status=TaskEnum.PROCEED.value) \
+            .update(status=TaskEnum.FAIL.value)
 
     @classmethod
     @orm_retry('update_step')
