@@ -12,6 +12,8 @@ services:
       - "3306:3306"
     volumes:
       - /mango_data/mysql:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmP123456&" ]
       interval: 5s
@@ -32,6 +34,8 @@ services:
       MINIO_ROOT_PASSWORD: mP123456
     volumes:
       - /mango_data/minio:/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     command: server /data --console-address ":9001"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
@@ -51,6 +55,9 @@ services:
         DJANGO_ENV: ${DJANGO_ENV}
     ports:
       - "8000:8000"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     depends_on:
       db:
         condition: service_healthy
@@ -72,6 +79,9 @@ services:
         VUE_ENV: ${VUE_ENV}
     ports:
       - "8001:80"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     networks:
       - app_network
 
@@ -79,6 +89,9 @@ services:
     build:
       context: ./MangoActuator
       dockerfile: Dockerfile
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     depends_on:
       mango_server:
         condition: service_started
