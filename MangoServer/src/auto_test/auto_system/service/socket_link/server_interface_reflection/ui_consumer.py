@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-04-29 11:20
 # @Author : 毛鹏
-from mangotools.decorator import convert_args
 
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
@@ -16,21 +15,18 @@ from src.models.ui_model import PageStepsResultModel, UiCaseResultModel, GetTask
 class UIConsumer:
 
     @classmethod
-    @convert_args(PageStepsResultModel)
-    def u_page_steps(cls, data: PageStepsResultModel):
-        TestReportWriting.update_page_step_status(data)
+    def u_page_steps(cls, data: dict):
+        TestReportWriting.update_page_step_status(PageStepsResultModel(**data))
 
     @classmethod
-    @convert_args(TestSuiteDetailsResultModel)
-    def u_test_suite_details(cls, data: TestSuiteDetailsResultModel):
-        UpdateTestSuite.update_test_suite_details(data)
+    def u_test_suite_details(cls, data: dict):
+        UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(**data))
 
     @classmethod
-    @convert_args(UiCaseResultModel)
-    def u_test_case(cls, data: UiCaseResultModel):
-        TestReportWriting.update_test_case(data)
+    def u_test_case(cls, data: dict):
+        TestReportWriting.update_test_case(UiCaseResultModel(**data))
 
     @classmethod
-    @convert_args(GetTaskModel)
-    def u_get_task(cls, data: GetTaskModel):
+    def u_get_task(cls, data: dict):
+        data = GetTaskModel(**data)
         UiCaseFlow.get_case(data)
