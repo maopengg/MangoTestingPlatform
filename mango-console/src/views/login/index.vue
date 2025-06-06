@@ -34,7 +34,8 @@
         >忘记密码</a-button
       >
     </div>
-    <div class="bottom"> Copyright © 芒果味 2022-至今 Version：{{ version }} </div>
+    <div class="bottom">芒果测试平台 Copyright © 芒果味 2022-至今 Version：{{ version }} </div>
+    <!--    不支持修改平台名称和作者署名！-->
   </div>
 </template>
 
@@ -85,7 +86,10 @@
             })
         })
       })
-      .catch((error) => {
+      .catch((error: Error) => {
+        if (error.message === '请求失败，未知异常') {
+          Message.error('后端服务可能未启动！')
+        }
         baseData.loading = false
       })
   }
