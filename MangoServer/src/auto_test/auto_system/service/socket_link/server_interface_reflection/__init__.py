@@ -8,10 +8,9 @@ import concurrent.futures
 import traceback
 
 from django.dispatch import Signal
-
 from mangotools.decorator import singleton
+
 from src.models.socket_model import QueueModel
-from src.settings import IS_DEBUG_LOG
 from src.tools.log_collector import log
 from .api_consumer import APIConsumer
 from .perf_consumer import PerfConsumer
@@ -31,8 +30,7 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
         if sender == "websocket":
             data = kwargs.get('data')
             if isinstance(data, QueueModel):
-                if IS_DEBUG_LOG:
-                    log.system.debug(f"开始处理接收的消息：{data.model_dump_json()}")
+                log.system.debug(f"消费者开始处理接收的消息：{data.model_dump_json()}")
                 future = self.executor.submit(getattr(self, data.func_name), data.func_args)
                 future.add_done_callback(self.handle_task_result)  # 添加任务完成后的回调函数
             else:
