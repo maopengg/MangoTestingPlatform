@@ -92,6 +92,6 @@ class DatabaseViews(ViewSet):
         except MangoToolsError:
             return ResponseData.fail(RESPONSE_MSG_0123, )
         if mysql_conn.connection.open:
-            return ResponseData.success(RESPONSE_MSG_0122, )
+            return ResponseData.success(RESPONSE_MSG_0127, )
         else:
             return ResponseData.fail(RESPONSE_MSG_0123, )
