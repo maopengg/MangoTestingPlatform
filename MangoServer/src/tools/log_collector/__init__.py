@@ -14,7 +14,7 @@ class System:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.debug(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -39,7 +39,7 @@ class Ui:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.debug(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -64,7 +64,7 @@ class Api:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.warning(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -89,7 +89,7 @@ class User:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.debug(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -114,7 +114,7 @@ class Perf:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.debug(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
@@ -139,7 +139,7 @@ class Pytest:
     @classmethod
     def debug(cls, msg: str):
         if IS_DEBUG_LOG:
-            cls.log.debug(msg)
+            cls.log.critical(msg)
 
     @classmethod
     def info(cls, msg: str):
