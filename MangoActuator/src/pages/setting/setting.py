@@ -137,8 +137,8 @@ class SettingPage(QWidget):
         log.set_debug(settings.IS_DEBUG)
 
     def click_send_redis_data(self):
-        from src.services.customization import WebSocketClient
-        WebSocketClient().sync_send(
+        from src.services.customization import socket_conn
+        socket_conn.sync_send(
             '设置缓存数据成功',
             func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
             is_notice=ClientTypeEnum.WEB,

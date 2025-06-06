@@ -502,9 +502,11 @@
           .then((res) => {
             Message.success(res.msg)
             getUiCaseStepsRefreshCacheData(res.data.id)
-              .then((res) => {})
+              .then((res) => {
+                Message.success(res.msg)
+                doRefresh()
+              })
               .catch(console.log)
-            doRefresh()
           })
           .catch(console.log)
       } else {
