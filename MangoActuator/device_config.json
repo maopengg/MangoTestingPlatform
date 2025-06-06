@@ -1,6 +1,6 @@
 {
-  "host": "http://127.0.0.1:8000",
-  "minio_url": "http://127.0.0.1:9000",
+  "host": "http://server:8000",
+  "minio_url": "http://minio:9000",
   "username": "open",
   "password": "123456",
   "web_parallel": 5,
