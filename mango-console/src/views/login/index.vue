@@ -21,10 +21,18 @@
                 v-model="baseData.confirm_password"
               />
             </div>
-            <div class="inputBox">
-              <a-button type="submit" @click="baseData.isLogin ? onLogin() : onRegister()">{{
-                baseData.isLogin ? '登录' : '注册'
-              }}</a-button>
+            <div
+              class="inputBox"
+              style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 35px;
+                cursor: pointer;
+              "
+              @click="baseData.isLogin ? onLogin() : onRegister()"
+            >
+              <a type="submit">{{ baseData.isLogin ? '登录' : '注册' }}</a>
             </div>
           </form>
         </div>
