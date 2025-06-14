@@ -147,13 +147,14 @@ class PageSteps:
             web_max = SetConfig.get_web_max()  # type: ignore
             web_headers = SetConfig.get_web_headers()  # type: ignore
             web_recording = SetConfig.get_web_recording()  # type: ignore
+            web_h5 = SetConfig.get_web_h5()  # type: ignore
             self.driver_object.set_web(
                 SetConfig.get_web_type(),  # type: ignore
                 SetConfig.get_web_path(),  # type: ignore
-                web_max if web_max else False,  # type: ignore
-                web_headers if web_headers else False,  # type: ignore
-                web_recording if web_recording else False,  # type: ignore
-                SetConfig.get_web_h5(),  # type: ignore
+                web_max if web_max else False,
+                web_headers if web_headers else False,
+                web_recording if web_recording else False,
+                web_h5 if web_h5 and web_h5 != 'None' else None,
                 web_is_default=settings.IS_OPEN,
                 videos_path=project_dir.videos()
             )
