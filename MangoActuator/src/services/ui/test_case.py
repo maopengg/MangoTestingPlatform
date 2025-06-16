@@ -115,12 +115,12 @@ class TestCase:
                 break
         try:
             await self.send_case_result(
-                f'用例<{self.case_model.name}>执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
+                f'用例【{self.case_model.name}】执行{f"失败，错误提示：{self.case_result.error_message}" if self.case_result.status == StatusEnum.FAIL.value else "通过"}')
             await self.case_posterior(self.case_model.posterior_sql)
             await self.sava_videos()
         except Exception:
             await self.send_case_result(
-                f'用例:<{self.case_model.name}>后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
+                f'用例【{self.case_model.name}】后置处理失败了，如果是因为开启视频录制则忽略，开启视频录制需要安装：playwright install ffmpeg，或者请联系管理员来解决!')
 
     async def case_front(self, front_custom: list[dict], front_sql: list[dict]):
         front_custom = self.base_data.test_data.replace(front_custom)

@@ -66,7 +66,7 @@ class TestPageSteps:
                 page_steps_result_model = await page_steps.steps_main()
                 await self.send_steps_result(
                     200 if page_steps_result_model.status else 300,
-                    f'步骤<{data.name}>测试完成' if page_steps_result_model.status else f'步骤<{data.name}>测试失败，错误提示：{page_steps_result_model.error_message}',
+                    f'步骤【{data.name}】测试完成' if page_steps_result_model.status else f'步骤【{data.name}】测试失败，错误提示：{page_steps_result_model.error_message}',
                     TipsTypeEnum.SUCCESS if page_steps_result_model.status else TipsTypeEnum.ERROR,
                     page_steps_result_model
                 )

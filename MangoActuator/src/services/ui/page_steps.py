@@ -96,6 +96,7 @@ class PageSteps:
             for _element_data in self.page_steps_model.case_data:
                 if _element_data.page_step_details_id == _id:
                     element_data = _element_data.page_step_details_data
+                    break
             if element_data is None:
                 raise UiError(*ERROR_MSG_0025)
             return element_data

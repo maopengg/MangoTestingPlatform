@@ -42,7 +42,7 @@ IS_DELETE = True
 IS_SEND_MAIL = False
 
 # **************** 个人配置，开源用户忽略这部分代码 **************** #
-IS_TRUE = False
+IS_TRUE = True
 file_name = 'src/settings/database.json'
 if os.path.exists(file_name) and IS_TRUE:
     # 读取数据
