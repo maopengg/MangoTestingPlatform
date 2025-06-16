@@ -124,7 +124,8 @@ class PageSteps:
     async def _steps_retry(self):
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:
-                await self.base_data.page.reload()
+                if self.base_data.page:
+                    await self.base_data.page.reload()
             case DriveTypeEnum.ANDROID.value:
                 pass
             case DriveTypeEnum.DESKTOP.value:
