@@ -4,7 +4,7 @@
       <div class="drop">
         <div class="content">
           <h2> {{ baseData.isLogin ? '欢迎登录' : '欢迎注册' }} </h2>
-          <form>
+          <form @keyup.enter="baseData.isLogin ? onLogin() : onRegister()">
             <div class="inputBox" v-if="!baseData.isLogin">
               <input type="text" placeholder="请输入昵称" v-model="baseData.name" />
             </div>
