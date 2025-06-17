@@ -94,7 +94,7 @@ class TestCase:
             project_product_name=page_steps_detailed.page_step.project_product.name,
             module_name=page_steps_detailed.page_step.module.name,
             type=page_steps_detailed.page_step.project_product.ui_client_type,
-            url=page_steps_detailed.ele_name.page.url,
+            url=page_steps_detailed.page_step.page.url,
             switch_step_open_url=False,
             error_retry=None,
             element_list=[self.element_model(page_steps_detailed, )],
