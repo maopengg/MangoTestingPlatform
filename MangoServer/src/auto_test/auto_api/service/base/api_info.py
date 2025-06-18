@@ -6,6 +6,7 @@
 from urllib.parse import urljoin
 
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.public_base import PublicBase
 from src.enums.api_enum import MethodEnum
@@ -59,7 +60,9 @@ class ApiInfoBase(PublicBase):
             global_namespace = {}
             exec(func_str, global_namespace)
             return global_namespace[func_name]
-        except (KeyError, SyntaxError, TypeError) as error:
+        except Exception as error:
             log.api.warning(f'函数字符串：{func_str}')
-            log.api.error(error)
+            import traceback
+            log.api.error(
+                f'自定义函数执行失败，函数字符串：{func_str}，失败类型：{error}，失败明细：{traceback.format_exc()}')
             raise ToolsError(*ERROR_MSG_0014)
