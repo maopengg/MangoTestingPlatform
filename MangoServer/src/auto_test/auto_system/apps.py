@@ -64,15 +64,18 @@ class AutoSystemConfig(AppConfig):
     def populate_time_tasks():
         from src.auto_test.auto_system.models import TimeTasks
         if not TimeTasks.objects.exists():
-            TimeTasks.objects.create(name="每5分钟", cron="*/5 * * * *")
-            TimeTasks.objects.create(name="每30分钟", cron="*/30 * * * *")
-            TimeTasks.objects.create(name="每1小时", cron="0 * * * *")
-            TimeTasks.objects.create(name="每2小时", cron="0 */2 * * *")
-            TimeTasks.objects.create(name="每5小时", cron="0 */5 * * *")
-            TimeTasks.objects.create(name="每天9点", cron="0 9 * * *")
-            TimeTasks.objects.create(name="每天12点", cron="0 12 * * *")
-            TimeTasks.objects.create(name="每天18点", cron="0 18 * * *")
-            TimeTasks.objects.create(name="每周一8点", cron="0 8 * * 1")
+            TimeTasks.objects.create(name="每5分钟触发", cron="*/5 * * * *")
+            TimeTasks.objects.create(name="每30分钟触发", cron="*/30 * * * *")
+            TimeTasks.objects.create(name="每1小时触发", cron="0 * * * *")
+            TimeTasks.objects.create(name="每2小时触发", cron="0 */2 * * *")
+            TimeTasks.objects.create(name="每5小时触发", cron="0 */5 * * *")
+            TimeTasks.objects.create(name="每天1点触发", cron="0 1 * * *")
+            TimeTasks.objects.create(name="每天5点触发", cron="0 5 * * *")
+            TimeTasks.objects.create(name="每天9点触发", cron="0 9 * * *")
+            TimeTasks.objects.create(name="每天12点触发", cron="0 12 * * *")
+            TimeTasks.objects.create(name="每天18点触发", cron="0 18 * * *")
+            TimeTasks.objects.create(name="每天22点触发", cron="0 22 * * *")
+            TimeTasks.objects.create(name="每周一8点触发", cron="0 8 * * 1")
 
     def run_tests(self):
         from src.auto_test.auto_system.service.consumer import ConsumerThread
