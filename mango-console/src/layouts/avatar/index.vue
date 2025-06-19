@@ -97,6 +97,16 @@
   const socket = ref<WebSocket | null>(null)
   const notificationMessage = useNotificationMessage()
 
+  function formatDateTime(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
+
   const connectWebSocket = () => {
     if (socket.value) {
       return // 如果正在连接中，则不执行重复连接操作
@@ -122,15 +132,16 @@
     }
 
     socket.value.onmessage = (event) => {
-      // 在这里处理收到的消息
       const res = JSON.parse(event.data)
+      const currentTime = new Date()
+      const formattedTime = formatDateTime(currentTime)
       if (res.code == 200) {
         notificationMessage.addBadgeValue()
-        notificationMessage.addMessageContentList('消息', res.msg, 1)
+        notificationMessage.addMessageContentList(formattedTime, res.msg, 1)
         Notification.success('消息：' + res.msg)
       } else {
         notificationMessage.addBadgeValue()
-        notificationMessage.addMessageContentList('消息', res.msg, 0)
+        notificationMessage.addMessageContentList(formattedTime, res.msg, 0)
         Notification.error('消息：' + res.msg)
       }
     }

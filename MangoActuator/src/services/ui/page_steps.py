@@ -101,8 +101,8 @@ class PageSteps:
                 raise UiError(*ERROR_MSG_0025)
             return element_data
 
-    async def _ope_steps(self, element_model, element_data) -> ElementResultModel:
-        element_ope = AsyncElement(self.base_data, element_model, self.page_steps_model.type, element_data)
+    async def _ope_steps(self, element_model, element_data) -> [ElementResultModel | bool]:
+        element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
             if self.page_steps_model.switch_step_open_url:
                 await asyncio.sleep(1)
@@ -110,7 +110,7 @@ class PageSteps:
         else:
             await element_ope.open_device()
         self._device_opened = True
-        element_result = await element_ope.element_main()
+        element_result = await element_ope.element_main(element_model, element_data)
         self.page_step_result_model.status = element_result.status
         self.page_step_result_model.error_message = element_result.error_message
         self.page_step_result_model.element_result_list.append(element_result)
