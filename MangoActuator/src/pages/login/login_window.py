@@ -38,7 +38,7 @@ class LoginLogic(LoginWindow):
     def on_pushButtonLogin_clicked(self):
         self.login_but.setEnabled(True)
         if not self.ip_edit.text() or self.ip_edit.text() == '':
-            show_failed_message('请输入域名后再进行登录')
+            show_failed_message('请输入后端的服务地址，请确保是正确的')
             self.login_but.setEnabled(True)
             return
         http_url = is_valid_url(str(self.ip_edit.text()))
