@@ -211,7 +211,7 @@ class TestCase:
                 ChatConsumer.active_send(send_data)
             except MangoServerError as error:
                 user_list = [i.username for i in SocketUser.user if i.is_open]
-                if error.code == 328 and is_open and user_list:
+                if error.code == 1028 and is_open and user_list:
                     send_data.user = user_list[random.randint(0, len(user_list) - 1)]
                     ChatConsumer.active_send(send_data)
                 else:
