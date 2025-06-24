@@ -20,7 +20,7 @@ from playwright.async_api import Request, Route
 
 from src.enums.api_enum import MethodEnum, ApiTypeEnum, ClientEnum
 from src.enums.tools_enum import StatusEnum
-from src.enums.ui_enum import DriveTypeEnum
+from src.enums.ui_enum import DriveTypeEnum, UiPublicTypeEnum
 from src.exceptions import *
 from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel
@@ -46,7 +46,12 @@ class PageSteps:
         self.is_step = is_step
         self._device_opened = False
         self.host_list: list[dict] = []
-
+        if self.page_steps_model.environment_config.mysql_config:
+            self.base_data.set_mysql(
+                self.page_steps_model.environment_config.db_c_status,
+                self.page_steps_model.environment_config.db_rud_status,
+                self.page_steps_model.environment_config.mysql_config
+            )
         if page_steps_model:
             self.page_step_result_model = PageStepsResultModel(
                 id=self.page_steps_model.id,
@@ -61,6 +66,28 @@ class PageSteps:
                 status=StatusEnum.FAIL.value,
                 element_result_list=[]
             )
+
+    async def page_init(self, is_page_init: bool=False):
+        if not is_page_init:
+            return
+        for cache_data in self.page_steps_model.public_data_list:
+            if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
+                print(1, cache_data.key, cache_data.value)
+                self.base_data.test_data.set_cache(cache_data.key, cache_data.value)
+            elif cache_data.type == UiPublicTypeEnum.SQL.value:
+                if self.base_data.mysql_connect:
+                    sql = self.base_data.test_data.replace(cache_data.value)
+                    result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
+                    if isinstance(result_list, list):
+                        for result in result_list:
+                            try:
+                                for value, key in zip(result, eval(cache_data.key)):
+                                    print(2, key, result.get(value))
+                                    self.base_data.test_data.set_cache(key, result.get(value))
+                            except SyntaxError:
+                                raise UiError(*ERROR_MSG_0038)
+                        if not result_list:
+                            raise UiError(*ERROR_MSG_0036, value=(sql,))
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0

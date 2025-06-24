@@ -62,7 +62,6 @@ class TestCase:
             posterior_sql=case.posterior_sql,
             parametrize=case.parametrize,
             steps=[self.steps_model(i.page_step.id, i) for i in case_steps_detailed],
-            public_data_list=self.__public_data(case.project_product_id),
         )
         if case.parametrize and test_suite is None:
             for i in case.parametrize:

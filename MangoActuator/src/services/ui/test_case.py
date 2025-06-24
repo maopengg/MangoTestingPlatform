@@ -16,7 +16,6 @@ from mangotools.exceptions import MangoToolsError
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
-from src.enums.ui_enum import UiPublicTypeEnum
 from src.exceptions import *
 from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
@@ -39,7 +38,7 @@ class TestCase:
         self.test_data = ObtainTestData()
         self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot())
-
+        self._is_page_init = True
         self.case_result = UiCaseResultModel(
             id=self.case_model.id,
             name=self.case_model.name,
@@ -61,30 +60,9 @@ class TestCase:
             shutil.move(self.case_result.video_path, os.path.join(f'{project_dir.videos()}/', video_path))
             self.case_result.video_path = video_path
 
-    async def case_init(self):
-        for cache_data in self.case_model.public_data_list:
-            if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                self.test_data.set_cache(cache_data.key, cache_data.value)
-            elif cache_data.type == UiPublicTypeEnum.SQL.value:
-                if self.base_data.mysql_connect:
-                    sql = self.test_data.replace(cache_data.value)
-                    result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
-                    if isinstance(result_list, list):
-                        for result in result_list:
-                            try:
-                                for value, key in zip(result, eval(cache_data.key)):
-                                    self.test_data.set_cache(key, result.get(value))
-                            except SyntaxError as error:
-                                log.error(
-                                    f'初始化用例数据失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
-                                raise UiError(*ERROR_MSG_0038)
-
-                        if not result_list:
-                            raise UiError(*ERROR_MSG_0036, value=(sql,))
-
     @async_error_handle()
     @async_memory
-    async def case_page_step(self) -> None:
+    async def case_main(self) -> None:
         try:
             await self.case_front(self.case_model.front_custom, self.case_model.front_sql)
             await self.case_parametrize()
@@ -97,6 +75,8 @@ class TestCase:
             page_steps = PageSteps(self.base_data, self.driver_object, steps)
             try:
                 await page_steps.driver_init()
+                await page_steps.page_init(self._is_page_init)
+                self._is_page_init = False
                 page_steps_result_model = await page_steps.steps_main()
                 self.set_page_steps(page_steps_result_model)
                 if page_steps_result_model.status == StatusEnum.FAIL.value:
@@ -108,7 +88,8 @@ class TestCase:
             except Exception as error:
                 from mangotools.mangos import Mango  # type: ignore
                 from src.settings.settings import SETTINGS
-                Mango.s(self.case_page_step, error, traceback.format_exc(), SetConfig.get_username(), version=SETTINGS.version)  # type: ignore
+                Mango.s(self.case_main, error, traceback.format_exc(), SetConfig.get_username(),
+                        version=SETTINGS.version)
                 log.error(f'测试用例失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.set_page_steps(page_steps.page_step_result_model,
                                     f'执行用例发生未知错误，请联系管理员检查测试用例数据，未知异常：{error}')

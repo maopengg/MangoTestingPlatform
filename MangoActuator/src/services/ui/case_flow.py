@@ -59,8 +59,7 @@ class CaseFlow:
     async def execute_task(cls, case_model: CaseModel):
         async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
             cls.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
-            await obj.case_init()
-            await obj.case_page_step()
+            await obj.case_main()
             cls.running_tasks -= 1
 
     @classmethod

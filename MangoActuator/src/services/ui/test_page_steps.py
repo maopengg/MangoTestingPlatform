@@ -12,8 +12,7 @@ from mangotools.exceptions import MangoToolsError
 
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.ui_enum import UiPublicTypeEnum
-from src.exceptions import MangoActuatorError, ERROR_MSG_0038, UiError, ERROR_MSG_0036
+from src.exceptions import MangoActuatorError
 from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, PageStepsResultModel, RecordingModel
 from src.network import socket_conn, UiSocketEnum
@@ -37,32 +36,13 @@ class TestPageSteps:
 
         self.lock = asyncio.Lock()
 
-    async def page_init(self, data: PageStepsModel):
-        for cache_data in data.public_data_list:
-            if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                self.test_data.set_cache(cache_data.key, cache_data.value)
-            elif cache_data.type == UiPublicTypeEnum.SQL.value:
-                if self.base_data.mysql_connect:
-                    sql = self.test_data.replace(cache_data.value)
-                    result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
-                    if isinstance(result_list, list):
-                        for result in result_list:
-                            try:
-                                for value, key in zip(result, eval(cache_data.key)):
-                                    self.test_data.set_cache(key, result.get(value))
-                            except SyntaxError:
-                                raise UiError(*ERROR_MSG_0038)
-
-                        if not result_list:
-                            raise UiError(*ERROR_MSG_0036, value=(sql,))
-
     @async_error_handle()
     async def page_steps_mian(self, data: PageStepsModel) -> None:
-        await self.page_init(data)
         async with self.lock:
             page_steps = PageSteps(self.base_data, self.driver_object, data, True)
             try:
                 await page_steps.driver_init()
+                await page_steps.page_init()
                 page_steps_result_model = await page_steps.steps_main()
                 await self.send_steps_result(
                     200 if page_steps_result_model.status else 300,
@@ -81,7 +61,8 @@ class TestPageSteps:
             except Exception as error:
                 from mangotools.mangos import Mango  # type: ignore
                 from src.settings.settings import SETTINGS
-                Mango.s(self.page_steps_mian, error, traceback.format_exc(), SetConfig.get_username(), version=SETTINGS.version)  # type: ignore
+                Mango.s(self.page_steps_mian, error, traceback.format_exc(), SetConfig.get_username(),
+                        version=SETTINGS.version)  # type: ignore
                 log.error(f'步骤测试失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
                 self.base_data.is_open_url = False
                 await self.base_data.async_base_close()
@@ -123,7 +104,8 @@ class TestPageSteps:
         except Exception as error:
             from mangotools.mangos import Mango  # type: ignore
             from src.settings.settings import SETTINGS
-            Mango.s(self.new_web_obj, error, traceback.format_exc(), SetConfig.get_username(), version=SETTINGS.version)  # type: ignore
+            Mango.s(self.new_web_obj, error, traceback.format_exc(), SetConfig.get_username(),
+                    version=SETTINGS.version)  # type: ignore
             log.error(f'创建浏览器失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
             self.base_data.is_open_url = False
             await self.base_data.async_base_close()
