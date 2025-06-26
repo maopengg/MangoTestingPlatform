@@ -70,6 +70,7 @@ class CaseApiBase(ApiCaseBase):
             raise ApiError(*ERROR_MSG_0013)
 
     def __posterior_sql(self, sql_list: list[dict]):
+        # 有问题
         if self.mysql_connect:
             for sql_obj in sql_list:
                 res = self.mysql_connect.condition_execute(sql_obj.get('key'))
@@ -153,14 +154,13 @@ class CaseApiBase(ApiCaseBase):
             raise ApiError(*ERROR_MSG_0009, value=(ass_test_all, actual))
 
     def __front_sql(self, front_sql: list[str]):
+        # 有问题
         if self.mysql_connect:
             for sql in front_sql:
                 res = self.mysql_connect.condition_execute(sql)
-                if isinstance(res, list):
-                    for i in res:
-                        for key, value in i.items():
-                            self.set_cache(key, value)
-                            log.api.info(f'前置sql写入的数据：{self.get_cache(key)}')
+                if isinstance(res, list) and len(res) > 0:
+                    log.api.info(f'前置sql写入的数据：{res[0]}')
+                    self.set_dict_cache(res[0])
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:

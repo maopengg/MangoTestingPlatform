@@ -112,15 +112,13 @@ class TestCase:
             if self.base_data.mysql_connect:
                 sql = self.base_data.test_data.replace(i.get('sql'))
                 result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
-                if isinstance(result_list, list):
-                    for result in result_list:
-                        try:
-                            for value, key in zip(result, eval(i.get('value'))):
-                                self.base_data.test_data.set_cache(key, result.get(value))
-                        except SyntaxError as error:
-                            log.error(
-                                f'初始化用例数据失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
-                            raise ToolsError(*ERROR_MSG_0039)
+                if isinstance(result_list, list) and len(result_list) > 0:
+                    try:
+                        self.base_data.test_data.set_sql_cache(i.get('key'), result_list[0])
+                    except SyntaxError as error:
+                        log.error(
+                            f'初始化用例数据失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
+                        raise ToolsError(*ERROR_MSG_0039)
                     if not result_list:
                         raise ToolsError(*ERROR_MSG_0037, value=(sql,))
 

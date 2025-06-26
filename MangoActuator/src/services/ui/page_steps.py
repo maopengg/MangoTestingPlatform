@@ -78,13 +78,11 @@ class PageSteps:
                 if self.base_data.mysql_connect:
                     sql = self.base_data.test_data.replace(cache_data.value)
                     result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
-                    if isinstance(result_list, list):
-                        for result in result_list:
-                            try:
-                                for value, key in zip(result, eval(cache_data.key)):
-                                    self.base_data.test_data.set_cache(key, result.get(value))
-                            except SyntaxError:
-                                raise UiError(*ERROR_MSG_0038)
+                    if isinstance(result_list, list) and len(result_list) > 0:
+                        try:
+                            self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
+                        except SyntaxError:
+                            raise UiError(*ERROR_MSG_0038)
                         if not result_list:
                             raise UiError(*ERROR_MSG_0036, value=(sql,))
 
