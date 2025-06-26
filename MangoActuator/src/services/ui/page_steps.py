@@ -82,7 +82,6 @@ class PageSteps:
                         for result in result_list:
                             try:
                                 for value, key in zip(result, eval(cache_data.key)):
-                                    print(2, key, result.get(value))
                                     self.base_data.test_data.set_cache(key, result.get(value))
                             except SyntaxError:
                                 raise UiError(*ERROR_MSG_0038)
