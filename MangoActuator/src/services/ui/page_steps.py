@@ -72,17 +72,13 @@ class PageSteps:
             return
         for cache_data in self.page_steps_model.public_data_list:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
-                print(1, cache_data.key, cache_data.value)
                 self.base_data.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
                 if self.base_data.mysql_connect:
                     sql = self.base_data.test_data.replace(cache_data.value)
                     result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
                     if isinstance(result_list, list) and len(result_list) > 0:
-                        try:
-                            self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
-                        except SyntaxError:
-                            raise UiError(*ERROR_MSG_0038)
+                        self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
                         if not result_list:
                             raise UiError(*ERROR_MSG_0036, value=(sql,))
 
