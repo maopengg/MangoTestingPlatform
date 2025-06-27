@@ -6,8 +6,8 @@
 import json
 
 import time
-
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.models import ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.case_data import ApiCaseBase
 from src.enums.tools_enum import StatusEnum
@@ -20,7 +20,7 @@ class CaseApiBase(ApiCaseBase):
 
     def front_main(self, case_detailed_parameter: ApiCaseDetailedParameter, request: RequestModel) -> RequestModel:
         if case_detailed_parameter.front_sql:
-            self.__front_sql(case_detailed_parameter.front_sql)  # type: ignore
+            self.__front_sql(case_detailed_parameter.front_sql)
         if case_detailed_parameter.front_func:
             request = self.__front_func(case_detailed_parameter.front_func, request)
         return request
@@ -70,15 +70,12 @@ class CaseApiBase(ApiCaseBase):
             raise ApiError(*ERROR_MSG_0013)
 
     def __posterior_sql(self, sql_list: list[dict]):
-        # 有问题
         if self.mysql_connect:
             for sql_obj in sql_list:
                 res = self.mysql_connect.condition_execute(sql_obj.get('key'))
-                if isinstance(res, list):
-                    for res_dict in res:
-                        for key, value in res_dict.items():
-                            self.set_cache(sql_obj.get('value'), str(value))
-                            log.api.info(f'{sql_obj.get("value")}sql写入的数据：{self.get_cache(sql_obj.get("value"))}')
+                if isinstance(res, list) and len(res) > 0:
+                    log.api.info(f'前置sql写入的数据：{sql_obj.get("key_list")},sql: {res[0]}')
+                    self.set_sql_cache(sql_obj.get('key_list'), res[0])
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
@@ -153,14 +150,13 @@ class CaseApiBase(ApiCaseBase):
             ))
             raise ApiError(*ERROR_MSG_0009, value=(ass_test_all, actual))
 
-    def __front_sql(self, front_sql: list[str]):
-        # 有问题
+    def __front_sql(self, front_sql: list[dict]):
         if self.mysql_connect:
             for sql in front_sql:
-                res = self.mysql_connect.condition_execute(sql)
+                res = self.mysql_connect.condition_execute(sql.get('sql'))
                 if isinstance(res, list) and len(res) > 0:
-                    log.api.info(f'前置sql写入的数据：{res[0]}')
-                    self.set_dict_cache(res[0])
+                    log.api.info(f'前置sql写入的数据：{sql.get("key_list")},sql: {res[0]}')
+                    self.set_sql_cache(sql.get('key_list'), res[0])
 
     def __front_func(self, front_func: str, request: RequestModel) -> RequestModel:
         try:

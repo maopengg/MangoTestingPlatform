@@ -86,7 +86,7 @@ class TestCase:
                 self.set_page_steps(page_steps.page_step_result_model)
                 break
             except Exception as error:
-                from mangotools.mangos import Mango  # type: ignore
+                from mangotools.mangos import Mango
                 from src.settings.settings import SETTINGS
                 Mango.s(self.case_main, error, traceback.format_exc(), SetConfig.get_username(),
                         version=SETTINGS.version)

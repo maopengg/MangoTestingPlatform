@@ -103,9 +103,6 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
         if self.mysql_connect:
             result_list: list[dict] = self.mysql_connect.condition_execute(self.replace(api_public_obj.value))
             if isinstance(result_list, list) and len(result_list) > 0:
-                try:
-                    self.set_sql_cache(api_public_obj.key, result_list[0])
-                except SyntaxError:
-                    raise ToolsError(*ERROR_MSG_0035)
+                self.set_sql_cache(api_public_obj.key, result_list[0])
                 if not result_list:
                     raise ToolsError(*ERROR_MSG_0033, value=(api_public_obj.value,))
