@@ -6,7 +6,7 @@
 import traceback
 
 from mangotools.data_processor import SqlCache
-from mangotools.mangos import Mango  # type: ignore
+from mangotools.mangos import Mango
 
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import CacheKeyEnum

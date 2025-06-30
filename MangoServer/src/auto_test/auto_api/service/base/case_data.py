@@ -31,16 +31,8 @@ class ApiCaseBase(ApiInfoBase):
             for i in front_sql:
                 sql = self.replace(i.get('sql'))
                 result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-                if isinstance(result_list, list):
-                    for result in result_list:
-                        try:
-                            key_list = eval(i.get('key_list'))
-                            for value, key in zip(result, key_list):
-                                self.set_cache(key, result.get(value))
-                        except SyntaxError:
-                            raise ApiError(*ERROR_MSG_0036)
-                        except NameError:
-                            raise ApiError(*ERROR_MSG_0036)
+                if isinstance(result_list, list) and len(result_list) > 0:
+                    self.set_sql_cache(i.get('key_list'), result_list[0])
                     if not result_list:
                         raise ApiError(*ERROR_MSG_0034, value=(sql,))
 

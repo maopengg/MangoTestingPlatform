@@ -8,6 +8,7 @@ from typing import Optional
 from mangotools.assertion import PublicAssertion
 from mangotools.database import MysqlConnect
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.base_request import BaseRequest
@@ -100,14 +101,8 @@ class PublicBase(ObtainTestData, BaseRequest, PublicAssertion):
 
     def __sql(self, api_public_obj: ApiPublic):
         if self.mysql_connect:
-            print(self.replace(api_public_obj.value))
             result_list: list[dict] = self.mysql_connect.condition_execute(self.replace(api_public_obj.value))
-            if isinstance(result_list, list):
-                for result in result_list:
-                    try:
-                        for value, key in zip(result, eval(api_public_obj.key)):
-                            self.set_cache(key, result.get(value))
-                    except SyntaxError:
-                        raise ToolsError(*ERROR_MSG_0035)
+            if isinstance(result_list, list) and len(result_list) > 0:
+                self.set_sql_cache(api_public_obj.key, result_list[0])
                 if not result_list:
                     raise ToolsError(*ERROR_MSG_0033, value=(api_public_obj.value,))
