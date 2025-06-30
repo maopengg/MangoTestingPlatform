@@ -89,7 +89,7 @@ export const formItems: FormItem[] = reactive([
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入缓存的key',
+    placeholder: '请输入缓存的key,sql则使用逗号隔开保存多个key',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')

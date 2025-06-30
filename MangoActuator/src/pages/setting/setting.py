@@ -6,7 +6,7 @@
 from mangotools.decorator import func_info
 from mangoui import *
 
-from src import SetConfig
+from src.tools.set_config import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.models import queue_notification

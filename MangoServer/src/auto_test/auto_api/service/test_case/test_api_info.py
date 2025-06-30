@@ -40,7 +40,7 @@ class TestApiInfo(ApiInfoBase):
         res = response.model_dump()
         res['name'] = api_info.name
 
-        res['cache_all'] = self.get_all()
+        res['cache_all'] = self.test_data.get_all()
         api_info.result_data = res
         api_info.save()
         return res

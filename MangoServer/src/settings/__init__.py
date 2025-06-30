@@ -184,20 +184,30 @@ LOGGING = {
     'version': 1,  # 指明dictConnfig的版本
     'disable_existing_loggers': False,  # 表示是否禁用所有的已经存在的日志配置
     'formatters': {  # 格式器
+        'colored': {
+            '()': 'colorlog.ColoredFormatter',  # 使用 colorlog 的彩色格式化器
+            'format': '%(log_color)s[%(asctime)s] [%(levelname)s] %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+            'log_colors': {
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'purple',
+            },
+        },
         'verbose': {  # 详细
             'format': '[%(asctime)s] [%(levelname)s] %(module)s %(process)s %(thread)s %(message)s',
         },
-        'standard': {  # 标准
-            'format': '[%(asctime)s] [%(levelname)s] %(message)s',
-        },
+
     },
     # 'filters':{}, 过滤器
     'handlers': {
         # 处理器，在这里定义了两个个处理器. 用来定义具体处理日志的方式，可以定义多种，"default"就是默认方式，"console"就是打印到控制台方式。files是写入到文件的方式，注意使用的class不同
-        'console': {  # 控制台
+        'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'standard',
+            'formatter': 'colored',  # 使用彩色格式化器
         },
         'api': {  # 文件
             'level': 'INFO',

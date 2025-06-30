@@ -204,7 +204,7 @@ class PageSteps:
         self.test_object = self.base_data.url
 
         if self.driver_object.android is None:
-            self.driver_object.set_android(SetConfig.get_and_equipment())  # type: ignore
+            self.driver_object.set_android(SetConfig.get_and_equipment())
         if self.base_data.android is None:
             self.base_data.android = self.driver_object.android.new_android()
 

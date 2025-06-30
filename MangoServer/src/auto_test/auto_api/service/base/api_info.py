@@ -15,7 +15,10 @@ from src.models.api_model import RequestModel, ResponseModel
 
 
 class ApiInfoBase(PublicBase):
+    """ API INFO"""
+
     def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True) -> ResponseModel:
+        log.api.debug(f'执行API接口-1->ID:{api_info_id}')
         api_info = ApiInfo.objects.get(id=api_info_id)
         self.project_product_id = api_info.project_product.id
 
@@ -46,16 +49,19 @@ class ApiInfoBase(PublicBase):
         return response
 
     def api_info_posterior_json_path(self, posterior_json_path: list[dict], response: ResponseModel):
+        log.api.debug(f'执行API接口-4->后置jsonpath:{posterior_json_path}')
         if response.json is None:
             raise ApiError(*ERROR_MSG_0023)
         for i in posterior_json_path:
-            self.set_cache(i.get('key'), self.get_json_path_value(response.json, i.get('value')))
+            self.test_data.set_cache(i.get('key'), self.test_data.get_json_path_value(response.json, i.get('value')))
 
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
-        pass
+        log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')
+
 
     @staticmethod
     def analytic_func(func_str, func_name='func'):
+        log.api.debug(f'执行API接口-4->后置函数:{func_str}')
         try:
             global_namespace = {}
             exec(func_str, global_namespace)

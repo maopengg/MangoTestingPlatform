@@ -29,9 +29,7 @@ class TestCase(CaseApiBase):
         super().__init__(user_id, test_env, )
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
-
         self.case_headers = {}
-
         self.api_case_result: Optional[ApiCaseResultModel | None] = None
 
     def __enter__(self):
@@ -57,7 +55,6 @@ class TestCase(CaseApiBase):
         try:
             self.init_test_object(api_case.project_product.id)
             self.init_public(api_case.project_product.id)
-
             self.case_front_main(api_case)
             if api_case.parametrize:
                 for i in api_case.parametrize:
@@ -81,6 +78,7 @@ class TestCase(CaseApiBase):
                     error_message=self.error_message,
                     result_data=self.api_case_result
                 ))
+            log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
             return self.api_case_result
         except Exception as error:
             api_case.status = TaskEnum.FAIL.value
@@ -151,7 +149,7 @@ class TestCase(CaseApiBase):
                 ass=self.ass_main(response_model, case_detailed_parameter),
                 request=request_model,
                 response=response_model,
-                cache_data=self.get_all(),
+                cache_data=self.test_data.get_all(),
                 test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
 
             )

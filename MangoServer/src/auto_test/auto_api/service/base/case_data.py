@@ -9,6 +9,7 @@ from src.exceptions import *
 
 
 class ApiCaseBase(ApiInfoBase):
+    """ 测试用例前后置 """
 
     def case_front_main(self, api_case: ApiCase):
         if api_case.front_custom:
@@ -24,15 +25,17 @@ class ApiCaseBase(ApiInfoBase):
 
     def __front_custom(self, front_custom):
         for custom in front_custom:
-            self.set_cache(custom.get('key'), custom.get('value'))
+            log.api.debug(f'前置自定义->key:{custom.get("key")}，value:{custom.get("value")}')
+            self.test_data.set_cache(custom.get('key'), custom.get('value'))
 
     def __front_sql(self, front_sql: list[dict]):
         if self.mysql_connect:
             for i in front_sql:
-                sql = self.replace(i.get('sql'))
+                sql = self.test_data.replace(i.get('sql'))
                 result_list: list[dict] = self.mysql_connect.condition_execute(sql)
+                log.api.debug(f'前置自定义->key:{sql}，value:{result_list}')
                 if isinstance(result_list, list) and len(result_list) > 0:
-                    self.set_sql_cache(i.get('key_list'), result_list[0])
+                    self.test_data.set_sql_cache(i.get('key_list'), result_list[0])
                     if not result_list:
                         raise ApiError(*ERROR_MSG_0034, value=(sql,))
 
@@ -44,12 +47,17 @@ class ApiCaseBase(ApiInfoBase):
             self.case_headers = case_details_header
         else:
             self.case_headers = self.init_headers()
+        log.api.debug(f'前置自定义->用例headers:{self.case_headers}')
 
     def __posterior_sql(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
-            self.mysql_connect.condition_execute(self.replace(sql.get('sql')))
+            sql = self.test_data.replace(self.test_data.replace(sql.get('sql')))
+            log.api.debug(f'后置sql->sql:{sql}')
+            self.mysql_connect.condition_execute(sql)
 
     def case_parametrize(self, parametrize: dict):
         if parametrize:
             for i in parametrize:
-                self.set_cache(i.get('key'), self.replace(i.get('value')))
+                value = self.test_data.replace(i.get('value'))
+                log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
+                self.test_data.set_cache(i.get('key'), value)
