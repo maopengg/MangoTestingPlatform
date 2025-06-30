@@ -32,10 +32,9 @@ async def main():
         traceback.print_exc()
         log.error(f"顶级任务出现异常：{error}")
 
-
 asyncio.run(main())
 # 下面是需要打包成exe的人看的
-"""
+r"""
 pyinstaller `
 --name "执行器" `
 --onefile `
@@ -46,9 +45,12 @@ pyinstaller `
 --add-data "src/settings/menus_2.json;src/settings" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\u2.jar;uiautomator2/assets" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\app-uiautomator.apk;uiautomator2/assets" `
 --hidden-import "mango" `
 --hidden-import "pyarmor_runtime" `
 --hidden-import "pyarmor_runtime_000000" `
+--hidden-import "uiautomator2" `
 --clean `
 --noconfirm `
 --hidden-import "email.mime.text" `
