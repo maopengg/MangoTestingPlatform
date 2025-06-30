@@ -772,6 +772,7 @@
     data.tabsKey = key
     data.assClickAdd = !(
       key === '30' ||
+      key === '40' ||
       key === '42' ||
       key === '33' ||
       key === '43' ||
