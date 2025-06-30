@@ -51,14 +51,9 @@
                     title="失败截图"
                     width="260"
                     style="margin-right: 67px; vertical-align: top"
-                    :preview-visible="visible"
-                    @preview-visible-change="visible = false"
                   >
                     <template #extra>
                       <div class="actions">
-                        <span class="action" @click="visible = true">
-                          <icon-eye />
-                        </span>
                         <span class="action">
                           <icon-download />
                         </span>
@@ -113,7 +108,7 @@
     ope: [],
   })
   const enumStore = useEnum()
-  const visible = ref(false)
+  // const visible = ref(false)
 
   const customStyle = reactive({
     borderRadius: '6px',
