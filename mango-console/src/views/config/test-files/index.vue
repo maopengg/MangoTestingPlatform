@@ -130,7 +130,6 @@
     } else if (!file_path.startsWith('/')) {
       file_path = '/' + file_path
     }
-    console.log(minioURL + file_path)
     file_path = minioURL + file_path
     const file_name = record.name
     if (file_name.includes('jpg') || file_name.includes('png')) {
