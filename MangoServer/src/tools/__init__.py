@@ -13,7 +13,7 @@ from src.settings import BASE_DIR
 class ProjectDir:
 
     def __init__(self):
-        self.folder_list = ['logs', 'mango-file', 'failed_screenshot', 'upload_template']
+        self.folder_list = ['logs', 'mango-file', 'failed_screenshot', 'upload_template', 'download']
         self._root_path = BASE_DIR
         self.init_folder()
 
@@ -43,6 +43,8 @@ class ProjectDir:
     def logs(self, folder_name='logs'):
         return os.path.join(self._root_path, folder_name)
 
+    def download(self, folder_name='download'):
+        return os.path.join(self._root_path, folder_name)
 
 project_dir = ProjectDir()
 

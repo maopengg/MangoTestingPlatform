@@ -6,15 +6,14 @@
 from mangotools.decorator import func_info
 from mangoui import *
 
-from src.tools.set_config import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.models import queue_notification
 from src.network import HTTP
 from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
-from src.tools.command.command import CommandThread
 from src.tools.log_collector import log
+from src.tools.set_config import SetConfig
 
 
 class SettingPage(QWidget):
@@ -35,6 +34,10 @@ class SettingPage(QWidget):
         self.sendRedisData.clicked.connect(self.click_send_redis_data)
         card_layout1.addRow('发送缓存数据：', self.sendRedisData, )
 
+        self.toggle2 = MangoToggle()
+        self.toggle2.set_value(SetConfig.get_is_minio())  # type: ignore
+        self.toggle2.clicked.connect(SetConfig.set_is_minio)  # type: ignore
+        card_layout1.addRow('是否开启MINIO（配合服务器MINIO使用）：', self.toggle2)
         self.minio_ = MangoLabel('minio配置，如果没有就不管，主要是测试用例中有上传文件时候使用的')
         card_layout1.addRow('MINIO配置说明：', self.minio_, )
         self.minio = MangoLineEdit('请输入minio的url', SetConfig.get_minio_url())  # type: ignore
@@ -147,10 +150,7 @@ class SettingPage(QWidget):
         queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
 
     def test_but(self):
-        self.command_thread = CommandThread(self, 'python D:\GitCode\PytestAutoTest\main.py')
-        self.command_thread.output_signal.connect(self.handle_output)
-        self.command_thread.error_signal.connect(self.handle_error)
-        self.command_thread.start()
+        print(type(SetConfig.get_is_minio()), SetConfig.get_is_minio())
 
     def handle_output(self, output):
         mango_label = MangoLabel(output)

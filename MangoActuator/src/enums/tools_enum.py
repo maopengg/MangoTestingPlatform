@@ -151,6 +151,7 @@ class CacheKeyEnum(BaseEnum):
     HOST = 'host'
     WS = 'ws'
     MINIO_URL = 'minio_url'
+    IS_MINIO = 'is_minio'
 
     REMEMBER_USERNAME = 'remember_username'
     USERNAME = 'username'
@@ -175,4 +176,4 @@ class CacheKeyEnum(BaseEnum):
         from mangotools.enums import CacheValueTypeEnum
         return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
                 'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
-                'web_type': CacheValueTypeEnum.INT}
+                'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,}
