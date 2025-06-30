@@ -1,6 +1,6 @@
 {
   "name": "arco-work",
-  "version": "5.6.9",
+  "version": "5.7.0",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
