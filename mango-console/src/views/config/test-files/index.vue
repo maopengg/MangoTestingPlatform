@@ -116,7 +116,22 @@
   }
 
   function onDownload(record: any) {
-    const file_path = minioURL + record.test_file
+    let file_path = record.test_file
+
+    if (file_path.startsWith('http://') || file_path.startsWith('https://')) {
+      try {
+        const urlObj = new URL(file_path)
+        file_path = urlObj.pathname
+      } catch (e) {
+        console.error('URL解析失败:', e)
+        Message.error('文件路径格式错误')
+        return
+      }
+    } else if (!file_path.startsWith('/')) {
+      file_path = '/' + file_path
+    }
+    console.log(minioURL + file_path)
+    file_path = minioURL + file_path
     const file_name = record.name
     if (file_name.includes('jpg') || file_name.includes('png')) {
       window.open(file_path, '_blank')
