@@ -21,7 +21,7 @@ class BaseRequest:
 
     def http(self, request_data: RequestModel) -> ResponseModel:
         try:
-            log.api.debug(f'开始执行接口：{request_data.model_dump_json()}')
+            log.api.debug(f'开始执行接口：{request_data}')
             s = time.time()
             response = requests.request(
                 method=request_data.method,
@@ -50,6 +50,11 @@ class BaseRequest:
         response = ResponseModel(
             code=response.status_code,
             time=end,
+            request_headers=request_data.headers,
+            request_params=request_data.params,
+            request_data=request_data.data,
+            request_json=request_data.json,
+            request_file=str(request_data.file),
             headers=response.headers,
             json=response_json,
             text=response.text

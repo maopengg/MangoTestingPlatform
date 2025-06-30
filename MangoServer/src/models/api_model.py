@@ -24,6 +24,11 @@ class RequestModel(BaseModel):
 class ResponseModel(BaseModel):
     code: int
     time: float
+    request_headers: dict | None = None
+    request_params: dict | list | str | None = None
+    request_data: dict | list | None = None
+    request_json: dict | list | None = None
+    request_file: list[dict] | Any | None = None
     headers: dict
     json: dict | list | None = None
     text: str | None = None

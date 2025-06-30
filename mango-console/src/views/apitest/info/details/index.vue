@@ -134,26 +134,60 @@
             />
           </a-tab-pane>
           <a-tab-pane key="8" title="响应结果">
-            <a-space direction="vertical">
-              <a-space>
-                <a-tag color="orange">响 应 码</a-tag>
-                <span>{{ data.result_data?.code }}</span>
-              </a-space>
-              <a-space>
-                <a-tag color="orange">响应时间</a-tag>
-                <span>{{ data.result_data?.time }}</span>
-              </a-space>
-              <a-space>
-                <a-tag color="orange">缓存数据</a-tag>
-                <span>{{ data.result_data?.cache_all }}</span>
-              </a-space>
-              <a-space>
-                <a-tag color="orange">响 应 体</a-tag>
-                <pre>{{
-                  strJson(data.result_data?.json ? data.result_data?.json : data.result_data?.text)
-                }}</pre>
-              </a-space>
-            </a-space>
+            <a-tabs default-active-key="1">
+              <a-tab-pane key="1" title="基础信息">
+                <a-space direction="vertical">
+                  <a-space>
+                    <a-tag color="orange">响 应 码</a-tag>
+                    <span>{{ data.result_data?.code }}</span>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange">响应时间</a-tag>
+                    <span>{{ data.result_data?.time }}</span>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange">缓存数据</a-tag>
+                    <pre>{{ data.result_data?.cache_all }}</pre>
+                  </a-space>
+                </a-space>
+              </a-tab-pane>
+              <a-tab-pane key="2" title="请求信息">
+                <a-space direction="vertical">
+                  <a-space>
+                    <a-tag color="orange" v-if="data.result_data?.request_headers">请求头</a-tag>
+                    <pre>{{ data.result_data?.request_headers }}</pre>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange" v-if="data.result_data?.request_params">参数</a-tag>
+                    <pre>{{ data.result_data?.request_params }}</pre>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange" v-if="data.result_data?.request_data">表单</a-tag>
+                    <pre>{{ data.result_data?.request_data }}</pre>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange" v-if="data.result_data?.request_json">json</a-tag>
+                    <pre>{{ data.result_data?.request_json }}</pre>
+                  </a-space>
+                  <a-space>
+                    <a-tag color="orange" v-if="data.result_data?.request_file">file</a-tag>
+                    <pre>{{ data.result_data?.request_file }}</pre>
+                  </a-space>
+                </a-space>
+              </a-tab-pane>
+              <a-tab-pane key="3" title="响应信息">
+                <a-space direction="vertical">
+                  <a-space>
+                    <a-tag color="orange">响 应 体</a-tag>
+                    <pre>{{
+                      strJson(
+                        data.result_data?.json ? data.result_data?.json : data.result_data?.text
+                      )
+                    }}</pre>
+                  </a-space>
+                </a-space>
+              </a-tab-pane>
+            </a-tabs>
           </a-tab-pane>
         </a-tabs>
       </a-card>
@@ -168,7 +202,6 @@
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
   import { strJson } from '@/utils/tools'
-  import CodeEditor from '@/components/CodeEditor.vue'
 
   const enumStore = useEnum()
   const userStore = useUserStore()
@@ -301,6 +334,7 @@
 
   onMounted(() => {
     nextTick(async () => {
+      doRefresh()
       switchPageType()
     })
   })

@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
+import os.path
+import traceback
 from typing import Optional
 
 from mangotools.assertion import PublicAssertion
@@ -19,7 +21,7 @@ from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel
 from src.tools.obtain_test_data import ObtainTestData
-
+from src.tools import project_dir
 
 class PublicBase(BaseRequest, PublicAssertion):
     """ 公共参数设置"""
@@ -91,15 +93,15 @@ class PublicBase(BaseRequest, PublicAssertion):
                             i: dict = i
                             for k, v in i.items():
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                                path = self.test_data.replace(v)
-                                file.append((k, (file_name, open(path, 'rb'))))
+                                file.append((k, (file_name, open(self.test_data.replace(v), 'rb'))))
                         request_data_model.file = file
                 else:
                     value = self.test_data.replace(value)
                     setattr(request_data_model, key, value)
         except MangoToolsError as error:
+            print(traceback.print_exc())
             raise ApiError(error.code, error.msg)
-        log.api.debug(f'清洗请求数据-2->{request_data_model.model_dump_json()}')
+        log.api.debug(f'清洗请求数据-2->{request_data_model}')
         return request_data_model
 
     def __custom(self, api_public_obj: ApiPublic):

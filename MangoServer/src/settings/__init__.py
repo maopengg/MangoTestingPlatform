@@ -32,6 +32,7 @@ if not IS_MINIO:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'mango-file')
 else:
     DEFAULT_FILE_STORAGE = 'minio_storage.storage.MinioMediaStorage'
+
 # **********************************************************************************************************************
 
 USE_TZ = True

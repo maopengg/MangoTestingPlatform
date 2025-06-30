@@ -22,7 +22,7 @@ class TestApiInfo(ApiInfoBase):
             api_info.save()
             self.init_test_object(api_info.project_product_id)
             self.init_public(api_info.project_product_id)
-            response = self.api_request(api_info.id)
+            response = self.api_request(api_info.id, is_merge_headers=True)
             api_info.status = TaskEnum.SUCCESS.value
             api_info.save()
             return self.save_api_info(api_info, response)
@@ -39,7 +39,6 @@ class TestApiInfo(ApiInfoBase):
             api_info.status = StatusEnum.FAIL.value
         res = response.model_dump()
         res['name'] = api_info.name
-
         res['cache_all'] = self.test_data.get_all()
         api_info.result_data = res
         api_info.save()

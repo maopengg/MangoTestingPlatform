@@ -17,16 +17,23 @@ from src.models.api_model import RequestModel, ResponseModel
 class ApiInfoBase(PublicBase):
     """ API INFO"""
 
-    def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True) -> ResponseModel:
+    def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True,
+                    is_merge_headers=False) -> ResponseModel:
         log.api.debug(f'执行API接口-1->ID:{api_info_id}')
         api_info = ApiInfo.objects.get(id=api_info_id)
         self.project_product_id = api_info.project_product.id
-
+        if is_merge_headers and api_info.header:
+            headers = self.init_headers()
+            headers.update(api_info.header)
+        elif api_info.header is not None:
+            headers = api_info.header
+        else:
+            headers = self.init_headers()
         if request_model is None:
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(api_info.method).name,
                 url=urljoin(self.test_object.value, api_info.url),
-                headers=api_info.header if api_info.header is not None else self.init_headers(),
+                headers=headers,
                 params=api_info.params,
                 data=api_info.data,
                 json=api_info.json,
@@ -57,7 +64,6 @@ class ApiInfoBase(PublicBase):
 
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
         log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')
-
 
     @staticmethod
     def analytic_func(func_str, func_name='func'):
