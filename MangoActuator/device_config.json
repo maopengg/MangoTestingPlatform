@@ -1,7 +1,7 @@
 {
-  "host": "http://172.16.100.47:8000",
-  "minio_url": "http://172.16.100.47:9000",
-  "username": "admin",
+  "host": "http://server:8000",
+  "minio_url": "http://minio:9000",
+  "username": "open",
   "password": "123456",
   "web_parallel": 5,
   "web_type": 0
