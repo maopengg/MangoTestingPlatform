@@ -58,5 +58,4 @@ pyinstaller `
 --hidden-import "email.mime.multipart" `
 main.py
 """
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\angotools\mangos\pyarmor_runtime_windows\pyarmor_runtime_000000;pyarmor_runtime_000000"
-# --add-data="{{把上面的这一行，改为你自己的虚拟环境中的目录，虚拟环境或者是你安装包的包的目录}}\angotools\mangos\pyarmor_runtime_linux\pyarmor_runtime_000000;pyarmor_runtime_000000"
+# --add-data="" 这个参数中的-> D:\DevFile\python\MangoActuator 要改为你自己虚拟环境的地址，即可打包~
