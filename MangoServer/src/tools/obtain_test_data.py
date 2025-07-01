@@ -10,7 +10,6 @@ from urllib.parse import urljoin
 
 import requests
 from mangotools.data_processor import DataProcessor
-from mangotools.models import FunctionModel
 from requests.exceptions import MissingSchema
 
 from src.auto_test.auto_system.models import FileData
@@ -53,7 +52,7 @@ class ObtainTestData(DataProcessor):
             except FileNotFoundError:
                 raise ToolsError(*ERROR_MSG_0020)
             except MissingSchema:
-                raise ToolsError(*ERROR_MSG_0019)
+                raise ToolsError(*ERROR_MSG_0019, value=(file_name,))
         else:
             file_data = FileData.objects.get(name=file_name)
             shutil.copy2(
