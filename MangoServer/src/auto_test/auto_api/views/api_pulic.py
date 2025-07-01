@@ -65,18 +65,7 @@ class ApiPublicViews(ViewSet):
         """
 
         obj = self.model.objects.get(id=request.data.get('id'))
-        if request.data.get('status') == StatusEnum.SUCCESS.value:
-            if obj.type == ApiPublicTypeEnum.SQL.value:
-                try:
-                    Database.objects.get(project_product=obj.project_product_id)
-                except Database.DoesNotExist:
-                    return ResponseData.fail(RESPONSE_MSG_0110, )
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0104, )
 
-    @action(methods=['get'], detail=False)
-    @error_response('api')
-    def get_set_cache(self, request: Request):
-        CommonParameters(request.query_params.get('id'))
-        return ResponseData.success(RESPONSE_MSG_0105, )
