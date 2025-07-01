@@ -9,7 +9,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_system.models import Database
+from src.auto_test.auto_system.models import Database, TestObject
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_ui.models import UiPublic
 from src.enums.tools_enum import StatusEnum
@@ -65,12 +65,6 @@ class UiPublicViews(ViewSet):
         :return:
         """
         obj = self.model.objects.get(id=request.data.get('id'))
-        if obj.type == UiPublicTypeEnum.SQL.value:
-            if request.data.get('status') == StatusEnum.SUCCESS.value:
-                try:
-                    Database.objects.get(project_product=obj.project_product.id)
-                except Database.DoesNotExist:
-                    return ResponseData.fail(RESPONSE_MSG_0110, )
         obj.status = request.data.get('status')
         obj.save()
         return ResponseData.success(RESPONSE_MSG_0021, )
