@@ -42,8 +42,8 @@ class ObtainTestData(DataProcessor):
             if minio_host is None:
                 raise ToolsError(*ERROR_MSG_0025)
             url = urljoin(minio_host, f'/mango-file/test_file/{file_name}')
-            response = requests.get(url, proxies={'http': None, 'https': None}, )
             try:
+                response = requests.get(url, proxies={'http': None, 'https': None}, )
                 if response.status_code != 200:
                     raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
                 file_path = os.path.join(project_dir.upload(), file_name)
