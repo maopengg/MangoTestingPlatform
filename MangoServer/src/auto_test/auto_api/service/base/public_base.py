@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
-import os.path
 import traceback
 from typing import Optional
 
@@ -21,7 +20,7 @@ from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel
 from src.tools.obtain_test_data import ObtainTestData
-from src.tools import project_dir
+
 
 class PublicBase(BaseRequest, PublicAssertion):
     """ 公共参数设置"""
@@ -36,7 +35,7 @@ class PublicBase(BaseRequest, PublicAssertion):
 
         self.test_data = ObtainTestData()
 
-        self.status = StatusEnum.SUCCESS
+        self.status: StatusEnum = StatusEnum.FAIL
         self.error_message = None
 
         self.test_object: Optional[None | TestObject] = None

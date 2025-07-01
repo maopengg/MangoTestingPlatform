@@ -96,6 +96,8 @@ class ApiCaseDetailedParameter(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
     case_detailed = models.ForeignKey(to=ApiCaseDetailed, to_field="id", on_delete=models.PROTECT)
+    error_retry = models.SmallIntegerField(verbose_name="失败重试", null=True)
+    retry_interval = models.SmallIntegerField(verbose_name="重试间隔", null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
     header = models.JSONField(verbose_name="请求头", default=list)
     params = models.JSONField(verbose_name="参数", null=True)

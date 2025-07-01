@@ -66,4 +66,50 @@ export const formParameterItems: FormItem[] = reactive([
       return true
     },
   },
+  {
+    label: '失败重试',
+    key: 'error_retry',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入重试次数，整数类型',
+    validator: function () {
+      if (!this.value) {
+        return true
+      }
+      const num = Number(this.value)
+      if (isNaN(num) || !Number.isInteger(num)) {
+        Message.error('请输入有效的整数')
+        return false
+      }
+      if (num <= 0) {
+        Message.error('请输入大于0的整数')
+        return false
+      }
+      return true
+    },
+  },
+  {
+    label: '失败间隔',
+    key: 'retry_interval',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入重试间隔，每次失败会等待N秒后再试',
+    validator: function () {
+      if (!this.value) {
+        return true
+      }
+      const num = Number(this.value)
+      if (isNaN(num) || !Number.isInteger(num)) {
+        Message.error('请输入有效的整数')
+        return false
+      }
+      if (num <= 0) {
+        Message.error('请输入大于0的整数')
+        return false
+      }
+      return true
+    },
+  },
 ])

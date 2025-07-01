@@ -9,6 +9,8 @@ from datetime import datetime
 from typing import Optional
 from urllib.parse import urljoin
 
+import time
+
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders, ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.case_api import CaseApiBase
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
@@ -124,42 +126,46 @@ class TestCase(CaseApiBase):
             case_detailed.save()
 
     def test_case_detailed_parameter(self, case_detailed: ApiCaseDetailed):
-        for case_detailed_parameter in ApiCaseDetailedParameter.objects.filter(
-                case_detailed_id=case_detailed.id):
+        for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
+            self.status: StatusEnum = StatusEnum.FAIL
             self.project_product_id = case_detailed.api_info.project_product.id
             self.init_test_object(case_detailed.api_info.project_product.id)
-            request_model = self.request_data_clean(RequestModel(
-                method=MethodEnum(case_detailed.api_info.method).name,
-                url=urljoin(self.test_object.value, case_detailed.api_info.url),
-                headers=self.headers(case_detailed_parameter),
-                params=case_detailed_parameter.params,
-                data=case_detailed_parameter.data,
-                json=case_detailed_parameter.json,
-                file=case_detailed_parameter.file
-            ))
-            request_model = self.front_main(case_detailed_parameter, request_model)
-            response_model = self.api_request(case_detailed.api_info.id, request_model, False)
-            response_model = self.posterior_main(response_model, case_detailed_parameter)
-            case_steps_result = ApiCaseStepsResultModel(
-                id=case_detailed.id,
-                api_info_id=case_detailed.api_info.id,
-                name=case_detailed_parameter.name,
-                status=self.status.value,
-                error_message=self.error_message,
-                ass=self.ass_main(response_model, case_detailed_parameter),
-                request=request_model,
-                response=response_model,
-                cache_data=self.test_data.get_all(),
-                test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-
-            )
-            self.api_case_result.steps.append(case_steps_result)
-            model = ApiCaseDetailedParameter.objects.get(id=case_detailed_parameter.id)
-            model.status = self.status.value
-            model.result_data = case_steps_result.model_dump()
-            model.save()
-            if self.status == StatusEnum.FAIL:
-                break
+            error_retry = 0
+            retry = parameter.error_retry + 1 if parameter.error_retry else 1
+            log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
+            while error_retry < retry and self.status == StatusEnum.FAIL:
+                error_retry += 1
+                request_model = self.request_data_clean(RequestModel(
+                    method=MethodEnum(case_detailed.api_info.method).name,
+                    url=urljoin(self.test_object.value, case_detailed.api_info.url),
+                    headers=self.headers(parameter),
+                    params=parameter.params,
+                    data=parameter.data,
+                    json=parameter.json,
+                    file=parameter.file
+                ))
+                request_model = self.front_main(parameter, request_model)
+                response_model = self.api_request(case_detailed.api_info.id, request_model, False)
+                response_model = self.posterior_main(response_model, parameter)
+                case_steps_result = ApiCaseStepsResultModel(
+                    id=case_detailed.id,
+                    api_info_id=case_detailed.api_info.id,
+                    name=parameter.name,
+                    status=self.status.value,
+                    error_message=self.error_message,
+                    ass=self.ass_main(response_model, parameter),
+                    request=request_model,
+                    response=response_model,
+                    cache_data=self.test_data.get_all(),
+                    test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                )
+                self.api_case_result.steps.append(case_steps_result)
+                model = ApiCaseDetailedParameter.objects.get(id=parameter.id)
+                model.status = self.status.value
+                model.result_data = case_steps_result.model_dump()
+                model.save()
+                if parameter.retry_interval:
+                    time.sleep(parameter.retry_interval)
 
     def update_api_info(self, api_info_id: int):
         model = ApiInfo.objects.get(id=api_info_id)

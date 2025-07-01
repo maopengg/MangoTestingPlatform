@@ -190,11 +190,25 @@
               </a-space>
               <a-space direction="vertical" fill>
                 <a-collapse :bordered="false" :default-active-key="[0]" accordion>
-                  <a-collapse-item
-                    v-for="(item, index) of data.selectDataObj"
-                    :key="index"
-                    :header="item.name + (item.status === 1 ? '-成功' : '-失败')"
-                  >
+                  <a-collapse-item v-for="(item, index) of data.selectDataObj" :key="index">
+                    <template #header>
+                      <div class="custom-header">
+                        <span>{{ '场景名称：' + item.name }}</span>
+                        <span style="width: 20px"></span>
+                        <a-tag :color="enumStore.status_colors[item.status]"
+                          >{{ enumStore.task_status[item.status].title }}
+                        </a-tag>
+                        <a-tag color="purple">
+                          {{
+                            item.error_retry
+                              ? `重试 ${item.error_retry} 次，每次间隔 ${
+                                  item.retry_interval ? item.retry_interval : 0
+                                } 秒`
+                              : '不重试'
+                          }}
+                        </a-tag>
+                      </div>
+                    </template>
                     <template #extra>
                       <a-button size="mini" type="text" @click.stop="parameterEditing(item)"
                         >编辑
@@ -343,6 +357,20 @@
                             <a-tab-pane key="21" title="请求头">
                               <div class="m-2">
                                 <pre>{{ strJson(item.result_data?.request?.headers) }}</pre>
+                              </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="25" title="请求数据">
+                              <div class="m-2" v-if="item.result_data?.request?.data">
+                                <pre>表单：{{ strJson(item.result_data?.request?.data) }}</pre>
+                              </div>
+                              <div class="m-2" v-if="item.result_data?.request?.json">
+                                <pre>json：{{ strJson(item.result_data?.request?.json) }}</pre>
+                              </div>
+                              <div class="m-2" v-if="item.result_data?.request?.params">
+                                <pre>参数：{{ strJson(item.result_data?.request?.params) }}</pre>
+                              </div>
+                              <div class="m-2" v-if="item.result_data?.request?.file">
+                                <span>file：{{ item.result_data?.request?.file }}</span>
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="22" title="响应头">
@@ -1167,5 +1195,23 @@
       padding: 5px;
       width: 55%;
     }
+  }
+
+  .custom-header {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 控制标签间距 */
+    font-size: 14px;
+  }
+  .label {
+    color: #666;
+    font-weight: bold;
+  }
+  .value {
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .value.status {
+    background: rgba(0, 0, 0, 0.04);
   }
 </style>

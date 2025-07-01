@@ -49,6 +49,8 @@ class CaseApiBase(ApiCaseBase):
         except (ToolsError, ApiError) as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
+        else:
+            self.status = StatusEnum.SUCCESS
         finally:
             return self.ass_result
 
@@ -138,7 +140,7 @@ class CaseApiBase(ApiCaseBase):
     def __ass_json_all(self, actual: dict, ass_json_all: dict):
         try:
             log.api.debug(f'用例详情断言-2->实际：{actual}，预期：{ass_json_all}')
-            self.test_data.ass_response_whole(actual, ass_json_all)
+            self.p_in_dict(actual, ass_json_all)
         except AssertionError as error:
             log.api.debug(str(error))
             self.ass_result.append(AssResultModel(

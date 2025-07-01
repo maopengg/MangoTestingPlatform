@@ -61,7 +61,7 @@ class PageSteps:
                 element_result_list=[]
             )
 
-    async def page_init(self, is_page_init: bool=False):
+    async def page_init(self, is_page_init: bool = False):
         if self.page_steps_model.environment_config.mysql_config:
             self.base_data.set_mysql(
                 self.page_steps_model.environment_config.db_c_status,
@@ -84,7 +84,7 @@ class PageSteps:
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0
-        self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
+        self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
