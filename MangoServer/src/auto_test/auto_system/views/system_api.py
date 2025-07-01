@@ -5,13 +5,14 @@
 # @Author : 毛鹏
 import re
 
+from mangotools.models import ClassMethodModel
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from mangotools.data_processor import ObtainRandomData
 from mangotools.enums import NoticeEnum
-from mangotools.method import class_methods
+from mangotools.method import class_methods, class_own_methods
 from src.enums.api_enum import *
 from src.enums.pytest_enum import *
 from src.enums.system_enum import *
@@ -21,6 +22,7 @@ from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
 from src.tools.redis.redis import Cache
 from src.tools.view import *
+from src.tools.obtain_test_data import ObtainTestData
 
 
 class SystemViews(ViewSet):
@@ -61,7 +63,19 @@ class SystemViews(ViewSet):
         @param request:
         @return:
         """
-        return ResponseData.success(RESPONSE_MSG_0061, [i.model_dump() for i in class_methods(ObtainRandomData)])
+        list_ = []
+        for i in class_own_methods(ObtainTestData):
+            if i.label:
+                i.label += '()'
+            list_.append(i.model_dump())
+        list1 = [ClassMethodModel(
+            value=ObtainTestData.__name__,
+            label=ObtainTestData.__doc__,
+            children=list_,
+        ).model_dump()]
+        list2 = [i.model_dump() for i in class_methods(ObtainRandomData)]
+        combined_list = list1 + list2
+        return ResponseData.success(RESPONSE_MSG_0061, combined_list)
 
     @action(methods=['get'], detail=False)
     @error_response('system')
@@ -74,7 +88,7 @@ class SystemViews(ViewSet):
         match = re.search(r'\((.*?)\)', name)
         if match:
             try:
-                return ResponseData.success(RESPONSE_MSG_0062, str(ObtainRandomData().regular(name)))
+                return ResponseData.success(RESPONSE_MSG_0062, str(ObtainTestData().regular(name)))
             except MangoServerError as error:
                 return ResponseData.fail((error.code, error.msg), )
         else:

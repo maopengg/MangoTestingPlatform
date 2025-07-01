@@ -46,12 +46,6 @@ class PageSteps:
         self.is_step = is_step
         self._device_opened = False
         self.host_list: list[dict] = []
-        if self.page_steps_model.environment_config.mysql_config:
-            self.base_data.set_mysql(
-                self.page_steps_model.environment_config.db_c_status,
-                self.page_steps_model.environment_config.db_rud_status,
-                self.page_steps_model.environment_config.mysql_config
-            )
         if page_steps_model:
             self.page_step_result_model = PageStepsResultModel(
                 id=self.page_steps_model.id,
@@ -68,6 +62,12 @@ class PageSteps:
             )
 
     async def page_init(self, is_page_init: bool=False):
+        if self.page_steps_model.environment_config.mysql_config:
+            self.base_data.set_mysql(
+                self.page_steps_model.environment_config.db_c_status,
+                self.page_steps_model.environment_config.db_rud_status,
+                self.page_steps_model.environment_config.mysql_config
+            )
         if not is_page_init:
             return
         for cache_data in self.page_steps_model.public_data_list:

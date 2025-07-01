@@ -55,7 +55,7 @@ class TestCase:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.base_data.async_base_close()
-        if self.driver_object.web.web_recording:
+        if self.driver_object.web and self.driver_object.web.web_recording:
             video_path = f'{self.case_model.name}-{RandomTimeData.get_time_for_min()}.webm'
             shutil.move(self.case_result.video_path, os.path.join(f'{project_dir.videos()}/', video_path))
             self.case_result.video_path = video_path
