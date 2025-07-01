@@ -4,7 +4,9 @@
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
 import subprocess
+import webbrowser
 
+from mangoautomation.tools._uiautodev import start_uiautodev, stop_uiautodev
 from mangoui import *
 
 from src.enums.ui_enum import BrowserTypeEnum, DeviceEnum
@@ -17,7 +19,7 @@ class UiSettingPage(MangoWidget):
     combo_box_3_list = [ComboBoxDataModel(id=str(i), name=str(i)) for i in DeviceEnum.get_obj()]
     combo_box_3_list.insert(0, ComboBoxDataModel(id=None, name='不开启'))
 
-    def __init__(self, parent,):
+    def __init__(self, parent, ):
         super().__init__(parent)
         self.parent = parent
         self.data = []
@@ -68,6 +70,12 @@ class UiSettingPage(MangoWidget):
         card_layout2.addRow('刷新设备：', push_button)
         self.label_2 = MangoLabel()
         card_layout2.addRow('在线设备：', self.label_2)
+        # push_button_2 = MangoPushButton('启动设备')
+        # push_button_2.clicked.connect(self.clicked_push_button_2)
+        # card_layout2.addRow('启动元素查找：', push_button_2)
+        # push_button_3 = MangoPushButton('关闭设备')
+        # push_button_3.clicked.connect(self.clicked_push_button_3)
+        # card_layout2.addRow('关闭元素查找：', push_button_3)
 
         card_layout6 = MangoVBoxLayout()
         card_widget6 = MangoCard(card_layout6, 'windows客户端配置')
@@ -135,3 +143,14 @@ class UiSettingPage(MangoWidget):
         except Exception as e:
             print(f"执行ADB命令出错: {e}")
             return []
+
+    def clicked_push_button_2(self):
+        msg = start_uiautodev()
+        if 'http' in  msg:
+            webbrowser.open(msg)
+            info_message(self, msg)
+        else:
+            error_message(self, msg)
+
+    def clicked_push_button_3(self):
+        info_message(self, stop_uiautodev())
