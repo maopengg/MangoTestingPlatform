@@ -89,7 +89,8 @@ class PublicBase(BaseRequest, PublicAssertion):
                     if request_data_model.file:
                         file = []
                         for i in request_data_model.file:
-                            i: dict = i
+                            if not isinstance(i, dict):
+                                raise ApiError(*ERROR_MSG_0025)
                             for k, v in i.items():
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
                                 file.append((k, (file_name, open(self.test_data.replace(v), 'rb'))))
