@@ -135,7 +135,7 @@ class TestCase(CaseApiBase):
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
             while error_retry < retry and self.status == StatusEnum.FAIL:
                 error_retry += 1
-                request_model = self.request_data_clean(RequestModel(
+                request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
                     url=urljoin(self.test_object.value, case_detailed.api_info.url),
                     headers=self.headers(parameter),
@@ -143,8 +143,9 @@ class TestCase(CaseApiBase):
                     data=parameter.data,
                     json=parameter.json,
                     file=parameter.file
-                ))
+                )
                 request_model = self.front_main(parameter, request_model)
+                request_model = self.request_data_clean(request_model)
                 response_model = self.api_request(case_detailed.api_info.id, request_model, False)
                 response_model = self.posterior_main(response_model, parameter)
                 case_steps_result = ApiCaseStepsResultModel(
