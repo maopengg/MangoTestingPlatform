@@ -495,6 +495,7 @@
           putApiInfo(value)
             .then((res) => {
               Message.success(res.msg)
+              modalDialogRef.value?.toggle()
               doRefresh()
             })
             .catch(console.log)
