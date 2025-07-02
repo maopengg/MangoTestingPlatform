@@ -46,9 +46,11 @@ class BaseRequest:
         except RequestException as error:
             log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.model_dump_json()}，报错内容：{error}')
             raise ApiError(*ERROR_MSG_0002)
-        response_json = None
-        if 'application/json' in response.headers.get('Content-Type', ''):
+        try:
+
             response_json = response.json()
+        except Exception:
+            response_json = None
         response = ResponseModel(
             code=response.status_code,
             time=end,
