@@ -478,7 +478,6 @@
   function onDataForm() {
     if (data.addType == 0) {
       if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
         let value = getFormItems(formItems)
         value['type'] = data.apiType
         value['front_json_path'] = []
@@ -487,6 +486,7 @@
           postApiInfo(value)
             .then((res) => {
               Message.success(res.msg)
+              modalDialogRef.value?.toggle()
               doRefresh()
             })
             .catch(console.log)
@@ -502,12 +502,12 @@
       }
     } else if (data.addType === 1) {
       if (formItemsImport.every((it) => (it.validator ? it.validator() : true))) {
-        modalDialogRef.value?.toggle()
         let value = getFormItems(formItemsImport)
         value['type'] = data.apiType
         postApiImportUrl(value)
           .then((res) => {
             Message.success(res.msg)
+            modalDialogRef.value?.toggle()
             doRefresh()
           })
           .catch(console.log)
