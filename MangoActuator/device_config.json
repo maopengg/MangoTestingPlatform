@@ -4,5 +4,6 @@
   "username": "open",
   "password": "123456",
   "web_parallel": 5,
-  "web_type": 0
+  "web_type": 0,
+  "is_minio": true
 }
