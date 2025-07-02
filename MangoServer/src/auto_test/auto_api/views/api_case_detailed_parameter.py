@@ -63,4 +63,4 @@ class ApiCaseDetailedParameterViews(ViewSet):
         if key and key.startswith('$.'):
             key = JsonTool.get_json_path_value(response_json, key)
         value = JsonTool.get_json_path_value(response_json, value)
-        return ResponseData.success(RESPONSE_MSG_0069, data={'key': key, 'value': value})
+        return ResponseData.success(RESPONSE_MSG_0135, data={'key': key, 'value': value})
