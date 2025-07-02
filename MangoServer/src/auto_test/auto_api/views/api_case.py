@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
+from django.db import transaction
 
 from django.forms import model_to_dict
 from rest_framework import serializers
@@ -132,9 +133,11 @@ class ApiCaseViews(ViewSet):
 
     @action(methods=['POST'], detail=False)
     @error_response('api')
+    @transaction.atomic
     def copy_case(self, request: Request):
-        from src.auto_test.auto_api.models import ApiCaseDetailed
-        from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedSerializers
+        from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCaseDetailedParameter
+        from src.auto_test.auto_api.views.api_case_detailed import ApiCaseDetailedCRUD
+        from src.auto_test.auto_api.views.api_case_detailed_parameter import ApiCaseDetailedParameterCRUD
         case_id = request.data.get('case_id')
         case_obj = ApiCase.objects.get(id=case_id)
         case_obj = model_to_dict(case_obj)
@@ -150,11 +153,12 @@ class ApiCaseViews(ViewSet):
                 api_case_detailed = model_to_dict(i)
                 del api_case_detailed['id']
                 api_case_detailed['case'] = serializer.data['id']
-                ui_case_steps_serializer = ApiCaseDetailedSerializers(data=api_case_detailed)
-                if ui_case_steps_serializer.is_valid():
-                    ui_case_steps_serializer.save()
-                else:
-                    return ResponseData.fail(RESPONSE_MSG_0008)
+                res_case_de = ApiCaseDetailedCRUD.inside_post(api_case_detailed)
+                for p in ApiCaseDetailedParameter.objects.filter(case_detailed_id=i.id):
+                    parameter = model_to_dict(p)
+                    del parameter['id']
+                    parameter['case_detailed'] = res_case_de.get('id')
+                    ApiCaseDetailedParameterCRUD.inside_post(parameter)
             return ResponseData.success(RESPONSE_MSG_0009, serializer.data)
         else:
             return ResponseData.fail(RESPONSE_MSG_0008, serializer.errors)

@@ -58,6 +58,10 @@ class ApiCaseBase(ApiInfoBase):
     def case_parametrize(self, parametrize: dict):
         if parametrize:
             for i in parametrize:
+                key = i.get('key', None)
+                value = i.get('value', None)
+                if key is None or value is None:
+                    raise ApiError(*ERROR_MSG_0032)
                 value = self.test_data.replace(i.get('value'))
                 log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
                 self.test_data.set_cache(i.get('key'), value)
