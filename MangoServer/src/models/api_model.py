@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from src.exceptions import ApiError, ERROR_MSG_0003
 from src.tools.log_collector import log
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 _a = {
@@ -17,6 +18,7 @@ _a = {
     'json': 'json',
     'params': '参数',
 }
+
 
 class RequestModel(BaseModel):
     method: str | None
@@ -34,11 +36,11 @@ class RequestModel(BaseModel):
                 try:
                     parsed = json.loads(field_value)
                     if not isinstance(parsed, (dict, list)):
-                        log.api.info(f'序列化失败：{parsed}')
-                        raise ApiError(*ERROR_MSG_0003, value=(_a.get(field), ))
+                        log.api.info(f'序列化失败-1：{parsed}')
+                        raise ApiError(*ERROR_MSG_0003, value=(_a.get(field),))
                     setattr(self, field, parsed)
                 except json.JSONDecodeError:
-                    log.api.info(f'序列化失败：{field_value}')
+                    log.api.info(f'序列化失败-2：{field_value}')
                     raise ApiError(*ERROR_MSG_0003, value=(_a.get(field),))
 
 
