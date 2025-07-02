@@ -513,7 +513,8 @@
                                     :key="index"
                                   >
                                     <a-input
-                                      v-model="item.posterior_response[index].key"
+                                      style="width: 300px"
+                                      v-model="item.posterior_response[index].value"
                                       placeholder="请输入jsonpath语法"
                                       @blur="
                                         blurSave(
@@ -524,8 +525,9 @@
                                       "
                                     />
                                     <a-input
-                                      v-model="item.posterior_response[index].value"
-                                      placeholder="请输入缓存key"
+                                      style="width: 300px"
+                                      v-model="item.posterior_response[index].key"
+                                      placeholder="请输入缓存key，也可以是jsonpath"
                                       @blur="
                                         blurSave(
                                           'posterior_response',

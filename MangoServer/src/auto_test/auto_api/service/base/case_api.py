@@ -45,7 +45,8 @@ class CaseApiBase(ApiCaseBase):
                 ass_json_all = self.test_data.replace(case_detailed_parameter.ass_json_all)
                 self.__ass_json_all(response.json, ass_json_all)
             if case_detailed_parameter.ass_text_all:
-                self.__ass_test_all(response.text, self.test_data.replace(case_detailed_parameter.ass_text_all))  # type: ignore
+                self.__ass_test_all(response.text,
+                                    self.test_data.replace(case_detailed_parameter.ass_text_all))  # type: ignore
         except (ToolsError, ApiError) as error:
             self.status = StatusEnum.FAIL
             self.error_message = error.msg
@@ -57,8 +58,10 @@ class CaseApiBase(ApiCaseBase):
     def posterior_main(self, response: ResponseModel,
                        case_detailed_parameter: ApiCaseDetailedParameter) -> ResponseModel:
         if case_detailed_parameter.posterior_response:
-            self.__posterior_response(response.json,
-                                      self.test_data.replace(case_detailed_parameter.posterior_response))
+            self.__posterior_response(
+                response.json,
+                self.test_data.replace(case_detailed_parameter.posterior_response)
+            )
         if case_detailed_parameter.posterior_sql:
             self.__posterior_sql(self.test_data.replace(case_detailed_parameter.posterior_sql))
         if case_detailed_parameter.posterior_sleep:
@@ -87,9 +90,12 @@ class CaseApiBase(ApiCaseBase):
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
         for i in posterior_response:
-            value = self.test_data.get_json_path_value(response_text, i['key'])
+            key: str = i.get('key')
+            if key and key.startswith('$.'):
+                key = self.test_data.get_json_path_value(response_text, i.get('key'))
+            value = self.test_data.get_json_path_value(response_text, i.get('value'))
             log.api.debug(f'用例详情后置-1->key：{i["value"]}，value：{value}')
-            self.test_data.set_cache(i['value'], value)
+            self.test_data.set_cache(key, value)
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
         _dict = {}
