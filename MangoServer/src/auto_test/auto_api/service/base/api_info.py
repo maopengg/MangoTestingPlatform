@@ -22,11 +22,11 @@ class ApiInfoBase(PublicBase):
         log.api.debug(f'执行API接口-1->ID:{api_info_id}')
         api_info = ApiInfo.objects.get(id=api_info_id)
         self.project_product_id = api_info.project_product.id
-        if is_merge_headers and api_info.header:
+        if is_merge_headers and api_info.headers:
             headers = self.init_headers()
-            headers.update(api_info.header)
-        elif api_info.header is not None:
-            headers = api_info.header
+            headers.update(api_info.headers)
+        elif api_info.headers is not None:
+            headers = api_info.headers
         else:
             headers = self.init_headers()
         if request_model is None:

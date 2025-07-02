@@ -2,23 +2,42 @@
 # @Project: 芒果测试平台
 # @Description: # @Time   : 2022-12-04 17:14
 # @Author : 毛鹏
-
+import json
 import warnings
 from typing import Any
 
 from pydantic import BaseModel
 
+from src.exceptions import ApiError, ERROR_MSG_0003
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
+_a = {
+    'data': '表单',
+    'json': 'json',
+    'params': '参数',
+}
 
 class RequestModel(BaseModel):
     method: str | None
     url: str | None
     headers: dict | None = None
-    params: dict | list | str | None = None
-    data: dict | list | None = None
-    json: dict | list | None = None
+    params: str | None = None
+    data: str | None = None
+    json: str | None = None
     file: list[dict] | Any | None = None
+
+    def serialize(self):
+        for field in ['data', 'json', 'params']:
+            try:
+                field_value = getattr(self, field)
+                if field_value is not None:
+                    parsed = json.loads(field_value)
+                    if not isinstance(parsed, (dict, list)):
+                        raise ApiError(*ERROR_MSG_0003, value=(_a.get(field), ))
+                    setattr(self, field, parsed)
+            except json.JSONDecodeError:
+                raise ApiError(*ERROR_MSG_0003, value=(_a.get(field),))
 
 
 class ResponseModel(BaseModel):

@@ -33,11 +33,11 @@
           </template>
           <a-tab-pane key="0" title="请求头">
             <a-textarea
-              v-model="data.header"
+              v-model="data.headers"
               :auto-size="{ minRows: 28, maxRows: 28 }"
               allow-clear
               placeholder="请输入请求头，字符串形式"
-              @blur="upDate('header', data.header)"
+              @blur="upDate('headers', data.headers)"
             />
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
@@ -211,10 +211,10 @@
     id: 0,
     pageType: '0',
     addButton: false,
-    header: formatJson(pageData.record.header),
-    params: formatJson(pageData.record.params),
-    json: formatJson(pageData.record.json),
-    data: formatJson(pageData.record.data),
+    headers: formatJson(pageData.record.headers),
+    params: pageData.record.params,
+    json: pageData.record.json,
+    data: pageData.record.data,
     file: formatJson(pageData.record.file),
     posterior_func: pageData.record.posterior_func,
     posterior_json_path: pageData.record.posterior_json_path,
@@ -271,7 +271,12 @@
 
   function upDate(key: string, value1: string) {
     let value = ''
-    if (!(key === 'posterior_json_path' || key === 'posterior_re') && key !== 'posterior_func') {
+    if (
+      key === 'posterior_json_path' ||
+      key === 'posterior_re' ||
+      key === 'headers' ||
+      key === 'file'
+    ) {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
@@ -289,9 +294,12 @@
         return
       }
     } else {
-      value = value1
+      if (value1 === '') {
+        value = null
+      } else {
+        value = value1
+      }
     }
-
     putApiInfo({ id: pageData.record.id, [key]: value })
       .then((res) => {
         Message.success(res.msg)
@@ -319,10 +327,10 @@
     getApiInfo({ id: pageData.record.id })
       .then((res) => {
         const res_data = res.data[0]
-        data.header = formatJson(res_data.header)
-        data.params = formatJson(res_data.params)
-        data.json = formatJson(res_data.json)
-        data.data = formatJson(res_data.data)
+        data.headers = formatJson(res_data.headers)
+        data.params = res_data.params
+        data.json = res_data.json
+        data.data = res_data.data
         data.file = formatJson(res_data.file)
         data.posterior_func = res_data.posterior_func
         data.posterior_json_path = res_data.posterior_json_path

@@ -230,8 +230,8 @@
                         <a-tab-pane key="0" title="请求配置">
                           <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
                             <a-tab-pane key="00" title="请求头">
-                              <div class="m-2">
-                                <a-space direction="vertical">
+                              <div class="m-2" style="height: 145px; overflow-y: auto">
+                                <a-space direction="vertical" style="width: 100%">
                                   <a-checkbox-group
                                     v-for="header of data.headers_list"
                                     :key="header.id"
@@ -251,11 +251,10 @@
                             <a-tab-pane key="01" title="参数">
                               <div class="m-2">
                                 <a-textarea
-                                  class="m-2"
                                   v-model="item.params"
                                   allow-clear
-                                  auto-size
-                                  placeholder="请输入参数，json格式"
+                                  :auto-size="{ minRows: 6 }"
+                                  placeholder="请输入参数"
                                   @blur="blurSave('params', item.params, item.id)"
                               /></div>
                             </a-tab-pane>
@@ -264,8 +263,8 @@
                                 <a-textarea
                                   v-model="item.data"
                                   allow-clear
-                                  auto-size
-                                  placeholder="请输入表单，json格式"
+                                  :auto-size="{ minRows: 6 }"
+                                  placeholder="请输入表单"
                                   @blur="blurSave('data', item.data, item.id)"
                               /></div>
                             </a-tab-pane>
@@ -274,18 +273,18 @@
                                 <a-textarea
                                   v-model="item.json"
                                   allow-clear
-                                  auto-size
-                                  placeholder="请输入JSON，json格式"
+                                  :auto-size="{ minRows: 6 }"
+                                  placeholder="请输入JSON"
                                   @blur="blurSave('json', item.json, item.id)"
                               /></div>
                             </a-tab-pane>
-                            <a-tab-pane key="04" title="file">
+                            <a-tab-pane key="04" title="文件">
                               <div class="m-2">
                                 <a-textarea
                                   v-model="item.file"
                                   allow-clear
-                                  auto-size
-                                  placeholder="请输入file，json格式"
+                                  :auto-size="{ minRows: 6 }"
+                                  placeholder="请输入file，json格式数据"
                                   @blur="blurSave('file', item.file, item.id)"
                               /></div>
                             </a-tab-pane>
@@ -925,8 +924,11 @@
       'posterior_func',
       'front_func',
       'ass_text_all',
+      'data',
+      'json',
+      'params',
     ]
-    const in_serialize = ['data', 'json', 'data', 'file', 'params', 'ass_json_all']
+    const in_serialize = ['file', 'ass_json_all']
     const payload: any = {
       id: id,
       [key]: null,
@@ -990,7 +992,7 @@
         if (res.data.length !== 0) {
           data.selectDataObj = res.data
           const formatItemData = (item: any) => {
-            const propertiesToFormat = ['ass_json_all', 'data', 'params', 'json', 'file']
+            const propertiesToFormat = ['ass_json_all', 'file']
 
             propertiesToFormat.forEach((prop) => {
               if (typeof item[prop] === 'object') {

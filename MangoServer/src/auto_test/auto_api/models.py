@@ -22,10 +22,10 @@ class ApiInfo(models.Model):
 
     url = models.CharField(verbose_name="请求url", max_length=1024)
     method = models.SmallIntegerField(verbose_name="请求方法")
-    header = models.JSONField(verbose_name="请求头", null=True)
-    params = models.JSONField(verbose_name="参数", null=True)
-    data = models.JSONField(verbose_name="data", null=True)
-    json = models.JSONField(verbose_name="json", null=True)
+    headers = models.JSONField(verbose_name="请求头", null=True)
+    params = models.TextField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
 
     posterior_json_path = models.JSONField(verbose_name="后置jsonpath提取", default=list)
@@ -99,15 +99,15 @@ class ApiCaseDetailedParameter(models.Model):
     error_retry = models.SmallIntegerField(verbose_name="失败重试", null=True)
     retry_interval = models.SmallIntegerField(verbose_name="重试间隔", null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
-    header = models.JSONField(verbose_name="请求头", default=list)
-    params = models.JSONField(verbose_name="参数", null=True)
-    data = models.JSONField(verbose_name="data", null=True)
-    json = models.JSONField(verbose_name="json", null=True)
+    headers = models.JSONField(verbose_name="请求头", default=list)
+    params = models.TextField(verbose_name="参数", null=True)
+    data = models.TextField(verbose_name="data", null=True)
+    json = models.TextField(verbose_name="json", null=True)
     file = models.JSONField(verbose_name="file", null=True)
-    # 前置-目前只支持sql1
 
+    # 前置
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
-    front_func = models.TextField(verbose_name='后置自定义', null=True)
+    front_func = models.TextField(verbose_name='前置自定义函数', null=True)
     # 断言
     ass_sql = models.JSONField(verbose_name="sql断言", default=list)
     ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)

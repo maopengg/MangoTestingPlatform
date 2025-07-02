@@ -178,9 +178,9 @@ class TestCase(CaseApiBase):
         model.save()
 
     def headers(self, case_detailed_parameter: ApiCaseDetailedParameter) -> dict:
-        if case_detailed_parameter.header:
+        if case_detailed_parameter.headers:
             case_details_header = {}
-            for i in ApiHeaders.objects.filter(id__in=case_detailed_parameter.header):
+            for i in ApiHeaders.objects.filter(id__in=case_detailed_parameter.headers):
                 case_details_header[i.key] = i.value
             case_headers = deepcopy(self.case_headers)
             case_headers.update(case_details_header)

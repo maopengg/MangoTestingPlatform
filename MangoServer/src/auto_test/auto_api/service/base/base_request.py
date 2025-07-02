@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2024-11-25 20:10
 # @Author : 毛鹏
+
 import requests
 import time
 from requests import Response
@@ -20,6 +21,7 @@ class BaseRequest:
         self.timeout = CacheDataValue.get_cache_value(CacheDataKeyEnum.API_TIMEOUT.name)
 
     def http(self, request_data: RequestModel) -> ResponseModel:
+        request_data.serialize()
         try:
             log.api.debug(f'开始执行接口：{request_data}')
             s = time.time()
@@ -78,4 +80,3 @@ class BaseRequest:
         )
         end = time.time() - s
         return response
-
