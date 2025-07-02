@@ -350,7 +350,9 @@
                                   <span>响应code：{{ item.result_data?.response?.code }}</span>
                                   <span>测试时间：{{ item.result_data?.test_time }}</span>
                                   <span>响应时间：{{ item.result_data?.response?.time }}</span>
-                                  <span>失败原因：{{ item.result_data?.error_message }}</span>
+                                  <span v-if="item.result_data?.error_message"
+                                    >失败原因：{{ item.result_data?.error_message }}</span
+                                  >
                                 </a-space></div
                               >
                             </a-tab-pane>
