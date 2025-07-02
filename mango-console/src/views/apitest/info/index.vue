@@ -83,7 +83,7 @@
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
             <a-button size="small" type="primary" @click="onAdd(0)">新增</a-button>
-            <!--            <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>-->
+            <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
             <a-button size="small" status="success" @click="onConcurrency">批量执行</a-button>
             <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
           </a-space>
@@ -243,12 +243,12 @@
               value-key="key"
             />
           </template>
-          <template v-else-if="item.key === 'curl'">
+          <template v-else-if="item.key === 'curl_command'">
             <a-textarea
               v-model="item.value"
               :placeholder="item.placeholder"
               allow-clear
-              auto-size
+              auto-size="{ minRows: 3, maxRows: 5 }"
             />
           </template>
         </a-form-item>

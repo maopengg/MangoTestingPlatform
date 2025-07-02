@@ -183,19 +183,19 @@ export const formItemsImport: FormItem[] = reactive([
   },
   {
     label: 'curl',
-    key: 'curl',
+    key: 'curl_command',
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请输入复制的curl',
+    placeholder: '请输入复制的curl（bash）',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
-      const parsedCurl = parseCurl(this.value)
-      const dataRaw = parseDataRaw(this.value)
-      this.value = { ...parsedCurl, data: dataRaw }
+      // const parsedCurl = parseCurl(this.value)
+      // const dataRaw = parseDataRaw(this.value)
+      // this.value = { ...parsedCurl, data: dataRaw }
       return true
     },
   },
