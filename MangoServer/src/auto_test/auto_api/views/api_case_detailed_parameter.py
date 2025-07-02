@@ -4,7 +4,9 @@
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
 
+from mangotools.data_processor import JsonTool
 from rest_framework import serializers
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
@@ -50,3 +52,15 @@ class ApiCaseDetailedParameterCRUD(ModelCRUD):
 class ApiCaseDetailedParameterViews(ViewSet):
     model = ApiCaseDetailedParameter
     serializer_class = ApiCaseDetailedParameterSerializers
+
+    @action(methods=['POST'], detail=False)
+    @error_response('api')
+    def post_test_jsonpath(self, request: Request):
+        jsonpath = request.data.get('jsonpath')
+        response_json = request.data.get('response_json')
+        key = jsonpath.get('key')
+        value = jsonpath.get('value')
+        if key and key.startswith('$.'):
+            key = JsonTool.get_json_path_value(response_json, key)
+        value = JsonTool.get_json_path_value(response_json, value)
+        return ResponseData.success(RESPONSE_MSG_0069, data={'key': key, 'value': value})

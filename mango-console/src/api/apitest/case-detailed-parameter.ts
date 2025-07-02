@@ -40,3 +40,15 @@ export function deleteApiCaseDetailedParameter(id: number | string[] | number[])
     },
   })
 }
+
+export function postCaseDetailedParameterTestJsonpath(jsonpath: object, response_json: object) {
+  return post({
+    url: '/api/case/detailed/parameter/test/jsonpath',
+    data: () => {
+      return {
+        jsonpath: jsonpath,
+        response_json: response_json,
+      }
+    },
+  })
+}

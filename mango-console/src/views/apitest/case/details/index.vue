@@ -513,7 +513,7 @@
                                     :key="index"
                                   >
                                     <a-input
-                                      style="width: 300px"
+                                      style="width: 280px"
                                       v-model="item.posterior_response[index].value"
                                       placeholder="请输入jsonpath语法"
                                       @blur="
@@ -525,7 +525,7 @@
                                       "
                                     />
                                     <a-input
-                                      style="width: 300px"
+                                      style="width: 280px"
                                       v-model="item.posterior_response[index].key"
                                       placeholder="请输入缓存key，也可以是jsonpath"
                                       @blur="
@@ -550,6 +550,12 @@
                                         )
                                       "
                                       >移除
+                                    </a-button>
+                                    <a-button
+                                      size="small"
+                                      status="success"
+                                      @click="jsonpathTest(item, index)"
+                                      >测试
                                     </a-button>
                                   </a-space>
                                 </a-space>
@@ -731,6 +737,7 @@
     postApiCaseDetailedParameter,
     putApiCaseDetailedParameter,
     deleteApiCaseDetailedParameter,
+    postCaseDetailedParameterTestJsonpath,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
@@ -961,6 +968,26 @@
   function removeFrontSql(item: any, index: number, key: string, id: number) {
     item.splice(index, 1)
     blurSave(key, item, id)
+  }
+  function jsonpathTest(item: any, index: number) {
+    if (
+      item.result_data?.response?.json === null ||
+      (typeof item.result_data?.response?.json !== 'object' &&
+        !Array.isArray(item.result_data?.response?.json))
+    ) {
+      Message.error('响应JSON是空或者不是JSON格式，无法进行测试！')
+      return
+    }
+    postCaseDetailedParameterTestJsonpath(
+      item.posterior_response[index],
+      item.result_data?.response?.json
+    )
+      .then((res) => {
+        Message.success(
+          '测试成功，key：【' + res.data.key + '】，value：【' + res.data.value + '】'
+        )
+      })
+      .catch(console.log)
   }
 
   function getCacheDataKeyValue() {
