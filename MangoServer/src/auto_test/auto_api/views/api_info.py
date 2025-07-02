@@ -138,12 +138,12 @@ class ApiInfoViews(ViewSet):
         query_params = parse_qs(url_components.query)
         params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}
         if params:
-            result['params'] = json.dumps(params)
+            result['params'] = json.dumps(params, indent=4, ensure_ascii=False)
         if parsed.json and parsed.data:
-            result['json'] = json.dumps(parsed.json)
+            result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         elif parsed.json is None and parsed.data:
-            result['data'] = json.dumps(parsed.data)
+            result['data'] = json.dumps(parsed.data, indent=4, ensure_ascii=False)
         elif parsed.json and parsed.data is None:
-            result['json'] = json.dumps(parsed.json)
+            result['json'] = json.dumps(parsed.json, indent=4, ensure_ascii=False)
         data = ApiInfoCRUD.inside_post(result)
         return ResponseData.success(RESPONSE_MSG_0069, data=data)
