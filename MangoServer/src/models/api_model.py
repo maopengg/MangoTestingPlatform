@@ -34,7 +34,7 @@ class RequestModel(BaseModel):
             field_value = getattr(self, field)
             if field_value is not None:
                 try:
-                    parsed = json.loads(field_value)
+                    parsed = json.loads(field_value, strict=False)
                     if not isinstance(parsed, (dict, list)):
                         log.api.info(f'序列化失败-1：{parsed}')
                         raise ApiError(*ERROR_MSG_0003, value=(_a.get(field),))
