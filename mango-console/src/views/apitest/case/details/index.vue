@@ -235,7 +235,7 @@
                                   <a-checkbox-group
                                     v-for="header of data.headers_list"
                                     :key="header.id"
-                                    v-model="item.header"
+                                    v-model="item.headers"
                                     direction="vertical"
                                     @change="
                                       (selectedValues) => changeHeadersApi(selectedValues, item)
@@ -893,7 +893,7 @@
   }
 
   function changeHeadersApi(selectedValues: any, item: any) {
-    putApiCaseDetailedParameter({ id: item.id, header: selectedValues })
+    putApiCaseDetailedParameter({ id: item.id, headers: selectedValues })
       .then((res) => {
         Message.success(res.msg)
       })
@@ -919,7 +919,7 @@
   function blurSave(key: string, item: string | null, id: number) {
     const not_serialize = [
       'url',
-      'header',
+      'headers',
       'posterior_sleep',
       'posterior_func',
       'front_func',

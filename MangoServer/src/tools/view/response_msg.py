@@ -136,3 +136,4 @@ RESPONSE_MSG_0130 = (300, '通知配置如果是邮箱的话，只能输入列�
 RESPONSE_MSG_0131 = (200, '正在调试中...')
 RESPONSE_MSG_0132 = (200, '重新测试套成功！')
 RESPONSE_MSG_0133 = (200, '测试子任务成功！')
+RESPONSE_MSG_0134 = (300, '只支持cURL(base)的格式')

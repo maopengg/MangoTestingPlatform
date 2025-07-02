@@ -120,6 +120,9 @@ class ApiInfoViews(ViewSet):
     @action(methods=['POST'], detail=False)
     @error_response('api')
     def import_api(self, request: Request):
+        curl_command = request.data.get('curl_command')
+        if not curl_command.startswith("curl 'http"):
+            return ResponseData.fail(RESPONSE_MSG_0134)
         parsed = parse(request.data.get('curl_command'))
         url_components = urlparse(parsed.url)
         path = url_components.path
