@@ -248,7 +248,7 @@
               v-model="item.value"
               :placeholder="item.placeholder"
               allow-clear
-              auto-size="{ minRows: 3, maxRows: 5 }"
+              :auto-size="{ minRows: 3, maxRows: 5 }"
             />
           </template>
         </a-form-item>
