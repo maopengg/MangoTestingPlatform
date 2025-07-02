@@ -361,6 +361,7 @@
       })
     } else if (type === 1) {
       data.actionTitle = '导入接口'
+      data.isAdd = true
       modalDialogRef.value?.toggle()
       data.formItem = formItemsImport
       formItemsImport.forEach((it) => {
@@ -375,6 +376,7 @@
 
   function onUpdate(item: any) {
     data.actionTitle = '编辑接口信息'
+    data.addType = 0
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
