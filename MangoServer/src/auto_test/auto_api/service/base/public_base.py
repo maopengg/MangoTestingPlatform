@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
+import mimetypes
 import traceback
 from typing import Optional
 
@@ -20,6 +21,8 @@ from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel
 from src.tools.obtain_test_data import ObtainTestData
+
+mimetypes.init()
 
 
 class PublicBase(BaseRequest, PublicAssertion):
@@ -92,8 +95,12 @@ class PublicBase(BaseRequest, PublicAssertion):
                             if not isinstance(i, dict):
                                 raise ApiError(*ERROR_MSG_0025)
                             for k, v in i.items():
+                                file_path = self.test_data.replace(v)
                                 file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
-                                file.append((k, (file_name, open(self.test_data.replace(v), 'rb'))))
+                                mime_type, _ = mimetypes.guess_type(file_path)
+                                if mime_type is None:
+                                    mime_type = 'application/octet-stream'
+                                file.append((k, (file_name, open(file_path, 'rb'), mime_type)))
                         request_data_model.file = file
                 else:
                     value = self.test_data.replace(value)
