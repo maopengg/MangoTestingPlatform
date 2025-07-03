@@ -349,7 +349,12 @@
                                   <span>URL：{{ item.result_data?.request?.url }}</span>
                                   <span>响应code：{{ item.result_data?.response?.code }}</span>
                                   <span>测试时间：{{ item.result_data?.test_time }}</span>
-                                  <span>响应时间：{{ item.result_data?.response?.time }}</span>
+                                  <span
+                                    >响应时间：{{
+                                      item.result_data?.response?.time.toFixed(2)
+                                    }}
+                                    秒</span
+                                  >
                                   <span v-if="item.result_data?.error_message"
                                     >失败原因：{{ item.result_data?.error_message }}</span
                                   >
@@ -358,36 +363,36 @@
                             </a-tab-pane>
                             <a-tab-pane key="21" title="请求头">
                               <div class="m-2">
-                                <pre>{{ strJson(item.result_data?.request?.headers) }}</pre>
+                                <JsonDisplay :data="item.result_data?.request?.headers" />
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="25" title="请求数据">
                               <div class="m-2" v-if="item.result_data?.request?.data">
-                                <pre>表单：{{ strJson(item.result_data?.request?.data) }}</pre>
+                                <JsonDisplay :data="item.result_data?.request?.data" />
                               </div>
                               <div class="m-2" v-if="item.result_data?.request?.json">
-                                <pre>json：{{ strJson(item.result_data?.request?.json) }}</pre>
+                                <JsonDisplay :data="item.result_data?.request?.json" />
                               </div>
                               <div class="m-2" v-if="item.result_data?.request?.params">
-                                <pre>参数：{{ strJson(item.result_data?.request?.params) }}</pre>
+                                <JsonDisplay :data="item.result_data?.request?.params" />
                               </div>
                               <div class="m-2" v-if="item.result_data?.request?.file">
-                                <span>file：{{ item.result_data?.request?.file }}</span>
+                                <JsonDisplay :data="item.result_data?.request?.file" />
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="22" title="响应头">
                               <div class="m-2">
-                                <pre>{{ strJson(item.result_data?.response?.headers) }}</pre>
+                                <JsonDisplay :data="item.result_data?.response?.headers" />
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="23" title="响应JSON">
                               <div class="m-2">
-                                <pre>{{ strJson(item.result_data?.response?.json) }}</pre>
+                                <JsonDisplay :data="item.result_data?.response?.json" />
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="24" title="响应文本">
                               <div class="m-2">
-                                <pre>{{ strJson(item.result_data?.response?.text) }}</pre>
+                                <JsonDisplay :data="item.result_data?.response?.text" />
                               </div>
                             </a-tab-pane>
                           </a-tabs>
@@ -639,7 +644,7 @@
                         </a-tab-pane>
                         <a-tab-pane key="5" title="缓存数据">
                           <div class="m-2">
-                            <pre>{{ strJson(item.result_data?.cache_data) }}</pre>
+                            <JsonDisplay :data="item.result_data?.cache_data" />
                           </div>
                         </a-tab-pane>
                       </a-tabs>

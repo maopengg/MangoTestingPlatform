@@ -58,7 +58,7 @@ class BaseRequest:
             request_params=request_data.params,
             request_data=request_data.data,
             request_json=request_data.json,
-            request_file=str(request_data.file),
+            request_file=str(request_data.file) if request_data.file else None,
             headers=response.headers,
             json=response_json,
             text=response.text

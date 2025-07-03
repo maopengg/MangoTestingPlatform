@@ -78,6 +78,7 @@ declare module 'vue' {
     TableConfig: typeof import('./src/components/TableConfig.vue')['default']
     TableFooter: typeof import('./src/components/TableFooter.vue')['default']
     TableHeader: typeof import('./src/components/TableHeader.vue')['default']
+    JsonDisplay: typeof import('./src/components/JsonDisplay.vue')['default']
   }
 }
 

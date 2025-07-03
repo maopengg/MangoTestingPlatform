@@ -147,31 +147,31 @@
                   </a-space>
                   <a-space>
                     <a-tag color="orange">缓存数据</a-tag>
-                    <pre>{{ data.result_data?.cache_all }}</pre>
+                    <JsonDisplay :data="data.result_data?.cache_all" />
                   </a-space>
                 </a-space>
               </a-tab-pane>
               <a-tab-pane key="2" title="请求信息">
                 <a-space direction="vertical">
-                  <a-space>
-                    <a-tag color="orange" v-if="data.result_data?.request_headers">请求头</a-tag>
-                    <pre>{{ data.result_data?.request_headers }}</pre>
+                  <a-space v-if="data.result_data?.request_headers">
+                    <a-tag color="orange">请求头</a-tag>
+                    <JsonDisplay :data="data.result_data?.request_headers" />
                   </a-space>
-                  <a-space>
-                    <a-tag color="orange" v-if="data.result_data?.request_params">参数</a-tag>
-                    <pre>{{ data.result_data?.request_params }}</pre>
+                  <a-space v-if="data.result_data?.request_params">
+                    <a-tag color="orange">参数</a-tag>
+                    <JsonDisplay :data="data.result_data?.request_params" />
                   </a-space>
-                  <a-space>
-                    <a-tag color="orange" v-if="data.result_data?.request_data">表单</a-tag>
-                    <pre>{{ data.result_data?.request_data }}</pre>
+                  <a-space v-if="data.result_data?.request_data">
+                    <a-tag color="orange">表单</a-tag>
+                    <JsonDisplay :data="data.result_data?.request_data" />
                   </a-space>
-                  <a-space>
-                    <a-tag color="orange" v-if="data.result_data?.request_json">json</a-tag>
-                    <pre>{{ data.result_data?.request_json }}</pre>
+                  <a-space v-if="data.result_data?.request_json">
+                    <a-tag color="orange">json</a-tag>
+                    <JsonDisplay :data="data.result_data?.request_json" />
                   </a-space>
-                  <a-space>
-                    <a-tag color="orange" v-if="data.result_data?.request_file">file</a-tag>
-                    <pre>{{ data.result_data?.request_file }}</pre>
+                  <a-space v-if="data.result_data?.request_file">
+                    <a-tag color="orange">file</a-tag>
+                    <JsonDisplay :data="data.result_data?.request_file" />
                   </a-space>
                 </a-space>
               </a-tab-pane>
@@ -179,11 +179,11 @@
                 <a-space direction="vertical">
                   <a-space>
                     <a-tag color="orange">响 应 体</a-tag>
-                    <pre>{{
-                      strJson(
+                    <JsonDisplay
+                      :data="
                         data.result_data?.json ? data.result_data?.json : data.result_data?.text
-                      )
-                    }}</pre>
+                      "
+                    />
                   </a-space>
                 </a-space>
               </a-tab-pane>
@@ -201,7 +201,6 @@
   import { getApiCaseInfoRun, getApiInfo, putApiInfo } from '@/api/apitest/info'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
-  import { strJson } from '@/utils/tools'
 
   const enumStore = useEnum()
   const userStore = useUserStore()
@@ -271,15 +270,11 @@
 
   function upDate(key: string, value1: string) {
     let value = ''
-    if (
-      key === 'posterior_json_path' ||
-      key === 'posterior_re' ||
-      key === 'headers' ||
-      key === 'file'
-    ) {
+    if (key === 'headers' || key === 'file') {
       try {
         if (value1) {
           const parsedValue = JSON.parse(value1)
+          console.log(value1)
           if (typeof parsedValue === 'object') {
             value = parsedValue
           } else {
@@ -290,6 +285,7 @@
           value = null
         }
       } catch (e) {
+        console.log(e)
         Message.error(`请输入json格式的：${key}`)
         return
       }

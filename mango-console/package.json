@@ -42,6 +42,7 @@
     "tiny-emitter": "^2.1.0",
     "vue": "^3.2.31",
     "vue-codemirror": "^6.1.1",
+    "vue-json-pretty": "^2.5.0",
     "vue-router": "^4.0.14",
     "vuedraggable": "^4.0.3",
     "xgplayer": "^2.31.4",
