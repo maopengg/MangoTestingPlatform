@@ -49,10 +49,11 @@ class ApiCaseFlow:
             test_case = TestCase(
                 user_id=case_model.user_id,
                 test_env=case_model.test_env,
+                case_id=case_model.case_id,
                 test_suite=case_model.test_suite,
                 test_suite_details=case_model.test_suite_details,
             )
-            return test_case.test_case(case_model.case_id)
+            return test_case.test_case()
         except Exception as error:
             trace = traceback.format_exc()
             if IS_SEND_MAIL:

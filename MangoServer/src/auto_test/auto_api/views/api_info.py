@@ -5,17 +5,19 @@
 # @Author : 毛鹏
 import json
 from urllib.parse import urlparse, parse_qs
+
 from curlparser import parse
 from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-from src.enums.api_enum import MethodEnum
+
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.test_case.test_api_info import TestApiInfo
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -71,12 +73,11 @@ class ApiInfoViews(ViewSet):
         if not api_info_id and api_info_list:
             api_info_res_list = []
             for api_info_id in api_info_list:
-                api_info_res: dict = TestApiInfo(
-                    request.user['id'], test_env, ).api_info_run(api_info_id)
+                api_info_res: dict = TestApiInfo(request.user['id'], test_env).api_info_run(api_info_id)
                 api_info_res_list.append(api_info_res)
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res_list)
         else:
-            api_info_res: dict = TestApiInfo(request.user['id'], test_env, ).api_info_run(api_info_id)
+            api_info_res: dict = TestApiInfo(request.user['id'], test_env).api_info_run(api_info_id)
             return ResponseData.success(RESPONSE_MSG_0072, api_info_res)
 
     @action(methods=['get'], detail=False)

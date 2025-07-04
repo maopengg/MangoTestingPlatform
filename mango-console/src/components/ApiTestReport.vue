@@ -20,48 +20,47 @@
     <a-tab-pane key="2" title="请求信息">
       <a-tabs default-active-key="21" position="left" size="small">
         <a-tab-pane key="21" title="请求头">
-          <pre>{{ strJson(resultData?.request?.headers) }}</pre>
+          <JsonDisplay :data="resultData?.request?.headers" />
         </a-tab-pane>
         <a-tab-pane key="22" title="参数">
-          <pre>{{ strJson(resultData?.request?.params) }}</pre>
+          <JsonDisplay :data="resultData?.request?.params" />
         </a-tab-pane>
-        <a-tab-pane key="23" title="data">
-          <pre>{{ strJson(resultData?.request?.data) }}</pre>
+        <a-tab-pane key="23" title="表单">
+          <JsonDisplay :data="resultData?.request?.data" />
         </a-tab-pane>
-        <a-tab-pane key="24" title="json">
-          <pre>{{ strJson(resultData?.request?.json) }}</pre>
+        <a-tab-pane key="24" title="JSON">
+          <JsonDisplay :data="resultData?.request?.json" />
         </a-tab-pane>
         <a-tab-pane key="25" title="文件">
-          <pre>{{ strJson(resultData?.request?.file) }}</pre>
+          <JsonDisplay :data="resultData?.request?.file" />
         </a-tab-pane>
       </a-tabs>
     </a-tab-pane>
     <a-tab-pane key="3" title="响应信息">
       <a-tabs default-active-key="31" position="left" size="small">
         <a-tab-pane key="31" title="响应头">
-          <pre>{{ strJson(resultData?.response?.headers) }}</pre>
+          <JsonDisplay :data="resultData?.response?.headers" />
+        </a-tab-pane>
+
+        <a-tab-pane key="33" title="JSON">
+          <JsonDisplay :data="resultData?.response?.json" />
         </a-tab-pane>
         <a-tab-pane key="32" title="文本">
-          <pre>{{ strJson(resultData?.response?.text) }}</pre>
-        </a-tab-pane>
-        <a-tab-pane key="33" title="JSON">
-          <pre>{{ strJson(resultData?.response?.json) }}</pre>
+          <JsonDisplay :data="resultData?.response?.text" />
         </a-tab-pane>
       </a-tabs>
     </a-tab-pane>
 
     <a-tab-pane key="11" title="缓存数据">
-      <pre>{{ strJson(resultData?.cache_data) }}</pre>
+      <JsonDisplay :data="resultData?.cache_data" />
     </a-tab-pane>
     <a-tab-pane key="12" title="断言数据">
-      <pre>{{ strJson(resultData?.ass) }}</pre>
+      <JsonDisplay :data="resultData?.ass" />
     </a-tab-pane>
   </a-tabs>
 </template>
 
 <script lang="ts" setup>
-  import { strJson } from '@/utils/tools'
-
   defineProps({
     resultData: {
       type: Object as () => any,

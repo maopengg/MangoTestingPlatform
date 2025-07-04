@@ -4,7 +4,6 @@
 # @Time   : 2023-02-17 20:20
 # @Author : 毛鹏
 from django.db import transaction
-
 from django.forms import model_to_dict
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -73,11 +72,10 @@ class ApiCaseViews(ViewSet):
         api_case_run = TestCase(
             user_id=request.user.get('id'),
             test_env=request.query_params.get('test_env'),
+            case_id=request.query_params.get('case_id'),
         )
         test_result: ApiCaseResultModel = api_case_run.test_case(
-            request.query_params.get('case_id'),
             request.query_params.get('case_sort')
-
         )
         if StatusEnum.SUCCESS.value != test_result.status:
             return ResponseData.fail((300, test_result.error_message), test_result.model_dump())

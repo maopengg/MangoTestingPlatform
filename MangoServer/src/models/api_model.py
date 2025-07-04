@@ -88,9 +88,9 @@ class ApiCaseStepsResultModel(BaseModel):
     name: str
     status: int
     error_message: str | None = None
-    ass: list[AssResultModel]
+    ass: list[AssResultModel] | None = None
     request: RequestModel
-    response: ResponseModel
+    response: ResponseModel | None = None
     cache_data: dict
     test_time: str | None = None
 

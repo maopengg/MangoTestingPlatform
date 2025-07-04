@@ -23,7 +23,10 @@ class BaseRequest:
     def http(self, request_data: RequestModel) -> ResponseModel:
         request_data.serialize()
         try:
-            log.api.debug(f'开始执行接口：{request_data}')
+            if request_data.file:
+                log.api.debug(f'开始执行接口：{request_data.model_dump()}')
+            else:
+                log.api.debug(f'开始执行接口：{request_data.model_dump_json()}')
             s = time.time()
             response = requests.request(
                 method=request_data.method,

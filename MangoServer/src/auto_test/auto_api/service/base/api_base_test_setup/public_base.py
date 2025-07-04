@@ -1,19 +1,18 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: 
+# @Description:
 # @Time   : 2023-11-30 12:34
 # @Author : 毛鹏
 import mimetypes
 import traceback
 from typing import Optional
 
-from mangotools.assertion import PublicAssertion
 from mangotools.database import MysqlConnect
 from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
-from src.auto_test.auto_api.service.base.base_request import BaseRequest
+from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
 from src.enums.api_enum import ApiPublicTypeEnum
@@ -25,35 +24,27 @@ from src.tools.obtain_test_data import ObtainTestData
 mimetypes.init()
 
 
-class PublicBase(BaseRequest, PublicAssertion):
+class PublicBase(BaseRequest):
     """ 公共参数设置"""
 
-    def __init__(self,
-                 user_id: int,
-                 test_env: int):
-        BaseRequest.__init__(self)
-        self.user_id = user_id
-        self.test_env = test_env
-        self.project_product_id = None
-
+    def __init__(self):
+        super().__init__()
         self.test_data = ObtainTestData()
-
-        self.status: StatusEnum = StatusEnum.FAIL
-        self.error_message = None
-
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
+        self.headers: dict = {}
 
-    def init_headers(self):
-        headers = {}
+    def init_headers(self, project_product_id: int):
+        if self.headers != {}:
+            return self.headers
         for i in ApiHeaders.objects.filter(
-                project_product_id=self.project_product_id,
+                project_product_id=project_product_id,
                 status=StatusEnum.SUCCESS.value):
-            headers[i.key] = i.value
-        return headers
+            self.headers[i.key] = i.value
+        return self.headers
 
-    def init_test_object(self, project_product_id: int):
-        self.test_object = func_test_object_value(self.test_env,
+    def init_test_object(self, project_product_id: int, test_env: int):
+        self.test_object = func_test_object_value(test_env,
                                                   project_product_id,
                                                   AutoTypeEnum.API.value)
         log.api.debug(

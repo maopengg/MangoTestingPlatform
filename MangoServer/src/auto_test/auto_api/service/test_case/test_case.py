@@ -6,33 +6,50 @@
 import traceback
 from copy import deepcopy
 from datetime import datetime
-from typing import Optional
 from urllib.parse import urljoin
 
 import time
 
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders, ApiCaseDetailedParameter
-from src.auto_test.auto_api.service.base.case_api import CaseApiBase
+from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
 from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
 from src.exceptions import *
-from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel
+from src.models.api_model import RequestModel, ApiCaseResultModel, ApiCaseStepsResultModel, ResponseModel
 from src.models.system_model import TestSuiteDetailsResultModel
+from ..base.case_base import CaseBase
+from ..base.case_parameter import CaseParameter
 
 
-class TestCase(CaseApiBase):
+class TestCase:
 
     def __init__(self,
                  user_id: int,
                  test_env: int,
+                 case_id: int,
                  test_suite: int = None,
                  test_suite_details: int = None):
-        super().__init__(user_id, test_env, )
+        self.user_id = user_id
+        self.test_env = test_env
+        self.case_id = case_id
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
-        self.case_headers = {}
-        self.api_case_result: Optional[ApiCaseResultModel | None] = None
+
+        self.test_setup = APIBaseTestSetup()
+        self.api_case: ApiCase = ApiCase.objects.get(id=case_id)
+        self.case_base = CaseBase(self.test_setup, self.api_case)
+
+        self.api_case.status = TaskEnum.PROCEED.value
+        self.api_case.save()
+        self.api_case_result = ApiCaseResultModel(
+            id=case_id,
+            name=self.api_case.name,
+            test_env=self.test_env,
+            user_id=self.user_id,
+            status=StatusEnum.FAIL.value,
+            test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        )
 
     def __enter__(self):
         return self
@@ -40,57 +57,47 @@ class TestCase(CaseApiBase):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def test_case(self, case_id: int, case_sort: int | None = None) -> ApiCaseResultModel:
-        log.api.debug(f'开始执行用例ID：{case_id}')
-        api_case = ApiCase.objects.get(id=case_id)
-        api_case.status = TaskEnum.PROCEED.value
-        api_case.save()
-        self.api_case_result = ApiCaseResultModel(
-            id=case_id,
-            name=api_case.name,
-            test_env=self.test_env,
-            user_id=self.user_id,
-            status=StatusEnum.FAIL.value,
-            error_message=self.error_message,
-            test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        )
+    def test_case(self, case_sort: int | None = None) -> ApiCaseResultModel:
+        log.api.debug(f'开始执行用例ID：{self.case_id}')
         try:
-            self.init_test_object(api_case.project_product.id)
-            self.init_public(api_case.project_product.id)
-            self.case_front_main(api_case)
-            if api_case.parametrize:
-                for i in api_case.parametrize:
-                    self.case_detailed(case_id, case_sort, i)
+            self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
+            self.test_setup.init_public(self.api_case.project_product.id)
+            self.case_base.case_front_main()
+            res = None
+            if self.api_case.parametrize and isinstance(self.api_case.parametrize, list):
+                for i in self.api_case.parametrize:
+                    res: tuple | None = self.case_detailed(self.case_id, case_sort, i)
             else:
-                self.case_detailed(case_id, case_sort)
-
-            self.case_posterior_main(api_case)
-
-            self.api_case_result.status = self.status.value
-            self.api_case_result.error_message = self.error_message
-            self.update_test_case(case_id)
-            api_case.status = self.status.value
-            api_case.save()
+                res: tuple | None = self.case_detailed(self.case_id, case_sort)
+            self.case_base.case_posterior_main()
+            if res and isinstance(res, tuple):
+                self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
+            else:
+                self.api_case_result.status, self.api_case_result.error_message = StatusEnum.SUCCESS.value, None
+            self.update_test_case(self.case_id, self.api_case_result.status)
             if self.test_suite and self.test_suite_details:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
                     id=self.test_suite_details,
                     type=TestCaseTypeEnum.API,
                     test_suite=self.test_suite,
-                    status=self.status.value,
-                    error_message=self.error_message,
+                    status=self.api_case_result.status,
+                    error_message=self.api_case_result.error_message,
                     result_data=self.api_case_result
                 ))
             log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
             return self.api_case_result
         except Exception as error:
-            api_case.status = TaskEnum.FAIL.value
-            api_case.save()
+            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             return self.api_case_result
 
-    def case_detailed(self, case_id: int, case_sort: int | None, parametrize: dict | None = None):
+    def case_detailed(self,
+                      case_id: int,
+                      case_sort: int | None,
+                      parametrize: dict | None = None
+                      ) -> tuple[int, str] | None:
         if case_sort:
             case_detailed_list = ApiCaseDetailed \
                 .objects \
@@ -103,87 +110,104 @@ class TestCase(CaseApiBase):
                 .order_by('case_sort')
         if not case_detailed_list:
             raise ApiError(*ERROR_MSG_0008)
-        self.case_parametrize(parametrize)
+        self.case_base.case_parametrize(parametrize)
         for case_detailed in case_detailed_list:
-            try:
-                case_detailed.status = TaskEnum.PROCEED.value
-                case_detailed.save()
-                self.project_product_id = case_detailed.api_info.project_product.id
-                self.test_case_detailed_parameter(case_detailed)
-                self.update_api_info(case_detailed.api_info.id)
-                if self.status == StatusEnum.FAIL:
-                    break
-            except MangoServerError as error:
-                self.status = StatusEnum.FAIL
-                self.error_message = error.msg
-            except Exception as error:
-                traceback.print_exc()
-                self.status = StatusEnum.FAIL
-                log.api.error(str(error))
-                self.error_message = f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
-                raise error
-            case_detailed.status = self.status.value
+            case_detailed.status = TaskEnum.PROCEED.value
             case_detailed.save()
-
-    def test_case_detailed_parameter(self, case_detailed: ApiCaseDetailed):
-        for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
-            self.status: StatusEnum = StatusEnum.FAIL
             self.project_product_id = case_detailed.api_info.project_product.id
-            self.init_test_object(case_detailed.api_info.project_product.id)
+            res = self.detailed_parameter(case_detailed)
+            if res:
+                case_detailed.status = res[0]
+                case_detailed.save()
+                return res
+            else:
+                case_detailed.status = StatusEnum.SUCCESS.value
+                case_detailed.save()
+
+    def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
+        for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
+            case_parameter = CaseParameter(self.test_setup, parameter)
+            self.project_product_id = case_detailed.api_info.project_product.id
+            self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
             error_retry = 0
             retry = parameter.error_retry + 1 if parameter.error_retry else 1
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
-            while error_retry < retry and self.status == StatusEnum.FAIL:
+            while error_retry < retry:
                 error_retry += 1
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
-                    url=urljoin(self.test_object.value, case_detailed.api_info.url),
-                    headers=self.headers(parameter),
+                    url=urljoin(self.test_setup.test_object.value, case_detailed.api_info.url),
+                    headers=self.__headers(parameter),
                     params=parameter.params,
                     data=parameter.data,
                     json=parameter.json,
                     file=parameter.file
                 )
-                request_model = self.front_main(parameter, request_model)
-                request_model = self.request_data_clean(request_model)
-                response_model = self.api_request(case_detailed.api_info.id, request_model, False)
-                response_model = self.posterior_main(response_model, parameter)
-                case_steps_result = ApiCaseStepsResultModel(
+                parameter_models = ApiCaseStepsResultModel(
                     id=case_detailed.id,
                     api_info_id=case_detailed.api_info.id,
                     name=parameter.name,
-                    status=self.status.value,
-                    error_message=self.error_message,
-                    ass=self.ass_main(response_model, parameter),
+                    status=StatusEnum.FAIL.value,
                     request=request_model,
-                    response=response_model,
-                    cache_data=self.test_data.get_all(),
+                    cache_data=self.test_setup.test_data.get_all(),
                     test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 )
-                self.api_case_result.steps.append(case_steps_result)
-                model = ApiCaseDetailedParameter.objects.get(id=parameter.id)
-                model.status = self.status.value
-                model.result_data = case_steps_result.model_dump()
-                model.save()
-                if parameter.retry_interval:
-                    time.sleep(parameter.retry_interval)
+                try:
+                    request_model = case_parameter.front_main(request_model)
+                    request_model = self.test_setup.request_data_clean(request_model)
+                    self.test_setup.test_data.get_all()
+                    parameter_models.response = self.test_setup.api_request(
+                        case_detailed.api_info.id, request_model, False)
+                    parameter_models.response = case_parameter.posterior_main(parameter_models.response)
+                    parameter_models.ass, parameter_models.status, parameter_models.error_message = case_parameter.ass_main(
+                        parameter_models.response)
+                    self.test_setup.test_data.get_all()
+                    self.api_case_result.steps.append(parameter_models)
+                    self.update_api_info(case_detailed.api_info.id, parameter_models.response, parameter_models.status)
+                    self.update_test_case_detailed_parameter(parameter.id, parameter_models)
+                except Exception as error:
+                    parameter_models.status = StatusEnum.FAIL.value
+                    if parameter_models.response:
+                        self.update_api_info(case_detailed.api_info.id, parameter_models.response, parameter_models.status)
+                    self.update_test_case_detailed_parameter(parameter.id, parameter_models)
+                    traceback.print_exc()
+                    log.api.error(str(error))
+                    return StatusEnum.FAIL.value, f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+                if parameter_models.status == StatusEnum.FAIL.value and parameter_models.error_message:
+                    return parameter_models.status, parameter_models.error_message
+                else:
+                    if parameter.retry_interval:
+                        time.sleep(parameter.retry_interval)
+                    break
 
-    def update_api_info(self, api_info_id: int):
-        model = ApiInfo.objects.get(id=api_info_id)
-        model.status = self.status.value
+    def update_api_info(self, _id: int, result_data: ResponseModel, status:int):
+        model = ApiInfo.objects.get(id=_id)
+        model.status = status
+        result_data_dict = result_data.model_dump()
+        result_data_dict['name'] = model.name
+        result_data_dict['cache_all'] = self.test_setup.test_data.get_all()
+        model.result_data = result_data_dict
         model.save()
 
-    def update_test_case(self, case_id: int, ):
+    @classmethod
+    def update_test_case(cls, case_id: int, status: int):
         model = ApiCase.objects.get(id=case_id)
-        model.status = self.status.value
+        model.status = status
         model.save()
 
-    def headers(self, case_detailed_parameter: ApiCaseDetailedParameter) -> dict:
-        if case_detailed_parameter.headers:
+    @classmethod
+    def update_test_case_detailed_parameter(cls, parameter_id, result_data: ApiCaseStepsResultModel):
+        model = ApiCaseDetailedParameter.objects.get(id=parameter_id)
+        model.status = result_data.status
+        model.result_data = result_data.model_dump()
+        model.save()
+
+    def __headers(self, parameter: ApiCaseDetailedParameter) -> dict:
+        if parameter.headers:
             case_details_header = {}
-            for i in ApiHeaders.objects.filter(id__in=case_detailed_parameter.headers):
+            for i in ApiHeaders.objects.filter(id__in=parameter.headers):
                 case_details_header[i.key] = i.value
-            case_headers = deepcopy(self.case_headers)
+            case_headers = deepcopy(self.case_base.case_headers)
             case_headers.update(case_details_header)
             return case_headers
-        return self.case_headers
+        return self.case_base.case_headers

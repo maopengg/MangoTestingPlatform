@@ -1,34 +1,32 @@
 # -*- coding: utf-8 -*-
-# @Project: 
+# @Project: 芒果测试平台
 # @Description: 
-# @Time   : 2025-02-16 19:49
+# @Time   : 2025-07-04 17:18
 # @Author : 毛鹏
 from urllib.parse import urljoin
 
 from mangotools.exceptions import MangoToolsError
 
 from src.auto_test.auto_api.models import ApiInfo
-from src.auto_test.auto_api.service.base.public_base import PublicBase
+from src.auto_test.auto_api.service.base.api_base_test_setup.public_base import PublicBase
 from src.enums.api_enum import MethodEnum
 from src.exceptions import *
 from src.models.api_model import RequestModel, ResponseModel
 
 
-class ApiInfoBase(PublicBase):
-    """ API INFO"""
+class APIBaseTestSetup(PublicBase):
 
     def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True,
                     is_merge_headers=False) -> ResponseModel:
         log.api.debug(f'执行API接口-1->ID:{api_info_id}')
         api_info = ApiInfo.objects.get(id=api_info_id)
-        self.project_product_id = api_info.project_product.id
         if is_merge_headers and api_info.headers:
-            headers = self.init_headers()
+            headers = self.init_headers(api_info.project_product.id)
             headers.update(api_info.headers)
         elif api_info.headers is not None:
             headers = api_info.headers
         else:
-            headers = self.init_headers()
+            headers = self.init_headers(api_info.project_product.id)
         if request_model is None:
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(api_info.method).name,
