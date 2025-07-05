@@ -24,7 +24,6 @@ class NoticeMain:
         test_object = TestObject.objects.get(environment=test_env, project_product=project_product)
         notice_obj = NoticeConfig.objects.filter(test_object=test_object.id, status=StatusEnum.SUCCESS.value)
         test_report = cls.test_report(test_suite_id)
-        print(test_report.model_dump_json())
         for i in notice_obj:
             try:
                 if i.type == NoticeEnum.MAIL.value:
@@ -39,18 +38,28 @@ class NoticeMain:
     @classmethod
     def test_notice_send(cls, _id):
         notice_obj = NoticeConfig.objects.get(id=_id)
-        test_report = TestReportModel(
-            test_suite_id=123456789,
-            case_sum=83,
-            success=58,
-            success_rate=69.88,
-            warning=0,
-            fail=0,
-            execution_duration='00:29:16',
-            test_time='2024-01-22 06:35:58',
-            test_environment='手动测试环境',
-            project_name='手动触发项目',
-            project_id=0)
+        test_report = TestReportModel(**{
+            "test_suite_id": 197899881973,
+            "project_id": 1,
+            "project_name": "演示DEMO",
+            "test_environment": "生产环境",
+            "case_sum": 6,
+            "api_case_sum": 1,
+            "api_fail": 0,
+            "api_call": 1,
+            "ui_case_sum": 2,
+            "ui_fail": 0,
+            "ui_step_call": 7,
+            "pytest_case_sum": 3,
+            "pytest_fail": 0,
+            "pytest_func_call": 3,
+            "success": 6,
+            "success_rate": 100.0,
+            "warning": 0,
+            "fail": 0,
+            "execution_duration": "03:40:36",
+            "test_time": "2025-07-05 06:26:47"
+        })
         if notice_obj.type == NoticeEnum.MAIL.value:
             cls.__wend_mail_send(notice_obj, test_report)
         elif notice_obj.type == NoticeEnum.WECOM.value:
