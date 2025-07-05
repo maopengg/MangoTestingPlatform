@@ -23,13 +23,14 @@ class NoticeMain:
     def notice_main(cls, test_env: int, project_product: int, test_suite_id: int):
         test_object = TestObject.objects.get(environment=test_env, project_product=project_product)
         notice_obj = NoticeConfig.objects.filter(test_object=test_object.id, status=StatusEnum.SUCCESS.value)
-
+        test_report = cls.test_report(test_suite_id)
+        print(test_report.model_dump_json())
         for i in notice_obj:
             try:
                 if i.type == NoticeEnum.MAIL.value:
-                    cls.__wend_mail_send(i, cls.test_report(test_suite_id))
+                    cls.__wend_mail_send(i, test_report)
                 elif i.type == NoticeEnum.WECOM.value:
-                    cls.__we_chat_send(i, cls.test_report(test_suite_id))
+                    cls.__we_chat_send(i, test_report)
                 else:
                     log.system.error('暂不支持钉钉打卡')
             except MangoToolsError as error:
@@ -101,9 +102,9 @@ class NoticeMain:
 
         # 合计所有统计数据（只计算非None的值）
         case_sum = (api_case_sum or 0) + (ui_case_sum or 0) + (pytest_case_sum or 0)
-        success = api_success + ui_success + pytest_success
-        fail = api_fail + ui_fail + pytest_fail
-        warning = api_warning + ui_warning + pytest_warning
+        success = (api_success or 0) + (ui_success or 0) + (pytest_success or 0)
+        fail = (api_fail or 0) + (ui_fail or 0) + (pytest_fail or 0)
+        warning = (api_warning or 0) + (ui_warning or 0) + (pytest_warning or 0)
         # 计算成功率
         success_rate = 100 if case_sum == 0 else round(success / case_sum * 100, 2)
 
@@ -122,6 +123,9 @@ class NoticeMain:
             warning=warning,
             fail=fail,
             api_case_sum=api_case_sum,
+            api_fail=api_fail,
+            ui_fail=ui_fail,
+            pytest_fail=pytest_fail,
             ui_case_sum=ui_case_sum,
             pytest_case_sum=pytest_case_sum,
             api_call=api_call,
@@ -142,7 +146,7 @@ class NoticeMain:
         fail = 0
         warning = 0
         if not case_result.exists():
-            return None, None, 0, 0, 0
+            return None, None, None, None, None
 
         for i in case_result:
             for r in i.result_data:
@@ -163,7 +167,7 @@ class NoticeMain:
         fail = 0
         warning = 0
         if not case_result.exists():
-            return None, None, 0, 0, 0
+            return None, None, None, None, None
 
         for i in case_result:
             for r in i.result_data:
@@ -184,7 +188,7 @@ class NoticeMain:
         fail = 0
         warning = 0
         if not case_result.exists():
-            return None, None, 0, 0, 0
+            return None, None, None, None, None
 
         for i in case_result:
             for r in i.result_data:
