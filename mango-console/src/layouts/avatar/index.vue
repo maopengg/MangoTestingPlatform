@@ -25,6 +25,7 @@
   <template>
     <a-modal v-model:visible="visible" @cancel="handleCancel" @ok="handleOk">
       <template #title> 扫描二维码加群</template>
+      <span>进群需要git点Starred（点星）</span>
       <a-space>
         <img alt="作者微信" src="/static/images/author.jpg" />
         <img alt="交流群" src="/static/images/group.jpg" />
