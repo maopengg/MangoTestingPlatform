@@ -647,6 +647,11 @@
                             <JsonDisplay :data="item.result_data?.cache_data" />
                           </div>
                         </a-tab-pane>
+                        <a-tab-pane key="6" title="断言结果">
+                          <div class="m-2">
+                            <JsonDisplay :data="item.result_data?.ass" />
+                          </div>
+                        </a-tab-pane>
                       </a-tabs>
                     </div>
                   </a-collapse-item>

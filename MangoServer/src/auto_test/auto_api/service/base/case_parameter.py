@@ -4,11 +4,12 @@
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
 import json
+import traceback
 
 import time
+
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
-
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
@@ -23,6 +24,10 @@ class CaseParameter:
         self.test_setup = api_base_test_setup
         self.parameter = parameter
         self.ass_result: list[AssResultModel] = []
+
+        self.test_data = api_base_test_setup.test_data
+        self.test_object = api_base_test_setup.test_object
+        self.mysql_connect = api_base_test_setup.mysql_connect
 
     def front_main(self, request: RequestModel) -> RequestModel:
         if self.parameter.front_sql:
@@ -44,9 +49,12 @@ class CaseParameter:
                 self.__ass_json_all(response.json, ass_json_all)
             if self.parameter.ass_text_all:
                 self.__ass_test_all(response.text, self.test_setup.test_data.replace(self.parameter.ass_text_all))
-        except (ToolsError, ApiError) as error:
+        except (ToolsError, ApiError, MangoToolsError) as error:
             return self.ass_result, StatusEnum.FAIL.value, error.msg
-        return self.ass_result, StatusEnum.FAIL.value, None
+        except Exception as e:
+            log.api.error(f'API断言发生未知错误，管理员请检查：{e}，{traceback.print_exc()}')
+            return self.ass_result, StatusEnum.FAIL.value, None
+        return self.ass_result, StatusEnum.SUCCESS.value, None
 
     def posterior_main(self, response: ResponseModel) -> ResponseModel:
         if self.parameter.posterior_response:
@@ -90,76 +98,79 @@ class CaseParameter:
             self.test_setup.test_data.set_cache(key, value)
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
-        _dict = {}
-        method = None
         try:
             if ass_jsonpath:
                 for i in ass_jsonpath:
-                    value = self.test_setup.test_data.get_json_path_value(response_data, i['actual'])
-                    expect = None
-                    if i.get('expect'):
-                        try:
-                            expect = str(eval(i.get('expect')))
-                        except (NameError, SyntaxError):
-                            expect = i.get('expect')
-                    method = i.get('method')
-                    log.api.debug(f'用例详情断言-3->方法：{method}，actual：{str(value)}, expect: {expect}')
-                    MangoAssertion().ass(method, str(value), expect)
+                    ass_dict = {
+                        'expect': self.test_setup.test_data.replace(i.get('expect')),
+                        'actual': str(self.test_setup.test_data.get_json_path_value(response_data, i['actual'])),
+                        'method': i.get('method')
+                    }
+                    if ass_dict['expect'] == '':
+                        ass_dict['expect'] = None
+                    mango_assertion = MangoAssertion()
+                    self.ass_result.append(AssResultModel(
+                        method=getattr(mango_assertion, ass_dict['method']).__doc__,
+                        actual=ass_dict['actual'],
+                        expect=ass_dict['expect'],
+                    ))
+                    log.api.info(f'用例详情断言-1->{ass_dict}')
+                    mango_assertion.ass(**ass_dict)
         except AssertionError as error:
             log.api.debug(str(error))
-            self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise ApiError(*ERROR_MSG_0005)
         except ToolsError as error:
             log.api.debug(str(error))
-            self.ass_result.append(AssResultModel(type=method, expect=_dict.get('expect'), actual=_dict.get('actual')))
             raise error
 
     def __ass_sql(self, sql_list: list[dict]):
-        method = None
-        actual = None
-        expect = None
         try:
             if self.test_setup.mysql_connect:
                 for sql in sql_list:
-                    actual = self.test_setup.test_data.replace(sql.get('actual'))
-                    expect = self.test_setup.test_data.replace(sql.get('expect'))
-                    if not actual:
-                        raise ApiError(*ERROR_MSG_0041)
-                    method = sql.get('method')
-                    log.api.debug(f'用例详情断言-4->方法：{method}，actual：{actual}, expect: {expect}')
-                    MangoAssertion(self.test_setup.mysql_connect).ass(method, actual, expect)
+                    ass_dict = {
+                        'expect': self.test_setup.test_data.replace(sql.get('expect')),
+                        'actual': self.test_setup.test_data.replace(sql.get('actual')),
+                        'method': sql.get('method')
+                    }
+                    mango_assertion = MangoAssertion()
+                    self.ass_result.append(AssResultModel(
+                        method=getattr(mango_assertion, ass_dict['method']).__doc__,
+                        actual=ass_dict['actual'],
+                        expect=ass_dict['expect'],
+                    ))
+                    log.api.info(f'用例详情断言-2->{ass_dict}')
+                    mango_assertion.ass(**ass_dict)
         except AssertionError as error:
             log.api.debug(str(error))
-            self.ass_result.append(AssResultModel(type=method, actual=actual, expect=expect))
             raise ApiError(*ERROR_MSG_0006)
 
-    def __ass_json_all(self, actual: dict, ass_json_all: dict):
+    def __ass_json_all(self, actual: dict, expect: dict):
         try:
-            log.api.debug(f'用例详情断言-2->实际：{actual}，预期：{ass_json_all}')
-            MangoAssertion().p_in_dict(actual, ass_json_all)
+            log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
+            self.ass_result.append(AssResultModel(
+                method='JSON一致性断言',
+                actual=json.dumps(actual, ensure_ascii=False),
+                expect=json.dumps(expect, ensure_ascii=False)
+            ))
+            MangoAssertion().p_in_dict(actual, expect)
         except AssertionError as error:
             log.api.debug(str(error))
-            self.ass_result.append(AssResultModel(
-                type='全匹配断言',
-                expect=json.dumps(ass_json_all, ensure_ascii=False),
-                actual=json.dumps(actual, ensure_ascii=False)
-            ))
-            raise ApiError(*ERROR_MSG_0004, value=(ass_json_all, actual))
+            raise ApiError(*ERROR_MSG_0004)
 
-    def __ass_test_all(self, actual: str, ass_test_all: str):
+    def __ass_test_all(self, actual: str, expect: str):
         try:
-            log.api.debug(f'用例详情断言-1->实际：{actual}，预期：{ass_test_all}')
-            assert actual.strip() == ass_test_all.strip()
+            log.api.debug(f'用例详情断言-4->实际：{actual}，预期：{expect}')
+            self.ass_result.append(AssResultModel(
+                method='文本一致性断言',
+                actual=actual,
+                expect=expect
+            ))
+            assert actual.strip() == expect.strip()
         except AssertionError as error:
             log.api.debug(str(error))
-            self.ass_result.append(AssResultModel(
-                type='响应文本全匹配',
-                expect=ass_test_all,
-                actual=actual
-            ))
-            raise ApiError(*ERROR_MSG_0009, value=(ass_test_all, actual))
+            raise ApiError(*ERROR_MSG_0009)
 
-    def __front_sql(self, front_sql: list[str]):
+    def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:
             for sql in front_sql:
                 sql = self.test_setup.test_data.replace(sql)

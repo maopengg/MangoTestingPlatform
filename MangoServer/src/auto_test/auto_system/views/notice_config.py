@@ -67,6 +67,7 @@ class NoticeConfigViews(ViewSet):
         from src.auto_test.auto_system.service.notice import NoticeMain
         _id = request.query_params.get('id')
         try:
+            # NoticeMain.notice_main(2, 2, 197899881973)
             NoticeMain.test_notice_send(_id)
         except MangoServerError as error:
             return ResponseData.fail((error.code, error.msg))

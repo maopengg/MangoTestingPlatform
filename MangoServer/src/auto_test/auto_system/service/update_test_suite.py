@@ -39,9 +39,10 @@ class UpdateTestSuite:
             test_suite_detail.case_name = case_name
         test_suite_detail.status = data.status
         test_suite_detail.save()
-        test_suite_detail_list = TestSuiteDetails.objects.filter(test_suite=data.test_suite,
-                                                                 status__in=[TaskEnum.STAY_BEGIN.value,
-                                                                             TaskEnum.PROCEED.value])
+        test_suite_detail_list = TestSuiteDetails.objects.filter(
+            test_suite=data.test_suite,
+            status__in=[TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value]
+        )
 
         if data.type == TestCaseTypeEnum.UI:
             TestReportWriting.update_test_case(data.result_data)

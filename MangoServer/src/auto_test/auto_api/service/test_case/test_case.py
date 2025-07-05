@@ -66,9 +66,9 @@ class TestCase:
             res = None
             if self.api_case.parametrize and isinstance(self.api_case.parametrize, list):
                 for i in self.api_case.parametrize:
-                    res: tuple | None = self.case_detailed(self.case_id, case_sort, i)
+                    res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort, i)
             else:
-                res: tuple | None = self.case_detailed(self.case_id, case_sort)
+                res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort)
             self.case_base.case_posterior_main()
             if res and isinstance(res, tuple):
                 self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
@@ -115,7 +115,7 @@ class TestCase:
             case_detailed.status = TaskEnum.PROCEED.value
             case_detailed.save()
             self.project_product_id = case_detailed.api_info.project_product.id
-            res = self.detailed_parameter(case_detailed)
+            res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
             if res:
                 case_detailed.status = res[0]
                 case_detailed.save()
@@ -125,14 +125,17 @@ class TestCase:
                 case_detailed.save()
 
     def detailed_parameter(self, case_detailed: ApiCaseDetailed) -> tuple[int, str] | None:
+        res_list = []
         for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
             case_parameter = CaseParameter(self.test_setup, parameter)
             self.project_product_id = case_detailed.api_info.project_product.id
             self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
             error_retry = 0
             retry = parameter.error_retry + 1 if parameter.error_retry else 1
+            status = StatusEnum.FAIL.value
+            error_message = None
             log.api.debug(f'开始执行用例的场景：{parameter.name}，这个场景失败重试：{retry} 次')
-            while error_retry < retry:
+            while error_retry < retry and status != StatusEnum.SUCCESS.value:
                 error_retry += 1
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
@@ -143,7 +146,7 @@ class TestCase:
                     json=parameter.json,
                     file=parameter.file
                 )
-                parameter_models = ApiCaseStepsResultModel(
+                res_model = ApiCaseStepsResultModel(
                     id=case_detailed.id,
                     api_info_id=case_detailed.api_info.id,
                     name=parameter.name,
@@ -156,31 +159,32 @@ class TestCase:
                     request_model = case_parameter.front_main(request_model)
                     request_model = self.test_setup.request_data_clean(request_model)
                     self.test_setup.test_data.get_all()
-                    parameter_models.response = self.test_setup.api_request(
+                    res_model.response = self.test_setup.api_request(
                         case_detailed.api_info.id, request_model, False)
-                    parameter_models.response = case_parameter.posterior_main(parameter_models.response)
-                    parameter_models.ass, parameter_models.status, parameter_models.error_message = case_parameter.ass_main(
-                        parameter_models.response)
+                    res_model.response = case_parameter.posterior_main(res_model.response)
+                    res_model.ass, status, error_message = case_parameter.ass_main(res_model.response)
+                    res_model.status = status
+                    res_model.error_message = error_message
                     self.test_setup.test_data.get_all()
-                    self.api_case_result.steps.append(parameter_models)
-                    self.update_api_info(case_detailed.api_info.id, parameter_models.response, parameter_models.status)
-                    self.update_test_case_detailed_parameter(parameter.id, parameter_models)
-                except Exception as error:
-                    parameter_models.status = StatusEnum.FAIL.value
-                    if parameter_models.response:
-                        self.update_api_info(case_detailed.api_info.id, parameter_models.response, parameter_models.status)
-                    self.update_test_case_detailed_parameter(parameter.id, parameter_models)
-                    traceback.print_exc()
-                    log.api.error(str(error))
-                    return StatusEnum.FAIL.value, f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
-                if parameter_models.status == StatusEnum.FAIL.value and parameter_models.error_message:
-                    return parameter_models.status, parameter_models.error_message
-                else:
+                    self.api_case_result.steps.append(res_model)
+                    self.update_api_info(case_detailed.api_info.id, res_model.response, res_model.status)
+                    self.update_test_case_detailed_parameter(parameter.id, res_model)
                     if parameter.retry_interval:
                         time.sleep(parameter.retry_interval)
-                    break
+                except Exception as error:
+                    res_model.status = StatusEnum.FAIL.value
+                    if res_model.response:
+                        self.update_api_info(case_detailed.api_info.id, res_model.response,
+                                             res_model.status)
+                    self.update_test_case_detailed_parameter(parameter.id, res_model)
+                    log.api.error(f'API请求发生未知错误：{traceback.print_exc()}')
+                    return StatusEnum.FAIL.value, f'发生未知错误，请联系管理员来处理异常，异常内容：{error}'
+            res_list.append({'status': status, 'error_message': error_message})
+        for i in res_list:
+            if i.get('status') == StatusEnum.FAIL.value:
+                return i.get('status'), i.get('error_message')
 
-    def update_api_info(self, _id: int, result_data: ResponseModel, status:int):
+    def update_api_info(self, _id: int, result_data: ResponseModel, status: int):
         model = ApiInfo.objects.get(id=_id)
         model.status = status
         result_data_dict = result_data.model_dump()

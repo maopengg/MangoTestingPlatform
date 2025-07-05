@@ -76,32 +76,32 @@ class RecordingApiModel(BaseModel):
 
 
 class AssResultModel(BaseModel):
-    type: str
-    expect: str | None
+    method: str
+    expect: str | None = None
     actual: str | None
 
 
 class ApiCaseStepsResultModel(BaseModel):
     """接口结果"""
     id: int
-    api_info_id: int
     name: str
     status: int
     error_message: str | None = None
+    test_time: str | None = None
+    api_info_id: int
     ass: list[AssResultModel] | None = None
     request: RequestModel
     response: ResponseModel | None = None
     cache_data: dict
-    test_time: str | None = None
 
 
 class ApiCaseResultModel(BaseModel):
     """用例结果"""
     id: int
     name: str
-    test_env: int
-    user_id: int
-    test_time: str | None = None
     status: int
     error_message: str | None = None
+    test_time: str | None = None
+    test_env: int
+    user_id: int
     steps: list[ApiCaseStepsResultModel] = []

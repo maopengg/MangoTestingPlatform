@@ -12,7 +12,7 @@ from mangotools.notice import EmailSend, WeChatSend
 from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails, TestSuite, TestObject
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import StatusEnum, EnvironmentEnum
+from src.enums.tools_enum import StatusEnum, EnvironmentEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.tools.log_collector import log
 
@@ -45,7 +45,7 @@ class NoticeMain:
             success_rate=69.88,
             warning=0,
             fail=0,
-            execution_duration=395,
+            execution_duration='00:29:16',
             test_time='2024-01-22 06:35:58',
             test_environment='手动测试环境',
             project_name='手动触发项目',
@@ -92,24 +92,110 @@ class NoticeMain:
     @classmethod
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
-        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
-        case_sum = case_result.count()
-        success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
-        create_time = test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S")
         execution_duration = test_suite.update_time - test_suite.create_time
-        success_rate = 100 if success == case_sum else round(success / case_sum * 100, 2)
+
+        # 获取API和UI的统计数据
+        api_case_sum, api_call, api_success, api_fail, api_warning = cls.__api(test_suite_id)
+        ui_case_sum, ui_step_call, ui_success, ui_fail, ui_warning = cls.__ui(test_suite_id)
+        pytest_case_sum, pytest_func_call, pytest_success, pytest_fail, pytest_warning = cls.__pytest(test_suite_id)
+
+        # 合计所有统计数据（只计算非None的值）
+        case_sum = (api_case_sum or 0) + (ui_case_sum or 0) + (pytest_case_sum or 0)
+        success = api_success + ui_success + pytest_success
+        fail = api_fail + ui_fail + pytest_fail
+        warning = api_warning + ui_warning + pytest_warning
+        # 计算成功率
+        success_rate = 100 if case_sum == 0 else round(success / case_sum * 100, 2)
+
+        # 将秒数转换为HH:MM:SS格式
+        total_seconds = int(execution_duration.total_seconds())
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        execution_duration_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
         return TestReportModel(
             test_suite_id=test_suite_id,
             case_sum=case_sum,
             success=success,
             success_rate=success_rate,
-            warning=case_result.filter(status=2).count(),
-            fail=case_result.filter(status=StatusEnum.FAIL.value).count(),
-            execution_duration=int(execution_duration.total_seconds()),
-            test_time=create_time,
+            warning=warning,
+            fail=fail,
+            api_case_sum=api_case_sum,
+            ui_case_sum=ui_case_sum,
+            pytest_case_sum=pytest_case_sum,
+            api_call=api_call,
+            ui_step_call=ui_step_call,
+            pytest_func_call=pytest_func_call,
+            execution_duration=execution_duration_str,
+            test_time=test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S"),
             test_environment=EnvironmentEnum.get_value(test_suite.test_env),
             project_name=test_suite.project_product.project.name,
             project_id=test_suite.project_product.project.id)
+
+    @staticmethod
+    def __api(test_suite_id):
+        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.API.value)
+        api_case_sum = 0
+        api_call = 0
+        success = 0
+        fail = 0
+        warning = 0
+        if not case_result.exists():
+            return None, None, 0, 0, 0
+
+        for i in case_result:
+            for r in i.result_data:
+                api_case_sum += 1
+                api_call += 1
+                if r.get('status') == StatusEnum.SUCCESS.value:
+                    success += 1
+                else:
+                    fail += 1
+        return api_case_sum, api_call, success, fail, warning
+
+    @staticmethod
+    def __pytest(test_suite_id):
+        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.PYTEST.value)
+        pytest_case_sum = 0
+        pytest_func_call = 0
+        success = 0
+        fail = 0
+        warning = 0
+        if not case_result.exists():
+            return None, None, 0, 0, 0
+
+        for i in case_result:
+            for r in i.result_data:
+                pytest_case_sum += 1
+                pytest_func_call += 1
+                if r.get('status') == StatusEnum.SUCCESS.value:
+                    success += 1
+                else:
+                    fail += 1
+        return pytest_case_sum, pytest_func_call, success, fail, warning
+
+    @staticmethod
+    def __ui(test_suite_id):
+        case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.UI.value)
+        ui_case_sum = 0
+        ui_step_call = 0
+        success = 0
+        fail = 0
+        warning = 0
+        if not case_result.exists():
+            return None, None, 0, 0, 0
+
+        for i in case_result:
+            for r in i.result_data:
+                ui_case_sum += 1
+                ui_step_call += len(r.get('element_result_list'))
+                if r.get('status') == StatusEnum.SUCCESS.value:
+                    success += 1
+                else:
+                    fail += 1
+
+        return ui_case_sum, ui_step_call, success, fail, warning
 
     @staticmethod
     def mail_config():

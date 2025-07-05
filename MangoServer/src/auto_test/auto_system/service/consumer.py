@@ -95,6 +95,7 @@ class ConsumerThread:
         except MangoServerError as error:
             log.system.debug(f'UI测试任务发生已知错误，忽略错误，等待重新开始：{error.msg}')
         except Exception as error:
+            log.system.error(retry, max_retry, error, traceback.format_exc())
             if retry > max_retry:
                 self.consumer_error(test_suite, test_suite_details, error, traceback.format_exc())
                 return
