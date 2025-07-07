@@ -4,8 +4,10 @@
 # @Time   : 2022-11-10 21:24
 # @Author : 毛鹏
 import json
+import os
 import traceback
 
+import requests
 import time
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
@@ -14,6 +16,7 @@ from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestS
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
+from src.tools import project_dir
 from ...models import ApiCaseDetailedParameter
 
 
@@ -71,6 +74,8 @@ class CaseParameter:
             time.sleep(int(self.parameter.posterior_sleep))
         if self.parameter.posterior_func:
             response = self.__posterior_func(self.parameter.posterior_func, response)
+        if self.parameter.posterior_file:
+            self.__posterior_file(self.parameter.posterior_file)
         return response
 
     def __posterior_func(self, posterior_func: str, response: ResponseModel) -> RequestModel:
@@ -99,6 +104,25 @@ class CaseParameter:
             value = self.test_setup.test_data.get_json_path_value(response_text, i.get('value'))
             log.api.debug(f'用例详情后置-1->key：{i["value"]}，value：{value}')
             self.test_setup.test_data.set_cache(key, value)
+
+    def __posterior_file(self, posterior_file: list[dict]):
+        for i in posterior_file:
+            url_path = i.get('value')
+            if not url_path:
+                continue
+            try:
+                filename = os.path.basename(url_path.split("?")[0])
+                local_file_path = os.path.join(project_dir.download(), filename)
+                response = requests.get(url_path, stream=True, timeout=30, proxies={'http': None, 'https': None})
+                response.raise_for_status()
+                with open(local_file_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                self.test_setup.test_data.set_cache(i.get('key'), local_file_path)
+            except Exception as e:
+                log.api.error(f'下载文件异常：{traceback.format_exc()}')
+                raise ApiError(*ERROR_MSG_0016, value=(e,))
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
         try:

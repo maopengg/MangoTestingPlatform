@@ -118,6 +118,7 @@ class ApiCaseDetailedParameter(models.Model):
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
     posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
     posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", null=True)
+    posterior_file = models.JSONField(verbose_name="文件下载", default=list)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
