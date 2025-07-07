@@ -387,7 +387,10 @@
                             </a-tab-pane>
                             <a-tab-pane key="23" title="响应JSON">
                               <div class="m-2">
-                                <JsonDisplay :data="item.result_data?.response?.json" />
+                                <JsonDisplay
+                                  :data="item.result_data?.response?.json"
+                                  :jsonpath="true"
+                                />
                               </div>
                             </a-tab-pane>
                             <a-tab-pane key="24" title="响应文本">
@@ -730,7 +733,7 @@
   import { fieldNames } from '@/setting'
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
-  import { formatJson, formatJsonObj, strJson } from '@/utils/tools'
+  import { formatJson, formatJsonObj } from '@/utils/tools'
   import { formItems, columns, formParameterItems } from './config'
   import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
   import {
@@ -753,7 +756,6 @@
     postCaseDetailedParameterTestJsonpath,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
-  import { getUiCaseStepsRefreshCacheData } from '@/api/uitest/case-steps-detailed'
 
   const userStore = useUserStore()
 
@@ -802,6 +804,7 @@
       data.tabsKey = '00'
     } else if (key === '1') {
       data.tabsKey = '10'
+      data.assClickAdd = true
     } else if (key === '2') {
       data.tabsKey = '23'
     } else if (key === '3') {
@@ -809,6 +812,7 @@
       data.assClickAdd = false
     } else if (key === '4') {
       data.tabsKey = '40'
+      data.assClickAdd = true
     } else if (key === '5') {
       data.tabsKey = '50'
     }
@@ -822,7 +826,6 @@
     data.tabsKey = key
     data.assClickAdd = !(
       key === '30' ||
-      key === '40' ||
       key === '42' ||
       key === '33' ||
       key === '43' ||

@@ -58,8 +58,12 @@ class ApiCaseDetailedParameterViews(ViewSet):
     def post_test_jsonpath(self, request: Request):
         jsonpath = request.data.get('jsonpath')
         response_json = request.data.get('response_json')
-        key = jsonpath.get('key')
-        value = jsonpath.get('value')
+        if isinstance(jsonpath, str):
+            key = None
+            value = jsonpath
+        else:
+            key = jsonpath.get('key')
+            value = jsonpath.get('value')
         if key and key.startswith('$.'):
             key = JsonTool.get_json_path_value(response_json, key)
         value = JsonTool.get_json_path_value(response_json, value)
