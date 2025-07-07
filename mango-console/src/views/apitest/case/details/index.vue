@@ -4,7 +4,15 @@
       <a-card :bordered="false" title="组合用例场景">
         <template #extra>
           <a-space>
-            <a-button size="small" status="success" @click="caseRun(null)">执行 </a-button>
+            <a-button
+              size="small"
+              status="success"
+              :loading="caseRunning"
+              :disabled="caseRunning"
+              @click="caseRun(null)"
+            >
+              执行
+            </a-button>
             <a-button size="small" status="warning" type="primary" @click="doResetSearch"
               >返回
             </a-button>
@@ -140,7 +148,11 @@
                         </a-tag>
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <a-button size="mini" type="text" @click="caseRun(record.case_sort)"
+                        <a-button
+                          size="mini"
+                          type="text"
+                          :loading="caseRunning"
+                          @click="caseRun(record.case_sort)"
                           >执行到此处
                         </a-button>
                         <a-button size="mini" type="text" @click="refresh(record.id)"
@@ -431,7 +443,7 @@
                                     <a-cascader
                                       v-model="item.ass_jsonpath[index].method"
                                       :default-value="item.ass_jsonpath[index].method"
-                                      :options="data.ass"
+                                      :options="data.textAss"
                                       expand-trigger="hover"
                                       placeholder="请选择断言方法"
                                       value-key="key"
@@ -459,41 +471,6 @@
                                 </a-space></div
                               >
                             </a-tab-pane>
-                            <a-tab-pane key="32" title="sql断言">
-                              <div class="m-2">
-                                <a-space direction="vertical">
-                                  <a-space v-for="(value, index) of item.ass_sql" :key="index">
-                                    <a-input
-                                      v-model="item.ass_sql[index].actual"
-                                      placeholder="请输入sql查询语句，只能查询一个字段"
-                                      @blur="blurSave('ass_sql', item.ass_sql, item.id)"
-                                    />
-                                    <a-cascader
-                                      v-model="item.ass_sql[index].method"
-                                      :default-value="item.ass_sql[index].method"
-                                      :options="data.ass"
-                                      expand-trigger="hover"
-                                      placeholder="请选择断言方法"
-                                      value-key="key"
-                                      @blur="blurSave('ass_sql', item.ass_sql, item.id)"
-                                    />
-                                    <a-input
-                                      v-model="item.ass_sql[index].expect"
-                                      placeholder="请输入想要判断的值"
-                                      @blur="blurSave('ass_sql', item.ass_sql, item.id)"
-                                    />
-                                    <a-button
-                                      status="danger"
-                                      type="text"
-                                      @click="
-                                        removeFrontSql(item.ass_sql, index, 'ass_sql', item.id)
-                                      "
-                                      >移除
-                                    </a-button>
-                                  </a-space>
-                                </a-space></div
-                              >
-                            </a-tab-pane>
                             <a-tab-pane key="33" title="文本一致断言">
                               <div class="m-2">
                                 <a-textarea
@@ -504,6 +481,51 @@
                                   @blur="blurSave('ass_text_all', item.ass_text_all, item.id)"
                                 />
                               </div>
+                            </a-tab-pane>
+                            <a-tab-pane key="32" title="通用断言">
+                              <div class="m-2">
+                                <a-space direction="vertical">
+                                  <a-space v-for="(value, index) of item.ass_general" :key="index">
+                                    <a-cascader
+                                      v-model="item.ass_general[index].method"
+                                      :default-value="item.ass_general[index].method"
+                                      :options="data.ass"
+                                      expand-trigger="hover"
+                                      placeholder="请选择断言方法"
+                                      value-key="key"
+                                      @change="changeGeneralAss(value, index, item)"
+                                    />
+                                    <a-space
+                                      v-if="value?.value && value?.value?.parameter"
+                                      direction="vertical"
+                                    >
+                                      <a-input
+                                        v-for="(param, pIdx) in value.value.parameter"
+                                        :key="param.f"
+                                        v-model="value.value.parameter[pIdx].v"
+                                        :placeholder="param.p"
+                                        :allow-clear="true"
+                                        :required="param.d"
+                                        style="width: 220px"
+                                        @blur="blurSave('ass_general', item.ass_general, item.id)"
+                                      />
+                                    </a-space>
+                                    <a-button
+                                      status="danger"
+                                      type="text"
+                                      @click="
+                                        removeFrontSql(
+                                          item.ass_general,
+                                          index,
+                                          'ass_general',
+                                          item.id
+                                        )
+                                      "
+                                      >移除
+                                    </a-button>
+                                  </a-space>
+                                </a-space></div
+                              >
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
@@ -777,6 +799,7 @@
     productModuleName: [],
     apiList: [],
     ass: [],
+    textAss: [],
     caseHeadersList: [],
     caseDetailsHeadersList: [],
     apiType: '2',
@@ -789,6 +812,40 @@
     updateId: null,
   })
 
+  const caseRunning = ref(false)
+  function changeGeneralAss(value, index, item) {
+    const inputItem = findItemByValue(data.ass, value.method)
+    // 遍历 parameter，把对象类型的 v 转成 JSON 字符串
+    if (inputItem && Array.isArray(inputItem.parameter)) {
+      inputItem.parameter.forEach((param) => {
+        if (typeof param.v === 'object' && param.v !== null) {
+          try {
+            param.v = JSON.stringify(param.v)
+          } catch {
+            param.v = ''
+          }
+        }
+      })
+    }
+    item.ass_general[index].value = inputItem
+    console.log(inputItem)
+  }
+
+  function findItemByValue(data: any, value: string) {
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i]
+      if (item.value === value) {
+        return item
+      }
+      if (item.children) {
+        const childItem = findItemByValue(item.children, value)
+        if (childItem) {
+          return childItem
+        }
+      }
+    }
+    return undefined
+  }
   function switchType(key: any) {
     if (key === '1') {
       data.apiSonType = '11'
@@ -839,7 +896,7 @@
     } else if ('31' === data.tabsKey) {
       item['ass_jsonpath'].push({ actual: '', method: '', expect: '' })
     } else if ('32' === data.tabsKey) {
-      item['ass_sql'].push({ actual: '', method: '', expect: '' })
+      item['ass_general'].push({ method: '', value: {} })
     } else if ('40' === data.tabsKey) {
       item['posterior_response'].push({ key: '', value: '' })
     } else if ('41' === data.tabsKey) {
@@ -1011,8 +1068,11 @@
     getSystemCacheDataKeyValue('select_value')
       .then((res) => {
         res.data.forEach((item: any) => {
-          if (item.value === 'ass') {
-            data.ass.push(...item.children)
+          if (item.value.includes('断言')) {
+            data.ass.push(item)
+          }
+          if (item.value === '文本断言') {
+            data.textAss.push(...item.children)
           }
         })
       })
@@ -1069,14 +1129,18 @@
       .catch(console.log)
   }
 
-  function caseRun(case_sort: number | null) {
-    Message.loading('用例开始执行中~')
-    getApiCaseRun(route.query.case_id, userStore.selected_environment, case_sort)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
+  const caseRun = async (param) => {
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getApiCaseRun(route.query.case_id, userStore.selected_environment, param)
+      Message.success(res.msg)
+      doRefresh()
+    } catch (e) {
+      Message.error(e?.msg || e?.message || '用例执行失败')
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function onProductModuleName() {

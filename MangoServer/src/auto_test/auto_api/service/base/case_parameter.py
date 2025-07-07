@@ -7,9 +7,9 @@ import json
 import traceback
 
 import time
-
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
@@ -41,9 +41,12 @@ class CaseParameter:
             if self.parameter.ass_jsonpath:
                 ass_jsonpath = self.test_setup.test_data.replace(self.parameter.ass_jsonpath)
                 self.__ass_jsonpath(response.json, ass_jsonpath)
-            if self.parameter.ass_sql:
-                ass_sql = self.test_setup.test_data.replace(self.parameter.ass_sql)
-                self.__ass_sql(ass_sql)
+            # if self.parameter.ass_sql:
+            #     ass_sql = self.test_setup.test_data.replace(self.parameter.ass_sql)
+            #     self.__ass_sql(ass_sql)
+            if self.parameter.ass_general:
+                ass_general = self.test_setup.test_data.replace(self.parameter.ass_general)
+                self.__ass_general(ass_general)
             if self.parameter.ass_json_all:
                 ass_json_all = self.test_setup.test_data.replace(self.parameter.ass_json_all)
                 self.__ass_json_all(response.json, ass_json_all)
@@ -123,6 +126,33 @@ class CaseParameter:
             log.api.debug(str(error))
             raise error
 
+    def __ass_general(self, general: list[dict]):
+        try:
+            for i in general:
+                ass_dict = {
+                    'method': i.get('value').get('value'),
+                    'actual': '',
+                    'expect': ''
+                }
+                for p in i.get('value', {}).get('parameter', []):
+                    ass_dict[p.get('f')] = p.get('v')
+                mango_assertion = MangoAssertion(self.mysql_connect)
+                self.ass_result.append(AssResultModel(
+                    method=getattr(mango_assertion, ass_dict['method']).__doc__,
+                    actual=ass_dict['actual'],
+                    expect=ass_dict['expect'],
+                ))
+                if ass_dict['expect'] == '':
+                    ass_dict['expect'] = None
+                log.api.info(f'用例详情断言-2->{ass_dict}')
+                try:
+                    mango_assertion.ass(**ass_dict)
+                except Exception as error:
+                    print(traceback.format_exc())
+        except AssertionError as error:
+            log.api.debug(str(error))
+            raise ApiError(*ERROR_MSG_0007)
+
     def __ass_sql(self, sql_list: list[dict]):
         try:
             if self.test_setup.mysql_connect:
@@ -138,6 +168,8 @@ class CaseParameter:
                         actual=ass_dict['actual'],
                         expect=ass_dict['expect'],
                     ))
+                    if ass_dict['expect'] == '':
+                        ass_dict['expect'] = None
                     log.api.info(f'用例详情断言-2->{ass_dict}')
                     mango_assertion.ass(**ass_dict)
         except AssertionError as error:

@@ -109,6 +109,7 @@ class ApiCaseDetailedParameter(models.Model):
     front_sql = models.JSONField(verbose_name="前置sql", default=list)
     front_func = models.TextField(verbose_name='前置自定义函数', null=True)
     # 断言
+    ass_general = models.JSONField(verbose_name="sql断言", default=list)
     ass_sql = models.JSONField(verbose_name="sql断言", default=list)
     ass_json_all = models.JSONField(verbose_name="响应JSON全匹配断言", null=True)
     ass_text_all = models.TextField(verbose_name="响应文本全匹配断言", null=True)
