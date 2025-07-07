@@ -153,7 +153,7 @@
                           type="text"
                           :loading="caseRunning"
                           @click="caseRun(record.case_sort)"
-                          >执行到此处
+                          >执行到这
                         </a-button>
                         <a-button size="mini" type="text" @click="refresh(record.id)"
                           >同步

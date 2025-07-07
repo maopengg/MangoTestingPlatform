@@ -145,10 +145,7 @@ class CaseParameter:
                 if ass_dict['expect'] == '':
                     ass_dict['expect'] = None
                 log.api.info(f'用例详情断言-2->{ass_dict}')
-                try:
-                    mango_assertion.ass(**ass_dict)
-                except Exception as error:
-                    print(traceback.format_exc())
+                mango_assertion.ass(**ass_dict)
         except AssertionError as error:
             log.api.debug(str(error))
             raise ApiError(*ERROR_MSG_0007)
