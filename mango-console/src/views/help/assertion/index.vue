@@ -28,7 +28,7 @@
     getSystemCacheDataKeyValue('select_value')
       .then((res) => {
         res.data.forEach((item: any) => {
-          if (item.value.includes('ass')) {
+          if (item.value.includes('断言') || item.value.includes('ass')) {
             randomList.value.push(...item.children)
           }
         })

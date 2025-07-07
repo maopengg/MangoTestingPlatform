@@ -10,6 +10,8 @@ import atexit
 import time
 from django.apps import AppConfig
 from django.db import ProgrammingError, OperationalError
+from mangotools.decorator import func_info
+from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
 from src.tools.log_collector import log
@@ -26,6 +28,7 @@ class AutoSystemConfig(AppConfig):
             self.save_cache()
             self.populate_time_tasks()
             self.run_tests()
+            self.init_ass()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -90,3 +93,28 @@ class AutoSystemConfig(AppConfig):
             self.system_task.join()
         except AttributeError:
             pass
+
+    def init_ass(self):
+        import json
+
+        from src.auto_test.auto_system.models import CacheData
+        from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
+        from src.enums.system_enum import CacheDataKey2Enum
+
+        data = {
+            'describe': CacheDataKey2Enum.ASS_SELECT_VALUE.value,
+            'key': CacheDataKey2Enum.ASS_SELECT_VALUE.value,
+            'value': json.dumps(func_info, ensure_ascii=False),
+            'value_type': CacheValueTypeEnum.DICT.value,
+        }
+        try:
+            cache_data = CacheData.objects.get(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
+        except CacheData.DoesNotExist:
+            CacheDataCRUD.inside_post(data)
+        except CacheData.MultipleObjectsReturned:
+            cache_data_list = CacheData.objects.filter(key=CacheDataKey2Enum.ASS_SELECT_VALUE.value)
+            for cache_data in cache_data_list:
+                cache_data.delete()
+            CacheDataCRUD.inside_post(data)
+        else:
+            CacheDataCRUD.inside_put(cache_data.id, data)

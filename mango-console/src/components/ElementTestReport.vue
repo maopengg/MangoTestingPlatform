@@ -139,8 +139,8 @@
             data.ass.push(...item.children)
           } else if (item.value === 'ass_web') {
             data.ass.push(...item.children)
-          } else {
-            data.ass.push(...item.children)
+          } else if (item.value.includes('断言')) {
+            data.ass.push(item)
           }
         })
       })

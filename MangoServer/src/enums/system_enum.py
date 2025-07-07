@@ -66,6 +66,7 @@ class CacheDataKeyEnum(BaseEnum):
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""
     SELECT_VALUE = 'select_value'
+    ASS_SELECT_VALUE = 'ass_select_value'
 
     @classmethod
     def obj(cls):

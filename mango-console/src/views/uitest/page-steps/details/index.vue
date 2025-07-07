@@ -664,10 +664,11 @@
             if (route.query.pageType === '0') {
               data.ass.unshift(...item.children)
             }
-          } else {
-            data.ass.push(...item.children)
+          } else if (item.value.includes('断言')) {
+            data.ass.push(item)
           }
         })
+        console.log(data.ass)
       })
       .catch(console.log)
   }

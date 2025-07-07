@@ -1065,7 +1065,7 @@
   }
 
   function getCacheDataKeyValue() {
-    getSystemCacheDataKeyValue('select_value')
+    getSystemCacheDataKeyValue('ass_select_value')
       .then((res) => {
         res.data.forEach((item: any) => {
           if (item.value.includes('断言')) {
