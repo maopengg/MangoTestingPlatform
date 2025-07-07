@@ -17,8 +17,8 @@
   </a-space>
   <div style="position: relative">
     <vue-json-pretty
-      v-if="isObjectOrArray"
-      :key="`json-${isExpanded}`"
+      v-if="isObjectOrArray && showComponent"
+      :key="`json-${isExpanded}-${forceRerender}`"
       :data="parsedData"
       :deep="isExpanded ? undefined : 1"
       :show-length="true"
@@ -26,8 +26,8 @@
 
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
     <vue-json-pretty
-      v-else-if="isString && isValidJson"
-      :key="`json-string-${isExpanded}`"
+      v-else-if="isString && isValidJson && showComponent"
+      :key="`json-string-${isExpanded}-${forceRerender}`"
       :data="jsonFromString"
       :deep="isExpanded ? undefined : 1"
     />
@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-  import { computed, ref } from 'vue'
+  import { computed, ref, nextTick, onMounted, watch } from 'vue'
   import VueJsonPretty from 'vue-json-pretty'
   import 'vue-json-pretty/lib/styles.css'
   import { Message } from '@arco-design/web-vue'
@@ -58,6 +58,10 @@
   const jsonpathInput = ref('')
   // 控制展开/收起状态，默认为收起状态
   const isExpanded = ref(false)
+  // 强制重新渲染的标记
+  const forceRerender = ref(0)
+  // 控制是否显示组件
+  const showComponent = ref(false)
 
   /**
    * 判断是否是对象或数组
@@ -150,12 +154,44 @@
       .catch(console.log)
   }
 
-  const toggleExpand = () => {
+  const toggleExpand = async () => {
     isExpanded.value = !isExpanded.value
+    // 强制重新渲染组件
+    forceRerender.value++
+    await nextTick()
   }
+
+  // 监听数据变化，确保组件正确渲染
+  watch(
+    () => props.data,
+    async () => {
+      showComponent.value = false
+      await nextTick()
+      showComponent.value = true
+      forceRerender.value++
+    },
+    { immediate: true }
+  )
+
+  // 监听展开状态变化
+  watch(
+    () => isExpanded.value,
+    async () => {
+      await nextTick()
+      forceRerender.value++
+    }
+  )
+
+  // 组件挂载后确保正确显示
+  onMounted(async () => {
+    await nextTick()
+    showComponent.value = true
+    // 确保初始状态正确
+    forceRerender.value++
+  })
 </script>
 
-<style scoped>
+<style scoped lang="less">
   .copy-button {
     position: absolute;
     top: 0;
