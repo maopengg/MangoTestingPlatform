@@ -144,7 +144,7 @@
                           >执行到此处
                         </a-button>
                         <a-button size="mini" type="text" @click="refresh(record.id)"
-                          >刷新
+                          >同步
                         </a-button>
                         <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
                           >删除
@@ -753,6 +753,7 @@
     postCaseDetailedParameterTestJsonpath,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { getUiCaseStepsRefreshCacheData } from '@/api/uitest/case-steps-detailed'
 
   const userStore = useUserStore()
 
@@ -1191,12 +1192,20 @@
   }
 
   function refresh(id: number) {
-    putApiPutRefreshApiInfo(id)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
+    Modal.confirm({
+      title: '提示',
+      content: '是否确实从接口管理中同步接口数据？点击确认后，原始数据会丢失！',
+      cancelText: '取消',
+      okText: '同步',
+      onOk: () => {
+        putApiPutRefreshApiInfo(id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
   }
 
   function select(record: any) {

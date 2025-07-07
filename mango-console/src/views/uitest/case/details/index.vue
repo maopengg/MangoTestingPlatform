@@ -558,7 +558,7 @@
       title: '提示',
       content: '是否确实从页面步骤详情中同步数据？点击确认后，原始数据会丢失！',
       cancelText: '取消',
-      okText: '刷新',
+      okText: '同步',
       onOk: () => {
         getUiCaseStepsRefreshCacheData(null, route.query.id)
           .then((res) => {

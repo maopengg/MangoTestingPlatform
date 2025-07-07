@@ -134,7 +134,7 @@ class ApiInfoViews(ViewSet):
             'type': request.data.get('type'),
             'url': path,
             'method': MethodEnum.get_key(parsed.method),
-            # 'headers': dict(parsed.header),
+            'headers': dict(parsed.header),
         }
         query_params = parse_qs(url_components.query)
         params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}
