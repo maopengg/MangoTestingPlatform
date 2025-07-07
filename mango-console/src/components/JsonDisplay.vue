@@ -2,10 +2,10 @@
   <a-space class="m-2">
     <a-space v-if="showJsonpathButton">
       <a-input v-model="jsonpathInput" placeholder="请输入jsonpath语法，如: $.name" />
-      <a-button type="outline" status="warning" @click="jsonpathTest">提取</a-button>
+      <a-button type="dashed" status="warning" @click="jsonpathTest">提取</a-button>
     </a-space>
     <a-space>
-      <a-button type="outline" status="success" @click="copyToClipboard">复制</a-button></a-space
+      <a-button type="dashed" status="success" @click="copyToClipboard">复制</a-button></a-space
     ></a-space
   >
   <div style="position: relative">
