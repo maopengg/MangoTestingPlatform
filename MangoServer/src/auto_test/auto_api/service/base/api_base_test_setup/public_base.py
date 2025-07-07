@@ -47,6 +47,7 @@ class PublicBase(BaseRequest):
         self.test_object = func_test_object_value(test_env,
                                                   project_product_id,
                                                   AutoTypeEnum.API.value)
+        self.test_data.set_cache('url', self.test_object.value)
         log.api.debug(
             f'初始化测试对象，是否开启数据库的增删改权限：{self.test_object.db_c_status, self.test_object.db_c_status}')
         if StatusEnum.SUCCESS.value in [self.test_object.db_c_status, self.test_object.db_rud_status]:
