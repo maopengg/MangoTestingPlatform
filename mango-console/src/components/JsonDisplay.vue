@@ -131,7 +131,8 @@
       await navigator.clipboard.writeText(value)
       Message.success('复制成功')
     } catch (error) {
-      Message.error('复制失败')
+      Message.error('复制失败: ' + (error?.message || error))
+      console.error('Clipboard error:', error)
     }
   }
 
