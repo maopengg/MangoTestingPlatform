@@ -9,10 +9,10 @@
     ></a-space
   >
   <div style="position: relative">
-    <vue-json-pretty v-if="isObjectOrArray" :data="parsedData" :deep="1" :show-length="true" />
+    <vue-json-pretty v-if="isObjectOrArray" :data="parsedData" :show-length="true" />
 
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
-    <vue-json-pretty v-else-if="isString && isValidJson" :data="jsonFromString" :deep="1" />
+    <vue-json-pretty v-else-if="isString && isValidJson" :data="jsonFromString" />
 
     <span v-else>{{ parsedData }}</span>
   </div>
