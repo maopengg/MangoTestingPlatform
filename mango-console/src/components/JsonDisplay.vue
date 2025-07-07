@@ -6,9 +6,9 @@
     </a-space>
     <a-space>
       <a-button type="dashed" status="success" @click="copyToClipboard">复制</a-button>
-      <a-button 
-        v-if="isObjectOrArray || (isString && isValidJson)" 
-        type="dashed" 
+      <a-button
+        v-if="isObjectOrArray || (isString && isValidJson)"
+        type="dashed"
         @click="toggleExpand"
       >
         {{ isExpanded ? '收起' : '展开' }}
@@ -16,19 +16,19 @@
     </a-space>
   </a-space>
   <div style="position: relative">
-    <vue-json-pretty 
-      v-if="isObjectOrArray" 
+    <vue-json-pretty
+      v-if="isObjectOrArray"
       :key="`json-${isExpanded}`"
-      :data="parsedData" 
-      :deep="isExpanded ? undefined : 1" 
-      :show-length="true" 
+      :data="parsedData"
+      :deep="isExpanded ? undefined : 1"
+      :show-length="true"
     />
 
     <pre v-else-if="isString && !isValidJson">{{ parsedData }}</pre>
-    <vue-json-pretty 
-      v-else-if="isString && isValidJson" 
+    <vue-json-pretty
+      v-else-if="isString && isValidJson"
       :key="`json-string-${isExpanded}`"
-      :data="jsonFromString" 
+      :data="jsonFromString"
       :deep="isExpanded ? undefined : 1"
     />
 
