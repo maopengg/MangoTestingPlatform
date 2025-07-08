@@ -30,7 +30,7 @@ class HttpClientApi(HttpBase):
             if minio_host is None:
                 raise ToolsError(*ERROR_MSG_0002)
         else:
-            minio_host =SetConfig.get_host()
+            minio_host = SetConfig.get_host()
         url = urljoin(minio_host, f'/mango-file/test_file/{file_name}')
         response = requests.get(url, proxies={'http': None, 'https': None}, )
         try:
