@@ -9,6 +9,7 @@ from mangotools.enums import NoticeEnum
 from mangotools.exceptions import MangoToolsError
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangotools.notice import EmailSend, WeChatSend
+
 from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuiteDetails, TestSuite, TestObject
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
@@ -191,23 +192,16 @@ class NoticeMain:
     @staticmethod
     def __ui(test_suite_id):
         case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.UI.value)
-        ui_case_sum = 0
-        ui_step_call = 0
-        success = 0
-        fail = 0
-        warning = 0
         if not case_result.exists():
             return None, None, None, None, None
 
+        ui_case_sum = case_result.count()
+        ui_step_call = 0
+        success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
+        fail = case_result.filter(status=StatusEnum.FAIL.value).count()
+        warning = 0
         for i in case_result:
-            for r in i.result_data:
-                ui_case_sum += 1
-                ui_step_call += len(r.get('element_result_list'))
-                if r.get('status') == StatusEnum.SUCCESS.value:
-                    success += 1
-                else:
-                    fail += 1
-
+            ui_step_call += len(i.result_data)
         return ui_case_sum, ui_step_call, success, fail, warning
 
     @staticmethod
