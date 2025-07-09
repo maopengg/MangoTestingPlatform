@@ -6,6 +6,7 @@
 import mimetypes
 import traceback
 from typing import Optional
+from urllib.parse import urlparse, urljoin
 
 from mangotools.database import MysqlConnect
 from mangotools.exceptions import MangoToolsError
@@ -28,8 +29,8 @@ class PublicBase(BaseRequest):
     """ 公共参数设置"""
 
     def __init__(self):
-        super().__init__()
         self.test_data = ObtainTestData()
+        super().__init__(self.test_data)
         self.test_object: Optional[None | TestObject] = None
         self.mysql_connect: Optional[None | MysqlConnect] = None
         self.headers: dict = {}
@@ -73,6 +74,7 @@ class PublicBase(BaseRequest):
 
     def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:
         log.api.debug(f'清洗请求数据-1->{request_data_model.model_dump_json()}')
+
         try:
             for key, value in request_data_model:
                 if key == 'headers':
@@ -97,6 +99,9 @@ class PublicBase(BaseRequest):
                 else:
                     value = self.test_data.replace(value)
                     setattr(request_data_model, key, value)
+            result = urlparse(request_data_model.url)
+            if not all([result.scheme, result.netloc]):
+                request_data_model.url = urljoin(self.test_object.value, request_data_model.url)
         except MangoToolsError as error:
             print(traceback.print_exc())
             raise ApiError(error.code, error.msg)

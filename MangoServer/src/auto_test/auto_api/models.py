@@ -2,6 +2,7 @@ from django.db import models
 
 from src.auto_test.auto_system.models import ProjectProduct, ProductModule
 from src.auto_test.auto_user.models import User
+from src.enums.tools_enum import StatusEnum
 from src.exceptions import ToolsError
 
 """
@@ -24,13 +25,17 @@ class ApiInfo(models.Model):
     method = models.SmallIntegerField(verbose_name="请求方法")
     headers = models.JSONField(verbose_name="请求头", null=True)
     params = models.TextField(verbose_name="参数", null=True)
+    is_text_params = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
     data = models.TextField(verbose_name="data", null=True)
+    is_text_data = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
     json = models.TextField(verbose_name="json", null=True)
+    is_text_json = models.SmallIntegerField(verbose_name="请求方法", default=StatusEnum.SUCCESS.value)
     file = models.JSONField(verbose_name="file", null=True)
 
     posterior_json_path = models.JSONField(verbose_name="后置jsonpath提取", default=list)
     posterior_re = models.JSONField(verbose_name="后置正则提取", default=list)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
+    posterior_file = models.CharField(verbose_name="下载文件名称key", max_length=1024, null=True)
 
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)
@@ -100,6 +105,7 @@ class ApiCaseDetailedParameter(models.Model):
     retry_interval = models.SmallIntegerField(verbose_name="重试间隔", null=True)
     name = models.CharField(verbose_name="步骤名称", max_length=128)
     headers = models.JSONField(verbose_name="请求头", default=list)
+    is_case_headers = models.SmallIntegerField(verbose_name="是否使用用例headers", default=StatusEnum.SUCCESS.value)
     params = models.TextField(verbose_name="参数", null=True)
     data = models.TextField(verbose_name="data", null=True)
     json = models.TextField(verbose_name="json", null=True)
@@ -118,7 +124,7 @@ class ApiCaseDetailedParameter(models.Model):
     posterior_sql = models.JSONField(verbose_name="后置sql", default=list)
     posterior_response = models.JSONField(verbose_name="后置响应处理", default=list)
     posterior_sleep = models.SmallIntegerField(verbose_name="强制等待", null=True)
-    posterior_file = models.JSONField(verbose_name="文件下载", default=list)
+    posterior_file = models.JSONField(verbose_name="文件下载", default=dict)
     posterior_func = models.TextField(verbose_name='后置自定义', null=True)
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="最近一次执行结果", null=True)

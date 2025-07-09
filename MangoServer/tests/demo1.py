@@ -3,12 +3,9 @@
 # @Description: 
 # @Time   : 2025-03-25 22:22
 # @Author : 毛鹏
-from typing import Optional, Union, Dict, List, Any
+from typing import Optional, Union, Dict, Any
+
 from pydantic import BaseModel, HttpUrl
-import json
-from pathlib import Path
-
-
 
 
 class RequestModel(BaseModel):
@@ -24,38 +21,12 @@ class RequestModel(BaseModel):
     allow_redirects: Optional[bool] = None  # 是否允许重定向
     verify: Optional[Union[bool, str]] = None  # SSL验证
 
-    def prepare_request(self):
-        """准备请求参数，将模型转换为requests库接受的格式"""
-        request_args = {
-            'method': self.method,
-            'url': str(self.url),
-        }
 
-        if self.headers:
-            request_args['headers'] = self.headers
+data = {'method': 'assert_cell_value',
+        'actual': '{"文件路径":"D:\\GitCode\\MangoTestingPlatform\\MangoServer\\download\\20250319151528-yq-test03.xlsx","工作表":"sheet1"}',
+        'expect': '{"单元格":"B2","预期值":"6414c5e50000000011023c12"}'}
 
-        if isinstance(self.params, dict):
-            request_args['params'] = self.params
-        elif self.params:
-            request_args['params'] = json.loads(self.params)
+import json
 
-        if isinstance(self.data, dict):
-            request_args['data'] = self.data
-        elif self.data:
-            request_args['data'] = self.data
-
-        if self.json is not None:
-            request_args['json'] = self.json
-
-        if self.files:
-            if isinstance(self.files, list):
-                request_args['files'] = [f.dict() for f in self.files]
-            else:
-                request_args['files'] = self.files.dict()
-
-        # 添加其他可选参数
-        for field in ['auth', 'timeout', 'allow_redirects', 'verify']:
-            if getattr(self, field) is not None:
-                request_args[field] = getattr(self, field)
-
-        return request_args
+print(json.loads(data.get('actual')))
+print(json.loads(data.get('expect')))

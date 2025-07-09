@@ -28,6 +28,7 @@ class RequestModel(BaseModel):
     data: str | None = None
     json: str | None = None
     file: list[dict] | Any | None = None
+    posterior_file: str | None = None
 
     def serialize(self):
         for field in ['data', 'json', 'params']:
@@ -79,6 +80,7 @@ class AssResultModel(BaseModel):
     method: str
     expect: str | None = None
     actual: str | None
+    error_msg: str | None = None
 
 
 class ApiCaseStepsResultModel(BaseModel):

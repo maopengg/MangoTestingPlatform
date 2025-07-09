@@ -30,12 +30,14 @@ class APIBaseTestSetup(PublicBase):
         if request_model is None:
             request_model = self.request_data_clean(RequestModel(
                 method=MethodEnum(api_info.method).name,
-                url=urljoin(self.test_object.value, api_info.url),
+                url=api_info.url,
                 headers=headers,
                 params=api_info.params,
                 data=api_info.data,
                 json=api_info.json,
-                file=api_info.file))
+                file=api_info.file,
+                posterior_file=api_info.posterior_file,
+            ))
         response = self.http(request_model)
         try:
             if api_info.posterior_re:

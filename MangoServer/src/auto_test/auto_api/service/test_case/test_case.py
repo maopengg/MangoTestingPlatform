@@ -139,12 +139,13 @@ class TestCase:
                 error_retry += 1
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
-                    url=urljoin(self.test_setup.test_object.value, case_detailed.api_info.url),
+                    url=case_detailed.api_info.url,
                     headers=self.__headers(parameter),
                     params=parameter.params,
                     data=parameter.data,
                     json=parameter.json,
-                    file=parameter.file
+                    file=parameter.file,
+                    posterior_file=case_detailed.api_info.posterior_file,
                 )
                 res_model = ApiCaseStepsResultModel(
                     id=case_detailed.id,
@@ -152,26 +153,26 @@ class TestCase:
                     name=parameter.name,
                     status=StatusEnum.FAIL.value,
                     request=request_model,
-                    cache_data=self.test_setup.test_data.get_all(),
+                    cache_data={},
                     test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 try:
                     request_model = case_parameter.front_main(request_model)
                     request_model = self.test_setup.request_data_clean(request_model)
-                    self.test_setup.test_data.get_all()
                     res_model.response = self.test_setup.api_request(
                         case_detailed.api_info.id, request_model, False)
                     res_model.response = case_parameter.posterior_main(res_model.response)
                     res_model.ass, status, error_message = case_parameter.ass_main(res_model.response)
                     res_model.status = status
                     res_model.error_message = error_message
-                    self.test_setup.test_data.get_all()
+                    res_model.cache_data = self.test_setup.test_data.get_all()
                     self.api_case_result.steps.append(res_model)
                     self.update_api_info(case_detailed.api_info.id, res_model.response, res_model.status)
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     if parameter.retry_interval:
                         time.sleep(parameter.retry_interval)
                 except Exception as error:
+                    res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.status = StatusEnum.FAIL.value
                     if res_model.response:
                         self.update_api_info(case_detailed.api_info.id, res_model.response,

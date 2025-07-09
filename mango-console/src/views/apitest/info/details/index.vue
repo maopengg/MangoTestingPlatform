@@ -42,29 +42,29 @@
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
             <a-textarea
-              v-model="data.params"
+              v-model="data.api_info.params"
               :auto-size="{ minRows: 28, maxRows: 28 }"
               allow-clear
               placeholder="请输入json格式的数据"
-              @blur="upDate('params', data.params)"
+              @blur="upDate('params', data.api_info.params)"
             />
           </a-tab-pane>
           <a-tab-pane key="2" title="表单">
             <a-textarea
-              v-model="data.data"
+              v-model="data.api_info.data"
               :auto-size="{ minRows: 28, maxRows: 28 }"
               allow-clear
               placeholder="请输入json格式的表单"
-              @blur="upDate('data', data.data)"
+              @blur="upDate('data', data.api_info.data)"
             />
           </a-tab-pane>
           <a-tab-pane key="3" title="JSON">
             <a-textarea
-              v-model="data.json"
+              v-model="data.api_info.json"
               :auto-size="{ minRows: 28, maxRows: 28 }"
               allow-clear
               placeholder="请输入json格式的JSON"
-              @blur="upDate('json', data.json)"
+              @blur="upDate('json', data.api_info.json)"
             />
           </a-tab-pane>
           <a-tab-pane key="4" title="文件">
@@ -78,23 +78,25 @@
           </a-tab-pane>
           <a-tab-pane key="5" title="后置jsonpath提取">
             <a-space direction="vertical">
-              <a-space v-for="(value, index) of data.posterior_json_path" :key="index">
+              <a-space v-for="(value, index) of data.api_info.posterior_json_path" :key="index">
                 <a-input
-                  v-model="data.posterior_json_path[index].key"
+                  v-model="data.api_info.posterior_json_path[index].key"
                   placeholder="请输入缓存key"
-                  @blur="upDate('posterior_json_path', data.posterior_json_path)"
+                  @blur="upDate('posterior_json_path', data.api_info.posterior_json_path)"
                 />
                 <a-input
-                  v-model="data.posterior_json_path[index].value"
+                  v-model="data.api_info.posterior_json_path[index].value"
                   placeholder="请输入jsonpath语法"
-                  @blur="upDate('posterior_json_path', data.posterior_json_path)"
+                  @blur="upDate('posterior_json_path', data.api_info.posterior_json_path)"
                 />
 
                 <a-button
                   size="small"
                   status="danger"
                   type="text"
-                  @click="removeFrontSql(data.posterior_json_path, index, 'posterior_json_path')"
+                  @click="
+                    removeFrontSql(data.api_info.posterior_json_path, index, 'posterior_json_path')
+                  "
                   >移除
                 </a-button>
               </a-space>
@@ -102,23 +104,23 @@
           </a-tab-pane>
           <a-tab-pane key="6" title="后置正则提取">
             <a-space direction="vertical">
-              <a-space v-for="(value, index) of data.posterior_re" :key="index">
+              <a-space v-for="(value, index) of data.api_info.posterior_re" :key="index">
                 <a-input
-                  v-model="data.posterior_re[index].key"
+                  v-model="data.api_info.posterior_re[index].key"
                   placeholder="请输入缓存key"
-                  @blur="upDate('posterior_re', data.posterior_re)"
+                  @blur="upDate('posterior_re', data.api_info.posterior_re)"
                 />
                 <a-input
-                  v-model="data.posterior_re[index].value"
+                  v-model="data.api_info.posterior_re[index].value"
                   placeholder="请输入jsonpath语法"
-                  @blur="upDate('posterior_re', data.posterior_re)"
+                  @blur="upDate('posterior_re', data.api_info.posterior_re)"
                 />
 
                 <a-button
                   size="small"
                   status="danger"
                   type="text"
-                  @click="removeFrontSql(data.posterior_re, index, 'posterior_re')"
+                  @click="removeFrontSql(data.api_info.posterior_re, index, 'posterior_re')"
                   >移除
                 </a-button>
               </a-space>
@@ -126,12 +128,22 @@
           </a-tab-pane>
           <a-tab-pane key="7" title="后置函数">
             <a-textarea
-              v-model="data.posterior_func"
+              v-model="data.api_info.posterior_func"
               :auto-size="{ minRows: 28, maxRows: 28 }"
               allow-clear
               placeholder="根据帮助文档，输入自定义后置函数"
-              @blur="upDate('posterior_func', data.posterior_func)"
+              @blur="upDate('posterior_func', data.api_info.posterior_func)"
             />
+          </a-tab-pane>
+          <a-tab-pane key="9" title="文件保存">
+            <a-space>
+              <a-input
+                v-model="data.api_info.posterior_file"
+                placeholder="请输入保存key，后续可以通过key取到文件路径"
+                style="width: 500px"
+                @blur="upDate('posterior_file', data.api_info.posterior_file)"
+              />
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="8" title="响应结果">
             <a-tabs default-active-key="1">
@@ -139,39 +151,39 @@
                 <a-space direction="vertical">
                   <a-space>
                     <a-tag color="orange">响 应 码</a-tag>
-                    <span>{{ data.result_data?.code }}</span>
+                    <span>{{ data.api_info.result_data?.code }}</span>
                   </a-space>
                   <a-space>
                     <a-tag color="orange">响应时间</a-tag>
-                    <span>{{ data.result_data?.time }}</span>
+                    <span>{{ data.api_info.result_data?.time }}</span>
                   </a-space>
                   <a-space>
                     <a-tag color="orange">缓存数据</a-tag>
-                    <JsonDisplay :data="data.result_data?.cache_all" />
+                    <JsonDisplay :data="data.api_info.result_data?.cache_all" />
                   </a-space>
                 </a-space>
               </a-tab-pane>
               <a-tab-pane key="2" title="请求信息">
                 <a-space direction="vertical">
-                  <a-space v-if="data.result_data?.request_headers">
+                  <a-space v-if="data.api_info.result_data?.request_headers">
                     <a-tag color="orange">请求头</a-tag>
-                    <JsonDisplay :data="data.result_data?.request_headers" />
+                    <JsonDisplay :data="data.api_info.result_data?.request_headers" />
                   </a-space>
-                  <a-space v-if="data.result_data?.request_params">
+                  <a-space v-if="data.api_info.result_data?.request_params">
                     <a-tag color="orange">参数</a-tag>
-                    <JsonDisplay :data="data.result_data?.request_params" />
+                    <JsonDisplay :data="data.api_info.result_data?.request_params" />
                   </a-space>
-                  <a-space v-if="data.result_data?.request_data">
+                  <a-space v-if="data.api_info.result_data?.request_data">
                     <a-tag color="orange">表单</a-tag>
-                    <JsonDisplay :data="data.result_data?.request_data" />
+                    <JsonDisplay :data="data.api_info.result_data?.request_data" />
                   </a-space>
-                  <a-space v-if="data.result_data?.request_json">
+                  <a-space v-if="data.api_info.result_data?.request_json">
                     <a-tag color="orange">json</a-tag>
-                    <JsonDisplay :data="data.result_data?.request_json" />
+                    <JsonDisplay :data="data.api_info.result_data?.request_json" />
                   </a-space>
-                  <a-space v-if="data.result_data?.request_file">
+                  <a-space v-if="data.api_info.result_data?.request_file">
                     <a-tag color="orange">file</a-tag>
-                    <JsonDisplay :data="data.result_data?.request_file" />
+                    <JsonDisplay :data="data.api_info.result_data?.request_file" />
                   </a-space>
                 </a-space>
               </a-tab-pane>
@@ -181,7 +193,9 @@
                     <a-tag color="orange">响 应 体</a-tag>
                     <JsonDisplay
                       :data="
-                        data.result_data?.json ? data.result_data?.json : data.result_data?.text
+                        data.api_info.result_data?.json
+                          ? data.api_info.result_data?.json
+                          : data.api_info.result_data?.text
                       "
                     />
                   </a-space>
@@ -210,15 +224,9 @@
     id: 0,
     pageType: '0',
     addButton: false,
+    api_info: pageData.record,
     headers: formatJson(pageData.record.headers),
-    params: pageData.record.params,
-    json: pageData.record.json,
-    data: pageData.record.data,
     file: formatJson(pageData.record.file),
-    posterior_func: pageData.record.posterior_func,
-    posterior_json_path: pageData.record.posterior_json_path,
-    posterior_re: pageData.record.posterior_re,
-    result_data: pageData.record.result_data,
   })
 
   function switchType(key: any) {
@@ -232,9 +240,9 @@
 
   function addData() {
     if (data.pageType === '5') {
-      data.posterior_json_path.push({ key: '', value: '' })
+      data.api_info.posterior_json_path.push({ key: '', value: '' })
     } else if (data.pageType === '6') {
-      data.posterior_re.push({ key: '', value: '' })
+      data.api_info.posterior_re.push({ key: '', value: '' })
     }
   }
 
@@ -324,14 +332,7 @@
       .then((res) => {
         const res_data = res.data[0]
         data.headers = formatJson(res_data.headers)
-        data.params = res_data.params
-        data.json = res_data.json
-        data.data = res_data.data
         data.file = formatJson(res_data.file)
-        data.posterior_func = res_data.posterior_func
-        data.posterior_json_path = res_data.posterior_json_path
-        data.posterior_re = res_data.posterior_re
-        data.result_data = res_data.result_data
       })
       .catch(console.log)
   }

@@ -93,7 +93,7 @@ class CaseParameter:
                 res = self.test_setup.mysql_connect.condition_execute(sql)
                 log.api.debug(f'用例详情后置-2->key：{sql_obj.get("value")}，sql：{sql}，结果：{res}')
                 if isinstance(res, list) and len(res) > 0:
-                    log.api.info(f'前置sql写入的数据：{sql_obj.get("value")},sql: {res[0]}')
+                    log.api.debug(f'前置sql写入的数据：{sql_obj.get("value")},sql: {res[0]}')
                     self.test_setup.test_data.set_sql_cache(sql_obj.get('value'), res[0])
 
     def __posterior_response(self, response_text: dict, posterior_response: list[dict]):
@@ -125,77 +125,38 @@ class CaseParameter:
                 raise ApiError(*ERROR_MSG_0016, value=(e,))
 
     def __ass_jsonpath(self, response_data, ass_jsonpath):
-        try:
-            if ass_jsonpath:
-                for i in ass_jsonpath:
-                    ass_dict = {
-                        'expect': self.test_setup.test_data.replace(i.get('expect')),
-                        'actual': str(self.test_setup.test_data.get_json_path_value(response_data, i['actual'])),
-                        'method': i.get('method')
-                    }
-                    if ass_dict['expect'] == '':
-                        ass_dict['expect'] = None
-                    mango_assertion = MangoAssertion()
-                    self.ass_result.append(AssResultModel(
-                        method=getattr(mango_assertion, ass_dict['method']).__doc__,
-                        actual=ass_dict['actual'],
-                        expect=ass_dict['expect'],
-                    ))
-                    log.api.info(f'用例详情断言-1->{ass_dict}')
-                    mango_assertion.ass(**ass_dict)
-        except AssertionError as error:
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0005)
-        except ToolsError as error:
-            log.api.debug(str(error))
-            raise error
+        if ass_jsonpath:
+            for i in ass_jsonpath:
+                ass_dict = {
+                    'expect': self.test_setup.test_data.replace(i.get('expect')),
+                    'actual': str(self.test_setup.test_data.get_json_path_value(response_data, i['actual'])),
+                    'method': i.get('method')
+                }
+                mango_assertion = MangoAssertion()
+                self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0005)
 
     def __ass_general(self, general: list[dict]):
-        try:
-            for i in general:
-                ass_dict = {
-                    'method': i.get('value').get('value'),
-                    'actual': '',
-                    'expect': ''
-                }
-                for p in i.get('value', {}).get('parameter', []):
-                    ass_dict[p.get('f')] = p.get('v')
-                mango_assertion = MangoAssertion(self.mysql_connect)
-                self.ass_result.append(AssResultModel(
-                    method=getattr(mango_assertion, ass_dict['method']).__doc__,
-                    actual=ass_dict['actual'],
-                    expect=ass_dict['expect'],
-                ))
-                if ass_dict['expect'] == '':
-                    ass_dict['expect'] = None
-                log.api.info(f'用例详情断言-2->{ass_dict}')
-                mango_assertion.ass(**ass_dict)
-        except AssertionError as error:
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0007)
+        for i in general:
+            ass_dict = {
+                'method': i.get('value').get('value'),
+                'actual': '',
+                'expect': ''
+            }
+            for p in i.get('value', {}).get('parameter', []):
+                ass_dict[p.get('f')] = p.get('v')
+            mango_assertion = MangoAssertion(self.mysql_connect)
+            self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_sql(self, sql_list: list[dict]):
-        try:
-            if self.test_setup.mysql_connect:
-                for sql in sql_list:
-                    ass_dict = {
-                        'expect': self.test_setup.test_data.replace(sql.get('expect')),
-                        'actual': self.test_setup.test_data.replace(sql.get('actual')),
-                        'method': sql.get('method')
-                    }
-                    mango_assertion = MangoAssertion()
-                    self.ass_result.append(AssResultModel(
-                        method=getattr(mango_assertion, ass_dict['method']).__doc__,
-                        actual=ass_dict['actual'],
-                        expect=ass_dict['expect'],
-                    ))
-                    if ass_dict['expect'] == '':
-                        ass_dict['expect'] = None
-                    log.api.info(f'用例详情断言-2->{ass_dict}')
-                    mango_assertion.ass(**ass_dict)
-        except AssertionError as error:
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0006)
+        if self.test_setup.mysql_connect:
+            for sql in sql_list:
+                ass_dict = {
+                    'expect': self.test_setup.test_data.replace(sql.get('expect')),
+                    'actual': self.test_setup.test_data.replace(sql.get('actual')),
+                    'method': sql.get('method')
+                }
+                mango_assertion = MangoAssertion()
+                self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_json_all(self, actual: dict, expect: dict):
         try:
@@ -222,6 +183,24 @@ class CaseParameter:
         except AssertionError as error:
             log.api.debug(str(error))
             raise ApiError(*ERROR_MSG_0009)
+
+    def __ass_(self, mango_assertion, ass_dict: dict, _error_msg: tuple):
+        ass_result = AssResultModel(
+            method=getattr(mango_assertion, ass_dict['method']).__doc__,
+            actual=ass_dict['actual'],
+            expect=ass_dict['expect'],
+        )
+        if ass_dict['expect'] == '':
+            ass_dict['expect'] = None
+        log.api.info(f'用例详情断言-1->{ass_dict}')
+        try:
+            mango_assertion.ass(**ass_dict)
+            self.ass_result.append(ass_result)
+        except AssertionError as error:
+            ass_result.error_msg = str(error)
+            self.ass_result.append(ass_result)
+            log.api.debug(str(error))
+            raise ApiError(300, str(error))
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:
