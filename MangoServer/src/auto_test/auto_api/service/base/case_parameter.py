@@ -159,15 +159,17 @@ class CaseParameter:
                 self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_json_all(self, actual: dict, expect: dict):
+        log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
+        ass_result = AssResultModel(
+            method='JSON一致性断言',
+            actual=json.dumps(actual, ensure_ascii=False),
+            expect=json.dumps(expect, ensure_ascii=False)
+        )
         try:
-            log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
-            self.ass_result.append(AssResultModel(
-                method='JSON一致性断言',
-                actual=json.dumps(actual, ensure_ascii=False),
-                expect=json.dumps(expect, ensure_ascii=False)
-            ))
-            MangoAssertion().p_in_dict(actual, expect)
+            ass_result.ass_msg = MangoAssertion().p_in_dict(actual, expect)
+            self.ass_result.append(ass_result)
         except AssertionError as error:
+            ass_result.ass_msg = str(error.args[0]) if error.args else ''
             log.api.debug(str(error))
             raise ApiError(*ERROR_MSG_0004)
 
@@ -177,9 +179,10 @@ class CaseParameter:
             self.ass_result.append(AssResultModel(
                 method='文本一致性断言',
                 actual=actual,
-                expect=expect
+                expect=expect,
+                ass_msg=f'实际={actual}, 预期={expect}'
             ))
-            assert actual.strip() == expect.strip()
+            assert actual.strip() == expect.strip(), f'实际={actual}, 预期={expect}'
         except AssertionError as error:
             log.api.debug(str(error))
             raise ApiError(*ERROR_MSG_0009)
@@ -194,10 +197,10 @@ class CaseParameter:
             ass_dict['expect'] = None
         log.api.info(f'用例详情断言-1->{ass_dict}')
         try:
-            mango_assertion.ass(**ass_dict)
+            ass_result.ass_msg = mango_assertion.ass(**ass_dict)
             self.ass_result.append(ass_result)
         except AssertionError as error:
-            ass_result.error_msg = str(error)
+            ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
             log.api.debug(str(error))
             raise ApiError(300, str(error))

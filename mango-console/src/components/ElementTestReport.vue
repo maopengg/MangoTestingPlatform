@@ -4,7 +4,7 @@
       <a-tag v-if="resultData?.test_time">执行时间：{{ resultData?.test_time }}</a-tag>
     </template>
     <a-tab-pane key="1" title="执行过程">
-      <a-space direction="vertical">
+      <a-space direction="vertical" style="width: 100%">
         <span style="padding-left: 20px"> tips：如果不是最新的测试结果，请点击上面的刷新！</span>
         <a-collapse
           v-for="item of resultData?.element_result_list"
@@ -19,32 +19,40 @@
             <div>
               <a-space direction="vertical" style="width: 50%">
                 <p>
-                  操作类型：{{
+                  <span class="label">操作类型</span>：{{
                     item.type
                       ? getLabelByValue(data.ass, item.ope_key)
                       : getLabelByValue(data.ope, item.ope_key)
                   }}
                 </p>
                 <p>
-                  表达式类型：{{
+                  <span class="label">表达式类型</span>：{{
                     enumStore.element_exp.find((item1) => item1.key === item.exp)?.title
                   }}
                 </p>
                 <p>
-                  测试结果：{{ item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试' }}
+                  <span class="label">测试结果</span>：{{
+                    item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
+                  }}
                 </p>
-                <p>等待时间：{{ item.sleep ? item.sleep : '-' }}</p>
-                <p v-if="item.status === 0 && item?.error_message"
-                  >错误提示：{{ item.error_message }}</p
+                <p><span class="label">等待时间</span>：{{ item.sleep ? item.sleep : '-' }}</p>
+                <p v-if="item.status === 0 && item?.error_message">
+                  <span class="label">错误提示</span>：{{ item.error_message }}
+                </p>
+                <p v-if="item.ass_msg"><span class="label">预期</span>：{{ item.ass_msg }}</p>
+                <p v-if="item.status === 0 && item?.video_path"
+                  ><span class="label">视频路径</span>：{{ item.video_path }}</p
                 >
-                <p v-if="item.expect">预期：{{ item.expect }}</p>
-                <p v-if="item.status === 0 && item?.video_path">视频路径：{{ item.video_path }}</p>
               </a-space>
               <a-space direction="vertical" style="width: 50%">
-                <p style="word-wrap: break-word">元素表达式：{{ item.loc }}</p>
-                <p>元素个数：{{ item.ele_quantity }}</p>
-                <p>元素下标：{{ item.sub ? item.sub : '-' }}</p>
-                <p v-if="item?.element_text">文本信息：{{ item?.element_text }}</p>
+                <p style="word-wrap: break-word"
+                  ><span class="label">元素表达式</span>：{{ item.loc }}</p
+                >
+                <p><span class="label">元素个数</span>：{{ item.ele_quantity }}</p>
+                <p><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p>
+                <p v-if="item?.element_text"
+                  ><span class="label">元素文本</span>：{{ item?.element_text }}</p
+                >
                 <div v-if="item.status === 0 && item?.picture_name">
                   <a-image
                     :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
@@ -66,7 +74,6 @@
                     </template>
                   </a-image>
                 </div>
-                <p v-if="item.expect">实际：{{ item.actual }}</p>
               </a-space>
             </div>
           </a-collapse-item>
@@ -74,7 +81,7 @@
       </a-space>
     </a-tab-pane>
     <a-tab-pane key="2" title="其他信息">
-      <a-space direction="vertical" size="large">
+      <a-space direction="vertical" style="width: 100%">
         <a-space v-if="resultData?.status === 0">
           <span>失败描述：{{ resultData?.error_message || '无' }}</span>
         </a-space>
@@ -92,12 +99,12 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, reactive, ref } from 'vue'
+  import { onMounted, reactive } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
-  const props = defineProps({
+  defineProps({
     resultData: {
       type: Array as () => any,
       required: true,
@@ -155,4 +162,11 @@
   })
 </script>
 
-<style scoped></style>
+<style scoped>
+  .label {
+    display: inline-block;
+    width: 80px;
+    text-align: right;
+    margin-right: 8px;
+  }
+</style>

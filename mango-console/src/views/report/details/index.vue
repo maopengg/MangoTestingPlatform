@@ -231,28 +231,28 @@
           class="custom-drawer"
         >
           <template v-if="data.selectedCase">
-            <a-descriptions :column="1" bordered class="custom-descriptions">
-              <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>
-              <a-descriptions-item label="用例名称"
-                >{{ data.selectedCase?.name }}
-              </a-descriptions-item>
-              <a-descriptions-item label="项目名称"
-                >{{ data.selectedCase?.project_product_name }}
-              </a-descriptions-item>
-              <a-descriptions-item label="执行状态">
-                <a-tag
-                  :color="enumStore.status_colors[data?.selectedCase?.status]"
-                  size="small"
-                  class="custom-tag"
-                >
-                  {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}
-                </a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"
-                >{{ data.selectedCase?.error_message }}
-              </a-descriptions-item>
-            </a-descriptions>
-            <div class="report-cards">
+            <!--            <a-descriptions :column="1" bordered class="custom-descriptions">-->
+            <!--              <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>-->
+            <!--              <a-descriptions-item label="用例名称"-->
+            <!--                >{{ data.selectedCase?.name }}-->
+            <!--              </a-descriptions-item>-->
+            <!--              <a-descriptions-item label="项目名称"-->
+            <!--                >{{ data.selectedCase?.project_product_name }}-->
+            <!--              </a-descriptions-item>-->
+            <!--              <a-descriptions-item label="执行状态">-->
+            <!--                <a-tag-->
+            <!--                  :color="enumStore.status_colors[data?.selectedCase?.status]"-->
+            <!--                  size="small"-->
+            <!--                  class="custom-tag"-->
+            <!--                >-->
+            <!--                  {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}-->
+            <!--                </a-tag>-->
+            <!--              </a-descriptions-item>-->
+            <!--              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"-->
+            <!--                >{{ data.selectedCase?.error_message }}-->
+            <!--              </a-descriptions-item>-->
+            <!--            </a-descriptions>-->
+            <div>
               <div v-if="data.selectedCase.case_type === 0">
                 <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
                   <ElementTestReport :resultData="data?.selectedCase" />

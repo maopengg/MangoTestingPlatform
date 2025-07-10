@@ -80,7 +80,7 @@ class AssResultModel(BaseModel):
     method: str
     expect: str | None = None
     actual: str | None
-    error_msg: str | None = None
+    ass_msg: str | None = None
 
 
 class ApiCaseStepsResultModel(BaseModel):
