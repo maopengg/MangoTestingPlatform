@@ -114,7 +114,7 @@ class TestCase:
         for case_detailed in case_detailed_list:
             case_detailed.status = TaskEnum.PROCEED.value
             case_detailed.save()
-            self.project_product_id = case_detailed.api_info.project_product.id
+            self.project_product_id = case_detailed.project_product.id
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
             if res:
                 case_detailed.status = res[0]
@@ -128,8 +128,8 @@ class TestCase:
         res_list = []
         for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
             case_parameter = CaseParameter(self.test_setup, parameter)
-            self.project_product_id = case_detailed.api_info.project_product.id
-            self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
+            self.project_product_id = case_detailed.project_product.id
+            self.test_setup.init_test_object(case_detailed.project_product.id, self.test_env)
             error_retry = 0
             retry = parameter.error_retry + 1 if parameter.error_retry else 1
             status = StatusEnum.FAIL.value

@@ -101,7 +101,7 @@
                   <a-tab-pane key="13" title="默认请求头">
                     <a-space direction="vertical">
                       <a-checkbox-group
-                        v-for="item of data.headers_list"
+                        v-for="item of data.case_headers_list"
                         :key="item.id"
                         v-model="pageData.record.front_headers"
                         direction="vertical"
@@ -245,7 +245,7 @@
                               <div class="m-2" style="height: 145px; overflow-y: auto">
                                 <a-space direction="vertical" style="width: 100%">
                                   <a-checkbox-group
-                                    v-for="header of data.headers_list"
+                                    v-for="header of data.parameter_headers_list"
                                     :key="header.id"
                                     v-model="item.headers"
                                     direction="vertical"
@@ -700,7 +700,7 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
+          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
               :options="data.productModuleName"
@@ -806,7 +806,8 @@
     apiSonType: '0',
     caseDetailsTypeKey: '0',
     tabsKey: '10',
-
+    case_headers_list: {},
+    parameter_headers_list: {},
     actionParameterTitle: '新增接口场景',
     isAdd: true,
     updateId: null,
@@ -1116,15 +1117,19 @@
       .catch(console.log)
   }
 
-  function doRefreshHeaders() {
+  function doRefreshHeaders(project_product_id: any, is_parameter = false) {
     const value = {
       page: 1,
       pageSize: 10000,
-      project_product_id: route.query.project_product,
+      project_product_id: project_product_id,
     }
     getApiHeaders(value)
       .then((res) => {
-        data.headers_list = res.data
+        if (is_parameter) {
+          data.parameter_headers_list = res.data
+        } else {
+          data.case_headers_list = res.data
+        }
       })
       .catch(console.log)
   }
@@ -1181,7 +1186,17 @@
       let value = getFormItems(formItems)
       value['case'] = route.query.case_id
       value['case_sort'] = data.data.length
-
+      for (const parentItem of data.productModuleName) {
+        if (parentItem.children) {
+          const matchedChild = parentItem.children.find(
+            (child) => child.value === value['project_product']
+          )
+          if (matchedChild) {
+            value['project_product'] = parentItem.value
+            break
+          }
+        }
+      }
       postApiCaseDetailed(value, route.query.case_id)
         .then((res) => {
           Message.success(res.msg)
@@ -1278,14 +1293,14 @@
   function select(record: any) {
     data.tabelJson = record
     doRefreshParameter(data.tabelJson.id)
-
+    doRefreshHeaders(record.project_product.id, true)
     switchApiInfoType(data.caseDetailsTypeKey)
   }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doRefreshHeaders()
+      doRefreshHeaders(route.query.project_product)
       onProductModuleName()
       getCacheDataKeyValue()
     })

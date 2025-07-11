@@ -13,6 +13,7 @@ from rest_framework.viewsets import ViewSet
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiInfo, ApiCase, ApiCaseDetailedParameter
 from src.auto_test.auto_api.views.api_case import ApiCaseSerializers
 from src.auto_test.auto_api.views.api_info import ApiInfoSerializers
+from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -32,6 +33,7 @@ class ApiCaseDetailedSerializers(serializers.ModelSerializer):
 class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    project_product = ProjectProductSerializersC(read_only=True)
     case = ApiCaseSerializers(read_only=True)
     api_info = ApiInfoSerializers(read_only=True)
 
@@ -43,6 +45,7 @@ class ApiCaseDetailedSerializersC(serializers.ModelSerializer):
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
             'case',
+            'project_product',
             'api_info')
         return queryset
 
@@ -83,8 +86,6 @@ class ApiCaseDetailedCRUD(ModelCRUD):
     @error_response('api')
     def post(self, request: Request):
         data = request.data
-        if data['module']:
-            del data['module']
         api_info_obj = ApiInfo.objects.get(id=request.data.get('api_info'))
         data['url'] = api_info_obj.url
         data['params'] = api_info_obj.params

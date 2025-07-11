@@ -127,6 +127,12 @@ class ApiInfoViews(ViewSet):
         parsed = parse(request.data.get('curl_command'))
         url_components = urlparse(parsed.url)
         path = url_components.path
+        headers = {}
+        for key, value in parsed.header.items():
+            if isinstance(value, str):
+                headers[key] = value.strip()
+            else:
+                headers[key] = value
         result = {
             'name': request.data.get('name'),
             'module': request.data.get('module'),
@@ -134,7 +140,7 @@ class ApiInfoViews(ViewSet):
             'type': request.data.get('type'),
             'url': path,
             'method': MethodEnum.get_key(parsed.method),
-            'headers': dict(parsed.header),
+            'headers': headers,
         }
         query_params = parse_qs(url_components.query)
         params = {k: v[0] if len(v) == 1 else v for k, v in query_params.items()}

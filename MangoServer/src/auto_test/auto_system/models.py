@@ -44,9 +44,11 @@ class ProjectProduct(models.Model):
             raise ToolsError(300, "产品模块-有关联数据，请先删除绑定的数据后再删除！")
         if TestObject.objects.filter(project_product=self).exists():
             raise ToolsError(300, "测试对象-有关联数据，请先删除绑定的数据后再删除！")
-        from src.auto_test.auto_api.models import ApiPublic, ApiCase, ApiInfo
+        from src.auto_test.auto_api.models import ApiPublic, ApiCase, ApiInfo, ApiCaseDetailed
         if ApiInfo.objects.filter(project_product=self).exists():
             raise ToolsError(300, "接口信息-有关联数据，请先删除绑定的数据后再删除！")
+        if ApiCaseDetailed.objects.filter(project_product=self).exists():
+            raise ToolsError(300, "API用例详情-有关联数据，请先删除绑定的数据后再删除！")
         if ApiCase.objects.filter(project_product=self).exists():
             raise ToolsError(300, "API用例-有关联数据，请先删除绑定的数据后再删除！")
         if ApiPublic.objects.filter(project_product=self).exists():
