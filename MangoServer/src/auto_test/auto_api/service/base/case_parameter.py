@@ -169,10 +169,12 @@ class CaseParameter:
         log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
         ass_result = AssResultModel(
             method='JSON一致性断言',
-            actual=json.dumps(actual, ensure_ascii=False),
+            actual=None,
             expect=json.dumps(expect, ensure_ascii=False)
         )
         try:
+            assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
+            ass_result.actual = json.dumps(actual, ensure_ascii=False)
             ass_result.ass_msg = MangoAssertion().p_in_dict(actual, expect)
             self.ass_result.append(ass_result)
         except AssertionError as error:
