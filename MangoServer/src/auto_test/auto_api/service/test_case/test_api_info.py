@@ -22,9 +22,7 @@ class TestApiInfo:
         try:
             api_info.status = TaskEnum.PROCEED.value
             api_info.save()
-            self.test_setup.init_test_object(api_info.project_product_id, self.test_env)
-            self.test_setup.init_public(api_info.project_product_id)
-            response = self.test_setup.api_request(api_info.id, is_merge_headers=True)
+            response = self.test_setup.api_request(api_info.id, self.test_env, is_merge_headers=True, is_error=True)
             api_info.status = TaskEnum.SUCCESS.value
             api_info.save()
             return self.save_api_info(api_info, response)

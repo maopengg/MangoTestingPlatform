@@ -245,7 +245,7 @@
                               <div class="m-2" style="height: 145px; overflow-y: auto">
                                 <a-space direction="vertical" style="width: 100%">
                                   <a-checkbox-group
-                                    v-for="header of data.headers_list"
+                                    v-for="header of data.parameter_headers_list"
                                     :key="header.id"
                                     v-model="item.headers"
                                     direction="vertical"
@@ -748,7 +748,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, nextTick, onMounted, ref } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
@@ -756,11 +756,11 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
-  import { formItems, columns, formParameterItems } from './config'
-  import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
+  import { columns, formItems, formParameterItems } from './config'
+  import { getApiCaseRun, putApiCase } from '@/api/apitest/case'
   import {
-    getApiCaseDetailed,
     deleteApiCaseDetailed,
+    getApiCaseDetailed,
     postApiCaseDetailed,
     putApiPutCaseSort,
     putApiPutRefreshApiInfo,
@@ -771,11 +771,11 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
   import {
+    deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
     postApiCaseDetailedParameter,
-    putApiCaseDetailedParameter,
-    deleteApiCaseDetailedParameter,
     postCaseDetailedParameterTestJsonpath,
+    putApiCaseDetailedParameter,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
@@ -1116,15 +1116,19 @@
       .catch(console.log)
   }
 
-  function doRefreshHeaders() {
+  function doRefreshHeaders(project_product_id: any, is_parameter = false) {
     const value = {
       page: 1,
       pageSize: 10000,
-      project_product_id: route.query.project_product,
+      project_product_id: project_product_id,
     }
     getApiHeaders(value)
       .then((res) => {
-        data.headers_list = res.data
+        if (is_parameter) {
+          data.parameter_headers_list = res.data
+        } else {
+          data.headers_list = res.data
+        }
       })
       .catch(console.log)
   }
@@ -1278,14 +1282,14 @@
   function select(record: any) {
     data.tabelJson = record
     doRefreshParameter(data.tabelJson.id)
-
+    doRefreshHeaders(record.api_info.project_product, true)
     switchApiInfoType(data.caseDetailsTypeKey)
   }
 
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
-      doRefreshHeaders()
+      doRefreshHeaders(route.query.project_product)
       onProductModuleName()
       getCacheDataKeyValue()
     })
@@ -1322,16 +1326,5 @@
     align-items: center;
     gap: 12px; /* 控制标签间距 */
     font-size: 14px;
-  }
-  .label {
-    color: #666;
-    font-weight: bold;
-  }
-  .value {
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .value.status {
-    background: rgba(0, 0, 0, 0.04);
   }
 </style>

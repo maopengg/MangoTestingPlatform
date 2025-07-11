@@ -9,15 +9,15 @@ import traceback
 
 import requests
 import time
+
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
-
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools import project_dir
-from ...models import ApiCaseDetailedParameter
+from ...models import ApiCaseDetailedParameter, ApiHeaders
 
 
 class CaseParameter:
@@ -32,6 +32,13 @@ class CaseParameter:
         self.test_object = api_base_test_setup.test_object
         self.mysql_connect = api_base_test_setup.mysql_connect
 
+    def headers(self, parameter: ApiCaseDetailedParameter) -> dict:
+        case_details_header = {}
+        if parameter.headers:
+            for i in ApiHeaders.objects.filter(id__in=parameter.headers):
+                case_details_header[i.key] = i.value
+        return case_details_header
+
     def front_main(self, request: RequestModel) -> RequestModel:
         if self.parameter.front_sql:
             self.__front_sql(self.parameter.front_sql)
@@ -40,6 +47,7 @@ class CaseParameter:
         return request
 
     def ass_main(self, response: ResponseModel, ) -> tuple[list[AssResultModel], int, str | None]:
+        print(123123, response.model_dump())
         try:
             if self.parameter.ass_jsonpath:
                 ass_jsonpath = self.test_setup.test_data.replace(self.parameter.ass_jsonpath)
@@ -59,7 +67,7 @@ class CaseParameter:
             return self.ass_result, StatusEnum.FAIL.value, error.msg
         except Exception as e:
             log.api.error(f'API断言发生未知错误，管理员请检查：{e}，{traceback.print_exc()}')
-            return self.ass_result, StatusEnum.FAIL.value, None
+            return self.ass_result, StatusEnum.FAIL.value, f'API断言发生未知错误，管理员请检查：{e}'
         return self.ass_result, StatusEnum.SUCCESS.value, None
 
     def posterior_main(self, response: ResponseModel) -> ResponseModel:
