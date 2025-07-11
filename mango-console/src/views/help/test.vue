@@ -1,344 +1,187 @@
 <template>
-  <div class="test-report-container">
-    <a-row :gutter="2" class="summary-cards">
-      <a-col v-for="(item, index) in summaryCards" :key="index" :span="6">
-        <a-card :class="['summary-card', item.class]">
-          <template #title>
-            <a-space>
-              <component :is="item.icon" />
-              <span>{{ item.title }}</span>
-            </a-space>
-          </template>
-          <div class="card-content">
-            <span class="number">{{ item.value }}</span>
-            <span class="label">个</span>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <a-row :gutter="2" class="chart-section">
-      <a-col :span="8">
-        <a-card title="基础信息">
-          <div class="chart-container">
-            <div class="progress-item">
-              <div class="progress-label">API测试 ({{ data.summary.api_count }})：</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.api_in_progress_count / data.summary.api_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-          </div>
-        </a-card>
-      </a-col>
-
-      <a-col :span="8">
-        <a-card title="测试进度">
-          <div class="chart-container">
-            <div class="progress-item">
-              <div class="progress-label">API测试 ({{ data.summary.api_count }})：</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.api_in_progress_count / data.summary.api_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.ui_in_progress_count / data.summary.ui_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-            <div class="progress-item">
-              <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
-              <a-progress
-                :color="{
-                  '0%': 'rgb(var(--primary-6))',
-                  '100%': 'rgb(var(--success-6))',
-                }"
-                :percent="data.summary.pytest_in_progress_count / data.summary.pytest_count"
-                :style="{ width: '50%' }"
-              />
-            </div>
-          </div>
-        </a-card>
-      </a-col>
-      <a-col :span="8">
-        <a-card title="测试结果统计">
-          <div class="chart-container">
-            <a-progress
-              :color="'#52C41A'"
-              :percent="(data.summary.success_count / data.summary.count) * 100"
-              style="margin-right: 32px"
-              type="circle"
-            >
-              <template #text>
-                <div class="circle-progress-text">
-                  <div>成功率</div>
-                  <div
-                    >{{ ((data.summary.success_count / data.summary.count) * 100).toFixed(1) }}%
-                  </div>
-                </div>
-              </template>
-            </a-progress>
-          </div>
-        </a-card>
-      </a-col>
-    </a-row>
-
-    <a-card class="test-details">
-      <template #title>
-        <a-space>
-          <icon-unordered-list />
-          <span>测试用例详情</span>
-        </a-space>
-      </template>
-      <a-table
-        :bordered="false"
-        :columns="tableColumns"
-        :data="table.dataList"
-        :draggable="{ type: 'handle', width: 40 }"
-        :loading="table.tableLoading.value"
-        :pagination="false"
-        :row-selection="{ selectedRowKeys, showCheckedAll }"
-        :rowKey="rowKey"
-      >
-        <template #columns>
-          <a-table-column
-            v-for="item of tableColumns"
-            :key="item.key"
-            :align="item.align"
-            :data-index="item.key"
-            :fixed="item.fixed"
-            :title="item.title"
-            :width="item.width"
+  <TableBody ref="tableBody">
+    <template #default>
+      <div class="flow-layout">
+        <!-- 左侧节点面板 -->
+        <div class="flow-panel flow-panel-left">
+          <div class="flow-panel-title">节点面板</div>
+          <div
+            v-for="item in nodeTypes"
+            :key="item.type"
+            :draggable="true"
+            @dragstart="(e) => onDragStart(e, item.type, item.label)"
+            class="flow-draggable-node"
           >
-            <template v-if="item.key === 'index'" #cell="{ record }">
-              {{ record.id }}
-            </template>
-            <template v-else-if="item.key === 'type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.type]" size="small"
-                >{{ enumStore.test_case_type[record.type].title }}
-              </a-tag>
-            </template>
-            <template v-else-if="item.key === 'case_id'" #cell="{ record }">
-              {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
-            </template>
-            <template v-else-if="item.key === 'status'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record?.status]" size="small">
-                {{ enumStore.task_status[record?.status].title }}
-              </a-tag>
-            </template>
-            <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" @click="showDetails(record)"> 查看详情</a-button>
-            </template>
-          </a-table-column>
-        </template>
-      </a-table>
-    </a-card>
-
-    <!-- 测试详情抽屉 -->
-    <a-drawer v-model:visible="drawerVisible" :width="800" title="测试用例详情">
-      <template v-if="data.selectedCase">
-        <a-descriptions :column="1" bordered>
-          <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>
-          <a-descriptions-item label="用例名称"
-            >{{ data.selectedCase?.case_name }}
-          </a-descriptions-item>
-          <a-descriptions-item label="项目名称"
-            >{{ data.selectedCase?.project_product?.name }}
-          </a-descriptions-item>
-          <a-descriptions-item label="创建时间"
-            >{{ data.selectedCase?.create_time }}
-          </a-descriptions-item>
-          <a-descriptions-item label="更新时间"
-            >{{ data.selectedCase?.update_time }}
-          </a-descriptions-item>
-          <a-descriptions-item label="执行状态">
-            <a-tag :color="enumStore.colors[data?.selectedCase?.status]" size="small">
-              {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}
-            </a-tag>
-          </a-descriptions-item>
-        </a-descriptions>
-        <div>
-          <div v-if="data.caseType === 0">
-            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
-              <ElementTestReport :resultData="data?.selectedCase.resultData" />
-            </a-card>
-          </div>
-          <div v-else-if="data.caseType === 1">
-            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
-              <ApiTestReport :resultData="data?.selectedCase.resultData" />
-            </a-card>
-          </div>
-          <div v-else-if="data.caseType === 2">
-            <a-card :bordered="false" :title="data?.selectedCase.resultData?.name">
-              <PytestTestReport :resultData="data?.selectedCase.resultData"
-                >pytest
-              </PytestTestReport>
-            </a-card>
+            {{ item.label }}
           </div>
         </div>
-      </template>
-    </a-drawer>
-  </div>
+
+        <!-- 中间vue-flow画布 -->
+        <div class="flow-canvas-wrapper" @drop="onDrop" @dragover="onDragOver">
+          <div class="flow-canvas-inner">
+            <VueFlow
+              :nodes="nodes"
+              :edges="edges"
+              class="flow-canvas"
+              @node-click="onNodeClick"
+              @connect="onConnect"
+              :connection-mode="'loose'"
+            />
+          </div>
+        </div>
+
+        <!-- 右侧属性面板 -->
+        <div class="flow-panel flow-panel-right">
+          <div class="flow-panel-title">属性面板</div>
+          <div v-if="selectedNode" class="flow-attr-list">
+            <div><b>节点ID:</b> {{ selectedNode.id }}</div>
+            <div><b>类型:</b> {{ selectedNode.type }}</div>
+            <div><b>数据:</b> {{ selectedNode.data }}</div>
+          </div>
+          <div v-else class="flow-attr-empty">请选择一个节点查看详情</div>
+        </div>
+      </div>
+    </template>
+  </TableBody>
 </template>
 
-<script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
-  import {
-    IconApps,
-    IconCheckCircle,
-    IconCloseCircle,
-    IconSync,
-    IconUnorderedList,
-  } from '@arco-design/web-vue/es/icon'
-  import PytestTestReport from '@/components/PytestTestReport.vue'
-  import ApiTestReport from '@/components/ApiTestReport.vue'
-  import ElementTestReport from '@/components/ElementTestReport.vue'
-  import { useEnum } from '@/store/modules/get-enum'
-  import {
-    usePagination,
-    useRowKey,
-    useRowSelection,
-    useTable,
-    useTableColumn,
-  } from '@/hooks/table'
-  import {
-    getSystemTestSuiteDetails,
-    getSystemTestSuiteDetailsSummary,
-  } from '@/api/system/test_sute_details'
+<script setup>
+import { ref } from 'vue'
+import { VueFlow, useVueFlow } from '@vue-flow/core'
 
-  const pagination = usePagination(doRefresh)
-  const drawerVisible = ref(false)
-  const enumStore = useEnum()
+// 你可以自行组装 nodes/edges 数据
+const nodes = ref([])
+const edges = ref([])
 
-  const table = useTable()
-  const rowKey = useRowKey('id')
-  const { selectedRowKeys, showCheckedAll } = useRowSelection()
-  const tableColumns = useTableColumn([
-    table.indexColumn,
-    {
-      title: '用例名称',
-      key: 'case_name',
-      dataIndex: 'case_name',
-    },
-    {
-      title: '测试类型',
-      key: 'type',
-      dataIndex: 'type',
-    },
-    {
-      title: '测试结果',
-      key: 'status',
-      dataIndex: 'status',
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      dataIndex: 'actions',
-      fixed: 'right',
-      width: 130,
-    },
-  ])
-  const data: any = reactive({
-    dataList: [],
-    stepName: '',
-    treeData: [],
-    resultData: {},
-    summary: {},
-    caseType: null,
-    selectedCase: {},
+const selectedNode = ref(null)
+
+const nodeTypes = [
+  { type: 'input', label: '开始' },
+  { type: 'default', label: '节点' },
+  { type: 'default', label: '判断' }, // 判断也用 default 类型
+  { type: 'output', label: '结束' },
+]
+
+function onDragStart(event, nodeType, nodeLabel) {
+  event.dataTransfer.setData('application/node-type', nodeType)
+  event.dataTransfer.setData('application/node-label', nodeLabel)
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+const { project, addEdges } = useVueFlow()
+
+// 添加连接处理
+function onConnect(params) {
+  edges.value.push({
+    id: `edge_${Date.now()}`,
+    source: params.source,
+    target: params.target,
+    animated: true
   })
-
-  const summaryCards = computed(() => [
-    {
-      title: '总用例数',
-      value: data.summary.count,
-      icon: IconApps,
-      class: '',
-    },
-    {
-      title: '成功用例',
-      value: data.summary.success_count,
-      icon: IconCheckCircle,
-      class: 'success',
-    },
-    {
-      title: '失败用例',
-      value: data.summary.fail_count,
-      icon: IconCloseCircle,
-      class: 'error',
-    },
-    {
-      title: '进行中',
-      value: data.summary.proceed_count,
-      icon: IconSync,
-      class: 'running',
-    },
-  ])
-
-  const showDetails = (record: any) => {
-    data.selectedCase = record
-    drawerVisible.value = true
-  }
-
-  function doRefresh() {
-    getSystemTestSuiteDetails(232853768174)
-      .then((res) => {
-        data.datsList = res.data
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
-  }
-
-  function doRefreshSummary() {
-    getSystemTestSuiteDetailsSummary(232853768174)
-      .then((res) => {
-        data.summary = res.data
-      })
-      .catch(console.log)
-  }
-
-  onMounted(() => {
-    doRefresh()
-    doRefreshSummary()
-  })
+}
 </script>
 
-<style scoped></style>
+<style>
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+
+.flow-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #f4f6fa;
+}
+
+.flow-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  max-width: 340px;
+  width: 22%;
+  background: #fff;
+  border-radius: 12px;
+  margin: 18px 0 18px 18px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.06);
+  padding: 24px 18px 18px 18px;
+  box-sizing: border-box;
+  height: calc(100vh - 36px);
+}
+.flow-panel.flow-panel-left {
+  width: 15%;
+  min-width: 120px;
+  max-width: 300px;
+}
+.flow-panel.flow-panel-right {
+  width: 25%;
+  min-width: 180px;
+  max-width: 500px;
+  margin-left: 0;
+  margin-right: 18px;
+}
+.flow-panel-title {
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 18px;
+  color: #222;
+}
+.flow-draggable-node {
+  margin-bottom: 14px;
+  padding: 12px 0;
+  background: #f7faff;
+  border: 1.5px solid #b3c6e0;
+  border-radius: 6px;
+  cursor: grab;
+  text-align: center;
+  font-size: 16px;
+  transition: background 0.2s, border 0.2s;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.03);
+}
+.flow-draggable-node:hover {
+  background: #e6f0ff;
+  border-color: #409eff;
+}
+.flow-canvas-wrapper {
+  width: 60%;
+  min-width: 200px;
+  max-width: 100vw;
+  flex: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: 100vh;
+  padding: 0 0;
+}
+.flow-canvas-inner {
+  width: 98%;
+  height: 96vh;
+  background: #fafdff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.flow-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+}
+.flow-attr-list {
+  font-size: 15px;
+  color: #333;
+  line-height: 2.1;
+}
+.flow-attr-empty {
+  color: #bbb;
+  font-size: 15px;
+  margin-top: 30px;
+  text-align: center;
+}
+
+.vue-flow__handle {
+  display: block !important;
+  opacity: 1 !important;
+}
+</style>

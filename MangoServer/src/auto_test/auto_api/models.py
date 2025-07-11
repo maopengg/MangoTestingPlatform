@@ -97,6 +97,10 @@ class ApiCaseDetailed(models.Model):
         super().delete(*args, **kwargs)
 
 
+    # def clean(self):
+    #     if self.status not in [StatusEnum.FAIL, StatusEnum.SUCCESS]:
+    #         raise ValidationError("状态值只能是 0 或 1")
+    #     super().clean()
 class ApiCaseDetailedParameter(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
