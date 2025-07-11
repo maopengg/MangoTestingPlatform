@@ -5,7 +5,6 @@
 # @Author : 毛鹏
 
 import os
-import traceback
 from urllib.parse import urlparse
 
 import requests
@@ -53,7 +52,6 @@ class BaseRequest:
         except Timeout:
             raise ApiError(*ERROR_MSG_0037)
         except RequestException as error:
-            traceback.print_exc()
             log.api.error(f'接口请求时发生未知错误，错误数据：{request_data.model_dump_json()}，报错内容：{error}')
             raise ApiError(*ERROR_MSG_0002)
         if request_data.posterior_file:

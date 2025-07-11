@@ -83,7 +83,6 @@ class ApiCase(models.Model):
 class ApiCaseDetailed(models.Model):
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
     update_time = models.DateTimeField(verbose_name="修改时间", auto_now=True)
-    project_product = models.ForeignKey(to=ProjectProduct, to_field="id", on_delete=models.PROTECT)
     case = models.ForeignKey(to=ApiCase, to_field="id", on_delete=models.PROTECT)
     api_info = models.ForeignKey(to=ApiInfo, to_field="id", on_delete=models.PROTECT)
     case_sort = models.IntegerField(verbose_name="用例排序", null=True)
