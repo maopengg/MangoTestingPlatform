@@ -179,22 +179,24 @@ class CaseParameter:
             self.ass_result.append(ass_result)
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0004)
+            self.ass_result.append(ass_result)
+            raise ApiError(300, ass_result.ass_msg)
 
     def __ass_test_all(self, actual: str, expect: str):
+        log.api.debug(f'用例详情断言-4->实际：{actual}，预期：{expect}')
+        ass_result = AssResultModel(
+            method='文本一致性断言',
+            actual=actual,
+            expect=expect,
+            ass_msg=f'实际={actual}, 预期={expect}'
+        )
+        self.ass_result.append(ass_result)
         try:
-            log.api.debug(f'用例详情断言-4->实际：{actual}，预期：{expect}')
-            self.ass_result.append(AssResultModel(
-                method='文本一致性断言',
-                actual=actual,
-                expect=expect,
-                ass_msg=f'实际={actual}, 预期={expect}'
-            ))
             assert actual.strip() == expect.strip(), f'实际={actual}, 预期={expect}'
         except AssertionError as error:
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0009)
+            ass_result.ass_msg = str(error.args[0]) if error.args else ''
+            self.ass_result.append(ass_result)
+            raise ApiError(300, ass_result.ass_msg)
 
     def __ass_(self, mango_assertion, ass_dict: dict, _error_msg: tuple):
         ass_result = AssResultModel(
@@ -211,8 +213,8 @@ class CaseParameter:
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
-            log.api.debug(str(error))
-            raise ApiError(300, str(error))
+            raise ApiError(300, ass_result.ass_msg)
+
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:
