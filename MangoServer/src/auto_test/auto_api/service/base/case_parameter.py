@@ -47,7 +47,6 @@ class CaseParameter:
         return request
 
     def ass_main(self, response: ResponseModel, ) -> tuple[list[AssResultModel], int, str | None]:
-        print(123123, response.model_dump())
         try:
             if self.parameter.ass_jsonpath:
                 ass_jsonpath = self.test_setup.test_data.replace(self.parameter.ass_jsonpath)
