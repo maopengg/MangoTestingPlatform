@@ -101,7 +101,7 @@
                   <a-tab-pane key="13" title="默认请求头">
                     <a-space direction="vertical">
                       <a-checkbox-group
-                        v-for="item of data.case_headers_list"
+                        v-for="item of data.headers_list"
                         :key="item.id"
                         v-model="pageData.record.front_headers"
                         direction="vertical"
@@ -700,7 +700,7 @@
           <template v-if="item.type === 'input'">
             <a-input v-model="item.value" :placeholder="item.placeholder" />
           </template>
-          <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+          <template v-else-if="item.type === 'cascader' && item.key === 'module'">
             <a-cascader
               v-model="item.value"
               :options="data.productModuleName"
@@ -748,7 +748,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { reactive, nextTick, onMounted, ref } from 'vue'
+  import { nextTick, onMounted, reactive, ref } from 'vue'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
   import { ModalDialogType } from '@/types/components'
@@ -756,11 +756,11 @@
   import { Message, Modal } from '@arco-design/web-vue'
   import { usePageData } from '@/store/page-data'
   import { formatJson, formatJsonObj } from '@/utils/tools'
-  import { formItems, columns, formParameterItems } from './config'
-  import { putApiCase, getApiCaseRun } from '@/api/apitest/case'
+  import { columns, formItems, formParameterItems } from './config'
+  import { getApiCaseRun, putApiCase } from '@/api/apitest/case'
   import {
-    getApiCaseDetailed,
     deleteApiCaseDetailed,
+    getApiCaseDetailed,
     postApiCaseDetailed,
     putApiPutCaseSort,
     putApiPutRefreshApiInfo,
@@ -771,11 +771,11 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { getApiHeaders } from '@/api/apitest/headers'
   import {
+    deleteApiCaseDetailedParameter,
     getApiCaseDetailedParameter,
     postApiCaseDetailedParameter,
-    putApiCaseDetailedParameter,
-    deleteApiCaseDetailedParameter,
     postCaseDetailedParameterTestJsonpath,
+    putApiCaseDetailedParameter,
   } from '@/api/apitest/case-detailed-parameter'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
@@ -806,8 +806,7 @@
     apiSonType: '0',
     caseDetailsTypeKey: '0',
     tabsKey: '10',
-    case_headers_list: {},
-    parameter_headers_list: {},
+
     actionParameterTitle: '新增接口场景',
     isAdd: true,
     updateId: null,
@@ -1128,7 +1127,7 @@
         if (is_parameter) {
           data.parameter_headers_list = res.data
         } else {
-          data.case_headers_list = res.data
+          data.headers_list = res.data
         }
       })
       .catch(console.log)
@@ -1186,17 +1185,7 @@
       let value = getFormItems(formItems)
       value['case'] = route.query.case_id
       value['case_sort'] = data.data.length
-      for (const parentItem of data.productModuleName) {
-        if (parentItem.children) {
-          const matchedChild = parentItem.children.find(
-            (child) => child.value === value['project_product']
-          )
-          if (matchedChild) {
-            value['project_product'] = parentItem.value
-            break
-          }
-        }
-      }
+
       postApiCaseDetailed(value, route.query.case_id)
         .then((res) => {
           Message.success(res.msg)
@@ -1293,7 +1282,7 @@
   function select(record: any) {
     data.tabelJson = record
     doRefreshParameter(data.tabelJson.id)
-    doRefreshHeaders(record.project_product.id, true)
+    doRefreshHeaders(record.api_info.project_product, true)
     switchApiInfoType(data.caseDetailsTypeKey)
   }
 
@@ -1337,16 +1326,5 @@
     align-items: center;
     gap: 12px; /* 控制标签间距 */
     font-size: 14px;
-  }
-  .label {
-    color: #666;
-    font-weight: bold;
-  }
-  .value {
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .value.status {
-    background: rgba(0, 0, 0, 0.04);
   }
 </style>

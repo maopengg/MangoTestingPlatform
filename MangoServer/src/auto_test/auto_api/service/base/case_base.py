@@ -39,9 +39,6 @@ class CaseBase:
                 log.api.debug(f'用例参数化->key:{i.get("key")}，value：{value}')
                 self.test_setup.test_data.set_cache(i.get('key'), value)
 
-    def case_headers(self):
-        pass
-
     def __front_custom(self, front_custom: list):
         for custom in front_custom:
             log.api.debug(f'前置自定义->key:{custom.get("key")}，value:{custom.get("value")}')
@@ -60,12 +57,8 @@ class CaseBase:
 
     def __front_headers(self):
         if self.api_case.front_headers:
-            case_details_header = {}
             for i in ApiHeaders.objects.filter(id__in=self.api_case.front_headers):
-                case_details_header[i.key] = i.value
-            self.case_headers = case_details_header
-        else:
-            self.case_headers = self.test_setup.init_headers(self.api_case.project_product.id)
+                self.case_headers[i.key] = i.value
         log.api.debug(f'前置自定义->用例headers:{self.case_headers}')
 
     def __posterior_sql(self, posterior_sql: list[dict]):
