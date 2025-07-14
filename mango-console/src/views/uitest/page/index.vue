@@ -50,7 +50,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
             </div>
             <div>
               <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
@@ -195,7 +195,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加页面',
+    actionTitle: '新增',
   })
 
   function onResetSearch() {
@@ -204,8 +204,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加页面'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {

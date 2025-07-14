@@ -135,6 +135,8 @@ class ModelCRUD(GenericAPIView):
                 self.asynchronous_callback(request.query_params.get('parent_id'))
         except ToolsError as error:
             return ResponseData.fail((error.code, error.msg))
+        except self.model.DoesNotExist:
+            return ResponseData.fail(RESPONSE_MSG_0029)
         else:
             return ResponseData.success(RESPONSE_MSG_0005)
 

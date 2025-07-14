@@ -37,7 +37,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
           </a-space>
         </template>
@@ -148,7 +148,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const data = reactive({
-    actionTitle: '添加配置',
+    actionTitle: '新增',
     isAdd: false,
     updateId: 0,
   })
@@ -172,8 +172,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加测试对象的mysql配置'
+  function onAdd() {
+    data.actionTitle = '新增'
     modalDialogRef.value?.toggle()
     data.isAdd = true
     formItems.forEach((it) => {
@@ -203,7 +203,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑配置'
+    data.actionTitle = '编辑'
     modalDialogRef.value?.toggle()
     data.isAdd = false
     data.updateId = item.id

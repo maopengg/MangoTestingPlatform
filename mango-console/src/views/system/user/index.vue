@@ -160,7 +160,7 @@
   const userData = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加用户',
+    actionTitle: '新增',
     allRole: [],
   })
 
@@ -221,7 +221,7 @@
   }
 
   function onUpdate(item: any) {
-    userData.actionTitle = '编辑用户'
+    userData.actionTitle = '编辑'
     userData.isAdd = false
     userData.updateId = item.id
     modalDialogRef.value?.toggle()

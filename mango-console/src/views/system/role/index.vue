@@ -98,7 +98,7 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加测试对象',
+    actionTitle: '新增',
   })
 
   function doRefresh() {
@@ -111,7 +111,7 @@
   }
 
   function onAdd() {
-    data.actionTitle = '添加角色'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -141,7 +141,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑角色'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

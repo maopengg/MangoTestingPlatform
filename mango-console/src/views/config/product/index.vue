@@ -177,7 +177,7 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加项目',
+    actionTitle: '新增',
   })
 
   function onResetSearch() {
@@ -199,7 +199,7 @@
   }
 
   function onAdd() {
-    data.actionTitle = '添加项目'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -230,7 +230,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑项目'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

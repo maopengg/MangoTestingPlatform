@@ -37,7 +37,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
           </a-space>
         </template>
@@ -175,7 +175,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加通知',
+    actionTitle: '新增',
     userList: [],
     formItems: [],
   })
@@ -211,10 +211,10 @@
     })
   }
 
-  function onAddPage() {
+  function onAdd() {
     data.formItems = []
     data.formItems.push(...formItems)
-    data.actionTitle = '添加通知'
+    data.actionTitle = '添加'
     modalDialogRef.value?.toggle()
     data.isAdd = true
     data.formItems.forEach((it: any) => {
@@ -246,7 +246,7 @@
   function onUpdate(item: any) {
     data.formItems = []
     data.formItems.push(...formItems)
-    data.actionTitle = '编辑通知'
+    data.actionTitle = '编辑'
     modalDialogRef.value?.toggle()
     data.isAdd = false
     data.updateId = item.id

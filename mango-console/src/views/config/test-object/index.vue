@@ -50,7 +50,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
             </div>
           </a-space>
         </template>
@@ -232,7 +232,7 @@
     nickname: [],
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加测试对象',
+    actionTitle: '新增',
   })
 
   function onResetSearch() {
@@ -241,8 +241,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加测试对象'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -272,7 +272,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑测试对象'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

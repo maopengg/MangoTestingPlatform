@@ -248,7 +248,7 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加定时任务',
+    actionTitle: '新增',
     userList: [],
     timingList: [],
   })
@@ -274,7 +274,7 @@
   }
 
   function onAdd() {
-    data.actionTitle = '添加定时任务'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -310,7 +310,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑定时器'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

@@ -68,13 +68,13 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '新增模块',
+    actionTitle: '新增',
     data: [],
     caseList: [],
   })
 
   function doAppend() {
-    data.actionTitle = '添加用例'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -104,7 +104,7 @@
   }
 
   function onUpdate(record: any) {
-    data.actionTitle = '编辑用例'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = record.id
     modalDialogRef.value?.toggle()

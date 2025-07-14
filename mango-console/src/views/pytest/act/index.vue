@@ -175,7 +175,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加',
+    actionTitle: '新增',
     drawerVisible: false,
     codeText: '',
     projectNameList: [],

@@ -499,14 +499,14 @@
                                       v-if="value?.value && value?.value?.parameter"
                                       direction="vertical"
                                     >
-                                      <a-input
+                                      <a-textarea
                                         v-for="(param, pIdx) in value.value.parameter"
                                         :key="param.f"
                                         v-model="value.value.parameter[pIdx].v"
                                         :placeholder="param.p"
-                                        :allow-clear="true"
                                         :required="param.d"
-                                        style="width: 220px"
+                                        :auto-size="{ minRows: 2, maxRows: 4 }"
+                                        style="width: 330px"
                                         @blur="blurSave('ass_general', item.ass_general, item.id)"
                                       />
                                     </a-space>
@@ -790,7 +790,7 @@
 
   const route = useRoute()
   const data: any = reactive({
-    actionTitle: '新增接口',
+    actionTitle: '新增',
 
     assClickAdd: true,
     results: null,
@@ -815,7 +815,6 @@
   const caseRunning = ref(false)
   function changeGeneralAss(value, index, item) {
     const inputItem = findItemByValue(data.ass, value.method)
-    // 遍历 parameter，把对象类型的 v 转成 JSON 字符串
     if (inputItem && Array.isArray(inputItem.parameter)) {
       inputItem.parameter.forEach((param) => {
         if (typeof param.v === 'object' && param.v !== null) {
@@ -828,7 +827,6 @@
       })
     }
     item.ass_general[index].value = inputItem
-    console.log(inputItem)
   }
 
   function findItemByValue(data: any, value: string) {
@@ -1134,6 +1132,10 @@
   }
 
   const caseRun = async (param) => {
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
     if (caseRunning.value) return
     caseRunning.value = true
     try {
@@ -1238,7 +1240,7 @@
   }
 
   function addApiInfo() {
-    data.actionTitle = '添加接口到用例'
+    data.actionTitle = '新增'
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
       if (it.reset) {

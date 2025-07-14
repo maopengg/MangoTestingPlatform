@@ -39,7 +39,7 @@ export const columns: any = reactive([
     title: '操作',
     dataIndex: 'actions',
     align: 'center',
-    width: 140,
+    width: 160,
   },
 ])
 

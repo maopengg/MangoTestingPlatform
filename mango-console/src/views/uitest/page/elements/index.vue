@@ -202,7 +202,7 @@
     id: 0,
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加元素',
+    actionTitle: '新增',
     eleExp: [],
     totalSize: 0,
     type: 0,
@@ -217,7 +217,7 @@
   })
 
   function doAppend() {
-    data.actionTitle = '添加元素'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -270,7 +270,7 @@
   }
 
   function onUpdate(record: any) {
-    data.actionTitle = '编辑添加元素'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = record.id
     modalDialogRef.value?.toggle()

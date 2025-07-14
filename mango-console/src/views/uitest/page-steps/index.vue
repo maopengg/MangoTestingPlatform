@@ -89,7 +89,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
@@ -138,7 +138,9 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" @click="onRunCase(record)">调试</a-button>
+              <a-button size="mini" type="text" :loading="caseRunning" @click="onRunCase(record)"
+                >调试</a-button
+              >
               <a-button size="mini" type="text" @click="onClick(record)">步骤</a-button>
               <a-dropdown trigger="hover">
                 <a-button size="mini" type="text">···</a-button>
@@ -242,6 +244,7 @@
   import { conditionItems, formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
+  import { getUiCaseRun } from '@/api/uitest/case'
 
   const productModule = useProductModule()
   const projectInfo = useProject()
@@ -257,9 +260,10 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加测试对象',
+    actionTitle: '新增',
     pageName: [],
   })
+  const caseRunning = ref(false)
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
@@ -283,8 +287,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加页面'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it: any) => {
@@ -336,7 +340,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑步骤'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
@@ -377,16 +381,21 @@
     }
   }
 
-  function onRunCase(record: any) {
+  const onRunCase = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsTest(record.id, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiStepsTest(param.id, userStore.selected_environment)
+      Message.loading(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   const router = useRouter()

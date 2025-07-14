@@ -63,7 +63,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
@@ -187,7 +187,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const data = reactive({
-    actionTitle: '添加接口',
+    actionTitle: '新增',
     isAdd: false,
     updateId: 0,
     moduleList: [],
@@ -211,8 +211,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加公共参数'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -263,7 +263,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑公共参数'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
