@@ -242,7 +242,7 @@
                         <a-tab-pane key="0" title="请求配置">
                           <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
                             <a-tab-pane key="00" title="请求头">
-                              <div class="m-2" style="height: 145px; overflow-y: auto">
+                              <div class="m-2" style="height: 180px; overflow-y: auto">
                                 <a-space direction="vertical" style="width: 100%">
                                   <a-checkbox-group
                                     v-for="header of data.parameter_headers_list"
