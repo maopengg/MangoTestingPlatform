@@ -117,12 +117,15 @@ if not IS_SQLITE:
             'HOST': MYSQL_IP,
             'PORT': MYSQL_PORT,
             'TEST': {
-                'NAME': MYSQL_DB_NAME,
+                'NAME': f'test_{MYSQL_DB_NAME}',
                 'CHARSET': 'utf8mb4',
                 'COLLATION': 'utf8mb4_general_ci'
             },
             'OPTIONS': {
-                "init_command": "SET foreign_key_checks = 0;",
+                'charset': 'utf8mb4',
+                "init_command": "SET time_zone='+08:00';",
+                'connect_timeout': 30,
+
             }
         }
     }

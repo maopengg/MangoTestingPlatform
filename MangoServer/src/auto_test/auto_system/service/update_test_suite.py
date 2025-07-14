@@ -39,13 +39,13 @@ class UpdateTestSuite:
             test_suite_detail.case_name = case_name
         test_suite_detail.status = data.status
         test_suite_detail.save()
+        if data.type == TestCaseTypeEnum.UI:
+            TestReportWriting.update_test_case(data.result_data)
+
         test_suite_detail_list = TestSuiteDetails.objects.filter(
             test_suite=data.test_suite,
             status__in=[TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value]
         )
-
-        if data.type == TestCaseTypeEnum.UI:
-            TestReportWriting.update_test_case(data.result_data)
         if not test_suite_detail_list.exists():
             test_suite = TestSuiteDetails.objects.filter(test_suite=data.test_suite, status=StatusEnum.FAIL.value)
             if not test_suite.exists():
@@ -64,7 +64,7 @@ class UpdateTestSuite:
         from src.auto_test.auto_system.consumers import ChatConsumer
         ChatConsumer.active_send(SocketDataModel(
             code=200 if test_suite.status else 300,
-            msg=msg if msg else f'测试套ID：{test_suite_id} 执行完成',
+            msg=f'测试套ID：{test_suite_id} 执行完成，结果：{msg}' if msg else f'测试套ID：{test_suite_id} 执行完成',
             user=test_suite.user.username,
             is_notice=ClientTypeEnum.WEB,
         ))
