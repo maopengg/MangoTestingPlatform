@@ -9,9 +9,9 @@ import traceback
 
 import requests
 import time
-
 from mangotools.assertion import MangoAssertion
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
@@ -32,12 +32,15 @@ class CaseParameter:
         self.test_object = api_base_test_setup.test_object
         self.mysql_connect = api_base_test_setup.mysql_connect
 
-    def headers(self, parameter: ApiCaseDetailedParameter) -> dict:
-        case_details_header = {}
+    def headers(self, parameter: ApiCaseDetailedParameter, headers: dict) -> dict:
         if parameter.headers:
-            for i in ApiHeaders.objects.filter(id__in=parameter.headers):
-                case_details_header[i.key] = i.value
-        return case_details_header
+            case_details_header = {}
+            if parameter.headers:
+                for i in ApiHeaders.objects.filter(id__in=parameter.headers):
+                    case_details_header[i.key] = i.value
+            return case_details_header
+        else:
+            return headers
 
     def front_main(self, request: RequestModel) -> RequestModel:
         if self.parameter.front_sql:
@@ -214,7 +217,6 @@ class CaseParameter:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
             raise ApiError(300, ass_result.ass_msg)
-
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:

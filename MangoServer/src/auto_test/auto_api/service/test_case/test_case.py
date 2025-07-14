@@ -138,7 +138,7 @@ class TestCase:
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
                     url=case_detailed.api_info.url,
-                    headers=case_parameter.headers(parameter),
+                    headers=case_parameter.headers(parameter, self.case_base.case_headers),
                     params=parameter.params,
                     data=parameter.data,
                     json=parameter.json,
@@ -169,6 +169,12 @@ class TestCase:
                     if parameter.retry_interval:
                         time.sleep(parameter.retry_interval)
                 except (MangoServerError, MangoToolsError) as error:
+                    res_model.cache_data = self.test_setup.test_data.get_all()
+                    res_model.status = StatusEnum.FAIL.value
+                    if res_model.response:
+                        self.update_api_info(case_detailed.api_info.id, res_model.response,
+                                             res_model.status)
+                    self.update_test_case_detailed_parameter(parameter.id, res_model)
                     return StatusEnum.FAIL.value, error.msg
                 except Exception as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
