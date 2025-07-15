@@ -237,7 +237,7 @@
                       <a-tabs
                         :active-key="data.caseDetailsTypeKey"
                         position="left"
-                        @tab-click="(key) => switchApiInfoType(key)"
+                        @tab-click="(key) => switchApiInfoType(key, item)"
                       >
                         <a-tab-pane key="0" title="请求配置">
                           <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
@@ -303,7 +303,10 @@
                           </a-tabs>
                         </a-tab-pane>
                         <a-tab-pane key="1" title="前置处理">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
+                          <a-tabs
+                            :active-key="data.tabsKey"
+                            @tab-click="(key) => tabsChange(key, item)"
+                          >
                             <template #extra>
                               <a-space v-if="data.assClickAdd">
                                 <a-button size="small" type="primary" @click="clickAdd(item)"
@@ -354,11 +357,15 @@
                           </a-tabs>
                         </a-tab-pane>
                         <a-tab-pane key="2" title="响应结果">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
+                          <a-tabs
+                            :active-key="data.tabsKey"
+                            @tab-click="(key) => tabsChange(key, item)"
+                          >
                             <a-tab-pane key="20" title="基础信息">
                               <div class="m-2">
                                 <a-space direction="vertical">
                                   <span>URL：{{ item.result_data?.request?.url }}</span>
+                                  <span>请求方法：{{ item.result_data?.request?.method }}</span>
                                   <span>响应code：{{ item.result_data?.response?.code }}</span>
                                   <span>测试时间：{{ item.result_data?.test_time }}</span>
                                   <span
@@ -413,7 +420,10 @@
                           </a-tabs>
                         </a-tab-pane>
                         <a-tab-pane key="3" title="接口断言">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
+                          <a-tabs
+                            :active-key="data.tabsKey"
+                            @tab-click="(key) => tabsChange(key, item)"
+                          >
                             <template #extra>
                               <a-space v-if="data.assClickAdd">
                                 <a-button size="small" type="primary" @click="clickAdd(item)">
@@ -530,7 +540,10 @@
                           </a-tabs>
                         </a-tab-pane>
                         <a-tab-pane key="4" title="后置处理">
-                          <a-tabs :active-key="data.tabsKey" @tab-click="(key) => tabsChange(key)">
+                          <a-tabs
+                            :active-key="data.tabsKey"
+                            @tab-click="(key) => tabsChange(key, item)"
+                          >
                             <template #extra>
                               <a-space v-if="data.assClickAdd">
                                 <a-button size="small" type="primary" @click="clickAdd(item)"
@@ -853,20 +866,46 @@
     data.apiType = key
   }
 
-  function switchApiInfoType(key: any) {
+  function switchApiInfoType(key: any, item: any) {
     data.caseDetailsTypeKey = key
     if (key === '0') {
-      data.tabsKey = '00'
+      if (item?.params) {
+        data.tabsKey = '01'
+      } else if (item?.data) {
+        data.tabsKey = '02'
+      } else if (item?.json) {
+        data.tabsKey = '03'
+      } else if (item?.file) {
+        data.tabsKey = '04'
+      } else {
+        data.tabsKey = '00'
+      }
     } else if (key === '1') {
       data.tabsKey = '10'
       data.assClickAdd = true
     } else if (key === '2') {
       data.tabsKey = '23'
     } else if (key === '3') {
-      data.tabsKey = '30'
+      if (item.ass_general && item.ass_general.length > 0) {
+        data.tabsKey = '32'
+      } else if (item.ass_jsonpath && item.ass_jsonpath.length > 0) {
+        data.tabsKey = '31'
+      } else if (item.ass_text_all) {
+        data.tabsKey = '33'
+      } else {
+        data.tabsKey = '30'
+      }
       data.assClickAdd = false
     } else if (key === '4') {
-      data.tabsKey = '40'
+      if (item.posterior_sql && item.posterior_sql.length > 0) {
+        data.tabsKey = '41'
+      } else if (item.posterior_func && item.posterior_func.length > 0) {
+        data.tabsKey = '43'
+      } else if (item.posterior_sleep) {
+        data.tabsKey = '42'
+      } else {
+        data.tabsKey = '40'
+      }
       data.assClickAdd = true
     } else if (key === '5') {
       data.tabsKey = '50'
@@ -877,7 +916,7 @@
     data.apiSonType = key
   }
 
-  function tabsChange(key: string | number) {
+  function tabsChange(key: string | number, item: any) {
     data.tabsKey = key
     data.assClickAdd = !(
       key === '30' ||
@@ -1084,20 +1123,18 @@
         data.data = res.data
         if (res.data.length !== 0) {
           select(res.data[0])
-          doRefreshParameter(res.data[0].id)
         }
       })
       .catch(console.log)
   }
 
   function doRefreshParameter(id: number) {
-    getApiCaseDetailedParameter({ case_detailed_id: id })
+    return getApiCaseDetailedParameter({ case_detailed_id: id })
       .then((res) => {
         if (res.data.length !== 0) {
           data.selectDataObj = res.data
           const formatItemData = (item: any) => {
             const propertiesToFormat = ['ass_json_all', 'file']
-
             propertiesToFormat.forEach((prop) => {
               if (typeof item[prop] === 'object') {
                 item[prop] = formatJson(item[prop])
@@ -1283,9 +1320,10 @@
 
   function select(record: any) {
     data.tabelJson = record
-    doRefreshParameter(data.tabelJson.id)
     doRefreshHeaders(record.api_info.project_product, true)
-    switchApiInfoType(data.caseDetailsTypeKey)
+    doRefreshParameter(data.tabelJson.id).then(() => {
+      switchApiInfoType(data.caseDetailsTypeKey, data.selectDataObj[0])
+    })
   }
 
   onMounted(() => {
