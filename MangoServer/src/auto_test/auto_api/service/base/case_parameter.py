@@ -139,7 +139,7 @@ class CaseParameter:
             for i in ass_jsonpath:
                 ass_dict = {
                     'expect': self.test_setup.test_data.replace(i.get('expect')),
-                    'actual': str(self.test_setup.test_data.get_json_path_value(response_data, i['actual'])),
+                    'actual': self.test_setup.test_data.get_json_path_value(response_data, i['actual']),
                     'method': i.get('method')
                 }
                 mango_assertion = MangoAssertion()
