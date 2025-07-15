@@ -4,7 +4,6 @@ import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
-import parseCurl from 'parse-curl'
 
 export const conditionItems: Array<FormItem> = reactive([
   {
@@ -255,6 +254,6 @@ export const tableColumns = useTableColumn([
     key: 'actions',
     dataIndex: 'actions',
     fixed: 'right',
-    width: 180,
+    width: 160,
   },
 ])

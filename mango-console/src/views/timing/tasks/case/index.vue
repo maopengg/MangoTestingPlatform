@@ -42,7 +42,12 @@
                 {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>

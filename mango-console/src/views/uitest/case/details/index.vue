@@ -157,6 +157,7 @@
                         <a-button
                           size="mini"
                           type="text"
+                          class="custom-mini-btn"
                           :loading="caseRunning"
                           @click="onPageStep(record)"
                           >单步执行
@@ -165,12 +166,20 @@
                           <a-button size="mini" type="text">···</a-button>
                           <template #content>
                             <a-doption>
-                              <a-button size="mini" type="text" @click="oeFreshSteps(record)"
+                              <a-button
+                                size="mini"
+                                type="text"
+                                class="custom-mini-btn"
+                                @click="oeFreshSteps(record)"
                                 >同步数据
                               </a-button>
                             </a-doption>
                             <a-doption>
-                              <a-button size="mini" type="text" @click="onUpdate1(record)"
+                              <a-button
+                                size="mini"
+                                type="text"
+                                class="custom-mini-btn"
+                                @click="onUpdate1(record)"
                                 >编辑</a-button
                               >
                             </a-doption>
@@ -179,6 +188,7 @@
                                 size="mini"
                                 status="danger"
                                 type="text"
+                                class="custom-mini-btn"
                                 @click="onDelete(record)"
                                 >删除
                               </a-button>

@@ -77,3 +77,6 @@ object {
 .arco-switch-checked {
     background-color: rgb(var(--primary-6));
 }
+.custom-mini-btn {
+    padding: 0 4px ;
+}

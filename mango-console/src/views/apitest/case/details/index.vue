@@ -153,13 +153,26 @@
                           type="text"
                           :loading="caseRunning"
                           @click="caseRun(record.case_sort)"
-                          >执行到这
+                          class="custom-mini-btn"
+                        >
+                          执行到这
                         </a-button>
-                        <a-button size="mini" type="text" @click="refresh(record.id)"
-                          >同步
+                        <a-button
+                          size="mini"
+                          type="text"
+                          @click="refresh(record.id)"
+                          class="custom-mini-btn"
+                        >
+                          同步
                         </a-button>
-                        <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
-                          >删除
+                        <a-button
+                          size="mini"
+                          status="danger"
+                          type="text"
+                          @click="onDelete(record)"
+                          class="custom-mini-btn"
+                        >
+                          删除
                         </a-button>
                       </template>
                     </a-table-column>

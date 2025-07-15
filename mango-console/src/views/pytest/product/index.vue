@@ -66,9 +66,18 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-              <a-button size="mini" type="text" @click="onEditFile(record)">初始化文件</a-button>
-              <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+              <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
+                >编辑</a-button
+              >
+              <a-button size="mini" type="text" class="custom-mini-btn" @click="onEditFile(record)"
+                >初始化文件</a-button
+              >
+              <a-button
+                size="mini"
+                status="danger"
+                type="text"
+                class="custom-mini-btn"
+                @click="onDelete(record)"
                 >删除
               </a-button>
             </template>

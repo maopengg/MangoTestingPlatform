@@ -95,21 +95,45 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" :loading="caseRunning" @click="onRun(record)"
+              <a-button
+                type="text"
+                size="mini"
+                class="custom-mini-btn"
+                :loading="caseRunning"
+                @click="onRun(record)"
                 >执行</a-button
               >
-              <a-button type="text" size="mini" @click="onClick(record)">文件</a-button>
+              <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
+                >文件</a-button
+              >
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
+                    <a-button
+                      type="text"
+                      size="mini"
+                      class="custom-mini-btn"
+                      @click="onUpdate(record)"
+                      >编辑</a-button
+                    >
                   </a-doption>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onResult(record)">结果</a-button>
+                    <a-button
+                      type="text"
+                      size="mini"
+                      class="custom-mini-btn"
+                      @click="onResult(record)"
+                      >结果</a-button
+                    >
                   </a-doption>
                   <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    <a-button
+                      status="danger"
+                      type="text"
+                      size="mini"
+                      class="custom-mini-btn"
+                      @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>

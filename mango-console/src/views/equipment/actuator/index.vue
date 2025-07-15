@@ -40,7 +40,13 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button disabled size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button
+                  disabled
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >下线
                 </a-button>
               </a-space>

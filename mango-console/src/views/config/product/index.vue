@@ -79,9 +79,18 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-                <a-button size="mini" type="text" @click="onClick(record)">增加模块</a-button>
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
+                  >增加模块</a-button
+                >
+                <a-button
+                  size="mini"
+                  status="danger"
+                  class="custom-mini-btn"
+                  type="text"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </a-space>

@@ -58,9 +58,18 @@
                 />
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
+                  >调试</a-button
+                >
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  status="danger"
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>

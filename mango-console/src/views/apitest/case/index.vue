@@ -166,24 +166,52 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" :loading="caseRunning" @click="caseRun(record)"
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  :loading="caseRunning"
+                  @click="caseRun(record)"
                   >执行</a-button
                 >
-                <a-button size="mini" type="text" @click="onStep(record)">步骤</a-button>
-                <a-button size="mini" type="text" @click="clickSuite(record)">套件</a-button>
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
+                  >步骤</a-button
+                >
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="clickSuite(record)"
+                  >套件</a-button
+                >
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="onUpdate(record)"
+                        >编辑</a-button
+                      >
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="pageStepsCody(record)"
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="pageStepsCody(record)"
                         >复制
                       </a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                      <a-button
+                        size="mini"
+                        status="danger"
+                        class="custom-mini-btn"
+                        type="text"
+                        @click="onDelete(record)"
                         >删除
                       </a-button>
                     </a-doption>

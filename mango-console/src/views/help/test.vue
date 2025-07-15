@@ -164,7 +164,9 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" @click="showDetails(record)"> 查看详情</a-button>
+              <a-button type="text" class="custom-mini-btn" @click="showDetails(record)">
+                查看详情</a-button
+              >
             </template>
           </a-table-column>
         </template>

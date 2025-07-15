@@ -69,7 +69,11 @@
                       </template>
                       <template v-else-if="item.key === 'actions'" #cell="{ record }">
                         <a-space>
-                          <a-button size="mini" type="text" @click="onClick(record)"
+                          <a-button
+                            size="mini"
+                            type="text"
+                            class="custom-mini-btn"
+                            @click="onClick(record)"
                             >查看结果
                           </a-button>
                         </a-space>

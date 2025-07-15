@@ -109,19 +109,36 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button type="text" size="mini" @click="clickNotice(record)">通知配置</a-button>
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="clickNotice(record)"
+                  >通知配置</a-button
+                >
 
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button type="text" size="mini" @click="clickDataBase(record)"
+                      <a-button
+                        type="text"
+                        size="mini"
+                        class="custom-mini-btn"
+                        @click="clickDataBase(record)"
                         >数据库配置</a-button
                       >
                     </a-doption>
                     <a-doption>
-                      <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                      <a-button
+                        status="danger"
+                        type="text"
+                        class="custom-mini-btn"
+                        size="mini"
+                        @click="onDelete(record)"
                         >删除</a-button
                       >
                     </a-doption>
