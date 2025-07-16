@@ -26,7 +26,7 @@ class ConsumerThread:
     def __init__(self):
         self.running = True
         self.clean_time = 1  # 每隔1分钟，就检查一次全部数据是否有可以回写的状态
-        self.reset_time = 15  # 执行中超过n分钟的用例，会被重新设置为待执行
+        self.reset_time = 30  # 执行中超过n分钟的用例，会被重新设置为待执行
         self.consumer_sleep = 1  # 每次循环等待1秒
         self.retry_frequency = 3  # 重试次数
 
