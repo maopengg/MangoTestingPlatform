@@ -117,5 +117,4 @@ class AutoSystemConfig(AppConfig):
                 cache_data.delete()
             CacheDataCRUD.inside_post(data)
         else:
-            print(data)
             CacheDataCRUD.inside_put(cache_data.id, data)
