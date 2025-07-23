@@ -13,7 +13,6 @@ from mangoui import warning_notification, error_notification, success_notificati
 from src import process, log
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
-from src.settings import settings
 from src.settings.settings import SETTINGS, MENUS
 from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
@@ -40,70 +39,16 @@ class NotificationTask(QThread):
 
 class WindowLogic(MangoMain1Window):
     def __init__(self, loop):
-        from ..tools import SmallToolsPage
-        if settings.IS_NEW:
-            from ..home import HomePage
-            from ..setting import SettingPage, UiSettingPage
-            from ..user import UserPage
+        from ..home import HomePage
+        from ..setting import SettingPage, UiSettingPage
+        from ..user import UserPage
 
-            page_dict = {
-                'home': HomePage,
-                'settings': SettingPage,
-                'ui_settings': UiSettingPage,
-                'user': UserPage,
-            }
-        else:
-            from src.pages.api import ApiCasePage, ApiInfoPage, ApiHeadersPage, ApiPublicPage, ApiInfoDetailedPage, \
-                ApiCaseDetailedPage
-            from ..config import EnvConfigPage, ProductPage, ProjectPage, ModulePage, TestEnvPage, TestFilePage
-            from ..home import HomePage
-            from ..report import TestSuitePage, TestSuiteDetailedPage
-            from ..setting import SettingPage, RolePage, UserLogPage, UserAdministrationPage
-            from ..tasks import TasksPage, TasksDetailsPage, TimePage
-            from ..ui import PagePage, PublicPage, PageStepsPage, PageStepsDetailedPage, CasePage, ElementPage, \
-                CaseStepsPage, EquipmentPage
-            from ..user import UserPage
-
-            page_dict = {
-                'home': HomePage,
-                'page': PagePage,
-                'page_element': ElementPage,
-                'page_steps': PageStepsPage,
-                'page_steps_detailed': PageStepsDetailedPage,
-                'case': CasePage,
-                'case_steps': CaseStepsPage,
-                'public': PublicPage,
-                'equipment': EquipmentPage,
-
-                'api_info': ApiInfoPage,
-                'api_info_detailed': ApiInfoDetailedPage,
-                'api_case': ApiCasePage,
-                'api_case_detailed': ApiCaseDetailedPage,
-                'api_public': ApiPublicPage,
-                'api_headers': ApiHeadersPage,
-
-                'test_suite': TestSuitePage,
-                'test_suite_detailed': TestSuiteDetailedPage,
-
-                'project': ProjectPage,
-                'product': ProductPage,
-                'module': ModulePage,
-                'test_env': TestEnvPage,
-                'env_config': EnvConfigPage,
-                'test_file': TestFilePage,
-
-                'user_administration': UserAdministrationPage,
-                'role': RolePage,
-                'user_log': UserLogPage,
-
-                'time': TimePage,
-                'tasks': TasksPage,
-                'tasks_details': TasksDetailsPage,
-
-                'tools': SmallToolsPage,
-                'settings': SettingPage,
-                'user': UserPage,
-            }
+        page_dict = {
+            'home': HomePage,
+            'settings': SettingPage,
+            'ui_settings': UiSettingPage,
+            'user': UserPage,
+        }
         super().__init__(
             SETTINGS,
             MENUS,
