@@ -22,7 +22,6 @@ class LoginLogic(LoginWindow):
         self.loop = loop
         self.form_data = [FormDataModel(**i) for i in form_data]
 
-        self.register_but.clicked.connect(self.register)
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
