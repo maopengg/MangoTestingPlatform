@@ -4,7 +4,6 @@
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
 import json
-import traceback
 from threading import Thread
 
 from django.core.exceptions import FieldError, FieldDoesNotExist
@@ -18,6 +17,7 @@ from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view import *
+from .mode import get
 
 
 class ModelCRUD(GenericAPIView):
@@ -33,59 +33,13 @@ class ModelCRUD(GenericAPIView):
 
     @error_response('system')
     def get(self, request: Request):
-        query_dict = {}
-        for k, v in dict(request.query_params.lists()).items():
-            if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
-                query_dict[f'{k}__contains'] = v[0]
-            else:
-                query_dict[k] = v[0]
-        #
-        project_id = request.headers.get('Project', None)
-        if project_id and hasattr(self.model, 'project_product'):
-            from src.auto_test.auto_system.models import ProjectProduct
-            project_product = ProjectProduct.objects.filter(project_id=project_id)
-            if self.model.__name__ in self.pytest_model:
-                from src.auto_test.auto_pytest.models import PytestProduct
-                product = PytestProduct.objects.filter(
-                    project_product_id__in=project_product.values_list('id', flat=True))
-                query_dict['project_product_id__in'] = product.values_list('id', flat=True)
-            else:
-                query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
-        try:
-            if request.query_params.get("pageSize") and request.query_params.get("page"):
-                del query_dict['pageSize'], query_dict['page']
-                try:
-                    self.model._meta.get_field('case_sort')
-                    books = self.model.objects.filter(**query_dict).order_by('case_sort')
-                except FieldDoesNotExist:
-                    books = self.model.objects.filter(**query_dict)
-                data_list, count = self.paging_list(request.query_params.get("pageSize"),
-                                                    request.query_params.get("page"),
-                                                    books,
-                                                    self.get_serializer_class())
-                return ResponseData.success(RESPONSE_MSG_0001, data_list, count)
-            else:
-                try:
-                    self.model._meta.get_field('case_sort')
-                    books = self.model.objects.filter(**query_dict).order_by('case_sort')
-                except FieldDoesNotExist:
-                    books = self.model.objects.filter(**query_dict)
-                serializer = self.get_serializer_class()
-                try:
-                    books = serializer.setup_eager_loading(books)
-                except FieldError:
-                    pass
-                return ResponseData.success(RESPONSE_MSG_0001,
-                                            serializer(instance=books, many=True).data,
-                                            books.count())
-        except S3Error as error:
-            log.system.error(f'GET请求发送异常，请排查问题：{error}')
-            traceback.print_exc()
-            return ResponseData.fail(RESPONSE_MSG_0026, )
-        except Exception as error:
-            log.system.error(f'GET请求发送异常，请排查问题：{error}')
-            traceback.print_exc()
-            return ResponseData.fail(RESPONSE_MSG_0027, )
+        from src.auto_test.auto_system.models import ProjectProduct
+        return get(self, request, ProjectProduct, log,
+            field_does_note_xist=FieldDoesNotExist,
+            s3_error=S3Error,
+            response_data=ResponseData,
+            field_error=FieldError,
+            )
 
     @error_response('system')
     def post(self, request: Request):
