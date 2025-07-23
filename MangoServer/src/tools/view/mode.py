@@ -36,7 +36,7 @@ def get(self, request, project_product, log, **kwargs,):
                                                 request.query_params.get("page"),
                                                 books,
                                                 self.get_serializer_class())
-            return kwargs.get('response_data').success(kwargs.get('001'), data_list, count)
+            return kwargs.get('response_data').success(kwargs.get('m_001'), data_list, count)
         else:
             try:
                 self.model._meta.get_field('case_sort')
@@ -48,12 +48,12 @@ def get(self, request, project_product, log, **kwargs,):
                 books = serializer.setup_eager_loading(books)
             except kwargs.get('field_error'):
                 pass
-            return kwargs.get('response_data').success(kwargs.get('001'),
+            return kwargs.get('response_data').success(kwargs.get('m_001'),
                                         serializer(instance=books, many=True).data,
                                         books.count())
     except kwargs.get('s3_error') as error:
         log.system.error(f'GET请求发送异常，请排查问题：{error}, error:{traceback.print_exc()}')
-        return kwargs.get('response_data').fail(kwargs.get('026'), )
+        return kwargs.get('response_data').fail(kwargs.get('m_026'), )
     except Exception as error:
         log.system.error(f'GET请求发送异常，请排查问题：{error}, error:{traceback.print_exc()}')
-        return kwargs.get('response_data').fail(kwargs.get('027'), )
+        return kwargs.get('response_data').fail(kwargs.get('m_027'), )
