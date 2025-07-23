@@ -63,8 +63,6 @@ class LoginLogic(LoginWindow):
         try:
             response = HTTP.not_auth.login(self.username_edit.text(), self.password_edit.text())
             if response.code == 200:
-                if not settings.IS_NEW:
-                    Methods.set_project()
                 self.main_window = MainWindow(self.loop)
                 self.close()
                 self.main_window.show()
