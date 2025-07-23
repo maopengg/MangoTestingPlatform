@@ -22,7 +22,6 @@ class LoginLogic(LoginWindow):
         self.loop = loop
         self.form_data = [FormDataModel(**i) for i in form_data]
 
-        self.register_but.clicked.connect(self.register)
         self.setWindowTitle('登录')
         self.setFixedSize(280, 350)
         self.setWindowIcon(QIcon(':/icons/app_icon.png'))
@@ -67,6 +66,8 @@ class LoginLogic(LoginWindow):
                 self.close()
                 self.main_window.show()
                 HTTP.user.info.get_userinfo(response.data.get('userId'))
+            elif response.code == -300:
+                show_failed_message('IP或端口不正确或服务未启动')
             else:
                 log.error(f'登录失败，失败信息：{response.model_dump_json()}')
                 show_failed_message('账号或密码错误')
