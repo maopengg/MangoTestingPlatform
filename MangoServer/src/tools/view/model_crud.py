@@ -39,6 +39,9 @@ class ModelCRUD(GenericAPIView):
             s3_error=S3Error,
             response_data=ResponseData,
             field_error=FieldError,
+                   m_001=RESPONSE_MSG_0001,
+                   m_026=RESPONSE_MSG_0026,
+                   m_027=RESPONSE_MSG_0027,
             )
 
     @error_response('system')
