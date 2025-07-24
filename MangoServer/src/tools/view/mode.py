@@ -7,7 +7,7 @@ import json
 import traceback
 
 
-def get(self, **kwargs, ):
+def get(self, **kwargs):
     query_dict = {}
     for k, v in dict(kwargs.get('request').query_params.lists()).items():
         if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
@@ -19,8 +19,7 @@ def get(self, **kwargs, ):
     if project_id and hasattr(self.model, 'project_product'):
         project_product = kwargs.get('project_product').objects.filter(project_id=project_id)
         if self.model.__name__ in self.pytest_model:
-            from src.auto_test.auto_pytest.models import PytestProduct
-            product = PytestProduct.objects.filter(
+            product = kwargs.get('pytest_product').objects.filter(
                 project_product_id__in=project_product.values_list('id', flat=True))
             query_dict['project_product_id__in'] = product.values_list('id', flat=True)
         else:
@@ -37,7 +36,7 @@ def get(self, **kwargs, ):
                                                 kwargs.get('request').query_params.get("page"),
                                                 books,
                                                 self.get_serializer_class())
-            return kwargs.get('response_data').success(kwargs.get('m_001'), data_list, count)
+            return kwargs.get('response_data').success(kwargs.get('m_0001'), data_list, count)
         else:
             try:
                 self.model._meta.get_field('case_sort')
@@ -114,45 +113,28 @@ def delete(self, **kwargs):
         return kwargs.get('response_data').success(kwargs.get('m_0005'))
 
 
-def paging_list(cls, size: int, current: int, books: QuerySet, serializer) -> tuple[list, int]:
-
-    count = books.count()
-    if count <= int(size):
-        current = 1
-    try:
-        return serializer(
-            instance=Paginator(serializer.setup_eager_loading(books), size).page(current),
-            many=True).data, count
-    except FieldError:
-        return serializer(
-            instance=Paginator(books, size).page(current),
-            many=True).data, count
-
-
-def inside_post(cls, data: dict) -> dict:
-    serializer = cls.serializer(data=data)
+def inside_post(cls, **kwargs) -> dict:
+    serializer = cls.serializer(data=kwargs.get('data'))
     if serializer.is_valid():
         serializer.save()
         return serializer.data
     else:
-        log.system.error(f'执行内部保存时报错，请检查！数据：{data}, 报错信息：{json.dumps(serializer.errors)}')
-        raise ToolsError(*RESPONSE_MSG_0116, value=(serializer.errors,))
+        kwargs.get('log').system.error(
+            f'执行内部保存时报错，请检查！数据：{kwargs.get("data")}, 报错信息：{json.dumps(serializer.errors)}')
+        raise kwargs.get('tools_error')(*kwargs.get('m_0116'), value=(serializer.errors,))
 
 
-def inside_put(cls, _id: int, data: dict) -> dict:
-    serializer = cls.serializer(instance=cls.model.objects.get(pk=_id), data=data, partial=True)
+def inside_put(cls, **kwargs) -> dict:
+    serializer = cls.serializer(instance=cls.model.objects.get(pk=kwargs.get('_id')), data=kwargs.get("data"),
+                                partial=True)
     if serializer.is_valid():
         serializer.save()
         return serializer.data
     else:
-        log.system.error(f'执行内部修改时报错，请检查！id:{_id}, 数据：{data}, 报错信息：{str(serializer.errors)}')
-        raise ToolsError(*RESPONSE_MSG_0117, value=(serializer.errors,))
+        kwargs.get('log').system.error(
+            f'执行内部修改时报错，请检查！id:{kwargs.get("_id")}, 数据：{kwargs.get("data")}, 报错信息：{str(serializer.errors)}')
+        raise kwargs.get('tools_error')(*kwargs.get('m_0116'), value=(serializer.errors,))
 
 
-def inside_delete(cls, _id: int) -> None:
-    """
-    删除一条记录
-    @param _id:
-    @return:
-    """
-    cls.model.objects.get(id=_id).delete()
+def inside_delete(cls, **kwargs) -> None:
+    cls.model.objects.get(id=kwargs.get('_id')).delete()
