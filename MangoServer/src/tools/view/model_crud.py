@@ -8,6 +8,7 @@ from threading import Thread
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
+from mangotools.mangos import get, post, put, delete, inside_post, inside_put, inside_delete
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
@@ -16,7 +17,6 @@ from src.exceptions import ToolsError
 from src.tools.decorator.error_response import error_response
 from src.tools.log_collector import log
 from src.tools.view import *
-from .mode import get, post, put, delete, inside_post, inside_put, inside_delete
 
 
 class ModelCRUD(GenericAPIView):
@@ -96,7 +96,7 @@ class ModelCRUD(GenericAPIView):
                           log=log,
                           tools_error=ToolsError,
                           m_0116=RESPONSE_MSG_0116
-                            )
+                          )
 
     @classmethod
     def inside_delete(cls, _id: int) -> None:
