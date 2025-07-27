@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/playwright/python:v1.43.0
 WORKDIR /app
-COPY MangoActuator/library/mangoautomation-1.0.56-py3-none-any.whl /tmp/
+COPY library/mangoautomation-1.0.56-py3-none-any.whl /tmp/
 
 COPY linux_requirements.txt .
 RUN pip install --no-cache-dir -r linux_requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
