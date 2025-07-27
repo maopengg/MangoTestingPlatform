@@ -83,7 +83,10 @@ class TestCase:
                     break
             except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
-                self.set_page_steps(page_steps.page_step_result_model)
+                if page_steps.page_step_result_model.error_message:
+                    self.set_page_steps(page_steps.page_step_result_model)
+                else:
+                    self.set_page_steps(page_steps.page_step_result_model, error.msg)
                 break
             except Exception as error:
                 from mangotools.mangos import Mango
