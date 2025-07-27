@@ -5,7 +5,7 @@ COPY linux_requirements.txt .
 RUN pip install --no-cache-dir -r linux_requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 COPY dynamic_requirements.txt .
 RUN pip install --no-cache-dir -r dynamic_requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-RUN pip install ./library/mangoautomation-1.0.56-py3-none-any.whl
+RUN pip install ./MangoActuator/library/mangoautomation-1.0.56-py3-none-any.whl
 
 COPY . .
 
