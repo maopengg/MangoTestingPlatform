@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# @Project: 芒果测试平台# @Description: 封装请求
+# @Project: 芒果测试平台
+# @Description: 封装请求
 # @Time   : 2022-11-04 22:05
 # @Author : 毛鹏
 import json
