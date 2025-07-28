@@ -4,6 +4,7 @@
 # @Time   : 2024-11-28 17:58
 # @Author : 毛鹏
 import json
+from django.utils.timezone import localtime
 
 from mangotools.enums import NoticeEnum
 from mangotools.exceptions import MangoToolsError
@@ -41,7 +42,8 @@ class NoticeMain:
         notice_obj = NoticeConfig.objects.get(id=_id)
         test_report = TestReportModel(**{
             "test_suite_id": 197899881973,
-            "project_id": 1,
+            'task_name':None,
+            'product_name':'百度',
             "project_name": "演示DEMO",
             "test_environment": "生产环境",
             "case_sum": 6,
@@ -142,10 +144,12 @@ class NoticeMain:
             ui_step_call=ui_step_call,
             pytest_func_call=pytest_func_call,
             execution_duration=execution_duration_str,
-            test_time=test_suite.create_time.strftime("%Y-%m-%d %H:%M:%S"),
+            test_time=localtime(test_suite.create_time).strftime("%Y-%m-%d %H:%M:%S"),
             test_environment=EnvironmentEnum.get_value(test_suite.test_env),
             project_name=test_suite.project_product.project.name,
-            project_id=test_suite.project_product.project.id)
+            task_name=test_suite.tasks.name if test_suite.tasks else None,
+            product_name=test_suite.project_product.name,
+        )
 
     @staticmethod
     def __api(test_suite_id):

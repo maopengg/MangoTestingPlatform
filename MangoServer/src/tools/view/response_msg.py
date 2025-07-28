@@ -4,7 +4,7 @@
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏
 RESPONSE_MSG_0001 = (200, '获取数据成功')
-RESPONSE_MSG_0002 = (200, '新增一条记录成功')
+RESPONSE_MSG_0002 = (200, '新增一条成功')
 RESPONSE_MSG_0003 = (300, '保存数据时报错，请检查数据')
 RESPONSE_MSG_0004 = (300, '修改数据时报错，请检查数据')
 RESPONSE_MSG_0005 = (200, '删除成功')
@@ -31,7 +31,7 @@ RESPONSE_MSG_0025 = (200, '获取所有项目名称成功')
 RESPONSE_MSG_0026 = (300, 'minio没有正确配置，请查看文档或关闭minio配置')
 RESPONSE_MSG_0027 = (300, 'GET请求发送未知异常，请排查问题')
 RESPONSE_MSG_0028 = (300, '请在设置中选择项目之后再进行上传文件')
-RESPONSE_MSG_0029 = (300, '')
+RESPONSE_MSG_0029 = (300, '删除的内容已经被删除')
 RESPONSE_MSG_0030 = (200, '文件删除成功')
 RESPONSE_MSG_0031 = (200, '获取模块宣传名称成功')
 RESPONSE_MSG_0032 = (200, '获取所有角色成功')

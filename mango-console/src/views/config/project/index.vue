@@ -72,8 +72,15 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </a-space>
@@ -131,7 +138,7 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加项目',
+    actionTitle: '新增',
   })
 
   function onResetSearch() {
@@ -153,7 +160,7 @@
   }
 
   function onAdd() {
-    data.actionTitle = '添加项目'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -184,7 +191,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑项目'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()

@@ -44,7 +44,6 @@ class ApiCaseFlow:
 
     @classmethod
     def execute_task(cls, case_model: ConsumerCaseModel):
-        print(case_model)
         try:
             from src.auto_test.auto_api.service.test_case.test_case import TestCase
             test_case = TestCase(

@@ -42,7 +42,12 @@
                 {{ record.ui_case?.name || record.api_case?.name || record.pytest_case?.name }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>
@@ -138,7 +143,7 @@
     value: null,
     isModule: true,
     updateId: 0,
-    actionTitle: '添加定时任务',
+    actionTitle: '新增',
     caseList: [],
     data: [],
     moduleList: [],
@@ -168,7 +173,7 @@
   }
 
   function doAppend() {
-    data.actionTitle = '添加用例'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     data.formItems.forEach((it: any) => {

@@ -3,11 +3,13 @@
 # @Description: 
 # @Time   : 2025-07-04 17:18
 # @Author : 毛鹏
-from urllib.parse import urljoin
+import mimetypes
+import traceback
+from urllib.parse import urlparse, urljoin
 
 from mangotools.exceptions import MangoToolsError
-
 from src.auto_test.auto_api.models import ApiInfo
+from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
 from src.auto_test.auto_api.service.base.api_base_test_setup.public_base import PublicBase
 from src.enums.api_enum import MethodEnum
 from src.exceptions import *
@@ -16,19 +18,26 @@ from src.models.api_model import RequestModel, ResponseModel
 
 class APIBaseTestSetup(PublicBase):
 
-    def api_request(self, api_info_id: int, request_model: RequestModel = None, is_error=True,
-                    is_merge_headers=False) -> ResponseModel:
-        log.api.debug(f'执行API接口-1->ID:{api_info_id}')
+    def api_request(self,
+                    api_info_id,
+                    test_env: int,
+                    request_model: RequestModel = None,
+                    is_merge_headers=False,
+                    is_error=False,
+                    ) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
-        if is_merge_headers and api_info.headers:
-            headers = self.init_headers(api_info.project_product.id)
-            headers.update(api_info.headers)
-        elif api_info.headers is not None:
-            headers = api_info.headers
-        else:
-            headers = self.init_headers(api_info.project_product.id)
+        log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
+        self.init_public(api_info.project_product_id, test_env)
+        self.init_test_object(api_info.project_product_id, test_env)
         if request_model is None:
-            request_model = self.request_data_clean(RequestModel(
+            if is_merge_headers and api_info.headers:
+                headers = self.init_headers(api_info.project_product_id)
+                headers.update(api_info.headers)
+            elif api_info.headers is not None:
+                headers = api_info.headers
+            else:
+                headers = self.init_headers(api_info.project_product_id)
+            request_model = RequestModel(
                 method=MethodEnum(api_info.method).name,
                 url=api_info.url,
                 headers=headers,
@@ -37,8 +46,8 @@ class APIBaseTestSetup(PublicBase):
                 json=api_info.json,
                 file=api_info.file,
                 posterior_file=api_info.posterior_file,
-            ))
-        response = self.http(request_model)
+            )
+        response = self.http(self.request_data_clean(request_model))
         try:
             if api_info.posterior_re:
                 self.api_info_posterior_json_re(api_info.posterior_re, response)
@@ -46,14 +55,46 @@ class APIBaseTestSetup(PublicBase):
                 self.api_info_posterior_json_path(api_info.posterior_json_path, response)
             if api_info.posterior_func:
                 self.analytic_func(api_info.posterior_func)(self, response)
-        except MangoToolsError as error:
-            if is_error:
-                raise ApiError(error.code, error.msg)
-        except Exception as error:
-            log.api.error(f'api_info的请求失败，api_id:{api_info_id}, error:{error}')
+            return response
+        except (MangoServerError, MangoToolsError) as error:
             if is_error:
                 raise error
-        return response
+            return response
+
+    def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:
+        log.api.debug(f'清洗请求数据-1->{request_data_model.model_dump_json()}')
+        try:
+            for key, value in request_data_model:
+                if key == 'headers':
+                    value = self.test_data.replace(value)
+                    if value and isinstance(value, str):
+                        value = self.test_data.loads(value) if value else value
+                    setattr(request_data_model, key, value)
+                elif key == 'file':
+                    if request_data_model.file:
+                        file = []
+                        for i in request_data_model.file:
+                            if not isinstance(i, dict):
+                                raise ApiError(*ERROR_MSG_0025)
+                            for k, v in i.items():
+                                file_path = self.test_data.replace(v)
+                                file_name = self.test_data.identify_parentheses(v)[0].replace('(', '').replace(')', '')
+                                mime_type, _ = mimetypes.guess_type(file_path)
+                                if mime_type is None:
+                                    mime_type = 'application/octet-stream'
+                                file.append((k, (file_name, open(file_path, 'rb'), mime_type)))
+                        request_data_model.file = file
+                else:
+                    value = self.test_data.replace(value)
+                    setattr(request_data_model, key, value)
+            result = urlparse(request_data_model.url)
+            if not all([result.scheme, result.netloc]):
+                request_data_model.url = urljoin(self.test_object.value, request_data_model.url)
+        except MangoToolsError as error:
+            traceback.print_exc()
+            raise ApiError(error.code, error.msg)
+        log.api.debug(f'清洗请求数据-2->{request_data_model}')
+        return request_data_model
 
     def api_info_posterior_json_path(self, posterior_json_path: list[dict], response: ResponseModel):
         log.api.debug(f'执行API接口-4->后置jsonpath:{posterior_json_path}')

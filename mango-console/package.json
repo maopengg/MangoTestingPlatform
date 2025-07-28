@@ -1,6 +1,6 @@
 {
-  "name": "arco-work",
-  "version": "5.7.5",
+  "name": "mango-console",
+  "version": "5.7.54",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",

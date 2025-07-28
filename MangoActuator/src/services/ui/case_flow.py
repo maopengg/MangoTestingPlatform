@@ -22,7 +22,7 @@ class CaseFlow:
     max_tasks = 2
     running_tasks = 0
     parent = None
-    driver_object = DriverObject(True)
+    driver_object = DriverObject(log, True)
     running = True
 
     @classmethod

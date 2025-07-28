@@ -5,7 +5,9 @@
         <template #extra>
           <a-space>
             <a-button size="small" type="primary" @click="doAppend">增加</a-button>
-            <a-button size="small" status="success" @click="onRunCase">调试</a-button>
+            <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
+              >调试</a-button
+            >
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -91,9 +93,27 @@
                     </a-tag>
                   </template>
                   <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                    <a-button size="mini" type="text" @click="onTest(record)">调试</a-button>
-                    <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                    <a-button
+                      size="mini"
+                      type="text"
+                      class="custom-mini-btn"
+                      :loading="caseRunning"
+                      @click="onTest(record)"
+                      >调试</a-button
+                    >
+                    <a-button
+                      size="mini"
+                      type="text"
+                      class="custom-mini-btn"
+                      @click="onUpdate(record)"
+                      >编辑</a-button
+                    >
+                    <a-button
+                      size="mini"
+                      status="danger"
+                      type="text"
+                      class="custom-mini-btn"
+                      @click="onDelete(record)"
                       >删除
                     </a-button>
                   </template>
@@ -248,7 +268,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加测试对象',
+    actionTitle: '新增',
     dataList: [],
     uiPageName: [],
     type: 0,
@@ -258,6 +278,7 @@
     ope: [],
     opeSelect: [],
   })
+  const caseRunning = ref(false)
 
   function changeStatus(event: number, value: any = null) {
     data.type = event
@@ -378,7 +399,7 @@
   function doAppend() {
     changeStatus(0)
     data.type = 0
-    data.actionTitle = '添加详细步骤'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it: any) => {
@@ -418,7 +439,7 @@
     } else {
       upDataOpeValue(data.ass, item.ope_key)
     }
-    data.actionTitle = '编辑详细步骤'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
@@ -611,29 +632,37 @@
     }
     return undefined
   }
-
-  function onRunCase() {
+  const onRunCase = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsTest(route.query.id, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiStepsTest(route.query.id, userStore.selected_environment)
+      Message.loading(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
-
-  function onTest(record: any) {
+  const onTest = async (record) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiPageStepsDetailedTest(record.id, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiPageStepsDetailedTest(record.id, userStore.selected_environment)
+      Message.loading(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function doRefreshSteps(pageStepsId: any) {
@@ -668,7 +697,6 @@
             data.ass.push(item)
           }
         })
-        console.log(data.ass)
       })
       .catch(console.log)
   }

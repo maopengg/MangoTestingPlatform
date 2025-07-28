@@ -13,3 +13,5 @@
   const value = ref('测试页面')
   const content = ref('')
 </script>
+
+<style scoped></style>

@@ -61,23 +61,26 @@ class PageSteps:
                 element_result_list=[]
             )
 
-    async def page_init(self, is_page_init: bool = False):
+    async def page_init(self, is_page_init: bool = True):
         if self.page_steps_model.environment_config.mysql_config:
             self.base_data.set_mysql(
                 self.page_steps_model.environment_config.db_c_status,
                 self.page_steps_model.environment_config.db_rud_status,
                 self.page_steps_model.environment_config.mysql_config
             )
+        log.debug(f'设置UI自定义值-1：{not is_page_init},数据：{self.page_steps_model.public_data_list}')
         if not is_page_init:
             return
         for cache_data in self.page_steps_model.public_data_list:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
+                log.debug(f'设置UI自定义值key-2：{cache_data.key}，value：{cache_data.value}')
                 self.base_data.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
                 if self.base_data.mysql_connect:
                     sql = self.base_data.test_data.replace(cache_data.value)
                     result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
                     if isinstance(result_list, list) and len(result_list) > 0:
+                        log.debug(f'设置UI自定义值key-3：{cache_data.key}，value：{result_list[0]}')
                         self.base_data.test_data.set_sql_cache(cache_data.key, result_list[0])
                         if not result_list:
                             raise UiError(*ERROR_MSG_0036, value=(sql,))

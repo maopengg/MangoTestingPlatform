@@ -93,7 +93,11 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" status="success" @click="onConcurrency('批量执行')"
+              <a-button
+                size="small"
+                status="success"
+                :loading="caseRunning"
+                @click="onConcurrency('批量执行')"
                 >批量执行
               </a-button>
             </div>
@@ -171,21 +175,53 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="onCaseRun(record.id)">执行</a-button>
-                <a-button size="mini" type="text" @click="onClick(record)">步骤</a-button>
-                <a-button size="mini" type="text" @click="clickSuite(record)">套件</a-button>
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  :loading="caseRunning"
+                  @click="onCaseRun(record.id)"
+                  >执行</a-button
+                >
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
+                  >步骤</a-button
+                >
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="clickSuite(record)"
+                  >套件</a-button
+                >
 
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="onUpdate(record)"
+                        >编辑</a-button
+                      >
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="caseCody(record)">复制</a-button>
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="caseCody(record)"
+                        >复制</a-button
+                      >
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                      <a-button
+                        size="mini"
+                        status="danger"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="onDelete(record)"
                         >删除
                       </a-button>
                     </a-doption>
@@ -312,7 +348,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加用例',
+    actionTitle: '新增',
     userList: [],
     moduleList: productModule.data,
     systemStatus: [],
@@ -322,6 +358,7 @@
     drawerVisible: false,
     row: {},
   })
+  const caseRunning = ref(false)
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
@@ -346,7 +383,7 @@
   }
 
   function onAdd() {
-    data.actionTitle = '添加用例'
+    data.actionTitle = '添加'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it: any) => {
@@ -397,7 +434,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑用例'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     productModule.getProjectModule(item.project_product.id)
@@ -414,16 +451,21 @@
     })
   }
 
-  function onCaseRun(caseId: number) {
+  const onCaseRun = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiCaseRun(caseId, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiCaseRun(param, userStore.selected_environment)
+      Message.loading(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function onConcurrency(name: string) {

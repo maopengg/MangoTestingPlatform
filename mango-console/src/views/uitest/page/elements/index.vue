@@ -58,9 +58,18 @@
                 />
               </template>
               <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" @click="onDebug(record)">调试</a-button>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
+                  >调试</a-button
+                >
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  status="danger"
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>
@@ -202,7 +211,7 @@
     id: 0,
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加元素',
+    actionTitle: '新增',
     eleExp: [],
     totalSize: 0,
     type: 0,
@@ -217,7 +226,7 @@
   })
 
   function doAppend() {
-    data.actionTitle = '添加元素'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -270,7 +279,7 @@
   }
 
   function onUpdate(record: any) {
-    data.actionTitle = '编辑添加元素'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = record.id
     modalDialogRef.value?.toggle()

@@ -4,7 +4,9 @@
       <a-card :bordered="false" title="用例详情">
         <template #extra>
           <a-space>
-            <a-button size="small" status="success" @click="onCaseRun">执行</a-button>
+            <a-button size="small" status="success" :loading="caseRunning" @click="onCaseRun"
+              >执行</a-button
+            >
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -152,19 +154,32 @@
                         />
                       </template>
                       <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                        <a-button size="mini" type="text" @click="onPageStep(record)"
+                        <a-button
+                          size="mini"
+                          type="text"
+                          class="custom-mini-btn"
+                          :loading="caseRunning"
+                          @click="onPageStep(record)"
                           >单步执行
                         </a-button>
                         <a-dropdown trigger="hover">
                           <a-button size="mini" type="text">···</a-button>
                           <template #content>
                             <a-doption>
-                              <a-button size="mini" type="text" @click="oeFreshSteps(record)"
+                              <a-button
+                                size="mini"
+                                type="text"
+                                class="custom-mini-btn"
+                                @click="oeFreshSteps(record)"
                                 >同步数据
                               </a-button>
                             </a-doption>
                             <a-doption>
-                              <a-button size="mini" type="text" @click="onUpdate1(record)"
+                              <a-button
+                                size="mini"
+                                type="text"
+                                class="custom-mini-btn"
+                                @click="onUpdate1(record)"
                                 >编辑</a-button
                               >
                             </a-doption>
@@ -173,6 +188,7 @@
                                 size="mini"
                                 status="danger"
                                 type="text"
+                                class="custom-mini-btn"
                                 @click="onDelete(record)"
                                 >删除
                               </a-button>
@@ -388,12 +404,14 @@
     pageStepsName: [],
     data: [],
     selectData: {},
-    actionTitle: '添加用例步骤',
+    actionTitle: '新增',
     uiType: '2',
     uiSonType: '11',
     ass: [],
     ope: [],
   })
+
+  const caseRunning = ref(false)
 
   function switchType(key: any) {
     if (key === '1') {
@@ -594,23 +612,28 @@
       .catch(console.log)
   }
 
-  function onCaseRun() {
+  const onCaseRun = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiCaseRun(route.query.id, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiCaseRun(route.query.id, userStore.selected_environment)
+      Message.loading(res.msg)
+      doRefresh()
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function select(record: any) {
     data.selectData = record
   }
   function onUpdate1(item: any) {
-    data.actionTitle = '编辑用例步骤'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     modalDialogRef.value?.toggle()
@@ -645,16 +668,20 @@
       .catch(console.log)
   }
 
-  function onPageStep(record: any) {
+  const onPageStep = async (record) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    getUiStepsTest(record.page_step.id, userStore.selected_environment)
-      .then((res) => {
-        Message.loading(res.msg)
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getUiStepsTest(record.page_step.id, userStore.selected_environment)
+      Message.loading(res.msg)
+    } catch (e) {
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function getLabelByValue(opeData: any, value: string): string {

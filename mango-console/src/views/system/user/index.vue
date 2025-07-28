@@ -85,8 +85,15 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-                <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  status="danger"
+                  type="text"
+                  size="mini"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除</a-button
                 >
               </a-space>
@@ -160,7 +167,7 @@
   const userData = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加用户',
+    actionTitle: '新增',
     allRole: [],
   })
 
@@ -221,7 +228,7 @@
   }
 
   function onUpdate(item: any) {
-    userData.actionTitle = '编辑用户'
+    userData.actionTitle = '编辑'
     userData.isAdd = false
     userData.updateId = item.id
     modalDialogRef.value?.toggle()

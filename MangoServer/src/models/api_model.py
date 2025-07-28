@@ -79,7 +79,7 @@ class RecordingApiModel(BaseModel):
 class AssResultModel(BaseModel):
     method: str
     expect: str | None = None
-    actual: str | None
+    actual: Any | None
     ass_msg: str | None = None
 
 

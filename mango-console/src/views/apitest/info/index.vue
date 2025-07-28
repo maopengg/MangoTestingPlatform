@@ -77,14 +77,18 @@
           <a-space v-if="data.apiType === '0'">
             <a-button size="small" type="primary" @click="onBatchUpload">录制</a-button>
             <!--            <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>-->
-            <a-button size="small" status="success" @click="onConcurrency">批量执行</a-button>
+            <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
+              >批量执行</a-button
+            >
             <a-button size="small" status="warning" @click="setCase('设为调试')">设为调试</a-button>
             <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
             <a-button size="small" type="primary" @click="onAdd(0)">新增</a-button>
             <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
-            <a-button size="small" status="success" @click="onConcurrency">批量执行</a-button>
+            <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
+              >批量执行</a-button
+            >
             <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
           </a-space>
         </template>
@@ -172,19 +176,45 @@
                   </div>
                 </a-modal>
               </template>
-              <a-button size="mini" type="text" @click="onRunCase(record)">执行</a-button>
-              <a-button size="mini" type="text" @click="onStep(record)">详情</a-button>
+              <a-button
+                size="mini"
+                type="text"
+                class="custom-mini-btn"
+                :loading="caseRunning"
+                @click="onRunCase(record)"
+                >执行</a-button
+              >
+              <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
+                >详情</a-button
+              >
               <a-dropdown trigger="hover">
                 <a-button size="mini" type="text">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button size="mini" type="text" @click="onUpdate(record)">编辑 </a-button>
+                    <a-button
+                      size="mini"
+                      type="text"
+                      class="custom-mini-btn"
+                      @click="onUpdate(record)"
+                      >编辑
+                    </a-button>
                   </a-doption>
                   <a-doption>
-                    <a-button size="mini" type="text" @click="apiInfoCopy(record)">复制</a-button>
+                    <a-button
+                      size="mini"
+                      type="text"
+                      class="custom-mini-btn"
+                      @click="apiInfoCopy(record)"
+                      >复制</a-button
+                    >
                   </a-doption>
                   <a-doption>
-                    <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                    <a-button
+                      size="mini"
+                      status="danger"
+                      type="text"
+                      class="custom-mini-btn"
+                      @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -299,7 +329,7 @@
   const formModel = ref({})
 
   const data: any = reactive({
-    actionTitle: '添加接口',
+    actionTitle: '新增',
     isAdd: false,
     addType: 0,
     updateId: 0,
@@ -308,6 +338,8 @@
     apiPublicEnd: [],
     formItem: [],
   })
+  const caseRunning = ref(false)
+
   const visible = ref(false)
 
   const handleOk = () => {
@@ -348,7 +380,7 @@
   function onAdd(type: number) {
     data.addType = type
     if (type === 0) {
-      data.actionTitle = '新建接口'
+      data.actionTitle = '新增'
       data.isAdd = true
       modalDialogRef.value?.toggle()
       data.formItem = formItems
@@ -375,7 +407,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑接口信息'
+    data.actionTitle = '编辑'
     data.addType = 0
     data.isAdd = false
     data.updateId = item.id
@@ -518,20 +550,22 @@
     }
   }
 
-  // 获取所有项目
-  function onRunCase(record: any) {
+  const onRunCase = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    Message.loading('接口开始执行中~')
-    getApiCaseInfoRun(record.id, userStore.selected_environment)
-      .then((res) => {
-        data.caseResult = res.data
-        visible.value = true
-        doRefresh()
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getApiCaseInfoRun(param.id, userStore.selected_environment)
+      Message.success(res.msg)
+      doRefresh()
+    } catch (e) {
+      Message.error(e?.msg || e?.message || '用例执行失败')
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function onConcurrency() {

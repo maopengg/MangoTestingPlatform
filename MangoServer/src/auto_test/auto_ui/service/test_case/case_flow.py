@@ -37,7 +37,7 @@ class UiCaseFlow:
         except IndexError:
             time.sleep(3)
             return cls.execute_task(case_model, retry, max_retry)
-        cls.send_case(user.user_id, user.username, case_model)
+        cls.send_case(user.user_id, user.username, case_model, user.username)
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):

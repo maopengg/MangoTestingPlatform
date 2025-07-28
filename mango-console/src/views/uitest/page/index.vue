@@ -50,7 +50,7 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="onAddPage">新增</a-button>
+              <a-button type="primary" size="small" @click="onAdd">新增</a-button>
             </div>
             <div>
               <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>
@@ -96,16 +96,31 @@
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
-              <a-button type="text" size="mini" @click="onUpdate(record)">编辑</a-button>
-              <a-button type="text" size="mini" @click="onClick(record)">添加元素</a-button>
+              <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                >编辑</a-button
+              >
+              <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
+                >添加元素</a-button
+              >
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
                   <a-doption>
-                    <a-button type="text" size="mini" @click="onPageCopy(record.id)">复制</a-button>
+                    <a-button
+                      type="text"
+                      size="mini"
+                      class="custom-mini-btn"
+                      @click="onPageCopy(record.id)"
+                      >复制</a-button
+                    >
                   </a-doption>
                   <a-doption>
-                    <a-button status="danger" type="text" size="mini" @click="onDelete(record)"
+                    <a-button
+                      status="danger"
+                      type="text"
+                      size="mini"
+                      class="custom-mini-btn"
+                      @click="onDelete(record)"
                       >删除
                     </a-button>
                   </a-doption>
@@ -195,7 +210,7 @@
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '添加页面',
+    actionTitle: '新增',
   })
 
   function onResetSearch() {
@@ -204,8 +219,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加页面'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {

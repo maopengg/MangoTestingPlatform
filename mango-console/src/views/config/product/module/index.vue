@@ -20,8 +20,15 @@
               :width="item.width"
             >
               <template v-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
+                  >编辑</a-button
+                >
+                <a-button
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>
@@ -68,13 +75,13 @@
   const data = reactive({
     isAdd: false,
     updateId: 0,
-    actionTitle: '新增模块',
+    actionTitle: '新增',
     data: [],
     caseList: [],
   })
 
   function doAppend() {
-    data.actionTitle = '添加用例'
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -104,7 +111,7 @@
   }
 
   function onUpdate(record: any) {
-    data.actionTitle = '编辑用例'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = record.id
     modalDialogRef.value?.toggle()

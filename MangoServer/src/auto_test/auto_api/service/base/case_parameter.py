@@ -17,7 +17,7 @@ from src.enums.tools_enum import StatusEnum
 from src.exceptions import *
 from src.models.api_model import ResponseModel, RequestModel, AssResultModel
 from src.tools import project_dir
-from ...models import ApiCaseDetailedParameter
+from ...models import ApiCaseDetailedParameter, ApiHeaders
 
 
 class CaseParameter:
@@ -31,6 +31,16 @@ class CaseParameter:
         self.test_data = api_base_test_setup.test_data
         self.test_object = api_base_test_setup.test_object
         self.mysql_connect = api_base_test_setup.mysql_connect
+
+    def headers(self, parameter: ApiCaseDetailedParameter, headers: dict) -> dict:
+        if parameter.headers:
+            case_details_header = {}
+            if parameter.headers:
+                for i in ApiHeaders.objects.filter(id__in=parameter.headers):
+                    case_details_header[i.key] = i.value
+            return case_details_header
+        else:
+            return headers
 
     def front_main(self, request: RequestModel) -> RequestModel:
         if self.parameter.front_sql:
@@ -59,7 +69,7 @@ class CaseParameter:
             return self.ass_result, StatusEnum.FAIL.value, error.msg
         except Exception as e:
             log.api.error(f'API断言发生未知错误，管理员请检查：{e}，{traceback.print_exc()}')
-            return self.ass_result, StatusEnum.FAIL.value, None
+            return self.ass_result, StatusEnum.FAIL.value, f'API断言发生未知错误，管理员请检查：{e}'
         return self.ass_result, StatusEnum.SUCCESS.value, None
 
     def posterior_main(self, response: ResponseModel) -> ResponseModel:
@@ -129,7 +139,7 @@ class CaseParameter:
             for i in ass_jsonpath:
                 ass_dict = {
                     'expect': self.test_setup.test_data.replace(i.get('expect')),
-                    'actual': str(self.test_setup.test_data.get_json_path_value(response_data, i['actual'])),
+                    'actual': self.test_setup.test_data.get_json_path_value(response_data, i['actual']),
                     'method': i.get('method')
                 }
                 mango_assertion = MangoAssertion()
@@ -162,30 +172,34 @@ class CaseParameter:
         log.api.debug(f'用例详情断言-3->实际：{actual}，预期：{expect}')
         ass_result = AssResultModel(
             method='JSON一致性断言',
-            actual=json.dumps(actual, ensure_ascii=False),
+            actual=None,
             expect=json.dumps(expect, ensure_ascii=False)
         )
         try:
+            assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
+            ass_result.actual = json.dumps(actual, ensure_ascii=False)
             ass_result.ass_msg = MangoAssertion().p_in_dict(actual, expect)
             self.ass_result.append(ass_result)
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0004)
+            self.ass_result.append(ass_result)
+            raise ApiError(300, ass_result.ass_msg)
 
     def __ass_test_all(self, actual: str, expect: str):
+        log.api.debug(f'用例详情断言-4->实际：{actual}，预期：{expect}')
+        ass_result = AssResultModel(
+            method='文本一致性断言',
+            actual=actual,
+            expect=expect,
+            ass_msg=f'实际={actual}, 预期={expect}'
+        )
+        self.ass_result.append(ass_result)
         try:
-            log.api.debug(f'用例详情断言-4->实际：{actual}，预期：{expect}')
-            self.ass_result.append(AssResultModel(
-                method='文本一致性断言',
-                actual=actual,
-                expect=expect,
-                ass_msg=f'实际={actual}, 预期={expect}'
-            ))
             assert actual.strip() == expect.strip(), f'实际={actual}, 预期={expect}'
         except AssertionError as error:
-            log.api.debug(str(error))
-            raise ApiError(*ERROR_MSG_0009)
+            ass_result.ass_msg = str(error.args[0]) if error.args else ''
+            self.ass_result.append(ass_result)
+            raise ApiError(300, ass_result.ass_msg)
 
     def __ass_(self, mango_assertion, ass_dict: dict, _error_msg: tuple):
         ass_result = AssResultModel(
@@ -202,8 +216,7 @@ class CaseParameter:
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
             self.ass_result.append(ass_result)
-            log.api.debug(str(error))
-            raise ApiError(300, str(error))
+            raise ApiError(300, ass_result.ass_msg)
 
     def __front_sql(self, front_sql):
         if self.test_setup.mysql_connect and front_sql:

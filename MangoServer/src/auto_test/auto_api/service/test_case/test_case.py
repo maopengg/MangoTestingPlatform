@@ -4,13 +4,12 @@
 # @Time   : 2023-12-11 16:16
 # @Author : 毛鹏
 import traceback
-from copy import deepcopy
 from datetime import datetime
-from urllib.parse import urljoin
 
 import time
 
-from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiHeaders, ApiCaseDetailedParameter
+from mangotools.exceptions import MangoToolsError
+from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.api_enum import MethodEnum
@@ -60,8 +59,8 @@ class TestCase:
     def test_case(self, case_sort: int | None = None) -> ApiCaseResultModel:
         log.api.debug(f'开始执行用例ID：{self.case_id}')
         try:
-            self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
-            self.test_setup.init_public(self.api_case.project_product.id)
+            self.test_setup.init_test_object(self.api_case.project_product_id, self.test_env)
+            self.test_setup.init_public(self.api_case.project_product_id, self.test_env)
             self.case_base.case_front_main()
             res = None
             if self.api_case.parametrize and isinstance(self.api_case.parametrize, list):
@@ -114,7 +113,6 @@ class TestCase:
         for case_detailed in case_detailed_list:
             case_detailed.status = TaskEnum.PROCEED.value
             case_detailed.save()
-            self.project_product_id = case_detailed.api_info.project_product.id
             res: tuple[int, str] | None = self.detailed_parameter(case_detailed)
             if res:
                 case_detailed.status = res[0]
@@ -128,8 +126,8 @@ class TestCase:
         res_list = []
         for parameter in ApiCaseDetailedParameter.objects.filter(case_detailed_id=case_detailed.id):
             case_parameter = CaseParameter(self.test_setup, parameter)
-            self.project_product_id = case_detailed.api_info.project_product.id
-            self.test_setup.init_test_object(self.api_case.project_product.id, self.test_env)
+            self.test_setup.init_test_object(case_detailed.api_info.project_product_id, self.test_env)
+            self.test_setup.init_public(case_detailed.api_info.project_product_id, self.test_env)
             error_retry = 0
             retry = parameter.error_retry + 1 if parameter.error_retry else 1
             status = StatusEnum.FAIL.value
@@ -140,7 +138,7 @@ class TestCase:
                 request_model = RequestModel(
                     method=MethodEnum(case_detailed.api_info.method).name,
                     url=case_detailed.api_info.url,
-                    headers=self.__headers(parameter),
+                    headers=case_parameter.headers(parameter, self.case_base.case_headers),
                     params=parameter.params,
                     data=parameter.data,
                     json=parameter.json,
@@ -158,9 +156,8 @@ class TestCase:
                 )
                 try:
                     request_model = case_parameter.front_main(request_model)
-                    request_model = self.test_setup.request_data_clean(request_model)
                     res_model.response = self.test_setup.api_request(
-                        case_detailed.api_info.id, request_model, False)
+                        case_detailed.api_info_id, self.test_env, request_model)
                     res_model.response = case_parameter.posterior_main(res_model.response)
                     res_model.ass, status, error_message = case_parameter.ass_main(res_model.response)
                     res_model.status = status
@@ -171,6 +168,14 @@ class TestCase:
                     self.update_test_case_detailed_parameter(parameter.id, res_model)
                     if parameter.retry_interval:
                         time.sleep(parameter.retry_interval)
+                except (MangoServerError, MangoToolsError) as error:
+                    res_model.cache_data = self.test_setup.test_data.get_all()
+                    res_model.status = StatusEnum.FAIL.value
+                    if res_model.response:
+                        self.update_api_info(case_detailed.api_info.id, res_model.response,
+                                             res_model.status)
+                    self.update_test_case_detailed_parameter(parameter.id, res_model)
+                    return StatusEnum.FAIL.value, error.msg
                 except Exception as error:
                     res_model.cache_data = self.test_setup.test_data.get_all()
                     res_model.status = StatusEnum.FAIL.value
@@ -206,13 +211,3 @@ class TestCase:
         model.status = result_data.status
         model.result_data = result_data.model_dump()
         model.save()
-
-    def __headers(self, parameter: ApiCaseDetailedParameter) -> dict:
-        if parameter.headers:
-            case_details_header = {}
-            for i in ApiHeaders.objects.filter(id__in=parameter.headers):
-                case_details_header[i.key] = i.value
-            case_headers = deepcopy(self.case_base.case_headers)
-            case_headers.update(case_details_header)
-            return case_headers
-        return self.case_base.case_headers

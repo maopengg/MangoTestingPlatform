@@ -89,7 +89,9 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button size="small" status="success" @click="onCaseBatchRun">批量执行</a-button>
+              <a-button size="small" status="success" :loading="caseRunning" @click="onCaseBatchRun"
+                >批量执行</a-button
+              >
             </div>
             <div>
               <a-button size="small" status="warning" @click="handleClick">设为定时任务</a-button>
@@ -109,7 +111,7 @@
               </a-modal>
             </div>
             <div>
-              <a-button size="small" type="primary" @click="onAddPage">新增</a-button>
+              <a-button size="small" type="primary" @click="onAdd">新增</a-button>
             </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
@@ -164,22 +166,52 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
-                <a-button size="mini" type="text" @click="caseRun(record)">执行</a-button>
-                <a-button size="mini" type="text" @click="onStep(record)">步骤</a-button>
-                <a-button size="mini" type="text" @click="clickSuite(record)">套件</a-button>
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  :loading="caseRunning"
+                  @click="caseRun(record)"
+                  >执行</a-button
+                >
+                <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
+                  >步骤</a-button
+                >
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="clickSuite(record)"
+                  >套件</a-button
+                >
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="onUpdate(record)">编辑</a-button>
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="onUpdate(record)"
+                        >编辑</a-button
+                      >
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" type="text" @click="pageStepsCody(record)"
+                      <a-button
+                        size="mini"
+                        type="text"
+                        class="custom-mini-btn"
+                        @click="pageStepsCody(record)"
                         >复制
                       </a-button>
                     </a-doption>
                     <a-doption>
-                      <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                      <a-button
+                        size="mini"
+                        status="danger"
+                        class="custom-mini-btn"
+                        type="text"
+                        @click="onDelete(record)"
                         >删除
                       </a-button>
                     </a-doption>
@@ -304,7 +336,7 @@
   const userStore = useUserStore()
 
   const data: any = reactive({
-    actionTitle: '添加接口',
+    actionTitle: '新增',
     isAdd: false,
     updateId: 0,
     userList: [],
@@ -314,6 +346,7 @@
     drawerVisible: false,
     row: {},
   })
+  const caseRunning = ref(false)
 
   function doRefresh(projectProductId: number | null = null, bool_ = false) {
     let value = getFormItems(conditionItems)
@@ -337,8 +370,8 @@
     })
   }
 
-  function onAddPage() {
-    data.actionTitle = '添加公共参数'
+  function onAdd() {
+    data.actionTitle = '新增'
     data.isAdd = true
     modalDialogRef.value?.toggle()
     formItems.forEach((it) => {
@@ -389,7 +422,7 @@
   }
 
   function onUpdate(item: any) {
-    data.actionTitle = '编辑用例'
+    data.actionTitle = '编辑'
     data.isAdd = false
     data.updateId = item.id
     productModule.getProjectModule(item.project_product.id)
@@ -465,22 +498,25 @@
       .catch(console.log)
   }
 
-  function caseRun(record: any) {
+  const caseRun = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
     }
-    Message.loading('正在执行用例请稍后~')
-    getApiCaseRun(record.id, userStore.selected_environment, null)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
-    doRefresh()
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await getApiCaseRun(param.id, userStore.selected_environment, null)
+      Message.success(res.msg)
+      doRefresh()
+    } catch (e) {
+      Message.error(e?.msg || e?.message || '用例执行失败')
+    } finally {
+      caseRunning.value = false
+    }
   }
 
-  function onCaseBatchRun() {
+  const onCaseBatchRun = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
       return
@@ -490,12 +526,17 @@
       return
     }
     Message.loading('正在执行用例请稍后~')
-    postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
-      .then((res) => {
-        Message.success(res.msg)
-        doRefresh()
-      })
-      .catch(console.log)
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      const res = await postApiCaseBatchRun(selectedRowKeys.value, userStore.selected_environment)
+      Message.success(res.msg)
+      doRefresh()
+    } catch (e) {
+      Message.error(e?.msg || e?.message || '用例执行失败')
+    } finally {
+      caseRunning.value = false
+    }
   }
 
   function onStep(record: any) {

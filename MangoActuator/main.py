@@ -43,13 +43,10 @@ pyinstaller `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
 --add-data "src/settings/menus_2.json;src/settings" `
---add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_windows;mangos/pyarmor_runtime_windows" `
---add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos\pyarmor_runtime_linux;mangos/pyarmor_runtime_linux" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos;mangos" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\u2.jar;uiautomator2/assets" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\app-uiautomator.apk;uiautomator2/assets" `
 --hidden-import "mango" `
---hidden-import "pyarmor_runtime" `
---hidden-import "pyarmor_runtime_000000" `
 --hidden-import "uiautomator2" `
 --clean `
 --noconfirm `

@@ -40,8 +40,19 @@
                 {{ record.id }}
               </template>
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
-                <a-button size="mini" type="text" @click="onDownload(record)">下载</a-button>
-                <a-button size="mini" status="danger" type="text" @click="onDelete(record)"
+                <a-button
+                  size="mini"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDownload(record)"
+                  >下载</a-button
+                >
+                <a-button
+                  size="mini"
+                  status="danger"
+                  type="text"
+                  class="custom-mini-btn"
+                  @click="onDelete(record)"
                   >删除
                 </a-button>
               </template>

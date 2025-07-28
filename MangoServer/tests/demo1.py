@@ -22,11 +22,6 @@ class RequestModel(BaseModel):
     verify: Optional[Union[bool, str]] = None  # SSL验证
 
 
-data = {'method': 'assert_cell_value',
-        'actual': '{"文件路径":"D:\\GitCode\\MangoTestingPlatform\\MangoServer\\download\\20250319151528-yq-test03.xlsx","工作表":"sheet1"}',
-        'expect': '{"单元格":"B2","预期值":"6414c5e50000000011023c12"}'}
-
-import json
-
-print(json.loads(data.get('actual')))
-print(json.loads(data.get('expect')))
+data = '0'
+if data:
+    print(213)
