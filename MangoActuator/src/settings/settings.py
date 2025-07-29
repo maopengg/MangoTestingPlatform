@@ -11,9 +11,9 @@ IS_WINDOW = True
 IS_SEND_MAIL = True
 
 # **************************************** 下面不用管 **************************************** #
-with open('settings.json', "r", encoding='utf-8') as f:
+with open('src/settings/settings.json', "r", encoding='utf-8') as f:
     SETTINGS: dict = json.load(f)
-with open('menus_2.json', "r", encoding='utf-8') as f:
+with open('src/settings/menus_2.json', "r", encoding='utf-8') as f:
     MENUS: dict = json.load(f)
 
 MEMORY_THRESHOLD = 100  # 控制内存高于多少就不可以执行用例，防止崩溃
