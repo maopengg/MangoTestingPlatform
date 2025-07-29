@@ -26,7 +26,7 @@ def async_error_handle(is_error=False):
                 if IS_SEND_MAIL:
                     from src import project_dir
                     from src.settings.settings import SETTINGS
-                    kwargs['version'] = SETTINGS.version
+                    kwargs['version'] = SETTINGS.get('version')
                     Mango.s(func, error, trace, SetConfig.get_username(), args, kwargs)
                 from src.network import socket_conn
                 await socket_conn.async_send(
@@ -53,7 +53,7 @@ def sync_error_handle(is_error=False):
                 if IS_SEND_MAIL:
                     from src import project_dir
                     from src.settings.settings import SETTINGS
-                    kwargs['version'] = SETTINGS.version
+                    kwargs['version'] = SETTINGS.get('version')
                     Mango.s(func, error, trace,
                             SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value), args, kwargs)
                 from src.network import socket_conn

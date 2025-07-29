@@ -8,16 +8,16 @@ import threading
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mangoui import warning_notification, error_notification, success_notification, info_notification, \
-    MangoMain1Window, DialogWidget, FormDataModel
+    MangoMain1Window, DialogWidget, FormDataModel, AppConfig, MenusModel
 
 from src import process, log
 from src.enums.tools_enum import EnvironmentEnum
 from src.network import HTTP
-from src.settings.settings import SETTINGS, MENUS
 from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
 from ...models.socket_model import ResponseModel
 from ...models.user_model import UserModel
+from ...settings.settings import SETTINGS, MENUS
 from ...tools.components.message import response_message
 from ...tools.methods import Methods
 
@@ -50,8 +50,8 @@ class WindowLogic(MangoMain1Window):
             'user': UserPage,
         }
         super().__init__(
-            SETTINGS,
-            MENUS,
+            AppConfig(**SETTINGS),
+            MenusModel(**MENUS),
             page_dict,
             loop,
             page='home',
