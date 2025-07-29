@@ -1,7 +1,5 @@
 import json
 
-from src.tools import project_dir
-
 # ****************************************** 是否公开给其他人使用 ****************************************** #
 IS_OPEN = False
 # ****************************************** DEBUG ****************************************** #
@@ -13,9 +11,9 @@ IS_WINDOW = True
 IS_SEND_MAIL = True
 
 # **************************************** 下面不用管 **************************************** #
-with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
+with open('settings.json', "r", encoding='utf-8') as f:
     SETTINGS: dict = json.load(f)
-with open(project_dir.resource_path('src/settings/menus_2.json'), "r", encoding='utf-8') as f:
+with open('menus_2.json', "r", encoding='utf-8') as f:
     MENUS: dict = json.load(f)
 
 MEMORY_THRESHOLD = 100  # 控制内存高于多少就不可以执行用例，防止崩溃
