@@ -6,24 +6,29 @@
 import json
 
 from mangotools.enums import CacheValueTypeEnum
+
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
 from src.enums.system_enum import CacheDataKey2Enum, ClientTypeEnum
 from src.models.socket_model import SocketDataModel
-
+from src.tools.decorator.retry import ensure_db_connection
+from src.settings import VERSION
 
 class SystemConsumer:
 
     @classmethod
-    def t_set_operation_options(cls, data: list[dict]):
+    @ensure_db_connection()
+    def t_set_operation_options(cls, data: dict):
         data = {
-            'describe': CacheDataKey2Enum.SELECT_VALUE.value,
+            'describe': data.get('version'),
             'key': CacheDataKey2Enum.SELECT_VALUE.value,
-            'value': json.dumps(data, ensure_ascii=False),
+            'value': json.dumps(data.get('data'), ensure_ascii=False),
             'value_type': CacheValueTypeEnum.DICT.value,
         }
         try:
             cache_data = CacheData.objects.get(key=CacheDataKey2Enum.SELECT_VALUE.value)
+            if cache_data.describe != data.get('version') and data.get('version') == VERSION:
+                CacheDataCRUD.inside_put(cache_data.id, data)
         except CacheData.DoesNotExist:
             CacheDataCRUD.inside_post(data)
         except CacheData.MultipleObjectsReturned:
@@ -31,10 +36,9 @@ class SystemConsumer:
             for cache_data in cache_data_list:
                 cache_data.delete()
             CacheDataCRUD.inside_post(data)
-        else:
-            CacheDataCRUD.inside_put(cache_data.id, data)
 
     @classmethod
+    @ensure_db_connection()
     def t_set_actuator_open_state(cls, data):
         from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
         from src.auto_test.auto_system.consumers import ChatConsumer

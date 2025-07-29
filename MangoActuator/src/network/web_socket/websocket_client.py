@@ -17,6 +17,7 @@ from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import CacheKeyEnum
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.system_model import SetUserOpenSatusModel
+from src.services.customization import func_info
 from src.settings import settings
 from src.tools import project_dir
 from src.tools.log_collector import log
@@ -45,19 +46,21 @@ class WebSocketClient:
             response_str = await cls.websocket.recv()
             res = cls.__output_method(response_str)
             if res.code == 200:
-                await cls.async_send(
-                    f'{ClientNameEnum.DRIVER.value} 连接服务成功！',
-                )
                 cls.parent.set_tips_info("心跳已连接")
-                model = SetUserOpenSatusModel(
-                    username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
-                    status=bool(settings.IS_OPEN))
                 from src.network import ToolsSocketEnum
+                await cls.async_send(
+                    '设置缓存数据成功',
+                    func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
+                    is_notice=ClientTypeEnum.WEB,
+                    func_args={'version':settings.SETTINGS.version, 'data': func_info}
+
+                )
                 await cls.async_send(
                     '设置执行器状态',
                     func_name=ToolsSocketEnum.SET_USER_OPEN_STATUS_OPTIONS.value,
-                    func_args=model,
-                    is_notice=ClientTypeEnum.WEB
+                    func_args=SetUserOpenSatusModel(
+                        username=SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value),
+                        status=bool(settings.IS_OPEN)),
                 )
                 return True
             else:
@@ -159,8 +162,8 @@ class WebSocketClient:
         """
         try:
             out = json.loads(recv_json)
+            log.debug(f"SOCKET接收的数据：{json.dumps(out, ensure_ascii=False)}")
             if out['data']:
-                log.debug(f"SOCKET接收的数据：{json.dumps(out['data'], ensure_ascii=False)}")
                 if settings.IS_DEBUG:
                     try:
                         with open(fr'{project_dir.root_path()}\tests\test.json', 'w', encoding='utf-8') as f:

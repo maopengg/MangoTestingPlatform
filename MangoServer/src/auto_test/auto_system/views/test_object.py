@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from src.auto_test.auto_user.tools.factory import func_mysql_config
+from src.auto_test.auto_system.service.factory import func_mysql_config
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.tools_enum import StatusEnum
 from src.exceptions import MangoServerError

@@ -3,13 +3,16 @@
 # @Description: 
 # @Time   : 2024-03-14 10:03
 # @Author : 毛鹏
+
 import traceback
+from contextlib import contextmanager
+from functools import wraps
 
 import time
 from django.db import connection, close_old_connections
-from django.db.utils import Error
-
+from django.db.utils import Error, InterfaceError, OperationalError
 from mangotools.mangos import Mango
+
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
 
@@ -40,3 +43,45 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
         return wrapper
 
     return decorator
+
+
+def ensure_db_connection(is_while=False, max_retries=5):
+    def decorator(func):
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try_count = 0
+            while try_count < max_retries:
+                try:
+                    close_old_connections()
+                    return func(*args, **kwargs)
+                except (InterfaceError, OperationalError, Error) as e:
+                    try_count += 1
+                    if try_count > max_retries:
+                        log.system.error(
+                            f'重试失败: 函数：{func.__name__}, 数据list：{args},数据dict：{kwargs} 详情：{traceback.format_exc()}')
+                        if IS_SEND_MAIL:
+                            from src.settings import VERSION
+                            kwargs['version'] = VERSION
+                            Mango.s(func, e, traceback.format_exc(), args, kwargs)
+                        raise e
+                    time.sleep(2)
+                    close_old_connections()
+                    connection.ensure_connection()
+            else:
+                if is_while:
+                    return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@contextmanager
+def db_connection_context():
+    """数据库连接上下文管理器"""
+    try:
+        close_old_connections()
+        yield
+    finally:
+        close_old_connections()

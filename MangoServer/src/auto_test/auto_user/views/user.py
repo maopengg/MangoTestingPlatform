@@ -141,18 +141,21 @@ class LoginViews(ViewSet):
     def login(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
-        source_type = request.data.get('type')
+        source_type = int(request.data.get('type'))
         try:
             user_info = User.objects.get(username=username, password=password)
         except User.DoesNotExist:
             return ResponseData.fail(RESPONSE_MSG_0042)
         if not user_info:
             return ResponseData.fail(RESPONSE_MSG_0042)
+        if source_type == ClientTypeEnum.ACTUATOR.value:
+            if request.data.get('version') != settings.VERSION:
+                return ResponseData.fail(RESPONSE_MSG_0037)
+        elif  source_type == ClientTypeEnum.WEB.value:
+            user_info.last_login_time = datetime.now()
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
         user_info.ip = ip
-        if source_type == ClientTypeEnum.WEB.value:
-            user_info.last_login_time = datetime.now()
         user_info.save()
         from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
         UserLogsCRUD().inside_post({

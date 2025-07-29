@@ -70,7 +70,7 @@ class LoginLogic(LoginWindow):
                 show_failed_message('IP或端口不正确或服务未启动')
             else:
                 log.error(f'登录失败，失败信息：{response.model_dump_json()}')
-                show_failed_message('账号或密码错误')
+                show_failed_message(response.msg)
         except (JSONDecodeError, InvalidURL):
             show_failed_message('IP或端口不正确')
         except ConnectionError:

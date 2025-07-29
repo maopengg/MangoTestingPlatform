@@ -46,7 +46,6 @@ class ChatConsumer(WebsocketConsumer):
             self.inside_send(f"心跳已连接！IP：{self.scope.get('client')[0]}，端口：{self.scope.get('client')[1]}")
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.set_user_client_obj(self.username, self, user_id)
-            self.inside_send(f'{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
             try:
                 self.inside_send(f'您的{ClientNameEnum.DRIVER.value}已连接上{ClientNameEnum.SERVER.value}！')
             except SystemEError:
