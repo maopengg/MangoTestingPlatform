@@ -12,7 +12,7 @@ from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
-from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
+from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum, TaskEnum

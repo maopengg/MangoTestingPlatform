@@ -11,7 +11,7 @@ from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
 from src.auto_test.auto_system.models import TestObject
-from src.auto_test.auto_user.tools.factory import func_mysql_config, func_test_object_value
+from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
 from src.enums.api_enum import ApiPublicTypeEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum
 from src.exceptions import *

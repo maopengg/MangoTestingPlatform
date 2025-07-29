@@ -3,14 +3,9 @@
 # @Description: 
 # @Time   : 2024-09-19 10:50
 # @Author : 毛鹏
-from mangotools.decorator import func_info
 from mangoui import *
 
-from src.enums.gui_enum import TipsTypeEnum
-from src.enums.system_enum import ClientTypeEnum
-from src.models import queue_notification
 from src.network import HTTP
-from src.network.web_socket.socket_api_enum import ToolsSocketEnum
 from src.settings import settings
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
@@ -30,9 +25,9 @@ class SettingPage(QWidget):
         self.toggle1.set_value(settings.IS_DEBUG)
         self.toggle1.clicked.connect(self.debug)
         card_layout1.addRow('是否开启调试：', self.toggle1)
-        self.sendRedisData = MangoPushButton('发送')
-        self.sendRedisData.clicked.connect(self.click_send_redis_data)
-        card_layout1.addRow('发送缓存数据：', self.sendRedisData, )
+        # self.sendRedisData = MangoPushButton('发送')
+        # self.sendRedisData.clicked.connect(self.click_send_redis_data)
+        # card_layout1.addRow('发送缓存数据：', self.sendRedisData, )
 
         self.toggle2 = MangoToggle()
         self.toggle2.set_value(SetConfig.get_is_minio())  # type: ignore
@@ -139,15 +134,15 @@ class SettingPage(QWidget):
         settings.IS_DEBUG = bool(self.toggle1.get_value())
         log.set_debug(settings.IS_DEBUG)
 
-    def click_send_redis_data(self):
-        from src.services.customization import socket_conn
-        socket_conn.sync_send(
-            '设置缓存数据成功',
-            func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
-            is_notice=ClientTypeEnum.WEB,
-            func_args=func_info
-        )
-        queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
+    # def click_send_redis_data(self):
+    #     from src.services.customization import socket_conn
+    #     socket_conn.sync_send(
+    #         '设置缓存数据成功',
+    #         func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
+    #         is_notice=ClientTypeEnum.WEB,
+    #         func_args=func_info
+    #     )
+    #     queue_notification.put({'type': TipsTypeEnum.SUCCESS, 'value': '设置缓存数据成功'})
 
     def test_but(self):
         print(type(SetConfig.get_is_minio()), SetConfig.get_is_minio())

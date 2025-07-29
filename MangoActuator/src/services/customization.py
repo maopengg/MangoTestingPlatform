@@ -4,13 +4,10 @@
 # @Time   : 2025-04-29 14:06
 # @Author : 毛鹏
 from mangoautomation.uidrive.web.async_web import AsyncWebCustomization
-from mangotools.decorator import inject_to_class, async_method_callback
+from mangotools.decorator import *
 from mangotools.models import MethodModel
 from playwright.async_api import Locator
 
-from src.network import socket_conn
-
-socket_conn = socket_conn
 """
 示例，自定义方法
 
