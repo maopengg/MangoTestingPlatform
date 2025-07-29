@@ -1,7 +1,4 @@
 import json
-import platform
-
-from pydantic import BaseModel
 
 from src.tools import project_dir
 
@@ -16,21 +13,10 @@ IS_WINDOW = True
 IS_SEND_MAIL = True
 
 # **************************************** 下面不用管 **************************************** #
-if platform.system() != "Linux":
-    from mangoui import AppConfig, MenusModel
-
-    with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
-        SETTINGS = AppConfig(**json.loads(f.read()))
-    with open(project_dir.resource_path('src/settings/menus_2.json'), "r", encoding='utf-8') as f:
-        MENUS = MenusModel(**json.loads(f.read()))
-else:
-    class AppConfig(BaseModel):
-        app_name: str
-        version: str
-
-
-    with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
-        SETTINGS = AppConfig(**json.loads(f.read()))
+with open(project_dir.resource_path('src/settings/settings.json'), "r", encoding='utf-8') as f:
+    SETTINGS: dict = json.load(f)
+with open(project_dir.resource_path('src/settings/menus_2.json'), "r", encoding='utf-8') as f:
+    MENUS: dict = json.load(f)
 
 MEMORY_THRESHOLD = 100  # 控制内存高于多少就不可以执行用例，防止崩溃
 LOOP_MIX = 10  # 最大检查内存次数

@@ -69,7 +69,7 @@ class HttpClientApi(HttpBase):
                 'username': username,
                 'password': EncryptionTool.md5_32_small(**{'data': password}),
                 'type': ClientTypeEnum.ACTUATOR.value,
-                'version': settings.SETTINGS.version
+                'version': settings.SETTINGS.get('version')
             })
             if response.data and response.code == 200:
                 log.info(response.model_dump())
