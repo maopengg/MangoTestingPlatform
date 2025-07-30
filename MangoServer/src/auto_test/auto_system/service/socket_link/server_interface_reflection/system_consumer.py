@@ -27,7 +27,7 @@ class SystemConsumer:
         }
         try:
             cache_data = CacheData.objects.get(key=CacheDataKey2Enum.SELECT_VALUE.value)
-            if cache_data.describe != data.get('version') and data.get('version') == VERSION:
+            if data.get('version') == VERSION:
                 CacheDataCRUD.inside_put(cache_data.id, data)
         except CacheData.DoesNotExist:
             CacheDataCRUD.inside_post(data)
