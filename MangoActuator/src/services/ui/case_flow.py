@@ -72,4 +72,4 @@ class CaseFlow:
 
     @classmethod
     def reset_driver_object(cls):
-        cls.driver_object = DriverObject(True)
+        cls.driver_object = DriverObject(log, True)
