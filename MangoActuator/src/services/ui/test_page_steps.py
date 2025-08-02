@@ -139,7 +139,7 @@ class TestPageSteps:
         })
 
     def reset_driver_object(self):
-        self.driver_object = DriverObject(True)
+        self.driver_object = DriverObject(log, True)
         asyncio.run_coroutine_threadsafe(self.base_data.async_base_close(), self.parent.loop)
         self.base_data = BaseData(self.test_data, log) \
             .set_file_path(project_dir.download(), project_dir.screenshot(), )
