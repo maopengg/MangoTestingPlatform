@@ -124,7 +124,7 @@ class PageSteps:
                 raise UiError(*ERROR_MSG_0025)
             return element_data
 
-    async def _ope_steps(self, element_model, element_data) -> [ElementResultModel | bool]:
+    async def _ope_steps(self, element_model, element_data) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
             if self.page_steps_model.switch_step_open_url:
