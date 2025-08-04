@@ -67,7 +67,7 @@ class HttpClientApi(HttpBase):
         try:
             response = cls.post('/login', data={
                 'username': username,
-                'password': EncryptionTool.md5_32_small(**{'data': password}),
+                'password': EncryptionTool.md5_32_small(password),
                 'type': ClientTypeEnum.ACTUATOR.value,
                 'version': settings.SETTINGS.get('version')
             })

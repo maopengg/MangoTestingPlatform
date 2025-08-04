@@ -72,7 +72,7 @@ class WebSocketClient:
         进行websocket连接
         @return:
         """
-        server_url = f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}client/socket?username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}&password={EncryptionTool.md5_32_small(**{'data': SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value)})}"
+        server_url = f"{SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.WS.value)}client/socket?username={SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.USERNAME.value)}&password={EncryptionTool.md5_32_small(SqlCache(project_dir.cache_file()).get_sql_cache(CacheKeyEnum.PASSWORD.value))}"
         log.debug(f"websocketURL:{server_url}")
         retry = 0
         max_retries = 720
