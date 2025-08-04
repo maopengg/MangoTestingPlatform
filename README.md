@@ -73,12 +73,6 @@
 |---------|---------|
 | <img src="author.jpg" alt="作者微信" width="150"> | <img src="group.jpg" alt="测试交流群" width="150"> |
 
----
-
-## 📚 依赖项
-
-- **后端**：Python 3.10+, Django 4.2+, DRF, MySQL
-- **前端**：Vue3, TypeScript, Vite, Arco Design
 
 ---
 
