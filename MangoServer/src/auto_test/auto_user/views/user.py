@@ -67,7 +67,7 @@ class UserCRUD(ModelCRUD):
         if serializer.is_valid():
             serializer.save()
             user = self.model.objects.get(id=serializer.data.get('id'))
-            user.password = EncryptionTool.md5_32_small(**{'data': data['password']})
+            user.password = EncryptionTool.md5_32_small(data['password'])
             user.save()
             return ResponseData.success(RESPONSE_MSG_0002, serializer.data)
 
@@ -118,9 +118,9 @@ class UserViews(ViewSet):
     @action(methods=['put'], detail=False)
     @error_response('user')
     def put_password(self, request: Request):
-        password = EncryptionTool.md5_32_small(**{'data': request.data['password']})
-        new_password = EncryptionTool.md5_32_small(**{'data': request.data['new_password']})
-        confirm_password = EncryptionTool.md5_32_small(**{'data': request.data['confirm_password']})
+        password = EncryptionTool.md5_32_small(request.data['password'])
+        new_password = EncryptionTool.md5_32_small( request.data['new_password'])
+        confirm_password = EncryptionTool.md5_32_small( request.data['confirm_password'])
 
         obj = self.model.objects.get(id=request.data.get('id'))
         if password != obj.password:

@@ -96,7 +96,7 @@ class LoginLogic(LoginWindow):
         if dialog.data:
 
             if dialog.data['password'] == dialog.data['confirm_password']:
-                dialog.data['password'] = EncryptionTool.md5_32_small(**{'data': dialog.data['password']})
+                dialog.data['password'] = EncryptionTool.md5_32_small(dialog.data['password'])
                 try:
                     response_model = HTTP.not_auth.user_register(dialog.data)
                     if response_model:
