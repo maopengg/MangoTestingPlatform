@@ -27,9 +27,8 @@ class ObtainTestData(DataProcessor):
         return str(uuid.uuid4())
 
     @classmethod
-    def get_file(cls, **kwargs) -> str:
-        """传入文件名称，返回文件对象"""
-        file_name = kwargs.get('data')
+    def get_file(cls, file_name) -> str:
+        """传入文件名称，返回文件对象，参数file_name"""
         file_path = os.path.join(project_dir.upload(), file_name)
         try:
             file_data = FileData.objects.get(name=file_name)
