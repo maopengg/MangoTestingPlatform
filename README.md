@@ -71,7 +71,7 @@
 
 | 作者微信 | 测试交流群 |
 |---------|---------|
-| ![作者微信](author.jpg =150x) | ![测试交流群](group.jpg =150x) |
+| <img src="author.jpg" alt="作者微信" width="150"> | <img src="group.jpg" alt="测试交流群" width="150"> |
 
 ---
 
