@@ -50,7 +50,7 @@ class AutoUserConfig(AppConfig):
             username=SocketEnum.OPEN.value,
             defaults={
                 'name': SocketEnum.OPEN.value,
-                'password': EncryptionTool.md5_32_small(**{'data': '123456'}),
+                'password': EncryptionTool.md5_32_small('123456'),
                 'mailbox': [],
                 'config': {}
             }
