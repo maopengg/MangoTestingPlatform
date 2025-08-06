@@ -1,157 +1,154 @@
 <template>
-  <TableBody ref="tableBody">
-    <template #default>
-      <div class="test-report-container">
-        <a-row :gutter="16" class="summary-cards">
-          <a-col v-for="(item, index) in summaryCards" :key="index" class="summary-col">
-            <a-card :class="['summary-card', item.class]">
-              <template #title>
-                <a-space>
-                  <component :is="item.icon" />
-                  <span>{{ item.title }}</span>
-                </a-space>
-              </template>
-              <div class="card-content">
-                <span class="number">{{ item.value }}</span>
-                <span class="label">个</span>
-              </div>
-            </a-card>
-          </a-col>
-        </a-row>
-        <a-row :gutter="16" class="chart-section">
-          <a-col :span="8">
-            <a-card title="测试套基础信息" class="info-card">
-              <div class="chart-container">
-                <a-space direction="vertical" style="width: 100%">
-                  <div class="info-item">
-                    <span class="info-label">测试套ID：</span>
-                    <span class="info-value">{{ pageData.record.id }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">任务名称：</span>
-                    <span class="info-value">{{ pageData.record.tasks?.name }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">执行时间：</span>
-                    <span class="info-value">{{ pageData.record.create_time }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">测试环境：</span>
-                    <span class="info-value">{{
-                      enumStore.environment_type[pageData.record.test_env].title
-                    }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">执行人：</span>
-                    <span class="info-value">{{ pageData.record.user?.name }}</span>
-                  </div>
-                  <div class="info-item">
-                    <span class="info-label">是否通知：</span>
-                    <span class="info-value">{{
-                      enumStore.status[pageData.record.is_notice].title
-                    }}</span>
-                  </div>
-                </a-space>
-              </div>
-            </a-card>
-          </a-col>
-
-          <a-col :span="8">
-            <a-card title="用例执行进度" class="progress-card">
-              <div class="chart-container">
-                <div class="progress-item">
-                  <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.api_count > 0
-                        ? Number(
-                            (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
-                <div class="progress-item">
-                  <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.ui_count > 0
-                        ? Number(
-                            (data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
-                <div class="progress-item">
-                  <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
-                  <a-progress
-                    :percent="
-                      data.summary.pytest_count > 0
-                        ? Number(
-                            (
-                              data.summary.pytest_in_progress_count / data.summary.pytest_count
-                            ).toFixed(2)
-                          )
-                        : 0
-                    "
-                    :style="{ width: '80%' }"
-                    :color="{
-                      '0%': 'rgb(var(--primary-6))',
-                      '100%': 'rgb(var(--success-6))',
-                    }"
-                    :stroke-width="8"
-                  />
-                </div>
-              </div>
-            </a-card>
-          </a-col>
-          <a-col :span="8">
-            <a-card title="测试结果分布图" class="result-card">
-              <div class="chart-container">
-                <StatusChart
-                  :success="data.summary.success_count"
-                  :fail="data.summary.fail_count"
-                  :pending="data.summary.proceed_count"
-                  :todo="data.summary.stay_begin_count"
-                />
-              </div>
-            </a-card>
-          </a-col>
-        </a-row>
-
-        <a-card class="test-details">
+  <div class="test-report-container">
+    <a-row :gutter="16" class="summary-cards">
+      <a-col v-for="(item, index) in summaryCards" :key="index" class="summary-col">
+        <a-card :class="['summary-card', item.class]">
           <template #title>
             <a-space>
-              <icon-unordered-list />
-              <span>测试套用例列表</span>
-              <span style="font-size: 12px; opacity: 0.7; margin-left: 4px"
-                >请在左侧展开查看步骤结果</span
-              >
+              <component :is="item.icon" />
+              <span>{{ item.title }}</span>
             </a-space>
           </template>
-          <template #extra>
-            <a-space>
-              <!--              <span  style="font-size: 16px; opacity: 0.6;  color: black ">只看某个状态</span>-->
-              <a-button type="primary" size="small" @click="doRefresh(null)">全部</a-button>
-              <a-button status="danger" size="small" @click="doRefresh(0)">失败</a-button>
-              <a-button status="success" size="small" @click="doRefresh(1)">成功</a-button>
-              <a-button status="warning" size="small" @click="doRefresh(2)">进行中</a-button>
-              <a-button status="normal" size="small" @click="doRefresh(3)">待开始</a-button>
+          <div class="card-content">
+            <span class="number">{{ item.value }}</span>
+            <span class="label">个</span>
+          </div>
+        </a-card>
+      </a-col>
+    </a-row>
+    <a-row :gutter="16" class="chart-section">
+      <a-col :span="8">
+        <a-card title="测试套基础信息" class="info-card">
+          <div class="chart-container">
+            <a-space direction="vertical" style="width: 100%">
+              <div class="info-item">
+                <span class="info-label">测试套ID：</span>
+                <span class="info-value">{{ pageData.record.id }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">任务名称：</span>
+                <span class="info-value">{{ pageData.record.tasks?.name }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">执行时间：</span>
+                <span class="info-value">{{ pageData.record.create_time }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">测试环境：</span>
+                <span class="info-value">{{
+                  enumStore.environment_type[pageData.record.test_env].title
+                }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">执行人：</span>
+                <span class="info-value">{{ pageData.record.user?.name }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">是否通知：</span>
+                <span class="info-value">{{
+                  enumStore.status[pageData.record.is_notice].title
+                }}</span>
+              </div>
             </a-space>
-          </template>
+          </div>
+        </a-card>
+      </a-col>
+
+      <a-col :span="8">
+        <a-card title="用例执行进度" class="progress-card">
+          <div class="chart-container">
+            <div class="progress-item">
+              <div class="progress-label">API测试 ({{ data.summary.api_count }})</div>
+              <a-progress
+                :percent="
+                  data.summary.api_count > 0
+                    ? Number(
+                        (data.summary.api_in_progress_count / data.summary.api_count).toFixed(2)
+                      )
+                    : 0
+                "
+                :style="{ width: '80%' }"
+                :color="{
+                  '0%': 'rgb(var(--primary-6))',
+                  '100%': 'rgb(var(--success-6))',
+                }"
+                :stroke-width="8"
+              />
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">UI测试 ({{ data.summary.ui_count }})</div>
+              <a-progress
+                :percent="
+                  data.summary.ui_count > 0
+                    ? Number((data.summary.ui_in_progress_count / data.summary.ui_count).toFixed(2))
+                    : 0
+                "
+                :style="{ width: '80%' }"
+                :color="{
+                  '0%': 'rgb(var(--primary-6))',
+                  '100%': 'rgb(var(--success-6))',
+                }"
+                :stroke-width="8"
+              />
+            </div>
+            <div class="progress-item">
+              <div class="progress-label">Pytest测试 ({{ data.summary.pytest_count }})</div>
+              <a-progress
+                :percent="
+                  data.summary.pytest_count > 0
+                    ? Number(
+                        (data.summary.pytest_in_progress_count / data.summary.pytest_count).toFixed(
+                          2
+                        )
+                      )
+                    : 0
+                "
+                :style="{ width: '80%' }"
+                :color="{
+                  '0%': 'rgb(var(--primary-6))',
+                  '100%': 'rgb(var(--success-6))',
+                }"
+                :stroke-width="8"
+              />
+            </div>
+          </div>
+        </a-card>
+      </a-col>
+      <a-col :span="8">
+        <a-card title="测试结果分布图" class="result-card">
+          <div class="chart-container">
+            <StatusChart
+              :success="data.summary.success_count"
+              :fail="data.summary.fail_count"
+              :pending="data.summary.proceed_count"
+              :todo="data.summary.stay_begin_count"
+            />
+          </div>
+        </a-card>
+      </a-col>
+    </a-row>
+
+    <a-card class="test-details" body-style="padding: 0 20px 20px 20px">
+      <template #title>
+        <a-space>
+          <icon-unordered-list />
+          <span>测试套用例列表</span>
+          <span style="font-size: 12px; opacity: 0.7; margin-left: 4px"
+            >请在左侧展开查看步骤结果</span
+          >
+        </a-space>
+      </template>
+      <a-tabs @tab-click="(key) => doRefresh(null, key)">
+        <template #extra>
+          <a-space>
+            <a-button type="primary" size="small" @click="doRefresh(null)">全部</a-button>
+            <a-button status="danger" size="small" @click="doRefresh(0)">只看失败</a-button>
+            <a-button status="success" size="small" @click="doRefresh(1)">只看成功</a-button>
+            <a-button status="warning" size="small" @click="doRefresh(2)">只看进行中</a-button>
+            <a-button status="normal" size="small" @click="doRefresh(3)">只看待开始</a-button>
+          </a-space>
+        </template>
+        <a-tab-pane key="0" title="UI测试" v-if="data.summary.ui_count > 0">
           <a-table
             :bordered="false"
             :loading="table.tableLoading.value"
@@ -203,8 +200,8 @@
                       type="text"
                       size="mini"
                       @click="onRetry(record)"
-                      >重试</a-button
-                    >
+                      >重试
+                    </a-button>
                   </a-space>
 
                   <a-space>
@@ -220,60 +217,200 @@
               </a-table-column>
             </template>
           </a-table>
-          <TableFooter :pagination="pagination" />
-        </a-card>
+        </a-tab-pane>
+        <a-tab-pane key="1" title="API测试" v-if="data.summary.api_count > 0">
+          <a-table
+            :bordered="false"
+            :loading="table.tableLoading.value"
+            :data="table.dataList"
+            :columns="tableColumns"
+            :pagination="false"
+            :row-key="rowKey"
+            :expand-row-keys="expandedKeys"
+          >
+            <template #columns>
+              <a-table-column title="ID" data-index="id">
+                <template #cell="{ record }">
+                  {{ record.id }}
+                </template>
+              </a-table-column>
+              <a-table-column title="用例名称" data-index="case_name">
+                <template #cell="{ record }">
+                  {{ record.case_name }}
+                </template>
+              </a-table-column>
+              <a-table-column title="测试类型" data-index="type">
+                <template #cell="{ record }">
+                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
+                    >{{
+                      record?.type || record.type === 0
+                        ? enumStore.test_case_type[record?.type].title
+                        : ''
+                    }}
+                  </a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column title="步骤名称" data-index="name" />
+              <a-table-column title="测试结果" data-index="status">
+                <template #cell="{ record }">
+                  <a-tag
+                    :color="enumStore.status_colors[record?.status]"
+                    size="small"
+                    class="custom-tag"
+                  >
+                    {{ enumStore.task_status[record?.status].title }}
+                  </a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+                <template #cell="{ record }">
+                  <a-space>
+                    <a-button
+                      v-if="record.children"
+                      type="text"
+                      size="mini"
+                      @click="onRetry(record)"
+                      >重试
+                    </a-button>
+                  </a-space>
 
-        <!-- 测试详情抽屉 -->
-        <a-drawer
-          v-model:visible="drawerVisible"
-          :width="1000"
-          title="测试用例详情"
-          class="custom-drawer"
-        >
-          <template v-if="data.selectedCase">
-            <!--            <a-descriptions :column="1" bordered class="custom-descriptions">-->
-            <!--              <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>-->
-            <!--              <a-descriptions-item label="用例名称"-->
-            <!--                >{{ data.selectedCase?.name }}-->
-            <!--              </a-descriptions-item>-->
-            <!--              <a-descriptions-item label="项目名称"-->
-            <!--                >{{ data.selectedCase?.project_product_name }}-->
-            <!--              </a-descriptions-item>-->
-            <!--              <a-descriptions-item label="执行状态">-->
-            <!--                <a-tag-->
-            <!--                  :color="enumStore.status_colors[data?.selectedCase?.status]"-->
-            <!--                  size="small"-->
-            <!--                  class="custom-tag"-->
-            <!--                >-->
-            <!--                  {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}-->
-            <!--                </a-tag>-->
-            <!--              </a-descriptions-item>-->
-            <!--              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"-->
-            <!--                >{{ data.selectedCase?.error_message }}-->
-            <!--              </a-descriptions-item>-->
-            <!--            </a-descriptions>-->
-            <div>
-              <div v-if="data.selectedCase.case_type === 0">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-                  <ElementTestReport :resultData="data?.selectedCase" />
-                </a-card>
-              </div>
-              <div v-else-if="data.selectedCase.case_type === 1">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-                  <ApiTestReport :resultData="data?.selectedCase" />
-                </a-card>
-              </div>
-              <div v-else-if="data.selectedCase.case_type === 2">
-                <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
-                  <PytestTestReport :resultData="data?.selectedCase">pytest</PytestTestReport>
-                </a-card>
-              </div>
-            </div>
-          </template>
-        </a-drawer>
-      </div>
-    </template>
-  </TableBody>
+                  <a-space>
+                    <a-button
+                      v-if="!record.children"
+                      type="text"
+                      size="mini"
+                      @click="showDetails(record)"
+                      >查看详细报告
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </a-tab-pane>
+        <a-tab-pane key="2" title="Pytest测试" v-if="data.summary.pytest_count > 0">
+          <a-table
+            :bordered="false"
+            :loading="table.tableLoading.value"
+            :data="table.dataList"
+            :columns="tableColumns"
+            :pagination="false"
+            :row-key="rowKey"
+            :expand-row-keys="expandedKeys"
+          >
+            <template #columns>
+              <a-table-column title="ID" data-index="id">
+                <template #cell="{ record }">
+                  {{ record.id }}
+                </template>
+              </a-table-column>
+              <a-table-column title="用例名称" data-index="case_name">
+                <template #cell="{ record }">
+                  {{ record.case_name }}
+                </template>
+              </a-table-column>
+              <a-table-column title="测试类型" data-index="type">
+                <template #cell="{ record }">
+                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
+                    >{{
+                      record?.type || record.type === 0
+                        ? enumStore.test_case_type[record?.type].title
+                        : ''
+                    }}
+                  </a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column title="步骤名称" data-index="name" />
+              <a-table-column title="测试结果" data-index="status">
+                <template #cell="{ record }">
+                  <a-tag
+                    :color="enumStore.status_colors[record?.status]"
+                    size="small"
+                    class="custom-tag"
+                  >
+                    {{ enumStore.task_status[record?.status].title }}
+                  </a-tag>
+                </template>
+              </a-table-column>
+              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+                <template #cell="{ record }">
+                  <a-space>
+                    <a-button
+                      v-if="record.children"
+                      type="text"
+                      size="mini"
+                      @click="onRetry(record)"
+                      >重试
+                    </a-button>
+                  </a-space>
+
+                  <a-space>
+                    <a-button
+                      v-if="!record.children"
+                      type="text"
+                      size="mini"
+                      @click="showDetails(record)"
+                      >查看详细报告
+                    </a-button>
+                  </a-space>
+                </template>
+              </a-table-column>
+            </template>
+          </a-table>
+        </a-tab-pane>
+      </a-tabs>
+      <TableFooter :pagination="pagination" />
+    </a-card>
+
+    <!-- 测试详情抽屉 -->
+    <a-drawer
+      v-model:visible="drawerVisible"
+      :width="1000"
+      title="测试用例详情"
+      class="custom-drawer"
+    >
+      <template v-if="data.selectedCase">
+        <!--            <a-descriptions :column="1" bordered class="custom-descriptions">-->
+        <!--              <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>-->
+        <!--              <a-descriptions-item label="用例名称"-->
+        <!--                >{{ data.selectedCase?.name }}-->
+        <!--              </a-descriptions-item>-->
+        <!--              <a-descriptions-item label="项目名称"-->
+        <!--                >{{ data.selectedCase?.project_product_name }}-->
+        <!--              </a-descriptions-item>-->
+        <!--              <a-descriptions-item label="执行状态">-->
+        <!--                <a-tag-->
+        <!--                  :color="enumStore.status_colors[data?.selectedCase?.status]"-->
+        <!--                  size="small"-->
+        <!--                  class="custom-tag"-->
+        <!--                >-->
+        <!--                  {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}-->
+        <!--                </a-tag>-->
+        <!--              </a-descriptions-item>-->
+        <!--              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"-->
+        <!--                >{{ data.selectedCase?.error_message }}-->
+        <!--              </a-descriptions-item>-->
+        <!--            </a-descriptions>-->
+        <div>
+          <div v-if="data.selectedCase.case_type === 0">
+            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+              <ElementTestReport :resultData="data?.selectedCase" />
+            </a-card>
+          </div>
+          <div v-else-if="data.selectedCase.case_type === 1">
+            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+              <ApiTestReport :resultData="data?.selectedCase" />
+            </a-card>
+          </div>
+          <div v-else-if="data.selectedCase.case_type === 2">
+            <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
+              <PytestTestReport :resultData="data?.selectedCase">pytest</PytestTestReport>
+            </a-card>
+          </div>
+        </div>
+      </template>
+    </a-drawer>
+  </div>
 </template>
 <script lang="ts" setup>
   import { computed, onMounted, reactive, ref } from 'vue'
@@ -380,10 +517,13 @@
     drawerVisible.value = true
   }
 
-  function doRefresh(status = null) {
+  function doRefresh(status = null, type = null) {
     let value = { test_suite_id: pageData.record.id }
     if (status !== null) {
       value['status'] = status
+    }
+    if (type !== null) {
+      value['type'] = type
     }
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
@@ -403,6 +543,7 @@
       })
       .catch(console.log)
   }
+
   function onRetry(record: any) {
     Modal.confirm({
       title: '提示',
@@ -418,6 +559,7 @@
       },
     })
   }
+
   onMounted(() => {
     doRefresh(null)
     doRefreshSummary()
@@ -460,11 +602,6 @@
     overflow: hidden;
     border: none;
 
-    &:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-    }
-
     .arco-card-header {
       border-bottom: 1px solid rgba(0, 0, 0, 0.05);
       padding: 16px 20px;
@@ -479,7 +616,7 @@
 
   // 摘要卡片
   .summary-cards {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
 
   .summary-card {
@@ -492,7 +629,7 @@
 
   .card-content {
     text-align: center;
-    padding: 24px 0;
+    padding: 6px 0;
   }
 
   .number {
@@ -562,7 +699,7 @@
   }
 
   .chart-section {
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
 
   .chart-container {
@@ -687,48 +824,5 @@
 
   .report-card {
     margin-bottom: 12px;
-  }
-
-  // 表格样式
-  :deep(.arco-table) {
-    .expand-icon {
-      cursor: pointer;
-      margin-right: 8px;
-      color: rgb(var(--primary-6));
-
-      &:hover {
-        opacity: 0.8;
-      }
-    }
-
-    .arco-table-tr-expand {
-      background-color: rgba(var(--primary-1), 0.1);
-    }
-
-    .arco-table-cell {
-      vertical-align: middle;
-    }
-
-    .arco-table-th {
-      background-color: rgba(var(--primary-1), 0.2);
-      font-weight: 600;
-    }
-
-    .arco-table-tr {
-      &:hover {
-        .arco-table-td {
-          background-color: rgba(var(--primary-1), 0.1);
-        }
-      }
-    }
-
-    .arco-table-td {
-      transition: background-color 0.3s;
-
-      &[rowspan] {
-        background-color: rgba(var(--primary-1), 0.05);
-        border-left: 2px solid rgb(var(--primary-6));
-      }
-    }
   }
 </style>
