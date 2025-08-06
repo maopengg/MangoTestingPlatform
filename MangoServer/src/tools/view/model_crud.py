@@ -8,7 +8,7 @@ from threading import Thread
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from mangotools.mangos import ModelCRUD as CRUD, inside_post, inside_put, inside_delete
+from mangotools.mangos import get, post, put, delete, inside_post, inside_put, inside_delete
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
@@ -34,16 +34,7 @@ class ModelCRUD(GenericAPIView):
     def get(self, request: Request):
         from src.auto_test.auto_system.models import ProjectProduct
         from src.auto_test.auto_pytest.models import PytestProduct
-        crud = CRUD(
-            model=self.model,
-            not_matching_str=self.not_matching_str,
-            pytest_model=self.pytest_model,
-            paging_list=self.paging_list,
-            get_serializer_class=self.get_serializer_class,
-            serializer=self.serializer,
-            asynchronous_callback=self.asynchronous_callback
-        )
-        return crud.get(
+        return get(self,
                    request=request,
                    project_product=ProjectProduct,
                    pytest_product=PytestProduct,
@@ -59,12 +50,7 @@ class ModelCRUD(GenericAPIView):
 
     @error_response('system')
     def post(self, request: Request):
-        crud = CRUD(
-            model=self.model,
-            serializer=self.serializer,
-            asynchronous_callback=self.asynchronous_callback
-        )
-        return crud.post(
+        return post(self,
                     request=request,
                     response_data=ResponseData,
                     log=log,
@@ -74,12 +60,7 @@ class ModelCRUD(GenericAPIView):
 
     @error_response('system')
     def put(self, request: Request):
-        crud = CRUD(
-            model=self.model,
-            serializer=self.serializer,
-            asynchronous_callback=self.asynchronous_callback
-        )
-        return crud.put(
+        return put(self,
                    request=request,
                    response_data=ResponseData,
                    log=log,
@@ -89,11 +70,7 @@ class ModelCRUD(GenericAPIView):
 
     @error_response('system')
     def delete(self, request: Request):
-        crud = CRUD(
-            model=self.model,
-            asynchronous_callback=self.asynchronous_callback
-        )
-        return crud.delete(
+        return delete(self,
                       request=request,
                       log=log,
                       response_data=ResponseData,
@@ -113,7 +90,6 @@ class ModelCRUD(GenericAPIView):
 
     @classmethod
     def inside_put(cls, _id: int, data: dict) -> dict:
-
         return inside_put(cls,
                           _id=_id,
                           data=data,
