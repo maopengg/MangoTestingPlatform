@@ -166,7 +166,16 @@
             accordion
             destroy-on-hide
           >
-            <a-collapse-item :header="item.case_name" key="1">
+            <a-collapse-item key="1">
+              <template #header>
+                <div class="custom-header">
+                  <span>{{ item.case_name }}</span>
+                  <span style="width: 20px"></span>
+                  <a-tag :color="enumStore.status_colors[item.status]"
+                    >{{ enumStore.task_status[item.status].title }}
+                  </a-tag>
+                </div>
+              </template>
               <a-table :columns="uiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="步骤ID" data-index="id">
@@ -253,6 +262,15 @@
             style="padding: 0 0 0 0"
           >
             <a-collapse-item :header="item.case_name" key="1">
+              <template #header>
+                <div class="custom-header">
+                  <span>{{ item.case_name }}</span>
+                  <span style="width: 20px"></span>
+                  <a-tag :color="enumStore.status_colors[item.status]"
+                    >{{ enumStore.task_status[item.status].title }}
+                  </a-tag>
+                </div>
+              </template>
               <a-table :columns="apiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="接口ID" data-index="id">
@@ -339,6 +357,15 @@
             style="padding: 0 0 0 0"
           >
             <a-collapse-item :header="item.case_name" key="1">
+              <template #header>
+                <div class="custom-header">
+                  <span>{{ item.case_name }}</span>
+                  <span style="width: 20px"></span>
+                  <a-tag :color="enumStore.status_colors[item.status]"
+                    >{{ enumStore.task_status[item.status].title }}
+                  </a-tag>
+                </div>
+              </template>
               <a-table :columns="pytestColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="产品名称" data-index="project_product_name">
@@ -848,5 +875,11 @@
 
   .report-card {
     margin-bottom: 12px;
+  }
+  .custom-header {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 控制标签间距 */
+    font-size: 14px;
   }
 </style>
