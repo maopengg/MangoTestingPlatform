@@ -130,233 +130,275 @@
 
     <a-card class="test-details" body-style="padding: 0 20px 20px 20px">
       <template #title>
-        <a-space>
-          <icon-unordered-list />
-          <span>测试套用例列表</span>
-          <span style="font-size: 12px; opacity: 0.7; margin-left: 4px"
-            >请在左侧展开查看步骤结果</span
-          >
-        </a-space>
+        <icon-unordered-list />
+        <span>测试套用例列表</span>
       </template>
-      <a-tabs @tab-click="(key) => doRefresh(null, key)">
+      <a-tabs @tab-click="(key) => doRefresh(key)">
         <template #extra>
           <a-space>
-            <a-button type="primary" size="small" @click="doRefresh(null)">全部</a-button>
-            <a-button status="danger" size="small" @click="doRefresh(0)">只看失败</a-button>
-            <a-button status="success" size="small" @click="doRefresh(1)">只看成功</a-button>
-            <a-button status="warning" size="small" @click="doRefresh(2)">只看进行中</a-button>
-            <a-button status="normal" size="small" @click="doRefresh(3)">只看待开始</a-button>
+            <a-button type="primary" size="small" :loading="caseRunning" @click="doCaseStatus(null)"
+              >全部</a-button
+            >
+            <a-button status="danger" size="small" :loading="caseRunning" @click="doCaseStatus(0)"
+              >只看失败</a-button
+            >
+            <a-button status="success" size="small" :loading="caseRunning" @click="doCaseStatus(1)"
+              >只看成功</a-button
+            >
+            <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
+              >只看进行中</a-button
+            >
+            <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
+              >只看待开始</a-button
+            >
           </a-space>
         </template>
-        <a-tab-pane key="0" title="UI测试" v-if="data.summary.ui_count > 0">
-          <a-table
+        <a-tab-pane
+          key="0"
+          :title="'UI测试（' + data.summary.ui_count + '）'"
+          v-if="data.summary.ui_count > 0"
+        >
+          <a-collapse
+            :default-active-key="[1]"
             :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :row-key="rowKey"
-            :expand-row-keys="expandedKeys"
+            v-for="item of data.dataList"
+            :key="item.id"
+            accordion
+            destroy-on-hide
           >
-            <template #columns>
-              <a-table-column title="ID" data-index="id">
-                <template #cell="{ record }">
-                  {{ record.id }}
-                </template>
-              </a-table-column>
-              <a-table-column title="用例名称" data-index="case_name">
-                <template #cell="{ record }">
-                  {{ record.case_name }}
-                </template>
-              </a-table-column>
-              <a-table-column title="测试类型" data-index="type">
-                <template #cell="{ record }">
-                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
-                    >{{
-                      record?.type || record.type === 0
-                        ? enumStore.test_case_type[record?.type].title
-                        : ''
-                    }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="步骤名称" data-index="name" />
-              <a-table-column title="测试结果" data-index="status">
-                <template #cell="{ record }">
-                  <a-tag
-                    :color="enumStore.status_colors[record?.status]"
-                    size="small"
-                    class="custom-tag"
-                  >
-                    {{ enumStore.task_status[record?.status].title }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                <template #cell="{ record }">
-                  <a-space>
-                    <a-button
-                      v-if="record.children"
-                      type="text"
-                      size="mini"
-                      @click="onRetry(record)"
-                      >重试
-                    </a-button>
-                  </a-space>
+            <a-collapse-item :header="item.case_name" key="1">
+              <a-table :columns="uiColumns" :data="item.children" :pagination="false"
+                ><template #columns>
+                  <a-table-column title="步骤ID" data-index="id">
+                    <template #cell="{ record }">
+                      {{ record.id }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="产品名称" data-index="project_product_name">
+                    <template #cell="{ record }">
+                      {{ record.project_product_name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="步骤名称" data-index="name">
+                    <template #cell="{ record }">
+                      {{ record.name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试时间" data-index="test_time">
+                    <template #cell="{ record }">
+                      {{ record.test_time }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试环境" data-index="test_object">
+                    <template #cell="{ record }">
+                      {{ record.test_object }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试结果" data-index="status">
+                    <template #cell="{ record }">
+                      <a-tag
+                        :color="enumStore.status_colors[record?.status]"
+                        size="small"
+                        class="custom-tag"
+                      >
+                        {{ enumStore.task_status[record?.status].title }}
+                      </a-tag>
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="失败提示" data-index="error_message">
+                    <template #cell="{ record }">
+                      {{ record.error_message }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+                    <template #cell="{ record }">
+                      <a-space>
+                        <a-button
+                          v-if="record.children"
+                          type="text"
+                          size="mini"
+                          @click="onRetry(record)"
+                          >重试
+                        </a-button>
+                      </a-space>
 
-                  <a-space>
-                    <a-button
-                      v-if="!record.children"
-                      type="text"
-                      size="mini"
-                      @click="showDetails(record)"
-                      >查看详细报告
-                    </a-button>
-                  </a-space>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+                      <a-space>
+                        <a-button
+                          v-if="!record.children"
+                          type="text"
+                          size="mini"
+                          @click="showDetails(record)"
+                          >查看详细报告
+                        </a-button>
+                      </a-space>
+                    </template>
+                  </a-table-column>
+                </template></a-table
+              >
+            </a-collapse-item>
+          </a-collapse>
         </a-tab-pane>
-        <a-tab-pane key="1" title="API测试" v-if="data.summary.api_count > 0">
-          <a-table
+        <a-tab-pane
+          key="1"
+          :title="'API测试（' + data.summary.api_count + '）'"
+          v-if="data.summary.api_count > 0"
+        >
+          <a-collapse
+            :default-active-key="[1]"
             :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :row-key="rowKey"
-            :expand-row-keys="expandedKeys"
+            v-for="item of data.dataList"
+            :key="item.id"
+            accordion
+            destroy-on-hide
+            style="padding: 0 0 0 0"
           >
-            <template #columns>
-              <a-table-column title="ID" data-index="id">
-                <template #cell="{ record }">
-                  {{ record.id }}
-                </template>
-              </a-table-column>
-              <a-table-column title="用例名称" data-index="case_name">
-                <template #cell="{ record }">
-                  {{ record.case_name }}
-                </template>
-              </a-table-column>
-              <a-table-column title="测试类型" data-index="type">
-                <template #cell="{ record }">
-                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
-                    >{{
-                      record?.type || record.type === 0
-                        ? enumStore.test_case_type[record?.type].title
-                        : ''
-                    }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="步骤名称" data-index="name" />
-              <a-table-column title="测试结果" data-index="status">
-                <template #cell="{ record }">
-                  <a-tag
-                    :color="enumStore.status_colors[record?.status]"
-                    size="small"
-                    class="custom-tag"
-                  >
-                    {{ enumStore.task_status[record?.status].title }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                <template #cell="{ record }">
-                  <a-space>
-                    <a-button
-                      v-if="record.children"
-                      type="text"
-                      size="mini"
-                      @click="onRetry(record)"
-                      >重试
-                    </a-button>
-                  </a-space>
+            <a-collapse-item :header="item.case_name" key="1">
+              <a-table :columns="apiColumns" :data="item.children" :pagination="false"
+                ><template #columns>
+                  <a-table-column title="接口ID" data-index="id">
+                    <template #cell="{ record }">
+                      {{ record.id }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="产品名称" data-index="project_product_name">
+                    <template #cell="{ record }">
+                      {{ record.project_product_name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="接口名称" data-index="name">
+                    <template #cell="{ record }">
+                      {{ record.name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试环境" data-index="request_url">
+                    <template #cell="{ record }">
+                      {{ record?.request?.url }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="耗时" data-index="response_time">
+                    <template #cell="{ record }">
+                      {{ record?.response?.time }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试结果" data-index="status">
+                    <template #cell="{ record }">
+                      <a-tag
+                        :color="enumStore.status_colors[record?.status]"
+                        size="small"
+                        class="custom-tag"
+                      >
+                        {{ enumStore.task_status[record?.status].title }}
+                      </a-tag>
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="失败提示" data-index="error_message">
+                    <template #cell="{ record }">
+                      {{ record.error_message }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+                    <template #cell="{ record }">
+                      <a-space>
+                        <a-button
+                          v-if="record.children"
+                          type="text"
+                          size="mini"
+                          @click="onRetry(record)"
+                          >重试
+                        </a-button>
+                      </a-space>
 
-                  <a-space>
-                    <a-button
-                      v-if="!record.children"
-                      type="text"
-                      size="mini"
-                      @click="showDetails(record)"
-                      >查看详细报告
-                    </a-button>
-                  </a-space>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+                      <a-space>
+                        <a-button
+                          v-if="!record.children"
+                          type="text"
+                          size="mini"
+                          @click="showDetails(record)"
+                          >查看详细报告
+                        </a-button>
+                      </a-space>
+                    </template>
+                  </a-table-column>
+                </template></a-table
+              >
+            </a-collapse-item>
+          </a-collapse>
         </a-tab-pane>
-        <a-tab-pane key="2" title="Pytest测试" v-if="data.summary.pytest_count > 0">
-          <a-table
+        <a-tab-pane
+          key="2"
+          :title="'Pytest测试（' + data.summary.pytest_count + '）'"
+          v-if="data.summary.pytest_count > 0"
+        >
+          <a-collapse
+            :default-active-key="[1]"
             :bordered="false"
-            :loading="table.tableLoading.value"
-            :data="table.dataList"
-            :columns="tableColumns"
-            :pagination="false"
-            :row-key="rowKey"
-            :expand-row-keys="expandedKeys"
+            v-for="item of data.dataList"
+            :key="item.id"
+            accordion
+            destroy-on-hide
+            style="padding: 0 0 0 0"
           >
-            <template #columns>
-              <a-table-column title="ID" data-index="id">
-                <template #cell="{ record }">
-                  {{ record.id }}
-                </template>
-              </a-table-column>
-              <a-table-column title="用例名称" data-index="case_name">
-                <template #cell="{ record }">
-                  {{ record.case_name }}
-                </template>
-              </a-table-column>
-              <a-table-column title="测试类型" data-index="type">
-                <template #cell="{ record }">
-                  <a-tag :color="enumStore.colors[record?.type]" size="small" class="custom-tag"
-                    >{{
-                      record?.type || record.type === 0
-                        ? enumStore.test_case_type[record?.type].title
-                        : ''
-                    }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="步骤名称" data-index="name" />
-              <a-table-column title="测试结果" data-index="status">
-                <template #cell="{ record }">
-                  <a-tag
-                    :color="enumStore.status_colors[record?.status]"
-                    size="small"
-                    class="custom-tag"
-                  >
-                    {{ enumStore.task_status[record?.status].title }}
-                  </a-tag>
-                </template>
-              </a-table-column>
-              <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                <template #cell="{ record }">
-                  <a-space>
-                    <a-button
-                      v-if="record.children"
-                      type="text"
-                      size="mini"
-                      @click="onRetry(record)"
-                      >重试
-                    </a-button>
-                  </a-space>
+            <a-collapse-item :header="item.case_name" key="1">
+              <a-table :columns="pytestColumns" :data="item.children" :pagination="false"
+                ><template #columns>
+                  <a-table-column title="产品名称" data-index="project_product_name">
+                    <template #cell="{ record }">
+                      {{ item.project_product.name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="用例名称" data-index="name">
+                    <template #cell="{ record }">
+                      {{ record.name }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="开始时间" data-index="start">
+                    <template #cell="{ record }">
+                      {{ formatDateTime(record.start) }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="结束时间" data-index="stop">
+                    <template #cell="{ record }">
+                      {{ formatDateTime(record.stop) }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="测试结果" data-index="status">
+                    <template #cell="{ record }">
+                      <a-tag
+                        :color="enumStore.status_colors[record?.status]"
+                        size="small"
+                        class="custom-tag"
+                      >
+                        {{ enumStore.task_status[record?.status].title }}
+                      </a-tag>
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
+                    <template #cell="{ record }">
+                      <a-space>
+                        <a-button
+                          v-if="record.children"
+                          type="text"
+                          size="mini"
+                          @click="onRetry(record)"
+                          >重试
+                        </a-button>
+                      </a-space>
 
-                  <a-space>
-                    <a-button
-                      v-if="!record.children"
-                      type="text"
-                      size="mini"
-                      @click="showDetails(record)"
-                      >查看详细报告
-                    </a-button>
-                  </a-space>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+                      <a-space>
+                        <a-button
+                          v-if="!record.children"
+                          type="text"
+                          size="mini"
+                          @click="showDetails(record)"
+                          >查看详细报告
+                        </a-button>
+                      </a-space>
+                    </template>
+                  </a-table-column>
+                </template></a-table
+              >
+            </a-collapse-item>
+          </a-collapse>
         </a-tab-pane>
       </a-tabs>
       <TableFooter :pagination="pagination" />
@@ -370,27 +412,6 @@
       class="custom-drawer"
     >
       <template v-if="data.selectedCase">
-        <!--            <a-descriptions :column="1" bordered class="custom-descriptions">-->
-        <!--              <a-descriptions-item label="用例ID">{{ data.selectedCase?.id }}</a-descriptions-item>-->
-        <!--              <a-descriptions-item label="用例名称"-->
-        <!--                >{{ data.selectedCase?.name }}-->
-        <!--              </a-descriptions-item>-->
-        <!--              <a-descriptions-item label="项目名称"-->
-        <!--                >{{ data.selectedCase?.project_product_name }}-->
-        <!--              </a-descriptions-item>-->
-        <!--              <a-descriptions-item label="执行状态">-->
-        <!--                <a-tag-->
-        <!--                  :color="enumStore.status_colors[data?.selectedCase?.status]"-->
-        <!--                  size="small"-->
-        <!--                  class="custom-tag"-->
-        <!--                >-->
-        <!--                  {{ enumStore?.task_status[data?.selectedCase?.status]?.title }}-->
-        <!--                </a-tag>-->
-        <!--              </a-descriptions-item>-->
-        <!--              <a-descriptions-item v-if="data?.selectedCase?.status === 0" label="失败提示"-->
-        <!--                >{{ data.selectedCase?.error_message }}-->
-        <!--              </a-descriptions-item>-->
-        <!--            </a-descriptions>-->
         <div>
           <div v-if="data.selectedCase.case_type === 0">
             <a-card :title="data?.selectedCase?.name" :bordered="false" class="report-card">
@@ -432,51 +453,20 @@
     IconSync,
     IconUnorderedList,
   } from '@arco-design/web-vue/es/icon'
-  import { usePagination, useRowKey, useTable, useTableColumn } from '@/hooks/table'
   import { Message, Modal } from '@arco-design/web-vue'
+  import { apiColumns, pytestColumns, uiColumns } from '@/views/report/details/config'
 
   const pageData: any = usePageData()
-  const pagination = usePagination(doRefresh)
   const drawerVisible = ref(false)
   const enumStore = useEnum()
 
-  const table = useTable()
-  const rowKey = useRowKey('id')
-  const tableColumns = useTableColumn([
-    table.indexColumn,
-    {
-      title: '用例名称',
-      key: 'case_name',
-      dataIndex: 'case_name',
-    },
-    {
-      title: '测试类型',
-      key: 'type',
-      dataIndex: 'type',
-    },
-    {
-      title: '步骤名称',
-      key: 'name',
-      dataIndex: 'name',
-    },
-    {
-      title: '测试结果',
-      key: 'status',
-      dataIndex: 'status',
-    },
-    {
-      title: '操作',
-      key: 'actions',
-      dataIndex: 'actions',
-      fixed: 'right',
-      width: 130,
-    },
-  ])
   const data: any = reactive({
     dataList: [],
     summary: {},
     selectedCase: {},
+    caseStatus: null,
   })
+  const caseRunning = ref(false)
 
   const summaryCards = computed(() => [
     {
@@ -510,36 +500,76 @@
       class: 'error',
     },
   ])
-  const expandedKeys = ref([])
+  function formatDateTime(timestamp) {
+    if (!timestamp) return ''
+    const date = new Date(timestamp)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
 
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  }
   const showDetails = (record: any) => {
     data.selectedCase = record
     drawerVisible.value = true
   }
+  // 修改doCaseStatus函数
+  const doCaseStatus = async (key) => {
+    if (caseRunning.value) return
+    caseRunning.value = true
+    try {
+      data.caseStatus = key
+      await doRefresh(data.caseType) // 添加await等待异步操作完成
+    } catch (e) {
+      Message.error(e?.msg || e?.message || '用例执行失败')
+    } finally {
+      caseRunning.value = false
+    }
+  }
 
-  function doRefresh(status = null, type = null) {
+  // 修改doRefresh函数，让它返回Promise
+  function doRefresh(type = null) {
+    data.caseType = type
     let value = { test_suite_id: pageData.record.id }
-    if (status !== null) {
-      value['status'] = status
+    if (data.caseStatus !== null) {
+      value['status'] = data.caseStatus
     }
-    if (type !== null) {
-      value['type'] = type
+    if (data.caseType !== null) {
+      value['type'] = data.caseType
+    } else if (data.summary?.ui_count > 0) {
+      value['type'] = 0
+    } else if (data.summary.api_count > 0) {
+      value['type'] = 1
+    } else if (data.summary.pytest_count > 0) {
+      value['type'] = 2
     }
-    value['page'] = pagination.page
-    value['pageSize'] = pagination.pageSize
-    getSystemTestSuiteDetails(value)
-      .then((res) => {
-        data.datsList = res.data
-        table.handleSuccess(res)
-        pagination.setTotalSize((res as any).totalSize)
-      })
-      .catch(console.log)
+    value['page'] = 1
+    value['pageSize'] = 10000
+
+    // 返回Promise
+    return new Promise((resolve, reject) => {
+      getSystemTestSuiteDetails(value)
+        .then((res) => {
+          data.dataList = res.data
+          // table.handleSuccess(res)
+          // pagination.setTotalSize((res as any).totalSize)
+          resolve(res)
+        })
+        .catch((error) => {
+          console.log(error)
+          reject(error)
+        })
+    })
   }
 
   function doRefreshSummary() {
     getSystemTestSuiteDetailsSummary(pageData.record.id)
       .then((res) => {
         data.summary = res.data
+        doRefresh(null)
       })
       .catch(console.log)
   }
@@ -561,13 +591,7 @@
   }
 
   onMounted(() => {
-    doRefresh(null)
     doRefreshSummary()
-
-    // 添加测试数据以验证合并功能
-    setTimeout(() => {
-      console.log('表格数据:', table.dataList)
-    }, 2000)
   })
 </script>
 <style lang="less" scoped>
