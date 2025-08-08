@@ -193,14 +193,19 @@
                       {{ record.name }}
                     </template>
                   </a-table-column>
-                  <a-table-column title="测试时间" data-index="test_time">
+                  <a-table-column title="开始时间" data-index="test_time">
                     <template #cell="{ record }">
-                      {{ record.test_time }}
+                      {{ record?.test_time }}
+                    </template>
+                  </a-table-column>
+                  <a-table-column title="结束时间" data-index="stop_time">
+                    <template #cell="{ record }">
+                      {{ record?.stop_time }}
                     </template>
                   </a-table-column>
                   <a-table-column title="测试环境" data-index="test_object">
                     <template #cell="{ record }">
-                      {{ record.test_object }}
+                      {{ record?.test_object }}
                     </template>
                   </a-table-column>
                   <a-table-column title="测试结果" data-index="status">

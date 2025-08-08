@@ -10,8 +10,12 @@ export const uiColumns: any = reactive([
     dataIndex: 'name',
   },
   {
-    title: '测试时间',
+    title: '开始时间',
     dataIndex: 'test_time',
+  },
+  {
+    title: '结束时间',
+    dataIndex: 'stop_time',
   },
   {
     title: '测试环境',
