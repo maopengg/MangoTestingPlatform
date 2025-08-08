@@ -93,6 +93,7 @@ class UiCaseResultModel(BaseModel):
     project_product_name: str
     module_name: str
     test_time: str | None = None
+    stop_time: str | None = None
     test_env: int
     status: int
     error_message: str | None = None
