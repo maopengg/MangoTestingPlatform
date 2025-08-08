@@ -1121,7 +1121,7 @@
           if (item.value.includes('断言')) {
             data.ass.push(item)
           }
-          if (item.value === '文本断言') {
+          if (item.value === '内容断言') {
             data.textAss.push(...item.children)
           }
         })
