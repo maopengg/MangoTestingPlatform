@@ -562,7 +562,6 @@
       Message.success(res.msg)
       doRefresh()
     } catch (e) {
-      Message.error(e?.msg || e?.message || '用例执行失败')
     } finally {
       caseRunning.value = false
     }

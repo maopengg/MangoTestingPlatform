@@ -128,7 +128,6 @@
         Message.success(res.msg)
         await doRefresh()
       } catch (error) {
-        console.error(error)
       } finally {
         loading.value = false
       }
