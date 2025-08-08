@@ -428,7 +428,6 @@
           </a-collapse>
         </a-tab-pane>
       </a-tabs>
-      <TableFooter :pagination="pagination" />
     </a-card>
 
     <!-- 测试详情抽屉 -->
@@ -581,8 +580,6 @@
       getSystemTestSuiteDetails(value)
         .then((res) => {
           data.dataList = res.data
-          // table.handleSuccess(res)
-          // pagination.setTotalSize((res as any).totalSize)
           resolve(res)
         })
         .catch((error) => {
