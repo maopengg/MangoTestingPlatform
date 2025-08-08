@@ -1190,12 +1190,9 @@
     caseRunning.value = true
     try {
       const res = await getApiCaseRun(route.query.case_id, userStore.selected_environment, param)
-      if (res.code !== 300) {
-        Message.success(res.msg)
-      }
+      Message.success(res.msg)
       doRefresh()
     } catch (e) {
-      Message.error(e?.msg || e?.message || '用例执行失败')
     } finally {
       caseRunning.value = false
     }
