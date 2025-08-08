@@ -69,6 +69,8 @@ class TestCase:
         except Exception as error:
             log.error(f'步骤初始化失败，类型：{error}，错误详情：{traceback.format_exc()}')
             self.case_result.status = StatusEnum.FAIL.value
+            self.case_result.error_message = str(error)
+            self.case_result.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             await self.send_case_result(f'初始化用例前置数据发生未知异常，请联系管理员来解决!')
             raise error
         for steps in self.case_model.steps:
@@ -167,6 +169,7 @@ class TestCase:
         })
 
     def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg=None):
+        self.case_result.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if msg:
             self.case_result.error_message = msg
             self.case_result.status = StatusEnum.FAIL.value

@@ -101,6 +101,7 @@ class ApiCaseResultModel(BaseModel):
     """用例结果"""
     id: int
     name: str
+    project_product_name: str
     status: int
     error_message: str | None = None
     test_time: str | None = None

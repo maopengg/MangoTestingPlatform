@@ -44,6 +44,7 @@ class TestCase:
         self.api_case_result = ApiCaseResultModel(
             id=case_id,
             name=self.api_case.name,
+            project_product_name=self.api_case.project_product.name,
             test_env=self.test_env,
             user_id=self.user_id,
             status=StatusEnum.FAIL.value,

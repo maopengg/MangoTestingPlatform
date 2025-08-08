@@ -78,7 +78,6 @@ class PageStepsResultModel(BaseModel):
     project_product_name: str
     case_step_details_id: int | None = None
     test_time: str | None = None
-
     cache_data: dict
     test_object: str  # url或者软件包
 
@@ -96,6 +95,7 @@ class UiCaseResultModel(BaseModel):
     test_env: int
     status: int
     test_time: str | None = None
+    stop_time: str | None = None
     error_message: str | None = None
     video_path: str | None = None
     steps: list[PageStepsResultModel]
