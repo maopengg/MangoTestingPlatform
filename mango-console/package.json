@@ -1,6 +1,6 @@
 {
   "name": "mango-console",
-  "version": "5.7.55",
+  "version": "5.7.56",
   "scripts": {
     "dev": "vite --mode dev --host",
     "test": "vite --mode test --host",
