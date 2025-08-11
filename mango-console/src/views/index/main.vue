@@ -16,20 +16,19 @@
     </div>
     <div class="center">
       <div style="display: flex; flex-direction: column; height: 100%">
-        <a-space direction="vertical">
-          <a-card>
-            <CenterTitle />
-          </a-card>
+        <a-space direction="vertical" style="height: 100%">
           <a-card style="flex: 1; overflow: hidden">
             <div style="display: flex; flex-direction: column; height: 100%">
               <Title title="近3个月执行趋势图" />
               <FullYearSalesChart ref="fullYearSalesChart" />
             </div>
           </a-card>
-          <a-card>
-            <div style="flex: 1; overflow: auto">
-              <a-space direction="vertical" fill>
+          <a-card style="flex: 1; min-height: 300px; overflow: hidden">
+            <div style="display: flex; flex-direction: column; height: 100%">
+              <div style="flex: 0 0 auto">
                 <Title style="height: 65px" title="正在准备执行的自动化任务" />
+              </div>
+              <div style="flex: 1">
                 <a-table
                   :bordered="true"
                   :columns="tableColumns"
@@ -38,6 +37,10 @@
                   :pagination="false"
                   :rowKey="rowKey"
                   @selection-change="onSelectionChange"
+                  :scrollbar="true"
+                  :scroll="{
+                    y: 310,
+                  }"
                 >
                   <template #columns>
                     <a-table-column
@@ -57,7 +60,9 @@
                       <template v-else-if="item.key === 'timing_strategy'" #cell="{ record }">
                         {{ record.timing_strategy?.name }}
                       </template>
-
+                      <template v-else-if="item.key === 'case_people'" #cell="{ record }">
+                        {{ record.case_people?.name }}
+                      </template>
                       <template v-else-if="item.key === 'test_env'" #cell="{ record }">
                         <a-tag :color="enumStore.colors[record.test_env]" size="small">
                           {{
@@ -81,8 +86,10 @@
                     </a-table-column>
                   </template>
                 </a-table>
-                <TableFooter :pagination="pagination" />
-              </a-space>
+                <div style="padding: 5px 5px 5px 5px">
+                  <TableFooter :pagination="pagination"
+                /></div>
+              </div>
             </div>
           </a-card>
         </a-space>
@@ -95,7 +102,6 @@
   import { computed, nextTick, onMounted, reactive, ref, unref, watch } from 'vue'
   import Title from '@/views/index/components/Title'
   import useAppConfigStore from '@/store/modules/app-config'
-  import CenterTitle from '@/views/index/components/CenterTitle.vue'
   import FullYearSalesChart from './components/chart/FullYearSalesChart.vue'
   import HotProductChart from './components/chart/HotProductChart.vue'
   import {
@@ -112,9 +118,6 @@
   import { getSystemCaseRunSum, getSystemCaseSum } from '@/api/system'
 
   const appStore = useAppConfigStore()
-  const mainHeight = computed(() => {
-    return appStore.mainHeight + 'px'
-  })
 
   const enumStore = useEnum()
   const hotProductChart = ref()
@@ -133,7 +136,7 @@
   })
 
   const pagination = usePagination(doRefresh)
-  pagination.pageSize = 7
+  pagination.pageSize = 10
 
   const { onSelectionChange } = useRowSelection()
   const table = useTable()
@@ -162,6 +165,11 @@
       key: 'timing_strategy',
       dataIndex: 'timing_strategy',
       align: 'left',
+    },
+    {
+      title: '负责人',
+      key: 'case_people',
+      dataIndex: 'case_people',
     },
   ])
   const router = useRouter()

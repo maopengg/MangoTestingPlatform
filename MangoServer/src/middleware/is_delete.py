@@ -21,7 +21,7 @@ class IsDeleteMiddleWare(MiddlewareMixin):
             if token:
                 try:
                     payload = jwt.decode(token, settings.SECRET_KEY, algorithms='HS256')
-                    if payload.get('username') not in ['admin', ]:
+                    if payload.get('username') not in ['admin', 'open']:
                         if request.method == 'DELETE':
                             return JsonResponse({
                                 "code": 300,
