@@ -109,14 +109,24 @@ export const formItems: FormItem[] = reactive([
       return true
     },
   },
-
   {
     label: 'url',
     key: 'url',
     value: ref(''),
     type: 'input',
     required: true,
-    placeholder: '请输入url',
+    placeholder: '请输入url后面的路径',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      if (this.value.toLowerCase().startsWith('http')) {
+        Message.error('只允许输入url的路径部分，协议和域名部分从测试环境中读取！')
+        return false
+      }
+      return true
+    },
   },
   {
     label: 'method',
@@ -186,15 +196,24 @@ export const formItemsImport: FormItem[] = reactive([
     value: ref(''),
     type: 'textarea',
     required: true,
-    placeholder: '请输入复制的curl（bash）',
+    placeholder: '请输入复制的cURL（bash）',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')
         return false
       }
-      // const parsedCurl = parseCurl(this.value)
-      // const dataRaw = parseDataRaw(this.value)
-      // this.value = { ...parsedCurl, data: dataRaw }
+      const cmd = this.value.trim()
+      const isBrowserCurl =
+        cmd.startsWith('curl ') &&
+        (cmd.includes("'") || cmd.includes('"')) &&
+        !cmd.includes('^"') &&
+        cmd.includes(' \\\n') &&
+        !cmd.includes(' ^\n') &&
+        (cmd.includes('--compressed') || cmd.includes('--insecure') || cmd.includes('User-Agent:'))
+      if (!isBrowserCurl) {
+        Message.error('请从浏览器开发者工具(F12)中复制 cURL (base)，不要手动输入！')
+        return false
+      }
       return true
     },
   },
