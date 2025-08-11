@@ -35,9 +35,8 @@ class CaseParameter:
     def headers(self, parameter: ApiCaseDetailedParameter, headers: dict) -> dict:
         if parameter.headers:
             case_details_header = {}
-            if parameter.headers:
-                for i in ApiHeaders.objects.filter(id__in=parameter.headers):
-                    case_details_header[i.key] = i.value
+            for i in ApiHeaders.objects.filter(id__in=parameter.headers):
+                case_details_header[i.key] = i.value
             return case_details_header
         else:
             return headers
