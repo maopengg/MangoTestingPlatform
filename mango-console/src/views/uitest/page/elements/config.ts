@@ -1,6 +1,7 @@
 import { FormItem } from '@/types/components'
 import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
+import { isValidInteger } from '@/utils/form'
 
 export const columns: any = reactive([
   {
@@ -92,6 +93,16 @@ export const formItems: FormItem[] = reactive([
     type: 'input',
     required: false,
     placeholder: '请输入元素等待时间',
+    validator: function () {
+      if (!this.value && !this.required) {
+        return true
+      }
+      if (!isValidInteger(this.value)) {
+        Message.error(`${this.label}请输入正整数！`)
+        return false
+      }
+      return true
+    },
   },
   {
     label: '元素下标',
@@ -100,6 +111,16 @@ export const formItems: FormItem[] = reactive([
     type: 'input',
     required: false,
     placeholder: '请输入元素下标',
+    validator: function () {
+      if (!this.value && !this.required) {
+        return true
+      }
+      if (!isValidInteger(this.value)) {
+        Message.error(`${this.label}请输入正整数！`)
+        return false
+      }
+      return true
+    },
   },
 ])
 

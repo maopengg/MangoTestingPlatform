@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue'
 import { FormItem } from '@/types/components'
 import { Message } from '@arco-design/web-vue'
+import { isValidInteger } from '@/utils/form'
 
 export const columns: any = reactive([
   {
@@ -97,16 +98,11 @@ export const formItems: FormItem[] = reactive([
     required: false,
     placeholder: '请输入重试次数，整数类型',
     validator: function () {
-      if (!this.value) {
+      if (!this.value && !this.required) {
         return true
       }
-      const num = Number(this.value)
-      if (isNaN(num) || !Number.isInteger(num)) {
-        Message.error('请输入有效的整数')
-        return false
-      }
-      if (num <= 0) {
-        Message.error('请输入大于0的整数')
+      if (!isValidInteger(this.value)) {
+        Message.error(`${this.label}请输入正整数！`)
         return false
       }
       return true
