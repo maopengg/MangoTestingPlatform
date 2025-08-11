@@ -431,6 +431,7 @@
     getApiInfo({ id: pageData.record.id })
       .then((res) => {
         const res_data = res.data[0]
+        data.api_info = res_data
         data.headers = formatJson(res_data.headers)
         data.file = formatJson(res_data.file)
       })

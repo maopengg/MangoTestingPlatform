@@ -104,6 +104,6 @@ class PublicBase(BaseRequest):
             if new_key_lower in original_lower_keys:
                 original_key = original_lower_keys[new_key_lower]
                 del original_dict[original_key]
-            original_dict[new_key] = new_value
+            original_dict[new_key] = new_value.strip()
             original_lower_keys[new_key_lower] = new_key
         return original_dict

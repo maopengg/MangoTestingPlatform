@@ -86,6 +86,9 @@ class BaseRequest:
     @classmethod
     def test_http(cls, request_data: RequestModel) -> Response:
         s = time.time()
+        for key, value in request_data.headers.items():
+            if value:
+                request_data.headers[key] = value.strip()
         response = requests.request(
             method=request_data.method,
             url=request_data.url,
@@ -94,7 +97,27 @@ class BaseRequest:
             data=request_data.data,
             json=request_data.json,
             files=request_data.file,
-            timeout=int(30)
+            timeout=int(30),
+            proxies={'http': None, 'https': None}
         )
         end = time.time() - s
         return response
+
+
+if __name__ == '__main__':
+    data = {"method": "POST", "url": "",
+            "headers": {"Accept": " application/json, text/plain, */*",
+                        "Referer": "",
+                        "sec-ch-ua": " \"Not;A=Brand\";v=\"99\", \"Google Chrome\";v=\"139\", \"Chromium\";v=\"139\"",
+                        "tenant_id": " 14",
+                        "User-Agent": " Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+                        "Authorization": " Bearer 9db73bc6-da7b-4c01-a84e-c0bcecfeb184", "sec-ch-ua-mobile": " ?0",
+                        "sec-ch-ua-platform": " \"Windows\""},
+            "params": None,
+            "data": None,
+            "json": None,
+            "file": [
+                ('file', ('达人导入模板.xlsx', open(r'C:/Users/Administrator/Downloads/达人导入模板.xlsx', 'rb'),
+                          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'))
+            ], "posterior_file": None}
+    print(BaseRequest.test_http(RequestModel(**data)).text)
