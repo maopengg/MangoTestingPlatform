@@ -152,7 +152,7 @@
                     allow-clear
                     placeholder="请输入json格式的上传文件"
                     style="width: 100%; height: 100%"
-                    @blur="upDate('file', data.file1)"
+                    @blur="upDate('file', data.file)"
                   />
                 </a-col>
                 <a-col :span="12">
