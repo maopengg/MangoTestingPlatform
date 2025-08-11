@@ -32,49 +32,141 @@
             </a-space>
           </template>
           <a-tab-pane key="0" title="请求头">
-            <a-textarea
-              v-model="data.headers"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
-              allow-clear
-              placeholder="请输入请求头，字符串形式"
-              @blur="upDate('headers', data.headers)"
-            />
+            <a-space direction="vertical" fill>
+              <span class="form-tip">
+                <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                提示：请必须输入json格式的请求头
+              </span>
+              <a-textarea
+                v-model="data.headers"
+                :auto-size="data.textareaAutoSize"
+                allow-clear
+                placeholder="请输入请求头，字符串形式"
+                @blur="upDate('headers', data.headers)"
+            /></a-space>
           </a-tab-pane>
           <a-tab-pane key="1" title="参数">
-            <a-textarea
-              v-model="data.api_info.params"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
-              allow-clear
-              placeholder="请输入json格式的数据"
-              @blur="upDate('params', data.api_info.params)"
-            />
+            <a-space direction="vertical" fill>
+              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
+                <a-form-item label="是否开启JSON输入：">
+                  <a-switch
+                    :default-checked="true"
+                    disabled
+                    checked-children="开启"
+                    un-checked-children="关闭"
+                  />
+                </a-form-item>
+                <a-form-item>
+                  <span class="form-tip">
+                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
+                  </span>
+                </a-form-item>
+              </a-form>
+              <a-textarea
+                v-model="data.api_info.params"
+                :auto-size="data.textareaAutoSize"
+                allow-clear
+                placeholder='请输入json格式的数据，例如：{"key": "value"}'
+                @blur="upDate('params', data.api_info.params)"
+              />
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="2" title="表单">
-            <a-textarea
-              v-model="data.api_info.data"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
-              allow-clear
-              placeholder="请输入json格式的表单"
-              @blur="upDate('data', data.api_info.data)"
-            />
+            <a-space direction="vertical" fill>
+              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
+                <a-form-item label="是否开启JSON输入：">
+                  <a-switch
+                    :default-checked="true"
+                    disabled
+                    checked-children="开启"
+                    un-checked-children="关闭"
+                  />
+                </a-form-item>
+                <a-form-item>
+                  <span class="form-tip">
+                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
+                  </span>
+                </a-form-item>
+              </a-form>
+              <a-textarea
+                v-model="data.api_info.data"
+                :auto-size="data.textareaAutoSize"
+                allow-clear
+                placeholder="请输入json格式的表单"
+                @blur="upDate('data', data.api_info.data)"
+              />
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="3" title="JSON">
-            <a-textarea
-              v-model="data.api_info.json"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
-              allow-clear
-              placeholder="请输入json格式的JSON"
-              @blur="upDate('json', data.api_info.json)"
-            />
+            <a-space direction="vertical" fill>
+              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
+                <a-form-item label="是否开启JSON输入：">
+                  <a-switch
+                    :default-checked="true"
+                    disabled
+                    checked-children="开启"
+                    un-checked-children="关闭"
+                  />
+                </a-form-item>
+                <a-form-item>
+                  <span class="form-tip">
+                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
+                  </span>
+                </a-form-item>
+              </a-form>
+              <a-textarea
+                v-model="data.api_info.json"
+                :auto-size="data.textareaAutoSize"
+                allow-clear
+                placeholder="请输入json格式的JSON"
+                @blur="upDate('json', data.api_info.json)"
+              />
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="4" title="文件">
-            <a-textarea
-              v-model="data.file"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
-              allow-clear
-              placeholder="请输入json格式的文件上传数据"
-              @blur="upDate('file', data.file)"
-            />
+            <a-space direction="vertical" fill>
+              <a-form layout="inline" :model="formState" style="margin-bottom: 8px">
+                <a-form-item label="是否开启JSON输入：">
+                  <a-switch
+                    :default-checked="true"
+                    disabled
+                    checked-children="开启"
+                    un-checked-children="关闭"
+                  />
+                </a-form-item>
+                <a-form-item>
+                  <span class="form-tip">
+                    <icon-info-circle style="margin-right: 4px; color: #ff7d00" />
+                    提示：当前必须输入json格式的请求参数，否则后续会提示错误
+                  </span>
+                </a-form-item>
+              </a-form>
+              <a-row :gutter="16">
+                <a-col :span="12">
+                  <a-textarea
+                    v-model="data.file"
+                    :auto-size="data.textareaAutoSize"
+                    allow-clear
+                    placeholder="请输入json格式的上传文件"
+                    style="width: 100%; height: 100%"
+                    @blur="upDate('file1', data.file1)"
+                  />
+                </a-col>
+                <a-col :span="12">
+                  <a-textarea
+                    v-model="data.fileDemo"
+                    :auto-size="data.textareaAutoSize"
+                    allow-clear
+                    placeholder="示例"
+                    style="width: 100%; height: 100%"
+                    disabled
+                  />
+                </a-col>
+              </a-row>
+            </a-space>
           </a-tab-pane>
           <a-tab-pane key="5" title="后置jsonpath提取">
             <a-space direction="vertical">
@@ -129,7 +221,7 @@
           <a-tab-pane key="7" title="后置函数">
             <a-textarea
               v-model="data.api_info.posterior_func"
-              :auto-size="{ minRows: 28, maxRows: 28 }"
+              :auto-size="data.textareaAutoSize"
               allow-clear
               placeholder="根据帮助文档，输入自定义后置函数"
               @blur="upDate('posterior_func', data.api_info.posterior_func)"
@@ -227,6 +319,14 @@
     api_info: pageData.record,
     headers: formatJson(pageData.record.headers),
     file: formatJson(pageData.record.file),
+    textareaAutoSize: { minRows: 21, maxRows: 25 },
+    fileDemo:
+      '示例：' +
+      formatJson([
+        {
+          file: '${{get_file(数据订阅新增模板.xlsx)}}',
+        },
+      ]),
   })
 
   function switchType(key: any) {
@@ -352,5 +452,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .form-tip {
+    color: #ff7d00;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* 如果需要调整表单间距 */
+  :deep(.ant-form-inline .ant-form-item) {
+    margin-right: 12px;
+    margin-bottom: 0;
   }
 </style>

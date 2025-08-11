@@ -7,6 +7,7 @@ import mimetypes
 from typing import Optional
 
 from mangotools.database import MysqlConnect
+
 from src.auto_test.auto_api.models import ApiHeaders
 from src.auto_test.auto_api.models import ApiPublic
 from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
@@ -39,10 +40,12 @@ class PublicBase(BaseRequest):
         self.is_headers = project_product_id
         if self.headers != {}:
             return self.headers
+        api_headers = {}
         for i in ApiHeaders.objects.filter(
                 project_product_id=project_product_id,
                 status=StatusEnum.SUCCESS.value):
-            self.headers[i.key] = i.value
+            api_headers[i.key] = i.value
+        self.update_dict_case_insensitive(self.headers, api_headers)
         return self.headers
 
     def init_test_object(self, project_product_id, test_env: int):
@@ -92,3 +95,15 @@ class PublicBase(BaseRequest):
                 self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
                 if not result_list:
                     raise ToolsError(*ERROR_MSG_0033, value=(sql,))
+
+    @staticmethod
+    def update_dict_case_insensitive(original_dict, new_dict):
+        original_lower_keys = {k.lower(): k for k in original_dict.keys()}
+        for new_key, new_value in new_dict.items():
+            new_key_lower = new_key.lower()
+            if new_key_lower in original_lower_keys:
+                original_key = original_lower_keys[new_key_lower]
+                del original_dict[original_key]
+            original_dict[new_key] = new_value
+            original_lower_keys[new_key_lower] = new_key
+        return original_dict

@@ -8,6 +8,7 @@ import traceback
 from urllib.parse import urlparse, urljoin
 
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.models import ApiInfo
 from src.auto_test.auto_api.service.base.api_base_test_setup.base_request import BaseRequest
 from src.auto_test.auto_api.service.base.api_base_test_setup.public_base import PublicBase
@@ -17,6 +18,7 @@ from src.models.api_model import RequestModel, ResponseModel
 
 
 class APIBaseTestSetup(PublicBase):
+
 
     def api_request(self,
                     api_info_id,
@@ -29,10 +31,11 @@ class APIBaseTestSetup(PublicBase):
         log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
         self.init_public(api_info.project_product_id, test_env)
         self.init_test_object(api_info.project_product_id, test_env)
+        # API info的请求
         if request_model is None:
             if is_merge_headers and api_info.headers:
                 headers = self.init_headers(api_info.project_product_id)
-                headers.update(api_info.headers)
+                self.update_dict_case_insensitive(headers, api_info.headers)
             elif api_info.headers is not None:
                 headers = api_info.headers
             else:
