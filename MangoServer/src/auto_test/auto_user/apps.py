@@ -10,8 +10,6 @@ import time
 from django.apps import AppConfig
 
 from src.enums.system_enum import SocketEnum
-from src.enums.tools_enum import StatusEnum
-from src.enums.ui_enum import DriveTypeEnum
 
 
 class AutoUserConfig(AppConfig):
@@ -19,6 +17,8 @@ class AutoUserConfig(AppConfig):
     name = 'src.auto_test.auto_user'
 
     def ready(self):
+        self.check_version()
+
         def run():
             time.sleep(5)
             self.new_role()
@@ -55,3 +55,13 @@ class AutoUserConfig(AppConfig):
                 'config': {}
             }
         )
+
+    def check_version(self):
+        import re
+        import requests
+        from src.settings import VERSION
+        text = requests.get('https://gitee.com/mao-peng/version').text
+        match = re.search(r'(\d+\.\d+\.\d+)', text)
+        if not (match and match.group(1) == VERSION):
+            print('当前版本与最新不一致，请执行git pull 升级到最新版本！')
+            os._exit(1)
