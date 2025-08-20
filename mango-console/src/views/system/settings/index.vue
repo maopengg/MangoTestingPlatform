@@ -98,10 +98,10 @@
   const loading = ref(false)
   const settingsData = reactive({
     editing: false,
-    host: ['DOMAIN_NAME'],
-    email: ['SEND_USER', 'EMAIL_HOST', 'STAMP_KET'],
+    host: ['SYSTEM_DOMAIN_NAME'],
+    email: ['SYSTEM_SEND_USER', 'SYSTEM_EMAIL_HOST', 'SYSTEM_STAMP_KET'],
     api: ['API_TIMEOUT'],
-    pytest: ['GIT_URL'],
+    pytest: ['PYTEST_GIT_URL', 'PYTEST_ACT', 'PYTEST_TESTCASE', 'PYTEST_TOOLS', 'PYTEST_UPLOAD'],
     data: [],
   })
 
