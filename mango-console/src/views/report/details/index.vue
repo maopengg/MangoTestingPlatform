@@ -145,10 +145,10 @@
             <a-button status="success" size="small" :loading="caseRunning" @click="doCaseStatus(1)"
               >只看成功</a-button
             >
-            <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
+            <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
               >只看进行中</a-button
             >
-            <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
+            <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
               >只看待开始</a-button
             >
           </a-space>
