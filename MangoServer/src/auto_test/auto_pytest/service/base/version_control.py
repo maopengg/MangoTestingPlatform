@@ -39,6 +39,7 @@ class GitRepo:
                 try:
                     self.repo = Repo(self.local_warehouse_path)
                 except Exception:
+                    log.pytest.error(f'git地址：{self.local_warehouse_path}')
                     raise PytestError(*ERROR_MSG_0018)
 
     def pull_repo(self):
