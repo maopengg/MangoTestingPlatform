@@ -585,13 +585,14 @@
   function onRetry(_id: any) {
     Modal.confirm({
       title: '提示',
-      content: '是否要重试这个测试？',
+      content: '是否要重试这个测试任务？',
       cancelText: '取消',
       okText: '重试',
       onOk: () => {
         getSystemTestSuiteDetailsRetry(_id)
           .then((res) => {
             Message.success(res.msg)
+            doRefresh(data.caseStatus)
           })
           .catch(console.log)
       },
