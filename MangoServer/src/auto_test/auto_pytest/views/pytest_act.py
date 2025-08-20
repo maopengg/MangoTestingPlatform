@@ -71,6 +71,7 @@ class PytestActViews(ViewSet):
                 CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_ACT),
                 GitRepo().local_warehouse_path).find_test_files():
             for file in project.auto_test:
+                _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(
                     file_path=file.path,
                     defaults={
