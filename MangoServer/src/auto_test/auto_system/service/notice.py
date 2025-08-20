@@ -211,9 +211,9 @@ class NoticeMain:
     @staticmethod
     def mail_config():
         try:
-            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SEND_USER.name).value
-            email_host = CacheData.objects.get(key=CacheDataKeyEnum.EMAIL_HOST.name).value
-            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.STAMP_KET.name).value
+            send_user = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_SEND_USER.name).value
+            email_host = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_EMAIL_HOST.name).value
+            stamp_key = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_STAMP_KET.name).value
         except CacheData.DoesNotExist:
             raise SystemEError(*ERROR_MSG_0031)
         else:
@@ -223,9 +223,9 @@ class NoticeMain:
 
     @classmethod
     def get_domain_name(cls):
-        domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.DOMAIN_NAME.value}，此处才会显示跳转连接'
+        domain_name = f'请先到系统管理->系统设置中设置：{CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.value}，此处才会显示跳转连接'
         try:
-            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.DOMAIN_NAME.name)
+            cache_data_obj = CacheData.objects.get(key=CacheDataKeyEnum.SYSTEM_DOMAIN_NAME.name)
         except CacheData.DoesNotExist:
             pass
         else:
