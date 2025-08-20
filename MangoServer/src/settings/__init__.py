@@ -123,6 +123,7 @@ if not IS_SQLITE:
             },
             'OPTIONS': {
                 'charset': 'utf8mb4',
+                'init_command': "SET time_zone = '+08:00'",  # 关键！强制会话时区
                 'connect_timeout': 5,  # 连接超时时间
             },
             'CONN_MAX_AGE': 60 * 30,  # 连接最大存活时间（秒）
