@@ -21,7 +21,7 @@ class GitRepo:
     def __init__(self):
         self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
         log.pytest.debug(f'git路径：{self.local_warehouse_path}')
-        self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name).value
+        self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
         if not self.repo_url:
             raise PytestError(*ERROR_MSG_0015)
 

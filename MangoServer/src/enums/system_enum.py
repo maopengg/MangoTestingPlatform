@@ -44,24 +44,36 @@ class SocketEnum(BaseEnum):
 
 class CacheDataKeyEnum(BaseEnum):
     """缓存KEY的名称"""
-    DOMAIN_NAME = '本系统的URL地址'
-    SEND_USER = '邮箱发送人'
-    EMAIL_HOST = '邮箱域名'
-    STAMP_KET = '邮箱的stamp_key'
+    SYSTEM_DOMAIN_NAME = '本系统的URL地址'
+    SYSTEM_SEND_USER = '邮箱发送人'
+    SYSTEM_EMAIL_HOST = '邮箱域名'
+    SYSTEM_STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
-    GIT_URL = 'git的请求url示例>https://{username}:{password}@gitee.com/mao-peng/MangoPytest.git'
+    PYTEST_GIT_URL = 'git的请求url示例>https://{username}:{password}@gitee.com/mao-peng/MangoPytest.git'
+    PYTEST_ACT = 'abstract'
+    PYTEST_TESTCASE = 'test_case'
+    PYTEST_TOOLS = 'scripts'
+    PYTEST_UPLOAD = 'upload'
 
     @classmethod
     def obj(cls):
         return {
-            'DOMAIN_NAME': None,
-            'SEND_USER': None,
-            'EMAIL_HOST': None,
-            'STAMP_KET': None,
+            'SYSTEM_DOMAIN_NAME': None,
+            'SYSTEM_SEND_USER': None,
+            'SYSTEM_EMAIL_HOST': None,
+            'SYSTEM_STAMP_KET': None,
             'API_TIMEOUT': 15,
-            'GIT_URL': None
+            'PYTEST_GIT_URL': None,
+            'PYTEST_ACT': 'abstract',
+            'PYTEST_TESTCASE': 'test_case',
+            'PYTEST_TOOLS': 'scripts',
+            'PYTEST_UPLOAD': 'upload',
         }
 
+    @classmethod
+    def get_cache_value(cls, key):
+        from src.auto_test.auto_system.models import CacheData
+        return CacheData.objects.get(key=key.value).value
 
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""

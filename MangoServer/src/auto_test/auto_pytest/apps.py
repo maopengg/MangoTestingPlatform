@@ -32,7 +32,7 @@ class AutoPytestConfig(AppConfig):
         from src.auto_test.auto_pytest.service.base.version_control import GitRepo
         from src.auto_test.auto_system.models import CacheData
         try:
-            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.GIT_URL.name)
+            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
             if repo_url and repo_url.value:
                 repo = GitRepo()
                 repo.pull_repo()

@@ -4,6 +4,7 @@
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
 import os
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -14,7 +15,6 @@ from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_system.models import ProductModule
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
-from src.enums.pytest_enum import PytestFileTypeEnum
 from src.tools import project_dir
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -64,7 +64,7 @@ class PytestProductViews(ViewSet):
     def pytest_update(self, request: Request):
         repo = GitRepo()
         repo.pull_repo()
-        update_file = UpdateFile(PytestFileTypeEnum.TEST_CASE, repo.local_warehouse_path).find_test_files(True)
+        update_file = UpdateFile('', repo.local_warehouse_path).find_test_files(True)
         for project in update_file:
             projects = self.model.objects.filter(file_name=project.project_name)
             if not projects.exists():

@@ -27,13 +27,3 @@ class AllureStatusEnum(BaseEnum):
     def obj(cls):
         return {0: "未绑定", 1: "已绑定", 2: "已删除"}
 
-
-class PytestFileTypeEnum(BaseEnum):
-    COMPONENTS = 0
-    TEST_CASE = 1
-    UPLOAD = 2
-    TOOLS = 3
-
-    @classmethod
-    def obj(cls):
-        return {0: "components", 1: "test_case", 2: "upload", 3: "tools", }
