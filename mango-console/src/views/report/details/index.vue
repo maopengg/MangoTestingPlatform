@@ -177,14 +177,9 @@
                 </div>
               </template>
               <template #extra>
-                       <a-button
-                          type="text"
-                          size="mini"
-                          @click="onRetry(item.id)"
-                          >重试
-                        </a-button>
-      </template>
-
+                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+              </template>
+              <a-table :columns="uiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="步骤ID" data-index="id">
                     <template #cell="{ record }">
@@ -274,14 +269,9 @@
                   </a-tag>
                 </div>
               </template>
-                            <template #extra>
-                       <a-button
-                          type="text"
-                          size="mini"
-                          @click="onRetry(item.id)"
-                          >重试
-                        </a-button>
-      </template>
+              <template #extra>
+                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+              </template>
               <a-table :columns="apiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="接口ID" data-index="id">
@@ -367,14 +357,9 @@
                   </a-tag>
                 </div>
               </template>
-                            <template #extra>
-                       <a-button
-                          type="text"
-                          size="mini"
-                          @click="onRetry(item.id)"
-                          >重试
-                        </a-button>
-      </template>
+              <template #extra>
+                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+              </template>
               <a-table :columns="pytestColumns" :data="item.children" :pagination="false"
                 ><template #columns>
                   <a-table-column title="产品名称" data-index="project_product_name">
@@ -597,14 +582,14 @@
       .catch(console.log)
   }
 
-  function onRetry(case_id: any) {
+  function onRetry(_id: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要重试这个测试？',
       cancelText: '取消',
       okText: '重试',
       onOk: () => {
-        getSystemTestSuiteDetailsRetry(case_id)
+        getSystemTestSuiteDetailsRetry(_id)
           .then((res) => {
             Message.success(res.msg)
           })
