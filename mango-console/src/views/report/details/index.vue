@@ -329,16 +329,6 @@
                     <template #cell="{ record }">
                       <a-space>
                         <a-button
-                          v-if="record.children"
-                          type="text"
-                          size="mini"
-                          @click="onRetry(record)"
-                          >重试
-                        </a-button>
-                      </a-space>
-
-                      <a-space>
-                        <a-button
                           v-if="!record.children"
                           type="text"
                           size="mini"
@@ -420,16 +410,6 @@
                   </a-table-column>
                   <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
                     <template #cell="{ record }">
-                      <a-space>
-                        <a-button
-                          v-if="record.children"
-                          type="text"
-                          size="mini"
-                          @click="onRetry(record)"
-                          >重试
-                        </a-button>
-                      </a-space>
-
                       <a-space>
                         <a-button
                           v-if="!record.children"
