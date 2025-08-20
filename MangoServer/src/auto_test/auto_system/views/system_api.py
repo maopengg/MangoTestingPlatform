@@ -51,7 +51,6 @@ class SystemViews(ViewSet):
             'environment_type': EnvironmentEnum.get_option(),
             'test_case_type': TestCaseTypeEnum.get_option(),
             'file_status': FileStatusEnum.get_option(),
-            'file_type': PytestFileTypeEnum.get_option(),
         }
         return ResponseData.success(RESPONSE_MSG_0076, enum_dict)
 
