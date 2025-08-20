@@ -73,7 +73,7 @@ class CacheDataKeyEnum(BaseEnum):
     @classmethod
     def get_cache_value(cls, key):
         from src.auto_test.auto_system.models import CacheData
-        return CacheData.objects.get(key=key.value).value
+        return CacheData.objects.get(key=key.name).value
 
 class CacheDataKey2Enum(BaseEnum):
     """缓存KEY的名称，不在系统设置页面展示"""
