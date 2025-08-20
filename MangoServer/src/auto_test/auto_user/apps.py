@@ -17,7 +17,8 @@ class AutoUserConfig(AppConfig):
     name = 'src.auto_test.auto_user'
 
     def ready(self):
-        self.check_version()
+        if os.getenv('DJANGO_ENV', 'master') == 'master':
+            self.check_version()
 
         def run():
             time.sleep(5)
