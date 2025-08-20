@@ -177,7 +177,7 @@
                 </div>
               </template>
               <template #extra>
-                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
               <a-table :columns="uiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
@@ -270,7 +270,7 @@
                 </div>
               </template>
               <template #extra>
-                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
               <a-table :columns="apiColumns" :data="item.children" :pagination="false"
                 ><template #columns>
@@ -358,7 +358,7 @@
                 </div>
               </template>
               <template #extra>
-                <a-button type="text" size="mini" @click="onRetry(item.id)">重试 </a-button>
+                <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
               <a-table :columns="pytestColumns" :data="item.children" :pagination="false"
                 ><template #columns>
