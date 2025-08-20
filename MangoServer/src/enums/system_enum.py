@@ -50,10 +50,10 @@ class CacheDataKeyEnum(BaseEnum):
     SYSTEM_STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
     PYTEST_GIT_URL = 'git的请求url示例>https://{username}:{password}@gitee.com/mao-peng/MangoPytest.git'
-    PYTEST_ACT = 'abstract'
-    PYTEST_TESTCASE = 'test_case'
-    PYTEST_TOOLS = 'scripts'
-    PYTEST_UPLOAD = 'upload'
+    PYTEST_ACT = '中间对象（PO模式的pageobject）目录名称'
+    PYTEST_TESTCASE = '测试用例目录名称'
+    PYTEST_TOOLS = '脚本目录名称'
+    PYTEST_UPLOAD = '上传文件目录名称'
 
     @classmethod
     def obj(cls):
