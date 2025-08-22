@@ -78,6 +78,7 @@ class AutoSystemConfig(AppConfig):
             TimeTasks.objects.create(name="每天12点触发", cron="0 12 * * *")
             TimeTasks.objects.create(name="每天18点触发", cron="0 18 * * *")
             TimeTasks.objects.create(name="每天22点触发", cron="0 22 * * *")
+            TimeTasks.objects.create(name="每天9点，14点，17点触发", cron="0 9,14,17 * * *")
             TimeTasks.objects.create(name="每周一8点触发", cron="0 8 * * 1")
 
     def run_tests(self):
