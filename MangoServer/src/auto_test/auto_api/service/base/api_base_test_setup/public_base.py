@@ -97,7 +97,7 @@ class PublicBase(BaseRequest):
                     raise ApiError(*ERROR_MSG_0033, value=(sql,))
 
     @staticmethod
-    def update_dict_case_insensitive(original_dict, new_dict):
+    def update_dict_case_insensitive(original_dict: dict[str], new_dict: dict[str]):
         original_lower_keys = {k.lower(): k for k in original_dict.keys()}
         for new_key, new_value in new_dict.items():
             new_key_lower = new_key.lower()
