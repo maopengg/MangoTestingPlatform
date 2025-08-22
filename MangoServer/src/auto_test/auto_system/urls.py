@@ -51,6 +51,7 @@ urlpatterns = [
     path("variable/random/list", SystemViews.as_view({'get': 'common_variable'})),
     path("variable/value", SystemViews.as_view({'get': 'random_data'})),
     path("enum", SystemViews.as_view({'get': 'enum_api'})),
+    path("set/debug/log", SystemViews.as_view({'post': 'set_debug_log'})),
     #
     path("socket/user/list", SocketApiViews.as_view({'get': 'get_user_list'})),
     path("socket/all/user/sum", SocketApiViews.as_view({'get': 'get_all_user_sum'})),

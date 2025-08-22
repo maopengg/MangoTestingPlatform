@@ -5,14 +5,15 @@
 # @Author : 毛鹏
 import re
 
+from mangotools.data_processor import ObtainRandomData
+from mangotools.enums import NoticeEnum
+from mangotools.method import class_methods, class_own_methods
 from mangotools.models import ClassMethodModel
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from mangotools.data_processor import ObtainRandomData
-from mangotools.enums import NoticeEnum
-from mangotools.method import class_methods, class_own_methods
+from src import settings
 from src.enums.api_enum import *
 from src.enums.pytest_enum import *
 from src.enums.system_enum import *
@@ -20,9 +21,9 @@ from src.enums.tools_enum import *
 from src.enums.ui_enum import *
 from src.exceptions import MangoServerError
 from src.tools.decorator.error_response import error_response
+from src.tools.obtain_test_data import ObtainTestData
 from src.tools.redis.redis import Cache
 from src.tools.view import *
-from src.tools.obtain_test_data import ObtainTestData
 
 
 class SystemViews(ViewSet):
@@ -95,3 +96,11 @@ class SystemViews(ViewSet):
                 return ResponseData.success(RESPONSE_MSG_0062, Cache().read_data_from_cache(name))
             else:
                 return ResponseData.fail(RESPONSE_MSG_0060)
+
+    @action(methods=['post'], detail=False)
+    @error_response('system')
+    def set_debug_log(self, request: Request):
+        is_debug = request.data.get('is_debug')
+        if is_debug is not None:
+            settings.IS_DEBUG_LOG = is_debug
+        return ResponseData.success(RESPONSE_MSG_0136, data={'is_debug': settings.IS_DEBUG_LOG})

@@ -9,7 +9,12 @@
           {{ settingsData.editing ? '保存配置' : '修改配置' }}
         </a-button>
       </div>
-
+      <a-card :bordered="false">
+        <a-space>
+          <span>设置系统debug级别日志：</span>
+          <a-switch v-model="settingsData.isDebug" @change="doPostSystemSetDebugLog" />
+        </a-space>
+      </a-card>
       <a-card v-if="hasConfig('host')" title="域名配置" :bordered="false">
         <a-space direction="vertical" size="large">
           <div v-for="item in filteredConfig('host')" :key="item.key">
@@ -94,6 +99,7 @@
   import { onMounted, reactive, ref } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import { getSystemCacheData, putSystemCacheData } from '@/api/system/cache_data'
+  import { postSystemSetDebugLog } from '@/api/system/system'
 
   const loading = ref(false)
   const settingsData = reactive({
@@ -103,6 +109,7 @@
     api: ['API_TIMEOUT'],
     pytest: ['PYTEST_GIT_URL', 'PYTEST_ACT', 'PYTEST_TESTCASE', 'PYTEST_TOOLS', 'PYTEST_UPLOAD'],
     data: [],
+    isDebug: false,
   })
 
   // 检查是否有某类配置
@@ -143,9 +150,17 @@
       console.error(error)
     }
   }
-
+  async function doPostSystemSetDebugLog(isDebug) {
+    try {
+      const res = await postSystemSetDebugLog(isDebug)
+      settingsData.isDebug = res.data.is_debug
+    } catch (error) {
+      console.error(error)
+    }
+  }
   onMounted(() => {
     doRefresh()
+    doPostSystemSetDebugLog(null)
   })
 </script>
 

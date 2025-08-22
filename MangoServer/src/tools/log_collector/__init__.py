@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import logging
 
-from src.settings import IS_DEBUG_LOG
+from src import settings
 
 
 class System:
@@ -13,7 +13,7 @@ class System:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
@@ -38,7 +38,7 @@ class Ui:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
@@ -63,7 +63,7 @@ class Api:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
@@ -88,7 +88,7 @@ class User:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
@@ -113,7 +113,7 @@ class Perf:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
@@ -138,7 +138,7 @@ class Pytest:
 
     @classmethod
     def debug(cls, msg: str):
-        if IS_DEBUG_LOG:
+        if settings.IS_DEBUG_LOG:
             cls.log.critical(msg)
 
     @classmethod
