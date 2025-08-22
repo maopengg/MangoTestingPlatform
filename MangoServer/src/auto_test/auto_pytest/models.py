@@ -17,6 +17,7 @@ class PytestProduct(models.Model):
 
     class Meta:
         db_table = 'pytest_product'
+        ordering = ['-id']
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -35,6 +36,7 @@ class PytestAct(models.Model):
 
     class Meta:
         db_table = 'pytest_act'
+        ordering = ['-id']
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -58,6 +60,7 @@ class PytestCase(models.Model):
 
     class Meta:
         db_table = 'pytest_case'
+        ordering = ['-id']
 
     def delete(self, *args, **kwargs):
         if TasksDetails.objects.filter(pytest_case=self).exists():
@@ -78,6 +81,7 @@ class PytestTools(models.Model):
 
     class Meta:
         db_table = 'pytest_tools'
+        ordering = ['-id']
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -94,6 +98,7 @@ class PytestTestFile(models.Model):
 
     class Meta:
         db_table = 'pytest_test_file'
+        ordering = ['-id']
 
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
