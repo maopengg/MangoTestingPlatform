@@ -162,11 +162,16 @@
             accordion
             destroy-on-hide
           >
-            <a-collapse-item
-              :header="item.name + '-' + item.status"
-              :style="customStyle"
-              :key="item.uuid"
-            >
+            <a-collapse-item :style="customStyle" :key="item.uuid">
+              <template #header>
+                <div class="custom-header">
+                  <span>{{ item.name }}</span>
+                  <span style="width: 20px"></span>
+                  <a-tag :color="enumStore.status_colors[item.status]"
+                    >{{ enumStore.task_status[item.status].title }}
+                  </a-tag>
+                </div>
+              </template>
               <PytestTestReport :resultData="item" />
             </a-collapse-item>
           </a-collapse>
@@ -503,3 +508,11 @@
     })
   })
 </script>
+<style lang="less" scoped>
+  .custom-header {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* 控制标签间距 */
+    font-size: 14px;
+  }
+</style>

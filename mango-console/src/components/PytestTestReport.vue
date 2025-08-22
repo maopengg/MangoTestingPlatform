@@ -16,16 +16,28 @@
         }}</a-tag
       >
     </template>
-    <a-tab-pane key="1" title="执行过程">
-      <a-collapse
-        v-for="(attachments, index) of resultData.attachments"
-        :key="index"
-        :bordered="false"
-        :default-active-key="['1']"
-        destroy-on-hide
-      >
-        <a-collapse-item :key="index" :header="attachments.name">
+    <a-tab-pane key="1" title="测试步骤">
+      <a-collapse :bordered="false" :default-active-key="['1']" destroy-on-hide>
+        <a-collapse-item
+          v-for="(attachments, index) of resultData.attachments"
+          :key="index"
+          :header="attachments.name"
+        >
           <div>{{ attachments.source }}</div>
+        </a-collapse-item>
+        <a-collapse-item
+          key="custom-item1"
+          v-if="resultData.statusDetails && resultData.statusDetails?.message"
+          header="报错类型"
+        >
+          <pre>{{ resultData.statusDetails?.message }}</pre>
+        </a-collapse-item>
+        <a-collapse-item
+          key="custom-item2"
+          v-if="resultData.statusDetails && resultData.statusDetails?.trace"
+          header="报错代码行"
+        >
+          <pre>{{ resultData.statusDetails?.trace }}</pre>
         </a-collapse-item>
       </a-collapse>
     </a-tab-pane>

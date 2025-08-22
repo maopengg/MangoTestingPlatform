@@ -158,15 +158,8 @@
           :title="'UI测试（' + data.summary.ui_count + '）'"
           v-if="data.summary.ui_count > 0"
         >
-          <a-collapse
-            :default-active-key="[1]"
-            :bordered="false"
-            v-for="item of data.dataList"
-            :key="item.id"
-            accordion
-            destroy-on-hide
-          >
-            <a-collapse-item key="1">
+          <a-collapse :default-active-key="[1]" :bordered="false" accordion destroy-on-hide>
+            <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
                 <div class="custom-header">
                   <span>{{ item.case_name }}</span>
