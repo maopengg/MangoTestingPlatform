@@ -94,7 +94,7 @@ class PublicBase(BaseRequest):
             if isinstance(result_list, list) and len(result_list) > 0:
                 self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
                 if not result_list:
-                    raise ToolsError(*ERROR_MSG_0033, value=(sql,))
+                    raise ApiError(*ERROR_MSG_0033, value=(sql,))
 
     @staticmethod
     def update_dict_case_insensitive(original_dict, new_dict):
@@ -104,6 +104,9 @@ class PublicBase(BaseRequest):
             if new_key_lower in original_lower_keys:
                 original_key = original_lower_keys[new_key_lower]
                 del original_dict[original_key]
-            original_dict[new_key] = new_value.strip()
-            original_lower_keys[new_key_lower] = new_key
+            if isinstance(new_key, str) and isinstance(new_value, str):
+                original_dict[new_key] = new_value.strip()
+                original_lower_keys[new_key_lower] = new_key
+            else:
+                raise ApiError(*ERROR_MSG_0040)
         return original_dict
