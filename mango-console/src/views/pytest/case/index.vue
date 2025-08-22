@@ -274,6 +274,7 @@
   import { useProject } from '@/store/modules/get-project'
   import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
   import { getSystemTasksName } from '@/api/system/tasks'
+  import useUserStore from '@/store/modules/user'
 
   const projectInfo = useProject()
 
@@ -284,6 +285,7 @@
   const rowKey = useRowKey('id')
   const formModel = ref({})
   const enumStore = useEnum()
+  const userStore = useUserStore()
 
   const data: any = reactive({
     isAdd: false,
@@ -408,12 +410,16 @@
   }
 
   const onRun = async (param) => {
+    if (userStore.selected_environment == null) {
+      Message.error('请先选择用例执行的环境')
+      return
+    }
     Message.loading('准备开始执行，执行完成之后，请在右侧按钮结果中查看执行结果~')
 
     if (caseRunning.value) return
     caseRunning.value = true
     try {
-      const res = await getPytestCaseTest(param.id)
+      const res = await getPytestCaseTest(param.id, userStore.selected_environment)
       Message.success(res.msg)
       doRefresh()
     } catch (e) {
