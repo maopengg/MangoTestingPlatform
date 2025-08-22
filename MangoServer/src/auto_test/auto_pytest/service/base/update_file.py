@@ -8,7 +8,6 @@ from datetime import datetime
 
 from git import Repo
 
-from src.enums.system_enum import CacheDataKeyEnum
 from src.models.pytest_model import FileModel, UpdateFileModel
 
 

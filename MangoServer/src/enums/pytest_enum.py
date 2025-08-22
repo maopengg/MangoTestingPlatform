@@ -27,3 +27,6 @@ class AllureStatusEnum(BaseEnum):
     def obj(cls):
         return {0: "未绑定", 1: "已绑定", 2: "已删除"}
 
+
+class PytestSystemEnum(BaseEnum):
+    TEST_ENV = 'MANGO_TEST_ENV'

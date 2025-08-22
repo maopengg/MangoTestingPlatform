@@ -40,7 +40,7 @@ class PytestCaseFlow:
             test_suite=case_model.test_suite,
             test_suite_details=case_model.test_suite_details,
         )
-        return test_case.test_case_main(case_model.case_id)
+        return test_case.test_case_main(case_model.case_id, case_model.test_env)
 
     @classmethod
     def add_task(cls, case_model: ConsumerCaseModel):

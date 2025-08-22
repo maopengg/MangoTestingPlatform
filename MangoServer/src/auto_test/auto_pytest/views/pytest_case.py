@@ -122,5 +122,5 @@ class PytestCaseViews(ViewSet):
     @action(methods=['GET'], detail=False)
     @error_response('pytest')
     def pytest_test_case(self, request: Request):
-        report_data = TestCase().test_case_main(request.query_params.get('id'))
+        report_data = TestCase().test_case_main(request.query_params.get('id'), request.query_params.get("test_env"))
         return ResponseData.success(RESPONSE_MSG_0086, data=report_data)

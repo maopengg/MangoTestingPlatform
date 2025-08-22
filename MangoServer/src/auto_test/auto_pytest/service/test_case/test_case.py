@@ -13,6 +13,7 @@ from pathlib import Path
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
 from src.enums.pytest_enum import AllureStatusEnum
+from src.enums.pytest_enum import PytestSystemEnum
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.tools import project_dir
@@ -26,12 +27,15 @@ class TestCase:
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
 
-    def test_case_main(self, case_id) -> list[dict]:
+    def test_case_main(self, case_id, test_env: int) -> list[dict]:
         obj = PytestCase.objects.get(id=case_id)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
         allure_results_dir = os.path.join(project_dir.logs(), f'allure-results-{uuid.uuid4()}')
         os.makedirs(allure_results_dir, exist_ok=True)
+        env = os.environ.copy()
+        env[PytestSystemEnum.TEST_ENV.value] = f'{test_env}'
+
         pytest_cmd = [
             'pytest',
             obj.file_path,
@@ -40,7 +44,7 @@ class TestCase:
             '--alluredir', allure_results_dir
         ]
         log.pytest.debug('启动命令：{}'.format(pytest_cmd))
-        subprocess.run(pytest_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(pytest_cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         report_data = self.read_allure_json_results(allure_results_dir)
         log.pytest.debug(f'{obj.name}测试结果：{report_data}')
         self.result_data(report_data, obj)
@@ -87,7 +91,8 @@ class TestCase:
                 report_data.append(res_dict)
         return report_data
 
-    def delete_allure_results(self, results_dir):
+    @classmethod
+    def delete_allure_results(cls, results_dir):
         """
         删除 Allure 结果目录
         """
