@@ -8,18 +8,12 @@ import threading
 
 from PySide6.QtCore import QThread, Signal, QTimer
 from mangoui import warning_notification, error_notification, success_notification, info_notification, \
-    MangoMain1Window, DialogWidget, FormDataModel, AppConfig, MenusModel
+    MangoMain1Window, AppConfig, MenusModel
 
 from src import process, log
-from src.enums.tools_enum import EnvironmentEnum
-from src.network import HTTP
 from ...enums.gui_enum import TipsTypeEnum
 from ...models import queue_notification
-from ...models.socket_model import ResponseModel
-from ...models.user_model import UserModel
 from ...settings.settings import SETTINGS, MENUS
-from ...tools.components.message import response_message
-from ...tools.methods import Methods
 
 
 class NotificationTask(QThread):
@@ -40,13 +34,18 @@ class NotificationTask(QThread):
 class WindowLogic(MangoMain1Window):
     def __init__(self, loop):
         from ..home import HomePage
-        from ..setting import SettingPage, UiSettingPage
+        from ..setting import SettingPage
         from ..user import UserPage
+        from ..ui import AndroidPage, PcPage, WEBPage
+        from ..pytest import PytestPage
 
         page_dict = {
             'home': HomePage,
             'settings': SettingPage,
-            'ui_settings': UiSettingPage,
+            'web': WEBPage,
+            'android': AndroidPage,
+            'pc': PcPage,
+            'pytest': PytestPage,
             'user': UserPage,
         }
         super().__init__(
@@ -78,8 +77,6 @@ class WindowLogic(MangoMain1Window):
         self.notification_thread.notify_signal.connect(self.handle_notification)
         self.notification_thread.start()
 
-        self.clicked.connect(self.title_bar_clicked_func)
-
     def handle_notification(self, notification_type, message):
         if notification_type == TipsTypeEnum.ERROR.value:
             error_notification(self.content_area_frame, message)
@@ -89,48 +86,6 @@ class WindowLogic(MangoMain1Window):
             info_notification(self.content_area_frame, message)
         elif notification_type == TipsTypeEnum.WARNING.value:
             warning_notification(self.content_area_frame, message)
-
-    def title_bar_clicked_func(self, data):
-        if data == 'project':
-            user_info = UserModel()
-            project_list = [FormDataModel(
-                title='项目名称',
-                placeholder='请选择项目进行全局条件过滤',
-                key='selected_project',
-                type=1,
-                select=Methods.get_project_model(),
-                value=str(user_info.selected_project)
-            )]
-
-            dialog = DialogWidget('选择项目', project_list)
-            dialog.exec()
-            if dialog.data:
-                response: ResponseModel = HTTP.user.info.put_user_project(user_info.id,
-                                                                          dialog.data.get('selected_project'))
-                response_message(self.central_widget, response)
-                if response.code == 200:
-                    HTTP.api.info.headers['Project'] = str(dialog.data.get('selected_project'))
-                    user_info.selected_project = response.data.get('selected_project')
-
-        elif data == 'test_env':
-            user_info = UserModel()
-            env_list = [FormDataModel(
-                title='测试环境',
-                placeholder='请选择测试环境，用例执行与测试环境绑定',
-                key='selected_environment',
-                type=1,
-                select=EnvironmentEnum.get_select(),
-                value=str(user_info.selected_environment)
-            )]
-            dialog = DialogWidget('选择测试环境', env_list)
-            dialog.exec()
-            if dialog.data:
-                user_info.selected_environment = dialog.data.get('selected_environment')
-                response: ResponseModel = HTTP.user.info.put_environment(user_info.id,
-                                                                         dialog.data.get('selected_environment'))
-                response_message(self.central_widget, response)
-                if response.code == 200:
-                    user_info.selected_project = response.data.get('selected_environment')
 
     def set_tips_info(self, mag: str):
         self.credits.update_label.emit(str(mag))

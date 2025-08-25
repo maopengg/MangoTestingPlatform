@@ -61,8 +61,18 @@ class SocketApiViews(ViewSet):
     def set_user_open_status(self, request: Request):
         status = request.data.get('status')
         username = request.data.get('username')
-        SocketUser.set_user_open_status(username, bool(status))
         user_obj = SocketUser.get_user_obj(username)
+        from src.auto_test.auto_system.consumers import ChatConsumer
+        ChatConsumer.active_send(SocketDataModel(
+            code=200,
+            msg=f'执行器连接成功，当前OPEN状态：{SocketUser.get_user_obj(username).is_open}',
+            user=username,
+            is_notice=ClientTypeEnum.ACTUATOR,
+            data=QueueModel(
+                func_name=UiSocketEnum.SET_OPEN_STATUS.value,
+                func_args={'is_open': bool(status)}),
+        ))
+        SocketUser.set_user_open_status(username, bool(status))
         return ResponseData.success(RESPONSE_MSG_0113, {
             'user_id': user_obj.user_id,
             'username': user_obj.username,

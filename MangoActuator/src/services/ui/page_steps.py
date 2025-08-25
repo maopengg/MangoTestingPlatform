@@ -180,7 +180,7 @@ class PageSteps:
                 web_headers if web_headers else False,
                 web_recording if web_recording else False,
                 web_h5 if web_h5 and web_h5 != 'None' else None,
-                web_is_default=settings.IS_OPEN,
+                web_is_default=SetConfig.get_web_default(),  # type: ignore
                 videos_path=project_dir.videos()
             )
         if is_recording and host_list:

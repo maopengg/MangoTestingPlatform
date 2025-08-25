@@ -165,6 +165,7 @@ class CacheKeyEnum(BaseEnum):
     WEB_H5 = 'web_h5'
     WEB_PATH = 'web_path'
     WEB_HEADERS = 'web_headers'
+    WEB_DEFAULT = 'web_default'
 
     AND_EQUIPMENT = 'and_equipment'
 
@@ -176,4 +177,5 @@ class CacheKeyEnum(BaseEnum):
         from mangotools.enums import CacheValueTypeEnum
         return {'web_max': CacheValueTypeEnum.BOOL, 'web_headers': CacheValueTypeEnum.BOOL,
                 'web_recording': CacheValueTypeEnum.BOOL, 'web_parallel': CacheValueTypeEnum.INT,
-                'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,}
+                'web_type': CacheValueTypeEnum.INT, 'is_minio': CacheValueTypeEnum.BOOL,
+                'web_default': CacheValueTypeEnum.BOOL, }

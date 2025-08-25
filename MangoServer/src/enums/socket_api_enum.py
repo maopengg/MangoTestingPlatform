@@ -17,6 +17,7 @@ class UiSocketEnum(Enum):
     NEW_PAGE_OBJ = 'u_page_new_obj'
     MangoPytest = 't_mango_pytest'
     RECORDING = 'u_recording'
+    SET_OPEN_STATUS = 't_set_open_status'
 
 
 class ToolsSocketEnum(Enum):

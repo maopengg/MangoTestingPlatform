@@ -43,6 +43,7 @@ async def main():
                         set_method(value)
                 else:
                     raise Exception(f"Warning: Method '{method_name}' not found in SetConfig")
+    SetConfig.set_web_default(True)  # type: ignore
     await process(LinuxLoop(), True)
     while True:
         await asyncio.sleep(0.1)

@@ -12,6 +12,7 @@ from mangoautomation.uidrive import DriverObject
 
 from src.models.ui_model import CaseModel, GetTaskModel
 from src.services.ui.test_case import TestCase
+from src.settings import settings
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
 from src.tools.set_config import SetConfig
@@ -43,14 +44,15 @@ class CaseFlow:
     @classmethod
     async def get_case_task(cls):
         try:
-            from src.network import UiSocketEnum, socket_conn
-            from src import CacheKeyEnum
-            from src.tools.set_config import SetConfig
-            await socket_conn.async_send(
-                '请求获取任务',
-                func_name=UiSocketEnum.GET_TASK.value,
-                func_args=GetTaskModel(username=SetConfig.get_username())  # type: ignore
-            )
+            if settings.IS_OPEN:
+                from src.network import UiSocketEnum, socket_conn
+                from src import CacheKeyEnum
+                from src.tools.set_config import SetConfig
+                await socket_conn.async_send(
+                    '请求获取任务',
+                    func_name=UiSocketEnum.GET_TASK.value,
+                    func_args=GetTaskModel(username=SetConfig.get_username())  # type: ignore
+                )
         except Exception as error:
             log.error(f'get_case_task失败，类型：{type(error)}，失败详情：{error}，失败明细：{traceback.format_exc()}')
 
