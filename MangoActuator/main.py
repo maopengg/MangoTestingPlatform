@@ -57,5 +57,6 @@ pyinstaller `
 --hidden-import "email.mime.base" `
 --hidden-import "email.mime.multipart" `
 main.py
+
 """
 # --add-data="" 这个参数中的-> D:\DevFile\python\MangoActuator 要改为你自己虚拟环境的地址，即可打包~
