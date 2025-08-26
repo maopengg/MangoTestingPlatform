@@ -84,8 +84,8 @@ class OperationLogMiddleware(MiddlewareMixin):
                 'request_data': log_data['request_data'],
                 'response_data': log_data['response_data'],
                 'status_code': log_data['status_code'],
-                'duration_ms': log_data['duration'],
-                'ip_address': log_data['ip'],
+                'duration': log_data['duration'],
+                'ip': log_data['ip'],
             })
             # OperationLog.objects.create(**{
             #     'user_id': log_data.get('user_id'),

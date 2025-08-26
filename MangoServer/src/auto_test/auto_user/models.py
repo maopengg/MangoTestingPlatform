@@ -71,6 +71,9 @@ class UserLogs(models.Model):
     ip = models.CharField(verbose_name="登录IP", max_length=64, null=True)
 
     # url = models.CharField(verbose_name="url", max_length=64, null=True)
+    # method = models.CharField(verbose_name="method", max_length=64, null=True)
+    # status_code = models.CharField(verbose_name="status_code", max_length=64, null=True)
+    # duration = models.CharField(verbose_name="duration", max_length=64, null=True)
     # request_data = models.TextField(verbose_name="请求数据", null=True)
     # response_data = models.TextField(verbose_name="响应数据", null=True)
 
