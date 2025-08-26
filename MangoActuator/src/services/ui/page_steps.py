@@ -25,7 +25,6 @@ from src.exceptions import *
 from src.models.api_model import RecordingApiModel
 from src.models.ui_model import PageStepsResultModel, PageStepsModel
 from src.network import ApiSocketEnum, socket_conn, HTTP
-from src.settings import settings
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
@@ -139,6 +138,7 @@ class PageSteps:
         self.page_step_result_model.element_result_list.append(element_result)
         if self.page_step_result_model.status == StatusEnum.FAIL.value:
             if element_result.picture_name and element_result.picture_path:
+                log.debug(f'上传截图文件名称：{element_result.picture_name}，绝对路径：{element_result.picture_path}')
                 upload = HTTP.not_auth.upload_file(element_result.picture_path, element_result.picture_name)
                 if not upload and self.page_step_result_model.error_message:
                     self.page_step_result_model.error_message += '--截图上传失败，请检查minio或者文件配置是否正确！'
@@ -148,7 +148,11 @@ class PageSteps:
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:
                 if self.base_data.page:
-                    await self.base_data.page.reload()
+
+                    try:
+                        await self.base_data.page.reload(wait_until="domcontentloaded", timeout=20000)
+                    except TimeoutError:
+                        await self.base_data.page.reload(wait_until="load", timeout=10000)
             case DriveTypeEnum.ANDROID.value:
                 pass
             case DriveTypeEnum.DESKTOP.value:
