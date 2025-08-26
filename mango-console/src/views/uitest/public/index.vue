@@ -13,6 +13,18 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
               <template v-else-if="item.type === 'select'">
                 <a-select
                   v-model="item.value"
@@ -203,6 +215,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
+    doRefresh()
   }
 
   const onModifyStatus = async (newValue: boolean, id: number) => {

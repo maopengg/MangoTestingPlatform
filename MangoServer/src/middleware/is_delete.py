@@ -49,7 +49,7 @@ class IsDeleteMiddleWare(MiddlewareMixin):
                                     "msg": "演示环境非管理员权限禁止修改，只能执行测试任务",
                                     "data": None
                                 }, status=200)
-                except Exception as e:
+                except Exception:
                     pass
 
     def process_response(self, request, response):

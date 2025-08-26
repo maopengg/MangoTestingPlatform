@@ -4,6 +4,39 @@ import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
+
+export const conditionItems: Array<FormItem> = reactive([
+  {
+    key: 'id',
+    label: 'ID',
+    type: 'input',
+    placeholder: '请输入ID',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'name',
+    label: '文件名称',
+    type: 'input',
+    placeholder: '请输入页面名称',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+    optionItems: [],
+    reset: function () {},
+  },
+])
+
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',

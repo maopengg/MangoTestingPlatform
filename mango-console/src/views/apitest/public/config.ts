@@ -9,17 +9,36 @@ export const conditionItems: Array<FormItem> = reactive([
     key: 'id',
     label: 'ID',
     type: 'input',
-    placeholder: '请输入ID',
+    placeholder: '请输入参数ID',
     value: ref(''),
     reset: function () {
       this.value = ''
     },
   },
   {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
     key: 'name',
     label: '参数名称',
     type: 'input',
     placeholder: '请输入参数名称',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'key',
+    label: 'key',
+    type: 'input',
+    placeholder: '请输入key',
     value: ref(''),
     reset: function () {
       this.value = ''

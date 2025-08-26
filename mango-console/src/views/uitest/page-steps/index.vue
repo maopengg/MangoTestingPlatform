@@ -13,16 +13,15 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project_product'">
-                <a-select
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="projectInfo.projectProductList"
                   :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  value-key="key"
                   allow-clear
                   allow-search
-                  style="width: 150px"
-                  value-key="key"
                   @change="doRefresh(item.value, true)"
                 />
               </template>
@@ -39,7 +38,7 @@
                   @change="onModulePage(item.value, true)"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'page'">
+              <template v-else-if="item.type === 'select' && item.key === 'page_id'">
                 <a-select
                   v-model="item.value"
                   :field-names="fieldNames"
@@ -307,6 +306,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
+    doRefresh()
   }
 
   function onAdd() {

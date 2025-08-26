@@ -1,14 +1,44 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="测试文件管理">
-        <template #extra>
-          <a-button size="small" type="primary" @click="clickUpdate">更新目录</a-button>
+      <TableHeader
+        :show-filter="true"
+        title="测试文件"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+              <template v-if="item.type === 'input'">
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectPytest2"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh(item.value, true)"
+                />
+              </template>
+            </a-form-item>
+          </a-form>
         </template>
-      </a-card>
+      </TableHeader>
     </template>
 
     <template #default>
+      <a-tabs>
+        <template #extra>
+          <div>
+            <a-button size="small" type="primary" @click="clickUpdate">更新目录</a-button>
+          </div>
+        </template>
+      </a-tabs>
       <a-table
         :bordered="false"
         :columns="tableColumns"
@@ -92,7 +122,7 @@
           <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
             <a-cascader
               v-model="item.value"
-              :options="data.projectPytest"
+              :options="projectInfo.projectPytest2"
               :placeholder="item.placeholder"
               allow-clear
               allow-search
@@ -122,7 +152,7 @@
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { getFormItems } from '@/utils/datacleaning'
   import { fieldNames } from '@/setting'
-  import { formItems, tableColumns } from './config'
+  import { formItems, tableColumns, conditionItems } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import {
     deletePytestFile,
@@ -149,9 +179,13 @@
     actionTitle: '新增',
     drawerVisible: false,
     codeText: '',
-    projectPytest: [],
   })
-
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+    doRefresh()
+  }
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
@@ -219,10 +253,14 @@
     })
   }
 
-  function doRefresh() {
-    const value = {}
+  function doRefresh(projectProductId: number | string | null = null, bool_ = false) {
+    const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
+    }
     getPytestFile(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -232,30 +270,13 @@
   }
 
   function onPytestProjectName(projectProductId: any) {
-    if (!projectProductId) {
-      projectInfo.projectPytestName()
-      data.projectPytest = JSON.parse(JSON.stringify(projectInfo.projectPytest))
-      data.projectPytest.forEach((item) => {
-        item.children.forEach((item1) => {
-          delete item1.children
-        })
-      })
-    } else {
-      projectInfo.projectPytest.forEach((item) => {
-        item.children.forEach((item1) => {
-          if (projectProductId === item1.value) {
-            data.moduleList = item1.children
-          }
-        })
-      })
-    }
+    data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
     formItems.forEach((item: FormItem) => {
       if (item.key === 'module') {
         item.value = ''
       }
     })
   }
-
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

@@ -28,16 +28,16 @@ export const conditionItems: Array<FormItem> = reactive([
   },
   {
     key: 'project_product',
-    label: '产品',
+    label: '项目/产品',
     value: ref(''),
-    type: 'select',
+    type: 'cascader',
     placeholder: '请选择产品',
     optionItems: [],
     reset: function () {},
   },
   {
     key: 'module',
-    label: '模块',
+    label: '模块名称',
     value: ref(''),
     type: 'select',
     placeholder: '请选择产品',
@@ -45,7 +45,7 @@ export const conditionItems: Array<FormItem> = reactive([
     reset: function () {},
   },
   {
-    key: 'page',
+    key: 'page_id',
     label: '所属页面',
     value: ref(''),
     type: 'select',
@@ -80,7 +80,7 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '模块',
+    label: '模块名称',
     key: 'module',
     value: ref(''),
     placeholder: '请选择测试模块',
@@ -136,7 +136,7 @@ export const tableColumns = useTableColumn([
     width: 200,
   },
   {
-    title: '模块',
+    title: '模块名称',
     key: 'module',
     dataIndex: 'module',
     align: 'left',

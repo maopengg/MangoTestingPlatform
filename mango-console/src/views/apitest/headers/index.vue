@@ -13,44 +13,17 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'module'">
-                <a-select
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
                   v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="data.moduleList"
                   :placeholder="item.placeholder"
+                  :options="projectInfo.projectProduct"
+                  value-key="key"
                   allow-clear
                   allow-search
-                  style="width: 150px"
-                  value-key="key"
-                  @change="doRefresh"
+                  @change="doRefresh(item.value, true)"
                 />
-              </template>
-              <template v-else-if="item.type === 'select' && item.key === 'client'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.client"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  style="width: 150px"
-                  value-key="key"
-                  @change="doRefresh"
-                />
-              </template>
-              <template v-if="item.type === 'date'">
-                <a-date-picker v-model="item.value" />
-              </template>
-              <template v-if="item.type === 'time'">
-                <a-time-picker v-model="item.value" value-format="HH:mm:ss" />
-              </template>
-              <template v-if="item.type === 'check-group'">
-                <a-checkbox-group v-model="item.value">
-                  <a-checkbox v-for="it of item.optionItems" :key="it.value" :value="it.value">
-                    {{ item.label }}
-                  </a-checkbox>
-                </a-checkbox-group>
               </template>
             </a-form-item>
           </a-form>
@@ -216,6 +189,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
+    doRefresh()
   }
 
   function onAdd() {

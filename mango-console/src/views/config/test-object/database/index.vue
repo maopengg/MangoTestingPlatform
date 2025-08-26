@@ -177,6 +177,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
+    doRefresh()
   }
 
   function onAdd() {

@@ -13,13 +13,12 @@
               <template v-if="item.type === 'input'">
                 <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'project_product'">
-                <a-select
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
                   style="width: 150px"
                   v-model="item.value"
                   :placeholder="item.placeholder"
-                  :options="projectInfo.projectProductList"
-                  :field-names="fieldNames"
+                  :options="projectInfo.projectProduct"
                   value-key="key"
                   allow-clear
                   allow-search
@@ -217,6 +216,7 @@
     conditionItems.forEach((it) => {
       it.value = ''
     })
+    doRefresh()
   }
 
   function onAdd() {

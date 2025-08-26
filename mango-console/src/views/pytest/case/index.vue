@@ -1,11 +1,85 @@
 <template>
   <TableBody ref="tableBody">
     <template #header>
-      <a-card :bordered="false" title="测试用例">
-        <template #extra>
-          <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+      <TableHeader
+        :show-filter="true"
+        title="测试用例"
+        @search="doRefresh"
+        @reset-search="onResetSearch"
+      >
+        <template #search-content>
+          <a-form :model="{}" layout="inline" @keyup.enter="doRefresh">
+            <a-form-item v-for="item of conditionItems" :key="item.key" :label="item.label">
+              <template v-if="item.type === 'input'">
+                <a-input v-model="item.value" :placeholder="item.placeholder" @blur="doRefresh" />
+              </template>
+              <template v-else-if="item.type === 'cascader' && item.key === 'project_product'">
+                <a-cascader
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="projectInfo.projectPytest2"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh(item.value, true)"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'module'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="data.moduleList"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'file_status'">
+                <a-select
+                  style="width: 150px"
+                  v-model="item.value"
+                  :placeholder="item.placeholder"
+                  :options="enumStore.file_status"
+                  :field-names="fieldNames"
+                  value-key="key"
+                  allow-clear
+                  allow-search
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'status'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.task_status"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+              <template v-else-if="item.type === 'select' && item.key === 'level'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="enumStore.case_level"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
+            </a-form-item>
+          </a-form>
         </template>
-      </a-card>
+      </TableHeader>
     </template>
 
     <template #default>
@@ -13,6 +87,7 @@
         <template #extra>
           <a-space>
             <div>
+              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
               <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
               <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
                 <template #title> 设为定时任务</template>
@@ -200,7 +275,7 @@
               v-model="item.value"
               @change="onPytestProjectName(item.value)"
               :placeholder="item.placeholder"
-              :options="data.projectPytest"
+              :options="projectInfo.projectPytest2"
               allow-search
               allow-clear
             />
@@ -280,6 +355,7 @@
   import { postSystemTasksBatchSetCases } from '@/api/system/tasks_details'
   import { getSystemTasksName } from '@/api/system/tasks'
   import useUserStore from '@/store/modules/user'
+  import { conditionItems } from '@/views/pytest/case/config'
 
   const projectInfo = useProject()
 
@@ -298,7 +374,6 @@
     actionTitle: '新增',
     drawerVisible: false,
     codeText: '',
-    projectPytest: [],
     moduleList: [],
     scheduledName: [],
     isResult: false,
@@ -402,10 +477,14 @@
     })
   }
 
-  function doRefresh() {
-    const value = {}
+  function doRefresh(projectProductId: number | null = null, bool_ = false) {
+    const value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (projectProductId && bool_) {
+      value['project_product'] = projectProductId
+      data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
+    }
     getPytestCase(value)
       .then((res) => {
         table.handleSuccess(res)
@@ -414,6 +493,12 @@
       .catch(console.log)
   }
 
+  function onResetSearch() {
+    conditionItems.forEach((it) => {
+      it.value = ''
+    })
+    doRefresh()
+  }
   const onRun = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -461,23 +546,7 @@
   }
 
   function onPytestProjectName(projectProductId: any) {
-    if (!projectProductId) {
-      projectInfo.projectPytestName()
-      data.projectPytest = JSON.parse(JSON.stringify(projectInfo.projectPytest))
-      data.projectPytest.forEach((item) => {
-        item.children.forEach((item1) => {
-          delete item1.children
-        })
-      })
-    } else {
-      projectInfo.projectPytest.forEach((item) => {
-        item.children.forEach((item1) => {
-          if (projectProductId === item1.value) {
-            data.moduleList = item1.children
-          }
-        })
-      })
-    }
+    data.moduleList = projectInfo.getProjectPytestModule(projectProductId)
     formItems.forEach((item: FormItem) => {
       if (item.key === 'module') {
         item.value = ''

@@ -4,6 +4,83 @@ import { Message } from '@arco-design/web-vue'
 import { useTable, useTableColumn } from '@/hooks/table'
 
 const table = useTable()
+export const conditionItems: Array<FormItem> = reactive([
+  {
+    key: 'id',
+    label: 'ID',
+    type: 'input',
+    placeholder: '请输入ID',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'name',
+    label: '用例名称',
+    type: 'input',
+    placeholder: '请输入页面名称',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'file_name',
+    label: '文件路径',
+    type: 'input',
+    placeholder: '请输入页面地址',
+    value: ref(''),
+    reset: function () {
+      this.value = ''
+    },
+  },
+  {
+    key: 'project_product',
+    label: '项目/产品',
+    value: ref(''),
+    type: 'cascader',
+    placeholder: '请选择产品',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'module',
+    label: '模块名称',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择模块',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'level',
+    label: '用例级别',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择用例级别',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'file_status',
+    label: '文件状态',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择文件状态',
+    optionItems: [],
+    reset: function () {},
+  },
+  {
+    key: 'status',
+    label: '测试结果',
+    value: ref(''),
+    type: 'select',
+    placeholder: '请选择文件状态',
+    optionItems: [],
+    reset: function () {},
+  },
+])
 export const formItems: FormItem[] = reactive([
   {
     label: '项目/产品',
@@ -21,7 +98,7 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '模块',
+    label: '模块名称',
     key: 'module',
     value: ref(''),
     placeholder: '请选择模块名称',
@@ -36,7 +113,7 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '名称',
+    label: '用例名称',
     key: 'name',
     value: ref(''),
     placeholder: '请输入名称',
@@ -107,21 +184,21 @@ export const tableColumns = useTableColumn([
     width: 200,
   },
   {
-    title: '模块',
+    title: '模块名称',
     key: 'module',
     dataIndex: 'module',
     align: 'left',
     width: 180,
   },
   {
-    title: '名称',
+    title: '用例名称',
     key: 'name',
     dataIndex: 'name',
     align: 'left',
     width: 300,
   },
   {
-    title: '文件名称',
+    title: '文件路径',
     key: 'file_name',
     dataIndex: 'file_name',
     align: 'left',

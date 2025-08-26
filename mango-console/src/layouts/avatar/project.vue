@@ -58,7 +58,7 @@
       project.selectValue = key
       if (item.key === project.selectValue) project.selectTitle = item.title
     })
-    project.projectProductNameList(project.selectValue)
+    // project.projectProductNameList(project.selectValue)
   }
 
   watchEffect(() => {
@@ -69,6 +69,7 @@
 
   onMounted(async () => {
     project.getProject()
+    project.projectPytestName()
   })
 </script>
 
