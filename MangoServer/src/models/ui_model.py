@@ -101,5 +101,3 @@ class UiCaseResultModel(BaseModel):
     steps: list[PageStepsResultModel]
 
 
-class GetTaskModel(BaseModel):
-    username: str

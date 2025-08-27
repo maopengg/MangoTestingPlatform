@@ -10,12 +10,13 @@ from src.consumer.api import API
 from src.consumer.perf import Perf
 from src.consumer.tools import Tools
 from src.consumer.ui import UI
+from src.consumer.pytest import Pytest
 from src.models.socket_model import QueueModel
 from src.settings import settings
 from src.tools.log_collector import log
 
 
-class SocketConsumer(UI, API, Perf, Tools):
+class SocketConsumer(UI, API, Perf, Tools, Pytest):
     queue = asyncio.Queue()
     parent = None
     running = True

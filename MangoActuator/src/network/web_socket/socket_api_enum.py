@@ -17,13 +17,20 @@ class UiSocketEnum(Enum):
     PAGE_STEPS = 'u_page_steps'  # 步骤详情
     TEST_CASE = 'u_test_case'  #
     TEST_CASE_BATCH = 'u_test_suite_details'  #
-    GET_TASK = 'u_get_task'  #
+
+
+class PytestSocketEnum(Enum):
+    """ UI自动化接口 """
+    GET_TASK = 'p_get_task'  #
+    TEST_CASE_BATCH = 'u_test_suite_details'  #
+    TEST_CASE = 'u_test_case'  #
 
 
 class ToolsSocketEnum(Enum):
     """ 工具类接口 """
     SET_OPERATION_OPTIONS = 't_set_operation_options'
     SET_USER_OPEN_STATUS_OPTIONS = 't_set_actuator_open_state'
+    GET_TASK = 't_get_task'  #
 
 
 class QueueEnum(Enum):

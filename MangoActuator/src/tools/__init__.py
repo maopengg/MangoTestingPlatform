@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Project: 芒果测试平台
-# @Description: # @Time   : 2023-03-05 20:39
+# @Description:
+# @Time   : 2023-03-05 20:39
 # @Author : 毛鹏
 
 import os
@@ -11,7 +12,7 @@ import sys
 class ProjectDir:
 
     def __init__(self):
-        self.folder_list = ['logs', 'cache', 'screenshot', 'upload', 'videos', 'download']
+        self.folder_list = ['logs', 'cache', 'screenshot', 'upload', 'videos', 'download', 'allure']
         self._root_path = self.init_project_path()
         self.init_folder()
 
@@ -50,6 +51,8 @@ class ProjectDir:
         return os.path.join(self.root_path(), 'cache')
 
     def logs(self, folder_name='logs'):
+        return os.path.join(self.root_path(), folder_name)
+    def allure(self, folder_name='allure'):
         return os.path.join(self.root_path(), folder_name)
 
     def screenshot(self, folder_name='screenshot'):

@@ -22,3 +22,7 @@ class UiSocketEnum(Enum):
 
 class ToolsSocketEnum(Enum):
     pass
+
+
+class PytestSocketEnum(Enum):
+    TEST_CASE = 'p_case'

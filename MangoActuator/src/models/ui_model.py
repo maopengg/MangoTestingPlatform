@@ -7,6 +7,8 @@ from mangoautomation.models import ElementModel, ElementResultModel
 from mangotools.models import MysqlConingModel
 from pydantic import BaseModel
 
+from src.enums.tools_enum import TestCaseTypeEnum
+
 
 class UiPublicModel(BaseModel):
     type: int
@@ -101,5 +103,3 @@ class UiCaseResultModel(BaseModel):
     steps: list[PageStepsResultModel] = []
 
 
-class GetTaskModel(BaseModel):
-    username: str

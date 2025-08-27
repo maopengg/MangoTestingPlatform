@@ -6,6 +6,7 @@
 from pydantic import BaseModel
 
 from src.enums.tools_enum import TestCaseTypeEnum
+from src.models.pytest_model import PytestCaseResultModel
 from src.models.ui_model import UiCaseResultModel
 
 
@@ -15,7 +16,7 @@ class TestSuiteDetailsResultModel(BaseModel):
     test_suite: int
     status: int
     error_message: str | None = None
-    result_data: UiCaseResultModel
+    result_data: UiCaseResultModel | list[dict] | PytestCaseResultModel
 
 
 class CmdTestModel(BaseModel):
@@ -41,3 +42,8 @@ class ConsumerCaseModel(BaseModel):
 class SetUserOpenSatusModel(BaseModel):
     username: str
     status: bool
+
+
+class GetTaskModel(BaseModel):
+    type: TestCaseTypeEnum
+    username: str

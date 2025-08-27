@@ -13,5 +13,6 @@ videos/
 download/
 tests/*.json
 report/
+allure/
 *.spec
 __pycache__/

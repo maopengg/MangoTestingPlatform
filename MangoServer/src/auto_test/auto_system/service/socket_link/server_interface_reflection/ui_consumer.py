@@ -5,11 +5,10 @@
 # @Author : 毛鹏
 
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
-from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 
 from src.models.system_model import TestSuiteDetailsResultModel
-from src.models.ui_model import PageStepsResultModel, UiCaseResultModel, GetTaskModel
+from src.models.ui_model import PageStepsResultModel, UiCaseResultModel
 from src.tools.decorator.retry import ensure_db_connection
 
 
@@ -29,9 +28,3 @@ class UIConsumer:
     @ensure_db_connection()
     def u_test_case(cls, data: dict):
         TestReportWriting.update_test_case(UiCaseResultModel(**data))
-
-    @classmethod
-    @ensure_db_connection()
-    def u_get_task(cls, data: dict):
-        data = GetTaskModel(**data)
-        UiCaseFlow.get_case(data)

@@ -9,10 +9,12 @@ from mangotools.enums import CacheValueTypeEnum
 
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
+from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
 from src.enums.system_enum import CacheDataKey2Enum, ClientTypeEnum
+from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.socket_model import SocketDataModel
+from src.models.system_model import GetTaskModel
 from src.tools.decorator.retry import ensure_db_connection
-from src.settings import VERSION
 
 class SystemConsumer:
 
@@ -49,3 +51,12 @@ class SystemConsumer:
             user=data.get("username"),
             is_notice=ClientTypeEnum.WEB,
         ))
+
+    @classmethod
+    @ensure_db_connection()
+    def t_get_task(cls, data: dict):
+        data = GetTaskModel(**data)
+        if data.type == TestCaseTypeEnum.UI:
+            UiCaseFlow.get_case(data)
+        elif data.type == TestCaseTypeEnum.PYTEST:
+            PyCaseFlow.get_case(data)
