@@ -14,9 +14,7 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       contains(github.event.head_commit.modified, 'MangoActuator/src/settings/') ||
       contains(github.event.head_commit.added, 'MangoActuator/src/settings/') ||
-      contains(github.event.head_commit.removed, 'MangoActuator/src/settings/') ||
-      contains(github.event.head_commit.modified, 'main.py') ||
-      contains(github.event.head_commit.modified, 'app_icon.ico')
+      contains(github.event.head_commit.removed, 'MangoActuator/src/settings/') 
 
     runs-on: windows-latest
     strategy:
