@@ -13,8 +13,7 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_user.models import User
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
-from src.models.system_model import ConsumerCaseModel
-from src.models.ui_model import GetTaskModel
+from src.models.system_model import ConsumerCaseModel, GetTaskModel
 from src.tools.log_collector import log
 
 

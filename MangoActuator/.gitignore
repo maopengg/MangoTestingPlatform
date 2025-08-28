@@ -12,7 +12,7 @@ upload/
 videos/
 download/
 tests/*.json
-report/
+mango_pytest/
 allure/
 *.spec
 __pycache__/

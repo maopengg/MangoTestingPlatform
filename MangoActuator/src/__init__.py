@@ -10,7 +10,8 @@ from src.services.ui.case_flow import CaseFlow
 from src.tools.set_config import SetConfig
 from .consumer import SocketConsumer
 from .enums.tools_enum import CacheKeyEnum
-from .network.web_socket import WebSocketClient
+from .network.web_socket import WebSocketClient, socket_conn
+from .services.pytest.case_flow import PytestCaseFlow
 from .tools import project_dir
 from .tools.log_collector import log
 
@@ -23,9 +24,11 @@ async def process(parent, is_login=False, retry=0):
         WebSocketClient.parent = parent
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
+        PytestCaseFlow.parent = parent
         websocket_task = asyncio.create_task(WebSocketClient.client_run())
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
+        case_flow_task = asyncio.create_task(PytestCaseFlow.process_tasks())
         if is_login:
             from src.network import HTTP
             from src.settings import settings
@@ -56,8 +59,10 @@ async def test_process(parent):
     try:
         SocketConsumer.parent = parent
         CaseFlow.parent = parent
+        PytestCaseFlow.parent = parent
         consumer_task = asyncio.create_task(SocketConsumer.process_tasks())
         case_flow_task = asyncio.create_task(CaseFlow.process_tasks())
+        case_flow_task = asyncio.create_task(PytestCaseFlow.process_tasks())
     except Exception as error:
         if consumer_task:
             consumer_task.cancel()

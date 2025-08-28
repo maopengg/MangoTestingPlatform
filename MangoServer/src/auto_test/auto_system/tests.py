@@ -3,7 +3,7 @@ import json
 
 from django.test import TestCase
 
-from src.auto_test.auto_system.service.socket_link.server_interface_reflection.ui_consumer import UIConsumer
+from src.auto_test.auto_system.service.socket_link.server_interface_reflection.ui import UIConsumer
 
 
 class YourTestClass(TestCase):

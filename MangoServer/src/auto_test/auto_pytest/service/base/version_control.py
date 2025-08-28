@@ -73,3 +73,12 @@ class GitRepo:
             self.repo.git.commit('-m', '芒果测试平台自动提交')
             push_result = self.repo.git.push('origin', 'master', '--force-with-lease')
             log.pytest.info(f'推送完成: {push_result}')
+
+    def get_repo_info(self):
+        """获取仓库基本信息"""
+        if not os.path.exists(self.local_warehouse_path):
+            return None
+
+        with self._repo_lock:
+            commit_hash = self.repo.head.commit.hexsha[:8]
+            return commit_hash

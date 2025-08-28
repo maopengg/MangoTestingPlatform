@@ -18,6 +18,8 @@ class PytestCaseModel(BaseModel):
     test_env: int
     case_people: str
     file_path: str
+    git_url: str
+    commit_hash: str
 
 
 class PytestCaseResultModel(BaseModel):

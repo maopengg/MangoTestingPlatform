@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl
 from channels.exceptions import StopConsumer
 from channels.generic.websocket import WebsocketConsumer
 
-from src.auto_test.auto_system.service.socket_link.server_interface_reflection import ServerInterfaceReflection
+from src.auto_test.auto_system.service.socket_link.consumer import ServerInterfaceReflection
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import SocketEnum, ClientTypeEnum, ClientNameEnum

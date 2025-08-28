@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import traceback
 import uuid
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from src.models.pytest_model import PytestCaseModel, PytestCaseResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.network import socket_conn
 from src.network.web_socket.socket_api_enum import PytestSocketEnum
+from src.services.pytest.git_manager import GitPullManager
 from src.tools import project_dir
 from src.tools.log_collector import log
 
@@ -37,12 +39,20 @@ class TestCase:
     async def __aenter__(self):
         return self
 
-    def test_case_main(self) -> list[dict]:
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        traceback.print_exc()
+        return self
+
+    async def test_case(self) -> list[dict]:
+        log.debug(f'开始执行pytest用例：{self.case_model.name}')
+        git = GitPullManager(self.case_model.git_url)
+        git.clone()
+        git.pull(self.case_model.commit_hash)
         allure_results_dir = os.path.join(project_dir.allure(), f'allure-results-{uuid.uuid4()}')
+        log.debug(f'生成的用例存储目录：{allure_results_dir}')
         os.makedirs(allure_results_dir, exist_ok=True)
         env = os.environ.copy()
         env[PytestSystemEnum.TEST_ENV.value] = f'{self.case_model.test_env}'
-
         pytest_cmd = [
             'pytest',
             self.case_model.file_path,
@@ -52,14 +62,14 @@ class TestCase:
         ]
         log.debug('启动命令：{}'.format(pytest_cmd))
         subprocess.run(pytest_cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        report_data = self.read_allure_json_results(allure_results_dir)
-        log.debug(f'{self.case_model.name}测试结果：{report_data}')
-        self.result_data(report_data)
-        self.send_case_result()
-        self.delete_allure_results(allure_results_dir)
+        report_data = await self.read_allure_json_results(allure_results_dir)
+        # log.debug(f'{self.case_model.name}测试结果：{report_data}')
+        await self.result_data(report_data)
+        await self.send_case_result()
+        await self.delete_allure_results(allure_results_dir)
         return report_data
 
-    def result_data(self, result_data: list[dict]):
+    async def result_data(self, result_data: list[dict]):
         status = TaskEnum.SUCCESS.value
         for i in result_data:
             if i.get('status') != AllureStatusEnum.SUCCESS.value:
@@ -70,10 +80,7 @@ class TestCase:
         self.case_result.status = status
         self.case_result.result_data = result_data
 
-    def read_allure_json_results(self, results_dir):
-        """
-        读取 Allure JSON 报告文件并返回数据
-        """
+    async def read_allure_json_results(self, results_dir):
         report_data = []
         for json_file in Path(results_dir).glob('*-result.json'):
             with open(json_file, 'r', encoding='utf-8') as f:
@@ -89,10 +96,7 @@ class TestCase:
         return report_data
 
     @classmethod
-    def delete_allure_results(cls, results_dir):
-        """
-        删除 Allure 结果目录
-        """
+    async def delete_allure_results(cls, results_dir):
         if os.path.exists(results_dir):
             shutil.rmtree(results_dir)
 

@@ -14,10 +14,9 @@ from src.models.system_model import GetTaskModel
 from src.services.pytest.test_case import TestCase
 from src.settings import settings
 from src.tools.log_collector import log
-from src.tools.set_config import SetConfig
 
 
-class CaseFlow:
+class PytestCaseFlow:
     queue = asyncio.Queue()
     max_tasks = 5
     running_tasks = 0
@@ -29,7 +28,7 @@ class CaseFlow:
         s = time.time()
         while cls.running:
             await asyncio.sleep(0.1)
-            if cls.running_tasks < SetConfig.get_web_parallel() and not cls.queue.empty():  # type: ignore
+            if cls.running_tasks < cls.max_tasks and not cls.queue.empty():  # type: ignore
                 case_model: PytestCaseModel = await cls.queue.get()
                 cls.running_tasks += 1
                 asyncio.create_task(cls.execute_task(case_model))
@@ -56,8 +55,8 @@ class CaseFlow:
     @classmethod
     async def execute_task(cls, case_model: PytestCaseModel):
         async with TestCase(cls.parent, case_model) as obj:
-            cls.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
-            await obj.case_main()
+            cls.parent.set_tips_info(f'开始执行Pytest测试用例：{case_model.name}')
+            await obj.test_case()
             cls.running_tasks -= 1
 
     @classmethod
