@@ -9,8 +9,6 @@ import traceback
 from dulwich import porcelain
 from dulwich.repo import Repo
 
-from src.tools import project_dir
-
 
 class GitPullManager:
 
@@ -55,34 +53,44 @@ class GitPullManager:
         return self.__clone_repository()
 
     def push(self, force=True, commit_message="芒果测试平台提交"):
-        """简化版推送方法，直接强制推送本地更改"""
+
         if not os.path.exists(self.local_dir):
-            self.log.debug("本地仓库不存在")
+            self.log.debug("本地仓库不存在，请先克隆或拉取")
             return False
 
-        # 切换到仓库目录
         original_dir = os.getcwd()
-        os.chdir(self.local_dir)
+        try:
+            os.chdir(self.local_dir)
+            repo = Repo('.')
 
-        # 初始化仓库对象
-        repo = Repo('.')
+            try:
+                porcelain.add(repo, paths=["."])
 
-        if self.__check_if_dirty(repo):
-            porcelain.add(repo, paths=["."])
-            porcelain.commit(
-                repo,
-                message=commit_message.encode('utf-8'),
-                committer=f"{self.username} <{self.username}@mango.test>".encode('utf-8')
-            )
-        porcelain.push(
-            repo,
-            remote_location=self.__get_auth_url(),
-            force=True  # 始终强制推送
-        )
+                porcelain.commit(
+                    repo,
+                    message=commit_message.encode('utf-8'),
+                    committer=f"{self.username} <{self.username}@mango.test>"
+                )
+                self.log.debug("成功提交本地更改")
+            except Exception as e:
+                self.log.error(f"提交失败: {e}")
+                return False
+            if force:
+                self.log.debug("开始强制推送（放弃远程更改）...")
+                try:
+                    porcelain.pull(repo, remote_location=self.__get_auth_url(), force=True)
+                except Exception as e:
+                    self.log.debug(f"强制拉取可能失败: {e}, 继续推送...")
+            try:
+                porcelain.push(repo, remote_location=self.__get_auth_url(), force=force)
+                self.log.debug("推送成功!")
+                return True
+            except Exception as e:
+                self.log.error(f"推送失败: {e}")
+                return False
 
-        os.chdir(original_dir)
-        return True
-
+        finally:
+            os.chdir(original_dir)
 
     def __is_current_repo(self):
         """检查目录是否已经是当前仓库的Git仓库"""
@@ -255,8 +263,10 @@ class GitPullManager:
         has_unstaged = len(status.unstaged) > 0
         return has_staged or has_unstaged
 
+
 if __name__ == "__main__":
     from src.tools.log_collector import log
+    from src.tools import project_dir
     REPO_URL = "https://gitee.com/mao-peng/MangoPytest.git"
 
     git_manager = GitPullManager(
@@ -269,7 +279,7 @@ if __name__ == "__main__":
 
     # 示例用法
     # 默认会强制接受远程更改
-    success = git_manager.clone(True)
+    success = git_manager.clone(False)
     print(success)
 
     # 可以显式指定不接受远程更改
