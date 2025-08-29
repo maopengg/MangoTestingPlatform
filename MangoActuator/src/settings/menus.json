@@ -39,7 +39,7 @@
         },
         {
           "btn_id": "public",
-          "btn_text": "公共参数",
+          "btn_text": "全局变量",
           "btn_tooltip": "测试用例",
           "show_top": true,
           "is_active": false
@@ -84,8 +84,8 @@
         },
         {
           "btn_id": "api_public",
-          "btn_text": "公共参数",
-          "btn_tooltip": "公共参数",
+          "btn_text": "全局变量",
+          "btn_tooltip": "全局变量",
           "show_top": true,
           "is_active": false
         }

@@ -3,6 +3,8 @@
 # @Description: 
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
+import os
+
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -10,15 +12,15 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestTools
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
-from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
-from src.enums.pytest_enum import  FileStatusEnum
+from src.enums.pytest_enum import FileStatusEnum
+from src.enums.system_enum import CacheDataKeyEnum
+from src.tools import project_dir
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
-from src.enums.system_enum import CacheDataKeyEnum
 
 
 class PytestToolsSerializers(serializers.ModelSerializer):
@@ -67,7 +69,8 @@ class PytestToolsViews(ViewSet):
     def pytest_update(self, request: Request):
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TOOLS), GitRepo().local_warehouse_path).find_test_files():
+        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TOOLS),
+                                  os.path.join(project_dir.root_path(), 'mango_pytest')).find_test_files():
             for file in project.auto_test:
                 _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(

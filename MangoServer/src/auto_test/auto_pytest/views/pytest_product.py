@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import os
 
+from mangotools.mangos import GitPullManager
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -12,11 +13,12 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestProduct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
-from src.auto_test.auto_pytest.service.base.version_control import GitRepo
-from src.auto_test.auto_system.models import ProductModule
+from src.auto_test.auto_system.models import ProductModule, CacheData
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
+from src.enums.system_enum import CacheDataKeyEnum
 from src.tools import project_dir
 from src.tools.decorator.error_response import error_response
+from src.tools.log_collector import log
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
@@ -62,9 +64,11 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        repo = GitRepo()
-        repo.pull_repo()
-        update_file = UpdateFile('', repo.local_warehouse_path).find_test_files(True)
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
+        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+        repo.clone()
+        repo.pull()
+        update_file = UpdateFile('').find_test_files(True)
         for project in update_file:
             projects = self.model.objects.filter(file_name=project.project_name)
             if not projects.exists():
@@ -78,8 +82,10 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_push(self, request: Request):
-        repo = GitRepo()
-        repo.push_repo()
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
+        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+        # repo.clone()
+        repo.push()
         return ResponseData.success(RESPONSE_MSG_0090)
 
     @action(methods=['get'], detail=False)

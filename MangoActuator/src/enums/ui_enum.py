@@ -80,7 +80,7 @@ class ElementOperationEnum(BaseEnum):
 
 
 class UiPublicTypeEnum(BaseEnum):
-    """公共参数类型"""
+    """全局变量类型"""
     CUSTOM = 0
     SQL = 1
 

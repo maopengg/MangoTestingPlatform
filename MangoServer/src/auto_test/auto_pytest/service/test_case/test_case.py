@@ -6,7 +6,6 @@
 import random
 
 from src.auto_test.auto_pytest.models import PytestCase
-from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
@@ -16,6 +15,8 @@ from src.enums.tools_enum import TaskEnum
 from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0015
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
+from src.tools import project_dir
+from src.tools.log_collector import log
 
 
 class TestCase:
@@ -32,6 +33,7 @@ class TestCase:
         obj: PytestCase = PytestCase.objects.get(id=case_id)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
+        repo = GitPullManager(self.repo_url.value, project_dir.root_path(), log.pytest)
         send_data = PytestCaseModel(
             send_user=self.user_id,
             test_suite_details=self.test_suite_details,
@@ -45,7 +47,7 @@ class TestCase:
             case_people=obj.case_people.name,
             file_path=obj.file_path,
             git_url=self.repo_url,
-            commit_hash=GitRepo().get_repo_info()
+            commit_hash=repo.get_repo_info()['commit_hash']
         )
         self.__socket_send(send_data)
         return send_data.model_dump()

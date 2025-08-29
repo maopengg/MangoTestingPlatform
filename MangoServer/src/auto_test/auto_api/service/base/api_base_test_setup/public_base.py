@@ -22,7 +22,7 @@ mimetypes.init()
 
 
 class PublicBase(BaseRequest):
-    """公共参数设置"""
+    """全局变量设置"""
 
     def __init__(self):
         self.test_data = ObtainTestData()
@@ -73,7 +73,7 @@ class PublicBase(BaseRequest):
             status=StatusEnum.SUCCESS.value,
             project_product=project_product_id) \
             .order_by('type')
-        log.api.debug(f'开始初始化公共参数！')
+        log.api.debug(f'开始初始化全局变量！')
         for i in api_public:
             if i.type == ApiPublicTypeEnum.SQL.value:
                 self.__sql(i)
@@ -83,14 +83,14 @@ class PublicBase(BaseRequest):
                 self.__custom(i)
 
     def __custom(self, api_public_obj: ApiPublic):
-        log.api.debug(f'公共参数-1->key：{api_public_obj.key}，value：{api_public_obj.value}')
+        log.api.debug(f'全局变量-1->key：{api_public_obj.key}，value：{api_public_obj.value}')
         self.test_data.set_cache(api_public_obj.key, api_public_obj.value)
 
     def __sql(self, api_public_obj: ApiPublic):
         if self.mysql_connect:
             sql = self.test_data.replace(api_public_obj.value)
             result_list: list[dict] = self.mysql_connect.condition_execute(sql)
-            log.api.debug(f'公共参数-2->key：{api_public_obj.key}，value:{sql}，查询结果：{result_list}')
+            log.api.debug(f'全局变量-2->key：{api_public_obj.key}，value:{sql}，查询结果：{result_list}')
             if isinstance(result_list, list) and len(result_list) > 0:
                 self.test_data.set_sql_cache(api_public_obj.key, result_list[0])
                 if not result_list:

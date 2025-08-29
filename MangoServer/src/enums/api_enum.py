@@ -34,7 +34,7 @@ class MethodEnum(BaseEnum):
 
 
 class ApiPublicTypeEnum(BaseEnum):
-    """公共参数类型"""
+    """全局变量类型"""
     CUSTOM = 0
     SQL = 1
     LOGIN = 2

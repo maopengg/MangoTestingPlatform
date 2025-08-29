@@ -47,7 +47,7 @@ def ad_routes():
                 {
                     "parentPath": "/uitest",
                     "menuUrl": "/uitest/public/index",
-                    "menuName": "公共参数",
+                    "menuName": "全局变量",
                     "cacheable": True,
                 },
                 # {
@@ -81,7 +81,7 @@ def ad_routes():
                 {
                     "parentPath": "/apitest",
                     "menuUrl": "/apitest/public/index",
-                    "menuName": "公共参数",
+                    "menuName": "全局变量",
                 },
             ],
         },

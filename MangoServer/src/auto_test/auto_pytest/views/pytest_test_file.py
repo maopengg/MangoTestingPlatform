@@ -12,7 +12,6 @@ from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_pytest.models import PytestTestFile
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
-from src.auto_test.auto_pytest.service.base.version_control import GitRepo
 from src.auto_test.auto_pytest.views.pytest_product import PytestProductSerializersC
 from src.auto_test.auto_system.views.product_module import ProductModuleSerializers
 from src.enums.system_enum import CacheDataKeyEnum
@@ -67,8 +66,7 @@ class PytestTestFileViews(ViewSet):
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
         for project in UpdateFile(
-                CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_UPLOAD),
-                GitRepo().local_warehouse_path).find_test_files():
+                CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_UPLOAD)).find_test_files():
             for file in project.auto_test:
                 _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(

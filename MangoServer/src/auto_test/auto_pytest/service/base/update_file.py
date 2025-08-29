@@ -9,14 +9,15 @@ from datetime import datetime
 from git import Repo
 
 from src.models.pytest_model import FileModel, UpdateFileModel
+from src.tools import project_dir
 
 
 class UpdateFile:
 
-    def __init__(self, file_type: str, local_warehouse_path: str):
+    def __init__(self, file_type: str):
         self.file_type: str = file_type
 
-        self.local_warehouse_path = local_warehouse_path
+        self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
         self.repo = Repo(self.local_warehouse_path)
 
     def get_git_update_time(self, file_path):

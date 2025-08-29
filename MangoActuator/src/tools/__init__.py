@@ -52,6 +52,7 @@ class ProjectDir:
 
     def logs(self, folder_name='logs'):
         return os.path.join(self.root_path(), folder_name)
+
     def allure(self, folder_name='allure'):
         return os.path.join(self.root_path(), folder_name)
 

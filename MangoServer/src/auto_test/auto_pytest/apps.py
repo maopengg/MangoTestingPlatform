@@ -6,6 +6,8 @@ from django.apps import AppConfig
 
 from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
 from src.enums.system_enum import CacheDataKeyEnum
+from src.tools import project_dir
+from src.tools.log_collector import log
 
 
 class AutoPytestConfig(AppConfig):
@@ -29,13 +31,13 @@ class AutoPytestConfig(AppConfig):
         self.pytest_task.start()
 
     def pull_code(self):
-        from src.auto_test.auto_pytest.service.base.version_control import GitRepo
+        from mangotools.mangos import GitPullManager
         from src.auto_test.auto_system.models import CacheData
         try:
             repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
             if repo_url and repo_url.value:
-                repo = GitRepo()
-                repo.pull_repo()
+                repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+                repo.clone()
         except Exception:
             pass
 
