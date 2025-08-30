@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import traceback
 
-from mangotools.mangos import GitPullManager, pytest_test_case
+from mangotools.mangos import GitRepoOperator, pytest_test_case
 
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.pytest_enum import PytestSystemEnum, AllureStatusEnum
@@ -40,7 +40,7 @@ class TestCase:
 
     async def test_case(self) -> list[dict]:
         log.debug(f'开始执行pytest用例：{self.case_model.name}')
-        git = GitPullManager(self.case_model.git_url, project_dir.root_path(), log)
+        git = GitRepoOperator(self.case_model.git_url, project_dir.root_path(), log)
         git.clone()
         git.pull(self.case_model.commit_hash)
         report_data = pytest_test_case(

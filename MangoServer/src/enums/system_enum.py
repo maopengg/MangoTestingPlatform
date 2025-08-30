@@ -49,7 +49,9 @@ class CacheDataKeyEnum(BaseEnum):
     SYSTEM_EMAIL_HOST = '邮箱域名'
     SYSTEM_STAMP_KET = '邮箱的stamp_key'
     API_TIMEOUT = 'API请求超时时间'
-    PYTEST_GIT_URL = 'git的请求url示例>https://{username}:{password}@gitee.com/mao-peng/MangoPytest.git'
+    PYTEST_GIT_URL = 'git的请求url示例>https://gitee.com/mao-peng/MangoPytest'
+    PYTEST_GIT_USERNAME = 'git账号'
+    PYTEST_GIT_PASSWORD = 'git密码'
     PYTEST_ACT = '中间对象（PO模式的pageobject）目录名称'
     PYTEST_TESTCASE = '测试用例目录名称'
     PYTEST_TOOLS = '脚本目录名称'
@@ -64,6 +66,8 @@ class CacheDataKeyEnum(BaseEnum):
             'SYSTEM_STAMP_KET': None,
             'API_TIMEOUT': 15,
             'PYTEST_GIT_URL': None,
+            'PYTEST_GIT_USERNAME': None,
+            'PYTEST_GIT_PASSWORD': None,
             'PYTEST_ACT': 'abstract',
             'PYTEST_TESTCASE': 'test_case',
             'PYTEST_TOOLS': 'scripts',

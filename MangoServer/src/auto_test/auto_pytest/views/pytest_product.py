@@ -5,7 +5,7 @@
 # @Author : 毛鹏
 import os
 
-from mangotools.mangos import GitPullManager
+from mangotools.mangos import GitRepoOperator
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -64,8 +64,12 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
-        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
+        username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
+        password =CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
+        if repo_url is None or repo_url == "" or username is None or username == "" or password is None or password == "":
+            return ResponseData.success(RESPONSE_MSG_0091)
+        repo = GitRepoOperator(repo_url, project_dir.root_path(), log.pytest, username, password)
         repo.clone()
         repo.pull()
         update_file = UpdateFile('').find_test_files(True)
@@ -82,8 +86,12 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_push(self, request: Request):
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
-        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
+        username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
+        password =CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
+        if repo_url is None or repo_url == "" or username is None or username == "" or password is None or password == "":
+            return ResponseData.success(RESPONSE_MSG_0091)
+        repo = GitRepoOperator(repo_url, project_dir.root_path(), log.pytest, username, password)
         # repo.clone()
         repo.push()
         return ResponseData.success(RESPONSE_MSG_0090)

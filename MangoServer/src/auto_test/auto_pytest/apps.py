@@ -31,12 +31,14 @@ class AutoPytestConfig(AppConfig):
         self.pytest_task.start()
 
     def pull_code(self):
-        from mangotools.mangos import GitPullManager
+        from mangotools.mangos import GitRepoOperator
         from src.auto_test.auto_system.models import CacheData
         try:
-            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
-            if repo_url and repo_url.value:
-                repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
+            username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
+            password = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
+            if repo_url is not None and username is None and  password is not None :
+                repo = GitRepoOperator(repo_url, project_dir.root_path(), log.pytest,username, password)
                 repo.clone()
         except Exception:
             pass
