@@ -1,4 +1,3 @@
-import atexit
 import time
 from threading import Thread
 
@@ -22,7 +21,7 @@ class AutoPytestConfig(AppConfig):
 
         task = Thread(target=run)
         task.start()
-        atexit.register(self.shutdown)
+        # atexit.register(self.shutdown)
 
     # def test_case_consumption(self):
     #     self.case_flow = PytestCaseFlow()
