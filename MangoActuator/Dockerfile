@@ -2,9 +2,9 @@ ARG EXECUTOR_TYPE
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
 
 #=================================================
-# 1) pytest —— 独立 alpine 镜像
+# 1) pytest —— python:3.10-slim-bullseye
 #=================================================
-FROM mcr.microsoft.com/playwright/python:v1.43.0 AS pytest
+FROM python:3.10-slim-bullseye AS pytest
 WORKDIR /app
 # 换国内源
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
