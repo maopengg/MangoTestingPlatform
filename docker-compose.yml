@@ -4,7 +4,6 @@ services:
   db:
     image: mysql:8.0.40-debian
     restart: unless-stopped
-    profiles: [ "on" ]
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -28,7 +27,6 @@ services:
   minio:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z.fips
     restart: unless-stopped
-    profiles: [ "on" ]
     ports:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
@@ -55,6 +53,7 @@ services:
       dockerfile: Dockerfile
       args:
         DJANGO_ENV: ${DJANGO_ENV}
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
@@ -78,6 +77,7 @@ services:
       dockerfile: Dockerfile
       args:
         VUE_ENV: ${VUE_ENV}
+    restart: unless-stopped
     ports:
       - "8001:80"
     volumes:
@@ -92,7 +92,6 @@ services:
       args:
         EXECUTOR_TYPE: ${EXECUTOR_TYPE}
     restart: unless-stopped
-    profiles: [ "on" ]
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
