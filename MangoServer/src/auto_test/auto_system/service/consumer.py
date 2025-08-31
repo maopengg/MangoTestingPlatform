@@ -3,14 +3,14 @@
 # @Description: 
 # @Time   : 2024-11-23 22:49
 # @Author : 毛鹏
+import time
 import traceback
 from datetime import timedelta
 
-import time
 from django.utils import timezone
 
 from src.auto_test.auto_api.service.test_case.case_flow import ApiCaseFlow
-from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
+# from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
 from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite, Tasks
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
@@ -38,7 +38,7 @@ class ConsumerThread:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
                 retry__lt=self.retry_frequency + 1,
-                type__in=[TestCaseTypeEnum.API.value, TestCaseTypeEnum.PYTEST.value]
+                type__in=[TestCaseTypeEnum.API.value, ]
             ).first()
 
             if test_suite_details:
@@ -75,7 +75,8 @@ class ConsumerThread:
             elif test_suite_details.type == TestCaseTypeEnum.API.value:
                 ApiCaseFlow.add_task(case_model)
             else:
-                PytestCaseFlow.add_task(case_model)
+                pass
+                # PytestCaseFlow.add_task(case_model)
             log.system.info(
                 f'推送{TestCaseTypeEnum.get_value(test_suite_details.type)}任务成功，test_suite_details":{test_suite_details.id}')
         except MangoServerError as error:
