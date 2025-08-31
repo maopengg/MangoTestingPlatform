@@ -10,7 +10,6 @@ from queue import Queue
 
 from django.utils import timezone
 
-from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.exceptions import MangoServerError
 from src.models.system_model import ConsumerCaseModel
@@ -56,6 +55,7 @@ class PyCaseFlow:
 
     @classmethod
     def get_case(cls, data):
+        from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
         with cls._get_case_lock:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
