@@ -1,5 +1,3 @@
-ARG EXECUTOR_TYPE
-
 #=================================================
 # 1) pytest —— 独立 alpine 镜像
 #=================================================
@@ -45,6 +43,7 @@ COPY . .
 #=================================================
 # 5) 最终阶段：只选对应阶段
 #=================================================
+ARG EXECUTOR_TYPE
 FROM ${EXECUTOR_TYPE} AS final
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
