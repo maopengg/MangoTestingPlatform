@@ -4,8 +4,7 @@ services:
   db:
     image: mysql:8.0.40-debian
     restart: unless-stopped
-    profiles:
-      - ${ENABLE_MYSQL:-true}
+    profiles: [ "on" ]
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -29,8 +28,7 @@ services:
   minio:
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z.fips
     restart: unless-stopped
-    profiles:
-      - ${ENABLE_MINIO:-true}
+    profiles: [ "on" ]
     ports:
       - "${MINIO_API_PORT}:9000"
       - "${MINIO_CONSOLE_PORT}:9001"
@@ -94,8 +92,7 @@ services:
       args:
         EXECUTOR_TYPE: ${EXECUTOR_TYPE}
     restart: unless-stopped
-    profiles:
-      - ${ENABLE_ACTUATOR:-true}
+    profiles: [ "on" ]
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
