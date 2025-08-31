@@ -8,7 +8,7 @@ WORKDIR /app
 # 换国内源
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
 # pytest 只装 pytest 相关依赖
-COPY linux_requirements.txt pytest_requirements.txt ./
+COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r pytest_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
