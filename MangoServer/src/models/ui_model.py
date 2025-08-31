@@ -3,10 +3,61 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
+from typing import Any
+
 from pydantic import BaseModel
 
-from mangoautomation.models import ElementModel, ElementResultModel
 from mangotools.models import MysqlConingModel
+
+
+class MethodModel(BaseModel):
+    f: str
+    p: str | None = None
+    d: bool = False
+    v: Any = None
+
+
+class ElementModel(BaseModel):
+    id: int
+    type: int
+    name: str | None
+    loc: str | None
+    exp: int | None
+    sleep: int | None
+    sub: int | None
+    is_iframe: int | None
+    ope_key: str | None
+    ope_value: list[MethodModel] | None
+    key_list: list | None = None
+    sql: str | None = None
+    key: str | None = None
+    value: str | None = None
+
+
+class ElementResultModel(BaseModel):
+    id: int
+    name: str | None = None
+    loc: str | None = None
+    exp: int | None = None
+    sleep: int | None = None
+    sub: int | None = None
+
+    type: int
+    ope_key: str | None = None
+    ope_value: dict = {}
+    ass_msg: str | None = None
+    sql: str | None = None
+    key_list: str | None = None
+    key: str | None = None
+    value: str | None = None
+
+    ele_quantity: int = 0
+    element_text: str | None = None
+
+    status: int = 0
+    error_message: str | None = None
+    picture_path: str | None = None
+    picture_name: str | None = None
 
 
 class UiPublicModel(BaseModel):
@@ -99,5 +150,3 @@ class UiCaseResultModel(BaseModel):
     error_message: str | None = None
     video_path: str | None = None
     steps: list[PageStepsResultModel]
-
-
