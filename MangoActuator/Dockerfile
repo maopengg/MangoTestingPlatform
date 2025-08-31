@@ -3,7 +3,7 @@ ARG EXECUTOR_TYPE
 #=================================================
 # 1) pytest —— 独立 alpine 镜像
 #=================================================
-FROM python:3.10.16-alpine AS pytest
+FROM mcr.microsoft.com/playwright/python:v1.43.0 AS pytest
 WORKDIR /app
 # 换国内源
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
