@@ -47,8 +47,26 @@ COPY . .
 #=================================================
 # 5) 最终阶段：只选对应阶段
 #=================================================
-ARG EXECUTOR_TYPE
-ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
-RUN echo "构建执行器：$EXECUTOR_TYPE"
-FROM ${EXECUTOR_TYPE} AS final
+FROM python:3.10-slim-bullseye AS final
+WORKDIR /app
+
+# 根据 EXECUTOR_TYPE 选择对应的构建阶段
+RUN if [ "$EXECUTOR_TYPE" = "pytest" ]; then \
+        echo "选择 pytest 阶段"; \
+        COPY --from=pytest . .; \
+    elif [ "$EXECUTOR_TYPE" = "pytest_web" ]; then \
+        echo "选择 pytest_web 阶段"; \
+        COPY --from=pytest_web . .; \
+    elif [ "$EXECUTOR_TYPE" = "web_ui" ]; then \
+        echo "选择 web_ui 阶段"; \
+        COPY --from=web_ui . .; \
+    elif [ "$EXECUTOR_TYPE" = "android_ui" ]; then \
+        echo "选择 android_ui 阶段"; \
+        COPY --from=android_ui . .; \
+    else \
+        echo "未指定有效的 EXECUTOR_TYPE，使用默认的 pytest_web 阶段"; \
+        COPY --from=pytest_web . .; \
+    fi
+
+# 设置默认的 CMD
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
