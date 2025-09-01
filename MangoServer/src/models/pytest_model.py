@@ -35,6 +35,8 @@ class PytestCaseModel(BaseModel):
     file_path: str
     git_url: str
     commit_hash: str
+    git_username: str
+    git_password: str
 
 
 class PytestCaseResultModel(BaseModel):

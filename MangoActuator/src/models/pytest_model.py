@@ -20,6 +20,8 @@ class PytestCaseModel(BaseModel):
     file_path: str
     git_url: str
     commit_hash: str
+    git_username: str
+    git_password: str
 
 
 class PytestCaseResultModel(BaseModel):
@@ -27,5 +29,3 @@ class PytestCaseResultModel(BaseModel):
     name: str
     status: int
     result_data: dict | list | None = None
-
-

@@ -40,7 +40,13 @@ class TestCase:
 
     async def test_case(self) -> list[dict]:
         log.debug(f'开始执行pytest用例：{self.case_model.name}')
-        git = GitRepoOperator(self.case_model.git_url, project_dir.root_path(), log)
+        git = GitRepoOperator(
+            self.case_model.git_url,
+            project_dir.root_path(),
+            log,
+            self.case_model.git_username,
+            self.case_model.git_password
+        )
         git.clone()
         git.pull(self.case_model.commit_hash)
         report_data = pytest_test_case(
