@@ -49,11 +49,11 @@ COPY . .
 ARG EXECUTOR_TYPE_ENV
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE_ENV}
 
-FROM ${EXECUTOR_TYPE:-pytest_web} AS final
+FROM ${EXECUTOR_TYPE} AS final
 WORKDIR /app
 
 # 复制对应阶段的内容
-COPY --from=${EXECUTOR_TYPE:-pytest_web} /app /app
+COPY --from=${EXECUTOR_TYPE} /app /app
 
 RUN echo "构建执行器：$EXECUTOR_TYPE"
 
