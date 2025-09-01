@@ -39,7 +39,7 @@ class TestCase:
         return self
 
     async def test_case(self) -> list[dict]:
-        log.debug(f'开始执行pytest用例：{self.case_model.name}')
+        log.debug(f'开始执行pytest用例：{self.case_model.name}，仓库目录：{project_dir.root_path()}')
         git = GitRepoOperator(
             self.case_model.git_url,
             project_dir.root_path(),
