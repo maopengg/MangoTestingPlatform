@@ -47,5 +47,7 @@ COPY . .
 # 5) 最终阶段：只选对应阶段
 #=================================================
 ARG EXECUTOR_TYPE
+ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
+RUN echo "构建：$EXECUTOR_TYPE"
 FROM ${EXECUTOR_TYPE} AS final
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
