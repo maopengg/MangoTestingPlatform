@@ -5,21 +5,17 @@
 # @Author : 毛鹏
 import random
 
-from mangotools.mangos import GitRepoOperator
-
 from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_pytest.service.base import git_obj
 from src.auto_test.auto_system.consumers import ChatConsumer
-from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.enums.socket_api_enum import PytestSocketEnum
-from src.enums.system_enum import ClientNameEnum, ClientTypeEnum, CacheDataKeyEnum
+from src.enums.system_enum import ClientNameEnum, ClientTypeEnum
 from src.enums.tools_enum import TaskEnum
-from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0015, ERROR_MSG_0020
+from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0020
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
-from src.tools import project_dir
-from src.tools.log_collector import log
-from src.auto_test.auto_pytest.service.base import git_obj
+
 
 class TestCase:
 
