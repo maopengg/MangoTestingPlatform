@@ -1,5 +1,6 @@
 ARG EXECUTOR_TYPE
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
+RUN echo "构建执行器：$EXECUTOR_TYPE"
 
 #=================================================
 # 1) pytest —— python:3.10-slim-bullseye
@@ -48,6 +49,6 @@ COPY . .
 #=================================================
 ARG EXECUTOR_TYPE
 ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
-RUN echo "构建：$EXECUTOR_TYPE"
+RUN echo "构建执行器：$EXECUTOR_TYPE"
 FROM ${EXECUTOR_TYPE} AS final
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
