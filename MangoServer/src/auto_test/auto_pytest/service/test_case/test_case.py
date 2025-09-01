@@ -45,7 +45,7 @@ class TestCase:
             test_env=test_env,
             case_people=obj.case_people.name,
             file_path=obj.file_path,
-            git_url=self.repo_url,
+            git_url=repo.repo_url,
             commit_hash=commit_hash
         )
         self.__socket_send(send_data)
