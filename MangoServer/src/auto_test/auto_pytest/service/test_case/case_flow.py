@@ -60,7 +60,7 @@ class PyCaseFlow:
             test_suite_details = TestSuiteDetails.objects.filter(
                 status=TaskEnum.STAY_BEGIN.value,
                 retry__lt=cls.retry_frequency + 1,
-                type=TestCaseTypeEnum.UI.value
+                type=TestCaseTypeEnum.PYTEST.value
             ).first()
             try:
                 if test_suite_details:
