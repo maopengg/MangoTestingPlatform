@@ -51,6 +51,8 @@ pyinstaller `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\app-uiautomator.apk;uiautomator2/assets" `
 --hidden-import "mango" `
 --hidden-import "uiautomator2" `
+--hidden-import "dulwich" `
+--hidden-import "dulwich.porcelain" `
 --clean `
 --noconfirm `
 --hidden-import "email.mime.text" `
