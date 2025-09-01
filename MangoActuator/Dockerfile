@@ -1,21 +1,16 @@
-# 定义构建参数
-ARG EXECUTOR_TYPE_ENV
+# 定义构建参数，设置默认值
+ARG EXECUTOR_TYPE=pytest_web
 
 #=================================================
-# 1) pytest —— python:3.10-slim-bullseye
+# 各个阶段定义（保持不变）
 #=================================================
 FROM python:3.10-slim-bullseye AS pytest
 WORKDIR /app
-# 换国内源
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-# pytest 只装 pytest 相关依赖
 COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r pytest_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
-#=================================================
-# 2) pytest_web —— playwright + pytest
-#=================================================
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS pytest_web
 WORKDIR /app
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
@@ -23,9 +18,6 @@ COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt -r pytest_requirements.txt
 COPY . .
 
-#=================================================
-# 3) web_ui —— playwright 基础镜像 + 仅 web 依赖
-#=================================================
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS web_ui
 WORKDIR /app
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
@@ -33,9 +25,6 @@ COPY linux_requirements.txt dynamic_requirements.txt ./
 RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
-#=================================================
-# 4) android_ui —— playwright 基础镜像 + 安卓依赖
-#=================================================
 FROM mcr.microsoft.com/playwright/python:v1.43.0 AS android_ui
 WORKDIR /app
 RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
@@ -44,18 +33,15 @@ RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements
 COPY . .
 
 #=================================================
-# 5) 最终阶段：根据参数选择对应阶段
+# 最终阶段：使用构建参数选择阶段
 #=================================================
-ARG EXECUTOR_TYPE_ENV
-ENV EXECUTOR_TYPE=${EXECUTOR_TYPE_ENV}
-
 FROM ${EXECUTOR_TYPE} AS final
 WORKDIR /app
 
-# 复制对应阶段的内容
-COPY --from=${EXECUTOR_TYPE} /app /app
+# 传递构建参数到环境变量
+ARG EXECUTOR_TYPE
+ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
 
 RUN echo "构建执行器：$EXECUTOR_TYPE"
 
-# 设置默认的 CMD
 CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
