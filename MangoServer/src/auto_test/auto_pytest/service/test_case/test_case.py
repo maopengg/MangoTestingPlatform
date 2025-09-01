@@ -6,6 +6,7 @@
 import random
 
 from mangotools.mangos import GitRepoOperator
+
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import CacheData
@@ -13,12 +14,12 @@ from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.enums.socket_api_enum import PytestSocketEnum
 from src.enums.system_enum import ClientNameEnum, ClientTypeEnum, CacheDataKeyEnum
 from src.enums.tools_enum import TaskEnum
-from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0015
+from src.exceptions import MangoServerError, PytestError, ERROR_MSG_0015, ERROR_MSG_0020
 from src.models.pytest_model import PytestCaseModel
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.tools import project_dir
 from src.tools.log_collector import log
-
+from src.auto_test.auto_pytest.service.base import git_obj
 
 class TestCase:
 
@@ -26,15 +27,16 @@ class TestCase:
         self.user_id = user_id
         self.test_suite = test_suite
         self.test_suite_details = test_suite_details
-        self.repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
-        if not self.repo_url:
-            raise PytestError(*ERROR_MSG_0015)
 
     def test_case(self, case_id, test_env: int) -> dict:
         obj: PytestCase = PytestCase.objects.get(id=case_id)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
-        repo = GitRepoOperator(self.repo_url, project_dir.root_path(), log.pytest)
+        repo = git_obj()
+        repo.clone()
+        commit_hash = repo.get_repo_info().get('commit_hash')
+        if commit_hash is None:
+            raise PytestError(*ERROR_MSG_0020)
         send_data = PytestCaseModel(
             send_user=self.user_id,
             test_suite_details=self.test_suite_details,
@@ -48,7 +50,7 @@ class TestCase:
             case_people=obj.case_people.name,
             file_path=obj.file_path,
             git_url=self.repo_url,
-            commit_hash=repo.get_repo_info()['commit_hash']
+            commit_hash=commit_hash
         )
         self.__socket_send(send_data)
         return send_data.model_dump()
