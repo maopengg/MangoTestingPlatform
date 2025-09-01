@@ -1,11 +1,9 @@
-import time
 from threading import Thread
 
+import time
 from django.apps import AppConfig
 
 # from src.auto_test.auto_pytest.service.test_case.case_flow import PytestCaseFlow
-from src.enums.system_enum import CacheDataKeyEnum
-from src.tools import project_dir
 from src.tools.log_collector import log
 
 
@@ -30,17 +28,13 @@ class AutoPytestConfig(AppConfig):
     #     self.pytest_task.start()
 
     def pull_code(self):
-        from mangotools.mangos import GitRepoOperator
-        from src.auto_test.auto_system.models import CacheData
+        from src.auto_test.auto_pytest.service.base import git_obj
         try:
-            repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
-            username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
-            password = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
-            if repo_url is not None and username is None and password is not None:
-                repo = GitRepoOperator(repo_url, project_dir.root_path(), log.pytest, username, password)
-                repo.clone()
+            repo = git_obj()
+            repo.clone()
         except Exception:
-            pass
+            import traceback
+            log.pytest.error(f'{traceback.format_exc()}')
 
     # def shutdown(self):
     #     self.case_flow.stop()
