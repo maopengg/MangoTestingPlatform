@@ -21,7 +21,6 @@ class UiSocketEnum(Enum):
 
 class PytestSocketEnum(Enum):
     """ Pytest自动化接口 """
-    GET_TASK = 'p_get_task'  #
     TEST_CASE_BATCH = 'p_test_suite_details'  #
     TEST_CASE = 'p_test_case'  #
 
