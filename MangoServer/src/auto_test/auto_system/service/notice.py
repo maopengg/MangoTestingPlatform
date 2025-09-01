@@ -184,13 +184,14 @@ class NoticeMain:
             return None, None, None, None, None
 
         for i in case_result:
-            for r in i.result_data:
-                pytest_case_sum += 1
-                pytest_func_call += 1
-                if r.get('status') == StatusEnum.SUCCESS.value:
-                    success += 1
-                else:
-                    fail += 1
+            if i.result_data:
+                for r in i.result_data:
+                    pytest_case_sum += 1
+                    pytest_func_call += 1
+                    if r.get('status') == StatusEnum.SUCCESS.value:
+                        success += 1
+                    else:
+                        fail += 1
         return pytest_case_sum, pytest_func_call, success, fail, warning
 
     @staticmethod

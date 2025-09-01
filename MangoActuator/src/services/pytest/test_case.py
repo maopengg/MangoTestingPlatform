@@ -71,10 +71,9 @@ class TestCase:
             func_name = PytestSocketEnum.TEST_CASE_BATCH.value
             func_args = TestSuiteDetailsResultModel(
                 id=self.case_model.test_suite_details,
-                type=TestCaseTypeEnum.UI,
+                type=TestCaseTypeEnum.PYTEST,
                 test_suite=self.case_model.test_suite_id,
                 status=self.case_result.status,
-                error_message=self.case_result.error_message,
                 result_data=self.case_result,
             )
         else:
