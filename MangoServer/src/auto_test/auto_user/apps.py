@@ -64,5 +64,4 @@ class AutoUserConfig(AppConfig):
         text = requests.get('https://gitee.com/mao-peng/version').text
         match = re.search(r'(\d+\.\d+\.\d+)', text)
         if not (match and match.group(1) == VERSION):
-            print('当前版本与最新不一致，请执行git pull 升级到最新版本！')
-            os._exit(1)
+            raise Exception('当前版本与最新不一致，请执行git pull 升级到最新版本！')
