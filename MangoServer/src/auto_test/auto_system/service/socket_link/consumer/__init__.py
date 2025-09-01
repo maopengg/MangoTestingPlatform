@@ -32,7 +32,6 @@ class ServerInterfaceReflection(APIConsumer, SystemConsumer, UIConsumer, PerfCon
             data = kwargs.get('data')
             if isinstance(data, QueueModel):
                 log.system.debug(f"消费者开始处理接收的消息：{data.model_dump_json()}")
-                data.func_name ='t_get_task'  if data.func_name == 'u_get_task' else data.func_name
                 future = self.executor.submit(getattr(self, data.func_name), data.func_args)
                 future.add_done_callback(self.handle_task_result)
             else:
