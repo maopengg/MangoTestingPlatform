@@ -95,7 +95,6 @@ class WebSocketClient:
                     cls.parent.set_tips_info(
                         f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
                     await asyncio.sleep(5)
-                    await cls.client_run()
 
     @classmethod
     async def client_recv(cls):
