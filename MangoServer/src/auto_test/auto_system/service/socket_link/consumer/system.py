@@ -6,7 +6,7 @@
 import json
 
 from mangotools.enums import CacheValueTypeEnum
-
+from src.auto_test.auto_pytest.service.test_case.case_flow import PyCaseFlow
 from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.views.cache_data import CacheDataCRUD
 from src.auto_test.auto_ui.service.test_case.case_flow import UiCaseFlow
@@ -15,6 +15,7 @@ from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.socket_model import SocketDataModel
 from src.models.system_model import GetTaskModel
 from src.tools.decorator.retry import ensure_db_connection
+
 
 class SystemConsumer:
 

@@ -6,10 +6,8 @@
 import os
 from datetime import datetime
 
-from git import Repo
-
+from src.auto_test.auto_pytest.service.base import git_obj
 from src.models.pytest_model import FileModel, UpdateFileModel
-from src.tools import project_dir
 
 
 class UpdateFile:
@@ -17,8 +15,8 @@ class UpdateFile:
     def __init__(self, file_type: str):
         self.file_type: str = file_type
 
-        self.local_warehouse_path = os.path.join(project_dir.root_path(), 'mango_pytest')
-        self.repo = Repo(self.local_warehouse_path)
+        self.repo = git_obj()
+        self.repo.clone()
 
     def get_git_update_time(self, file_path):
         commits = list(self.repo.iter_commits(paths=file_path, max_count=1))
@@ -39,21 +37,21 @@ class UpdateFile:
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
                                 time=self.get_git_update_time(abs_path)
                             ))
                         if components and file != "__init__.py":
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
                                 time=self.get_git_update_time(abs_path)
                             ))
                         if test_case and (file.startswith('test') or file.endswith('test')):
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.local_warehouse_path)),
+                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
                                 time=self.get_git_update_time(abs_path)
                             ))
 
@@ -65,7 +63,7 @@ class UpdateFile:
             return self.list_files(subdir_path, components=True)
 
     def find_test_files(self, is_project=False, auto_test_dir='auto_test') -> list[UpdateFileModel]:
-        directory = os.path.join(self.local_warehouse_path, auto_test_dir)
+        directory = os.path.join(self.repo.local_dir, auto_test_dir)
         subdirectories = []
         for item in os.listdir(directory):
             item_path = os.path.join(directory, item)

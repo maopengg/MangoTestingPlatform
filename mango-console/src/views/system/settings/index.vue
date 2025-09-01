@@ -107,7 +107,15 @@
     host: ['SYSTEM_DOMAIN_NAME'],
     email: ['SYSTEM_SEND_USER', 'SYSTEM_EMAIL_HOST', 'SYSTEM_STAMP_KET'],
     api: ['API_TIMEOUT'],
-    pytest: ['PYTEST_GIT_URL', 'PYTEST_ACT', 'PYTEST_TESTCASE', 'PYTEST_TOOLS', 'PYTEST_UPLOAD'],
+    pytest: [
+      'PYTEST_GIT_URL',
+      'PYTEST_GIT_USERNAME',
+      'PYTEST_GIT_PASSWORD',
+      'PYTEST_ACT',
+      'PYTEST_TESTCASE',
+      'PYTEST_TOOLS',
+      'PYTEST_UPLOAD',
+    ],
     data: [],
     isDebug: false,
   })

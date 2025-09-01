@@ -93,7 +93,7 @@ class ChatConsumer(WebsocketConsumer):
         elif self.scope.get('path') == SocketEnum.CLIENT_PATH.value:
             SocketUser.delete_user_client_obj(self.username)
             try:
-                self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！', is_notice=ClientTypeEnum.WEB.value)
+                self.inside_send(f'{ClientNameEnum.DRIVER.value}已断开！', is_notice=ClientTypeEnum.WEB)
             except SystemEError as error:
                 log.system.error(f'socker关闭发送错误：{error}')
                 traceback.print_exc()
@@ -132,7 +132,7 @@ class ChatConsumer(WebsocketConsumer):
     def inside_send(self,
                     msg: str,
                     code: int = 200,
-                    func_name: None = None,
+                    func_name: str | None = None,
                     func_args: Optional[Union[list[T], T]] | None = None,
                     is_notice: ClientTypeEnum | None = None,
                     ):

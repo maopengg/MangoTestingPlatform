@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 import random
 
+from mangotools.mangos import GitRepoOperator
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import CacheData
@@ -33,7 +34,7 @@ class TestCase:
         obj: PytestCase = PytestCase.objects.get(id=case_id)
         obj.status = TaskEnum.PROCEED.value
         obj.save()
-        repo = GitPullManager(self.repo_url.value, project_dir.root_path(), log.pytest)
+        repo = GitRepoOperator(self.repo_url, project_dir.root_path(), log.pytest)
         send_data = PytestCaseModel(
             send_user=self.user_id,
             test_suite_details=self.test_suite_details,

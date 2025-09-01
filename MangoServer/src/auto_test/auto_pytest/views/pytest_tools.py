@@ -69,8 +69,7 @@ class PytestToolsViews(ViewSet):
     def pytest_update(self, request: Request):
         file_path_list = list(self.model.objects.all().values_list('file_path', flat=True))
         _file_path_list = []
-        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TOOLS),
-                                  os.path.join(project_dir.root_path(), 'mango_pytest')).find_test_files():
+        for project in UpdateFile(CacheDataKeyEnum.get_cache_value(CacheDataKeyEnum.PYTEST_TOOLS)).find_test_files():
             for file in project.auto_test:
                 _file_path_list.append(file.path)
                 pytest_act, created = self.model.objects.get_or_create(

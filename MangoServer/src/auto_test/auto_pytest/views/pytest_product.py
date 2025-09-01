@@ -5,12 +5,11 @@
 # @Author : 毛鹏
 import os
 
-from mangotools.mangos import GitPullManager
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-
+from src.auto_test.auto_pytest.service.base import git_obj
 from src.auto_test.auto_pytest.models import PytestProduct
 from src.auto_test.auto_pytest.service.base.update_file import UpdateFile
 from src.auto_test.auto_system.models import ProductModule, CacheData
@@ -64,8 +63,7 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_update(self, request: Request):
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
-        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
+        repo = git_obj()
         repo.clone()
         repo.pull()
         update_file = UpdateFile('').find_test_files(True)
@@ -82,9 +80,7 @@ class PytestProductViews(ViewSet):
     @action(methods=['get'], detail=False)
     @error_response('pytest')
     def pytest_push(self, request: Request):
-        repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name)
-        repo = GitPullManager(repo_url.value, project_dir.root_path(), log.pytest)
-        # repo.clone()
+        repo = git_obj()
         repo.push()
         return ResponseData.success(RESPONSE_MSG_0090)
 

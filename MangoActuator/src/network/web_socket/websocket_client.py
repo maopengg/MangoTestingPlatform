@@ -52,7 +52,7 @@ class WebSocketClient:
                     '设置缓存数据成功',
                     func_name=ToolsSocketEnum.SET_OPERATION_OPTIONS.value,
                     is_notice=ClientTypeEnum.WEB,
-                    func_args={'version':settings.SETTINGS.get('version'), 'data': func_info}
+                    func_args={'version': settings.SETTINGS.get('version'), 'data': func_info}
 
                 )
                 await cls.async_send(

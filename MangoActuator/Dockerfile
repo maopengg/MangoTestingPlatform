@@ -1,15 +1,50 @@
-FROM mcr.microsoft.com/playwright/python:v1.43.0
+ARG EXECUTOR_TYPE
+ENV EXECUTOR_TYPE=${EXECUTOR_TYPE}
+
+#=================================================
+# 1) pytest —— python:3.10-slim-bullseye
+#=================================================
+FROM python:3.10-slim-bullseye AS pytest
 WORKDIR /app
-#COPY library/mangoautomation-1.0.56-py3-none-any.whl /tmp/
-
-COPY linux_requirements.txt .
-RUN pip install --no-cache-dir -r linux_requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-COPY dynamic_requirements.txt .
-RUN pip install --no-cache-dir -r dynamic_requirements.txt -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
-
-#RUN pip install /tmp/mangoautomation-1.0.56-py3-none-any.whl
-
-
+# 换国内源
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+# pytest 只装 pytest 相关依赖
+COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
+RUN pip install --no-cache-dir -r linux_requirements.txt -r pytest_requirements.txt -r dynamic_requirements.txt
 COPY . .
 
-CMD ["sh", "-c", "python linux_main.py"]
+#=================================================
+# 2) pytest_web —— playwright + pytest
+#=================================================
+FROM mcr.microsoft.com/playwright/python:v1.43.0 AS pytest_web
+WORKDIR /app
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+COPY linux_requirements.txt dynamic_requirements.txt pytest_requirements.txt ./
+RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt -r pytest_requirements.txt
+COPY . .
+
+#=================================================
+# 3) web_ui —— playwright 基础镜像 + 仅 web 依赖
+#=================================================
+FROM mcr.microsoft.com/playwright/python:v1.43.0 AS web_ui
+WORKDIR /app
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+COPY linux_requirements.txt dynamic_requirements.txt ./
+RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt
+COPY . .
+
+#=================================================
+# 4) android_ui —— playwright 基础镜像 + 安卓依赖
+#=================================================
+FROM mcr.microsoft.com/playwright/python:v1.43.0 AS android_ui
+WORKDIR /app
+RUN pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+COPY linux_requirements.txt dynamic_requirements.txt android_requirements.txt ./
+RUN pip install --no-cache-dir -r linux_requirements.txt -r dynamic_requirements.txt -r android_requirements.txt
+COPY . .
+
+#=================================================
+# 5) 最终阶段：只选对应阶段
+#=================================================
+FROM ${EXECUTOR_TYPE} AS final
+CMD ["python", "linux_main.py", "--env=${EXECUTOR_TYPE}"]
