@@ -7,6 +7,7 @@
 import os
 
 import sys
+from pathlib import Path
 
 
 class ProjectDir:
@@ -18,12 +19,16 @@ class ProjectDir:
 
     @staticmethod
     def init_project_path():
-        current_directory = os.path.abspath(__file__)
-        project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
-        current_dir2 = os.path.dirname(sys.executable)
-        if 'python.exe' not in sys.executable:
-            project_root_directory = current_dir2
-        return project_root_directory
+        if sys.platform.startswith('linux'):
+            from pathlib import Path
+            return str(Path(__file__).resolve().parent.parent.parent)
+        else:
+            current_directory = os.path.abspath(__file__)
+            project_root_directory = os.path.dirname(os.path.dirname(os.path.dirname(current_directory)))
+            current_dir2 = os.path.dirname(sys.executable)
+            if 'python.exe' not in sys.executable:
+                project_root_directory = current_dir2
+            return project_root_directory
 
     def init_folder(self):
         for i in self.folder_list:
