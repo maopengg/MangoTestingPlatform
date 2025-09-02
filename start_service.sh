@@ -5,5 +5,6 @@ git pull
 docker-compose build
 docker-compose up -d
 docker ps
+sleep 6
 docker logs mangotestingplatform-mango_server-1
 docker logs mangotestingplatform-mango_actuator-1
