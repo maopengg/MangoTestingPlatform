@@ -15,7 +15,6 @@ from playwright.async_api import Locator
 1.必须使用：@inject_to_class(AsyncWebCustomization)
 2.必须使用：async_method_callback装饰。参考如下，type可以输入：web， android， web_ass, android_ass
 3.函数必须写注释，方法如下。不可以加回车和空格
-4.写完了点击发送缓存数据按钮
 """
 
 
