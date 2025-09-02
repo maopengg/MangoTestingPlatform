@@ -34,7 +34,8 @@ class AutoPytestConfig(AppConfig):
             repo.clone()
         except Exception:
             import traceback
-            log.pytest.error(f'{traceback.format_exc()}')
+            log.pytest.debug(f'{traceback.format_exc()}')
+            log.pytest.info(f'如果您的项目已经配置了pytest等相关配置则关注下这个异常，如果没有配置请忽略！')
 
     # def shutdown(self):
     #     self.case_flow.stop()
