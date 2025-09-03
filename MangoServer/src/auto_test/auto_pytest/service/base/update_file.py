@@ -19,11 +19,7 @@ class UpdateFile:
         self.repo.clone()
 
     def get_git_update_time(self, file_path):
-        commits = list(self.repo.iter_commits(paths=file_path, max_count=1))
-        if commits:
-            return datetime.fromtimestamp(commits[0].committed_date)
-        else:
-            return datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
+        pass
 
     def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False) -> list[FileModel]:
         file_list = []
