@@ -9,7 +9,7 @@ export function postPytestCase(data: any) {
   })
 }
 
-export function deletePytestCase(id: number) {
+export function deletePytestCase(id: any) {
   return deleted({
     url: 'pytest/case',
     data: () => {

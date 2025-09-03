@@ -16,7 +16,6 @@ class UpdateFile:
         self.file_type: str = file_type
 
         self.repo = git_obj()
-        self.repo.clone()
 
     def get_git_update_time(self, file_path):
         pass
@@ -34,21 +33,21 @@ class UpdateFile:
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
                                                   os.path.relpath(str(abs_path), self.repo.local_dir)),
-                                time=self.get_git_update_time(abs_path)
+                                time=self.repo.get_file_last_commit_time(abs_path)
                             ))
                         if components and file != "__init__.py":
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
                                                   os.path.relpath(str(abs_path), self.repo.local_dir)),
-                                time=self.get_git_update_time(abs_path)
+                                time=self.repo.get_file_last_commit_time(abs_path)
                             ))
                         if test_case and (file.startswith('test') or file.endswith('test')):
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
                                 path=os.path.join('mango_pytest',
                                                   os.path.relpath(str(abs_path), self.repo.local_dir)),
-                                time=self.get_git_update_time(abs_path)
+                                time=self.repo.get_file_last_commit_time(abs_path)
                             ))
 
         return file_list

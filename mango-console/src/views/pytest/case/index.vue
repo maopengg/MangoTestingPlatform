@@ -94,6 +94,9 @@
                 >设为定时任务</a-button
               ></div
             >
+            <div>
+              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            </div>
             <a-modal v-model:visible="data.visible" @ok="handleOk" @cancel="handleCancel">
               <template #title> 设为定时任务</template>
               <div>
@@ -106,8 +109,9 @@
                   allow-clear
                   allow-search
                 />
-              </div> </a-modal
-          ></a-space>
+              </div>
+            </a-modal>
+          </a-space>
         </template>
       </a-tabs>
       <a-table
@@ -417,6 +421,26 @@
       okText: '删除',
       onOk: () => {
         deletePytestCase(data.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '不会删除git文件，确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deletePytestCase(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
             doRefresh()

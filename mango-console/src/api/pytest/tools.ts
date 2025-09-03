@@ -9,7 +9,7 @@ export function postPytestTools(data: any) {
   })
 }
 
-export function deletePytestTools(id: number) {
+export function deletePytestTools(id: any) {
   return deleted({
     url: 'pytest/tools',
     data: () => {

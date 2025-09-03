@@ -167,12 +167,10 @@ class TestCase:
                       is_test_element: bool = False,
                       data: dict = None) -> ElementModel:
         if not is_test_element and data is None:
-            return ElementModel(
+            element_model =  ElementModel(
                 id=steps_element.id,
                 type=steps_element.type,
                 name=steps_element.ele_name.name if steps_element.ele_name else None,
-                loc=steps_element.ele_name.loc if steps_element.ele_name else None,
-                exp=steps_element.ele_name.exp if steps_element.ele_name else None,
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
                 sub=steps_element.ele_name.sub if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
@@ -183,19 +181,32 @@ class TestCase:
                 key=steps_element.key,
                 value=steps_element.value
             )
+            if steps_element.ele_name:
+                element_model.elements.append(
+                    ElementListModel(exp=steps_element.ele_name.exp, loc=steps_element.ele_name.loc))
+                if steps_element.ele_name.loc2 and steps_element.ele_name.exp2:
+                    element_model.elements.append(
+                        ElementListModel(exp=steps_element.ele_name.exp2, loc=steps_element.ele_name.loc2))
+                if steps_element.ele_name.loc3 and steps_element.ele_name.exp3:
+                    element_model.elements.append(
+                        ElementListModel(exp=steps_element.ele_name.exp3, loc=steps_element.ele_name.loc3))
         else:
-            return ElementModel(
+            element_model =  ElementModel(
                 id=steps_element.id,
                 type=data.get('type'),
                 name=steps_element.name,
-                loc=steps_element.loc,
-                exp=steps_element.exp,
                 sleep=steps_element.sleep,
                 sub=steps_element.sub,
                 ope_key=data.get('ope_key'),
                 ope_value=data.get('ope_value'),
                 is_iframe=steps_element.is_iframe,
             )
+            element_model.elements.append(ElementListModel(exp=steps_element.exp, loc=steps_element.loc))
+            if steps_element.loc2 and steps_element.exp2:
+                element_model.elements.append(ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2))
+            if steps_element.loc3 and steps_element.exp3:
+                element_model.elements.append(ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3))
+        return  element_model
 
     def __socket_send(self, data_model, func_name: str, is_open=False) -> None:
         if self.is_send:

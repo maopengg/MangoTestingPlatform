@@ -4,14 +4,6 @@
       <a-card title="页面元素详情" :bordered="false">
         <template #extra>
           <a-space>
-            <a-upload
-              type="primary"
-              size="small"
-              @before-upload="beforeUpload"
-              :show-file-list="false"
-            />
-            <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
-            <a-button type="primary" size="small" @click="doAppend">增加</a-button>
             <a-button status="danger" size="small" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -32,51 +24,102 @@
       </a-card>
     </template>
     <template #default>
-      <a-card :bordered="false">
-        <a-table :columns="columns" :data="data.data" :pagination="false" :bordered="false">
-          <template #columns>
-            <a-table-column
-              :key="item.key"
-              v-for="item of columns"
-              :align="item.align"
-              :title="item.title"
-              :width="item.width"
-              :data-index="item.dataIndex"
-              :fixed="item.fixed"
-              :ellipsis="item.ellipsis"
-              :tooltip="item.tooltip"
-            >
-              <template v-if="item.dataIndex === 'exp'" #cell="{ record }">
-                <a-tag :color="enumStore.colors[record.exp]" size="small">
-                  {{ enumStore.element_exp.find((item) => item.key === record.exp)?.title }}
-                </a-tag>
-              </template>
-              <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
-                <a-switch
-                  :default-checked="record.is_iframe === 1"
-                  :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
-                />
-              </template>
-              <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
-                  >调试</a-button
-                >
-                <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
-                <a-button
-                  status="danger"
-                  type="text"
-                  size="mini"
-                  class="custom-mini-btn"
-                  @click="onDelete(record)"
-                  >删除
-                </a-button>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
-      </a-card>
+      <a-tabs>
+        <template #extra>
+          <a-space>
+            <div>
+              <a-button type="primary" size="small" @click="onDownload">下载模版</a-button>
+            </div>
+            <div>
+              <a-upload
+                @before-upload="beforeUpload"
+                :show-file-list="false"
+                class="custom-upload"
+              />
+            </div>
+            <div> <a-button type="primary" size="small" @click="doAppend">单个新增</a-button></div>
+            <div>
+              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            </div>
+          </a-space>
+        </template>
+      </a-tabs>
+      <a-table
+        :bordered="false"
+        :columns="tableColumns"
+        :data="table.dataList"
+        :loading="table.tableLoading.value"
+        :pagination="false"
+        :row-selection="{ selectedRowKeys, showCheckedAll }"
+        :rowKey="rowKey"
+        @selection-change="onSelectionChange"
+      >
+        <template #columns>
+          <a-table-column
+            v-for="item of tableColumns"
+            :key="item.key"
+            :align="item.align"
+            :data-index="item.key"
+            :ellipsis="item.ellipsis"
+            :fixed="item.fixed"
+            :title="item.title"
+            :tooltip="item.tooltip"
+            :width="item.width"
+          >
+            <template v-if="item.key === 'index'" #cell="{ record }">
+              {{ record.id }}
+            </template>
+            <template v-else-if="item.dataIndex === 'exp'" #cell="{ record }">
+              <a-tag :color="enumStore.colors[record.exp]" size="small">
+                {{ enumStore.element_exp.find((item) => item.key === record.exp)?.title }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.dataIndex === 'exp2'" #cell="{ record }">
+              <a-tag
+                v-if="record.exp2 !== null"
+                :color="enumStore.colors[record.exp2]"
+                size="small"
+              >
+                {{ enumStore.element_exp.find((item) => item.key === record.exp2)?.title }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.dataIndex === 'exp3'" #cell="{ record }">
+              <a-tag
+                v-if="record.exp3 !== null"
+                :color="enumStore.colors[record.exp3]"
+                size="small"
+              >
+                {{ enumStore.element_exp.find((item) => item.key === record.exp3)?.title }}
+              </a-tag>
+            </template>
+            <template v-else-if="item.dataIndex === 'is_iframe'" #cell="{ record }">
+              <a-switch
+                :default-checked="record.is_iframe === 1"
+                :beforeChange="(newValue) => onModifyStatus(newValue, record.id)"
+              />
+            </template>
+            <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
+              <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
+                >调试</a-button
+              >
+              <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
+                >编辑</a-button
+              >
+              <a-button
+                status="danger"
+                type="text"
+                size="mini"
+                class="custom-mini-btn"
+                @click="onDelete(record)"
+                >删除
+              </a-button>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+    </template>
+    <template #footer>
+      <TableFooter :pagination="pagination" />
     </template>
   </TableBody>
   <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
@@ -174,7 +217,7 @@
 <script lang="ts" setup>
   import { nextTick, onMounted, reactive, ref } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-  import { formItems1, columns, formItems } from './config'
+  import { formItems1, tableColumns, formItems } from './config'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { getFormItems } from '@/utils/datacleaning'
@@ -195,6 +238,11 @@
   import { useEnum } from '@/store/modules/get-enum'
   import { baseURL } from '@/api/axios.config'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
+  const pagination = usePagination(doRefresh)
+  const rowKey = useRowKey('id')
+  const table = useTable()
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -277,7 +325,26 @@
       },
     })
   }
-
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deleteUiElement(selectedRowKeys.value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
   function onUpdate(record: any) {
     data.actionTitle = '编辑'
     data.isAdd = false
@@ -325,10 +392,13 @@
   }
 
   function doRefresh() {
+    let value = {}
+    value['page'] = pagination.page
+    value['pageSize'] = pagination.pageSize
     getUiElement(route.query.id)
       .then((res) => {
-        data.data = res.data
-        data.totalSize = res.totalSize
+        table.handleSuccess(res)
+        pagination.setTotalSize((res as any).totalSize)
       })
       .catch(console.log)
   }
@@ -568,5 +638,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .custom-upload :deep(.arco-btn) {
+    height: 28px;
+    width: 88px;
+    line-height: 28px;
+  }
+
+  .custom-upload :deep(.arco-btn-text) {
+    height: 28px;
+    width: 88px;
+
+    line-height: 28px;
   }
 </style>

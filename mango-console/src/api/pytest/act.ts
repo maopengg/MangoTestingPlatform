@@ -9,7 +9,7 @@ export function postPytestAct(data: any) {
   })
 }
 
-export function deletePytestAct(id: number) {
+export function deletePytestAct(id: any) {
   return deleted({
     url: 'pytest/act',
     data: () => {

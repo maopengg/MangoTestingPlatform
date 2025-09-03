@@ -30,8 +30,7 @@ class AutoPytestConfig(AppConfig):
     def pull_code(self):
         from src.auto_test.auto_pytest.service.base import git_obj
         try:
-            repo = git_obj()
-            repo.clone()
+            git_obj()
         except Exception:
             import traceback
             log.pytest.debug(f'{traceback.format_exc()}')

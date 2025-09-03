@@ -64,7 +64,6 @@ class PytestProductViews(ViewSet):
     @error_response('pytest')
     def pytest_update(self, request: Request):
         repo = git_obj()
-        repo.clone()
         repo.pull()
         update_file = UpdateFile('').find_test_files(True)
         for project in update_file:

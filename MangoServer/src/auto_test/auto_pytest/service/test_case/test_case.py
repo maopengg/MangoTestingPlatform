@@ -29,7 +29,6 @@ class TestCase:
         obj.status = TaskEnum.PROCEED.value
         obj.save()
         repo = git_obj()
-        repo.clone()
         commit_hash = repo.get_repo_info().get('commit_hash')
         if commit_hash is None:
             raise PytestError(*ERROR_MSG_0020)

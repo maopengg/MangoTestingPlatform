@@ -59,9 +59,14 @@
     <template #default>
       <a-tabs>
         <template #extra>
-          <div>
-            <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
-          </div>
+          <a-space>
+            <div>
+              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+            </div>
+            <div>
+              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            </div></a-space
+          >
         </template>
       </a-tabs>
       <a-table
@@ -266,7 +271,26 @@
       },
     })
   }
-
+  function onDeleteItems() {
+    if (selectedRowKeys.value.length === 0) {
+      Message.error('请选择要删除的数据')
+      return
+    }
+    Modal.confirm({
+      title: '提示',
+      content: '不会删除git文件，确定要删除此数据吗？',
+      cancelText: '取消',
+      okText: '删除',
+      onOk: () => {
+        deletePytestAct(selectedRowKeys.value)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      },
+    })
+  }
   function clickUpdate() {
     Message.loading('文件更新中，请耐心等待10秒左右...')
     getPytestActUpdate()

@@ -91,8 +91,12 @@ class PageElementViews(ViewSet):
         df['表达式类型'] = df['表达式类型'].map(ElementExpEnum.reversal_obj())
         df = df.rename(columns={
             '元素名称': 'name',
-            '表达式类型': 'exp',
-            '定位表达式': 'loc',
+            '类型-1': 'exp',
+            '定位-1': 'loc',
+            '类型-2': 'exp2',
+            '定位-2': 'loc2',
+            '类型-3': 'exp3',
+            '定位-3': 'loc3',
             '等待时间（秒）': 'sleep',
             '元素下标（1开始）': 'sub',
         })
