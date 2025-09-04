@@ -764,11 +764,11 @@
     display: flex;
     .left {
       padding: 5px;
-      width: 60%;
+      width: 50%;
     }
     .right {
       padding: 5px;
-      width: 40%;
+      width: 50%;
     }
   }
 </style>

@@ -65,20 +65,26 @@
                   /></p>
                 </div>
               </a-space>
-              <a-space direction="vertical" style="width: 50%">
+              <a-space direction="vertical" id="maopeng2" style="width: 50%">
                 <template v-if="item.elements && item.elements.length">
                   <template v-for="(element, index) in item.elements" :key="index">
                     <p>
-                      <span class="label">表达式类型</span>：{{
+                      <span class="label">定位类型-{{ index + 1 }}</span
+                      >：{{
                         enumStore.element_exp.find((item1) => item1.key === element.exp)?.title
                       }}
                     </p>
                     <p style="word-wrap: break-word"
-                      ><span class="label">元素表达式</span>：{{ element.loc }}</p
+                      ><span class="label">定位元素-{{ index + 1 }}</span
+                      >：{{ element.loc }}</p
                     >
-                    <p><span class="label">元素个数</span>：{{ element.ele_quantity }}</p>
+                    <p
+                      ><span class="label">元素个数-{{ index + 1 }}</span
+                      >：{{ element.ele_quantity }}</p
+                    >
                     <p v-if="item?.element_text"
-                      ><span class="label">元素文本</span>：{{ element?.element_text }}</p
+                      ><span class="label">元素文本-{{ index + 1 }}</span
+                      >：{{ element?.element_text }}</p
                     >
                   </template>
                 </template>
@@ -190,7 +196,6 @@
     display: inline-block;
     width: 80px;
     text-align: right;
-    margin-right: 8px;
   }
 
   .error-container {
