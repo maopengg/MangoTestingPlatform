@@ -578,6 +578,7 @@
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
+          select.d === false &&
           (select.f === 'actual' || select.f === 'locating') &&
           !formItems.some((item) => item.key === select.f)
         ) {
@@ -598,7 +599,7 @@
           })
         } else if (select.d === true && !formItems.some((item) => item.key === select.f)) {
           formItems.push({
-            label: select.f,
+            label: select.n ? select.n : select.f,
             key: `${select.f}-ope_value`,
             value: select.v,
             type: 'textarea',

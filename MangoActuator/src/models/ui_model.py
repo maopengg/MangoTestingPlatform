@@ -7,8 +7,6 @@ from mangoautomation.models import ElementModel, ElementResultModel
 from mangotools.models import MysqlConingModel
 from pydantic import BaseModel
 
-from src.enums.tools_enum import TestCaseTypeEnum
-
 
 class UiPublicModel(BaseModel):
     type: int
@@ -79,6 +77,7 @@ class PageStepsResultModel(BaseModel):
     project_product_name: str
     case_step_details_id: int | None = None
     test_time: str | None = None
+    stop_time: str | None = None
 
     cache_data: dict
     test_object: str
@@ -101,5 +100,3 @@ class UiCaseResultModel(BaseModel):
     error_message: str | None = None
     video_path: str | None = None
     steps: list[PageStepsResultModel] = []
-
-

@@ -5,17 +5,8 @@
 # @Author : 毛鹏
 from typing import Any
 
-from mangoautomation.models import ElementResultModel
-from mangotools.models import MysqlConingModel
+from mangotools.models import MysqlConingModel, MethodModel
 from pydantic import BaseModel
-
-
-class MethodModel(BaseModel):
-    f: str
-    n: str
-    p: str | None = None
-    d: bool = False
-    v: Any = None
 
 
 class ElementListModel(BaseModel):
@@ -108,12 +99,14 @@ class PageStepsResultModel(BaseModel):
     project_product_name: str
     case_step_details_id: int | None = None
     test_time: str | None = None
+    stop_time: str | None = None
+
     cache_data: dict
     test_object: str  # url或者软件包
 
     status: int
     error_message: str | None = None
-    element_result_list: list[ElementResultModel]
+    element_result_list: Any
 
 
 class UiCaseResultModel(BaseModel):

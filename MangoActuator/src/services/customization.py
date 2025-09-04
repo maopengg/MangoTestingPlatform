@@ -21,7 +21,7 @@ from playwright.async_api import Locator
 @inject_to_class(AsyncWebCustomization)
 @async_method_callback('web', '定制开发', 1, [
     MethodModel(f='locating'),
-    MethodModel(f='input_value', p='请输入输入内容', d=True)])
+    MethodModel(n='输入你期望的名称', f='input_value', p='请输入输入内容', d=True)])
 async def w_demo(self, locating, input_value: str):
     """xx项目自定义方法"""
     pass

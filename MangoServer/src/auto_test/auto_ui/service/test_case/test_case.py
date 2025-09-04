@@ -184,10 +184,10 @@ class TestCase:
             if steps_element.ele_name:
                 element_model.elements.append(
                     ElementListModel(exp=steps_element.ele_name.exp, loc=steps_element.ele_name.loc))
-                if steps_element.ele_name.loc2 and steps_element.ele_name.exp2:
+                if steps_element.ele_name.loc2 is not None and steps_element.ele_name.exp2 is not None:
                     element_model.elements.append(
                         ElementListModel(exp=steps_element.ele_name.exp2, loc=steps_element.ele_name.loc2))
-                if steps_element.ele_name.loc3 and steps_element.ele_name.exp3:
+                if steps_element.ele_name.loc3 is not None and steps_element.ele_name.exp3 is not None:
                     element_model.elements.append(
                         ElementListModel(exp=steps_element.ele_name.exp3, loc=steps_element.ele_name.loc3))
         else:
@@ -202,9 +202,9 @@ class TestCase:
                 is_iframe=steps_element.is_iframe,
             )
             element_model.elements.append(ElementListModel(exp=steps_element.exp, loc=steps_element.loc))
-            if steps_element.loc2 and steps_element.exp2:
+            if steps_element.loc2 is not None and steps_element.exp2 is not None:
                 element_model.elements.append(ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2))
-            if steps_element.loc3 and steps_element.exp3:
+            if steps_element.loc3 is not None and steps_element.exp3 is not None:
                 element_model.elements.append(ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3))
         return  element_model
 

@@ -127,10 +127,6 @@ export const formItems: FormItem[] = reactive([
     required: false,
     placeholder: '请选择类型-2的元素表达式类型',
     validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
       return true
     },
   },
@@ -153,10 +149,6 @@ export const formItems: FormItem[] = reactive([
     required: false,
     placeholder: '请选择类型-3的元素表达式类型',
     validator: function () {
-      if (!this.value && this.value !== 0) {
-        Message.error(this.placeholder || '')
-        return false
-      }
       return true
     },
   },

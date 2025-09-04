@@ -15,7 +15,17 @@
           "
           destroy-on-hide
         >
-          <a-collapse-item :header="item.name" :style="customStyle" :key="item.id">
+          <a-collapse-item
+            :header="
+              item.name
+                ? item.name
+                : item.type
+                ? getLabelByValue(data.ass, item.ope_key)
+                : getLabelByValue(data.ope, item.ope_key)
+            "
+            :style="customStyle"
+            :key="item.id"
+          >
             <div>
               <a-space direction="vertical" style="width: 50%">
                 <p>
@@ -25,55 +35,68 @@
                       : getLabelByValue(data.ope, item.ope_key)
                   }}
                 </p>
-                <p>
-                  <span class="label">表达式类型</span>：{{
-                    enumStore.element_exp.find((item1) => item1.key === item.exp)?.title
-                  }}
-                </p>
+                <p><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p>
+                <p><span class="label">等待时间</span>：{{ item.sleep ? item.sleep : '-' }}</p>
+
                 <p>
                   <span class="label">测试结果</span>：{{
                     item.status === 1 ? '通过' : item.status === 0 ? '失败' : '未测试'
                   }}
                 </p>
-                <p><span class="label">等待时间</span>：{{ item.sleep ? item.sleep : '-' }}</p>
-                <p v-if="item.status === 0 && item?.error_message">
-                  <span class="label">错误提示</span>：{{ item.error_message }}
-                </p>
-                <p v-if="item.ass_msg"><span class="label">预期</span>：{{ item.ass_msg }}</p>
+                <div v-if="item.status === 0 && item?.error_message">
+                  <span class="label">错误提示</span>：
+                  <div class="error-container">
+                    <span class="error-message" :title="item.error_message">
+                      {{ item.error_message }}
+                    </span>
+                  </div>
+                </div>
+                <p v-if="item.ass_msg"><span class="label">断言提示</span>：{{ item.ass_msg }}</p>
                 <p v-if="item.status === 0 && item?.video_path"
                   ><span class="label">视频路径</span>：{{ item.video_path }}</p
                 >
+                <div v-if="item.status === 0 && item?.picture_name">
+                  <p
+                    ><span class="label">失败截图</span>：
+                    <a-image
+                      :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
+                      width="100"
+                      style="margin-right: 67px; vertical-align: top"
+                  /></p>
+                </div>
               </a-space>
               <a-space direction="vertical" style="width: 50%">
-                <p style="word-wrap: break-word"
-                  ><span class="label">元素表达式</span>：{{ item.loc }}</p
-                >
-                <p><span class="label">元素个数</span>：{{ item.ele_quantity }}</p>
-                <p><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p>
-                <p v-if="item?.element_text"
-                  ><span class="label">元素文本</span>：{{ item?.element_text }}</p
-                >
-                <div v-if="item.status === 0 && item?.picture_name">
-                  <a-image
-                    :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
-                    title="失败截图"
-                    width="260"
-                    style="margin-right: 67px; vertical-align: top"
+                <template v-if="item.elements && item.elements.length">
+                  <template v-for="(element, index) in item.elements" :key="index">
+                    <p>
+                      <span class="label">表达式类型</span>：{{
+                        enumStore.element_exp.find((item1) => item1.key === element.exp)?.title
+                      }}
+                    </p>
+                    <p style="word-wrap: break-word"
+                      ><span class="label">元素表达式</span>：{{ element.loc }}</p
+                    >
+                    <p><span class="label">元素个数</span>：{{ element.ele_quantity }}</p>
+                    <p v-if="item?.element_text"
+                      ><span class="label">元素文本</span>：{{ element?.element_text }}</p
+                    >
+                  </template>
+                </template>
+
+                <template v-else-if="item?.loc">
+                  <p>
+                    <span class="label">表达式类型</span>：{{
+                      enumStore.element_exp.find((item1) => item1.key === item.exp)?.title
+                    }}
+                  </p>
+                  <p style="word-wrap: break-word"
+                    ><span class="label">元素表达式</span>：{{ item.loc }}</p
                   >
-                    <template #extra>
-                      <div class="actions">
-                        <span class="action">
-                          <icon-download />
-                        </span>
-                        <a-tooltip content="失败截图">
-                          <span class="action">
-                            <icon-info-circle />
-                          </span>
-                        </a-tooltip>
-                      </div>
-                    </template>
-                  </a-image>
-                </div>
+                  <p><span class="label">元素个数</span>：{{ item.ele_quantity }}</p>
+                  <p v-if="item?.element_text"
+                    ><span class="label">元素文本</span>：{{ item?.element_text }}</p
+                  >
+                </template>
               </a-space>
             </div>
           </a-collapse-item>
@@ -168,5 +191,34 @@
     width: 80px;
     text-align: right;
     margin-right: 8px;
+  }
+
+  .error-container {
+    display: inline-block;
+    max-width: 150px; /* 根据实际布局调整 */
+    vertical-align: middle;
+  }
+
+  .error-message {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  .error-message:hover {
+    background-color: #fff2f0;
+    white-space: normal;
+    word-wrap: break-word;
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    max-width: 300px; /* 悬停时最大宽度 */
   }
 </style>
