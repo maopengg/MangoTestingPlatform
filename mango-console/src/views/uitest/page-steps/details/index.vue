@@ -578,7 +578,7 @@
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
-          select.d === false &&
+          select.n !== '函数代码' &&
           (select.f === 'actual' || select.f === 'locating') &&
           !formItems.some((item) => item.key === select.f)
         ) {
