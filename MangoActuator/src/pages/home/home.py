@@ -6,6 +6,7 @@
 import platform
 from collections import deque
 
+import psutil
 from mangoautomation.enums import BrowserTypeEnum
 from mangoui import *
 
@@ -72,8 +73,10 @@ class HomePage(MangoWidget):
         # 右边
         self.system_resource_layout = MangoFormLayout()
         self.system_resource_card = MangoCard(self.system_resource_layout, '系统资源')
-        self.system_resource_layout.addRow('已用CPU', MangoLabel('25%', self))
-        self.system_resource_layout.addRow('已用内存', MangoLabel('1.24G', self))
+        self.cpu = MangoLabel('-', self)
+        self.memory = MangoLabel('-', self)
+        self.system_resource_layout.addRow('已用CPU', self.cpu)
+        self.system_resource_layout.addRow('已用内存', self.memory)
         self.system_resource_layout.addRow('网络链接', MangoLabel('🟢 正常', self))
 
         self.env_info_layout = MangoFormLayout()
@@ -81,7 +84,8 @@ class HomePage(MangoWidget):
         self.python = MangoLabel(f'-', self)
         self.env_info_layout.addRow('python', self.python)
         self.env_info_layout.addRow('pytest', MangoLabel('8.3.3', self))
-        self.env_info_layout.addRow('浏览器', MangoLabel(f'{BrowserTypeEnum.get_value(SetConfig.get_web_type())}', self))
+        self.env_info_layout.addRow('浏览器',
+                                    MangoLabel(f'{BrowserTypeEnum.get_value(SetConfig.get_web_type())}', self))
 
         self.system_layout = MangoHBoxLayout()
         self.system_layout.addWidget(self.system_resource_card, 5)
@@ -127,7 +131,6 @@ class HomePage(MangoWidget):
         self.right_layout.addWidget(self.file_card, 6)
 
         if IS_WINDOW:
-            print(1)
             self.mango_dialog = MangoDialog('添加作者微信进芒果测试平台交流群', (260, 340))
             label = MangoLabel()
             pixmap = QPixmap(":/picture/author.png")  # 替换为你的图片路径
@@ -141,8 +144,13 @@ class HomePage(MangoWidget):
         if fixed_list:
             for i in fixed_list:
                 self.log_text_edit.append(i)
+
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory_info = psutil.virtual_memory()
+        memory_percent = memory_info.percent
+        self.cpu.setText(f'{cpu_percent}%')
+        self.memory.setText(f'{memory_percent}%')
         if IS_WINDOW:
-            print(2)
             QTimer.singleShot(500, self.open_dialog)
 
     def open_dialog(self):
