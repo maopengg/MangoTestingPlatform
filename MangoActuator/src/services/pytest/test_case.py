@@ -3,10 +3,10 @@
 # @Description:
 # @Time   : 2025-08-27 10:19
 # @Author : 毛鹏
+import os
 import traceback
 
-from mangotools.mangos import GitRepoOperator
-from .demo import pytest_test_case
+from mangotools.mangos import GitRepoOperator, pytest_test_case
 
 from src.enums.pytest_enum import PytestSystemEnum, AllureStatusEnum
 from src.enums.system_enum import ClientTypeEnum
@@ -31,7 +31,6 @@ class TestCase:
             status=StatusEnum.SUCCESS.value,
         )
         send_global_msg(self.case_model.name, MessageEnum.CASE_NAME)
-
 
     async def __aenter__(self):
         return self
