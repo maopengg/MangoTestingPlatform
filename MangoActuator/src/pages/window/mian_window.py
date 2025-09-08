@@ -17,6 +17,7 @@ class MainWindow(WindowLogic):
         self.loop = loop
         self.drag_pos = None
         self.is_close_tips = True
+        self.setWindowIcon(QIcon(':/icons/app_icon.png'))
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.activated.connect(self.open_window)

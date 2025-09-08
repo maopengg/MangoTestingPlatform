@@ -234,23 +234,23 @@
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
-          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
+          <CodeEditor v-model="data?.codeText" placeholder="输入python代码" />
         </div>
         <div v-else>
           <a-collapse
             v-for="item of data?.codeText"
             :bordered="false"
-            :key="item.uuid"
+            :key="item?.uuid"
             accordion
             destroy-on-hide
           >
-            <a-collapse-item :style="customStyle" :key="item.uuid">
+            <a-collapse-item :style="customStyle" :key="item?.uuid">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.name }}</span>
+                  <span>{{ item?.name }}</span>
                   <span style="width: 20px"></span>
-                  <a-tag :color="enumStore.status_colors[item.status]"
-                    >{{ enumStore.task_status[item.status].title }}
+                  <a-tag :color="enumStore.status_colors[item?.status]"
+                    >{{ enumStore.task_status[item?.status].title }}
                   </a-tag>
                 </div>
               </template>

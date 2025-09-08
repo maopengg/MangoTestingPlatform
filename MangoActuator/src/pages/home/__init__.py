@@ -3,4 +3,4 @@
 # @Description: 
 # @Time   : 2024-08-28 14:23
 # @Author : 毛鹏
-from .home import HomePage
+from .home import HomePage, fixed_list

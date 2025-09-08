@@ -5,7 +5,8 @@
 # @Author : 毛鹏
 import traceback
 
-from mangotools.mangos import GitRepoOperator, pytest_test_case
+from mangotools.mangos import GitRepoOperator
+from .demo import pytest_test_case
 
 from src.enums.pytest_enum import PytestSystemEnum, AllureStatusEnum
 from src.enums.system_enum import ClientTypeEnum
@@ -58,6 +59,8 @@ class TestCase:
             test_env=self.case_model.test_env,
             file_path=self.case_model.file_path,
             quiet=True,
+            show_output=True,
+            verbose=True,
         )
         await self.result_data(report_data)
         await self.send_case_result()

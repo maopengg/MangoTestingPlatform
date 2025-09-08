@@ -85,6 +85,9 @@ class WindowLogic(MangoMain1Window):
         elif msg_model.type == MessageEnum.REAL_TIME:
             if hasattr(self.page, 'real_time'):
                 self.page.real_time.emit(msg_model.msg)
+            else:
+                from ..home import fixed_list
+                fixed_list.append(msg_model.msg)
         elif msg_model.type == MessageEnum.WS_LINK:
             if hasattr(self.page, 'real_time'):
                 self.page.set_link(msg_model.msg)

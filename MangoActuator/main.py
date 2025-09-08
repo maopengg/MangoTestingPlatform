@@ -41,7 +41,6 @@ r"""
 pyinstaller `
 --name "芒果执行器" `
 --onefile `
---noconsole `
 --icon "app_icon.ico" `
 --add-data "src/settings/settings.json;src/settings" `
 --add-data "src/settings/menus.json;src/settings" `
@@ -49,15 +48,20 @@ pyinstaller `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\mangotools\mangos;mangos" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\u2.jar;uiautomator2/assets" `
 --add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\uiautomator2\assets\app-uiautomator.apk;uiautomator2/assets" `
+--add-data "D:\DevFile\python\MangoActuator\Lib\site-packages\allure_pytest;allure_pytest" `
+--hidden-import "allure_pytest" `
+--hidden-import "allure_pytest.plugin" `
+--hidden-import "pytest" `
+--hidden-import "_pytest" `
 --hidden-import "mango" `
 --hidden-import "uiautomator2" `
 --hidden-import "dulwich" `
 --hidden-import "dulwich.porcelain" `
---clean `
---noconfirm `
 --hidden-import "email.mime.text" `
 --hidden-import "email.mime.base" `
 --hidden-import "email.mime.multipart" `
+--clean `
+--noconfirm `
 main.py
 
 """

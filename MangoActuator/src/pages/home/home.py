@@ -14,7 +14,7 @@ from src.settings.settings import IS_WINDOW
 from src.tools import project_dir
 from src.tools.set_config import SetConfig
 
-fixed_list = deque(maxlen=20)
+fixed_list = deque(maxlen=100)
 
 
 class HomePage(MangoWidget):
