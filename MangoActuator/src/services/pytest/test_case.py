@@ -3,21 +3,21 @@
 # @Description:
 # @Time   : 2025-08-27 10:19
 # @Author : 毛鹏
+import os
 import traceback
 
 from mangotools.mangos import GitRepoOperator, pytest_test_case
 
-from src.enums.gui_enum import TipsTypeEnum
 from src.enums.pytest_enum import PytestSystemEnum, AllureStatusEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum, StatusEnum
-from src.models import queue_notification
+from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum, StatusEnum, MessageEnum
 from src.models.pytest_model import PytestCaseModel, PytestCaseResultModel
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.network import socket_conn
 from src.network.web_socket.socket_api_enum import PytestSocketEnum
 from src.tools import project_dir
 from src.tools.log_collector import log
+from src.tools.send_global_msg import send_global_msg
 
 
 class TestCase:
@@ -30,6 +30,7 @@ class TestCase:
             name=self.case_model.name,
             status=StatusEnum.SUCCESS.value,
         )
+        send_global_msg(self.case_model.name, MessageEnum.CASE_NAME)
 
     async def __aenter__(self):
         return self
@@ -47,6 +48,7 @@ class TestCase:
             self.case_model.git_username,
             self.case_model.git_password
         )
+        send_global_msg(f'开始pytest的文件：{self.case_model.file_path}')
         git.clone()
         git.pull(self.case_model.commit_hash)
         report_data = pytest_test_case(
@@ -56,6 +58,8 @@ class TestCase:
             test_env=self.case_model.test_env,
             file_path=self.case_model.file_path,
             quiet=True,
+            show_output=True,
+            verbose=True,
         )
         await self.result_data(report_data)
         await self.send_case_result()
@@ -93,7 +97,4 @@ class TestCase:
             func_args=func_args,
             user=self.case_model.send_user,
         )
-        queue_notification.put({
-            'type': TipsTypeEnum.SUCCESS if self.case_result.status else TipsTypeEnum.ERROR,
-            'value': f'pytest用例<{self.case_model.name}>测试完成'
-        })
+        send_global_msg(f'pytest用例<{self.case_model.name}>测试完成')

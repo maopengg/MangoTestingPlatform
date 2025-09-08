@@ -11,6 +11,7 @@ from mangotools.mangos import Mango
 from src import process
 from src.enums.tools_enum import CacheKeyEnum
 from src.settings import settings
+from src.tools.send_global_msg import global_consumer_news
 from src.tools.set_config import SetConfig
 from src.tools.url import is_valid_url, http_to_ws_url
 
@@ -20,8 +21,6 @@ class LinuxLoop:
     def __init__(self):
         self.loop = Mango.t()
 
-    def set_tips_info(self, value):
-        print(value)
 
 
 async def main():
@@ -45,6 +44,7 @@ async def main():
                     raise Exception(f"Warning: Method '{method_name}' not found in SetConfig")
     SetConfig.set_web_default(True)  # type: ignore
     await process(LinuxLoop(), True)
+    await global_consumer_news()
     while True:
         await asyncio.sleep(0.1)
 

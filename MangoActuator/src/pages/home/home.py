@@ -3,57 +3,133 @@
 # @Description: 
 # @Time   : 2024-08-27 14:45
 # @Author : 毛鹏
+import platform
+from collections import deque
+
+import psutil
+from mangoautomation.enums import BrowserTypeEnum
 from mangoui import *
 
-from src.models.socket_model import ResponseModel
-from src.network import HTTP
-from src.pages.home.home_dict import table_column
 from src.settings.settings import IS_WINDOW
+from src.tools import project_dir
+from src.tools.set_config import SetConfig
+
+fixed_list = deque(maxlen=100)
 
 
 class HomePage(MangoWidget):
+    real_time = Signal(str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.page = 1
         self.page_size = 10
         self.parent = parent
+        self.real_time.connect(self.update_message)
         self._layout = MangoHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addLayout(self._layout)
-        self.layout.setContentsMargins(5, 5, 5, 5)
-        self.layout_v_1 = MangoVBoxLayout()
-        self.layout_v_2 = MangoVBoxLayout()
-        self.layout_v_2_1 = MangoVBoxLayout()
-        self.layout_v_2_2 = MangoVBoxLayout()
-        self.layout_v_2.addLayout(self.layout_v_2_1, 4)
-        self.layout_v_2.addLayout(self.layout_v_2_2, 6)
-        self.layout_v_1_1 = MangoVBoxLayout()
-        self.layout_v_1_2 = MangoVBoxLayout()
-        self.layout_v_1.addLayout(self.layout_v_1_1)
-        self.layout_v_1.addLayout(self.layout_v_1_2)
-        self._layout.addLayout(self.layout_v_1, 3)
-        self._layout.addLayout(self.layout_v_2, 7)
+        self.left_layout = MangoVBoxLayout()
+        self._layout.addLayout(self.left_layout, 6)
+        self.right_layout = MangoVBoxLayout()
+        self._layout.addLayout(self.right_layout, 4)
 
-        self.label_6 = MangoLabel(f'用例执行数')
-        self.pie_plot_1 = MangoPiePlot()
-        self.layout_v_1_1.addWidget(self.pie_plot_1)
+        # 左边
+        self.run_status_layout = MangoFormLayout()
+        self.run_status_card = MangoCard(self.run_status_layout, '执行状态')
+        self.run_status = MangoLabel('🟢 接收中', self)
+        self.run_status_layout.addRow('接收状态', self.run_status)
+        self.run_status_case_name = MangoLabel('-', self)
+        self.run_status_layout.addRow('当前用例', self.run_status_case_name)
+        self.run_status_layout.addRow('今日执行', MangoLabel('x 次', self))
+        self.left_layout.addWidget(self.run_status_card, 2)
 
-        h_layout_1 = MangoHBoxLayout()
-        h_layout_1.addWidget(self.label_6, alignment=Qt.AlignCenter)  # type: ignore
-        self.layout_v_1_1.addLayout(h_layout_1)
+        self.current_task_layout = MangoFormLayout()
+        self.current_task_card = MangoCard(self.current_task_layout, '当前任务')
+        self.current_task_layout.addRow('测试套ID', MangoLabel('1232312', self))
+        self.current_task_layout.addRow('用例名称', MangoLabel('2025-01-01 00:00:00', self))
+        self.current_task_layout.addRow('开始时间', MangoLabel('2025-01-01 00:00:00', self))
 
-        self.label_7 = MangoLabel(f'用例数')
-        self.pie_plot_2 = MangoPiePlot()
-        self.layout_v_1_2.addWidget(self.pie_plot_2)
+        self.historical_statistics_layout = MangoFormLayout()
+        self.historical_statistics_card = MangoCard(self.historical_statistics_layout, '历史统计')
+        self.historical_statistics_layout.addRow('成功率', MangoLabel('98.12%', self))
+        self.historical_statistics_layout.addRow('平均用时', MangoLabel('45s', self))
+        self.historical_statistics_layout.addRow('峰值用例', MangoLabel('32', self))
 
-        h_layout_2 = MangoHBoxLayout()
-        h_layout_2.addWidget(self.label_7, alignment=Qt.AlignCenter)  # type: ignore
-        self.layout_v_1_2.addLayout(h_layout_2)
-        self.line_plot = MangoLinePlot('用例执行趋势图', '数量', '周')
-        self.layout_v_2_1.addWidget(self.line_plot)
-        self.table_column = [TableColumnModel(**i) for i in table_column]
-        self.table_widget = TableList(self.table_column)
-        self.table_widget.pagination.click.connect(self.pagination_clicked)
-        self.layout_v_2_2.addWidget(self.table_widget)
+        # self.run_status_layout_h = MangoHBoxLayout()
+        # self.run_status_layout_h.addWidget(self.current_task_card)
+        # self.run_status_layout_h.addWidget(self.historical_statistics_card)
+        # self.left_layout.addLayout(self.run_status_layout_h)
+
+        self.log_layout = MangoHBoxLayout()
+        self.log_card = MangoCard(self.log_layout, '实时日志')
+        self.log_layout.setContentsMargins(0, 0, 0, 0)
+        self.log_text_edit = MangoTextEdit('')
+        self.log_text_edit.setReadOnly(True)
+
+        self.log_layout.addWidget(self.log_text_edit)
+        self.left_layout.addWidget(self.log_card, 8)
+
+        # 右边
+        self.system_resource_layout = MangoFormLayout()
+        self.system_resource_card = MangoCard(self.system_resource_layout, '系统资源')
+        self.cpu = MangoLabel('-', self)
+        self.memory = MangoLabel('-', self)
+        self.system_resource_layout.addRow('已用CPU', self.cpu)
+        self.system_resource_layout.addRow('已用内存', self.memory)
+        self.system_resource_layout.addRow('网络链接', MangoLabel('🟢 正常', self))
+
+        self.env_info_layout = MangoFormLayout()
+        self.env_info_card = MangoCard(self.env_info_layout, '环境信息')
+        self.python = MangoLabel(f'-', self)
+        self.env_info_layout.addRow('python', self.python)
+        self.env_info_layout.addRow('pytest', MangoLabel('8.3.3', self))
+        self.env_info_layout.addRow('浏览器',
+                                    MangoLabel(f'{BrowserTypeEnum.get_value(SetConfig.get_web_type())}', self))
+
+        self.system_layout = MangoHBoxLayout()
+        self.system_layout.addWidget(self.system_resource_card, 5)
+        self.system_layout.addWidget(self.env_info_card, 5)
+        self.right_layout.addLayout(self.system_layout, 2)
+
+        self.server_config_layout = MangoFormLayout()
+        self.server_config_card = MangoCard(self.server_config_layout, '环境信息')
+        self.server_config_layout.addRow('服务地址', MangoLabel(f'{SetConfig.get_host()}', self))
+        self.server_config_layout.addRow('WS链接', MangoLabel(f'{SetConfig.get_ws()}', self))
+        self.server_config_layout.addRow('minio地址', MangoLabel(f'{SetConfig.get_minio_url()}', self))
+        self.link = MangoLabel('🟢 正常', self)
+        self.server_config_layout.addRow('链接状态', self.link)
+        self.right_layout.addWidget(self.server_config_card, 2)
+
+        self.file_layout = MangoFormLayout()
+        self.file_card = MangoCard(self.file_layout, '文件路径（右键路径可复制）')
+
+        # 创建固定宽度的标签
+        label_width = 250
+        cache_label = MangoLabel(f'{project_dir.cache()}', self)
+        cache_label.setFixedWidth(label_width)  # 设置固定宽度
+        log_label = MangoLabel(f'{project_dir.logs()}', self)
+        log_label.setFixedWidth(label_width)
+        screenshot_label = MangoLabel(f'{project_dir.screenshot()}', self)
+        screenshot_label.setFixedWidth(label_width)
+        video_label = MangoLabel(f'{project_dir.videos()}', self)
+        video_label.setFixedWidth(label_width)
+        download_label = MangoLabel(f'{project_dir.download()}', self)
+        download_label.setFixedWidth(label_width)
+        upload_label = MangoLabel(f'{project_dir.upload()}', self)
+        upload_label.setFixedWidth(label_width)
+        allure_label = MangoLabel(f'{project_dir.allure()}', self)
+        allure_label.setFixedWidth(label_width)
+        self.file_layout.addRow('缓存目录', cache_label)
+        self.file_layout.addRow('日志目录', log_label)
+        self.file_layout.addRow('截图目录', screenshot_label)
+        self.file_layout.addRow('视频目录', video_label)
+        self.file_layout.addRow('下载目录', download_label)
+        self.file_layout.addRow('上传目录', upload_label)
+        self.file_layout.addRow('allure', allure_label)
+
+        self.right_layout.addWidget(self.file_card, 6)
+
         if IS_WINDOW:
             self.mango_dialog = MangoDialog('添加作者微信进芒果测试平台交流群', (260, 340))
             label = MangoLabel()
@@ -64,37 +140,35 @@ class HomePage(MangoWidget):
             self.mango_dialog.layout.addWidget(label)
 
     def load_page_data(self, ):
-        pie_plot_1_data = HTTP.system.index.case_sum().data
-        if pie_plot_1_data:
-            self.pie_plot_1.draw(pie_plot_1_data)
-        else:
-            self.pie_plot_1.draw([{'value': 0, 'name': '前端'}, {'value': 0, 'name': '接口'}])
-        pie_plot_2_data = HTTP.system.index.case_run_sum().data
-        if pie_plot_2_data:
-            self.pie_plot_2.draw(pie_plot_2_data)
-        else:
-            self.pie_plot_2.draw([{'value': 0, 'name': '前端'}, {'value': 0, 'name': '接口'}])
-        data = []
-        response = HTTP.system.index.case_run_trends().data
-        data.append({'name': 'API', 'value': response.get('ui_count')})
-        data.append({'name': 'UI', 'value': response.get('api_count')})
-        self.line_plot.draw(data)
-        response_model: ResponseModel = HTTP.system.tasks.get_tasks(self.page, self.page_size)
-        self.table_widget.set_data(response_model.data, response_model.totalSize)
+        self.python.setText(platform.python_version())
+        if fixed_list:
+            for i in fixed_list:
+                self.log_text_edit.append(i)
+
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory_info = psutil.virtual_memory()
+        memory_percent = memory_info.percent
+        self.cpu.setText(f'{cpu_percent}%')
+        self.memory.setText(f'{memory_percent}%')
         if IS_WINDOW:
             QTimer.singleShot(500, self.open_dialog)
 
     def open_dialog(self):
         self.mango_dialog.exec()
 
-    def signal_label_6(self, text):
-        self.label_6.setText(text)
+    def update_message(self, text):
+        if text:
+            fixed_list.append(text)
+            current_time = QDateTime.currentDateTime().toString("HH:mm:ss")
+            self.log_text_edit.append(f'{current_time} - {text}')
 
-    def pagination_clicked(self, data):
-        if data['action'] == 'prev':
-            self.page = data['page']
-        elif data['action'] == 'next':
-            self.page = data['page']
-        elif data['action'] == 'per_page':
-            self.page_size = data['page']
-        self.show_data()
+    def set_link(self, value):
+        if int(value):
+            self.link.setText('🟢 正常')
+            self.run_status.setText('🟢 接收中')
+        else:
+            self.link.setText('🔴 异常')
+            self.run_status.setText('🔴 等待链接中')
+
+    def set_case_name(self, value):
+        self.run_status_case_name.setText(value)

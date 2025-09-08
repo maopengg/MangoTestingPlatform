@@ -6,8 +6,6 @@ from requests.exceptions import JSONDecodeError, InvalidURL, ConnectionError
 from src.network import HTTP
 from src.pages.login.login import LoginWindow
 from src.pages.window.mian_window import MainWindow
-from src.settings import settings
-from src.tools.methods import Methods
 from src.tools.set_config import SetConfig
 from .login_dict import form_data
 from ... import log

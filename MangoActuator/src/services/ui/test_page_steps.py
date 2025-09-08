@@ -11,11 +11,9 @@ from mangoautomation.uidrive import DriverObject, BaseData
 from mangotools.decorator import singleton
 from mangotools.exceptions import MangoToolsError
 
-from src.tools.set_config import SetConfig
 from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
 from src.exceptions import MangoActuatorError
-from src.models import queue_notification
 from src.models.ui_model import PageStepsModel, PageStepsResultModel, RecordingModel
 from src.network import socket_conn, UiSocketEnum
 from src.services.ui.page_steps import PageSteps
@@ -23,6 +21,8 @@ from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
+from src.tools.set_config import SetConfig
+from src.tools.send_global_msg import send_global_msg
 
 
 @singleton
@@ -42,10 +42,12 @@ class TestPageSteps:
     async def page_steps_mian(self, data: PageStepsModel) -> None:
         async with self.lock:
             page_steps = PageSteps(self.base_data, self.driver_object, data, True)
+            send_global_msg(f'UI-开始调试步骤：{data.name or data.ope_key}')
             try:
                 await page_steps.driver_init()
                 await page_steps.page_init()
                 page_steps_result_model = await page_steps.steps_main()
+                send_global_msg(f'UI-结束调试步骤：{data.name or data.ope_key}')
                 await self.send_steps_result(
                     200 if page_steps_result_model.status else 300,
                     f'步骤【{data.name}】测试完成' if page_steps_result_model.status else f'步骤【{data.name}】测试失败，错误提示：{page_steps_result_model.error_message}',
@@ -134,10 +136,7 @@ class TestPageSteps:
                 msg=msg,
                 is_notice=ClientTypeEnum.WEB
             )
-        queue_notification.put({
-            'type': _type,
-            'value': msg
-        })
+        send_global_msg(msg)
 
     def reset_driver_object(self):
         self.driver_object = DriverObject(log, True)

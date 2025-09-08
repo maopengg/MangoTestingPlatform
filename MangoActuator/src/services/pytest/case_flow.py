@@ -14,6 +14,7 @@ from src.models.system_model import GetTaskModel
 from src.services.pytest.test_case import TestCase
 from src.settings import settings
 from src.tools.log_collector import log
+from src.tools.send_global_msg import send_global_msg
 
 
 class PytestCaseFlow:
@@ -55,7 +56,7 @@ class PytestCaseFlow:
     @classmethod
     async def execute_task(cls, case_model: PytestCaseModel):
         async with TestCase(cls.parent, case_model) as obj:
-            cls.parent.set_tips_info(f'开始执行Pytest测试用例：{case_model.name}')
+            send_global_msg(f'开始执行Pytest测试用例：{case_model.name}')
             await obj.test_case()
             cls.running_tasks -= 1
 

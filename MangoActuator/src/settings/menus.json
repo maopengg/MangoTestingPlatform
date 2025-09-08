@@ -17,6 +17,7 @@
       "is_active": false,
       "submenus": [
         {
+          "btn_icon": ":/icons/robot.svg",
           "btn_id": "page",
           "btn_text": "页面元素",
           "btn_tooltip": "页面元素",

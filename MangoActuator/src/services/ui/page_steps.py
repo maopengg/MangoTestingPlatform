@@ -28,6 +28,7 @@ from src.network import ApiSocketEnum, socket_conn, HTTP
 from src.tools import project_dir
 from src.tools.decorator.error_handle import async_error_handle
 from src.tools.log_collector import log
+from src.tools.send_global_msg import send_global_msg
 from src.tools.set_config import SetConfig
 
 
@@ -67,15 +68,18 @@ class PageSteps:
                 self.page_steps_model.environment_config.db_rud_status,
                 self.page_steps_model.environment_config.mysql_config
             )
+            send_global_msg(f'UI-设置mysql链接成功')
         log.debug(f'设置UI自定义值-1：{not is_page_init},数据：{self.page_steps_model.public_data_list}')
         if not is_page_init:
             return
         for cache_data in self.page_steps_model.public_data_list:
             if cache_data.type == UiPublicTypeEnum.CUSTOM.value:
+                send_global_msg(f'UI-设置全局变量-自定义成功')
                 log.debug(f'设置UI自定义值key-2：{cache_data.key}，value：{cache_data.value}')
                 self.base_data.test_data.set_cache(cache_data.key, cache_data.value)
             elif cache_data.type == UiPublicTypeEnum.SQL.value:
                 if self.base_data.mysql_connect:
+                    send_global_msg(f'UI-设置全局变量-SQL成功')
                     sql = self.base_data.test_data.replace(cache_data.value)
                     result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
                     if isinstance(result_list, list) and len(result_list) > 0:
@@ -87,9 +91,11 @@ class PageSteps:
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0
         self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
+        send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
+                send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
                 await self._steps_retry()
             for element_model in self.page_steps_model.element_list:
                 try:
@@ -126,14 +132,17 @@ class PageSteps:
 
     async def _ope_steps(self, element_model, element_data) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
+        send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
         if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:
             if self.page_steps_model.switch_step_open_url:
                 await asyncio.sleep(1)
+            send_global_msg(f'UI-开始操作浏览器打开URL')
             await element_ope.open_device(is_open=self.page_steps_model.switch_step_open_url)
         else:
             await element_ope.open_device()
         self._device_opened = True
         element_result = await element_ope.element_main(element_model, element_data)
+        send_global_msg(f'UI-结束执行元素或操作：{element_model.name or element_model.ope_key}')
         self.page_step_result_model.status = element_result.status
         self.page_step_result_model.error_message = element_result.error_message
         self.page_step_result_model.element_result_list.append(element_result)
@@ -148,6 +157,7 @@ class PageSteps:
     async def _steps_retry(self):
         match self.page_steps_model.type:
             case DriveTypeEnum.WEB.value:
+                send_global_msg(f'UI-开始重试，正在刷新浏览器')
                 if self.base_data.page:
 
                     try:
@@ -173,6 +183,7 @@ class PageSteps:
                 log.error('自动化类型不存在，请联系管理员检查！')
 
     async def web_init(self, is_recording: bool = False, host_list: list | None = None):
+        send_global_msg(f'UI-开始初始化WEB设备')
         if self.driver_object.web is None:
             web_max = SetConfig.get_web_max()  # type: ignore
             web_headers = SetConfig.get_web_headers()  # type: ignore
@@ -210,14 +221,14 @@ class PageSteps:
     def android_init(self):
         self.base_data.package_name = self.page_steps_model.environment_config.test_object_value
         self.test_object = self.base_data.url
-
+        send_global_msg(f'UI-开始初始化安卓设备：{self.base_data.package_name}')
         if self.driver_object.android is None:
             self.driver_object.set_android(SetConfig.get_and_equipment())
         if self.base_data.android is None:
             self.base_data.android = self.driver_object.android.new_android()
 
     def desktop_init(self, ):
-        pass
+        send_global_msg(f'UI-开始初始化PC设备')
 
     async def __intercept_request(self, obj, route: Route, request: Request):
         if self.host_list is None:
@@ -226,6 +237,7 @@ class PageSteps:
         if request.resource_type in ("document", "xhr", "fetch"):
             for host_dict in self.host_list:
                 if host_dict.get('value') in request.url:
+                    send_global_msg(f'UI-设置拦截API成功，接口会写入到的产品ID：{host_dict.get("project_product_id")}')
                     await self.__send_recording_api(request, host_dict.get('project_product_id'))
         await route.continue_()
 
@@ -258,3 +270,4 @@ class PageSteps:
             func_name=ApiSocketEnum.RECORDING_API.value,
             func_args=api_info
         )
+        send_global_msg(f'UI-发送接口信息成功，URL：{parsed_url.path}')

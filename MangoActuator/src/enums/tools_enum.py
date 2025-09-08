@@ -146,6 +146,19 @@ class Status5Enum(BaseEnum):
         return {0: "关闭", 1: "启用"}
 
 
+class MessageEnum(BaseEnum):
+    """状态枚举"""
+    BOTTOM = 0
+    REAL_TIME = 1
+    NOTIFICATION = 2
+    WS_LINK = 3
+    CASE_NAME = 4
+
+    @classmethod
+    def obj(cls):
+        return {0: "底栏", 1: "首页实时日志", 2: '通知', 3: 'ws链接状态', 4: '用例名称'}
+
+
 class CacheKeyEnum(BaseEnum):
     """参数"""
     HOST = 'host'

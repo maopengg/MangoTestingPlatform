@@ -17,6 +17,7 @@ from src.services.ui.test_case import TestCase
 from src.settings import settings
 from src.tools.decorator.memory import async_memory
 from src.tools.log_collector import log
+from src.tools.send_global_msg import send_global_msg
 from src.tools.set_config import SetConfig
 
 
@@ -62,7 +63,7 @@ class CaseFlow:
     @async_memory
     async def execute_task(cls, case_model: CaseModel):
         async with TestCase(cls.parent, case_model, cls.driver_object) as obj:
-            cls.parent.set_tips_info(f'开始执行UI测试用例：{case_model.name}')
+            send_global_msg(f'开始执行UI测试用例：{case_model.name}')
             await obj.case_main()
             cls.running_tasks -= 1
 

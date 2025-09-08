@@ -4,10 +4,13 @@
 # @Time   : 2023-11-08 15:48
 # @Author : 毛鹏
 
-from mangoui import CascaderModel
 from pydantic import BaseModel
 
+from src.enums.gui_enum import TipsTypeEnum
+from src.enums.tools_enum import MessageEnum
 
-class BaseDictModel(BaseModel):
-    project: list[CascaderModel] | None = None
-    ui_option: list
+
+class MessageModel(BaseModel):
+    type: MessageEnum
+    msg: str | int
+    level: TipsTypeEnum | None = None
