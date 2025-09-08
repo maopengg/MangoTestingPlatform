@@ -87,13 +87,11 @@
         <template #extra>
           <a-space>
             <div>
-              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button></div
-            >
-            <div
-              ><a-button status="warning" size="small" @click="handleClick"
-                >设为定时任务</a-button
-              ></div
-            >
+              <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
+            </div>
+            <div>
+              <a-button status="warning" size="small" @click="handleClick">设为定时任务 </a-button>
+            </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
             </div>
@@ -183,11 +181,11 @@
                 class="custom-mini-btn"
                 :loading="caseRunning"
                 @click="onRun(record)"
-                >执行</a-button
-              >
+                >执行
+              </a-button>
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                >文件</a-button
-              >
+                >文件
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
@@ -197,8 +195,8 @@
                       size="mini"
                       class="custom-mini-btn"
                       @click="onUpdate(record)"
-                      >编辑</a-button
-                    >
+                      >编辑
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -206,8 +204,8 @@
                       size="mini"
                       class="custom-mini-btn"
                       @click="onResult(record)"
-                      >结果</a-button
-                    >
+                      >结果
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -234,7 +232,7 @@
       >
         <template #title> {{ data.isResult ? '查看测试结果' : '编辑代码' }}</template>
         <div v-if="!data.isResult">
-          <CodeEditor v-model="data?.codeText" placeholder="输入python代码" />
+          <CodeEditor v-model="data.codeText" placeholder="输入python代码" />
         </div>
         <div v-else>
           <a-collapse
@@ -429,6 +427,7 @@
       },
     })
   }
+
   function onDeleteItems() {
     if (selectedRowKeys.value.length === 0) {
       Message.error('请选择要删除的数据')
@@ -526,6 +525,7 @@
     })
     doRefresh()
   }
+
   const onRun = async (param) => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -588,6 +588,7 @@
       })
       .catch(console.log)
   }
+
   function scheduledName() {
     getSystemTasksName()
       .then((res) => {
@@ -595,6 +596,7 @@
       })
       .catch(console.log)
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()
