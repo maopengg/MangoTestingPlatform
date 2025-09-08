@@ -14,13 +14,14 @@ from websockets.exceptions import WebSocketException
 from websockets.legacy.client import WebSocketClientProtocol
 
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
-from src.enums.tools_enum import CacheKeyEnum
+from src.enums.tools_enum import CacheKeyEnum, MessageEnum
 from src.models.socket_model import SocketDataModel, QueueModel
 from src.models.system_model import SetUserOpenSatusModel
 from src.services.customization import func_info
 from src.settings import settings
 from src.tools import project_dir
 from src.tools.log_collector import log
+from src.tools.send_global_msg import send_global_msg
 
 T = TypeVar('T')
 
@@ -46,7 +47,7 @@ class WebSocketClient:
             response_str = await cls.websocket.recv()
             res = cls.__output_method(response_str)
             if res.code == 200:
-                cls.parent.set_tips_info("心跳已连接")
+                send_global_msg(res.msg, MessageEnum.BOTTOM)
                 from src.network import ToolsSocketEnum
                 await cls.async_send(
                     '设置缓存数据成功',
@@ -87,13 +88,15 @@ class WebSocketClient:
             except Exception as error:
                 if retry >= max_retries:
                     log.error(f"已达到最大重试次数({max_retries})，程序将退出")
-                    cls.parent.set_tips_info("连接失败，已达到最大重试次数，程序将退出")
+                    send_global_msg('连接失败，已达到最大重试次数，程序将退出', MessageEnum.BOTTOM)
+                    send_global_msg(0, MessageEnum.WS_LINK)
+
                     cls.running = False
                     os._exit(1)
                 else:
                     log.error(f'错误类型：{error}')
-                    cls.parent.set_tips_info(
-                        f"服务已关闭，正在尝试重新连接，如长时间无响应请联系管理人员！当前重试次数：{retry}")
+                    send_global_msg(0, MessageEnum.WS_LINK)
+                    send_global_msg(f"链接已断开，正在尝试重新连接！当前重试次数：{retry}", MessageEnum.BOTTOM)
                     await asyncio.sleep(5)
 
     @classmethod
@@ -103,6 +106,7 @@ class WebSocketClient:
         @return:
         """
         from src.consumer import SocketConsumer
+        send_global_msg(1, MessageEnum.WS_LINK)
         log.info('ws连接成功，开始获取数据！')
         while cls.running:
             recv_json = await cls.websocket.recv()

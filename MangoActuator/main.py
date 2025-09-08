@@ -39,7 +39,7 @@ asyncio.run(main())
 # 下面是需要打包成exe的人看的
 r"""
 pyinstaller `
---name "执行器" `
+--name "芒果执行器" `
 --onefile `
 --noconsole `
 --icon "app_icon.ico" `

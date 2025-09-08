@@ -9,38 +9,31 @@
       "is_active": true
     },
     {
-      "btn_icon": ":/icons/robot.svg",
-      "btn_id": "ui",
-      "btn_text": "UI自动化",
-      "btn_tooltip": "UI自动化配置",
+      "btn_icon": ":/icons/find-replace.svg",
+      "btn_id": "web",
+      "btn_text": "WEB配置",
+      "btn_tooltip": "WEB自动化配置",
       "show_top": true,
-      "is_active": false,
-      "submenus": [
-        {
-          "btn_id": "web",
-          "btn_text": "WEB配置",
-          "btn_tooltip": "WEB自动化配置",
-          "show_top": true,
-          "is_active": false
-        },
-        {
-          "btn_id": "android",
-          "btn_text": "安卓配置",
-          "btn_tooltip": "安卓自动化配置",
-          "show_top": true,
-          "is_active": false
-        },
-        {
-          "btn_id": "pc",
-          "btn_text": "PC配置",
-          "btn_tooltip": "PC自动化配置",
-          "show_top": true,
-          "is_active": false
-        }
-      ]
+      "is_active": false
     },
-        {
-      "btn_icon": ":/icons/robot.svg",
+    {
+      "btn_icon": ":/icons/mobile.svg",
+      "btn_id": "android",
+      "btn_text": "安卓配置",
+      "btn_tooltip": "安卓自动化配置",
+      "show_top": true,
+      "is_active": false
+    },
+    {
+      "btn_icon": ":/icons/desktop.svg",
+      "btn_id": "pc",
+      "btn_text": "PC配置",
+      "btn_tooltip": "PC自动化配置",
+      "show_top": true,
+      "is_active": false
+    },
+    {
+      "btn_icon": ":/icons/pen.svg",
       "btn_id": "pytest",
       "btn_text": "Pytest配置",
       "btn_tooltip": "Pytest自动化配置",

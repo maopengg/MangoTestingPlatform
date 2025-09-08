@@ -14,11 +14,9 @@ from mangoautomation.uidrive import DriverObject, BaseData
 from mangotools.data_processor import RandomTimeData
 from mangotools.exceptions import MangoToolsError
 
-from src.enums.gui_enum import TipsTypeEnum
 from src.enums.system_enum import ClientTypeEnum
-from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum
+from src.enums.tools_enum import StatusEnum, TestCaseTypeEnum, MessageEnum
 from src.exceptions import *
-from src.models import queue_notification
 from src.models.system_model import TestSuiteDetailsResultModel
 from src.models.ui_model import CaseModel, PageStepsResultModel, UiCaseResultModel
 from src.network import socket_conn, UiSocketEnum
@@ -28,6 +26,7 @@ from src.tools.decorator import async_error_handle, async_memory
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
 from src.tools.set_config import SetConfig
+from src.tools.send_global_msg import send_global_msg
 
 
 class TestCase:
@@ -50,6 +49,7 @@ class TestCase:
             test_env=self.case_model.test_env,
             status=StatusEnum.SUCCESS.value,
         )
+        send_global_msg(self.case_model.name, MessageEnum.CASE_NAME)
 
     async def __aenter__(self):
         return self
@@ -113,9 +113,11 @@ class TestCase:
         front_custom = self.base_data.test_data.replace(front_custom)
         front_sql = self.base_data.test_data.replace(front_sql)
         for i in front_custom:
+            send_global_msg(f'UI-开始设置用例前置自定义参数')
             self.base_data.test_data.set_cache(i.get('key'), i.get('value'))
         for i in front_sql:
             if self.base_data.mysql_connect:
+                send_global_msg(f'UI-开始设置用例前置SQL参数')
                 sql = self.base_data.test_data.replace(i.get('sql'))
                 result_list: list[dict] = self.base_data.mysql_connect.condition_execute(sql)
                 if isinstance(result_list, list) and len(result_list) > 0:
@@ -130,17 +132,20 @@ class TestCase:
 
     async def case_parametrize(self):
         if self.case_model.parametrize:
+            send_global_msg(f'UI-开始设置用例参数化')
             for i in self.case_model.parametrize:
                 self.base_data.test_data.set_cache(i.get('key'), self.base_data.test_data.replace(i.get('value')))
 
     async def case_posterior(self, posterior_sql: list[dict]):
         for sql in posterior_sql:
+            send_global_msg(f'UI-开始设置用例后置SQL')
             if self.base_data.mysql_connect and sql.get('sql', None) is not None:
                 self.base_data.mysql_connect.condition_execute(sql.get('sql'))
 
     async def sava_videos(self):
         if self.driver_object.web and self.driver_object.web.web_recording:
             self.case_result.video_path = await self.base_data.page.video.path()
+            send_global_msg(f'UI-保存的视频地址：{self.case_result.video_path}')
 
     async def send_case_result(self, msg):
         if self.case_model.test_suite_details and self.case_model.test_suite_id:
@@ -164,10 +169,7 @@ class TestCase:
             func_args=func_args,
             user=self.case_model.send_user,
         )
-        queue_notification.put({
-            'type': TipsTypeEnum.SUCCESS if self.case_result.status else TipsTypeEnum.ERROR,
-            'value': msg
-        })
+        send_global_msg(msg, )
 
     def set_page_steps(self, page_steps_result_model: PageStepsResultModel, msg=None):
         self.case_result.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
