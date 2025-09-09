@@ -57,9 +57,7 @@ class TestCase:
             test_env_name=PytestSystemEnum.TEST_ENV.value,
             test_env=self.case_model.test_env,
             file_path=self.case_model.file_path,
-            quiet=True,
-            show_output=True,
-            verbose=True,
+            quiet=False,
         )
         await self.result_data(report_data)
         await self.send_case_result()
