@@ -88,7 +88,11 @@ class PageElementViews(ViewSet):
     def post_upload_element(self, request):
         uploaded_file = request.FILES['file']
         df = pd.read_excel(uploaded_file, keep_default_na=False)
-        df['表达式类型'] = df['表达式类型'].map(ElementExpEnum.reversal_obj())
+        df['类型-1'] = df['类型-1'].map(ElementExpEnum.reversal_obj())
+        if not df['类型-2'].empty and df['类型-2'].notna().any():
+            df['类型-2'] = df['类型-2'].map(ElementExpEnum.reversal_obj())
+        if not df['类型-3'].empty and df['类型-3'].notna().any():
+            df['类型-3'] = df['类型-3'].map(ElementExpEnum.reversal_obj())
         df = df.rename(columns={
             '元素名称': 'name',
             '类型-1': 'exp',
