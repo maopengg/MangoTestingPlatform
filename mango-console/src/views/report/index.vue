@@ -61,13 +61,11 @@
         <a-table
           :scrollbar="true"
           :bordered="false"
-          :row-selection="{ selectedRowKeys, showCheckedAll }"
           :loading="table.tableLoading.value"
           :data="table.dataList"
           :columns="tableColumns"
           :pagination="false"
           :rowKey="rowKey"
-          @selection-change="onSelectionChange"
           :scroll="{ x: 1100, y: tableScrollHeight() }"
         >
           <template #columns>
@@ -129,7 +127,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+  import { usePagination, useRowKey, useTable } from '@/hooks/table'
   import { nextTick, onMounted, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import { fieldNames } from '@/setting'
@@ -148,7 +146,6 @@
 
   const pagination = usePagination(doRefresh)
   pagination.pageSize = 10
-  const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const table = useTable()
   const rowKey = useRowKey('id')
   const router = useRouter()

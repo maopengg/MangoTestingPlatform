@@ -162,7 +162,7 @@
             <a-collapse-item v-for="item of data.dataList" :key="item.id">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_name }}</span>
+                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
@@ -172,56 +172,33 @@
               <template #extra>
                 <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
-              <a-table :columns="uiColumns" :data="item.children" :pagination="false"
-                ><template #columns>
-                  <a-table-column title="步骤ID" data-index="id">
-                    <template #cell="{ record }">
-                      {{ record.id }}
+              <a-table
+                :bordered="false"
+                :columns="uiColumns"
+                :data="item.children"
+                :pagination="false"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="itemRow of uiColumns"
+                    :key="itemRow.key"
+                    :align="itemRow.align ? itemRow.align : 'center'"
+                    :data-index="itemRow.dataIndex"
+                    :fixed="itemRow.fixed"
+                    :title="itemRow.title"
+                    :width="itemRow.width"
+                    :ellipsis="itemRow.ellipsis"
+                    :tooltip="itemRow.tooltip"
+                  >
+                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                      <span>{{ record.id }}</span>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="产品名称" data-index="project_product_name">
-                    <template #cell="{ record }">
-                      {{ record.project_product_name }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="步骤名称" data-index="name">
-                    <template #cell="{ record }">
-                      {{ record.name }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="开始时间" data-index="test_time">
-                    <template #cell="{ record }">
-                      {{ record?.test_time }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="结束时间" data-index="stop_time">
-                    <template #cell="{ record }">
-                      {{ record?.stop_time }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="测试环境" data-index="test_object">
-                    <template #cell="{ record }">
-                      {{ record?.test_object }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="测试结果" data-index="status">
-                    <template #cell="{ record }">
-                      <a-tag
-                        :color="enumStore.status_colors[record?.status]"
-                        size="small"
-                        class="custom-tag"
-                      >
-                        {{ enumStore.task_status[record?.status].title }}
+                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                        >{{ enumStore.task_status[record.status].title }}
                       </a-tag>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="失败提示" data-index="error_message">
-                    <template #cell="{ record }">
-                      {{ record.error_message }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                    <template #cell="{ record }">
+                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
                       <a-space>
                         <a-button
                           v-if="!record.children"
@@ -233,8 +210,8 @@
                       </a-space>
                     </template>
                   </a-table-column>
-                </template></a-table
-              >
+                </template>
+              </a-table>
             </a-collapse-item>
           </a-collapse>
         </a-tab-pane>
@@ -255,7 +232,7 @@
             <a-collapse-item :header="item.case_name" key="1">
               <template #header>
                 <div class="custom-header">
-                  <span>{{ item.case_name }}</span>
+                  <span>{{ item.case_id }}-{{ item.case_name }}</span>
                   <span style="width: 20px"></span>
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
@@ -265,51 +242,39 @@
               <template #extra>
                 <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
-              <a-table :columns="apiColumns" :data="item.children" :pagination="false"
-                ><template #columns>
-                  <a-table-column title="接口ID" data-index="id">
-                    <template #cell="{ record }">
-                      {{ record.id }}
+              <a-table
+                :bordered="false"
+                :columns="apiColumns"
+                :data="item.children"
+                :pagination="false"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="itemRow of apiColumns"
+                    :key="itemRow.key"
+                    :align="itemRow.align ? itemRow.align : 'center'"
+                    :data-index="itemRow.dataIndex"
+                    :fixed="itemRow.fixed"
+                    :title="itemRow.title"
+                    :width="itemRow.width"
+                    :ellipsis="itemRow.ellipsis"
+                    :tooltip="itemRow.tooltip"
+                  >
+                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                      <span>{{ record.api_info_id }}</span>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="产品名称" data-index="project_product_name">
-                    <template #cell="{ record }">
-                      {{ record.project_product_name }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="接口名称" data-index="name">
-                    <template #cell="{ record }">
-                      {{ record.name }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="测试环境" data-index="request_url">
-                    <template #cell="{ record }">
-                      {{ record?.request?.url }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="耗时" data-index="response_time">
-                    <template #cell="{ record }">
-                      {{ record?.response?.time }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="测试结果" data-index="status">
-                    <template #cell="{ record }">
-                      <a-tag
-                        :color="enumStore.status_colors[record?.status]"
-                        size="small"
-                        class="custom-tag"
-                      >
-                        {{ enumStore.task_status[record?.status].title }}
+                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                        >{{ enumStore.task_status[record.status].title }}
                       </a-tag>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="失败提示" data-index="error_message">
-                    <template #cell="{ record }">
-                      {{ record.error_message }}
+                    <template v-else-if="itemRow.key === 'request_url'" #cell="{ record }">
+                      <span>{{ record?.request?.url }}</span>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                    <template #cell="{ record }">
+                    <template v-else-if="itemRow.key === 'response_time'" #cell="{ record }">
+                      <span>{{ record?.response?.time }}</span>
+                    </template>
+                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
                       <a-space>
                         <a-button
                           v-if="!record.children"
@@ -321,8 +286,8 @@
                       </a-space>
                     </template>
                   </a-table-column>
-                </template></a-table
-              >
+                </template>
+              </a-table>
             </a-collapse-item>
           </a-collapse>
         </a-tab-pane>
@@ -353,41 +318,39 @@
               <template #extra>
                 <a-button type="text" size="mini" @click.stop="onRetry(item.id)">重试</a-button>
               </template>
-              <a-table :columns="pytestColumns" :data="item.children" :pagination="false"
-                ><template #columns>
-                  <a-table-column title="产品名称" data-index="project_product_name">
-                    <template #cell="{ record }">
-                      {{ item.project_product.name }}
+              <a-table
+                :bordered="false"
+                :columns="pytestColumns"
+                :data="item.children"
+                :pagination="false"
+              >
+                <template #columns>
+                  <a-table-column
+                    v-for="itemRow of pytestColumns"
+                    :key="itemRow.key"
+                    :align="itemRow.align ? itemRow.align : 'center'"
+                    :data-index="itemRow.dataIndex"
+                    :fixed="itemRow.fixed"
+                    :title="itemRow.title"
+                    :width="itemRow.width"
+                    :ellipsis="itemRow.ellipsis"
+                    :tooltip="itemRow.tooltip"
+                  >
+                    <template v-if="itemRow.key === 'id'" #cell="{ record }">
+                      <span>{{ record.id }}</span>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="用例名称" data-index="name">
-                    <template #cell="{ record }">
-                      {{ record.name }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="开始时间" data-index="start">
-                    <template #cell="{ record }">
-                      {{ formatDateTime(record.start) }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="结束时间" data-index="stop">
-                    <template #cell="{ record }">
-                      {{ formatDateTime(record.stop) }}
-                    </template>
-                  </a-table-column>
-                  <a-table-column title="测试结果" data-index="status">
-                    <template #cell="{ record }">
-                      <a-tag
-                        :color="enumStore.status_colors[record?.status]"
-                        size="small"
-                        class="custom-tag"
-                      >
-                        {{ enumStore.task_status[record?.status].title }}
+                    <template v-else-if="itemRow.key === 'status'" #cell="{ record }">
+                      <a-tag :color="enumStore.status_colors[record.status]" size="small"
+                        >{{ enumStore.task_status[record.status].title }}
                       </a-tag>
                     </template>
-                  </a-table-column>
-                  <a-table-column title="操作" data-index="actions" :width="130" fixed="right">
-                    <template #cell="{ record }">
+                    <template v-else-if="itemRow.key === 'start'" #cell="{ record }">
+                      <span>{{ formatDateTime(record.start) }}</span>
+                    </template>
+                    <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
+                      <span>{{ formatDateTime(record.stop) }}</span>
+                    </template>
+                    <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
                       <a-space>
                         <a-button
                           v-if="!record.children"
@@ -399,8 +362,8 @@
                       </a-space>
                     </template>
                   </a-table-column>
-                </template></a-table
-              >
+                </template>
+              </a-table>
             </a-collapse-item>
           </a-collapse>
         </a-tab-pane>

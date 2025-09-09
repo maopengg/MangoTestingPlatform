@@ -40,7 +40,7 @@ export const tableColumns = useTableColumn([
     align: 'left',
   },
   {
-    title: '执行环境',
+    title: '测试环境',
     key: 'test_env',
     dataIndex: 'test_env',
     width: 120,
