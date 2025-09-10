@@ -33,7 +33,7 @@ class PageStepsDetailedSerializers(serializers.ModelSerializer):
 
 
 class PageStepsDetailedSerializersC(serializers.ModelSerializer):
-    page_step = PageStepsSerializers(read_only=True)
+    # page_step = PageStepsSerializers(read_only=True)
     ele_name = PageElementSerializers(read_only=True)
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
@@ -45,7 +45,7 @@ class PageStepsDetailedSerializersC(serializers.ModelSerializer):
     @staticmethod
     def setup_eager_loading(queryset):
         queryset = queryset.select_related(
-            'page_step',
+            # 'page_step',
             'ele_name')
         return queryset
 

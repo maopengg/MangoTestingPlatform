@@ -62,7 +62,7 @@
                     {{
                       record.type === 0
                         ? getLabelByValue(data.ope, record.ope_key)
-                        : record.type === 1
+                        : (record.type === 1 || record.type ===4)
                         ? getLabelByValue(data.ass, record.ope_key)
                         : record.type === 2
                         ? record.key_list
@@ -72,7 +72,7 @@
                   <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
                     {{
                       (() => {
-                        if (record.type === 0 || record.type === 1) {
+                        if (record.type === 0 || record.type === 1 || record.type === 4) {
                           const filteredData = Object.fromEntries(
                             record.ope_value
                               ?.filter((item) => item.d === true)
@@ -84,7 +84,7 @@
                         }
                         return record.type === 2 ? record.sql : record.value
                       })()
-                    }}
+                    }}{{record.type === 4 ? record.if_actual :''}}
                   </template>
 
                   <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
