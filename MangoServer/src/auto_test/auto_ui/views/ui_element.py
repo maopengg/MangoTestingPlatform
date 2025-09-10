@@ -88,6 +88,8 @@ class PageElementViews(ViewSet):
     def post_upload_element(self, request):
         uploaded_file = request.FILES['file']
         df = pd.read_excel(uploaded_file, keep_default_na=False)
+        df = df.where(df.notna(), None)
+        df = df.replace('', None)
         df['类型-1'] = df['类型-1'].map(ElementExpEnum.reversal_obj())
         if not df['类型-2'].empty and df['类型-2'].notna().any():
             df['类型-2'] = df['类型-2'].map(ElementExpEnum.reversal_obj())
