@@ -10,6 +10,8 @@ from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
 
+from mangoautomation.enums import ElementOperationEnum
+from mangoautomation.enums._ui_enum import OnConditionFailStrategy, OnConditionPassStrategy
 from mangoautomation.exceptions import MangoAutomationError
 from mangoautomation.models import ElementResultModel
 from mangoautomation.uidrive import AsyncElement
@@ -46,6 +48,7 @@ class PageSteps:
         self.is_step = is_step
         self._device_opened = False
         self.host_list: list[dict] = []
+        self.is_condition = True
         if page_steps_model:
             self.page_step_result_model = PageStepsResultModel(
                 id=self.page_steps_model.id,
@@ -93,6 +96,7 @@ class PageSteps:
         self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
+            error_retry += 1
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
@@ -101,16 +105,16 @@ class PageSteps:
                 try:
                     element_data = await self._get_element_data(element_model.id)
                     element_result = await self._ope_steps(element_model, element_data)
-                    if element_result.status == StatusEnum.FAIL.value:
-                        error_retry += 1
+                    await self.condition(element_model, element_result)
+                    if self.is_condition:
                         break
                 except (MangoToolsError, MangoAutomationError) as error:
-                    error_retry += 1
+                    log.debug(f'步骤发生未知失败-1，类型：{error}，详情：{traceback.format_exc()}')
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = error.msg
                     break
                 except Exception as error:
-                    error_retry += 1
+                    log.debug(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
                     self.page_step_result_model.status = StatusEnum.FAIL.value
                     self.page_step_result_model.error_message = str(error)
                     break
@@ -118,6 +122,16 @@ class PageSteps:
         self.page_step_result_model.test_object = self.test_object
         self.page_step_result_model.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         return self.page_step_result_model
+
+    async def condition(self, element_model, element_result):
+        if element_result.status == StatusEnum.FAIL.value and element_model.type != ElementOperationEnum.CONDITION:
+            self.is_condition = True
+        if element_result.status == StatusEnum.FAIL.value and element_model.if_failure == OnConditionFailStrategy.CONTINUE_TEST:
+            self.is_condition = False
+        elif element_result.status == StatusEnum.FAIL.value and element_model.if_failure == OnConditionFailStrategy.SKIP_STEPS:
+            self.is_condition = True
+        if element_result.status == StatusEnum.SUCCESS.value and element_model.if_pass == OnConditionPassStrategy.CONTINUE_TEST:
+            self.is_condition = False
 
     async def _get_element_data(self, _id):
         element_data = None

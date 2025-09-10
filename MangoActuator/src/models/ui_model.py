@@ -36,6 +36,7 @@ class StepsDataModel(BaseModel):
 
 class PageStepsModel(BaseModel):
     id: int
+    case_steps_id: int | None = None
     name: str
     project_product: int
     project_product_name: str

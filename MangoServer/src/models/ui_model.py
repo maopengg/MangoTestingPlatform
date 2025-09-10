@@ -8,6 +8,8 @@ from typing import Any
 from mangotools.models import MysqlConingModel, MethodModel
 from pydantic import BaseModel
 
+from src.enums.ui_enum import OnConditionFailStrategy, OnConditionPassStrategy
+
 
 class ElementListModel(BaseModel):
     exp: int | None
@@ -28,6 +30,9 @@ class ElementModel(BaseModel):
     sql: str | None = None
     key: str | None = None
     value: str | None = None
+    if_failure: OnConditionFailStrategy | None = None
+    if_pass: OnConditionPassStrategy | None = None
+    if_actual: str | None = None
 
 
 class UiPublicModel(BaseModel):
@@ -58,6 +63,7 @@ class StepsDataModel(BaseModel):
 
 class PageStepsModel(BaseModel):
     id: int
+    case_steps_id: int | None = None
     name: str
     project_product: int
     project_product_name: str

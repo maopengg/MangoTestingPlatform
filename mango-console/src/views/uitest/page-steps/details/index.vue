@@ -151,7 +151,28 @@
               value-key="key"
             />
           </template>
-
+          <template v-else-if="item.type === 'select' && item.key === 'if_failure'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.condition_fail"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
+                    <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
+            <a-select
+              v-model="item.value"
+              :field-names="fieldNames"
+              :options="enumStore.condition_pass"
+              :placeholder="item.placeholder"
+              allow-clear
+              allow-search
+              value-key="key"
+            />
+          </template>
           <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
             <a-space direction="vertical">
               <a-cascader
@@ -168,7 +189,11 @@
               />
             </a-space>
           </template>
-          <template v-else-if="item.type === 'cascader' && item.label === '断言操作'">
+          <template
+            v-else-if="
+              item.type === 'cascader' && (item.label === '断言操作' || item.label === '判断条件')
+            "
+          >
             <a-space direction="vertical">
               <a-cascader
                 v-model="item.value"
@@ -287,6 +312,7 @@
         formItems.splice(i, 1)
       }
     }
+    // 元素操作
     if (event === 0) {
       formItems.push({
         label: '元素操作',
@@ -303,6 +329,7 @@
           return true
         },
       })
+      // 元素断言
     } else if (event === 1) {
       formItems.push({
         label: '断言操作',
@@ -319,80 +346,133 @@
           return true
         },
       })
+      // sql操作
     } else if (event === 2) {
-      formItems.push(
-        ...[
-          {
-            label: 'key_list',
-            key: 'key_list',
-            value: ref(''),
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql查询结果的key_list',
-            validator: function () {
-              if (this.value !== '') {
-                try {
-                  this.value = JSON.parse(this.value)
-                } catch (e) {
-                  Message.error('key_list值请输入json数据类型')
-                  return false
-                }
-              }
-              return true
-            },
-          },
-          {
-            label: 'sql语句',
-            key: 'sql',
-            value: ref(''),
-            type: 'textarea',
-            required: true,
-            placeholder: '请输入sql',
-            validator: function () {
-              if (!this.value && this.value !== 0) {
-                Message.error(this.placeholder || '')
-                return false
-              }
-              return true
-            },
-          },
-        ]
-      )
-    } else {
-      formItems.push(
-        ...[
-          {
-            label: 'key',
-            key: 'key',
-            value: ref(''),
-            type: 'input',
-            required: true,
-            placeholder: '请输入key',
-            validator: function () {
-              if (!this.value && this.value !== 0) {
-                Message.error(this.placeholder || '')
-                return false
-              }
-              return true
-            },
-          },
-          {
-            label: 'value',
-            key: 'value',
-            value: ref(''),
-            type: 'input',
-            required: true,
-            placeholder: '请输入value',
-            validator: function () {
-              if (!this.value && this.value !== 0) {
-                Message.error(this.placeholder || '')
-                return false
-              }
-              return true
-            },
-          },
-        ]
-      )
+      formItems.push({
+        label: 'key_list',
+        key: 'key_list',
+        value: ref(''),
+        type: 'textarea',
+        required: true,
+        placeholder: '请输入sql查询结果的key_list',
+        validator: function () {
+          if (this.value !== '') {
+            try {
+              this.value = JSON.parse(this.value)
+            } catch (e) {
+              Message.error('key_list值请输入json数据类型')
+              return false
+            }
+          }
+          return true
+        },
+      })
+      formItems.push({
+        label: 'sql语句',
+        key: 'sql',
+        value: ref(''),
+        type: 'textarea',
+        required: true,
+        placeholder: '请输入sql',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
+      // 自定义变量
+    } else if (event === 3) {
+      formItems.push({
+        label: 'key',
+        key: 'key',
+        value: ref(''),
+        type: 'input',
+        required: true,
+        placeholder: '请输入key',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
+      formItems.push({
+        label: 'value',
+        key: 'value',
+        value: ref(''),
+        type: 'input',
+        required: true,
+        placeholder: '请输入value',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
+    }
+    // 条件判断
+    else if (event === 4) {
+      formItems.push({
+        label: '判断条件',
+        key: 'ope_key',
+        value: value ? value : ref(''),
+        type: 'cascader',
+        required: true,
+        placeholder: '请选择条件判断方法',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
+      formItems.push({
+        label: '实际值',
+        key: 'if_actual',
+        value: ref(''),
+        type: 'input',
+        required: false,
+        placeholder: '实际值和选择元素是二选一必填，这个值会覆盖选择的元素',
+        validator: function () {
+          return true
+        },
+      })
+      formItems.push({
+        label: '如果成立',
+        key: 'if_pass',
+        value: ref(0),
+        type: 'select',
+        required: true,
+        placeholder: '请选择如果条件判断成立的选项',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
+      formItems.push({
+        label: '如不成立',
+        key: 'if_failure',
+        value: ref(''),
+        type: 'select',
+        required: true,
+        placeholder: '请选择如果条件判断不成立的选项',
+        validator: function () {
+          if (!this.value && this.value !== 0) {
+            Message.error(this.placeholder || '')
+            return false
+          }
+          return true
+        },
+      })
     }
   }
 
@@ -582,26 +662,44 @@
           (select.f === 'actual' || select.f === 'locating') &&
           !formItems.some((item) => item.key === select.f)
         ) {
-          formItems.push({
-            label: '选择元素',
-            key: select.f,
-            value: ref(''),
-            placeholder: '请选择一个元素',
-            required: true,
-            type: 'select',
-            validator: function () {
-              if (!this.value && this.value !== 0) {
-                Message.error(this.placeholder || '')
-                return false
-              }
-              return true
-            },
-          })
+          if (data.type !== 4) {
+            formItems.push({
+              label: '选择元素',
+              key: select.f,
+              value: ref(''),
+              placeholder: '请选择一个元素',
+              required: true,
+              type: 'select',
+              validator: function () {
+                if (!this.value && this.value !== 0) {
+                  Message.error(this.placeholder || '')
+                  return false
+                }
+                return true
+              },
+            })
+          } else {
+            formItems.splice(-3, 0, {
+              label: '选择元素',
+              key: select.f,
+              value: ref(''),
+              placeholder: '请选择一个元素，手动输入的实际值会覆盖此元素结果',
+              required: false,
+              type: 'select',
+              validator: function () {
+                return true
+              },
+            })
+          }
         } else if (select.d === true && !formItems.some((item) => item.key === select.f)) {
-          formItems.push({
+          console.log(select.v)
+          let d = {
             label: select.n ? select.n : select.f,
             key: `${select.f}-ope_value`,
-            value: select.v,
+            value:
+              select.v !== null && typeof select.v === 'object'
+                ? JSON.stringify(select.v)
+                : select.v,
             type: 'textarea',
             required: true,
             placeholder: select.p,
@@ -610,9 +708,15 @@
                 Message.error(this.placeholder || '')
                 return false
               }
+              this.value = JSON.parse(this.value)
               return true
             },
-          })
+          }
+          if (data.type !== 4) {
+            formItems.push(d)
+          } else {
+            formItems.splice(-2, 0, d)
+          }
         }
       })
     }

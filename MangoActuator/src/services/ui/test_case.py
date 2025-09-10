@@ -82,7 +82,7 @@ class TestCase:
                 self._is_page_init = False
                 page_steps_result_model = await page_steps.steps_main()
                 self.set_page_steps(page_steps_result_model)
-                if page_steps_result_model.status == StatusEnum.FAIL.value:
+                if page_steps_result_model.status == StatusEnum.FAIL.value and page_steps.is_condition:
                     break
             except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')

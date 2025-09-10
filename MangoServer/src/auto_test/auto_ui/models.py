@@ -91,13 +91,19 @@ class PageStepsDetailed(models.Model):
     type = models.SmallIntegerField(verbose_name="操作类型")
     ele_name = models.ForeignKey(to=PageElement, to_field="id", on_delete=models.SET_NULL, null=True)
     step_sort = models.IntegerField(verbose_name="顺序的排序")
-
+    # 操作和断言
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
-    ope_value = models.JSONField(verbose_name="对该元素的操作类型", null=True)
+    ope_value = models.JSONField(verbose_name="操作输入值，也是条件预期值", null=True)
+    # sql
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
+    # 自定义
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
+    # 条件判断
+    if_failure  = models.SmallIntegerField(verbose_name="条件不成立时", null=True)
+    if_pass  = models.SmallIntegerField(verbose_name="条件成立时", null=True)
+    if_actual = models.CharField(verbose_name="条件实际值", max_length=1048, null=True)
 
     class Meta:
         db_table = 'page_steps_detailed'

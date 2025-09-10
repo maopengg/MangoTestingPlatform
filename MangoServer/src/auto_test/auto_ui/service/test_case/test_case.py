@@ -136,6 +136,7 @@ class TestCase:
         page_steps.save()
         page_steps_model = PageStepsModel(
             id=page_steps.id,
+            case_steps_id=case_steps_detailed.id,
             name=page_steps.name,
             project_product=page_steps.project_product.id,
             project_product_name=page_steps.project_product.name,
