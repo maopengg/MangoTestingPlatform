@@ -1,179 +1,116 @@
 <template>
-  <div class="flow-page">
-    <div class="flow-header">
-      <div class="title">{{ title }}</div>
-      <div class="actions">
-        <a-button type="primary" status="success" size="small" @click="runFlow">运行</a-button>
-        <a-button type="primary" size="small" @click="saveFlow">保存</a-button>
-      </div>
-    </div>
-
-    <div class="flow-body">
-      <!-- 左侧：15% 节点类型面板 -->
-      <div class="palette">
-        <a-card
-          title="操作类型"
-          :bordered="false"
-          style="height: 100%; border: none; box-shadow: none"
-        >
-          <div class="palette-list">
-            <div
-              v-for="item in paletteItems"
-              :key="item.type"
-              class="palette-item"
-              draggable="true"
-              @dragstart="onDragStart($event, item.type)"
-            >
-              <span class="dot" :style="{ backgroundColor: item.color }"></span>
-              <span>{{ item.label }}</span>
-            </div>
-          </div>
-        </a-card>
-      </div>
-
-      <!-- 中间：65% 画布（原生实现） -->
-      <div ref="canvasRef" class="canvas" @drop="onDrop" @dragover="onDragOver">
-        <!-- SVG 边渲染 -->
-        <svg class="edges" xmlns="http://www.w3.org/2000/svg">
-          <g>
-            <line
-              v-for="edge in edges"
-              :key="edge.id"
-              :x1="getConnectorPosition(edge.source).x"
-              :y1="getConnectorPosition(edge.source).y"
-              :x2="getConnectorPosition(edge.target).x"
-              :y2="getConnectorPosition(edge.target).y"
-              stroke="#999"
-              stroke-width="2"
-              stroke-dasharray="5,3"
-            />
-            <!-- 拖拽连线时的临时线条 -->
-            <line
-              v-if="isDraggingConnection && linkStartConnector"
-              :x1="getConnectorPosition(linkStartConnector).x"
-              :y1="getConnectorPosition(linkStartConnector).y"
-              :x2="dragConnectionEnd.x"
-              :y2="dragConnectionEnd.y"
-              stroke="#1677ff"
-              stroke-width="2"
-              stroke-dasharray="5,3"
-            />
-          </g>
-          <!-- 不再需要箭头定义 -->
-        </svg>
-
-        <!-- 连接线删除按钮 -->
-        <div
-          v-for="edge in edges.filter((edge) => {
-            const sourceNode = nodes.find((n) => n.id === edge.source.nodeId)
-            const targetNode = nodes.find((n) => n.id === edge.target.nodeId)
-            return sourceNode && targetNode
-          })"
-          :key="`delete-${edge.id}`"
-          class="edge-delete-button"
-          :style="{
-            left: getEdgeMidpoint(edge).x - 8 + 'px',
-            top: getEdgeMidpoint(edge).y - 8 + 'px',
-          }"
-          @click.stop="deleteEdge(edge)"
-          @mouseenter="hoveredEdge = edge.id"
-          @mouseleave="hoveredEdge = null"
-        >
-          ×
+  <TableBody ref="tableBody">
+    <template #header>
+      <div class="demo-header">
+        <h3>FlowChart 组件使用示例</h3>
+        <div class="demo-actions">
+          <a-button type="primary" @click="saveFlow">保存</a-button>
+          <a-button @click="executeFlow">执行</a-button>
         </div>
-
-        <!-- 节点渲染 -->
-        <div
-          v-for="node in nodes"
-          :key="node.id"
-          class="node"
-          :class="{
-            active: selectedNode && selectedNode.id === node.id,
-            linking: linkStartConnector && linkStartConnector.nodeId === node.id,
-          }"
-          :style="{
-            left: node.position.x + 'px',
-            top: node.position.y + 'px',
-            borderColor: getColor(node.data.type),
-          }"
-          @mousedown.stop="onNodeMouseDown($event, node)"
-          @dragstart.prevent
-        >
-          <!-- 删除按钮 -->
-          <div class="delete-button" @click.stop="deleteNode(node)">×</div>
-          <!-- 上方连接点 -->
-          <div class="connector-top">
-            <div
-              class="connector-point"
-              @mousedown.stop="onConnectorMouseDown($event, node, 'top')"
-              @mouseup.stop="onConnectorMouseUp($event, node, 'top')"
-            ></div>
+      </div>
+    </template>
+    <template #default>
+      <div class="flow-demo-page">
+        <div class="demo-body">
+          <!-- 左侧操作面板 -->
+          <div class="left-panel">
+            <a-card title="操作面板" :bordered="false">
+              <!-- 拖拽面板 -->
+              <div class="drag-panel">
+                <div class="node-types">
+                  <div
+                    v-for="nodeType in nodeTypes"
+                    :key="nodeType.type"
+                    class="node-type-item"
+                    draggable="true"
+                    @dragstart="onDragStart($event, nodeType.type)"
+                  >
+                    <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
+                    {{ nodeType.label }}
+                  </div>
+                </div>
+              </div>
+            </a-card>
           </div>
 
-          <div class="node-title">{{ node.data.label }}</div>
-          <div class="node-type">{{ node.data.type }}</div>
+          <!-- 中间 FlowChart 组件 -->
+          <div class="center-panel">
+            <FlowChart
+              ref="flowChartRef"
+              :flow-data="flowData"
+              :readonly="false"
+              :allow-drop="true"
+              :color-map="colorMap"
+              @node-click="onNodeClick"
+              @node-select="onNodeSelect"
+              @flow-change="onFlowChange"
+              @edge-delete="onEdgeDelete"
+              @node-delete="onNodeDelete"
+            />
+          </div>
 
-          <!-- 下方连接点 -->
-          <div class="connector-bottom">
-            <div
-              class="connector-point"
-              @mousedown.stop="onConnectorMouseDown($event, node, 'bottom')"
-              @mouseup.stop="onConnectorMouseUp($event, node, 'bottom')"
-            ></div>
+          <!-- 右侧详情面板 -->
+          <div class="right-panel">
+            <a-card title="节点详情" :bordered="false">
+              <div v-if="selectedNode" class="node-details">
+                <h4>{{ selectedNode.label }}</h4>
+                <div class="detail-item">
+                  <label>ID:</label>
+                  <span>{{ selectedNode.id }}</span>
+                </div>
+                <div class="detail-item">
+                  <label>类型:</label>
+                  <span>{{ selectedNode.type }}</span>
+                </div>
+                <div class="detail-item">
+                  <label>位置:</label>
+                  <span>x: {{ selectedNode.position.x }}, y: {{ selectedNode.position.y }}</span>
+                </div>
+                <div class="detail-item">
+                  <label>配置:</label>
+                  <pre class="config-json">{{ JSON.stringify(selectedNode.config, null, 2) }}</pre>
+                </div>
+
+                <!-- 自定义配置编辑 -->
+                <div class="config-editor">
+                  <h5>编辑配置</h5>
+                  <a-textarea
+                    v-model="configText"
+                    :rows="6"
+                    placeholder="请输入 JSON 格式的配置"
+                    @blur="updateNodeConfig"
+                  />
+                </div>
+              </div>
+              <div v-else class="no-selection">
+                <p>请选择一个节点查看详情</p>
+              </div>
+            </a-card>
           </div>
         </div>
       </div>
-
-      <!-- 右侧：20% JSON 展示 -->
-      <div class="details">
-        <a-card title="详情" :bordered="false" style="height: 100%; border: none; box-shadow: none">
-          <div v-if="selectedNode" class="json-box">
-            <pre>{{ formattedSelected }}</pre>
-          </div>
-          <div v-else class="json-box placeholder"> 选择一个节点，在此查看 JSON 配置</div>
-        </a-card>
-      </div>
-    </div>
-  </div>
+    </template>
+  </TableBody>
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+  import { ref, computed, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
+  import FlowChart from '@/components/FlowChart.vue'
+  import { FlowData, UINode, Props, UIEdge, Position } from '@/types/components'
 
-  type Position = { x: number; y: number }
-  type NodeData = { type: string; label: string; config: Record<string, any> }
-  type UINode = { id: string; position: Position; data: NodeData }
-  type ConnectorPosition = 'top' | 'bottom'
-  type Connector = { nodeId: string; position: ConnectorPosition }
-  type UIEdge = { id: string; source: Connector; target: Connector }
-
-  const title = ref('测试 Flow')
-
-  // 画布 DOM
-  const canvasRef = ref<HTMLElement | null>(null)
-
-  // 画布数据
-  const nodes = ref<UINode[]>([])
-  const edges = ref<UIEdge[]>([])
-
+  const flowChartRef = ref()
   const selectedNode = ref<UINode | null>(null)
+  const configText = ref('')
 
-  // 拖拽移动状态
-  const draggingId = ref<string | null>(null)
-  const dragOffset = ref<Position>({ x: 0, y: 0 })
-  const wasDragging = ref(false)
+  // 流程图数据
+  const flowData = ref<FlowData>({
+    nodes: [],
+    edges: [],
+  })
 
-  // 连线状态：点击一次设为起点
-  const linkStartConnector = ref<Connector | null>(null)
-  // 拖拽连线状态
-  const isDraggingConnection = ref(false)
-  const dragConnectionEnd = ref<Position>({ x: 0, y: 0 })
-  // 悬停的连接线
-  const hoveredEdge = ref<string | null>(null)
-
-  // 左侧可拖拽的操作类型
-  const paletteItems = ref([
+  // 节点类型定义
+  const nodeTypes = ref([
     { type: 'element', label: '元素操作', color: '#52c41a' },
     { type: 'ass', label: '断言操作', color: '#1677ff' },
     { type: 'sql', label: 'SQL操作', color: '#fa8c16' },
@@ -181,666 +118,262 @@
     { type: 'custom', label: '自定义变量', color: '#eb2f96' },
   ])
 
-  const colorMap: Record<string, string> = {
-    element: '#52c41a',
-    ass: '#1677ff',
-    sql: '#fa8c16',
-    if: '#722ed1',
-    custom: '#eb2f96',
-  }
-  const getColor = (type: string) => colorMap[type] || '#1677ff'
+  // 颜色映射
+  const colorMap = computed(() => {
+    const map: Record<string, string> = {}
+    nodeTypes.value.forEach((item) => {
+      map[item.type] = item.color
+    })
+    return map
+  })
 
-  // 判断节点类型
-  const isDecisionNode = (type: string) => type === 'if'
+  // 监听选中节点变化，更新配置文本
+  watch(
+    selectedNode,
+    (node) => {
+      if (node) {
+        configText.value = JSON.stringify(node.config || {}, null, 2)
+      } else {
+        configText.value = ''
+      }
+    },
+    { immediate: true }
+  )
 
-  // 获取节点的连接数
-  const getNodeConnections = (nodeId: string) => {
-    const inputs = edges.value.filter((edge) => edge.target.nodeId === nodeId)
-    const outputs = edges.value.filter((edge) => edge.source.nodeId === nodeId)
-    return { inputs, outputs }
-  }
-
-  // drag start：把类型放到 dataTransfer
+  // 拖拽开始
   const onDragStart = (event: DragEvent, type: string) => {
     event.dataTransfer?.setData('application/mango-flow', type)
     event.dataTransfer!.effectAllowed = 'move'
   }
 
-  // 允许放置
-  const onDragOver = (event: DragEvent) => {
-    event.preventDefault()
-    event.dataTransfer!.dropEffect = 'move'
+  // 节点点击事件
+  const onNodeClick = (node: UINode) => {
+    console.log('节点被点击:', node)
+    Message.info(`点击了节点: ${node.label}`)
   }
 
-  // 计算鼠标在画布内坐标
-  const getCanvasPosition = (clientX: number, clientY: number): Position => {
-    const el = canvasRef.value!
-    const rect = el.getBoundingClientRect()
-    return { x: clientX - rect.left, y: clientY - rect.top }
-  }
-
-  // 放置到画布：创建节点
-  const onDrop = (event: DragEvent) => {
-    event.preventDefault()
-    const type = event.dataTransfer?.getData('application/mango-flow')
-    if (!type) return
-
-    const position = getCanvasPosition(event.clientX, event.clientY)
-    const id = `${type}-${Date.now()}`
-
-    const newNode: UINode = {
-      id,
-      position,
-      data: {
-        type,
-        label: `${type} 节点`,
-        config: {},
-      },
-    }
-    nodes.value = nodes.value.concat(newNode)
-  }
-
-  // 节点鼠标按下：开始拖拽
-  const onNodeMouseDown = (e: MouseEvent, node: UINode) => {
-    if (e.button !== 0) return
-    e.preventDefault()
-    const start = getCanvasPosition(e.clientX, e.clientY)
-    draggingId.value = node.id
-    dragOffset.value = { x: start.x - node.position.x, y: start.y - node.position.y }
-    wasDragging.value = false
+  // 节点选中事件
+  const onNodeSelect = (node: UINode | null) => {
     selectedNode.value = node
   }
 
-  // 鼠标移动：更新拖拽节点坐标和连线位置
-  const onMouseMove = (e: MouseEvent) => {
-    if (draggingId.value) {
-      // 节点拖拽逻辑
-      const pos = getCanvasPosition(e.clientX, e.clientY)
-      const idx = nodes.value.findIndex((n) => n.id === draggingId.value)
-      if (idx !== -1) {
-        const next = { ...nodes.value[idx] }
-        next.position = { x: pos.x - dragOffset.value.x, y: pos.y - dragOffset.value.y }
-        if (
-          Math.abs(next.position.x - nodes.value[idx].position.x) > 0 ||
-          Math.abs(next.position.y - nodes.value[idx].position.y) > 0
-        ) {
-          wasDragging.value = true
-        }
-        nodes.value = nodes.value.slice(0, idx).concat(next, nodes.value.slice(idx + 1))
-      }
-    }
-
-    if (isDraggingConnection.value) {
-      // 连线拖拽逻辑
-      const pos = getCanvasPosition(e.clientX, e.clientY)
-      dragConnectionEnd.value = pos
-    }
+  // 流程图数据变化事件
+  const onFlowChange = (newFlowData: FlowData) => {
+    flowData.value = newFlowData
   }
 
-  // 鼠标抬起：结束拖拽
-  const onMouseUp = () => {
-    draggingId.value = null
-    dragOffset.value = { x: 0, y: 0 }
-
-    // 结束连线拖拽
-    if (isDraggingConnection.value) {
-      isDraggingConnection.value = false
-      linkStartConnector.value = null
-    }
-  }
-
-  onMounted(() => {
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
-  })
-  onBeforeUnmount(() => {
-    window.removeEventListener('mousemove', onMouseMove)
-    window.removeEventListener('mouseup', onMouseUp)
-  })
-
-  // 连接点鼠标按下：开始拖拽连线
-  const onConnectorMouseDown = (e: MouseEvent, node: UINode, position: ConnectorPosition) => {
-    e.stopPropagation()
-    e.preventDefault()
-
-    const currentConnector: Connector = { nodeId: node.id, position }
-    linkStartConnector.value = currentConnector
-    isDraggingConnection.value = true
-
-    // 获取初始位置
-    const startPos = getConnectorPosition(currentConnector)
-    dragConnectionEnd.value = { x: startPos.x, y: startPos.y }
-  }
-
-  // 连接点鼠标抬起：处理连线
-  const onConnectorMouseUp = (e: MouseEvent, node: UINode, position: ConnectorPosition) => {
-    e.stopPropagation()
-
-    // 无论是否被判定为点击，都先结束拖拽，防止因事件冒泡被阻止导致粘连
-    draggingId.value = null
-    dragOffset.value = { x: 0, y: 0 }
-
-    // 如果在拖拽连线状态，尝试创建连接
-    if (isDraggingConnection.value && linkStartConnector.value) {
-      const currentConnector: Connector = { nodeId: node.id, position }
-
-      // 不能连接到自己
-      if (
-        linkStartConnector.value.nodeId !== node.id ||
-        linkStartConnector.value.position !== position
-      ) {
-        // 检查连接限制
-        const startNode = nodes.value.find((n) => n.id === linkStartConnector.value!.nodeId)
-        const endNode = node
-
-        // 判断节点可以有多个连接，普通节点只能上方输入下方输出
-        const isStartDecision = startNode ? isDecisionNode(startNode.data.type) : false
-        const isEndDecision = isDecisionNode(endNode.data.type)
-
-        // 获取起点和终点节点的当前连接情况
-        const startConnections = getNodeConnections(linkStartConnector.value.nodeId)
-        const endConnections = getNodeConnections(endNode.id)
-
-        // 检查连接是否有效
-        let isValidConnection = false
-        let errorMessage = ''
-
-        if (isStartDecision && isEndDecision) {
-          // 判断节点之间可以任意连接
-          isValidConnection = true
-        } else if (isStartDecision) {
-          // 起点是判断节点，终点是普通节点
-          // 普通节点的上方只能有一个输入
-          if (position === 'top' && endConnections.inputs.length > 0) {
-            isValidConnection = false
-            errorMessage = '普通节点最多只能有一个输入连接'
-          } else if (position === 'bottom') {
-            isValidConnection = false
-            errorMessage = '普通节点只能从上方接收连接'
-          } else {
-            isValidConnection = true
-          }
-        } else if (isEndDecision) {
-          // 起点是普通节点，终点是判断节点
-          // 普通节点的下方只能有一个输出
-          if (
-            linkStartConnector.value.position === 'bottom' &&
-            startConnections.outputs.length > 0
-          ) {
-            isValidConnection = false
-            errorMessage = '普通节点最多只能有一个输出连接'
-          } else if (linkStartConnector.value.position === 'top') {
-            isValidConnection = false
-            errorMessage = '普通节点只能从下方发出连接'
-          } else {
-            isValidConnection = true
-          }
-        } else {
-          // 普通节点之间的连接
-          // 起点必须是下方连接点，终点必须是上方连接点
-          // 且起点最多一个输出，终点最多一个输入
-          if (linkStartConnector.value.position !== 'bottom' || position !== 'top') {
-            isValidConnection = false
-            errorMessage = '普通节点只能从上方接收连接，从下方发出连接'
-          } else if (startConnections.outputs.length > 0) {
-            isValidConnection = false
-            errorMessage = '普通节点最多只能有一个输出连接'
-          } else if (endConnections.inputs.length > 0) {
-            isValidConnection = false
-            errorMessage = '普通节点最多只能有一个输入连接'
-          } else {
-            isValidConnection = true
-          }
-        }
-
-        if (isValidConnection) {
-          // 创建连线
-          const edge: UIEdge = {
-            id: `e-${Date.now()}`,
-            source: linkStartConnector.value,
-            target: currentConnector,
-          }
-          edges.value = edges.value.concat(edge)
-        } else {
-          Message.warning(`连接无效：${errorMessage || '连接不符合规则'}`)
-        }
-      }
-
-      // 结束连线状态
-      isDraggingConnection.value = false
-      linkStartConnector.value = null
-      return
-    }
-
-    if (wasDragging.value) {
-      wasDragging.value = false
-      return
-    }
-
-    const currentConnector: Connector = { nodeId: node.id, position }
-
-    if (!linkStartConnector.value) {
-      // 设置起点
-      linkStartConnector.value = currentConnector
-    } else if (
-      linkStartConnector.value.nodeId === node.id &&
-      linkStartConnector.value.position === position
-    ) {
-      // 点击同一个连接点，取消连线
-      linkStartConnector.value = null
-    } else {
-      // 检查连接限制
-      const startNode = nodes.value.find((n) => n.id === linkStartConnector.value!.nodeId)
-      const endNode = node
-
-      // 判断节点可以有多个连接，普通节点只能上方输入下方输出
-      const isStartDecision = startNode ? isDecisionNode(startNode.data.type) : false
-      const isEndDecision = isDecisionNode(endNode.data.type)
-
-      // 获取起点和终点节点的当前连接情况
-      const startConnections = getNodeConnections(linkStartConnector.value.nodeId)
-      const endConnections = getNodeConnections(endNode.id)
-
-      // 检查连接是否有效
-      let isValidConnection = false
-      let errorMessage = ''
-
-      if (isStartDecision && isEndDecision) {
-        // 判断节点之间可以任意连接
-        isValidConnection = true
-      } else if (isStartDecision) {
-        // 起点是判断节点，终点是普通节点
-        // 普通节点的上方只能有一个输入
-        if (position === 'top' && endConnections.inputs.length > 0) {
-          isValidConnection = false
-          errorMessage = '普通节点最多只能有一个输入连接'
-        } else if (position === 'bottom') {
-          isValidConnection = false
-          errorMessage = '普通节点只能从上方接收连接'
-        } else {
-          isValidConnection = true
-        }
-      } else if (isEndDecision) {
-        // 起点是普通节点，终点是判断节点
-        // 普通节点的下方只能有一个输出
-        if (linkStartConnector.value.position === 'bottom' && startConnections.outputs.length > 0) {
-          isValidConnection = false
-          errorMessage = '普通节点最多只能有一个输出连接'
-        } else if (linkStartConnector.value.position === 'top') {
-          isValidConnection = false
-          errorMessage = '普通节点只能从下方发出连接'
-        } else {
-          isValidConnection = true
-        }
-      } else {
-        // 普通节点之间的连接
-        // 起点必须是下方连接点，终点必须是上方连接点
-        // 且起点最多一个输出，终点最多一个输入
-        if (linkStartConnector.value.position !== 'bottom' || position !== 'top') {
-          isValidConnection = false
-          errorMessage = '普通节点只能从上方接收连接，从下方发出连接'
-        } else if (startConnections.outputs.length > 0) {
-          isValidConnection = false
-          errorMessage = '普通节点最多只能有一个输出连接'
-        } else if (endConnections.inputs.length > 0) {
-          isValidConnection = false
-          errorMessage = '普通节点最多只能有一个输入连接'
-        } else {
-          isValidConnection = true
-        }
-      }
-
-      if (isValidConnection) {
-        // 创建连线
-        const edge: UIEdge = {
-          id: `e-${Date.now()}`,
-          source: linkStartConnector.value,
-          target: currentConnector,
-        }
-        edges.value = edges.value.concat(edge)
-      } else {
-        Message.warning(`连接无效：${errorMessage || '连接不符合规则'}`)
-      }
-
-      linkStartConnector.value = null
-    }
-  }
-
-  // 用于计算连接点坐标（供 SVG 使用）
-  const getConnectorPosition = (connector: Connector): Position => {
-    const node = nodes.value.find((n) => n.id === connector.nodeId)
-    if (!node) return { x: 0, y: 0 }
-
-    const nodeWidth = 140
-    const nodeHeight = 56
-
-    // 基础位置（节点左上角）
-    const baseX = node.position.x
-    const baseY = node.position.y
-
-    // 根据连接点位置计算坐标
-    switch (connector.position) {
-      case 'top':
-        return { x: baseX + nodeWidth / 2, y: baseY }
-      case 'bottom':
-        return { x: baseX + nodeWidth / 2, y: baseY + nodeHeight }
-      default:
-        return { x: baseX + nodeWidth / 2, y: baseY + nodeHeight / 2 }
-    }
-  }
-
-  // 计算连接线中点坐标（用于放置删除按钮）
-  const getEdgeMidpoint = (edge: UIEdge): Position => {
-    const startPos = getConnectorPosition(edge.source)
-    const endPos = getConnectorPosition(edge.target)
-    return {
-      x: (startPos.x + endPos.x) / 2,
-      y: (startPos.y + endPos.y) / 2,
-    }
-  }
-
-  // 删除连接线
-  const deleteEdge = (edge: UIEdge) => {
-    edges.value = edges.value.filter((e) => e.id !== edge.id)
+  // 连接线删除事件
+  const onEdgeDelete = (edge: UIEdge) => {
     Message.success('连接线已删除')
   }
 
-  const formattedSelected = computed(() => {
-    return selectedNode.value
-      ? JSON.stringify(
-          {
-            id: selectedNode.value.id,
-            position: selectedNode.value.position,
-            data: selectedNode.value.data,
-          },
-          null,
-          2
-        )
-      : ''
-  })
-
-  // 运行：提示成功
-  const runFlow = () => {
-    Message.success('运行成功')
-  }
-
-  // 保存：打印整体数据结构（节点与边）
-  const saveFlow = () => {
-    const payload = {
-      nodes: nodes.value,
-      edges: edges.value,
-    }
-    // 打印到控制台
-    // eslint-disable-next-line no-console
-    console.log('Flow payload:', payload)
-    Message.success('已保存（控制台查看数据结构）')
-  }
-
-  // 删除节点及相关连线
-  const deleteNode = (node: UINode) => {
-    // 删除与该节点相关的所有边
-    edges.value = edges.value.filter(
-      (edge) => edge.source.nodeId !== node.id && edge.target.nodeId !== node.id
-    )
-
-    // 如果正在连线且起点是该节点，取消连线状态
-    if (linkStartConnector.value && linkStartConnector.value.nodeId === node.id) {
-      linkStartConnector.value = null
-    }
-
-    // 如果选中的是该节点，取消选中
-    if (selectedNode.value && selectedNode.value.id === node.id) {
+  // 节点删除事件
+  const onNodeDelete = (node: UINode) => {
+    Message.success(`节点 ${node.label} 已删除`)
+    // 如果删除的是当前选中的节点，清空选择
+    if (selectedNode.value?.id === node.id) {
       selectedNode.value = null
     }
+  }
 
-    // 删除节点
-    nodes.value = nodes.value.filter((n) => n.id !== node.id)
+  // 更新节点配置
+  const updateNodeConfig = () => {
+    if (!selectedNode.value || !configText.value.trim()) return
 
-    Message.success('节点已删除')
+    try {
+      const config = JSON.parse(configText.value)
+      // 创建新的节点数据
+      const updatedNode = {
+        ...selectedNode.value,
+        config,
+      }
+
+      // 更新流程图中的节点
+      const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
+      if (nodeIndex !== -1) {
+        flowData.value.nodes[nodeIndex] = updatedNode
+        selectedNode.value = updatedNode
+        Message.success('节点配置已更新')
+      }
+    } catch (error) {
+      Message.error('JSON 格式错误，请检查配置')
+    }
+  }
+
+  // 保存流程
+  const saveFlow = () => {
+    const dataStr = JSON.stringify(flowData.value, null, 2)
+    console.log('保存的流程数据:', dataStr)
+    console.log('节点数量:', flowData.value.nodes.length)
+    console.log('连线数量:', flowData.value.edges.length)
+    Message.success('流程已保存')
+  }
+
+  // 执行流程
+  const executeFlow = () => {
+    console.log('执行流程:', flowData.value)
+    Message.success('流程执行成功！')
   }
 </script>
 
 <style scoped>
-  .flow-page {
+  .flow-demo-page {
+    padding: 16px;
+    height: calc(100vh - 32px);
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 60px);
-    box-sizing: border-box;
-    padding: 12px;
-    gap: 12px;
-    background-color: #ffffff;
   }
 
-  .flow-header {
+  .demo-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #fff;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
-  .title {
-    font-size: 16px;
+  .demo-header h2 {
+    margin: 0;
+    color: var(--color-text-1);
+    font-size: 18px;
     font-weight: 600;
   }
 
-  .actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .flow-body {
-    flex: 1;
+  .demo-actions {
     display: flex;
     gap: 12px;
+  }
+
+  .demo-body {
+    flex: 1;
+    display: flex;
+    gap: 16px;
     min-height: 0;
   }
 
-  .palette {
+  .left-panel {
     flex: 0 0 10%;
-    min-width: 150px;
-    max-width: 200px;
-    height: 100%;
-    overflow: auto;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-    border-radius: 8px;
-    background-color: #f5f5f5;
+    min-width: 200px;
   }
 
-  .palette-list {
+  .center-panel {
+    flex: 0 0 50%;
+    min-width: 0;
+  }
+
+  .right-panel {
+    flex: 0 0 40%;
+    min-width: 300px;
+  }
+
+  .drag-panel {
+    margin-bottom: 20px;
+  }
+
+  .drag-panel h4,
+  .data-display h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--color-text-2);
+  }
+
+  .node-types {
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .palette-item {
+  .node-type-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
-    border: 1px dashed var(--color-border-2, #e5e6eb);
+    padding: 8px 12px;
+    border: 1px dashed var(--color-border);
     border-radius: 6px;
     cursor: grab;
-    user-select: none;
-    background: var(--color-bg-1, #fff);
-  }
-
-  .palette-item:active {
-    cursor: grabbing;
-  }
-
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-
-  .canvas {
-    position: relative;
-    flex: 0 0 50%;
-    height: 100%;
-    min-width: 0;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-    border-radius: 8px;
-    overflow: auto;
-    background-color: #f5f5f5;
-    background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 0),
-      linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
-    background-size: 20px 20px;
-    min-height: 600px;
-  }
-
-  .edges {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    min-height: 2000px;
-    pointer-events: none;
-  }
-
-  .node {
-    position: absolute;
-    background: #fff;
-    padding: 8px 10px;
-    border: 2px solid #1677ff;
-    border-radius: 8px;
-    min-width: 140px;
-    min-height: 56px;
-    cursor: grab;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    user-select: none;
-  }
-
-  .node:active {
-    cursor: grabbing;
-  }
-
-  .node.active {
-    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.2);
-  }
-
-  .node.linking {
-    outline: 2px dashed #1677ff;
-  }
-
-  .delete-button {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 16px;
-    height: 16px;
-    background-color: #f5222d;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
-    z-index: 20;
-  }
-
-  .node:hover .delete-button {
-    opacity: 1;
-  }
-
-  .edge-delete-button {
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    background-color: #f5222d;
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    cursor: pointer;
-    opacity: 0.8;
+    background: var(--color-bg-2);
     transition: all 0.2s;
-    z-index: 30;
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
-  .edge-delete-button:hover {
-    opacity: 1;
-    transform: scale(1.1);
-    background-color: #cf1322;
+  .node-type-item:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light-1);
   }
 
-  .connector-top,
-  .connector-bottom {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    position: absolute;
-    left: 0;
+  .node-type-item:active {
+    cursor: grabbing;
   }
 
-  .connector-top {
-    top: -8px;
-  }
-
-  .connector-bottom {
-    bottom: -8px;
-  }
-
-  .connector-point {
-    width: 14px;
-    height: 14px;
-    background-color: #fff;
-    border: 3px solid #1677ff;
+  .color-dot {
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
-    cursor: pointer;
-    z-index: 10;
   }
 
-  .connector-point:hover {
-    background-color: #1677ff;
+  .data-display {
+    border-top: 1px solid var(--color-border);
+    padding-top: 16px;
   }
 
-  .node-title {
-    font-weight: 600;
-    margin-bottom: 4px;
+  .data-info {
+    margin: 8px 0 12px 0;
   }
 
-  .node-type {
+  .data-info p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--color-text-3);
+  }
+
+  .node-details h4 {
+    margin: 0 0 16px 0;
+    color: var(--color-text-1);
+  }
+
+  .detail-item {
+    display: flex;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .detail-item label {
+    flex: 0 0 60px;
+    color: var(--color-text-2);
+    font-weight: 500;
+  }
+
+  .detail-item span {
+    color: var(--color-text-1);
+  }
+
+  .config-json {
+    background: var(--color-fill-2);
+    padding: 8px;
+    border-radius: 4px;
     font-size: 12px;
-    color: #666;
-  }
-
-  .details {
-    flex: 1;
-    min-width: 200px;
-    height: 100%;
-    overflow: auto;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-    border-radius: 8px;
-    background-color: #f5f5f5;
-  }
-
-  .json-box {
-    height: calc(100vh - 160px);
-    overflow: auto;
-    background: var(--color-fill-1, #fafafa);
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid var(--color-border-2, #e5e6eb);
-  }
-
-  .json-box pre {
     margin: 0;
-    font-size: 12px;
-    line-height: 1.5;
     white-space: pre-wrap;
-    word-break: break-word;
+    max-height: 120px;
+    overflow-y: auto;
   }
 
-  .placeholder {
-    color: var(--color-text-3, #999);
+  .config-editor {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .config-editor h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: var(--color-text-2);
+  }
+
+  .no-selection {
+    text-align: center;
+    color: var(--color-text-3);
+    padding: 40px 0;
   }
 </style>
