@@ -11,7 +11,11 @@
     <div class="flow-body">
       <!-- 左侧：15% 节点类型面板 -->
       <div class="palette">
-        <a-card title="操作类型" :bordered="false">
+        <a-card
+          title="操作类型"
+          :bordered="false"
+          style="height: 100%; border: none; box-shadow: none"
+        >
           <div class="palette-list">
             <div
               v-for="item in paletteItems"
@@ -43,9 +47,40 @@
               stroke-width="2"
               stroke-dasharray="5,3"
             />
+            <!-- 拖拽连线时的临时线条 -->
+            <line
+              v-if="isDraggingConnection && linkStartConnector"
+              :x1="getConnectorPosition(linkStartConnector).x"
+              :y1="getConnectorPosition(linkStartConnector).y"
+              :x2="dragConnectionEnd.x"
+              :y2="dragConnectionEnd.y"
+              stroke="#1677ff"
+              stroke-width="2"
+              stroke-dasharray="5,3"
+            />
           </g>
           <!-- 不再需要箭头定义 -->
         </svg>
+
+        <!-- 连接线删除按钮 -->
+        <div
+          v-for="edge in edges.filter((edge) => {
+            const sourceNode = nodes.find((n) => n.id === edge.source.nodeId)
+            const targetNode = nodes.find((n) => n.id === edge.target.nodeId)
+            return sourceNode && targetNode
+          })"
+          :key="`delete-${edge.id}`"
+          class="edge-delete-button"
+          :style="{
+            left: getEdgeMidpoint(edge).x - 8 + 'px',
+            top: getEdgeMidpoint(edge).y - 8 + 'px',
+          }"
+          @click.stop="deleteEdge(edge)"
+          @mouseenter="hoveredEdge = edge.id"
+          @mouseleave="hoveredEdge = null"
+        >
+          ×
+        </div>
 
         <!-- 节点渲染 -->
         <div
@@ -70,6 +105,7 @@
           <div class="connector-top">
             <div
               class="connector-point"
+              @mousedown.stop="onConnectorMouseDown($event, node, 'top')"
               @mouseup.stop="onConnectorMouseUp($event, node, 'top')"
             ></div>
           </div>
@@ -81,6 +117,7 @@
           <div class="connector-bottom">
             <div
               class="connector-point"
+              @mousedown.stop="onConnectorMouseDown($event, node, 'bottom')"
               @mouseup.stop="onConnectorMouseUp($event, node, 'bottom')"
             ></div>
           </div>
@@ -89,7 +126,7 @@
 
       <!-- 右侧：20% JSON 展示 -->
       <div class="details">
-        <a-card title="详情" :bordered="false">
+        <a-card title="详情" :bordered="false" style="height: 100%; border: none; box-shadow: none">
           <div v-if="selectedNode" class="json-box">
             <pre>{{ formattedSelected }}</pre>
           </div>
@@ -129,6 +166,11 @@
 
   // 连线状态：点击一次设为起点
   const linkStartConnector = ref<Connector | null>(null)
+  // 拖拽连线状态
+  const isDraggingConnection = ref(false)
+  const dragConnectionEnd = ref<Position>({ x: 0, y: 0 })
+  // 悬停的连接线
+  const hoveredEdge = ref<string | null>(null)
 
   // 左侧可拖拽的操作类型
   const paletteItems = ref([
@@ -140,12 +182,11 @@
   ])
 
   const colorMap: Record<string, string> = {
-    start: '#52c41a',
-    http: '#1677ff',
-    mysql: '#fa8c16',
-    if: '#eb2f96',
-    delay: '#722ed1',
-    end: '#f5222d',
+    element: '#52c41a',
+    ass: '#1677ff',
+    sql: '#fa8c16',
+    if: '#722ed1',
+    custom: '#eb2f96',
   }
   const getColor = (type: string) => colorMap[type] || '#1677ff'
 
@@ -210,21 +251,29 @@
     selectedNode.value = node
   }
 
-  // 鼠标移动：更新拖拽节点坐标
+  // 鼠标移动：更新拖拽节点坐标和连线位置
   const onMouseMove = (e: MouseEvent) => {
-    if (!draggingId.value) return
-    const pos = getCanvasPosition(e.clientX, e.clientY)
-    const idx = nodes.value.findIndex((n) => n.id === draggingId.value)
-    if (idx !== -1) {
-      const next = { ...nodes.value[idx] }
-      next.position = { x: pos.x - dragOffset.value.x, y: pos.y - dragOffset.value.y }
-      if (
-        Math.abs(next.position.x - nodes.value[idx].position.x) > 0 ||
-        Math.abs(next.position.y - nodes.value[idx].position.y) > 0
-      ) {
-        wasDragging.value = true
+    if (draggingId.value) {
+      // 节点拖拽逻辑
+      const pos = getCanvasPosition(e.clientX, e.clientY)
+      const idx = nodes.value.findIndex((n) => n.id === draggingId.value)
+      if (idx !== -1) {
+        const next = { ...nodes.value[idx] }
+        next.position = { x: pos.x - dragOffset.value.x, y: pos.y - dragOffset.value.y }
+        if (
+          Math.abs(next.position.x - nodes.value[idx].position.x) > 0 ||
+          Math.abs(next.position.y - nodes.value[idx].position.y) > 0
+        ) {
+          wasDragging.value = true
+        }
+        nodes.value = nodes.value.slice(0, idx).concat(next, nodes.value.slice(idx + 1))
       }
-      nodes.value = nodes.value.slice(0, idx).concat(next, nodes.value.slice(idx + 1))
+    }
+
+    if (isDraggingConnection.value) {
+      // 连线拖拽逻辑
+      const pos = getCanvasPosition(e.clientX, e.clientY)
+      dragConnectionEnd.value = pos
     }
   }
 
@@ -232,6 +281,12 @@
   const onMouseUp = () => {
     draggingId.value = null
     dragOffset.value = { x: 0, y: 0 }
+
+    // 结束连线拖拽
+    if (isDraggingConnection.value) {
+      isDraggingConnection.value = false
+      linkStartConnector.value = null
+    }
   }
 
   onMounted(() => {
@@ -243,6 +298,20 @@
     window.removeEventListener('mouseup', onMouseUp)
   })
 
+  // 连接点鼠标按下：开始拖拽连线
+  const onConnectorMouseDown = (e: MouseEvent, node: UINode, position: ConnectorPosition) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    const currentConnector: Connector = { nodeId: node.id, position }
+    linkStartConnector.value = currentConnector
+    isDraggingConnection.value = true
+
+    // 获取初始位置
+    const startPos = getConnectorPosition(currentConnector)
+    dragConnectionEnd.value = { x: startPos.x, y: startPos.y }
+  }
+
   // 连接点鼠标抬起：处理连线
   const onConnectorMouseUp = (e: MouseEvent, node: UINode, position: ConnectorPosition) => {
     e.stopPropagation()
@@ -250,6 +319,98 @@
     // 无论是否被判定为点击，都先结束拖拽，防止因事件冒泡被阻止导致粘连
     draggingId.value = null
     dragOffset.value = { x: 0, y: 0 }
+
+    // 如果在拖拽连线状态，尝试创建连接
+    if (isDraggingConnection.value && linkStartConnector.value) {
+      const currentConnector: Connector = { nodeId: node.id, position }
+
+      // 不能连接到自己
+      if (
+        linkStartConnector.value.nodeId !== node.id ||
+        linkStartConnector.value.position !== position
+      ) {
+        // 检查连接限制
+        const startNode = nodes.value.find((n) => n.id === linkStartConnector.value!.nodeId)
+        const endNode = node
+
+        // 判断节点可以有多个连接，普通节点只能上方输入下方输出
+        const isStartDecision = startNode ? isDecisionNode(startNode.data.type) : false
+        const isEndDecision = isDecisionNode(endNode.data.type)
+
+        // 获取起点和终点节点的当前连接情况
+        const startConnections = getNodeConnections(linkStartConnector.value.nodeId)
+        const endConnections = getNodeConnections(endNode.id)
+
+        // 检查连接是否有效
+        let isValidConnection = false
+        let errorMessage = ''
+
+        if (isStartDecision && isEndDecision) {
+          // 判断节点之间可以任意连接
+          isValidConnection = true
+        } else if (isStartDecision) {
+          // 起点是判断节点，终点是普通节点
+          // 普通节点的上方只能有一个输入
+          if (position === 'top' && endConnections.inputs.length > 0) {
+            isValidConnection = false
+            errorMessage = '普通节点最多只能有一个输入连接'
+          } else if (position === 'bottom') {
+            isValidConnection = false
+            errorMessage = '普通节点只能从上方接收连接'
+          } else {
+            isValidConnection = true
+          }
+        } else if (isEndDecision) {
+          // 起点是普通节点，终点是判断节点
+          // 普通节点的下方只能有一个输出
+          if (
+            linkStartConnector.value.position === 'bottom' &&
+            startConnections.outputs.length > 0
+          ) {
+            isValidConnection = false
+            errorMessage = '普通节点最多只能有一个输出连接'
+          } else if (linkStartConnector.value.position === 'top') {
+            isValidConnection = false
+            errorMessage = '普通节点只能从下方发出连接'
+          } else {
+            isValidConnection = true
+          }
+        } else {
+          // 普通节点之间的连接
+          // 起点必须是下方连接点，终点必须是上方连接点
+          // 且起点最多一个输出，终点最多一个输入
+          if (linkStartConnector.value.position !== 'bottom' || position !== 'top') {
+            isValidConnection = false
+            errorMessage = '普通节点只能从上方接收连接，从下方发出连接'
+          } else if (startConnections.outputs.length > 0) {
+            isValidConnection = false
+            errorMessage = '普通节点最多只能有一个输出连接'
+          } else if (endConnections.inputs.length > 0) {
+            isValidConnection = false
+            errorMessage = '普通节点最多只能有一个输入连接'
+          } else {
+            isValidConnection = true
+          }
+        }
+
+        if (isValidConnection) {
+          // 创建连线
+          const edge: UIEdge = {
+            id: `e-${Date.now()}`,
+            source: linkStartConnector.value,
+            target: currentConnector,
+          }
+          edges.value = edges.value.concat(edge)
+        } else {
+          Message.warning(`连接无效：${errorMessage || '连接不符合规则'}`)
+        }
+      }
+
+      // 结束连线状态
+      isDraggingConnection.value = false
+      linkStartConnector.value = null
+      return
+    }
 
     if (wasDragging.value) {
       wasDragging.value = false
@@ -368,6 +529,22 @@
     }
   }
 
+  // 计算连接线中点坐标（用于放置删除按钮）
+  const getEdgeMidpoint = (edge: UIEdge): Position => {
+    const startPos = getConnectorPosition(edge.source)
+    const endPos = getConnectorPosition(edge.target)
+    return {
+      x: (startPos.x + endPos.x) / 2,
+      y: (startPos.y + endPos.y) / 2,
+    }
+  }
+
+  // 删除连接线
+  const deleteEdge = (edge: UIEdge) => {
+    edges.value = edges.value.filter((e) => e.id !== edge.id)
+    Message.success('连接线已删除')
+  }
+
   const formattedSelected = computed(() => {
     return selectedNode.value
       ? JSON.stringify(
@@ -427,10 +604,11 @@
   .flow-page {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: calc(100vh - 60px);
     box-sizing: border-box;
     padding: 12px;
     gap: 12px;
+    background-color: #ffffff;
   }
 
   .flow-header {
@@ -457,11 +635,14 @@
   }
 
   .palette {
-    width: 15%;
-    min-width: 180px;
-    max-width: 280px;
+    flex: 0 0 10%;
+    min-width: 150px;
+    max-width: 200px;
     height: 100%;
     overflow: auto;
+    border: 1px solid var(--color-border-2, #e5e6eb);
+    border-radius: 8px;
+    background-color: #f5f5f5;
   }
 
   .palette-list {
@@ -495,22 +676,26 @@
 
   .canvas {
     position: relative;
-    flex: 1;
+    flex: 0 0 50%;
     height: 100%;
     min-width: 0;
     border: 1px solid var(--color-border-2, #e5e6eb);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto;
+    background-color: #f5f5f5;
     background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 0),
       linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
     background-size: 20px 20px;
+    min-height: 600px;
   }
 
   .edges {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    min-height: 2000px;
     pointer-events: none;
   }
 
@@ -562,6 +747,31 @@
     opacity: 1;
   }
 
+  .edge-delete-button {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background-color: #f5222d;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: all 0.2s;
+    z-index: 30;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .edge-delete-button:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: #cf1322;
+  }
+
   .connector-top,
   .connector-bottom {
     display: flex;
@@ -572,18 +782,18 @@
   }
 
   .connector-top {
-    top: -5px;
+    top: -8px;
   }
 
   .connector-bottom {
-    bottom: -5px;
+    bottom: -8px;
   }
 
   .connector-point {
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     background-color: #fff;
-    border: 2px solid #1677ff;
+    border: 3px solid #1677ff;
     border-radius: 50%;
     cursor: pointer;
     z-index: 10;
@@ -604,11 +814,13 @@
   }
 
   .details {
-    width: 20%;
-    min-width: 220px;
-    max-width: 420px;
+    flex: 1;
+    min-width: 200px;
     height: 100%;
     overflow: auto;
+    border: 1px solid var(--color-border-2, #e5e6eb);
+    border-radius: 8px;
+    background-color: #f5f5f5;
   }
 
   .json-box {
