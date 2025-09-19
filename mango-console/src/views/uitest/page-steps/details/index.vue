@@ -4,126 +4,234 @@
       <a-card :bordered="false" style="border-radius: 10px; overflow: hidden" title="页面步骤详情">
         <template #extra>
           <a-space>
-            <a-button size="small" type="primary" @click="doAppend">增加</a-button>
+            <a-button size="small" type="primary" @click="saveFlow">保存</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onRunCase"
-              >调试</a-button
-            >
+              >调试
+            </a-button>
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
-        <div class="container">
-          <a-space direction="vertical" style="width: 25%">
-            <span>所属项目：{{ pageData.record.project_product?.project?.name }}</span>
-            <span>所属模块：{{ pageData.record.module?.name }}</span>
-            <span>所属页面：{{ pageData.record.page?.name }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 25%">
-            <span>步骤ID：{{ pageData.record.id }}</span>
-            <span>步骤名称：{{ pageData.record.name }}</span>
-            <span>步骤状态：{{ pageData.record.type === 1 ? '通过' : '失败' }}</span>
-          </a-space>
-          <a-space direction="vertical" style="width: 50%">
-            <span>步骤执行顺序：{{ pageData.record.run_flow }}</span>
-          </a-space>
-        </div>
+        <div class="container"></div>
       </a-card>
     </template>
     <template #default>
-      <div class="box">
-        <div class="left">
-          <a-card :bordered="false" style="border-radius: 10px; overflow: hidden">
-            <a-table
-              :bordered="false"
-              :columns="columns"
-              :data="data.dataList"
-              :draggable="{ type: 'handle', width: 40 }"
-              :pagination="false"
-              @change="handleChange"
-            >
-              <template #columns>
-                <a-table-column
-                  v-for="item of columns"
-                  :key="item.key"
-                  :align="item.align"
-                  :data-index="item.dataIndex"
-                  :ellipsis="item.ellipsis"
-                  :fixed="item.fixed"
-                  :title="item.title"
-                  :tooltip="item.tooltip"
-                  :width="item.width"
-                >
-                  <template v-if="item.dataIndex === 'page_step'" #cell="{ record }">
-                    {{ record.page_step?.name }}
-                  </template>
-                  <template v-else-if="item.dataIndex === 'ele_name'" #cell="{ record }">
-                    {{ record.ele_name ? record.ele_name.name : '-' }}
-                  </template>
-                  <template v-else-if="item.dataIndex === 'ope_key'" #cell="{ record }">
-                    {{
-                      record.type === 0
-                        ? getLabelByValue(data.ope, record.ope_key)
-                        : (record.type === 1 || record.type ===4)
-                        ? getLabelByValue(data.ass, record.ope_key)
-                        : record.type === 2
-                        ? record.key_list
-                        : record.key
-                    }}
-                  </template>
-                  <template v-else-if="item.dataIndex === 'ope_value'" #cell="{ record }">
-                    {{
-                      (() => {
-                        if (record.type === 0 || record.type === 1 || record.type === 4) {
-                          const filteredData = Object.fromEntries(
-                            record.ope_value
-                              ?.filter((item) => item.d === true)
-                              ?.map((item) => [item.f, item.v]) || []
-                          )
-                          return Object.keys(filteredData).length
-                            ? JSON.stringify(filteredData)
-                            : ''
-                        }
-                        return record.type === 2 ? record.sql : record.value
-                      })()
-                    }}{{record.type === 4 ? record.if_actual :''}}
-                  </template>
+      <div class="flow-demo-page">
+        <div class="demo-body">
+          <!-- 左侧操作面板 -->
+          <div class="left-panel">
+            <a-card title="操作面板" :bordered="false">
+              <!-- 拖拽面板 -->
+              <div class="drag-panel">
+                <div class="node-types">
+                  <div
+                    v-for="nodeType in nodeTypes"
+                    :key="nodeType.type"
+                    class="node-type-item"
+                    draggable="true"
+                    @dragstart="onDragStart($event, nodeType.type.toString())"
+                  >
+                    <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
+                    {{ nodeType.label }}
+                  </div>
+                </div>
+              </div>
+            </a-card>
+          </div>
 
-                  <template v-else-if="item.dataIndex === 'type'" #cell="{ record }">
-                    <a-tag :color="enumStore.colors[record.type]" size="small"
-                      >{{ enumStore.element_ope[record.type].title }}
-                    </a-tag>
-                  </template>
-                  <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
-                    <a-button
-                      size="mini"
-                      type="text"
-                      class="custom-mini-btn"
-                      :loading="caseRunning"
-                      @click="onTest(record)"
-                      >调试</a-button
-                    >
-                    <a-button
-                      size="mini"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="onUpdate(record)"
-                      >编辑</a-button
-                    >
-                    <a-button
-                      size="mini"
-                      status="danger"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="onDelete(record)"
-                      >删除
-                    </a-button>
-                  </template>
-                </a-table-column>
-              </template>
-            </a-table>
-          </a-card>
-        </div>
-        <div class="right">
-          <ElementTestReport :result-data="data.result_data" />
+          <!-- 中间 FlowChart 组件 -->
+          <div class="center-panel">
+            <FlowChart
+              ref="flowChartRef"
+              :flow-data="flowData"
+              :table-data="data.dataList"
+              :node-types="nodeTypes"
+              :readonly="false"
+              :allow-drop="true"
+              :color-map="colorMap"
+              @node-click="onNodeClick"
+              @node-select="onNodeSelect"
+              @flow-change="onFlowChange"
+              @edge-delete="onEdgeDelete"
+              @node-delete="onNodeDelete"
+            />
+          </div>
+
+          <!-- 右侧详情面板 -->
+          <div class="right-panel">
+            <a-tabs default-active-key="1">
+              <a-tab-pane key="1" title="节点配置信息">
+                <div v-if="selectedNode" class="node-details">
+                  <h4>{{ selectedNode.label }}</h4>
+                  <div class="detail-item">
+                    <label>ID:</label>
+                    <span>{{ selectedNode.id }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>类型:</label>
+                    <span>{{ selectedNode.type }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>位置:</label>
+                    <span>x: {{ selectedNode.position.x }}, y: {{ selectedNode.position.y }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>配置:</label>
+                    <pre class="config-json">{{
+                      JSON.stringify(selectedNode.config, null, 2)
+                    }}</pre>
+                  </div>
+
+                  <!-- 自定义配置编辑 -->
+                  <div class="config-editor">
+                    <div v-if="formItems.length > 0">
+                      <h5>节点配置表单</h5>
+                      <a-form :model="formModel">
+                        <a-form-item
+                          v-for="item of formItems"
+                          :key="item.key"
+                          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+                          :label="item.label"
+                        >
+                          <template v-if="item.type === 'input'">
+                            <a-input v-model="item.value" :placeholder="item.placeholder" />
+                          </template>
+                          <template v-else-if="item.type === 'select' && item.label === '选择元素'">
+                            <a-select
+                              v-model="item.value"
+                              :field-names="fieldNames"
+                              :options="data.uiPageName"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                              allow-search
+                              value-key="key"
+                            />
+                          </template>
+                          <template v-else-if="item.type === 'select' && item.key === 'if_failure'">
+                            <a-select
+                              v-model="item.value"
+                              :field-names="fieldNames"
+                              :options="enumStore.condition_fail"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                              allow-search
+                              value-key="key"
+                            />
+                          </template>
+                          <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
+                            <a-select
+                              v-model="item.value"
+                              :field-names="fieldNames"
+                              :options="enumStore.condition_pass"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                              allow-search
+                              value-key="key"
+                            />
+                          </template>
+                          <template
+                            v-else-if="item.type === 'cascader' && item.label === '元素操作'"
+                          >
+                            <a-space direction="vertical">
+                              <a-cascader
+                                v-model="item.value"
+                                :default-value="item.value"
+                                :options="data.ope"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                                allow-search
+                                expand-trigger="hover"
+                                style="width: 380px"
+                                value-key="key"
+                                @change="upDataOpeValue(data.ope, item.value)"
+                              />
+                            </a-space>
+                          </template>
+                          <template
+                            v-else-if="
+                              item.type === 'cascader' &&
+                              (item.label === '断言操作' || item.label === '判断条件')
+                            "
+                          >
+                            <a-space direction="vertical">
+                              <a-cascader
+                                v-model="item.value"
+                                :default-value="item.value"
+                                :options="data.ass"
+                                :placeholder="item.placeholder"
+                                allow-clear
+                                allow-search
+                                expand-trigger="hover"
+                                style="width: 380px"
+                                value-key="key"
+                                @change="upDataOpeValue(data.ass, item.value)"
+                              />
+                            </a-space>
+                          </template>
+                          <template
+                            v-else-if="
+                              item.type === 'textarea' &&
+                              item.key !== 'key_list' &&
+                              item.key !== 'sql'
+                            "
+                          >
+                            <a-textarea
+                              v-model="item.value"
+                              :auto-size="{ minRows: 4, maxRows: 7 }"
+                              :default-value="item.value"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                            />
+                          </template>
+
+                          <template v-else-if="item.type === 'radio' && item.key === 'type'">
+                            <a-select
+                              v-model="data.type"
+                              :field-names="fieldNames"
+                              :options="enumStore.element_ope"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                              allow-search
+                              value-key="key"
+                              @change="changeStatus"
+                            />
+                          </template>
+                          <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
+                            <a-textarea
+                              v-model="item.value"
+                              :auto-size="{ minRows: 4, maxRows: 7 }"
+                              :default-value="item.value"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                            />
+                          </template>
+
+                          <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
+                            <a-textarea
+                              v-model="item.value"
+                              :auto-size="{ minRows: 4, maxRows: 7 }"
+                              :default-value="item.value"
+                              :placeholder="item.placeholder"
+                              allow-clear
+                            />
+                          </template>
+                        </a-form-item>
+                      </a-form>
+                      <div class="form-actions">
+                        <a-button type="primary" @click="saveFormData">保存配置</a-button>
+                        <a-button @click="clearForm">清空表单</a-button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="no-selection">
+                  <p>请选择一个节点查看详情</p>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane key="2" title="步骤测试结果">
+                <ElementTestReport :result-data="data.result_data" />
+              </a-tab-pane>
+            </a-tabs>
+          </div>
         </div>
       </div>
     </template>
@@ -162,7 +270,7 @@
               value-key="key"
             />
           </template>
-                    <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
+          <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
             <a-select
               v-model="item.value"
               :field-names="fieldNames"
@@ -258,9 +366,10 @@
   </ModalDialog>
 </template>
 <script lang="ts" setup>
-  import { nextTick, onMounted, reactive, ref } from 'vue'
+  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
-
+  import FlowChart from '@/components/FlowChart.vue'
+  import { FlowData, UINode, UIEdge, FormItem } from '@/types/components'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { fieldNames } from '@/setting'
@@ -275,13 +384,30 @@
     putUiPagePutStepSort,
     putUiPageStepsDetailed,
   } from '@/api/uitest/page-steps-detailed'
-  import { getUiSteps, getUiStepsTest } from '@/api/uitest/page-steps'
+  import { getUiSteps, getUiStepsTest, putUiSteps } from '@/api/uitest/page-steps'
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
 
+  const flowChartRef = ref()
+  const selectedNode = ref<UINode | null>(null)
+  const configText = ref('')
+
+  const flowData = ref<FlowData>({
+    nodes: [],
+    edges: [],
+  })
+
+  // 节点类型定义
+  const nodeTypes = ref([
+    { type: 0, label: '元素操作', color: '#52c41a' },
+    { type: 1, label: '断言操作', color: '#1677ff' },
+    { type: 2, label: 'SQL操作', color: '#fa8c16' },
+    { type: 3, label: '条件判断', color: '#722ed1' },
+    { type: 4, label: '自定义变量', color: '#eb2f96' },
+  ])
   const enumStore = useEnum()
 
   const pageData = usePageData()
@@ -476,23 +602,15 @@
     }
   }
 
-  function doAppend() {
-    changeStatus(0)
-    data.type = 0
-    data.actionTitle = '新增'
-    data.isAdd = true
-    modalDialogRef.value?.toggle()
-    formItems.forEach((it: any) => {
-      if (it.reset) {
-        it.reset()
-      } else {
-        if (it.key === 'type') {
-          it.value = 0
-        } else {
-          it.value = ''
-        }
-      }
-    })
+  const saveFlow = () => {
+    const value = {}
+    value['id'] = pageData.record?.id || route.query.id
+    value['flow_data'] = flowData.value
+    putUiSteps(value)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
 
   function onDelete(record: any) {
@@ -639,7 +757,17 @@
   function doRefresh() {
     getUiPageStepsDetailed(route.query.id)
       .then((res) => {
-        data.dataList = res.data
+        data.dataList = res.data || []
+        // 安全检查流程图数据
+        const pageFlowData = pageData.record?.flow_data
+        if (pageFlowData && typeof pageFlowData === 'object') {
+          flowData.value = {
+            nodes: Array.isArray(pageFlowData.nodes) ? pageFlowData.nodes : [],
+            edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : []
+          }
+        } else {
+          flowData.value = { nodes: [], edges: [] }
+        }
       })
       .catch(console.log)
   }
@@ -737,6 +865,7 @@
     }
     return undefined
   }
+
   const onRunCase = async () => {
     if (userStore.selected_environment == null) {
       Message.error('请先选择用例执行的环境')
@@ -816,6 +945,121 @@
     return list.find((item: any) => item.value === value)?.label
   }
 
+  const colorMap = computed(() => {
+    const map: Record<string, string> = {}
+    nodeTypes.value.forEach((item) => {
+      map[item.type] = item.color
+    })
+    return map
+  })
+
+  // 监听选中节点变化，更新配置文本
+  watch(
+    selectedNode,
+    (node) => {
+      if (node) {
+        configText.value = JSON.stringify(node.config || {}, null, 2)
+      } else {
+        configText.value = ''
+      }
+    },
+    { immediate: true }
+  )
+
+  // 拖拽开始
+  const onDragStart = (event: DragEvent, type: string) => {
+    event.dataTransfer?.setData('application/mango-flow', type)
+    event.dataTransfer!.effectAllowed = 'move'
+  }
+
+  // 节点点击事件
+  const onNodeClick = (node: UINode) => {
+    console.log('节点被点击:', node)
+    Message.info(`点击了节点: ${node.label}`)
+  }
+
+  // 节点选中事件
+  const onNodeSelect = (node: UINode | null) => {
+    selectedNode.value = node
+  }
+
+  // 流程图数据变化事件
+  const onFlowChange = (newFlowData: FlowData) => {
+    flowData.value = newFlowData
+  }
+
+  // 连接线删除事件
+  const onEdgeDelete = (edge: UIEdge) => {
+    Message.success('连接线已删除')
+  }
+
+  // 节点删除事件
+  const onNodeDelete = (node: UINode) => {
+    Message.success(`节点 ${node.label} 已删除`)
+    // 如果删除的是当前选中的节点，清空选择
+    if (selectedNode.value?.id === node.id) {
+      selectedNode.value = null
+    }
+  }
+
+  // 更新节点配置
+  const updateNodeConfig = () => {
+    if (!selectedNode.value || !configText.value.trim()) return
+
+    try {
+      const config = JSON.parse(configText.value)
+      // 创建新的节点数据
+      const updatedNode = {
+        ...selectedNode.value,
+        config,
+      }
+
+      // 更新流程图中的节点
+      const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
+      if (nodeIndex !== -1) {
+        flowData.value.nodes[nodeIndex] = updatedNode
+        selectedNode.value = updatedNode
+        Message.success('节点配置已更新')
+      }
+    } catch (error) {
+      Message.error('JSON 格式错误，请检查配置')
+    }
+  }
+
+  // 保存表单数据
+  const saveFormData = () => {
+    if (!selectedNode.value) return
+
+    const formData = {}
+    formItems.forEach((item: any) => {
+      formData[item.key] = item.value
+    })
+
+    // 更新选中节点的配置
+    const updatedNode = {
+      ...selectedNode.value,
+      config: { ...selectedNode.value.config, ...formData },
+    }
+
+    const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
+    if (nodeIndex !== -1) {
+      flowData.value.nodes[nodeIndex] = updatedNode
+      selectedNode.value = updatedNode
+      Message.success('节点配置已保存')
+    }
+  }
+
+  // 清空表单
+  const clearForm = () => {
+    formItems.forEach((item: any) => {
+      if (item.reset) {
+        item.reset()
+      } else {
+        item.value = ''
+      }
+    })
+    Message.success('表单已清空')
+  }
   onMounted(() => {
     doRefresh()
     doRefreshSteps(pageData.record.id)
@@ -850,5 +1094,194 @@
     flex: 4;
     padding: 5px;
     max-width: 60%;
+  }
+
+  .flow-demo-page {
+    padding: 16px;
+    height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .demo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #fff;
+    border-bottom: 1px solid var(--color-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .demo-header h2 {
+    margin: 0;
+    color: var(--color-text-1);
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .demo-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .demo-body {
+    flex: 1;
+    display: flex;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .left-panel {
+    flex: 0 0 10%;
+    min-width: 200px;
+  }
+
+  .center-panel {
+    flex: 0 0 50%;
+    min-width: 0;
+  }
+
+  .right-panel {
+    flex: 0 0 40%;
+    min-width: 300px;
+  }
+
+  .drag-panel {
+    margin-bottom: 20px;
+  }
+
+  .drag-panel h4,
+  .data-display h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: var(--color-text-2);
+  }
+
+  .node-types {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .node-type-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px dashed var(--color-border);
+    border-radius: 6px;
+    cursor: grab;
+    background: var(--color-bg-2);
+    transition: all 0.2s;
+  }
+
+  .node-type-item:hover {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light-1);
+  }
+
+  .node-type-item:active {
+    cursor: grabbing;
+  }
+
+  .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .data-display {
+    border-top: 1px solid var(--color-border);
+    padding-top: 16px;
+  }
+
+  .data-info {
+    margin: 8px 0 12px 0;
+  }
+
+  .data-info p {
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--color-text-3);
+  }
+
+  .node-details h4 {
+    margin: 0 0 16px 0;
+    color: var(--color-text-1);
+  }
+
+  .detail-item {
+    display: flex;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+
+  .detail-item label {
+    flex: 0 0 60px;
+    color: var(--color-text-2);
+    font-weight: 500;
+  }
+
+  .detail-item span {
+    color: var(--color-text-1);
+  }
+
+  .config-json {
+    background: var(--color-fill-2);
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    margin: 0;
+    white-space: pre-wrap;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .config-editor {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .config-editor h5 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    color: var(--color-text-2);
+  }
+
+  .no-selection {
+    text-align: center;
+    color: var(--color-text-3);
+    padding: 40px 0;
+  }
+
+  .dynamic-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .dynamic-form h5 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: var(--color-text-2);
+  }
+
+  .form-item__require :deep(.arco-form-item-label-col) {
+    font-weight: 600;
+  }
+
+  .form-item__require :deep(.arco-form-item-label-col::before) {
+    content: '*';
+    color: #f53f3f;
+    margin-right: 4px;
+  }
+
+  .form-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
   }
 </style>

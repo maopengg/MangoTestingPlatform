@@ -6,6 +6,7 @@
         <div class="demo-actions">
           <a-button type="primary" @click="saveFlow">保存</a-button>
           <a-button @click="executeFlow">执行</a-button>
+          <a-button @click="addDemoFormItems">添加示例表单</a-button>
         </div>
       </div>
     </template>
@@ -51,41 +52,48 @@
 
           <!-- 右侧详情面板 -->
           <div class="right-panel">
-            <a-card title="节点详情" :bordered="false">
-              <div v-if="selectedNode" class="node-details">
-                <h4>{{ selectedNode.label }}</h4>
-                <div class="detail-item">
-                  <label>ID:</label>
-                  <span>{{ selectedNode.id }}</span>
-                </div>
-                <div class="detail-item">
-                  <label>类型:</label>
-                  <span>{{ selectedNode.type }}</span>
-                </div>
-                <div class="detail-item">
-                  <label>位置:</label>
-                  <span>x: {{ selectedNode.position.x }}, y: {{ selectedNode.position.y }}</span>
-                </div>
-                <div class="detail-item">
-                  <label>配置:</label>
-                  <pre class="config-json">{{ JSON.stringify(selectedNode.config, null, 2) }}</pre>
-                </div>
+            <a-tabs default-active-key="2">
+              <a-tab-pane key="1" title="节点配置信息">
+                <div v-if="selectedNode" class="node-details">
+                  <h4>{{ selectedNode.label }}</h4>
+                  <div class="detail-item">
+                    <label>ID:</label>
+                    <span>{{ selectedNode.id }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>类型:</label>
+                    <span>{{ selectedNode.type }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>位置:</label>
+                    <span>x: {{ selectedNode.position.x }}, y: {{ selectedNode.position.y }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>配置:</label>
+                    <pre class="config-json">{{
+                      JSON.stringify(selectedNode.config, null, 2)
+                    }}</pre>
+                  </div>
 
-                <!-- 自定义配置编辑 -->
-                <div class="config-editor">
-                  <h5>编辑配置</h5>
-                  <a-textarea
-                    v-model="configText"
-                    :rows="6"
-                    placeholder="请输入 JSON 格式的配置"
-                    @blur="updateNodeConfig"
-                  />
+                  <!-- 自定义配置编辑 -->
+                  <div class="config-editor">
+                    <h5>编辑配置</h5>
+                    <a-textarea
+                      v-model="configText"
+                      :rows="6"
+                      placeholder="请输入 JSON 格式的配置"
+                      @blur="updateNodeConfig"
+                    />
+                  </div>
                 </div>
-              </div>
-              <div v-else class="no-selection">
-                <p>请选择一个节点查看详情</p>
-              </div>
-            </a-card>
+                <div v-else class="no-selection">
+                  <p>请选择一个节点查看详情</p>
+                </div>
+              </a-tab-pane>
+              <a-tab-pane key="2" title="步骤测试结果">
+                <ElementTestReport :result-data="data.pageSteps?.result_data" />
+              </a-tab-pane>
+            </a-tabs>
           </div>
         </div>
       </div>
@@ -94,16 +102,21 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, watch } from 'vue'
+  import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import FlowChart from '@/components/FlowChart.vue'
-  import { FlowData, UINode, Props, UIEdge, Position } from '@/types/components'
+  import { FlowData, UINode, UIEdge, FormItem } from '@/types/components'
+  import { getUiSteps, putUiSteps } from '@/api/uitest/page-steps'
+  import ElementTestReport from '@/components/ElementTestReport.vue'
 
   const flowChartRef = ref()
   const selectedNode = ref<UINode | null>(null)
   const configText = ref('')
 
-  // 流程图数据
+  const data: any = reactive({
+    pageSteps: {},
+  })
+
   const flowData = ref<FlowData>({
     nodes: [],
     edges: [],
@@ -202,11 +215,14 @@
 
   // 保存流程
   const saveFlow = () => {
-    const dataStr = JSON.stringify(flowData.value, null, 2)
-    console.log('保存的流程数据:', dataStr)
-    console.log('节点数量:', flowData.value.nodes.length)
-    console.log('连线数量:', flowData.value.edges.length)
-    Message.success('流程已保存')
+    const value = {}
+    value['id'] = '2'
+    value['flow_data'] = flowData.value
+    putUiSteps(value)
+      .then((res) => {
+        Message.success(res.msg)
+      })
+      .catch(console.log)
   }
 
   // 执行流程
@@ -214,6 +230,23 @@
     console.log('执行流程:', flowData.value)
     Message.success('流程执行成功！')
   }
+
+  function doRefresh1() {
+    const value = {}
+    value['id'] = '2'
+    getUiSteps(value)
+      .then((res) => {
+        flowData.value = res.data[0].flow_data
+        data.pageSteps = res.data[0]
+      })
+      .catch(console.log)
+  }
+
+  onMounted(() => {
+    nextTick(async () => {
+      doRefresh1()
+    })
+  })
 </script>
 
 <style scoped>
@@ -375,5 +408,34 @@
     text-align: center;
     color: var(--color-text-3);
     padding: 40px 0;
+  }
+
+  .dynamic-form {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .dynamic-form h5 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: var(--color-text-2);
+  }
+
+  .form-item__require :deep(.arco-form-item-label-col) {
+    font-weight: 600;
+  }
+
+  .form-item__require :deep(.arco-form-item-label-col::before) {
+    content: '*';
+    color: #f53f3f;
+    margin-right: 4px;
+  }
+
+  .form-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
   }
 </style>

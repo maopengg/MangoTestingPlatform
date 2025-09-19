@@ -85,7 +85,7 @@ export type UINode = {
   position: Position
   type: string
   label: string
-  config?: Record<string, any>
+  config?: Record<config, any>
 }
 export type UIEdge = { id: string; source: Connector; target: Connector }
 

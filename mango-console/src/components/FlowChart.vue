@@ -76,8 +76,8 @@
         ></div>
       </div>
 
-      <div class="node-title">{{ node.label }}</div>
-      <div class="node-type">{{ node.type }}</div>
+      <div class="node-title">{{ node ? getNodeTypeLabel(node.type) : '加载中...' }}</div>
+      <div class="node-content">{{ node ? getNodeType(node) : '' }}</div>
 
       <!-- 下方连接点 -->
       <div v-if="!readonly" class="connector-bottom">
@@ -92,7 +92,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import type {
     Position,
@@ -102,13 +102,15 @@
     UINode,
     UIEdge,
   } from '@/types/components'
-  
+
   // Props
   interface Props {
     flowData?: FlowData
     readonly?: boolean
     allowDrop?: boolean
     colorMap?: Record<string, string>
+    tableData: any
+    nodeTypes?: Array<{ type: number; label: string; color: string }>
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -116,12 +118,19 @@
     readonly: false,
     allowDrop: true,
     colorMap: () => ({
-      element: '#52c41a',
-      ass: '#1677ff',
-      sql: '#fa8c16',
-      if: '#722ed1',
-      custom: '#eb2f96',
+      0: '#52c41a',
+      1: '#1677ff',
+      2: '#fa8c16',
+      3: '#722ed1',
+      4: '#eb2f96',
     }),
+    nodeTypes: () => [
+      { type: 0, label: '元素操作', color: '#52c41a' },
+      { type: 1, label: '断言操作', color: '#1677ff' },
+      { type: 2, label: 'SQL操作', color: '#fa8c16' },
+      { type: 3, label: '条件判断', color: '#722ed1' },
+      { type: 4, label: '自定义变量', color: '#eb2f96' },
+    ],
   })
 
   // Emits
@@ -156,9 +165,12 @@
   watch(
     () => props.flowData,
     (newData) => {
-      if (newData) {
-        nodes.value = [...newData.nodes]
-        edges.value = [...newData.edges]
+      if (newData && newData.nodes && newData.edges) {
+        // 使用 nextTick 确保 DOM 更新完成
+        nextTick(() => {
+          nodes.value = [...(newData.nodes || [])]
+          edges.value = [...(newData.edges || [])]
+        })
       }
     },
     { immediate: true, deep: true }
@@ -174,6 +186,30 @@
       })
     }
   })
+
+  function getNodeType(data: UINode) {
+    // 使用传入的tableData
+    if (!data || !data.config || !props.tableData) {
+      return '没找到'
+    }
+    
+    let result = '没找到'
+    props.tableData.forEach((item) => {
+      if (item.id === data.config.id) {
+        result = item.ele_name?.name || '没找到'
+      }
+    })
+    return result
+  }
+
+  // 根据节点类型获取对应的中文标签
+  function getNodeTypeLabel(type: string | number) {
+    if (!type && type !== 0) return '未知节点'
+    if (!props.nodeTypes || props.nodeTypes.length === 0) return `${type} 节点`
+    
+    const nodeType = props.nodeTypes.find(nt => nt.type.toString() === type.toString())
+    return nodeType ? nodeType.label : `${type} 节点`
+  }
 
   // 使用节流函数优化数据变化通知
   let updateTimer: ReturnType<typeof setTimeout> | null = null
@@ -623,10 +659,17 @@
     border-radius: 8px;
     overflow: auto;
     background-color: #f5f5f5;
-    background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 0),
-      linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 0);
+    background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 0),
+      linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 0);
     background-size: 20px 20px;
     min-height: 600px;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+
+  /* 隐藏WebKit浏览器的滚动条 */
+  .flow-canvas::-webkit-scrollbar {
+    display: none;
   }
 
   .edges {
@@ -748,7 +791,7 @@
     margin-bottom: 4px;
   }
 
-  .node-type {
+  .node-content {
     font-size: 12px;
     color: #666;
   }

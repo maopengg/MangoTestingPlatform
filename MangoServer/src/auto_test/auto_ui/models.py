@@ -69,6 +69,7 @@ class PageSteps(models.Model):
     # 0和空等于调试用例，1等于调试完成
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="测试结果", null=True)
+    flow_data = models.JSONField(verbose_name="flow_data", default=dict)
 
     class Meta:
         db_table = 'page_steps'
@@ -101,8 +102,8 @@ class PageStepsDetailed(models.Model):
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
     # 条件判断
-    if_failure  = models.SmallIntegerField(verbose_name="条件不成立时", null=True)
-    if_pass  = models.SmallIntegerField(verbose_name="条件成立时", null=True)
+    if_failure = models.SmallIntegerField(verbose_name="条件不成立时", null=True)
+    if_pass = models.SmallIntegerField(verbose_name="条件成立时", null=True)
     if_actual = models.CharField(verbose_name="条件实际值", max_length=1048, null=True)
 
     class Meta:
