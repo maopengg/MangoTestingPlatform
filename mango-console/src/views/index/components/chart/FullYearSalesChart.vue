@@ -70,7 +70,6 @@
           },
           yAxis: {
             type: 'value',
-            max: 800,
             splitLine: { show: false },
             axisLine: {
               show: true,

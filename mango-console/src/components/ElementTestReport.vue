@@ -82,7 +82,7 @@
                       ><span class="label">元素个数-{{ index + 1 }}</span
                       >：{{ element.ele_quantity }}</p
                     >
-                    <p v-if="item?.element_text"
+                    <p v-if="element?.element_text"
                       ><span class="label">元素文本-{{ index + 1 }}</span
                       >：{{ element?.element_text }}</p
                     >
