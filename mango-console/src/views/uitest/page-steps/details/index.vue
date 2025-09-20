@@ -83,7 +83,7 @@
 
                   <!-- 自定义配置编辑 -->
                   <div class="config-editor">
-                    <div v-if="formItems.length > 0">
+                    <div v-if="formItems.length > 0" style="padding: 0px 100px 0px 0px">
                       <h5>节点配置表单</h5>
                       <a-form :model="formModel">
                         <a-form-item
@@ -100,28 +100,6 @@
                               v-model="item.value"
                               :field-names="fieldNames"
                               :options="data.uiPageName"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                              allow-search
-                              value-key="key"
-                            />
-                          </template>
-                          <template v-else-if="item.type === 'select' && item.key === 'if_failure'">
-                            <a-select
-                              v-model="item.value"
-                              :field-names="fieldNames"
-                              :options="enumStore.condition_fail"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                              allow-search
-                              value-key="key"
-                            />
-                          </template>
-                          <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
-                            <a-select
-                              v-model="item.value"
-                              :field-names="fieldNames"
-                              :options="enumStore.condition_pass"
                               :placeholder="item.placeholder"
                               allow-clear
                               allow-search
@@ -218,7 +196,6 @@
                       </a-form>
                       <div class="form-actions">
                         <a-button type="primary" @click="saveFormData">保存配置</a-button>
-                        <a-button @click="clearForm">清空表单</a-button>
                       </div>
                     </div>
                   </div>
@@ -293,6 +270,7 @@
     updateId: 0,
     actionTitle: '新增',
     dataList: [],
+    selectData: {},
     uiPageName: [],
     type: 0,
     plainOptions: [],
@@ -558,70 +536,6 @@
       .catch(console.log)
   }
 
-  function onDataForm() {
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
-      value['page_step'] = route.query.id
-      value['type'] = data.type
-      const extractedValues = []
-      for (const key in value) {
-        if (key == 'locating' || key == 'actual') {
-          value['ele_name'] = value[key]
-          extractedValues.push({
-            f: key,
-            v: '',
-            d: false,
-          })
-          delete value[key]
-        } else if (key.includes('-ope_value')) {
-          const newKey = key.replace('-ope_value', '')
-          if (newKey && data.type === 0) {
-            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
-              if (item.f === newKey) {
-                extractedValues.push({
-                  f: newKey,
-                  v: value[key],
-                  d: item.d,
-                })
-              }
-            })
-          } else if (newKey && data.type === 1) {
-            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
-              if (item.f === newKey) {
-                extractedValues.push({
-                  f: newKey,
-                  v: value[key],
-                  d: item.d,
-                })
-              }
-            })
-          }
-          delete value[key]
-        }
-      }
-      value['ope_value'] = extractedValues
-
-      if (data.isAdd) {
-        value['step_sort'] = data.dataList.length
-        postUiPageStepsDetailed(value, route.query.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      } else {
-        value['id'] = data.updateId
-        putUiPageStepsDetailed(value, route.query.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      }
-    }
-  }
-
   function doResetSearch() {
     window.history.back()
   }
@@ -846,8 +760,13 @@
 
   // 节点点击事件
   const onNodeClick = (node: UINode) => {
-    console.log('节点被点击:', node)
     Message.info(`点击了节点: ${node.label}`)
+    data.dataList.forEach((item) => {
+      if (item.id === node.config.id) {
+        data.selectData = item
+        Message.info(`点击了节点: ${item.id}`)
+      }
+    })
   }
 
   // 节点选中事件
@@ -919,19 +838,70 @@
       selectedNode.value = updatedNode
       Message.success('节点配置已保存')
     }
+
+    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
+      modalDialogRef.value?.toggle()
+      let value = getFormItems(formItems)
+      value['page_step'] = route.query.id
+      value['type'] = data.type
+      const extractedValues = []
+      for (const key in value) {
+        if (key == 'locating' || key == 'actual') {
+          value['ele_name'] = value[key]
+          extractedValues.push({
+            f: key,
+            v: '',
+            d: false,
+          })
+          delete value[key]
+        } else if (key.includes('-ope_value')) {
+          const newKey = key.replace('-ope_value', '')
+          if (newKey && data.type === 0) {
+            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          } else if (newKey && data.type === 1) {
+            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
+              if (item.f === newKey) {
+                extractedValues.push({
+                  f: newKey,
+                  v: value[key],
+                  d: item.d,
+                })
+              }
+            })
+          }
+          delete value[key]
+        }
+      }
+      value['ope_value'] = extractedValues
+
+      if (data.isAdd) {
+        value['step_sort'] = data.dataList.length
+        postUiPageStepsDetailed(value, route.query.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      } else {
+        value['id'] = data.updateId
+        putUiPageStepsDetailed(value, route.query.id)
+          .then((res) => {
+            Message.success(res.msg)
+            doRefresh()
+          })
+          .catch(console.log)
+      }
+    }
   }
 
-  // 清空表单
-  const clearForm = () => {
-    formItems.forEach((item: any) => {
-      if (item.reset) {
-        item.reset()
-      } else {
-        item.value = ''
-      }
-    })
-    Message.success('表单已清空')
-  }
   onMounted(() => {
     doRefresh()
     doRefreshSteps(pageData.record.id)

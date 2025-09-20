@@ -55,7 +55,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
         haha
     """
     model = PageStepsDetailed
-    queryset = PageStepsDetailed.objects.all().order_by('step_sort')
+    queryset = PageStepsDetailed.objects.all()
     serializer_class = PageStepsDetailedSerializersC
     serializer = PageStepsDetailedSerializers
 
@@ -64,10 +64,9 @@ class PageStepsDetailedCRUD(ModelCRUD):
         page_step_id = request.GET.get('page_step_id')
         _id = request.GET.get('id')
         if page_step_id:
-            books = self.model.objects.filter(page_step_id=page_step_id).order_by('step_sort')
+            books = self.model.objects.filter(page_step_id=page_step_id)
         else:
-            books = self.model.objects.filter(id=_id).order_by('step_sort')
-
+            books = self.model.objects.filter(id=_id)
         try:
             books = self.serializer_class.setup_eager_loading(books)
         except FieldError:
@@ -83,7 +82,7 @@ class PageStepsDetailedCRUD(ModelCRUD):
         @return:
         """
         data = {'id': _id, 'run_flow': ''}
-        run = self.model.objects.filter(page_step=_id).order_by('step_sort')
+        run = self.model.objects.filter(page_step=_id)
         for i in run:
             data['run_flow'] += '->'
             if i.ele_name:

@@ -80,30 +80,6 @@ class ElementOperationEnum(BaseEnum):
         return {0: "元素操作", 1: "断言操作", 2: "SQL变量", 3: "自定义变量", 4: "条件判断"}
 
 
-class OnConditionFailStrategy(BaseEnum):
-    """条件不成立时的处理策略"""
-    CONTINUE_TEST = 0
-    SKIP_STEPS = 1
-
-    @classmethod
-    def obj(cls):
-        return {
-            0: "继续执行剩余步骤",
-            1: "跳过执行剩余步骤",
-        }
-
-
-class OnConditionPassStrategy(BaseEnum):
-    """条件成立时的处理策略"""
-    CONTINUE_TEST = 0
-
-    @classmethod
-    def obj(cls):
-        return {
-            0: "继续执行剩余步骤"
-        }
-
-
 class UiPublicTypeEnum(BaseEnum):
     """全局变量类型"""
     CUSTOM = 0
