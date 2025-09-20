@@ -236,140 +236,12 @@
       </div>
     </template>
   </TableBody>
-  <ModalDialog ref="modalDialogRef" :title="data.actionTitle" @confirm="onDataForm">
-    <template #content>
-      <a-form :model="formModel">
-        <a-form-item
-          v-for="item of formItems"
-          :key="item.key"
-          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
-          :label="item.label"
-        >
-          <template v-if="item.type === 'input'">
-            <a-input v-model="item.value" :placeholder="item.placeholder" />
-          </template>
-          <template v-else-if="item.type === 'select' && item.label === '选择元素'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="data.uiPageName"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'if_failure'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.condition_fail"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'select' && item.key === 'if_pass'">
-            <a-select
-              v-model="item.value"
-              :field-names="fieldNames"
-              :options="enumStore.condition_pass"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-            />
-          </template>
-          <template v-else-if="item.type === 'cascader' && item.label === '元素操作'">
-            <a-space direction="vertical">
-              <a-cascader
-                v-model="item.value"
-                :default-value="item.value"
-                :options="data.ope"
-                :placeholder="item.placeholder"
-                allow-clear
-                allow-search
-                expand-trigger="hover"
-                style="width: 380px"
-                value-key="key"
-                @change="upDataOpeValue(data.ope, item.value)"
-              />
-            </a-space>
-          </template>
-          <template
-            v-else-if="
-              item.type === 'cascader' && (item.label === '断言操作' || item.label === '判断条件')
-            "
-          >
-            <a-space direction="vertical">
-              <a-cascader
-                v-model="item.value"
-                :default-value="item.value"
-                :options="data.ass"
-                :placeholder="item.placeholder"
-                allow-clear
-                allow-search
-                expand-trigger="hover"
-                style="width: 380px"
-                value-key="key"
-                @change="upDataOpeValue(data.ass, item.value)"
-              />
-            </a-space>
-          </template>
-          <template
-            v-else-if="item.type === 'textarea' && item.key !== 'key_list' && item.key !== 'sql'"
-          >
-            <a-textarea
-              v-model="item.value"
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :default-value="item.value"
-              :placeholder="item.placeholder"
-              allow-clear
-            />
-          </template>
-
-          <template v-else-if="item.type === 'radio' && item.key === 'type'">
-            <a-select
-              v-model="data.type"
-              :field-names="fieldNames"
-              :options="enumStore.element_ope"
-              :placeholder="item.placeholder"
-              allow-clear
-              allow-search
-              value-key="key"
-              @change="changeStatus"
-            />
-          </template>
-          <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
-            <a-textarea
-              v-model="item.value"
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :default-value="item.value"
-              :placeholder="item.placeholder"
-              allow-clear
-            />
-          </template>
-
-          <template v-else-if="item.type === 'textarea' && item.key === 'sql'">
-            <a-textarea
-              v-model="item.value"
-              :auto-size="{ minRows: 4, maxRows: 7 }"
-              :default-value="item.value"
-              :placeholder="item.placeholder"
-              allow-clear
-            />
-          </template>
-        </a-form-item>
-      </a-form>
-    </template>
-  </ModalDialog>
 </template>
 <script lang="ts" setup>
   import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
   import { Message, Modal } from '@arco-design/web-vue'
   import FlowChart from '@/components/FlowChart.vue'
-  import { FlowData, UINode, UIEdge, FormItem } from '@/types/components'
+  import { FlowData, UINode, UIEdge } from '@/types/components'
   import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { fieldNames } from '@/setting'
@@ -763,7 +635,7 @@
         if (pageFlowData && typeof pageFlowData === 'object') {
           flowData.value = {
             nodes: Array.isArray(pageFlowData.nodes) ? pageFlowData.nodes : [],
-            edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : []
+            edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : [],
           }
         } else {
           flowData.value = { nodes: [], edges: [] }
