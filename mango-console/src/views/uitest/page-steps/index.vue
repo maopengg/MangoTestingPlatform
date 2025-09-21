@@ -143,11 +143,11 @@
                 class="custom-mini-btn"
                 :loading="caseRunning"
                 @click="onRunCase(record)"
-                >调试</a-button
-              >
+                >调试
+              </a-button>
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
-                >步骤</a-button
-              >
+                >步骤
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button size="mini" type="text">···</a-button>
                 <template #content>
@@ -157,8 +157,8 @@
                       type="text"
                       class="custom-mini-btn"
                       @click="onUpdate(record)"
-                      >编辑</a-button
-                    >
+                      >编辑
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -265,7 +265,6 @@
   import { conditionItems, formItems, tableColumns } from './config'
   import { useEnum } from '@/store/modules/get-enum'
   import useUserStore from '@/store/modules/user'
-  import { getUiCaseRun } from '@/api/uitest/case'
 
   const productModule = useProductModule()
   const projectInfo = useProject()

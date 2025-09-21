@@ -83,21 +83,13 @@ export type Connector = { nodeId: string; position: ConnectorPosition }
 export type UINode = {
   id: string
   position: Position
-  type: string
+  type: number
   label: string
-  config?: Record<config, any>
+  config?: Record<any, any>
 }
 export type UIEdge = { id: string; source: Connector; target: Connector }
 
 export interface FlowData {
   nodes: UINode[]
   edges: UIEdge[]
-}
-
-// Props
-export interface Props {
-  flowData?: FlowData
-  readonly?: boolean
-  allowDrop?: boolean
-  colorMap?: Record<string, string>
 }

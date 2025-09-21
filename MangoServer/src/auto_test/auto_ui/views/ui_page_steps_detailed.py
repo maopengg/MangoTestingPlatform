@@ -75,6 +75,16 @@ class PageStepsDetailedCRUD(ModelCRUD):
                                     self.serializer_class(instance=books,
                                                           many=True).data)
 
+    @error_response('ui')
+    def post(self, request: Request):
+        from src.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD
+        PageStepsCRUD.inside_put(request.data.get('page_step'), {'flow_data': request.data.get('flow_data')})
+        if request.data.get('id') is not None:
+            data = self.inside_put(request.data.get('id'), request.data)
+        else:
+            data = self.inside_post(request.data)
+        return ResponseData.success(RESPONSE_MSG_0035, data)
+
     def callback(self, _id):
         """
         排序

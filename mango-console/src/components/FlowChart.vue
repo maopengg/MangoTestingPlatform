@@ -3,27 +3,28 @@
     <!-- SVG 边渲染 -->
     <svg class="edges" xmlns="http://www.w3.org/2000/svg">
       <g>
-        <line
+        <!-- 使用path绘制直角连接线 -->
+        <path
           v-for="edge in edges"
           :key="edge.id"
-          :x1="getConnectorPosition(edge.source).x"
-          :y1="getConnectorPosition(edge.source).y"
-          :x2="getConnectorPosition(edge.target).x"
-          :y2="getConnectorPosition(edge.target).y"
+          :d="getRightAnglePath(edge)"
+          fill="none"
           stroke="#999"
           stroke-width="2"
           stroke-dasharray="5,3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         />
         <!-- 拖拽连线时的临时线条 -->
-        <line
+        <path
           v-if="isDraggingConnection && linkStartConnector"
-          :x1="getConnectorPosition(linkStartConnector).x"
-          :y1="getConnectorPosition(linkStartConnector).y"
-          :x2="dragConnectionEnd.x"
-          :y2="dragConnectionEnd.y"
-          stroke="#1677ff"
+          :d="getTempRightAnglePath()"
+          fill="none"
+          stroke="#999"
           stroke-width="2"
           stroke-dasharray="5,3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         />
       </g>
     </svg>
@@ -76,8 +77,8 @@
         ></div>
       </div>
 
-      <div class="node-title">{{ node ? getNodeTypeLabel(node.type) : '加载中...' }}</div>
-      <div class="node-content">{{ node ? getNodeType(node) : '' }}</div>
+      <div class="node-title">{{ node ? getNodeType(node) : '' }}</div>
+      <div class="node-content">{{ node ? getNodeTypeLabel(node.type) : '' }}</div>
 
       <!-- 下方连接点 -->
       <div v-if="!readonly" class="connector-bottom">
@@ -102,13 +103,16 @@
     UINode,
     UIEdge,
   } from '@/types/components'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
+
+  const useSelectValue = useSelectValueStore()
 
   // Props
   interface Props {
     flowData?: FlowData
     readonly?: boolean
     allowDrop?: boolean
-    colorMap?: Record<string, string>
+    colorMap?: Record<number, string>
     tableData: any
     nodeTypes?: Array<{ type: number; label: string; color: string }>
   }
@@ -188,15 +192,18 @@
   })
 
   function getNodeType(data: UINode) {
-    // 使用传入的tableData
     if (!data || !data.config || !props.tableData) {
-      return '没找到'
+      return ''
     }
-    
-    let result = '没找到'
+
+    let result = ''
     props.tableData.forEach((item) => {
       if (item.id === data.config.id) {
-        result = item.ele_name?.name || '没找到'
+        result = item.ele_name?.name
+          ? item.ele_name?.name
+          : useSelectValue.getSelectLabel(item.ope_key)
+          ? useSelectValue.getSelectLabel(item.ope_key)
+          : ''
       }
     })
     return result
@@ -206,8 +213,8 @@
   function getNodeTypeLabel(type: string | number) {
     if (!type && type !== 0) return '未知节点'
     if (!props.nodeTypes || props.nodeTypes.length === 0) return `${type} 节点`
-    
-    const nodeType = props.nodeTypes.find(nt => nt.type.toString() === type.toString())
+
+    const nodeType = props.nodeTypes.find((nt) => nt.type.toString() === type.toString())
     return nodeType ? nodeType.label : `${type} 节点`
   }
 
@@ -226,7 +233,7 @@
     }, 16) // ~60fps
   }
 
-  const getColor = (type: string) => props.colorMap[type] || '#1677ff'
+  const getColor = (type: number) => props.colorMap[type] || '#1677ff'
 
   // 优化：计算属性缓存有效连接线
   const validEdges = computed(() => {
@@ -238,7 +245,7 @@
   })
 
   // 判断节点类型
-  const isDecisionNode = (type: string) => type === 'if'
+  const isDecisionNode = (type: number) => type === 3
 
   // 获取节点的连接数
   const getNodeConnections = (nodeId: string) => {
@@ -274,7 +281,7 @@
     const newNode: UINode = {
       id,
       position,
-      type,
+      type: parseInt(type, 10),
       label: `${type} 节点`,
       config: {},
     }
@@ -588,13 +595,54 @@
     return result
   }
 
+  // 计算90度直角连接线的SVG路径
+  const getRightAnglePath = (edge: UIEdge): string => {
+    const startPos = getConnectorPosition(edge.source)
+    const endPos = getConnectorPosition(edge.target)
+
+    // 计算两个节点X坐标的中间位置
+    const midX = (startPos.x + endPos.x) / 2
+
+    // 从起点垂直下降，然后在中间X位置水平移动，最后垂直连接到终点
+    return `M ${startPos.x} ${startPos.y}
+            L ${startPos.x} ${startPos.y + 20}
+            L ${midX} ${startPos.y + 20}
+            L ${midX} ${endPos.y - 20}
+            L ${endPos.x} ${endPos.y - 20}
+            L ${endPos.x} ${endPos.y}`
+  }
+
+  // 计算拖拽时临时连接线的SVG路径
+  const getTempRightAnglePath = (): string => {
+    if (!linkStartConnector.value) return ''
+
+    const startPos = getConnectorPosition(linkStartConnector.value)
+    const endPos = dragConnectionEnd.value
+
+    // 计算两个位置X坐标的中间位置
+    const midX = (startPos.x + endPos.x) / 2
+
+    // 使用相同的路径算法
+    return `M ${startPos.x} ${startPos.y}
+            L ${startPos.x} ${startPos.y + 20}
+            L ${midX} ${startPos.y + 20}
+            L ${midX} ${endPos.y - 20}
+            L ${endPos.x} ${endPos.y - 20}
+            L ${endPos.x} ${endPos.y}`
+  }
+
   // 计算连接线中点坐标（用于放置删除按钮）
   const getEdgeMidpoint = (edge: UIEdge): Position => {
     const startPos = getConnectorPosition(edge.source)
     const endPos = getConnectorPosition(edge.target)
+
+    // 在中间的垂直线段上放置删除按钮
+    const midX = (startPos.x + endPos.x) / 2
+    const midY = startPos.y + (endPos.y - startPos.y) / 2
+
     return {
-      x: (startPos.x + endPos.x) / 2,
-      y: (startPos.y + endPos.y) / 2,
+      x: midX,
+      y: midY,
     }
   }
 

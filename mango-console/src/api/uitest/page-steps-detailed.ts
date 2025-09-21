@@ -33,7 +33,7 @@ export function putUiPageStepsDetailed(data: object, parent_id: any) {
   })
 }
 
-export function deleteUiPageStepsDetailed(id: number | string[] | number[], parentId: number) {
+export function deleteUiPageStepsDetailed(id: number | string[] | number[], parentId: any) {
   return deleted({
     url: '/ui/page/steps/detailed',
     data: () => {

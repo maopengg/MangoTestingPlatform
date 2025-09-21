@@ -83,13 +83,13 @@
 
                   <!-- 自定义配置编辑 -->
                   <div class="config-editor">
-                    <div v-if="formItems.length > 0" style="padding: 0px 100px 0px 0px">
-                      <h5>节点配置表单</h5>
-                      <a-form :model="formModel">
+                    <div v-if="data.formItems.length > 0" style="padding: 0px 100px 0px 0px">
+                      <h5>节点详情</h5>
+                      <a-form :model="formModel" ref="formRef">
                         <a-form-item
-                          v-for="item of formItems"
+                          v-for="item of data.formItems"
                           :key="item.key"
-                          :class="[item.required ? 'form-item__require' : 'form-item__no_require']"
+                          :required="item.required"
                           :label="item.label"
                         >
                           <template v-if="item.type === 'input'">
@@ -113,35 +113,36 @@
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
-                                :options="data.ope"
+                                :options="
+                                  route.query.pageType === '0'
+                                    ? useSelectValue.webOpe
+                                    : useSelectValue.androidOpe
+                                "
                                 :placeholder="item.placeholder"
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
                                 style="width: 380px"
                                 value-key="key"
-                                @change="upDataOpeValue(data.ope, item.value)"
+                                @change="upDataOpeValue(item.value)"
                               />
                             </a-space>
                           </template>
                           <template
-                            v-else-if="
-                              item.type === 'cascader' &&
-                              (item.label === '断言操作' || item.label === '判断条件')
-                            "
+                            v-else-if="item.type === 'cascader' && item.label === '断言操作'"
                           >
                             <a-space direction="vertical">
                               <a-cascader
                                 v-model="item.value"
                                 :default-value="item.value"
-                                :options="data.ass"
+                                :options="useSelectValue.ass"
                                 :placeholder="item.placeholder"
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
                                 style="width: 380px"
                                 value-key="key"
-                                @change="upDataOpeValue(data.ass, item.value)"
+                                @change="upDataOpeValue(item.value)"
                               />
                             </a-space>
                           </template>
@@ -158,19 +159,6 @@
                               :default-value="item.value"
                               :placeholder="item.placeholder"
                               allow-clear
-                            />
-                          </template>
-
-                          <template v-else-if="item.type === 'radio' && item.key === 'type'">
-                            <a-select
-                              v-model="data.type"
-                              :field-names="fieldNames"
-                              :options="enumStore.element_ope"
-                              :placeholder="item.placeholder"
-                              allow-clear
-                              allow-search
-                              value-key="key"
-                              @change="changeStatus"
                             />
                           </template>
                           <template v-else-if="item.type === 'textarea' && item.key === 'key_list'">
@@ -215,30 +203,32 @@
   </TableBody>
 </template>
 <script lang="ts" setup>
-  import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
-  import { Message, Modal } from '@arco-design/web-vue'
+  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { Message } from '@arco-design/web-vue'
   import FlowChart from '@/components/FlowChart.vue'
   import { FlowData, UINode, UIEdge } from '@/types/components'
-  import { ModalDialogType } from '@/types/components'
   import { useRoute } from 'vue-router'
   import { fieldNames } from '@/setting'
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
-  import { columns, formItems } from './config'
+  import {
+    formItemsElementAss,
+    formItemsElementKey,
+    formItemsElementOpe,
+    formItemsElementSql,
+  } from './config'
   import {
     deleteUiPageStepsDetailed,
     getUiPageStepsDetailed,
-    getUiPageStepsDetailedTest,
     postUiPageStepsDetailed,
-    putUiPagePutStepSort,
-    putUiPageStepsDetailed,
   } from '@/api/uitest/page-steps-detailed'
   import { getUiSteps, getUiStepsTest, putUiSteps } from '@/api/uitest/page-steps'
   import { getUiUiElementName } from '@/api/uitest/element'
   import useUserStore from '@/store/modules/user'
-  import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
-  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
+
+  const formRef = ref()
 
   const flowChartRef = ref()
   const selectedNode = ref<UINode | null>(null)
@@ -249,7 +239,6 @@
     edges: [],
   })
 
-  // 节点类型定义
   const nodeTypes = ref([
     { type: 0, label: '元素操作', color: '#52c41a' },
     { type: 1, label: '断言操作', color: '#1677ff' },
@@ -257,14 +246,13 @@
     { type: 3, label: '条件判断', color: '#722ed1' },
     { type: 4, label: '自定义变量', color: '#eb2f96' },
   ])
-  const enumStore = useEnum()
 
   const pageData = usePageData()
   const userStore = useUserStore()
+  const useSelectValue = useSelectValueStore()
 
   const route = useRoute()
   const formModel = ref({})
-  const modalDialogRef = ref<ModalDialogType | null>(null)
   const data: any = reactive({
     isAdd: false,
     updateId: 0,
@@ -275,263 +263,38 @@
     type: 0,
     plainOptions: [],
     result_data: {},
-    ass: [],
-    ope: [],
     opeSelect: [],
+    formItems: [],
   })
   const caseRunning = ref(false)
 
-  function changeStatus(event: number, value: any = null) {
+  function changeStatus(event: number) {
     data.type = event
-    for (let i = formItems.length - 1; i >= 0; i--) {
-      if (formItems[i].key !== 'type') {
-        formItems.splice(i, 1)
-      }
-    }
-    // 元素操作
+    // 清空表单项，重新构建
+    data.formItems = []
     if (event === 0) {
-      formItems.push({
-        label: '元素操作',
-        key: 'ope_key',
-        value: value ? value : ref(''),
-        type: 'cascader',
-        required: true,
-        placeholder: '请选择对元素的操作',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
+      data.formItems.push(...formItemsElementOpe)
       // 元素断言
     } else if (event === 1) {
-      formItems.push({
-        label: '断言操作',
-        key: 'ope_key',
-        value: value ? value : ref(''),
-        type: 'cascader',
-        required: true,
-        placeholder: '请选择断言类型',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
+      data.formItems.push(...formItemsElementAss)
       // sql操作
     } else if (event === 2) {
-      formItems.push({
-        label: 'key_list',
-        key: 'key_list',
-        value: ref(''),
-        type: 'textarea',
-        required: true,
-        placeholder: '请输入sql查询结果的key_list',
-        validator: function () {
-          if (this.value !== '') {
-            try {
-              this.value = JSON.parse(this.value)
-            } catch (e) {
-              Message.error('key_list值请输入json数据类型')
-              return false
-            }
-          }
-          return true
-        },
-      })
-      formItems.push({
-        label: 'sql语句',
-        key: 'sql',
-        value: ref(''),
-        type: 'textarea',
-        required: true,
-        placeholder: '请输入sql',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
+      data.formItems.push(...formItemsElementSql)
       // 自定义变量
     } else if (event === 3) {
-      formItems.push({
-        label: 'key',
-        key: 'key',
-        value: ref(''),
-        type: 'input',
-        required: true,
-        placeholder: '请输入key',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
-      formItems.push({
-        label: 'value',
-        key: 'value',
-        value: ref(''),
-        type: 'input',
-        required: true,
-        placeholder: '请输入value',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
-    }
-    // 条件判断
-    else if (event === 4) {
-      formItems.push({
-        label: '判断条件',
-        key: 'ope_key',
-        value: value ? value : ref(''),
-        type: 'cascader',
-        required: true,
-        placeholder: '请选择条件判断方法',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
-      formItems.push({
-        label: '实际值',
-        key: 'if_actual',
-        value: ref(''),
-        type: 'input',
-        required: false,
-        placeholder: '实际值和选择元素是二选一必填，这个值会覆盖选择的元素',
-        validator: function () {
-          return true
-        },
-      })
-      formItems.push({
-        label: '如果成立',
-        key: 'if_pass',
-        value: ref(0),
-        type: 'select',
-        required: true,
-        placeholder: '请选择如果条件判断成立的选项',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
-      formItems.push({
-        label: '如不成立',
-        key: 'if_failure',
-        value: ref(''),
-        type: 'select',
-        required: true,
-        placeholder: '请选择如果条件判断不成立的选项',
-        validator: function () {
-          if (!this.value && this.value !== 0) {
-            Message.error(this.placeholder || '')
-            return false
-          }
-          return true
-        },
-      })
+      data.formItems.push(...formItemsElementKey)
     }
   }
 
   const saveFlow = () => {
+    if (!checkNodeConnections()) return
     const value = {}
     value['id'] = pageData.record?.id || route.query.id
     value['flow_data'] = flowData.value
     putUiSteps(value)
       .then((res) => {
         Message.success(res.msg)
-      })
-      .catch(console.log)
-  }
-
-  function onDelete(record: any) {
-    Modal.confirm({
-      title: '提示',
-      content: '是否要删除此步骤详情？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteUiPageStepsDetailed(record.id, record.page_step.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
-          })
-          .catch(console.log)
-      },
-    })
-  }
-
-  function onUpdate(item: any) {
-    data.type = item.type
-    if (item.ope_key && item.type === 0) {
-      upDataOpeValue(data.ope, item.ope_key)
-    } else {
-      upDataOpeValue(data.ass, item.ope_key)
-    }
-    data.actionTitle = '编辑'
-    data.isAdd = false
-    data.updateId = item.id
-    modalDialogRef.value?.toggle()
-    nextTick(() => {
-      formItems.forEach((it: any) => {
-        let propName: any = item[it.key]
-        if (it.key.includes('locating') || it.key.includes('actual')) {
-          propName = item.ele_name
-        } else if (it.key.includes('ope_value')) {
-          if (item.ope_value) {
-            item.ope_value.forEach((item1: any) => {
-              if (item1.d && it.key.includes(it.key)) {
-                propName = item1.v
-              }
-            })
-          }
-        } else if (typeof propName === 'undefined') {
-          item.ope_value.forEach((item: any) => {
-            if (item.f === it.key) {
-              propName = item.v
-            }
-          })
-        }
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    })
-  }
-
-  const handleChange = (_data: any) => {
-    data.dataList = _data
-    let data1: any = []
-    data.dataList.forEach((item: any, index) => {
-      data1.push({
-        id: item.id,
-        step_sort: index,
-      })
-    })
-    putUiPagePutStepSort(data1)
-      .then((res) => {
-        Message.success(res.msg)
+        doRefresh()
       })
       .catch(console.log)
   }
@@ -540,19 +303,21 @@
     window.history.back()
   }
 
-  function doRefresh() {
+  function doRefresh(flushed = false) {
     getUiPageStepsDetailed(route.query.id)
       .then((res) => {
         data.dataList = res.data || []
         // 安全检查流程图数据
-        const pageFlowData = pageData.record?.flow_data
-        if (pageFlowData && typeof pageFlowData === 'object') {
-          flowData.value = {
-            nodes: Array.isArray(pageFlowData.nodes) ? pageFlowData.nodes : [],
-            edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : [],
+        if (flushed) {
+          const pageFlowData = pageData.record?.flow_data
+          if (pageFlowData && typeof pageFlowData === 'object') {
+            flowData.value = {
+              nodes: Array.isArray(pageFlowData.nodes) ? pageFlowData.nodes : [],
+              edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : [],
+            }
+          } else {
+            flowData.value = { nodes: [], edges: [] }
           }
-        } else {
-          flowData.value = { nodes: [], edges: [] }
         }
       })
       .catch(console.log)
@@ -566,18 +331,17 @@
       .catch(console.log)
   }
 
-  function upDataOpeValue(selectData: any, value: any) {
-    changeStatus(data.type, value)
-    const inputItem = findItemByValue(selectData, value)
+  function upDataOpeValue(value: any) {
+    const inputItem = useSelectValue.findItemByValue(value)
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
           select.n !== '函数代码' &&
           (select.f === 'actual' || select.f === 'locating') &&
-          !formItems.some((item) => item.key === select.f)
+          !data.formItems.some((item) => item.key === select.f)
         ) {
           if (data.type !== 4) {
-            formItems.push({
+            data.formItems.push({
               label: '选择元素',
               key: select.f,
               value: ref(''),
@@ -593,7 +357,7 @@
               },
             })
           } else {
-            formItems.splice(-3, 0, {
+            data.formItems.splice(-3, 0, {
               label: '选择元素',
               key: select.f,
               value: ref(''),
@@ -605,8 +369,7 @@
               },
             })
           }
-        } else if (select.d === true && !formItems.some((item) => item.key === select.f)) {
-          console.log(select.v)
+        } else if (select.d === true && !data.formItems.some((item) => item.key === select.f)) {
           let d = {
             label: select.n ? select.n : select.f,
             key: `${select.f}-ope_value`,
@@ -627,29 +390,13 @@
             },
           }
           if (data.type !== 4) {
-            formItems.push(d)
+            data.formItems.push(d)
           } else {
-            formItems.splice(-2, 0, d)
+            data.formItems.splice(-2, 0, d)
           }
         }
       })
     }
-  }
-
-  function findItemByValue(data: any, value: string) {
-    for (let i = 0; i < data.length; i++) {
-      const item = data[i]
-      if (item.value === value) {
-        return item
-      }
-      if (item.children) {
-        const childItem = findItemByValue(item.children, value)
-        if (childItem) {
-          return childItem
-        }
-      }
-    }
-    return undefined
   }
 
   const onRunCase = async () => {
@@ -668,22 +415,6 @@
       caseRunning.value = false
     }
   }
-  const onTest = async (record) => {
-    if (userStore.selected_environment == null) {
-      Message.error('请先选择用例执行的环境')
-      return
-    }
-    if (caseRunning.value) return
-    caseRunning.value = true
-    try {
-      const res = await getUiPageStepsDetailedTest(record.id, userStore.selected_environment)
-      Message.loading(res.msg)
-      doRefresh()
-    } catch (e) {
-    } finally {
-      caseRunning.value = false
-    }
-  }
 
   function doRefreshSteps(pageStepsId: any) {
     getUiSteps({ id: pageStepsId })
@@ -691,44 +422,6 @@
         data.result_data = res.data[0].result_data
       })
       .catch(console.log)
-  }
-
-  function getUiRunSortOpe() {
-    getSystemCacheDataKeyValue('select_value')
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          if (item.value === 'web') {
-            if (route.query.pageType === '0') {
-              data.ope.push(...item.children)
-            }
-          } else if (item.value === 'android') {
-            if (route.query.pageType === '1') {
-              data.ope.push(...item.children)
-            }
-          } else if (item.value === 'ass_android') {
-            if (route.query.pageType === '1') {
-              data.ass.unshift(...item.children)
-            }
-          } else if (item.value === 'ass_web') {
-            if (route.query.pageType === '0') {
-              data.ass.unshift(...item.children)
-            }
-          } else if (item.value.includes('断言')) {
-            data.ass.push(item)
-          }
-        })
-      })
-      .catch(console.log)
-  }
-
-  function getLabelByValue(opeData: any, value: string): string {
-    const list = [...opeData]
-    for (const item of list) {
-      if (item.children) {
-        list.push(...item.children)
-      }
-    }
-    return list.find((item: any) => item.value === value)?.label
   }
 
   const colorMap = computed(() => {
@@ -758,15 +451,53 @@
     event.dataTransfer!.effectAllowed = 'move'
   }
 
-  // 节点点击事件
   const onNodeClick = (node: UINode) => {
-    Message.info(`点击了节点: ${node.label}`)
+    data.selectData = {}
     data.dataList.forEach((item) => {
       if (item.id === node.config.id) {
         data.selectData = item
-        Message.info(`点击了节点: ${item.id}`)
       }
     })
+    // 先清空表单项，重新构建基础表单
+    changeStatus(node.type)
+    
+    // 如果有选中的数据，需要处理回显和动态表单项
+    if (Object.keys(data.selectData).length > 0) {
+      // 先处理操作类型选择，触发动态表单生成
+      const opeKeyItem = data.formItems.find((item: any) => item.key === 'ope_key')
+      if (opeKeyItem && data.selectData.ope_key) {
+        opeKeyItem.value = data.selectData.ope_key
+        // 触发动态表单项生成
+        upDataOpeValue(data.selectData.ope_key)
+      }
+      
+      // 然后处理所有表单项的回显
+      data.formItems.forEach((it: any) => {
+        let propName: any = data.selectData[it.key]
+        if (it.key.includes('locating') || it.key.includes('actual')) {
+          propName = data.selectData.ele_name
+        } else if (it.key.includes('ope_value')) {
+          if (data.selectData.ope_value) {
+            data.selectData.ope_value.forEach((item1: any) => {
+              if (item1.d && it.key.includes(item1.f)) {
+                propName = item1.v
+              }
+            })
+          }
+        } else if (typeof propName === 'undefined' && data.selectData.ope_value) {
+          data.selectData.ope_value.forEach((item: any) => {
+            if (item.f === it.key) {
+              propName = item.v
+            }
+          })
+        }
+        if (typeof propName === 'object' && propName !== null) {
+          it.value = propName.id
+        } else {
+          it.value = propName
+        }
+      })
+    }
   }
 
   // 节点选中事件
@@ -786,127 +517,144 @@
 
   // 节点删除事件
   const onNodeDelete = (node: UINode) => {
-    Message.success(`节点 ${node.label} 已删除`)
-    // 如果删除的是当前选中的节点，清空选择
     if (selectedNode.value?.id === node.id) {
       selectedNode.value = null
     }
+    deleteUiPageStepsDetailed(node.config.id, route.query.id)
+      .then((res) => {
+        Message.success(res.msg)
+        saveFlow()
+      })
+      .catch(console.log)
   }
 
-  // 更新节点配置
-  const updateNodeConfig = () => {
-    if (!selectedNode.value || !configText.value.trim()) return
-
-    try {
-      const config = JSON.parse(configText.value)
-      // 创建新的节点数据
-      const updatedNode = {
-        ...selectedNode.value,
-        config,
-      }
-
-      // 更新流程图中的节点
-      const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
-      if (nodeIndex !== -1) {
-        flowData.value.nodes[nodeIndex] = updatedNode
-        selectedNode.value = updatedNode
-        Message.success('节点配置已更新')
-      }
-    } catch (error) {
-      Message.error('JSON 格式错误，请检查配置')
+  // 检查是否有节点没有进行连接
+  const checkNodeConnections = (): boolean => {
+    // 如果没有节点，返回true（通过检查）
+    if (flowData.value.nodes.length === 0) {
+      return true
     }
+
+    // 如果只有一个节点，也认为是有效的（单节点流程）
+    if (flowData.value.nodes.length === 1) {
+      return true
+    }
+
+    // 检查每个节点的连接情况
+    for (const node of flowData.value.nodes) {
+      // 统计该节点的输入和输出连接
+      const inputConnections = flowData.value.edges.filter((edge) => edge.target.nodeId === node.id)
+      const outputConnections = flowData.value.edges.filter(
+        (edge) => edge.source.nodeId === node.id
+      )
+
+      // 条件判断节点（type: 3）的连接规则较为灵活，可以有多个输出
+      if (node.type === 3) {
+        // 条件判断节点至少需要有一个输出连接
+        if (outputConnections.length === 0 && flowData.value.nodes.length > 1) {
+          Message.warning('有步骤节点没有进行连接，请先连接节点后再保存！')
+          return false
+        }
+      } else {
+        // 其他节点类型（0-元素操作、1-断言操作、2-SQL操作、4-自定义变量）
+        // 如果不是第一个节点，必须有输入连接
+        // 如果不是最后一个节点，必须有输出连接
+        const hasInput = inputConnections.length > 0
+        const hasOutput = outputConnections.length > 0
+
+        // 检查是否为孤立节点（既没有输入也没有输出）
+        if (!hasInput && !hasOutput && flowData.value.nodes.length > 1) {
+          Message.warning('有步骤节点没有进行连接，请先连接节点后再保存！')
+          return false
+        }
+      }
+    }
+
+    return true
   }
 
   // 保存表单数据
   const saveFormData = () => {
     if (!selectedNode.value) return
+    if (!checkNodeConnections()) return
 
-    const formData = {}
-    formItems.forEach((item: any) => {
-      formData[item.key] = item.value
-    })
-
-    // 更新选中节点的配置
-    const updatedNode = {
-      ...selectedNode.value,
-      config: { ...selectedNode.value.config, ...formData },
+    // 添加必填校验
+    if (!data.formItems.every((it: any) => (it.validator ? it.validator() : true))) {
+      return
     }
 
-    const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
-    if (nodeIndex !== -1) {
-      flowData.value.nodes[nodeIndex] = updatedNode
-      selectedNode.value = updatedNode
-      Message.success('节点配置已保存')
+    let value = getFormItems(data.formItems)
+    value['page_step'] = route.query.id
+    value['type'] = data.type
+    if (data?.selectData?.id) {
+      value['id'] = data.selectData.id
     }
+    value['ope_value'] = processOptionData(value)
+    value['flow_data'] = flowData.value
 
-    if (formItems.every((it) => (it.validator ? it.validator() : true))) {
-      modalDialogRef.value?.toggle()
-      let value = getFormItems(formItems)
-      value['page_step'] = route.query.id
-      value['type'] = data.type
-      const extractedValues = []
-      for (const key in value) {
-        if (key == 'locating' || key == 'actual') {
-          value['ele_name'] = value[key]
-          extractedValues.push({
-            f: key,
-            v: '',
-            d: false,
-          })
-          delete value[key]
-        } else if (key.includes('-ope_value')) {
-          const newKey = key.replace('-ope_value', '')
-          if (newKey && data.type === 0) {
-            findItemByValue(data.ope, value.ope_key).parameter.forEach((item: any) => {
-              if (item.f === newKey) {
-                extractedValues.push({
-                  f: newKey,
-                  v: value[key],
-                  d: item.d,
-                })
-              }
-            })
-          } else if (newKey && data.type === 1) {
-            findItemByValue(data.ass, value.ope_key).parameter.forEach((item: any) => {
-              if (item.f === newKey) {
-                extractedValues.push({
-                  f: newKey,
-                  v: value[key],
-                  d: item.d,
-                })
-              }
-            })
-          }
-          delete value[key]
+    postUiPageStepsDetailed(value, route.query.id)
+      .then((res) => {
+        Message.success(res.msg)
+        doRefresh()
+        const updatedNode = {
+          ...selectedNode.value,
+          config: { id: res.data.id },
         }
-      }
-      value['ope_value'] = extractedValues
+        const nodeIndex = flowData.value.nodes.findIndex((n) => n.id === selectedNode.value!.id)
+        if (nodeIndex !== -1) {
+          flowData.value.nodes[nodeIndex] = updatedNode
+          selectedNode.value = updatedNode
+        }
+        doRefresh()
+      })
+      .catch(console.log)
+  }
 
-      if (data.isAdd) {
-        value['step_sort'] = data.dataList.length
-        postUiPageStepsDetailed(value, route.query.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
+  function processOptionData(value: any) {
+    const extractedValues = []
+    for (const key in value) {
+      if (key == 'locating' || key == 'actual') {
+        value['ele_name'] = value[key]
+        extractedValues.push({
+          f: key,
+          v: '',
+          d: false,
+        })
+        delete value[key]
+      } else if (key.includes('-ope_value')) {
+        const newKey = key.replace('-ope_value', '')
+        if (newKey && data.type === 0) {
+          useSelectValue.findItemByValue(value.ope_key).parameter.forEach((item: any) => {
+            if (item.f === newKey) {
+              extractedValues.push({
+                f: newKey,
+                v: value[key],
+                d: item.d,
+              })
+            }
           })
-          .catch(console.log)
-      } else {
-        value['id'] = data.updateId
-        putUiPageStepsDetailed(value, route.query.id)
-          .then((res) => {
-            Message.success(res.msg)
-            doRefresh()
+        } else if (newKey && data.type === 1) {
+          useSelectValue.findItemByValue(value.ope_key).parameter.forEach((item: any) => {
+            if (item.f === newKey) {
+              extractedValues.push({
+                f: newKey,
+                v: value[key],
+                d: item.d,
+              })
+            }
           })
-          .catch(console.log)
+        }
+        delete value[key]
       }
     }
+    return extractedValues
   }
 
   onMounted(() => {
-    doRefresh()
+    doRefresh(true)
     doRefreshSteps(pageData.record.id)
     getEleName()
-    getUiRunSortOpe()
+    useSelectValue.getSelectValue()
   })
 </script>
 <style scoped>
@@ -919,25 +667,6 @@
     white-space: nowrap;
   }
 
-  .box {
-    width: 100%;
-    margin: 0 auto;
-    padding: 5px;
-    box-sizing: border-box;
-    display: flex;
-  }
-
-  .left {
-    flex: 6;
-    padding: 5px;
-  }
-
-  .right {
-    flex: 4;
-    padding: 5px;
-    max-width: 60%;
-  }
-
   .flow-demo-page {
     padding: 16px;
     height: calc(100vh - 32px);
@@ -945,26 +674,11 @@
     flex-direction: column;
   }
 
-  .demo-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    background: #fff;
-    border-bottom: 1px solid var(--color-border);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  }
-
   .demo-header h2 {
     margin: 0;
     color: var(--color-text-1);
     font-size: 18px;
     font-weight: 600;
-  }
-
-  .demo-actions {
-    display: flex;
-    gap: 12px;
   }
 
   .demo-body {
@@ -1033,15 +747,6 @@
     border-radius: 50%;
   }
 
-  .data-display {
-    border-top: 1px solid var(--color-border);
-    padding-top: 16px;
-  }
-
-  .data-info {
-    margin: 8px 0 12px 0;
-  }
-
   .data-info p {
     margin: 4px 0;
     font-size: 13px;
@@ -1096,12 +801,6 @@
     text-align: center;
     color: var(--color-text-3);
     padding: 40px 0;
-  }
-
-  .dynamic-form {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--color-border);
   }
 
   .dynamic-form h5 {

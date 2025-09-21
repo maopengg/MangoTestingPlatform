@@ -20,8 +20,8 @@
               item.name
                 ? item.name
                 : item.type
-                ? getLabelByValue(data.ass, item.ope_key)
-                : getLabelByValue(data.ope, item.ope_key)
+                ? useSelectValue.getSelectLabel(item.ope_key)
+                : useSelectValue.getSelectLabel(item.ope_key)
             "
             :style="customStyle"
             :key="item.id"
@@ -31,8 +31,8 @@
                 <p>
                   <span class="label">操作类型</span>：{{
                     item.type
-                      ? getLabelByValue(data.ass, item.ope_key)
-                      : getLabelByValue(data.ope, item.ope_key)
+                      ? useSelectValue.getSelectLabel(item.ope_key)
+                      : useSelectValue.getSelectLabel(item.ope_key)
                   }}
                 </p>
                 <p><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p>
@@ -62,7 +62,8 @@
                       :src="minioURL + '/mango-file/failed_screenshot/' + item.picture_name"
                       width="100"
                       style="margin-right: 67px; vertical-align: top"
-                  /></p>
+                    />
+                  </p>
                 </div>
               </a-space>
               <a-space direction="vertical" id="maopeng2" style="width: 50%">
@@ -131,7 +132,7 @@
   import { onMounted, reactive } from 'vue'
   import { useEnum } from '@/store/modules/get-enum'
   import { minioURL } from '@/api/axios.config'
-  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
 
   defineProps({
     resultData: {
@@ -139,11 +140,9 @@
       required: true,
     },
   })
-  const data: any = reactive({
-    ass: [],
-    ope: [],
-  })
   const enumStore = useEnum()
+  const useSelectValue = useSelectValueStore()
+
   // const visible = ref(false)
 
   const customStyle = reactive({
@@ -153,42 +152,7 @@
     overflow: 'hidden',
   })
 
-  function getLabelByValue(opeData: any, value: string): string {
-    const list = [...opeData]
-    for (const item of list) {
-      if (item.children) {
-        list.push(...item.children)
-      }
-    }
-    return list.find((item: any) => item.value === value)?.label
-  }
-
-  function getCacheDataKeyValue() {
-    getSystemCacheDataKeyValue('select_value')
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          if (item.value === 'web') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'android') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'ass_android') {
-            data.ass.push(...item.children)
-          } else if (item.value === 'ass_web') {
-            data.ass.push(...item.children)
-          } else if (item.value.includes('断言')) {
-            data.ass.push(item)
-          }
-        })
-      })
-      .catch(console.log)
-  }
-
-  defineExpose({
-    getLabelByValue,
-  })
-  onMounted(() => {
-    getCacheDataKeyValue()
-  })
+  onMounted(() => {})
 </script>
 
 <style scoped>
