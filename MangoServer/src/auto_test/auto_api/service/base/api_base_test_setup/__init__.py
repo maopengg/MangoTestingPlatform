@@ -19,7 +19,6 @@ from src.models.api_model import RequestModel, ResponseModel
 
 class APIBaseTestSetup(PublicBase):
 
-
     def api_request(self,
                     api_info_id,
                     test_env: int,
@@ -109,8 +108,8 @@ class APIBaseTestSetup(PublicBase):
     def api_info_posterior_json_re(self, posterior_re: str, response: ResponseModel):
         log.api.debug(f'执行API接口-3->后置正则:{posterior_re}')
 
-    @staticmethod
-    def analytic_func(func_str, func_name='func'):
+    def analytic_func(self, func_str, func_name='func'):
+        func_str = self.test_data.replace(func_str)
         log.api.debug(f'执行API接口-4->后置函数:{func_str}')
         try:
             global_namespace = {}
