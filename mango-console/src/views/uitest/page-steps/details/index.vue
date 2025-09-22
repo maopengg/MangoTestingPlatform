@@ -254,17 +254,12 @@
   const route = useRoute()
   const formModel = ref({})
   const data: any = reactive({
-    isAdd: false,
-    updateId: 0,
-    actionTitle: '新增',
     dataList: [],
-    selectData: {},
-    uiPageName: [],
-    type: 0,
-    plainOptions: [],
-    result_data: {},
-    opeSelect: [],
-    formItems: [],
+    selectData: {}, // 选择的节点数据
+    uiPageName: [], // 元素名称
+    type: 0, // 点击的节点类型
+    result_data: {}, // 测试结果数据
+    formItems: [], // 表单数据
   })
   const caseRunning = ref(false)
 
@@ -409,7 +404,7 @@
     try {
       const res = await getUiStepsTest(route.query.id, userStore.selected_environment)
       Message.loading(res.msg)
-      doRefresh()
+      doRefreshSteps(pageData.record.id)
     } catch (e) {
     } finally {
       caseRunning.value = false
@@ -460,7 +455,7 @@
     })
     // 先清空表单项，重新构建基础表单
     changeStatus(node.type)
-    
+
     // 如果有选中的数据，需要处理回显和动态表单项
     if (Object.keys(data.selectData).length > 0) {
       // 先处理操作类型选择，触发动态表单生成
@@ -470,7 +465,7 @@
         // 触发动态表单项生成
         upDataOpeValue(data.selectData.ope_key)
       }
-      
+
       // 然后处理所有表单项的回显
       data.formItems.forEach((it: any) => {
         let propName: any = data.selectData[it.key]
@@ -652,7 +647,7 @@
 
   onMounted(() => {
     doRefresh(true)
-    doRefreshSteps(pageData.record.id)
+    data.result_data = pageData.record.result_data
     getEleName()
     useSelectValue.getSelectValue()
   })
