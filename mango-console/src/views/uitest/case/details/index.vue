@@ -254,7 +254,9 @@
                           <span v-if="item.type === 0">步骤：操作</span>
                           <span v-if="item.type === 1">步骤：断言</span>
                           <span v-if="item.type === 2">步骤：SQL</span>
-                          <span v-if="item.type === 3">步骤：自定义参数</span>
+                          <span v-if="item.type === 3">步骤：条件判断</span>
+                          <span v-if="item.type === 4">步骤：自定义参数</span>
+                          <span v-if="item.type === 5">步骤：python代码</span>
                         </a-space>
                         <a-space style="width: 30%">
                           <span v-if="item.type === 0"

@@ -81,19 +81,6 @@
                   @change="doRefresh"
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'level'">
-                <a-select
-                  v-model="item.value"
-                  :field-names="fieldNames"
-                  :options="enumStore.case_level"
-                  :placeholder="item.placeholder"
-                  allow-clear
-                  allow-search
-                  style="width: 150px"
-                  value-key="key"
-                  @change="doRefresh"
-                />
-              </template>
             </a-form-item>
           </a-form>
         </template>

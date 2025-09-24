@@ -47,7 +47,6 @@
               :node-types="nodeTypes"
               :readonly="false"
               :allow-drop="true"
-              :color-map="colorMap"
               @node-click="onNodeClick"
               @node-select="onNodeSelect"
               @flow-change="onFlowChange"
@@ -203,7 +202,7 @@
   </TableBody>
 </template>
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { onMounted, reactive, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import FlowChart from '@/components/FlowChart.vue'
   import { FlowData, UINode, UIEdge } from '@/types/components'
@@ -239,20 +238,23 @@
     edges: [],
   })
 
-  const nodeTypes = ref([
-    { type: 0, label: '元素操作', color: '#52c41a' },
-    { type: 1, label: '断言操作', color: '#1677ff' },
-    { type: 2, label: 'SQL操作', color: '#fa8c16' },
-    { type: 3, label: '条件判断', color: '#722ed1' },
-    { type: 4, label: '自定义变量', color: '#eb2f96' },
-  ])
-
   const pageData = usePageData()
   const userStore = useUserStore()
   const useSelectValue = useSelectValueStore()
 
   const route = useRoute()
   const formModel = ref({})
+  
+  // 节点类型定义
+  const nodeTypes = [
+    { type: 0, label: '元素操作', color: '#52c41a' },
+    { type: 1, label: '断言操作', color: '#1677ff' },
+    { type: 2, label: 'SQL操作', color: '#fa8c16' },
+    { type: 3, label: '自定义变量', color: '#eb2f96' },
+    { type: 4, label: '条件判断', color: '#722ed1' },
+    { type: 5, label: 'python代码', color: '#ff6b35' },
+  ]
+  
   const data: any = reactive({
     dataList: [],
     selectData: {}, // 选择的节点数据
@@ -278,6 +280,11 @@
       // 自定义变量
     } else if (event === 3) {
       data.formItems.push(...formItemsElementKey)
+      // 条件判断
+    } else if (event === 4) {
+      // 暂时为空，如需要可以添加相应表单项
+    } else if (event === 5) {
+      // python代码 - 暂时为空，如需要可以添加相应表单项
     }
   }
 
@@ -335,35 +342,21 @@
           (select.f === 'actual' || select.f === 'locating') &&
           !data.formItems.some((item) => item.key === select.f)
         ) {
-          if (data.type !== 4) {
-            data.formItems.push({
-              label: '选择元素',
-              key: select.f,
-              value: ref(''),
-              placeholder: '请选择一个元素',
-              required: true,
-              type: 'select',
-              validator: function () {
-                if (!this.value && this.value !== 0) {
-                  Message.error(this.placeholder || '')
-                  return false
-                }
-                return true
-              },
-            })
-          } else {
-            data.formItems.splice(-3, 0, {
-              label: '选择元素',
-              key: select.f,
-              value: ref(''),
-              placeholder: '请选择一个元素，手动输入的实际值会覆盖此元素结果',
-              required: false,
-              type: 'select',
-              validator: function () {
-                return true
-              },
-            })
-          }
+          data.formItems.push({
+            label: '选择元素',
+            key: select.f,
+            value: ref(''),
+            placeholder: '请选择一个元素',
+            required: true,
+            type: 'select',
+            validator: function () {
+              if (!this.value && this.value !== 0) {
+                Message.error(this.placeholder || '')
+                return false
+              }
+              return true
+            },
+          })
         } else if (select.d === true && !data.formItems.some((item) => item.key === select.f)) {
           let d = {
             label: select.n ? select.n : select.f,
@@ -384,11 +377,7 @@
               return true
             },
           }
-          if (data.type !== 4) {
-            data.formItems.push(d)
-          } else {
-            data.formItems.splice(-2, 0, d)
-          }
+          data.formItems.push(d)
         }
       })
     }
@@ -418,14 +407,6 @@
       })
       .catch(console.log)
   }
-
-  const colorMap = computed(() => {
-    const map: Record<string, string> = {}
-    nodeTypes.value.forEach((item) => {
-      map[item.type] = item.color
-    })
-    return map
-  })
 
   // 监听选中节点变化，更新配置文本
   watch(
@@ -465,34 +446,37 @@
         // 触发动态表单项生成
         upDataOpeValue(data.selectData.ope_key)
       }
+    }
+    formFeedback()
+  }
 
-      // 然后处理所有表单项的回显
-      data.formItems.forEach((it: any) => {
-        let propName: any = data.selectData[it.key]
-        if (it.key.includes('locating') || it.key.includes('actual')) {
-          propName = data.selectData.ele_name
-        } else if (it.key.includes('ope_value')) {
-          if (data.selectData.ope_value) {
-            data.selectData.ope_value.forEach((item1: any) => {
-              if (item1.d && it.key.includes(item1.f)) {
-                propName = item1.v
-              }
-            })
-          }
-        } else if (typeof propName === 'undefined' && data.selectData.ope_value) {
-          data.selectData.ope_value.forEach((item: any) => {
-            if (item.f === it.key) {
-              propName = item.v
+  // 处理所有表单项的回显
+  function formFeedback() {
+    data.formItems.forEach((it: any) => {
+      let propName: any = data.selectData[it.key]
+      if (it.key.includes('locating') || it.key.includes('actual')) {
+        propName = data.selectData.ele_name
+      } else if (it.key.includes('ope_value')) {
+        if (data.selectData.ope_value) {
+          data.selectData.ope_value.forEach((item1: any) => {
+            if (item1.d && it.key.includes(item1.f)) {
+              propName = item1.v
             }
           })
         }
-        if (typeof propName === 'object' && propName !== null) {
-          it.value = propName.id
-        } else {
-          it.value = propName
-        }
-      })
-    }
+      } else if (typeof propName === 'undefined' && data.selectData.ope_value) {
+        data.selectData.ope_value.forEach((item: any) => {
+          if (item.f === it.key) {
+            propName = item.v
+          }
+        })
+      }
+      if (typeof propName === 'object' && propName !== null) {
+        it.value = propName.id
+      } else {
+        it.value = propName
+      }
+    })
   }
 
   // 节点选中事件
@@ -538,20 +522,22 @@
     // 检查每个节点的连接情况
     for (const node of flowData.value.nodes) {
       // 统计该节点的输入和输出连接
-      const inputConnections = flowData.value.edges.filter((edge) => edge.target.nodeId === node.id)
+      const inputConnections = flowData.value.edges.filter(
+        (edge) => edge.target.node_id === node.id
+      )
       const outputConnections = flowData.value.edges.filter(
-        (edge) => edge.source.nodeId === node.id
+        (edge) => edge.source.node_id === node.id
       )
 
-      // 条件判断节点（type: 3）的连接规则较为灵活，可以有多个输出
-      if (node.type === 3) {
+      // 条件判断节点（type: 4）的连接规则较为灵活，可以有多个输出
+      if (node.type === 4) {
         // 条件判断节点至少需要有一个输出连接
         if (outputConnections.length === 0 && flowData.value.nodes.length > 1) {
           Message.warning('有步骤节点没有进行连接，请先连接节点后再保存！')
           return false
         }
       } else {
-        // 其他节点类型（0-元素操作、1-断言操作、2-SQL操作、4-自定义变量）
+        // 其他节点类型（0-元素操作、1-断言操作、2-SQL操作、3-自定义变量）
         // 如果不是第一个节点，必须有输入连接
         // 如果不是最后一个节点，必须有输出连接
         const hasInput = inputConnections.length > 0
@@ -586,11 +572,12 @@
     }
     value['ope_value'] = processOptionData(value)
     value['flow_data'] = flowData.value
+    value['node_id'] = selectedNode.value.id
+    value['step_sort'] = 0
 
     postUiPageStepsDetailed(value, route.query.id)
       .then((res) => {
         Message.success(res.msg)
-        doRefresh()
         const updatedNode = {
           ...selectedNode.value,
           config: { id: res.data.id },

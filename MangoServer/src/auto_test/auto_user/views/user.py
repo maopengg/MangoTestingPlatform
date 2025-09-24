@@ -119,8 +119,8 @@ class UserViews(ViewSet):
     @error_response('user')
     def put_password(self, request: Request):
         password = EncryptionTool.md5_32_small(request.data['password'])
-        new_password = EncryptionTool.md5_32_small( request.data['new_password'])
-        confirm_password = EncryptionTool.md5_32_small( request.data['confirm_password'])
+        new_password = EncryptionTool.md5_32_small(request.data['new_password'])
+        confirm_password = EncryptionTool.md5_32_small(request.data['confirm_password'])
 
         obj = self.model.objects.get(id=request.data.get('id'))
         if password != obj.password:
@@ -151,7 +151,7 @@ class LoginViews(ViewSet):
         if source_type == ClientTypeEnum.ACTUATOR.value:
             if request.data.get('version') != settings.VERSION:
                 return ResponseData.fail(RESPONSE_MSG_0037)
-        elif  source_type == ClientTypeEnum.WEB.value:
+        elif source_type == ClientTypeEnum.WEB.value:
             user_info.last_login_time = datetime.now()
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
@@ -210,12 +210,8 @@ class LoginViews(ViewSet):
     def test(self, request: Request):
         v = request.query_params.get('v')
         if v:
-            if v == '4.7':
-                from data_cleanup_scripts.v_4_7_2025_01_24 import main_4_7
-                main_4_7()
-            elif v == '5.5':
-                from data_cleanup_scripts.v_5_2_2025_04_13 import main_5_5
-                main_5_5()
+            from data_cleanup_scripts import data_cleanup
+            data_cleanup(v)
             return ResponseData.success(RESPONSE_MSG_0045, )
         else:
             return ResponseData.success(RESPONSE_MSG_0044, {'title': ''})

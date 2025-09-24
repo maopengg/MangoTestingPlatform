@@ -54,7 +54,7 @@
       class="node"
       :class="{
         active: selectedNode && selectedNode.id === node.id,
-        linking: linkStartConnector && linkStartConnector.nodeId === node.id,
+        linking: linkStartConnector && linkStartConnector.node_id === node.id,
       }"
       :style="{
         left: node.position.x + 'px',
@@ -78,7 +78,7 @@
       </div>
 
       <div class="node-title">{{ node ? getNodeType(node) : '' }}</div>
-      <div class="node-content">{{ node ? getNodeTypeLabel(node.type) : '' }}</div>
+      <div class="node-content">{{ node.label }}</div>
 
       <!-- 下方连接点 -->
       <div v-if="!readonly" class="connector-bottom">
@@ -93,15 +93,15 @@
 </template>
 
 <script lang="ts" setup>
-  import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
   import { Message } from '@arco-design/web-vue'
   import type {
-    Position,
-    ConnectorPosition,
     Connector,
+    ConnectorPosition,
     FlowData,
-    UINode,
+    Position,
     UIEdge,
+    UINode,
   } from '@/types/components'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
 
@@ -112,29 +112,15 @@
     flowData?: FlowData
     readonly?: boolean
     allowDrop?: boolean
-    colorMap?: Record<number, string>
     tableData: any
-    nodeTypes?: Array<{ type: number; label: string; color: string }>
+    nodeTypes: Array<{ type: number; label: string; color: string }>
   }
 
   const props = withDefaults(defineProps<Props>(), {
     flowData: () => ({ nodes: [], edges: [] }),
     readonly: false,
     allowDrop: true,
-    colorMap: () => ({
-      0: '#52c41a',
-      1: '#1677ff',
-      2: '#fa8c16',
-      3: '#722ed1',
-      4: '#eb2f96',
-    }),
-    nodeTypes: () => [
-      { type: 0, label: '元素操作', color: '#52c41a' },
-      { type: 1, label: '断言操作', color: '#1677ff' },
-      { type: 2, label: 'SQL操作', color: '#fa8c16' },
-      { type: 3, label: '条件判断', color: '#722ed1' },
-      { type: 4, label: '自定义变量', color: '#eb2f96' },
-    ],
+    nodeTypes: () => [],
   })
 
   // Emits
@@ -209,15 +195,6 @@
     return result
   }
 
-  // 根据节点类型获取对应的中文标签
-  function getNodeTypeLabel(type: string | number) {
-    if (!type && type !== 0) return '未知节点'
-    if (!props.nodeTypes || props.nodeTypes.length === 0) return `${type} 节点`
-
-    const nodeType = props.nodeTypes.find((nt) => nt.type.toString() === type.toString())
-    return nodeType ? nodeType.label : `${type} 节点`
-  }
-
   // 使用节流函数优化数据变化通知
   let updateTimer: ReturnType<typeof setTimeout> | null = null
   const notifyDataChange = () => {
@@ -233,24 +210,27 @@
     }, 16) // ~60fps
   }
 
-  const getColor = (type: number) => props.colorMap[type] || '#1677ff'
+  const getColor = (type: number) => {
+    const nodeType = props.nodeTypes.find((nt: any) => nt.type === type)
+    return nodeType ? nodeType.color : '#1677ff'
+  }
 
   // 优化：计算属性缓存有效连接线
   const validEdges = computed(() => {
     return edges.value.filter((edge) => {
-      const sourceNode = nodes.value.find((n) => n.id === edge.source.nodeId)
-      const targetNode = nodes.value.find((n) => n.id === edge.target.nodeId)
+      const sourceNode = nodes.value.find((n) => n.id === edge.source.node_id)
+      const targetNode = nodes.value.find((n) => n.id === edge.target.node_id)
       return sourceNode && targetNode
     })
   })
 
   // 判断节点类型
-  const isDecisionNode = (type: number) => type === 3
+  const isDecisionNode = (type: number) => type === 4
 
   // 获取节点的连接数
   const getNodeConnections = (nodeId: string) => {
-    const inputs = edges.value.filter((edge) => edge.target.nodeId === nodeId)
-    const outputs = edges.value.filter((edge) => edge.source.nodeId === nodeId)
+    const inputs = edges.value.filter((edge) => edge.target.node_id === nodeId)
+    const outputs = edges.value.filter((edge) => edge.source.node_id === nodeId)
     return { inputs, outputs }
   }
 
@@ -277,12 +257,14 @@
 
     const position = getCanvasPosition(event.clientX, event.clientY)
     const id = `${type}-${Date.now()}`
+    const nodeType = parseInt(type, 10)
+    const nodeTypeInfo = props.nodeTypes.find((nt) => nt.type === nodeType)
 
     const newNode: UINode = {
       id,
       position,
-      type: parseInt(type, 10),
-      label: `${type} 节点`,
+      type: nodeType,
+      label: nodeTypeInfo ? nodeTypeInfo.label : `${type} 节点`,
       config: {},
     }
     nodes.value = nodes.value.concat(newNode)
@@ -399,7 +381,7 @@
     e.stopPropagation()
     e.preventDefault()
 
-    const currentConnector: Connector = { nodeId: node.id, position }
+    const currentConnector: Connector = { node_id: node.id, position }
     linkStartConnector.value = currentConnector
     isDraggingConnection.value = true
 
@@ -419,11 +401,11 @@
 
     // 如果在拖拽连线状态，尝试创建连接
     if (isDraggingConnection.value && linkStartConnector.value) {
-      const currentConnector: Connector = { nodeId: node.id, position }
+      const currentConnector: Connector = { node_id: node.id, position }
 
       // 不能连接到自己
       if (
-        linkStartConnector.value.nodeId !== node.id ||
+        linkStartConnector.value.node_id !== node.id ||
         linkStartConnector.value.position !== position
       ) {
         if (isValidConnection(linkStartConnector.value, currentConnector)) {
@@ -448,13 +430,13 @@
       return
     }
 
-    const currentConnector: Connector = { nodeId: node.id, position }
+    const currentConnector: Connector = { node_id: node.id, position }
 
     if (!linkStartConnector.value) {
       // 设置起点
       linkStartConnector.value = currentConnector
     } else if (
-      linkStartConnector.value.nodeId === node.id &&
+      linkStartConnector.value.node_id === node.id &&
       linkStartConnector.value.position === position
     ) {
       // 点击同一个连接点，取消连线
@@ -476,16 +458,16 @@
 
   // 验证连接是否有效
   const isValidConnection = (source: Connector, target: Connector): boolean => {
-    const startNode = nodes.value.find((n) => n.id === source.nodeId)
-    const endNode = nodes.value.find((n) => n.id === target.nodeId)
+    const startNode = nodes.value.find((n) => n.id === source.node_id)
+    const endNode = nodes.value.find((n) => n.id === target.node_id)
     if (!startNode || !endNode) return false
 
     const isStartDecision = isDecisionNode(startNode.type)
     const isEndDecision = isDecisionNode(endNode.type)
 
     // 获取起点和终点节点的当前连接情况
-    const startConnections = getNodeConnections(source.nodeId)
-    const endConnections = getNodeConnections(target.nodeId)
+    const startConnections = getNodeConnections(source.node_id)
+    const endConnections = getNodeConnections(target.node_id)
 
     // 检查连接是否有效
     let isValid = false
@@ -537,12 +519,12 @@
 
   // 用于计算连接点坐标（供 SVG 使用）
   const getConnectorPosition = (connector: Connector): Position => {
-    const cacheKey = `${connector.nodeId}-${connector.position}`
+    const cacheKey = `${connector.node_id}-${connector.position}`
 
     // 检查缓存
     if (connectorPositionCache.has(cacheKey)) {
       const cached = connectorPositionCache.get(cacheKey)!
-      const node = nodes.value.find((n) => n.id === connector.nodeId)
+      const node = nodes.value.find((n) => n.id === connector.node_id)
       if (node) {
         // 更新缓存位置
         const nodeWidth = 140
@@ -567,7 +549,7 @@
       }
     }
 
-    const node = nodes.value.find((n) => n.id === connector.nodeId)
+    const node = nodes.value.find((n) => n.id === connector.node_id)
     if (!node) return { x: 0, y: 0 }
 
     const nodeWidth = 140
@@ -659,11 +641,11 @@
 
     // 删除与该节点相关的所有连接线
     edges.value = edges.value.filter(
-      (edge) => edge.source.nodeId !== node.id && edge.target.nodeId !== node.id
+      (edge) => edge.source.node_id !== node.id && edge.target.node_id !== node.id
     )
 
     // 如果正在连线且起点是该节点，取消连线状态
-    if (linkStartConnector.value && linkStartConnector.value.nodeId === node.id) {
+    if (linkStartConnector.value && linkStartConnector.value.node_id === node.id) {
       linkStartConnector.value = null
     }
 
@@ -837,6 +819,7 @@
   .node-title {
     font-weight: 600;
     margin-bottom: 4px;
+    color: #000;
   }
 
   .node-content {

@@ -78,11 +78,15 @@ class PageStepsDetailedCRUD(ModelCRUD):
     @error_response('ui')
     def post(self, request: Request):
         from src.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD
-        PageStepsCRUD.inside_put(request.data.get('page_step'), {'flow_data': request.data.get('flow_data')})
         if request.data.get('id') is not None:
             data = self.inside_put(request.data.get('id'), request.data)
         else:
             data = self.inside_post(request.data)
+        flow_data = request.data.get('flow_data')
+        for i in flow_data.get('nodes'):
+            if i.get('id') == request.data.get('node_id'):
+                i['config']['id'] = data.get('id')
+        PageStepsCRUD.inside_put(request.data.get('page_step'), {'flow_data': flow_data})
         return ResponseData.success(RESPONSE_MSG_0035, data)
 
     def callback(self, _id):

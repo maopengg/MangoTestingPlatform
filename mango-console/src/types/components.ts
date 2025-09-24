@@ -77,7 +77,7 @@ export type TableFooterType = InstanceType<
 
 export type Position = { x: number; y: number }
 export type ConnectorPosition = 'top' | 'bottom'
-export type Connector = { nodeId: string; position: ConnectorPosition }
+export type Connector = { node_id: string; position: ConnectorPosition }
 
 // 为了兼容性，保留原有的类型别名
 export type UINode = {
