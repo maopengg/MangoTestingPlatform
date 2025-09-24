@@ -89,8 +89,8 @@
           <a-space>
             <div>
               <a-button size="small" status="success" :loading="caseRunning" @click="onCaseBatchRun"
-                >批量执行</a-button
-              >
+                >批量执行
+              </a-button>
             </div>
             <div>
               <a-button size="small" status="warning" @click="handleClick">设为定时任务</a-button>
@@ -171,18 +171,18 @@
                   class="custom-mini-btn"
                   :loading="caseRunning"
                   @click="caseRun(record)"
-                  >执行</a-button
-                >
+                  >执行
+                </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
-                  >步骤</a-button
-                >
+                  >步骤
+                </a-button>
                 <a-button
                   size="mini"
                   type="text"
                   class="custom-mini-btn"
                   @click="clickSuite(record)"
-                  >套件</a-button
-                >
+                  >套件
+                </a-button>
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
                   <template #content>
@@ -192,8 +192,8 @@
                         type="text"
                         class="custom-mini-btn"
                         @click="onUpdate(record)"
-                        >编辑</a-button
-                      >
+                        >编辑
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -570,6 +570,7 @@
       .then((res) => {
         Message.success(res.msg)
         data.visible = false
+        doRefresh()
       })
       .catch(console.log)
   }

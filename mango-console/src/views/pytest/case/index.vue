@@ -90,7 +90,7 @@
               <a-button type="primary" size="small" @click="clickUpdate">更新目录</a-button>
             </div>
             <div>
-              <a-button status="warning" size="small" @click="handleClick">设为定时任务 </a-button>
+              <a-button status="warning" size="small" @click="handleClick">设为定时任务</a-button>
             </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
@@ -404,6 +404,7 @@
       .then((res) => {
         Message.success(res.msg)
         data.visible = false
+        doRefresh()
       })
       .catch(console.log)
   }

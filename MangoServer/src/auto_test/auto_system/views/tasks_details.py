@@ -71,7 +71,8 @@ class TasksDetailsCRUD(ModelCRUD):
             elif _type == TestCaseTypeEnum.API.value:
                 tasks_details = TasksDetails.objects.filter(task_id=task, api_case_id=request.data.get('api_case'))
             else:
-                tasks_details = TasksDetails.objects.filter(task_id=task, pytest_case_id=request.data.get('pytest_case'))
+                tasks_details = TasksDetails.objects.filter(task_id=task,
+                                                            pytest_case_id=request.data.get('pytest_case'))
             if tasks_details.exists():
                 return ResponseData.fail(RESPONSE_MSG_0112)
             else:
@@ -110,6 +111,10 @@ class TasksDetailsViews(ViewSet):
         elif _type == TestCaseTypeEnum.API.value:
             case_name = 'api_case'
         else:
+            obj = PytestCase.objects.filter(id__in=case_id_list)
+            for case in obj:
+                if case.project_product is None or case.project_product.project_product is None:
+                    return ResponseData.fail(RESPONSE_MSG_0091)
             case_name = 'pytest_case'
         tasks_run_case_list = self.model.objects.filter(task=scheduled_tasks_id).values_list(case_name, flat=True)
         for case_id in case_id_list:

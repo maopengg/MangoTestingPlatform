@@ -193,18 +193,18 @@
                   class="custom-mini-btn"
                   :loading="caseRunning"
                   @click="onCaseRun(record.id)"
-                  >执行</a-button
-                >
+                  >执行
+                </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onClick(record)"
-                  >步骤</a-button
-                >
+                  >步骤
+                </a-button>
                 <a-button
                   size="mini"
                   type="text"
                   class="custom-mini-btn"
                   @click="clickSuite(record)"
-                  >套件</a-button
-                >
+                  >套件
+                </a-button>
 
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
@@ -215,8 +215,8 @@
                         type="text"
                         class="custom-mini-btn"
                         @click="onUpdate(record)"
-                        >编辑</a-button
-                      >
+                        >编辑
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -224,8 +224,8 @@
                         type="text"
                         class="custom-mini-btn"
                         @click="caseCody(record)"
-                        >复制</a-button
-                      >
+                        >复制
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -519,6 +519,7 @@
       .then((res) => {
         Message.success(res.msg)
         data.visible = false
+        doRefresh()
       })
       .catch(console.log)
   }
