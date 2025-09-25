@@ -73,8 +73,8 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -185,6 +185,7 @@
             Message.success(res.msg)
             doRefresh()
             project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       },
@@ -219,6 +220,7 @@
             Message.success(res.msg)
             doRefresh()
             project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       } else {
@@ -228,6 +230,7 @@
             Message.success(res.msg)
             doRefresh()
             project.getProject()
+            project.projectProductName()
           })
           .catch(console.log)
       }
