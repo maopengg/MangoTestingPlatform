@@ -66,7 +66,6 @@ class PageSteps(models.Model):
     module = models.ForeignKey(to=ProductModule, to_field="id", on_delete=models.PROTECT)
     name = models.CharField(verbose_name="步骤名称", max_length=64)
     run_flow = models.TextField(verbose_name="步骤顺序", null=True)
-    # 0和空等于调试用例，1等于调试完成
     status = models.SmallIntegerField(verbose_name="状态", default=2)
     result_data = models.JSONField(verbose_name="测试结果", null=True)
     flow_data = models.JSONField(verbose_name="flow_data", default=dict)
