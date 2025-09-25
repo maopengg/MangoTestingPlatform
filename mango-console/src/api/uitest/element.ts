@@ -1,12 +1,10 @@
 import { deleted, get, post, put } from '@/api/http'
 
-export function getUiElement(pageId: any) {
+export function getUiElement(data: object) {
   return get({
     url: '/ui/element',
     data: () => {
-      return {
-        page_id: pageId,
-      }
+      return data
     },
   })
 }

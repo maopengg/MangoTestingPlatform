@@ -37,7 +37,9 @@
                 class="custom-upload"
               />
             </div>
-            <div> <a-button type="primary" size="small" @click="doAppend">单个新增</a-button></div>
+            <div>
+              <a-button type="primary" size="small" @click="doAppend">单个新增</a-button>
+            </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
             </div>
@@ -100,11 +102,11 @@
             </template>
             <template v-else-if="item.dataIndex === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onDebug(record)"
-                >调试</a-button
-              >
+                >调试
+              </a-button>
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button
                 status="danger"
                 type="text"
@@ -239,6 +241,7 @@
   import { baseURL } from '@/api/axios.config'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import { usePagination, useRowKey, useRowSelection, useTable } from '@/hooks/table'
+
   const { selectedRowKeys, onSelectionChange, showCheckedAll } = useRowSelection()
   const pagination = usePagination(doRefresh)
   const rowKey = useRowKey('id')
@@ -325,6 +328,7 @@
       },
     })
   }
+
   function onDeleteItems() {
     if (selectedRowKeys.value.length === 0) {
       Message.error('请选择要删除的数据')
@@ -345,6 +349,7 @@
       },
     })
   }
+
   function onUpdate(record: any) {
     data.actionTitle = '编辑'
     data.isAdd = false
@@ -395,7 +400,8 @@
     let value = {}
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
-    getUiElement(route.query.id)
+    value['page_id'] = route.query.id
+    getUiElement(value)
       .then((res) => {
         table.handleSuccess(res)
         pagination.setTotalSize((res as any).totalSize)
@@ -449,6 +455,7 @@
       })
       .catch(console.log)
   }
+
   function changeStatus(event: number) {
     data.type = event
     for (let i = formItems1.length - 1; i >= 0; i--) {
@@ -639,6 +646,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   .custom-upload :deep(.arco-btn) {
     height: 28px;
     width: 88px;

@@ -4,7 +4,6 @@
 # @Time   : 2023-01-15 22:06
 # @Author : 毛鹏
 import pandas as pd
-from django.core.exceptions import FieldError
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -51,18 +50,6 @@ class PageElementCRUD(ModelCRUD):
     queryset = PageElement.objects.all()
     serializer_class = PageElementSerializersC
     serializer = PageElementSerializers
-
-    @error_response('ui')
-    def get(self, request):
-        books = self.model.objects.filter(page_id=request.query_params.get('page_id')).order_by('id')
-        try:
-            books = self.serializer_class.setup_eager_loading(books)
-        except FieldError:
-            pass
-        return ResponseData.success(RESPONSE_MSG_0077,
-                                    self.serializer_class(instance=books,
-                                                          many=True).data,
-                                    books.count())
 
 
 class PageElementViews(ViewSet):
