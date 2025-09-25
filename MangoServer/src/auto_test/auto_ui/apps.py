@@ -3,6 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
 
 from src.enums.tools_enum import TaskEnum
+from src.tools.decorator.retry import ensure_db_connection
 
 
 class AutoUiConfig(AppConfig):
@@ -18,6 +19,7 @@ class AutoUiConfig(AppConfig):
         time.sleep(5)
         self.refresh_status()
 
+    @ensure_db_connection()
     def refresh_status(self):
         from django.utils import timezone
         from datetime import timedelta
