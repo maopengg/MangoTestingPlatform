@@ -15,7 +15,7 @@ def git_obj() -> GitRepoOperator:
     repo_url = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_URL.name).value
     username = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_USERNAME.name).value
     password = CacheData.objects.get(key=CacheDataKeyEnum.PYTEST_GIT_PASSWORD.name).value
-    if repo_url is None or repo_url == "" or username is None or username == "" or password is None or password == "":
+    if repo_url is None or repo_url == "":
         raise PytestError(*ERROR_MSG_0043)
     repo = GitRepoOperator(repo_url, project_dir.root_path(), log.pytest, username, password)
     return repo
