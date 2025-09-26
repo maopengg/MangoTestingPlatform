@@ -118,18 +118,6 @@ class PageStepsDetailedView(ViewSet):
 
     @action(methods=['get'], detail=False)
     @error_response('ui')
-    def get_test_page_steps_detailed(self, request: Request):
-        page_steps_detailed_id = request.query_params.get('page_steps_detailed_id')
-        TestCase(
-            request.user.get('id'),
-            request.user.get('username'),
-            request.query_params.get("test_env"),
-            is_send=request.query_params.get('is_send')
-        ).test_page_steps(page_steps_detailed_id)
-        return ResponseData.success(RESPONSE_MSG_0131, value=(ClientNameEnum.DRIVER.value,))
-
-    @action(methods=['get'], detail=False)
-    @error_response('ui')
     def get_ope_type(self, request: Request):
         page_type = request.query_params.get('page_type')
         # redis = RedisBase('default')

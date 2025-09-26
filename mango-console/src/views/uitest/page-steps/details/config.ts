@@ -35,6 +35,23 @@ export const formItemsElementAss: any = reactive([
     },
   },
 ])
+export const formItemsElement4: any = reactive([
+  {
+    label: '判断方法',
+    key: 'ope_key',
+    value: ref(''),
+    type: 'cascader',
+    required: true,
+    placeholder: '请选择判断方法',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
 export const formItemsElementSql: any = reactive([
   {
     label: 'key_list',
@@ -95,6 +112,41 @@ export const formItemsElementKey: any = reactive([
     type: 'input',
     required: true,
     placeholder: '请输入value',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
+
+export const formItemsElementCondition: any = reactive([
+  {
+    label: '判断值',
+    key: 'condition_value',
+    value: ref(''),
+    type: 'input',
+    required: true,
+    placeholder: '请输入判断值',
+    validator: function () {
+      if (!this.value && this.value !== 0) {
+        Message.error(this.placeholder || '')
+        return false
+      }
+      return true
+    },
+  },
+])
+export const formItemsElementCode: any = reactive([
+  {
+    label: 'python',
+    key: 'func',
+    value: ref(''),
+    type: 'code',
+    required: true,
+    placeholder: '请输入python代码',
     validator: function () {
       if (!this.value && this.value !== 0) {
         Message.error(this.placeholder || '')

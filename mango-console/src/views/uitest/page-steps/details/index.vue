@@ -17,28 +17,7 @@
     <template #default>
       <div class="flow-demo-page">
         <div class="demo-body">
-          <!-- 左侧操作面板 -->
-          <div class="left-panel">
-            <a-card title="操作面板" :bordered="false">
-              <!-- 拖拽面板 -->
-              <div class="drag-panel">
-                <div class="node-types">
-                  <div
-                    v-for="nodeType in nodeTypes"
-                    :key="nodeType.type"
-                    class="node-type-item"
-                    draggable="true"
-                    @dragstart="onDragStart($event, nodeType.type.toString())"
-                  >
-                    <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
-                    {{ nodeType.label }}
-                  </div>
-                </div>
-              </div>
-            </a-card>
-          </div>
-
-          <!-- 中间 FlowChart 组件 -->
+          <!-- FlowChart 组件（包含左侧操作面板） -->
           <div class="center-panel">
             <FlowChart
               ref="flowChartRef"
@@ -60,30 +39,54 @@
             <a-tabs default-active-key="1">
               <a-tab-pane key="1" title="节点配置信息">
                 <div v-if="selectedNode" class="node-details">
-                  <h4>{{ selectedNode.label }}</h4>
+                  <h3>最近测试结果</h3>
                   <div class="detail-item">
-                    <label>ID:</label>
-                    <span>{{ selectedNode.id }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label>类型:</label>
-                    <span>{{ selectedNode.type }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label>位置:</label>
-                    <span>x: {{ selectedNode.position.x }}, y: {{ selectedNode.position.y }}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label>配置:</label>
-                    <pre class="config-json">{{
-                      JSON.stringify(selectedNode.config, null, 2)
-                    }}</pre>
+                    <div
+                      v-if="
+                        data?.selectReslutData?.elements &&
+                        data.selectReslutData.elements.length > 0
+                      "
+                    >
+                      <div
+                        v-for="(element, index) in data.selectReslutData.elements"
+                        :key="index"
+                        style="margin-bottom: 16px"
+                      >
+                        <div style="font-weight: 600; margin-bottom: 8px">元素 {{ index + 1 }}</div>
+                        <div style="display: flex; flex-direction: column; gap: 6px">
+                          <div style="display: flex">
+                            <span>定位类型：</span>
+                            <span>{{
+                              enumStore.element_exp.find((item1) => item1.key === element.exp).title
+                            }}</span>
+                          </div>
+                          <div style="display: flex">
+                            <span>元素定位：</span>
+                            <span>{{ element.loc }}</span>
+                          </div>
+                          <div style="display: flex">
+                            <span>元素个数：</span>
+                            <span>{{ element.ele_quantity }}</span>
+                          </div>
+                          <div style="display: flex">
+                            <span>元素文本：</span>
+                            <span>{{ element.element_text }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-else>
+                      <span style="color: #c9cdd4">暂无元素信息</span>
+                    </div>
                   </div>
 
                   <!-- 自定义配置编辑 -->
                   <div class="config-editor">
                     <div v-if="data.formItems.length > 0" style="padding: 0px 100px 0px 0px">
-                      <h5>节点详情</h5>
+                      <h3>节点详情</h3>
+                      <span v-if="data.type === 4"
+                        >提示：判断请在判断后续节点中选择判断结果，如果成立则会执行这个分支的操作！</span
+                      >
                       <a-form :model="formModel" ref="formRef">
                         <a-form-item
                           v-for="item of data.formItems"
@@ -121,14 +124,17 @@
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
-                                style="width: 380px"
+                                style="width: 440px"
                                 value-key="key"
                                 @change="upDataOpeValue(item.value)"
                               />
                             </a-space>
                           </template>
                           <template
-                            v-else-if="item.type === 'cascader' && item.label === '断言操作'"
+                            v-else-if="
+                              item.type === 'cascader' &&
+                              (item.label === '断言操作' || item.label === '判断方法')
+                            "
                           >
                             <a-space direction="vertical">
                               <a-cascader
@@ -139,7 +145,7 @@
                                 allow-clear
                                 allow-search
                                 expand-trigger="hover"
-                                style="width: 380px"
+                                style="width: 440px"
                                 value-key="key"
                                 @change="upDataOpeValue(item.value)"
                               />
@@ -179,6 +185,13 @@
                               allow-clear
                             />
                           </template>
+                          <template v-else-if="item.type === 'code'">
+                            <CodeEditor
+                              v-model="item.value"
+                              :placeholder="item.placeholder"
+                              style="height: 360px; width: 700px"
+                            />
+                          </template>
                         </a-form-item>
                       </a-form>
                       <div class="form-actions">
@@ -211,7 +224,10 @@
   import { getFormItems } from '@/utils/datacleaning'
   import { usePageData } from '@/store/page-data'
   import {
+    formItemsElement4,
     formItemsElementAss,
+    formItemsElementCode,
+    formItemsElementCondition,
     formItemsElementKey,
     formItemsElementOpe,
     formItemsElementSql,
@@ -226,6 +242,8 @@
   import useUserStore from '@/store/modules/user'
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import CodeEditor from '@/components/CodeEditor.vue'
+  import { useEnum } from '@/store/modules/get-enum'
 
   const formRef = ref()
 
@@ -237,14 +255,14 @@
     nodes: [],
     edges: [],
   })
-
+  const enumStore = useEnum()
   const pageData = usePageData()
   const userStore = useUserStore()
   const useSelectValue = useSelectValueStore()
 
   const route = useRoute()
   const formModel = ref({})
-  
+
   // 节点类型定义
   const nodeTypes = [
     { type: 0, label: '元素操作', color: '#52c41a' },
@@ -254,39 +272,18 @@
     { type: 4, label: '条件判断', color: '#722ed1' },
     { type: 5, label: 'python代码', color: '#ff6b35' },
   ]
-  
+
   const data: any = reactive({
     dataList: [],
     selectData: {}, // 选择的节点数据
     uiPageName: [], // 元素名称
     type: 0, // 点击的节点类型
+    condition: 0, // 上一个节点是否是判断类型
     result_data: {}, // 测试结果数据
+    selectReslutData: {}, // 选择的节点数据
     formItems: [], // 表单数据
   })
   const caseRunning = ref(false)
-
-  function changeStatus(event: number) {
-    data.type = event
-    // 清空表单项，重新构建
-    data.formItems = []
-    if (event === 0) {
-      data.formItems.push(...formItemsElementOpe)
-      // 元素断言
-    } else if (event === 1) {
-      data.formItems.push(...formItemsElementAss)
-      // sql操作
-    } else if (event === 2) {
-      data.formItems.push(...formItemsElementSql)
-      // 自定义变量
-    } else if (event === 3) {
-      data.formItems.push(...formItemsElementKey)
-      // 条件判断
-    } else if (event === 4) {
-      // 暂时为空，如需要可以添加相应表单项
-    } else if (event === 5) {
-      // python代码 - 暂时为空，如需要可以添加相应表单项
-    }
-  }
 
   const saveFlow = () => {
     if (!checkNodeConnections()) return
@@ -299,6 +296,20 @@
         doRefresh()
       })
       .catch(console.log)
+  }
+
+  function setSelectData(node: UINode) {
+    data.selectData = {}
+    data.dataList.forEach((item: any) => {
+      if (item.id === node.config.id) {
+        data.selectData = item
+      }
+    })
+    data.result_data?.element_result_list.forEach((item: any) => {
+      if (item.id === data.selectData.id) {
+        data.selectReslutData = item
+      }
+    })
   }
 
   function doResetSearch() {
@@ -357,7 +368,11 @@
               return true
             },
           })
-        } else if (select.d === true && !data.formItems.some((item) => item.key === select.f)) {
+        } else if (
+          select.d === true &&
+          data.type !== 4 &&
+          !data.formItems.some((item) => item.key === select.f)
+        ) {
           let d = {
             label: select.n ? select.n : select.f,
             key: `${select.f}-ope_value`,
@@ -373,7 +388,7 @@
                 Message.error(this.placeholder || '')
                 return false
               }
-              this.value = JSON.parse(this.value)
+              // this.value = JSON.parse(this.value)
               return true
             },
           }
@@ -421,19 +436,30 @@
     { immediate: true }
   )
 
-  // 拖拽开始
-  const onDragStart = (event: DragEvent, type: string) => {
-    event.dataTransfer?.setData('application/mango-flow', type)
-    event.dataTransfer!.effectAllowed = 'move'
+  // 查找指定节点的上一个节点
+  const findPreviousNode = (nodeId: string): UINode | null => {
+    // 查找连接到当前节点的边
+    const incomingEdge = flowData.value.edges.find((edge) => edge.target.node_id === nodeId)
+    if (!incomingEdge) {
+      return null // 没有上一个节点
+    }
+    // 查找上一个节点
+    const previousNode = flowData.value.nodes.find(
+      (node) => node.id === incomingEdge.source.node_id
+    )
+    return previousNode || null
   }
 
   const onNodeClick = (node: UINode) => {
-    data.selectData = {}
-    data.dataList.forEach((item) => {
-      if (item.id === node.config.id) {
-        data.selectData = item
-      }
-    })
+    setSelectData(node)
+    // 检查上一个节点是否为判断类型（type: 4）
+    const previousNode = findPreviousNode(node.id)
+    if (previousNode && previousNode.type === 4) {
+      data.condition = true
+    } else {
+      data.condition = false
+    }
+
     // 先清空表单项，重新构建基础表单
     changeStatus(node.type)
 
@@ -448,6 +474,32 @@
       }
     }
     formFeedback()
+  }
+
+  function changeStatus(event: number) {
+    data.type = event
+    // 清空表单项，重新构建
+    data.formItems = []
+    if (data.condition) {
+      data.formItems.push(...formItemsElementCondition)
+    }
+    if (event === 0) {
+      data.formItems.push(...formItemsElementOpe)
+      // 元素断言
+    } else if (event === 1) {
+      data.formItems.push(...formItemsElementAss)
+      // sql操作
+    } else if (event === 2) {
+      data.formItems.push(...formItemsElementSql)
+      // 自定义变量
+    } else if (event === 3) {
+      data.formItems.push(...formItemsElementKey)
+      // 条件判断
+    } else if (event === 4) {
+      data.formItems.push(...formItemsElement4)
+    } else if (event === 5) {
+      data.formItems.push(...formItemsElementCode)
+    }
   }
 
   // 处理所有表单项的回显
@@ -670,63 +722,14 @@
     min-height: 0;
   }
 
-  .left-panel {
-    flex: 0 0 10%;
-    min-width: 200px;
-  }
-
   .center-panel {
-    flex: 0 0 50%;
+    flex: 1;
     min-width: 0;
   }
 
   .right-panel {
     flex: 0 0 40%;
     min-width: 300px;
-  }
-
-  .drag-panel {
-    margin-bottom: 20px;
-  }
-
-  .drag-panel h4,
-  .data-display h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: var(--color-text-2);
-  }
-
-  .node-types {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .node-type-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px dashed var(--color-border);
-    border-radius: 6px;
-    cursor: grab;
-    background: var(--color-bg-2);
-    transition: all 0.2s;
-  }
-
-  .node-type-item:hover {
-    border-color: var(--color-primary);
-    background: var(--color-primary-light-1);
-  }
-
-  .node-type-item:active {
-    cursor: grabbing;
-  }
-
-  .color-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
   }
 
   .data-info p {
@@ -744,6 +747,7 @@
     display: flex;
     margin-bottom: 12px;
     font-size: 13px;
+    padding: 0px 0px 0px 40px;
   }
 
   .detail-item label {

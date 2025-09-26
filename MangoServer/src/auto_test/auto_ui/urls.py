@@ -26,7 +26,6 @@ urlpatterns = [
     path("element/upload", PageElementViews.as_view({'post': 'post_upload_element'})),
     #
     path("page/steps/detailed", PageStepsDetailedCRUD.as_view()),
-    path("page/steps/detailed/test", PageStepsDetailedView.as_view({'get': 'get_test_page_steps_detailed'})),
     path("page/steps/detailed/sort", PageStepsDetailedView.as_view({'put': 'put_step_sort'})),
     #
     path("page/steps", PageStepsCRUD.as_view()),

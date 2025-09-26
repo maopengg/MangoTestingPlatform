@@ -4,10 +4,6 @@
 # @Time   : 2025-01-24 11:36
 # @Author : 毛鹏
 import uuid
-import time
-from typing import Optional, Dict, Any
-
-from pydantic import BaseModel
 
 from src.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
 
@@ -16,35 +12,6 @@ node_types = {0: '元素操作',
               2: 'SQL操作',
               3: '自定义变量',
               4: '条件判断'}
-
-
-class Position(BaseModel):
-    x: int
-    y: int
-
-
-class Connector(BaseModel):
-    node_id: str
-    position: str  # 只有 'top' | 'bottom' 两个类型，根据step_sort的排序来分上下
-
-
-class UINode(BaseModel):
-    id: str
-    position: Position
-    type: int
-    label: str
-    config: Optional[Dict[Any, Any]] = None
-
-
-class UIEdge(BaseModel):
-    id: str
-    source: Connector
-    target: Connector
-
-
-class FlowData(BaseModel):
-    nodes: list[UINode]
-    edges: list[UIEdge]  # 支持两种边格式
 
 
 def page_steps_detailed():

@@ -20,8 +20,8 @@ class PytestCaseModel(BaseModel):
     file_path: str
     git_url: str
     commit_hash: str
-    git_username: str
-    git_password: str
+    git_username: str | None = None
+    git_password: str | None = None
 
 
 class PytestCaseResultModel(BaseModel):

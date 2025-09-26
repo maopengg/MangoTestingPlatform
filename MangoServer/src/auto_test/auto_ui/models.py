@@ -101,7 +101,7 @@ class PageStepsDetailed(models.Model):
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
     # 条件
-
+    condition_value = models.CharField(verbose_name="判断条件", max_length=1048, null=True)
     # func
     func = models.TextField(verbose_name="func", null=True)
 

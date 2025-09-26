@@ -3,10 +3,40 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
+
 from typing import Any
 
 from mangotools.models import MysqlConingModel, MethodModel
 from pydantic import BaseModel
+
+
+class Position(BaseModel):
+    x: int
+    y: int
+
+
+class Connector(BaseModel):
+    node_id: str
+    position: str  # 只有 'top' | 'bottom' 两个类型，根据step_sort的排序来分上下
+
+
+class UINode(BaseModel):
+    id: str
+    position: Position
+    type: int
+    label: str
+    config: dict
+
+
+class UIEdge(BaseModel):
+    id: str
+    source: Connector
+    target: Connector
+
+
+class FlowData(BaseModel):
+    nodes: list[UINode]
+    edges: list[UIEdge]  # 支持两种边格式
 
 
 class ElementListModel(BaseModel):
@@ -71,8 +101,8 @@ class PageStepsModel(BaseModel):
     element_list: list[ElementModel] = []
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
-    case_step_details_id: int | None = None
     case_data: list[StepsDataModel] = []
+    flow_data: FlowData | None
 
 
 class CaseModel(BaseModel):

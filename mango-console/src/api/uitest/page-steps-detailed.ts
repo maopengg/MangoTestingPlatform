@@ -86,16 +86,3 @@ export function putUiPagePutStepSort(data: any) {
     },
   })
 }
-
-export function getUiPageStepsDetailedTest(id: any, test_env: any) {
-  return get({
-    url: '/ui/page/steps/detailed/test',
-    data: () => {
-      return {
-        page_steps_detailed_id: id,
-        test_env: test_env,
-        is_send: 1,
-      }
-    },
-  })
-}

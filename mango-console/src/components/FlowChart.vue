@@ -1,5 +1,29 @@
 <template>
-  <div ref="canvasRef" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
+  <div class="flow-container">
+    <!-- 左侧操作面板 -->
+    <div class="left-panel">
+      <a-card title="操作面板" :bordered="false">
+        <!-- 拖拽面板 -->
+        <div class="drag-panel">
+          <div class="node-types">
+            <div
+              v-for="nodeType in nodeTypes"
+              :key="nodeType.type"
+              class="node-type-item"
+              draggable="true"
+              @dragstart="onDragStart($event, nodeType.type.toString())"
+            >
+              <span class="color-dot" :style="{ backgroundColor: nodeType.color }"></span>
+              {{ nodeType.label }}
+            </div>
+          </div>
+        </div>
+      </a-card>
+    </div>
+
+    <!-- 中间流程图画布 -->
+    <div class="center-panel">
+      <div ref="canvasRef" class="flow-canvas" @drop="onDrop" @dragover="onDragOver">
     <!-- SVG 边渲染 -->
     <svg class="edges" xmlns="http://www.w3.org/2000/svg">
       <g>
@@ -87,6 +111,8 @@
           @mousedown.stop="onConnectorMouseDown($event, node, 'bottom')"
           @mouseup.stop="onConnectorMouseUp($event, node, 'bottom')"
         ></div>
+      </div>
+    </div>
       </div>
     </div>
   </div>
@@ -232,6 +258,12 @@
     const inputs = edges.value.filter((edge) => edge.target.node_id === nodeId)
     const outputs = edges.value.filter((edge) => edge.source.node_id === nodeId)
     return { inputs, outputs }
+  }
+
+  // 拖拽开始
+  const onDragStart = (event: DragEvent, type: string) => {
+    event.dataTransfer?.setData('application/mango-flow', type)
+    event.dataTransfer!.effectAllowed = 'move'
   }
 
   // 允许放置
@@ -474,8 +506,8 @@
     let errorMessage = ''
 
     if (isStartDecision && isEndDecision) {
-      // 判断节点之间可以任意连接
-      isValid = true
+      // 判断节点之间不允许连接
+      errorMessage = '判断类型节点之间不允许连接'
     } else if (isStartDecision) {
       // 起点是判断节点，终点是普通节点
       if (target.position === 'top' && endConnections.inputs.length > 0) {
@@ -681,6 +713,62 @@
 </script>
 
 <style scoped>
+  .flow-container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+  }
+
+  .left-panel {
+    width: 200px;
+    height: 100%;
+    border-right: 1px solid var(--color-border-2, #e5e6eb);
+    background-color: #fff;
+  }
+
+  .center-panel {
+    flex: 1;
+    height: 100%;
+  }
+
+  .drag-panel {
+    padding: 8px 0;
+  }
+
+  .node-types {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .node-type-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border-2, #e5e6eb);
+    border-radius: 6px;
+    cursor: grab;
+    transition: all 0.2s;
+    background-color: #fff;
+  }
+
+  .node-type-item:hover {
+    background-color: var(--color-fill-2, #f7f8fa);
+    border-color: var(--color-primary, #1677ff);
+  }
+
+  .node-type-item:active {
+    cursor: grabbing;
+  }
+
+  .color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
   .flow-canvas {
     position: relative;
     width: 100%;

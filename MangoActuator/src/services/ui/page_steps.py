@@ -56,7 +56,7 @@ class PageSteps:
                 type=self.page_steps_model.type,
                 project_product_id=self.page_steps_model.project_product,
                 project_product_name=self.page_steps_model.project_product_name,
-                case_step_details_id=self.page_steps_model.case_step_details_id,
+                case_step_details_id=self.page_steps_model.case_steps_id,
                 test_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 cache_data={},
                 test_object='',
