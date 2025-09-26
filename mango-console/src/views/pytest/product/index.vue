@@ -67,11 +67,11 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onEditFile(record)"
-                >初始化文件</a-button
-              >
+                >初始化文件
+              </a-button>
               <a-button
                 size="mini"
                 status="danger"
@@ -197,6 +197,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            project.projectPytestName()
           })
           .catch(console.log)
       },
@@ -232,6 +233,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            project.projectPytestName()
           })
           .catch(console.log)
       } else {
@@ -240,6 +242,7 @@
           .then((res) => {
             Message.success(res.msg)
             doRefresh()
+            project.projectPytestName()
           })
           .catch(console.log)
       }
