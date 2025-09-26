@@ -102,7 +102,7 @@ class PageStepsModel(BaseModel):
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
     case_data: list[StepsDataModel] = []
-    flow_data: FlowData | None
+    flow_data: list[list[dict]] | None = None
 
 
 class CaseModel(BaseModel):

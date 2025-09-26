@@ -7,7 +7,7 @@ import copy
 import random
 
 from pydantic import ValidationError
-
+from mangotools.mangos import traverse_flow_with_levels
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import TestObject
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
@@ -127,7 +127,7 @@ class TestCase:
             error_retry=None,
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
-            flow_data=FlowData(**page_steps.flow_data)
+            flow_data=traverse_flow_with_levels(page_steps.flow_data)
         )
         if case_steps_detailed:
             page_steps_model.case_steps_details = case_steps_detailed.id

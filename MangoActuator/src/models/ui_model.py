@@ -8,35 +8,6 @@ from mangotools.models import MysqlConingModel
 from pydantic import BaseModel
 
 
-class Position(BaseModel):
-    x: int
-    y: int
-
-
-class Connector(BaseModel):
-    node_id: str
-    position: str  # 只有 'top' | 'bottom' 两个类型，根据step_sort的排序来分上下
-
-
-class UINode(BaseModel):
-    id: str
-    position: Position
-    type: int
-    label: str
-    config: dict
-
-
-class UIEdge(BaseModel):
-    id: str
-    source: Connector
-    target: Connector
-
-
-class FlowData(BaseModel):
-    nodes: list[UINode]
-    edges: list[UIEdge]  # 支持两种边格式
-
-
 class UiPublicModel(BaseModel):
     type: int
     key: str
@@ -78,7 +49,7 @@ class PageStepsModel(BaseModel):
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
     case_data: list[StepsDataModel] = []
-    flow_data: FlowData | None
+    flow_data: list[list[dict]] | None = None
 
 
 class CaseModel(BaseModel):
