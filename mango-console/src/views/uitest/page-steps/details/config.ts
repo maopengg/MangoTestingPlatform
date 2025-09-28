@@ -135,6 +135,7 @@ export const formItemsElementCondition: any = reactive([
         Message.error(this.placeholder || '')
         return false
       }
+
       return true
     },
   },

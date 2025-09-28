@@ -6,13 +6,14 @@
 import copy
 import random
 
+from mangotools.mangos import build_decision_tree
 from pydantic import ValidationError
-from mangotools.mangos import traverse_flow_with_levels
+
 from src.auto_test.auto_system.consumers import ChatConsumer
 from src.auto_test.auto_system.models import TestObject
+from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
 from src.auto_test.auto_system.service.socket_link.socket_user import SocketUser
 from src.auto_test.auto_ui.models import *
-from src.auto_test.auto_system.service.factory import func_mysql_config, func_test_object_value
 from src.enums.socket_api_enum import UiSocketEnum
 from src.enums.system_enum import ClientTypeEnum, ClientNameEnum
 from src.enums.tools_enum import StatusEnum, AutoTypeEnum, TaskEnum
@@ -104,7 +105,6 @@ class TestCase:
             # equipment_config=self.__equipment_config(page.project_product.ui_client_type),
             environment_config=self.__environment_config(page.project_product.id),
             public_data_list=self.__public_data(page.project_product_id),
-            flow_data=None
         )
         self.__socket_send(func_name=UiSocketEnum.PAGE_STEPS.value, data_model=page_steps_model)
 
@@ -124,10 +124,9 @@ class TestCase:
             type=page_steps.project_product.ui_client_type,
             url=page_steps.page.url,
             switch_step_open_url=switch_step_open_url,
-            error_retry=None,
             environment_config=self.__environment_config(page_steps.project_product.id),
             public_data_list=self.__public_data(page_steps.project_product_id),
-            flow_data=traverse_flow_with_levels(page_steps.flow_data)
+            flow_data=build_decision_tree(page_steps.flow_data)
         )
         if case_steps_detailed:
             page_steps_model.case_steps_details = case_steps_detailed.id
@@ -154,40 +153,56 @@ class TestCase:
                 type=steps_element.type,
                 name=steps_element.ele_name.name if steps_element.ele_name else None,
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
-                sub=steps_element.ele_name.sub if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
                 ope_value=steps_element.ope_value,
-                is_iframe=steps_element.ele_name.is_iframe if steps_element.ele_name else None,
                 key_list=steps_element.key_list,
                 sql=steps_element.sql,
                 key=steps_element.key,
-                value=steps_element.value
+                value=steps_element.value,
+                condition_value=steps_element.condition_value,
+                func=steps_element.func
             )
             if steps_element.ele_name:
-                element_model.elements.append(
-                    ElementListModel(exp=steps_element.ele_name.exp, loc=steps_element.ele_name.loc))
+                element_model.elements.append(ElementListModel(
+                    exp=steps_element.ele_name.exp,
+                    loc=steps_element.ele_name.loc,
+                    sub=steps_element.ele_name.sub,
+                    is_iframe=steps_element.ele_name.is_iframe
+                ))
                 if steps_element.ele_name.loc2 is not None and steps_element.ele_name.exp2 is not None:
-                    element_model.elements.append(
-                        ElementListModel(exp=steps_element.ele_name.exp2, loc=steps_element.ele_name.loc2))
+                    element_model.elements.append(ElementListModel(
+                        exp=steps_element.ele_name.exp2,
+                        loc=steps_element.ele_name.loc2,
+                        sub=steps_element.ele_name.sub2,
+                        is_iframe=steps_element.ele_name.is_iframe
+                    ))
                 if steps_element.ele_name.loc3 is not None and steps_element.ele_name.exp3 is not None:
-                    element_model.elements.append(
-                        ElementListModel(exp=steps_element.ele_name.exp3, loc=steps_element.ele_name.loc3))
+                    element_model.elements.append(ElementListModel(
+                        exp=steps_element.ele_name.exp3,
+                        loc=steps_element.ele_name.loc3,
+                        sub=steps_element.ele_name.sub3,
+                        is_iframe=steps_element.ele_name.is_iframe
+                    ))
         else:
             element_model = ElementModel(
                 id=steps_element.id,
                 type=data.get('type'),
                 name=steps_element.name,
                 sleep=steps_element.sleep,
-                sub=steps_element.sub,
                 ope_key=data.get('ope_key'),
                 ope_value=data.get('ope_value'),
-                is_iframe=steps_element.is_iframe,
             )
-            element_model.elements.append(ElementListModel(exp=steps_element.exp, loc=steps_element.loc))
+            element_model.elements.append(
+                ElementListModel(exp=steps_element.exp, loc=steps_element.loc, sub=steps_element.sub,
+                                 is_iframe=steps_element.is_iframe))
             if steps_element.loc2 is not None and steps_element.exp2 is not None:
-                element_model.elements.append(ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2))
+                element_model.elements.append(
+                    ElementListModel(exp=steps_element.exp2, loc=steps_element.loc2, sub=steps_element.sub2,
+                                     is_iframe=steps_element.is_iframe))
             if steps_element.loc3 is not None and steps_element.exp3 is not None:
-                element_model.elements.append(ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3))
+                element_model.elements.append(
+                    ElementListModel(exp=steps_element.exp3, loc=steps_element.loc3, sub=steps_element.sub3,
+                                     is_iframe=steps_element.is_iframe))
         return element_model
 
     def __socket_send(self, data_model, func_name: str, is_open=False) -> None:

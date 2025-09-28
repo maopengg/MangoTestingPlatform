@@ -6,6 +6,7 @@
 import uuid
 
 from src.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
+from src.models.ui_model import *
 
 node_types = {0: '元素操作',
               1: '断言操作',

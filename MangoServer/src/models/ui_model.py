@@ -42,6 +42,8 @@ class FlowData(BaseModel):
 class ElementListModel(BaseModel):
     exp: int | None
     loc: str | None
+    sub: int | None = None
+    is_iframe: int | None
 
 
 class ElementModel(BaseModel):
@@ -50,15 +52,14 @@ class ElementModel(BaseModel):
     name: str | None
     elements: list[ElementListModel] = []
     sleep: int | None
-    sub: int | None
-    is_iframe: int | None
     ope_key: str | None
     ope_value: list[MethodModel] | None
     key_list: list | None = None
     sql: str | None = None
     key: str | None = None
     value: str | None = None
-    if_actual: str | None = None
+    condition_value: dict | None = None
+    func: str | None = None
 
 
 class UiPublicModel(BaseModel):
@@ -98,11 +99,11 @@ class PageStepsModel(BaseModel):
     url: str
     switch_step_open_url: bool
     error_retry: int | None = None
-    element_list: list[ElementModel] = []
+    element_list: list[ElementModel] | ElementModel = []
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
     case_data: list[StepsDataModel] = []
-    flow_data: list[list[dict]] | None = None
+    flow_data: dict | None = None
 
 
 class CaseModel(BaseModel):

@@ -67,18 +67,6 @@ class ElementExpEnum(BaseEnum):
         }
 
 
-class ElementOperationEnum(BaseEnum):
-    """元素操作类型枚举"""
-    OPE = 0
-    ASS = 1
-    SQL = 2
-    CUSTOM = 3
-
-    @classmethod
-    def obj(cls):
-        return {0: "操作", 1: "断言", 2: "SQL", 3: "参数"}
-
-
 class UiPublicTypeEnum(BaseEnum):
     """全局变量类型"""
     CUSTOM = 0

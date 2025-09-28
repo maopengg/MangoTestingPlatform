@@ -77,21 +77,23 @@ class PageElementViews(ViewSet):
         df = pd.read_excel(uploaded_file, keep_default_na=False)
         df = df.where(df.notna(), None)
         df = df.replace('', None)
-        df['类型-1'] = df['类型-1'].map(ElementExpEnum.reversal_obj())
+        df['*类型-1'] = df['*类型-1'].map(ElementExpEnum.reversal_obj())
         if not df['类型-2'].empty and df['类型-2'].notna().any():
             df['类型-2'] = df['类型-2'].map(ElementExpEnum.reversal_obj())
         if not df['类型-3'].empty and df['类型-3'].notna().any():
             df['类型-3'] = df['类型-3'].map(ElementExpEnum.reversal_obj())
         df = df.rename(columns={
-            '元素名称': 'name',
-            '类型-1': 'exp',
-            '定位-1': 'loc',
+            '*元素名称': 'name',
+            '*类型-1': 'exp',
+            '*定位-1': 'loc',
             '类型-2': 'exp2',
             '定位-2': 'loc2',
             '类型-3': 'exp3',
             '定位-3': 'loc3',
-            '等待时间（秒）': 'sleep',
-            '元素下标（1开始）': 'sub',
+            '等待时间': 'sleep',
+            '元素下标-1': 'sub',
+            '元素下标-2': 'sub2',
+            '元素下标-3': 'sub3',
         })
         for index, row in df.iterrows():
             record = row.to_dict()
@@ -99,6 +101,8 @@ class PageElementViews(ViewSet):
             record['is_iframe'] = 0
             record['sleep'] = None if record['sleep'] == '' else record['sleep']
             record['sub'] = None if record['sub'] == '' else record['sub']
+            record['sub2'] = None if record['sub2'] == '' else record['sub2']
+            record['sub3'] = None if record['sub3'] == '' else record['sub3']
             PageElementCRUD.inside_post(record)
         return ResponseData.success(RESPONSE_MSG_0083)
 

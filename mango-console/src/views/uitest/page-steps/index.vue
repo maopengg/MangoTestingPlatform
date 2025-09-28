@@ -160,15 +160,15 @@
                       >编辑
                     </a-button>
                   </a-doption>
-                  <a-doption>
-                    <a-button
-                      size="mini"
-                      type="text"
-                      class="custom-mini-btn"
-                      @click="onPageStepsCopy(record)"
-                      >复制
-                    </a-button>
-                  </a-doption>
+                  <!--                  <a-doption>-->
+                  <!--                    <a-button-->
+                  <!--                      size="mini"-->
+                  <!--                      type="text"-->
+                  <!--                      class="custom-mini-btn"-->
+                  <!--                      @click="onPageStepsCopy(record)"-->
+                  <!--                      >复制-->
+                  <!--                    </a-button>-->
+                  <!--                  </a-doption>-->
                   <a-doption>
                     <a-button
                       size="mini"

@@ -20,6 +20,6 @@ async def global_consumer_news():
     while True:
         if not global_msg_queue.empty():
             msg: MessageModel = global_msg_queue.get()
-            print(msg.model_dump_json())
+            print(msg.msg)
         else:
             await asyncio.sleep(3)

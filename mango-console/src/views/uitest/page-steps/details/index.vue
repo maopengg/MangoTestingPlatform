@@ -305,6 +305,7 @@
         data.selectData = item
       }
     })
+    data.selectReslutData = {}
     data.result_data?.element_result_list.forEach((item: any) => {
       if (item.id === data.selectData.id) {
         data.selectReslutData = item
@@ -524,7 +525,7 @@
         })
       }
       if (typeof propName === 'object' && propName !== null) {
-        it.value = propName.id
+        it.value = propName.id ? propName?.id : propName?.expect
       } else {
         it.value = propName
       }
@@ -626,7 +627,9 @@
     value['flow_data'] = flowData.value
     value['node_id'] = selectedNode.value.id
     value['step_sort'] = 0
-
+    if (value.condition_value) {
+      value['condition_value'] = { expect: value.condition_value }
+    }
     postUiPageStepsDetailed(value, route.query.id)
       .then((res) => {
         Message.success(res.msg)

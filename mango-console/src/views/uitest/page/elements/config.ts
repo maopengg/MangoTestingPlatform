@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue'
 import { Message } from '@arco-design/web-vue'
 import { isValidInteger } from '@/utils/form'
 import { useTable, useTableColumn } from '@/hooks/table'
+
 const table = useTable()
 
 export const tableColumns = useTableColumn([
@@ -29,6 +30,12 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
+    title: '下标-1',
+    key: 'sub',
+    dataIndex: 'sub',
+    width: 80,
+  },
+  {
     title: '类型-2',
     key: 'exp2',
     dataIndex: 'exp2',
@@ -41,6 +48,12 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+  },
+  {
+    title: '下标-2',
+    key: 'sub2',
+    dataIndex: 'sub',
+    width: 80,
   },
   {
     title: '类型-3',
@@ -57,17 +70,18 @@ export const tableColumns = useTableColumn([
     tooltip: true,
   },
   {
-    title: '等待时间（秒）',
-    key: 'sleep',
-    dataIndex: 'sleep',
-    width: 130,
+    title: '下标-3',
+    key: 'sub3',
+    dataIndex: 'sub',
+    width: 80,
   },
   {
-    title: '元素下标（1开始）',
-    key: 'sub',
-    dataIndex: 'sub',
-    width: 160,
+    title: '等待时间(秒)',
+    key: 'sleep',
+    dataIndex: 'sleep',
+    width: 120,
   },
+
   {
     title: '操作',
     key: 'actions',
@@ -120,6 +134,24 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
+    label: '元素下标-1',
+    key: 'sub',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入元素下标，从1开始数',
+    validator: function () {
+      if (!this.value && !this.required) {
+        return true
+      }
+      if (!isValidInteger(this.value)) {
+        Message.error(`${this.label}请输入正整数！`)
+        return false
+      }
+      return true
+    },
+  },
+  {
     label: '类型-2',
     key: 'exp2',
     value: null,
@@ -138,6 +170,24 @@ export const formItems: FormItem[] = reactive([
     required: false,
     placeholder: '请输入定位-2的元素表达式',
     validator: function () {
+      return true
+    },
+  },
+  {
+    label: '元素下标-2',
+    key: 'sub2',
+    value: ref(''),
+    type: 'input',
+    required: false,
+    placeholder: '请输入元素下标，从1开始数',
+    validator: function () {
+      if (!this.value && !this.required) {
+        return true
+      }
+      if (!isValidInteger(this.value)) {
+        Message.error(`${this.label}请输入正整数！`)
+        return false
+      }
       return true
     },
   },
@@ -164,12 +214,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '等待时间',
-    key: 'sleep',
+    label: '元素下标-3',
+    key: 'sub3',
     value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入元素等待时间',
+    placeholder: '请输入元素下标，从1开始数',
     validator: function () {
       if (!this.value && !this.required) {
         return true
@@ -182,12 +232,12 @@ export const formItems: FormItem[] = reactive([
     },
   },
   {
-    label: '元素下标',
-    key: 'sub',
+    label: '等待时间',
+    key: 'sleep',
     value: ref(''),
     type: 'input',
     required: false,
-    placeholder: '请输入元素下标',
+    placeholder: '请输入元素等待时间',
     validator: function () {
       if (!this.value && !this.required) {
         return true

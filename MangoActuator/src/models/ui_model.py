@@ -3,6 +3,8 @@
 # @Description:
 # @Time   : 2023-05-28 18:40
 # @Author : 毛鹏
+from typing import Any
+
 from mangoautomation.models import ElementModel, ElementResultModel
 from mangotools.models import MysqlConingModel
 from pydantic import BaseModel
@@ -45,11 +47,11 @@ class PageStepsModel(BaseModel):
     url: str
     switch_step_open_url: bool
     error_retry: int | None = None
-    element_list: list[ElementModel] = []
+    element_list: list[ElementModel] | ElementModel = []
     environment_config: EnvironmentConfigModel
     public_data_list: list[UiPublicModel] = []
     case_data: list[StepsDataModel] = []
-    flow_data: list[list[dict]] | None = None
+    flow_data: dict | None = None
 
 
 class CaseModel(BaseModel):

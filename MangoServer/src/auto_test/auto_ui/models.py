@@ -45,6 +45,8 @@ class PageElement(models.Model):
     loc3 = models.TextField(verbose_name="元素定位", null=True)
     sleep = models.SmallIntegerField(verbose_name="等待时间", null=True)
     sub = models.SmallIntegerField(verbose_name="下标", null=True)
+    sub2 = models.SmallIntegerField(verbose_name="下标2", null=True)
+    sub3 = models.SmallIntegerField(verbose_name="下标3", null=True)
     is_iframe = models.SmallIntegerField(verbose_name="是否在iframe里面", null=True)
 
     class Meta:
@@ -101,7 +103,7 @@ class PageStepsDetailed(models.Model):
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
     # 条件
-    condition_value = models.CharField(verbose_name="判断条件", max_length=1048, null=True)
+    condition_value = models.JSONField(verbose_name="条件判断", null=True)
     # func
     func = models.TextField(verbose_name="func", null=True)
 
