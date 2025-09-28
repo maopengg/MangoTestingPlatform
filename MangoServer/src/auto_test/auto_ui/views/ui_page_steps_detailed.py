@@ -11,11 +11,9 @@ from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
-from src.auto_test.auto_ui.models import PageStepsDetailed
-from src.auto_test.auto_ui.service.test_case.test_case import TestCase
+from src.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
 from src.auto_test.auto_ui.views.ui_element import PageElementSerializers
-from src.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
-from src.enums.system_enum import CacheDataKey2Enum, ClientNameEnum
+from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
@@ -95,21 +93,22 @@ class PageStepsDetailedCRUD(ModelCRUD):
         @param _id: 步骤id
         @return:
         """
-        data = {'id': _id, 'run_flow': ''}
+        page_steps = PageSteps.objects.get(id=_id)
+        run_flow = ''
         run = self.model.objects.filter(page_step=_id)
         for i in run:
-            data['run_flow'] += '->'
+            run_flow += '->'
             if i.ele_name:
-                data['run_flow'] += i.ele_name.name
+                run_flow += i.ele_name.name
             else:
                 if i.type == ElementOperationEnum.CUSTOM.value:
-                    data['run_flow'] += '参数'
+                    run_flow += '参数'
                 elif i.type == ElementOperationEnum.SQL.value:
-                    data['run_flow'] += 'SQL'
+                    run_flow += 'SQL'
                 else:
-                    data['run_flow'] += i.ope_key if i.ope_key else '无元素操作'
-        from src.auto_test.auto_ui.views.ui_page_steps import PageStepsCRUD
-        PageStepsCRUD.inside_put(data['id'], data)
+                    run_flow += i.ope_key if i.ope_key else '无元素操作'
+        page_steps.run_flow = run_flow
+        page_steps.save()
 
 
 class PageStepsDetailedView(ViewSet):
