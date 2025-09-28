@@ -35,7 +35,9 @@
                       : useSelectValue.getSelectLabel(item.ope_key)
                   }}
                 </p>
-                <p><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p>
+                <p v-if="item.sub"
+                  ><span class="label">元素下标</span>：{{ item.sub ? item.sub : '-' }}</p
+                >
                 <p><span class="label">等待时间</span>：{{ item.sleep ? item.sleep : '-' }}</p>
 
                 <p>
@@ -78,6 +80,10 @@
                     <p style="word-wrap: break-word"
                       ><span class="label">定位元素-{{ index + 1 }}</span
                       >：{{ element.loc }}</p
+                    >
+                    <p style="word-wrap: break-word"
+                      ><span class="label">元素下标-{{ index + 1 }}</span
+                      >：{{ element?.sub }}</p
                     >
                     <p
                       ><span class="label">元素个数-{{ index + 1 }}</span
