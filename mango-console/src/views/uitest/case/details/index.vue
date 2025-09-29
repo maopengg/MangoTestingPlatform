@@ -5,8 +5,8 @@
         <template #extra>
           <a-space>
             <a-button size="small" status="success" :loading="caseRunning" @click="onCaseRun"
-              >执行</a-button
-            >
+              >执行
+            </a-button>
             <a-button size="small" status="danger" @click="doResetSearch">返回</a-button>
           </a-space>
         </template>
@@ -45,8 +45,8 @@
                 <a-space>
                   <div>
                     <a-button size="small" type="primary" @click="addSynchronous"
-                      >全部同步</a-button
-                    >
+                      >全部同步
+                    </a-button>
                   </div>
                   <div>
                     <a-button size="small" type="primary" @click="addData">增加步骤</a-button>
@@ -180,8 +180,8 @@
                                 type="text"
                                 class="custom-mini-btn"
                                 @click="onUpdate1(record)"
-                                >编辑</a-button
-                              >
+                                >编辑
+                              </a-button>
                             </a-doption>
                             <a-doption>
                               <a-button
@@ -234,7 +234,7 @@
           </div>
           <div class="right">
             <a-tabs default-active-key="1">
-              <a-tab-pane key="1" title="步骤数据">
+              <a-tab-pane key="1" title="预估步骤执行顺序">
                 <a-list :bordered="false">
                   <template #header> {{ data.selectData?.page_step?.name }}</template>
                   <a-list-item
@@ -259,34 +259,18 @@
                           <span v-if="item.type === 5">步骤：python代码</span>
                         </a-space>
                         <a-space style="width: 30%">
-                          <span v-if="item.type === 0"
-                            >操作：{{ getLabelByValue(data.ope, item.ope_key) }}</span
-                          >
-                          <span v-if="item.type === 1"
-                            >操作：{{ getLabelByValue(data.ass, item.ope_key) }}</span
+                          <span
+                            >操作：{{ useSelectValue.findItemByValue(item.ope_key)?.label }}</span
                           >
                         </a-space>
                       </div>
                       <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
-                        <template
-                          v-for="key in Object.keys(item.page_step_details_data)"
-                          :key="key"
-                        >
-                          <template v-if="!['actual', 'locating'].includes(key)">
+                        <template v-for="data of item.page_step_details_data" :key="data.id">
+                          <template v-if="data.d">
                             <div style="display: flex; align-items: center; margin-bottom: 12px">
-                              <span
-                                style="
-                                  width: 120px;
-                                  flex-shrink: 0;
-                                  font-size: 14px;
-                                  color: #333;
-                                  font-weight: 500;
-                                "
-                              >
-                                {{ key + '：' }}
-                              </span>
+                              <span> {{ data.n }}： </span>
                               <a-textarea
-                                v-model="item.page_step_details_data[key]"
+                                v-model="data.v"
                                 :auto-size="{ minRows: 1, maxRows: 5 }"
                                 style="flex: 1; margin-left: 12px"
                                 @blur="onUpdate"
@@ -389,6 +373,7 @@
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
+  import { useSelectValueStore } from '@/store/modules/get-ope-value'
 
   const userStore = useUserStore()
   const enumStore = useEnum()
@@ -409,9 +394,8 @@
     actionTitle: '新增',
     uiType: '2',
     uiSonType: '11',
-    ass: [],
-    ope: [],
   })
+  const useSelectValue = useSelectValueStore()
 
   const caseRunning = ref(false)
 
@@ -573,6 +557,7 @@
       },
     })
   }
+
   function addSynchronous() {
     Modal.confirm({
       title: '提示',
@@ -634,6 +619,7 @@
   function select(record: any) {
     data.selectData = record
   }
+
   function onUpdate1(item: any) {
     data.actionTitle = '编辑'
     data.isAdd = false
@@ -656,6 +642,7 @@
       })
     })
   }
+
   function onUpdate() {
     putUiCaseStepsDetailed(
       {
@@ -686,35 +673,6 @@
     }
   }
 
-  function getLabelByValue(opeData: any, value: string): string {
-    const list = [...opeData]
-    for (const item of list) {
-      if (item.children) {
-        list.push(...item.children)
-      }
-    }
-    return list.find((item: any) => item.value === value)?.label
-  }
-
-  function getCacheDataKeyValue() {
-    getSystemCacheDataKeyValue('select_value')
-      .then((res) => {
-        res.data.forEach((item: any) => {
-          if (item.value === 'web') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'android') {
-            data.ope.push(...item.children)
-          } else if (item.value === 'ass_android') {
-            data.ass.push(...item.children)
-          } else if (item.value === 'ass_web') {
-            data.ass.push(...item.children)
-          } else if (item.value.includes('断言')) {
-            data.ass.push(item)
-          }
-        })
-      })
-      .catch(console.log)
-  }
   const onModifyStatus = async (newValue: any, id: number, key: string) => {
     let obj: any = {
       id: id,
@@ -743,7 +701,6 @@
     nextTick(async () => {
       doRefresh()
       onProductModuleName()
-      getCacheDataKeyValue()
     })
   })
 </script>
@@ -764,10 +721,12 @@
     padding: 5px;
     box-sizing: border-box;
     display: flex;
+
     .left {
       padding: 5px;
       width: 50%;
     }
+
     .right {
       padding: 5px;
       width: 50%;

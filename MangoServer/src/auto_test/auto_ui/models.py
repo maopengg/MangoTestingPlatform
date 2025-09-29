@@ -97,9 +97,11 @@ class PageStepsDetailed(models.Model):
     ope_key = models.CharField(verbose_name="对该元素的操作类型", max_length=1048, null=True)
     ope_value = models.JSONField(verbose_name="对该元素的操作类型", null=True)
     # sql
+    sql_execute = models.JSONField(verbose_name="sql步骤", null=True)
     key_list = models.JSONField(verbose_name="sql查询结果的key_list", null=True)
     sql = models.CharField(verbose_name="sql", max_length=1048, null=True)
     # 自定义
+    custom = models.JSONField(verbose_name="自定义缓存步骤", null=True)
     key = models.CharField(verbose_name="key", max_length=1048, null=True)
     value = models.CharField(verbose_name="value", max_length=1048, null=True)
     # 条件

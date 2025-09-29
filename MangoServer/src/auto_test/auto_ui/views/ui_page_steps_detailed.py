@@ -3,15 +3,20 @@
 # @Description: 
 # @Time   : 2023-01-15 10:56
 # @Author : 毛鹏
+import json
 
 from django.core.exceptions import FieldError
+from mangotools.mangos import get_execution_order_with_config_ids
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
+from src.exceptions import ToolsError
+from src.auto_test.auto_system.models import CacheData
 from src.auto_test.auto_system.service.cache_data_value import CacheDataValue
 from src.auto_test.auto_ui.models import PageStepsDetailed, PageSteps
+from src.auto_test.auto_ui.service.query_ope_key_name import get_by_object
 from src.auto_test.auto_ui.views.ui_element import PageElementSerializers
 from src.enums.system_enum import CacheDataKey2Enum
 from src.enums.ui_enum import DriveTypeEnum, ElementOperationEnum
@@ -69,9 +74,10 @@ class PageStepsDetailedCRUD(ModelCRUD):
             books = self.serializer_class.setup_eager_loading(books)
         except FieldError:
             pass
-        return ResponseData.success(RESPONSE_MSG_0016,
-                                    self.serializer_class(instance=books,
-                                                          many=True).data)
+        return ResponseData.success(
+            RESPONSE_MSG_0016,
+            self.serializer_class(instance=books, many=True).data
+        )
 
     @error_response('ui')
     def post(self, request: Request):
@@ -85,8 +91,10 @@ class PageStepsDetailedCRUD(ModelCRUD):
             if i.get('id') == request.data.get('node_id'):
                 i['config']['id'] = data.get('id')
         PageStepsCRUD.inside_put(request.data.get('page_step'), {'flow_data': flow_data})
+        self.asynchronous_callback(request.data.get('parent_id'))
         return ResponseData.success(RESPONSE_MSG_0035, data)
 
+    @error_response('ui')
     def callback(self, _id):
         """
         排序
@@ -94,21 +102,31 @@ class PageStepsDetailedCRUD(ModelCRUD):
         @return:
         """
         page_steps = PageSteps.objects.get(id=_id)
-        run_flow = ''
-        run = self.model.objects.filter(page_step=_id)
-        for i in run:
-            run_flow += '->'
-            if i.ele_name:
-                run_flow += i.ele_name.name
-            else:
-                if i.type == ElementOperationEnum.CUSTOM.value:
-                    run_flow += '参数'
-                elif i.type == ElementOperationEnum.SQL.value:
-                    run_flow += 'SQL'
-                else:
-                    run_flow += i.ope_key if i.ope_key else '无元素操作'
-        page_steps.run_flow = run_flow
-        page_steps.save()
+        try:
+            flow_data = get_execution_order_with_config_ids(page_steps.flow_data)
+        except KeyError:
+            import traceback
+            traceback.print_exc()
+            pass
+        else:
+            run_flow = ''
+            select_value = json.loads(CacheData.objects.get(key='select_value').value)
+            for __id in flow_data:
+                try:
+                    flow = self.model.objects.get(id=__id)
+                    run_flow += '->'
+                    if flow.ele_name:
+                        run_flow += flow.ele_name.name
+                    else:
+                        if flow.ope_key:
+                            label = get_by_object(select_value, flow.ope_key)
+                            run_flow += flow.ope_key if label is None else label.get('label')
+                        else:
+                            run_flow += ElementOperationEnum.get_value(flow.type)
+                except PageStepsDetailed.DoesNotExist:
+                    pass
+            page_steps.run_flow = run_flow
+            page_steps.save()
 
 
 class PageStepsDetailedView(ViewSet):

@@ -74,10 +74,11 @@ class ElementOperationEnum(BaseEnum):
     SQL = 2
     CUSTOM = 3
     CONDITION = 4
+    PYTHON_CODE = 5
 
     @classmethod
     def obj(cls):
-        return {0: "元素操作", 1: "断言操作", 2: "SQL变量", 3: "自定义变量", 4: "条件判断"}
+        return {0: "元素操作", 1: "断言操作", 2: "SQL变量", 3: "自定义变量", 4: "条件判断", 5: "python代码"}
 
 
 class UiPublicTypeEnum(BaseEnum):

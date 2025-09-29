@@ -43,12 +43,12 @@
                   <div class="detail-item">
                     <div
                       v-if="
-                        data?.selectReslutData?.elements &&
-                        data.selectReslutData.elements.length > 0
+                        data?.selectResultData?.elements &&
+                        data.selectResultData.elements.length > 0
                       "
                     >
                       <div
-                        v-for="(element, index) in data.selectReslutData.elements"
+                        v-for="(element, index) in data.selectResultData.elements"
                         :key="index"
                         style="margin-bottom: 16px"
                       >
@@ -205,7 +205,9 @@
                 </div>
               </a-tab-pane>
               <a-tab-pane key="2" title="步骤测试结果">
-                <ElementTestReport :result-data="data.result_data" />
+                <div v-if="data.result_data">
+                  <ElementTestReport :result-data="data.result_data" />
+                </div>
               </a-tab-pane>
             </a-tabs>
           </div>
@@ -280,7 +282,7 @@
     type: 0, // 点击的节点类型
     condition: 0, // 上一个节点是否是判断类型
     result_data: {}, // 测试结果数据
-    selectReslutData: {}, // 选择的节点数据
+    selectResultData: {}, // 选择的节点数据
     formItems: [], // 表单数据
   })
   const caseRunning = ref(false)
@@ -305,10 +307,10 @@
         data.selectData = item
       }
     })
-    data.selectReslutData = {}
+    data.selectResultData = {}
     data.result_data?.element_result_list.forEach((item: any) => {
       if (item.id === data.selectData.id) {
-        data.selectReslutData = item
+        data.selectResultData = item
       }
     })
   }
@@ -317,22 +319,10 @@
     window.history.back()
   }
 
-  function doRefresh(flushed = false) {
+  function doRefresh() {
     getUiPageStepsDetailed(route.query.id)
       .then((res) => {
         data.dataList = res.data || []
-        // 安全检查流程图数据
-        if (flushed) {
-          const pageFlowData = pageData.record?.flow_data
-          if (pageFlowData && typeof pageFlowData === 'object') {
-            flowData.value = {
-              nodes: Array.isArray(pageFlowData.nodes) ? pageFlowData.nodes : [],
-              edges: Array.isArray(pageFlowData.edges) ? pageFlowData.edges : [],
-            }
-          } else {
-            flowData.value = { nodes: [], edges: [] }
-          }
-        }
       })
       .catch(console.log)
   }
@@ -347,6 +337,11 @@
 
   function upDataOpeValue(value: any) {
     const inputItem = useSelectValue.findItemByValue(value)
+    for (let i = data.formItems.length - 1; i >= 0; i--) {
+      if (data.formItems[i].key !== 'ope_key') {
+        data.formItems.splice(i, 1)
+      }
+    }
     if (inputItem && inputItem.parameter) {
       inputItem.parameter.forEach((select: any) => {
         if (
@@ -420,6 +415,7 @@
     getUiSteps({ id: pageStepsId })
       .then((res) => {
         data.result_data = res.data[0].result_data
+        flowData.value = res.data[0].flow_data
       })
       .catch(console.log)
   }
@@ -507,7 +503,16 @@
   function formFeedback() {
     data.formItems.forEach((it: any) => {
       let propName: any = data.selectData[it.key]
-      if (it.key.includes('locating') || it.key.includes('actual')) {
+      if (it.key === 'key') {
+        propName = data.selectData?.custom ? data.selectData?.custom[0]['key'] : ''
+      } else if (it.key === 'value') {
+        propName = data.selectData?.custom ? data.selectData?.custom[0]['value'] : ''
+      } else if (it.key === 'sql') {
+        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['sql'] : ''
+      } else if (it.key === 'sql_list') {
+        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['sql_list'] : ''
+      }
+      if ((it.key.includes('locating') || it.key.includes('actual')) && it.label !== '函数代码') {
         propName = data.selectData.ele_name
       } else if (it.key.includes('ope_value')) {
         if (data.selectData.ope_value) {
@@ -552,10 +557,19 @@
     if (selectedNode.value?.id === node.id) {
       selectedNode.value = null
     }
+    if (!node.config?.id) {
+      setTimeout(() => {
+        saveFlow()
+      }, 100) // 确保flowData已经同步更新
+      return
+    }
     deleteUiPageStepsDetailed(node.config.id, route.query.id)
       .then((res) => {
         Message.success(res.msg)
-        saveFlow()
+        // 等待FlowChart组件数据同步完成后再保存
+        setTimeout(() => {
+          saveFlow()
+        }, 100) // 确保flowData已经同步更新
       })
       .catch(console.log)
   }
@@ -583,13 +597,7 @@
       )
 
       // 条件判断节点（type: 4）的连接规则较为灵活，可以有多个输出
-      if (node.type === 4) {
-        // 条件判断节点至少需要有一个输出连接
-        if (outputConnections.length === 0 && flowData.value.nodes.length > 1) {
-          Message.warning('有步骤节点没有进行连接，请先连接节点后再保存！')
-          return false
-        }
-      } else {
+      if (node.type !== 4) {
         // 其他节点类型（0-元素操作、1-断言操作、2-SQL操作、3-自定义变量）
         // 如果不是第一个节点，必须有输入连接
         // 如果不是最后一个节点，必须有输出连接
@@ -617,20 +625,29 @@
       return
     }
 
-    let value = getFormItems(data.formItems)
+    let value: object = getFormItems(data.formItems)
     value['page_step'] = route.query.id
     value['type'] = data.type
     if (data?.selectData?.id) {
       value['id'] = data.selectData.id
     }
-    value['ope_value'] = processOptionData(value)
     value['flow_data'] = flowData.value
     value['node_id'] = selectedNode.value.id
     value['step_sort'] = 0
     if (value.condition_value) {
       value['condition_value'] = { expect: value.condition_value }
     }
-    postUiPageStepsDetailed(value, route.query.id)
+    if (value.key || value.value) {
+      value['custom'] = [{ key: value.key, value: value.value }]
+      delete value.key
+      delete value.value
+    }
+    if (value.sql || value.sql_list) {
+      value['sql_execute'] = [{ sql: value.sql, sql_list: value.sql_list }]
+      delete value.sql
+      delete value.sql_list
+    }
+    postUiPageStepsDetailed({ ...value, ...processOptionData(value) }, route.query.id)
       .then((res) => {
         Message.success(res.msg)
         const updatedNode = {
@@ -649,47 +666,32 @@
 
   function processOptionData(value: any) {
     const extractedValues = []
-    for (const key in value) {
-      if (key == 'locating' || key == 'actual') {
-        value['ele_name'] = value[key]
-        extractedValues.push({
-          f: key,
-          v: '',
-          d: false,
-        })
-        delete value[key]
-      } else if (key.includes('-ope_value')) {
-        const newKey = key.replace('-ope_value', '')
-        if (newKey && data.type === 0) {
-          useSelectValue.findItemByValue(value.ope_key).parameter.forEach((item: any) => {
-            if (item.f === newKey) {
-              extractedValues.push({
-                f: newKey,
-                v: value[key],
-                d: item.d,
-              })
-            }
-          })
-        } else if (newKey && data.type === 1) {
-          useSelectValue.findItemByValue(value.ope_key).parameter.forEach((item: any) => {
-            if (item.f === newKey) {
-              extractedValues.push({
-                f: newKey,
-                v: value[key],
-                d: item.d,
-              })
-            }
-          })
-        }
-        delete value[key]
-      }
+    if (!value.ope_key) {
+      return {}
     }
-    return extractedValues
+    const parameter = useSelectValue.findItemByValue(value.ope_key)?.parameter
+    if (!parameter) {
+      return {}
+    }
+    for (const key in value) {
+      const newKey = key.replace('-ope_value', '')
+      parameter.forEach((item: any) => {
+        if (key == 'locating' || key == 'actual') {
+          value['ele_name'] = value[key]
+          extractedValues.push(item)
+        } else if (newKey && item.f === newKey) {
+          item['v'] = value[key]
+          extractedValues.push(item)
+          delete value[key]
+        }
+      })
+    }
+    return { ope_value: extractedValues, ele_name: value['ele_name'] }
   }
 
   onMounted(() => {
-    doRefresh(true)
-    data.result_data = pageData.record.result_data
+    doRefreshSteps(pageData.record.id)
+    doRefresh()
     getEleName()
     useSelectValue.getSelectValue()
   })

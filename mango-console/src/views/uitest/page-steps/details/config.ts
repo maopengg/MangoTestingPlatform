@@ -61,13 +61,9 @@ export const formItemsElementSql: any = reactive([
     required: true,
     placeholder: '请输入sql查询结果的key_list',
     validator: function () {
-      if (this.value !== '') {
-        try {
-          this.value = JSON.parse(this.value)
-        } catch (e) {
-          Message.error('key_list值请输入json数据类型')
-          return false
-        }
+      if (!this.value && this.value !== 0) {
+        Message.error('请输入sql查询结果的key_list')
+        return false
       }
       return true
     },
