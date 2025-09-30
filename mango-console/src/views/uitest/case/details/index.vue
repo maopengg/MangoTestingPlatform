@@ -20,15 +20,7 @@
           <a-space direction="vertical" style="width: 25%">
             <span>用例ID：{{ pageData.record.id }}</span>
             <span>用例名称：{{ pageData.record.name }}</span>
-            <span
-              >测试结果：{{
-                pageData.record.status === 1
-                  ? '通过'
-                  : pageData.record.status === 0
-                  ? '失败'
-                  : '未测试'
-              }}</span
-            >
+            <span>测试结果：{{ enumStore.task_status[pageData.record.status].title }}</span>
           </a-space>
           <a-space direction="vertical" style="width: 50%">
             <span>用例执行顺序：{{ pageData.record.case_flow }}</span>
@@ -235,117 +227,144 @@
           <div class="right">
             <a-tabs default-active-key="1">
               <a-tab-pane key="1" title="预估步骤执行顺序">
-                <a-list :bordered="false">
-                  <template #header> {{ data.selectData?.page_step?.name }}</template>
+                <a-list :bordered="false" :split="false" class="step-execution-list">
+                  <template #header>
+                    <div class="step-header">{{ data.selectData?.page_step?.name }}</div>
+                  </template>
                   <a-list-item
                     v-for="item of data.selectData?.case_data"
                     :key="item.page_step_details_id"
-                    style="padding: 4px 20px"
+                    class="step-list-item"
                   >
-                    <div style="display: flex; flex-direction: column">
-                      <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
-                        <a-space style="width: 40%">
-                          <span v-if="item.type === 0">步骤：操作</span>
-                          <span v-if="item.type === 1">步骤：断言</span>
-                          <span v-if="item.type === 2">步骤：SQL</span>
-                          <span v-if="item.type === 3">步骤：自定义参数</span>
-                          <span v-if="item.type === 4">步骤：条件判断</span>
-                          <span v-if="item.type === 5">步骤：python代码</span>
-                        </a-space>
-                        <a-space style="width: 30%">
-                          <span v-if="item.ope_key"
-                            >操作：{{ useSelectValue.findItemByValue(item.ope_key)?.label }}</span
-                          >
-                        </a-space>
-                        <a-space style="width: 30%">
-                          <span v-if="item.page_step_details_name">元素名称：</span>
-                          <span v-if="item.page_step_details_name">{{
-                            item.page_step_details_name
+                    <div class="step-container">
+                      <!-- 步骤信息行 -->
+                      <div class="step-info-row">
+                        <div class="step-type">
+                          <span>步骤类型：{{ enumStore.element_ope[item.type]?.title }}</span>
+                        </div>
+                        <div v-if="item.ope_key">
+                          <span class="operation-label">执行方法：</span>
+                          <span class="operation-value">{{
+                            useSelectValue.findItemByValue(item.ope_key).label
                           }}</span>
-                        </a-space>
+                        </div>
+                        <div class="step-element" v-if="item.page_step_details_name">
+                          <span class="element-label">元素名称：</span>
+                          <span class="element-value">{{ item.page_step_details_name }}</span>
+                        </div>
                       </div>
-                      <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
-                        <template v-for="item1 of item.page_step_details_data">
-                          <div style="display: flex; align-items: center; margin-bottom: 12px">
-                            <a-space direction="vertical">
-                              <a-space v-if="item.condition_value">
-                                <span>条件判断值： </span>
-                                <a-textarea
-                                  v-model="item.condition_value.expect"
-                                  :auto-size="{ minRows: 1, maxRows: 5 }"
-                                  style="flex: 1; margin-left: 12px"
-                                  @blur="onUpdate"
-                                />
-                              </a-space>
-                              <template v-if="item.type === 0">
-                                <span v-if="item1.d"> {{ item1.n }}： </span>
-                                <a-textarea
-                                  v-if="item1.d"
-                                  v-model="item1.v"
-                                  :auto-size="{ minRows: 1, maxRows: 5 }"
-                                  style="flex: 1; margin-left: 12px"
-                                  @blur="onUpdate"
-                                />
-                              </template>
-                              <template v-if="item.type === 1">
-                                <span v-if="item1.f !== 'actual'"> {{ item1.n }}： </span>
-                                <a-textarea
-                                  v-if="item1.f !== 'actual'"
-                                  v-model="item1.v"
-                                  :auto-size="{ minRows: 1, maxRows: 5 }"
-                                  style="flex: 1; margin-left: 12px"
-                                  @blur="onUpdate"
-                                />
-                              </template>
-                              <template v-else-if="item.type === 3">
-                                <a-space>
-                                  <span>key： </span>
-                                  <a-textarea
-                                    v-model="item1.key"
-                                    :auto-size="{ minRows: 1, maxRows: 5 }"
-                                    style="flex: 1; margin-left: 12px"
-                                    @blur="onUpdate"
-                                  />
-                                  <span>value： </span>
-                                  <a-textarea
-                                    v-model="item1.value"
-                                    :auto-size="{ minRows: 1, maxRows: 5 }"
-                                    style="flex: 1; margin-left: 12px"
-                                    @blur="onUpdate"
-                                  />
-                                </a-space>
-                              </template>
-                              <template v-else-if="item.type === 2">
-                                <a-space>
-                                  <span>key_list： </span>
-                                  <a-textarea
-                                    v-model="item1.key_list"
-                                    :auto-size="{ minRows: 1, maxRows: 5 }"
-                                    style="flex: 1; margin-left: 12px"
-                                    @blur="onUpdate"
-                                  />
-                                  <span>sql： </span>
-                                  <a-textarea
-                                    v-model="item1.sql"
-                                    :auto-size="{ minRows: 1, maxRows: 5 }"
-                                    style="flex: 1; margin-left: 12px; width: 300px"
-                                    @blur="onUpdate"
-                                  />
-                                </a-space>
-                              </template>
-                              <template v-else-if="item.type === 5">
-                                <CodeEditor
-                                  v-model="item1.func"
-                                  placeholder="请输入python代码"
-                                  style="height: 360px; width: 700px"
-                                />
-                                <a-button @click="onUpdate">保存</a-button>
-                              </template>
-                              <template v-else-if="item.type === 4"></template>
-                            </a-space>
+
+                      <!-- 步骤详情数据 -->
+                      <div class="step-details">
+                        <template
+                          v-for="item1 of item.page_step_details_data"
+                          :key="item1.id || Math.random()"
+                        >
+                          <!-- 条件判断值 -->
+                          <div v-if="item.condition_value" class="condition-input">
+                            <span class="input-label">条件判断值：</span>
+                            <a-textarea
+                              v-model="item.condition_value.expect"
+                              :auto-size="{ minRows: 1, maxRows: 5 }"
+                              class="custom-textarea"
+                              @blur="onUpdate"
+                            />
                           </div>
+
+                          <!-- 操作类型 (type === 0) -->
+                          <template v-if="item.type === 0">
+                            <div v-if="item1.d" class="operation-input">
+                              <span class="input-label">{{ item1.n }}：</span>
+                              <a-textarea
+                                v-model="item1.v"
+                                :auto-size="{ minRows: 1, maxRows: 5 }"
+                                class="custom-textarea"
+                                @blur="onUpdate"
+                              />
+                            </div>
+                          </template>
+
+                          <!-- 断言类型 (type === 1) -->
+                          <template v-if="item.type === 1">
+                            <div v-if="item1.f !== 'actual'" class="assertion-input">
+                              <span class="input-label">{{ item1.n }}：</span>
+                              <a-textarea
+                                v-model="item1.v"
+                                :auto-size="{ minRows: 1, maxRows: 5 }"
+                                class="custom-textarea"
+                                @blur="onUpdate"
+                              />
+                            </div>
+                          </template>
+
+                          <!-- 自定义参数类型 (type === 3) -->
+                          <template v-else-if="item.type === 3">
+                            <div class="custom-param-input">
+                              <div class="param-row">
+                                <span class="input-label">key：</span>
+                                <a-textarea
+                                  v-model="item1.key"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                              <div class="param-row">
+                                <span class="input-label">value：</span>
+                                <a-textarea
+                                  v-model="item1.value"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                            </div>
+                          </template>
+
+                          <!-- SQL类型 (type === 2) -->
+                          <template v-else-if="item.type === 2">
+                            <div class="sql-input">
+                              <div class="sql-row">
+                                <span class="input-label">key_list：</span>
+                                <a-textarea
+                                  v-model="item1.key_list"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                              <div class="sql-row">
+                                <span class="input-label">sql：</span>
+                                <a-textarea
+                                  v-model="item1.sql"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  class="custom-textarea sql-textarea"
+                                  @blur="onUpdate"
+                                />
+                              </div>
+                            </div>
+                          </template>
+
+                          <!-- Python代码类型 (type === 5) -->
+                          <template v-else-if="item.type === 5">
+                            <div class="python-code">
+                              <CodeEditor
+                                v-model="item1.func"
+                                placeholder="请输入python代码"
+                                class="code-editor"
+                              />
+                              <a-button type="primary" class="save-btn" @click="onUpdate"
+                                >保存
+                              </a-button>
+                            </div>
+                          </template>
+
+                          <!-- 条件判断类型 (type === 4) -->
+                          <template v-else-if="item.type === 4">
+                            <!-- 条件判断暂无内容 -->
+                          </template>
                         </template>
-                      </a-space>
+                      </div>
                     </div>
                   </a-list-item>
                 </a-list>
@@ -439,7 +458,6 @@
   import useUserStore from '@/store/modules/user'
   import { useEnum } from '@/store/modules/get-enum'
   import ElementTestReport from '@/components/ElementTestReport.vue'
-  import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
   import CodeEditor from '@/components/CodeEditor.vue'
 
@@ -769,6 +787,7 @@
     nextTick(async () => {
       doRefresh()
       onProductModuleName()
+      useSelectValue.getSelectValue()
     })
   })
 </script>
@@ -799,5 +818,174 @@
       padding: 5px;
       width: 50%;
     }
+  }
+
+  /* 步骤执行列表样式 */
+  .step-execution-list {
+    .step-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1d2129;
+    }
+  }
+
+  /* 强制覆盖 Arco Design 组件的边框样式 */
+  .step-execution-list :deep(.arco-list-split .arco-list-header) {
+    border-bottom: none !important;
+  }
+
+  .step-execution-list :deep(.arco-list-split .arco-list-item) {
+    border-bottom: none !important;
+  }
+
+  /* 如果上面还不够，用更强的选择器 */
+  :deep(.arco-list.arco-list-split .arco-list-header) {
+    border-bottom: none !important;
+  }
+
+  :deep(.arco-list.arco-list-split .arco-list-item) {
+    border-bottom: none !important;
+  }
+
+  .step-list-item {
+    padding: 8px 8px !important;
+    border: 1px solid #e5e6eb !important;
+    border-radius: 8px !important;
+    margin-bottom: 5px !important;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #f7f8fa;
+      border-color: #c9cdd4;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .step-container {
+    width: 100%;
+  }
+
+  /* 步骤信息行 */
+  .step-info-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px;
+    background-color: #f2f3f5;
+    border-radius: 6px;
+    flex-wrap: wrap;
+  }
+
+  /* 步骤类型标签 */
+  .step-type {
+    min-width: 120px;
+  }
+
+  .step-element {
+    display: flex;
+    align-items: center;
+    min-width: 120px;
+  }
+
+  .operation-label,
+  .element-label {
+    font-weight: 500;
+    color: #4e5969;
+    margin-right: 4px;
+  }
+
+  .operation-value,
+  .element-value {
+    color: #1d2129;
+    font-weight: 500;
+  }
+
+  /* 步骤详情区域 */
+  .step-details {
+    margin-top: 8px;
+  }
+
+  /* 输入框样式 */
+  .input-label {
+    display: inline-block;
+    min-width: 80px;
+    font-weight: 500;
+    color: #4e5969;
+    margin-right: 8px;
+  }
+
+  .custom-textarea {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  /* 条件判断输入 */
+  .condition-input {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 8px;
+    background-color: #fff7e6;
+    border-radius: 4px;
+  }
+
+  /* 操作输入 */
+  .operation-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  /* 断言输入 */
+  .assertion-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  /* 自定义参数输入 */
+  .custom-param-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .param-row {
+    display: flex;
+    align-items: center;
+  }
+
+  /* SQL输入 */
+  .sql-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sql-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .sql-textarea {
+    min-width: 300px;
+  }
+
+  /* Python代码编辑器 */
+  .python-code {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .code-editor {
+    height: 360px;
+    width: 100%;
+    max-width: 700px;
+  }
+
+  .save-btn {
+    align-self: flex-start;
   }
 </style>
