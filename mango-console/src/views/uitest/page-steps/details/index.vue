@@ -509,8 +509,8 @@
         propName = data.selectData?.custom ? data.selectData?.custom[0]['value'] : ''
       } else if (it.key === 'sql') {
         propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['sql'] : ''
-      } else if (it.key === 'sql_list') {
-        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['sql_list'] : ''
+      } else if (it.key === 'key_list') {
+        propName = data.selectData?.sql_execute ? data.selectData?.sql_execute[0]['key_list'] : ''
       }
       if ((it.key.includes('locating') || it.key.includes('actual')) && it.label !== '函数代码') {
         propName = data.selectData.ele_name
@@ -642,10 +642,10 @@
       delete value.key
       delete value.value
     }
-    if (value.sql || value.sql_list) {
-      value['sql_execute'] = [{ sql: value.sql, sql_list: value.sql_list }]
+    if (value.sql || value.key_list) {
+      value['sql_execute'] = [{ sql: value.sql, key_list: value.key_list }]
       delete value.sql
-      delete value.sql_list
+      delete value.key_list
     }
     postUiPageStepsDetailed({ ...value, ...processOptionData(value) }, route.query.id)
       .then((res) => {

@@ -155,7 +155,7 @@ def case_steps_detailed():
                     page_step_details_name=steps_detailed.ele_name.name if steps_detailed.ele_name else None
                 )
                 page_step_details_data = []
-                if steps_detailed.type == ElementOperationEnum.OPE.value or ElementOperationEnum.ASS.value:
+                if steps_detailed.type == ElementOperationEnum.OPE.value or steps_detailed.type == ElementOperationEnum.ASS.value:
                     if steps_detailed.ope_value:
                         page_step_details_data = steps_detailed.ope_value
                     for i in page_step_details_data:

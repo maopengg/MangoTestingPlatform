@@ -245,38 +245,105 @@
                     <div style="display: flex; flex-direction: column">
                       <div style="display: flex; margin-bottom: 2px; margin-top: 2px">
                         <a-space style="width: 40%">
+                          <span v-if="item.type === 0">步骤：操作</span>
+                          <span v-if="item.type === 1">步骤：断言</span>
+                          <span v-if="item.type === 2">步骤：SQL</span>
+                          <span v-if="item.type === 3">步骤：自定义参数</span>
+                          <span v-if="item.type === 4">步骤：条件判断</span>
+                          <span v-if="item.type === 5">步骤：python代码</span>
+                        </a-space>
+                        <a-space style="width: 30%">
+                          <span v-if="item.ope_key"
+                            >操作：{{ useSelectValue.findItemByValue(item.ope_key)?.label }}</span
+                          >
+                        </a-space>
+                        <a-space style="width: 30%">
                           <span v-if="item.page_step_details_name">元素名称：</span>
                           <span v-if="item.page_step_details_name">{{
                             item.page_step_details_name
                           }}</span>
                         </a-space>
-                        <a-space style="width: 30%">
-                          <span v-if="item.type === 0">步骤：操作</span>
-                          <span v-if="item.type === 1">步骤：断言</span>
-                          <span v-if="item.type === 2">步骤：SQL</span>
-                          <span v-if="item.type === 3">步骤：条件判断</span>
-                          <span v-if="item.type === 4">步骤：自定义参数</span>
-                          <span v-if="item.type === 5">步骤：python代码</span>
-                        </a-space>
-                        <a-space style="width: 30%">
-                          <span
-                            >操作：{{ useSelectValue.findItemByValue(item.ope_key)?.label }}</span
-                          >
-                        </a-space>
                       </div>
                       <a-space direction="vertical" style="margin-bottom: 2px; margin-top: 2px">
-                        <template v-for="data of item.page_step_details_data" :key="data.id">
-                          <template v-if="data.d">
-                            <div style="display: flex; align-items: center; margin-bottom: 12px">
-                              <span> {{ data.n }}： </span>
-                              <a-textarea
-                                v-model="data.v"
-                                :auto-size="{ minRows: 1, maxRows: 5 }"
-                                style="flex: 1; margin-left: 12px"
-                                @blur="onUpdate"
-                              />
-                            </div>
-                          </template>
+                        <template v-for="item1 of item.page_step_details_data">
+                          <div style="display: flex; align-items: center; margin-bottom: 12px">
+                            <a-space direction="vertical">
+                              <a-space v-if="item.condition_value">
+                                <span>条件判断值： </span>
+                                <a-textarea
+                                  v-model="item.condition_value.expect"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  style="flex: 1; margin-left: 12px"
+                                  @blur="onUpdate"
+                                />
+                              </a-space>
+                              <template v-if="item.type === 0">
+                                <span v-if="item1.d"> {{ item1.n }}： </span>
+                                <a-textarea
+                                  v-if="item1.d"
+                                  v-model="item1.v"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  style="flex: 1; margin-left: 12px"
+                                  @blur="onUpdate"
+                                />
+                              </template>
+                              <template v-if="item.type === 1">
+                                <span v-if="item1.f !== 'actual'"> {{ item1.n }}： </span>
+                                <a-textarea
+                                  v-if="item1.f !== 'actual'"
+                                  v-model="item1.v"
+                                  :auto-size="{ minRows: 1, maxRows: 5 }"
+                                  style="flex: 1; margin-left: 12px"
+                                  @blur="onUpdate"
+                                />
+                              </template>
+                              <template v-else-if="item.type === 3">
+                                <a-space>
+                                  <span>key： </span>
+                                  <a-textarea
+                                    v-model="item1.key"
+                                    :auto-size="{ minRows: 1, maxRows: 5 }"
+                                    style="flex: 1; margin-left: 12px"
+                                    @blur="onUpdate"
+                                  />
+                                  <span>value： </span>
+                                  <a-textarea
+                                    v-model="item1.value"
+                                    :auto-size="{ minRows: 1, maxRows: 5 }"
+                                    style="flex: 1; margin-left: 12px"
+                                    @blur="onUpdate"
+                                  />
+                                </a-space>
+                              </template>
+                              <template v-else-if="item.type === 2">
+                                <a-space>
+                                  <span>key_list： </span>
+                                  <a-textarea
+                                    v-model="item1.key_list"
+                                    :auto-size="{ minRows: 1, maxRows: 5 }"
+                                    style="flex: 1; margin-left: 12px"
+                                    @blur="onUpdate"
+                                  />
+                                  <span>sql： </span>
+                                  <a-textarea
+                                    v-model="item1.sql"
+                                    :auto-size="{ minRows: 1, maxRows: 5 }"
+                                    style="flex: 1; margin-left: 12px; width: 300px"
+                                    @blur="onUpdate"
+                                  />
+                                </a-space>
+                              </template>
+                              <template v-else-if="item.type === 5">
+                                <CodeEditor
+                                  v-model="item1.func"
+                                  placeholder="请输入python代码"
+                                  style="height: 360px; width: 700px"
+                                />
+                                <a-button @click="onUpdate">保存</a-button>
+                              </template>
+                              <template v-else-if="item.type === 4"></template>
+                            </a-space>
+                          </div>
                         </template>
                       </a-space>
                     </div>
@@ -374,6 +441,7 @@
   import ElementTestReport from '@/components/ElementTestReport.vue'
   import { getSystemCacheDataKeyValue } from '@/api/system/cache_data'
   import { useSelectValueStore } from '@/store/modules/get-ope-value'
+  import CodeEditor from '@/components/CodeEditor.vue'
 
   const userStore = useUserStore()
   const enumStore = useEnum()

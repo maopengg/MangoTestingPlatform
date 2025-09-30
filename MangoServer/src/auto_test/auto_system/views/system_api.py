@@ -45,7 +45,6 @@ class SystemViews(ViewSet):
             'ui_public': UiPublicTypeEnum.get_option(),
             'element_ope': ElementOperationEnum.get_option(),
             'api_parameter_type': ApiParameterTypeEnum.get_option(),
-            'device': DeviceEnum.obj(),
             'product_type': ProductTypeEnum.get_option(),
             'auto_type': AutoTypeEnum.get_option(),
             'task_status': TaskEnum.get_option(),

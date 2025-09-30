@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
-
+from mangotools.mangos import get_execution_order_with_config_ids
 from src.auto_test.auto_ui.models import UiCaseStepsDetailed, PageStepsDetailed
 from src.auto_test.auto_ui.views.ui_case import UiCaseSerializers
 from src.auto_test.auto_ui.views.ui_page_steps import PageStepsSerializers
@@ -84,30 +84,32 @@ class UiCaseStepsDetailedViews(ViewSet):
     def post_case_cache_data(self, request: Request):
         def m(_id):
             books = self.model.objects.get(id=_id)
-            ui_page_steps_detailed_obj = PageStepsDetailed.objects.filter(page_step=books.page_step)
             case_data_list = []
-            for steps_detailed in ui_page_steps_detailed_obj:
+            for page_step_details_id in get_execution_order_with_config_ids(books.page_step.flow_data):
+                steps_detailed = PageStepsDetailed.objects.get(id=page_step_details_id)
                 steps_data_model = StepsDataModel(
                     type=steps_detailed.type,
                     ope_key=steps_detailed.ope_key,
                     page_step_details_id=steps_detailed.id,
-                    page_step_details_name=steps_detailed.ele_name.name if steps_detailed.ele_name else None
+                    page_step_details_name=steps_detailed.ele_name.name if steps_detailed.ele_name else None,
+                    condition_value=steps_detailed.condition_value
                 )
-
-                if steps_detailed.type == ElementOperationEnum.OPE.value or ElementOperationEnum.ASS.value:
+                if steps_detailed.type == ElementOperationEnum.OPE.value or steps_detailed.type == ElementOperationEnum.ASS.value:
                     page_step_details_data = steps_detailed.ope_value
                 elif steps_detailed.type == ElementOperationEnum.SQL.value:
                     page_step_details_data = steps_detailed.sql_execute
                 elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
                     page_step_details_data = steps_detailed.custom
                 elif steps_detailed.type == ElementOperationEnum.CONDITION.value:
-                    page_step_details_data = [steps_detailed.condition_value]
+                    page_step_details_data = steps_detailed.ope_value
                 elif steps_detailed.type == ElementOperationEnum.PYTHON_CODE.value:
                     page_step_details_data = [{'func': steps_detailed.func}]
                 else:
                     return ResponseData.fail(RESPONSE_MSG_0048)
+
                 steps_data_model.page_step_details_data = page_step_details_data
                 case_data_list.append(steps_data_model.model_dump())
+                # print(steps_data_model.model_dump())
             books.case_data = case_data_list
             books.save()
 
