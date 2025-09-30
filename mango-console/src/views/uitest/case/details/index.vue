@@ -206,6 +206,7 @@
                       >
                         <span>sql语句</span>
                         <a-input
+                          :key="`posterior-sql-${index}`"
                           v-model="item.sql"
                           placeholder="请输入sql语句"
                           @blur="upDataCase"
@@ -257,8 +258,8 @@
                       <!-- 步骤详情数据 -->
                       <div class="step-details">
                         <template
-                          v-for="item1 of item.page_step_details_data"
-                          :key="item1.id || Math.random()"
+                          v-for="(item1, idx) of item.page_step_details_data"
+                          :key="item1.id || `${item.page_step_details_id}-${idx}`"
                         >
                           <!-- 条件判断值 -->
                           <div v-if="item.condition_value" class="condition-input">

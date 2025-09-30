@@ -95,11 +95,11 @@ class PageSteps:
         self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            error_retry += 1
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
                 await self._steps_retry()
+            error_retry += 1
             try:
                 if self.page_steps_model.flow_data is None:
                     for element_list in self.page_steps_model.element_list:

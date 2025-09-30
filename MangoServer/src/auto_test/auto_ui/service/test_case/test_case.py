@@ -129,7 +129,7 @@ class TestCase:
             flow_data=build_decision_tree(page_steps.flow_data)
         )
         if case_steps_detailed:
-            page_steps_model.case_steps_details = case_steps_detailed.id
+            page_steps_model.case_steps_id = case_steps_detailed.id
             case_steps_detailed.status = TaskEnum.PROCEED.value
             case_steps_detailed.save()
             page_steps_model.switch_step_open_url = bool(case_steps_detailed.switch_step_open_url)

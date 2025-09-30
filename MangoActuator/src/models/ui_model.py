@@ -34,6 +34,7 @@ class StepsDataModel(BaseModel):
     page_step_details_id: int
     page_step_details_data: list = []
     page_step_details_name: str | None = None
+    condition_value: dict | None = None
 
 
 class PageStepsModel(BaseModel):

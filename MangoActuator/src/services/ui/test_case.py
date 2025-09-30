@@ -25,8 +25,8 @@ from src.tools import project_dir
 from src.tools.decorator import async_error_handle, async_memory
 from src.tools.log_collector import log
 from src.tools.obtain_test_data import ObtainTestData
-from src.tools.set_config import SetConfig
 from src.tools.send_global_msg import send_global_msg
+from src.tools.set_config import SetConfig
 
 
 class TestCase:
@@ -82,7 +82,7 @@ class TestCase:
                 self._is_page_init = False
                 page_steps_result_model = await page_steps.steps_main()
                 self.set_page_steps(page_steps_result_model)
-                if page_steps_result_model.status == StatusEnum.FAIL.value and page_steps.is_condition:
+                if page_steps_result_model.status == StatusEnum.FAIL.value:
                     break
             except (MangoActuatorError, MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'测试用例失败，类型：{type(error)}，失败详情：{error}')
