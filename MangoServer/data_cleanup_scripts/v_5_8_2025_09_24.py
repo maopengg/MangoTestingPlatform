@@ -173,10 +173,12 @@ def case_steps_detailed():
                 elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
                     page_step_details_data = steps_detailed.custom
                 elif steps_detailed.type == ElementOperationEnum.CONDITION.value:
-                    page_step_details_data = [steps_detailed.condition_value]
+                    pass
+                    # page_step_details_data = [steps_detailed.condition_value]
                 elif steps_detailed.type == ElementOperationEnum.PYTHON_CODE.value:
-                    page_step_details_data = [{'func': steps_detailed.func}]
-                steps_data_model.page_step_details_data = page_step_details_data
+                    pass
+                    # page_step_details_data = [{'func': steps_detailed.func}]
+                steps_data_model.page_step_details_data = page_step_details_data if page_step_details_data else books.case_data
                 case_data_list.append(steps_data_model.model_dump())
                 print(case_data_list)
             except PageStepsDetailed.DoesNotExist:
