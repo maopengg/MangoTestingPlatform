@@ -155,10 +155,8 @@ class TestCase:
                 sleep=steps_element.ele_name.sleep if steps_element.ele_name else None,
                 ope_key=steps_element.ope_key,
                 ope_value=steps_element.ope_value,
-                key_list=steps_element.key_list,
-                sql=steps_element.sql,
-                key=steps_element.key,
-                value=steps_element.value,
+                sql_execute=steps_element.sql_execute,
+                custom=steps_element.custom,
                 condition_value=steps_element.condition_value,
                 func=steps_element.func
             )

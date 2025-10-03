@@ -246,7 +246,7 @@
                         <div v-if="item.ope_key">
                           <span class="operation-label">执行方法：</span>
                           <span class="operation-value">{{
-                            useSelectValue.findItemByValue(item.ope_key).label
+                            useSelectValue.findItemByValue(item.ope_key)?.label
                           }}</span>
                         </div>
                         <div class="step-element" v-if="item.page_step_details_name">
