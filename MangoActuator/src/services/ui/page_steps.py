@@ -96,7 +96,6 @@ class PageSteps:
         self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
-            print(error_retry)
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
@@ -105,7 +104,7 @@ class PageSteps:
             try:
                 if not self.page_steps_model.flow_data:
                     for element_list in self.page_steps_model.element_list:
-                        element_result = await self._ope_steps(element_list[0])
+                        element_result = await self._ope_steps(element_list[0], [])
                         if element_result.status == StatusEnum.FAIL.value:
                             break
                 else:
@@ -277,7 +276,7 @@ class PageSteps:
         self.test_object = self.base_data.url
         send_global_msg(f'UI-开始初始化安卓设备：{self.base_data.package_name}')
         if self.driver_object.android is None:
-            self.driver_object.set_android(SetConfig.get_and_equipment())
+            self.driver_object.set_android(SetConfig.get_and_equipment())  # type: ignore
         if self.base_data.android is None:
             self.base_data.android = self.driver_object.android.new_android()
 
