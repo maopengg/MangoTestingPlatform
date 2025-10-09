@@ -25,8 +25,6 @@ interface EnumState {
   test_case_type: StateValueType
   file_status: StateValueType
   file_type: StateValueType
-  condition_fail: StateValueType
-  condition_pass: StateValueType
   colors: string[]
   status_colors: string[]
 }
@@ -54,8 +52,6 @@ export const useEnum = defineStore('get-enum', {
     test_case_type: [],
     file_status: [],
     file_type: [],
-    condition_fail: [],
-    condition_pass: [],
     colors: [
       'magenta',
       'cyan',
@@ -101,8 +97,6 @@ export const useEnum = defineStore('get-enum', {
             this.test_case_type = res.data.test_case_type
             this.file_status = res.data.file_status
             this.file_type = res.data.file_type
-            this.condition_fail = res.data.condition_fail
-            this.condition_pass = res.data.condition_pass
           }
         })
         .catch(console.log)
