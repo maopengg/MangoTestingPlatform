@@ -52,8 +52,8 @@ class CaseBase:
                 log.api.debug(f'前置自定义->key:{sql}，value:{result_list}')
                 if isinstance(result_list, list) and len(result_list) > 0:
                     self.test_setup.test_data.set_sql_cache(i.get('key_list'), result_list[0])
-                    if not result_list:
-                        raise ApiError(*ERROR_MSG_0034, value=(sql,))
+                if not result_list:
+                    raise ApiError(*ERROR_MSG_0034, value=(sql,))
 
     def __front_headers(self):
         if self.api_case.front_headers:
