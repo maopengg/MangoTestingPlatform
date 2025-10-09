@@ -110,17 +110,15 @@ class PageSteps:
                 else:
                     element_result = await self.test_flow_data(self.page_steps_model.flow_data)
                     if element_result and element_result.status == StatusEnum.FAIL.value:
-                        break
+                        continue
             except (MangoToolsError, MangoAutomationError) as error:
                 log.debug(f'步骤发生未知失败-1，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = error.msg
-                break
             except Exception as error:
                 log.debug(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = str(error)
-                break
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
         self.page_step_result_model.test_object = self.test_object
         self.page_step_result_model.stop_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
