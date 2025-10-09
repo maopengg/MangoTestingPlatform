@@ -9,12 +9,11 @@ from datetime import datetime
 from functools import partial
 from urllib import parse
 from urllib.parse import urljoin
-from mangoautomation.models import ElementModel
 
 from mangoautomation.enums import ElementOperationEnum
 from mangoautomation.exceptions import MangoAutomationError
+from mangoautomation.models import ElementModel
 from mangoautomation.models import ElementResultModel
-from mangoautomation.models._ui_model import ElementListModel
 from mangoautomation.uidrive import AsyncElement
 from mangoautomation.uidrive import BaseData, DriverObject
 from mangotools.exceptions import MangoToolsError
@@ -94,9 +93,10 @@ class PageSteps:
 
     async def steps_main(self) -> PageStepsResultModel:
         error_retry = 0
-        self.page_steps_model.error_retry = self.page_steps_model.error_retry + 1 if self.page_steps_model.error_retry else 1
+        self.page_steps_model.error_retry = self.page_steps_model.error_retry if self.page_steps_model.error_retry else 1
         send_global_msg(f'UI-开始执行步骤，当前步骤重试：{self.page_steps_model.error_retry} 次')
         while error_retry < self.page_steps_model.error_retry and self.page_step_result_model.status == StatusEnum.FAIL.value:
+            print(error_retry)
             if error_retry != 0:
                 log.debug(f'开始第：{error_retry} 次重试步骤：{self.page_steps_model.name}')
                 send_global_msg(f'UI-正在执行步骤，当前步骤重试到第：{error_retry} 次')
@@ -142,7 +142,7 @@ class PageSteps:
             for i in flow_data.get('children', []):
                 element_list_model.append(await search_element_model(i.get('id')))
 
-        element_result = await self._ope_steps(element_model, element_list_model if element_list_model else None)
+        element_result = await self._ope_steps(element_model, element_list_model)
         if element_result.status == StatusEnum.FAIL.value:
             return element_result
         if element_result.next_node_id:
@@ -184,9 +184,7 @@ class PageSteps:
             element_model.condition_value = element_data.condition_value
         return element_model
 
-    async def _ope_steps(self, element_model, element_list_model=None) -> ElementResultModel:
-        if element_list_model is None:
-            element_list_model = []
+    async def _ope_steps(self, element_model, element_list_model) -> ElementResultModel:
         element_ope = AsyncElement(self.base_data, self.page_steps_model.type)
         send_global_msg(f'UI-开始执行元素或操作：{element_model.name or element_model.ope_key}')
         if self.page_steps_model.type == DriveTypeEnum.WEB.value and not self._device_opened:

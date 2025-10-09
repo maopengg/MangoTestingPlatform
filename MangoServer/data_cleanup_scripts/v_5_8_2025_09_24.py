@@ -17,7 +17,8 @@ node_types = {0: '元素操作',
               1: '断言操作',
               2: 'SQL操作',
               3: '自定义变量',
-              4: '条件判断'}
+              4: '条件判断',
+              5: 'python代码'}
 
 
 def get_parameter_by_value(data, target_value):
@@ -155,19 +156,22 @@ def case_steps_detailed():
                     page_step_details_name=steps_detailed.ele_name.name if steps_detailed.ele_name else None
                 )
                 page_step_details_data = []
+                if books.id == 874:
+                    pass
                 if steps_detailed.type == ElementOperationEnum.OPE.value or steps_detailed.type == ElementOperationEnum.ASS.value:
                     if steps_detailed.ope_value:
                         page_step_details_data = steps_detailed.ope_value
                     for i in page_step_details_data:
                         for b in books.case_data:
-                            data = b.get('page_step_details_data')
-                            if isinstance(data, dict):
-                                if data.get(i['f']):
-                                    i['v'] = data.get(i['f'])
-                            elif isinstance(data, list):
-                                for d in data:
-                                    if d.get('f') == i['f']:
-                                        i['v'] = d.get('v')
+                            if _id == b.get('page_step_details_id'):
+                                data = b.get('page_step_details_data')
+                                if isinstance(data, dict):
+                                    if data.get(i['f']):
+                                        i['v'] = data.get(i['f'])
+                                elif isinstance(data, list):
+                                    for d in data:
+                                        if d.get('f') == i['f']:
+                                            i['v'] = d.get('v')
                 elif steps_detailed.type == ElementOperationEnum.SQL.value:
                     page_step_details_data = steps_detailed.sql_execute
                 elif steps_detailed.type == ElementOperationEnum.CUSTOM.value:
@@ -180,7 +184,6 @@ def case_steps_detailed():
                     # page_step_details_data = [{'func': steps_detailed.func}]
                 steps_data_model.page_step_details_data = page_step_details_data if page_step_details_data else books.case_data
                 case_data_list.append(steps_data_model.model_dump())
-                print(case_data_list)
             except PageStepsDetailed.DoesNotExist:
                 print(books.page_step_id)
         books.case_data = case_data_list if case_data_list else None
