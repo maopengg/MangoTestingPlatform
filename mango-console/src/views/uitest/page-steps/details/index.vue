@@ -626,7 +626,7 @@
       return
     }
 
-    let value: object = getFormItems(data.formItems)
+    let value: any = getFormItems(data.formItems)
     value['page_step'] = route.query.id
     value['type'] = data.type
     if (data?.selectData?.id) {
@@ -648,6 +648,7 @@
       delete value.sql
       delete value.key_list
     }
+
     postUiPageStepsDetailed({ ...value, ...processOptionData(value) }, route.query.id)
       .then((res) => {
         Message.success(res.msg)
@@ -677,12 +678,19 @@
     for (const key in value) {
       const newKey = key.replace('-ope_value', '')
       parameter.forEach((item: any) => {
+        const isDuplicate = extractedValues.some(
+          (existingItem) => existingItem.d === item.d && existingItem.f === item.f
+        )
         if (key == 'locating' || key == 'actual') {
           value['ele_name'] = value[key]
-          extractedValues.push(item)
+          if (!isDuplicate) {
+            extractedValues.push(item)
+          }
         } else if (newKey && item.f === newKey) {
           item['v'] = value[key]
-          extractedValues.push(item)
+          if (!isDuplicate) {
+            extractedValues.push(item)
+          }
           delete value[key]
         }
       })
