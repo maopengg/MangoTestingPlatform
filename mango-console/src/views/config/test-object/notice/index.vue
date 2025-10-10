@@ -81,11 +81,11 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onTest(record)"
-                  >测试一下</a-button
-                >
+                  >测试一下
+                </a-button>
                 <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   size="mini"
                   status="danger"
@@ -247,8 +247,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }

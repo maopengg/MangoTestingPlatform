@@ -323,8 +323,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }
@@ -344,8 +344,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }

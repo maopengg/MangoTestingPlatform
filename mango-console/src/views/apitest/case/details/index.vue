@@ -281,7 +281,8 @@
                                   :auto-size="{ minRows: 6 }"
                                   placeholder="请输入参数"
                                   @blur="blurSave('params', item.params, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="02" title="表单">
                               <div class="m-2">
@@ -291,7 +292,8 @@
                                   :auto-size="{ minRows: 6 }"
                                   placeholder="请输入表单"
                                   @blur="blurSave('data', item.data, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="03" title="JSON">
                               <div class="m-2">
@@ -301,7 +303,8 @@
                                   :auto-size="{ minRows: 6 }"
                                   placeholder="请输入JSON"
                                   @blur="blurSave('json', item.json, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="04" title="文件">
                               <div class="m-2">
@@ -311,7 +314,8 @@
                                   :auto-size="{ minRows: 6 }"
                                   placeholder="请输入file，json格式数据"
                                   @blur="blurSave('file', item.file, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
@@ -365,7 +369,8 @@
                                   allow-clear
                                   placeholder="根据帮助文档，输入自定义前置函数"
                                   @blur="blurSave('front_func', item.front_func, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
@@ -390,8 +395,8 @@
                                   <span v-if="item.result_data?.error_message"
                                     >失败原因：{{ item.result_data?.error_message }}</span
                                   >
-                                </a-space></div
-                              >
+                                </a-space>
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="21" title="请求头">
                               <div class="m-2">
@@ -452,7 +457,8 @@
                                   allow-clear
                                   placeholder="请输入全部响应结果，将对响应结果进行字符串一致性断言"
                                   @blur="blurSave('ass_json_all', item.ass_json_all, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="31" title="jsonpath断言">
                               <div class="m-2">
@@ -491,8 +497,8 @@
                                       >移除
                                     </a-button>
                                   </a-space>
-                                </a-space></div
-                              >
+                                </a-space>
+                              </div>
                             </a-tab-pane>
                             <a-tab-pane key="33" title="文本一致断言">
                               <div class="m-2">
@@ -547,8 +553,8 @@
                                       >移除
                                     </a-button>
                                   </a-space>
-                                </a-space></div
-                              >
+                                </a-space>
+                              </div>
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
@@ -689,7 +695,8 @@
                                   allow-clear
                                   placeholder="根据帮助文档，输入自定义后置函数"
                                   @blur="blurSave('posterior_func', item.posterior_func, item.id)"
-                              /></div>
+                                />
+                              </div>
                             </a-tab-pane>
                           </a-tabs>
                         </a-tab-pane>
@@ -839,6 +846,7 @@
   })
 
   const caseRunning = ref(false)
+
   function changeGeneralAss(value, index, item) {
     const inputItem = findItemByValue(data.ass, value.method)
     if (inputItem && Array.isArray(inputItem.parameter)) {
@@ -870,6 +878,7 @@
     }
     return undefined
   }
+
   function switchType(key: any) {
     if (key === '1') {
       data.apiSonType = '11'
@@ -1093,6 +1102,7 @@
     item.splice(index, 1)
     blurSave(key, item, id)
   }
+
   function jsonpathTest(item: any, index: number) {
     if (
       item.result_data?.response?.json === null ||
@@ -1282,8 +1292,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }
@@ -1357,16 +1367,19 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   .main_box {
     width: 100%;
     margin: 0 auto;
     padding: 5px;
     box-sizing: border-box;
     display: flex;
+
     .left {
       padding: 5px;
       width: 45%;
     }
+
     .right {
       padding: 5px;
       width: 55%;

@@ -77,8 +77,8 @@
             <a-button size="small" type="primary" @click="onBatchUpload">录制</a-button>
             <!--            <a-button type="primary" size="small" @click="onSynchronization">同步</a-button>-->
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
-              >批量执行</a-button
-            >
+              >批量执行
+            </a-button>
             <a-button size="small" status="warning" @click="setCase('设为调试')">设为调试</a-button>
             <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
           </a-space>
@@ -86,8 +86,8 @@
             <a-button size="small" type="primary" @click="onAdd(0)">新增</a-button>
             <a-button type="primary" size="small" @click="onAdd(1)">导入</a-button>
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
-              >批量执行</a-button
-            >
+              >批量执行
+            </a-button>
             <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
           </a-space>
         </template>
@@ -181,11 +181,11 @@
                 class="custom-mini-btn"
                 :loading="caseRunning"
                 @click="onRunCase(record)"
-                >执行</a-button
-              >
+                >执行
+              </a-button>
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onStep(record)"
-                >详情</a-button
-              >
+                >详情
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button size="mini" type="text">···</a-button>
                 <template #content>
@@ -204,8 +204,8 @@
                       type="text"
                       class="custom-mini-btn"
                       @click="apiInfoCopy(record)"
-                      >复制</a-button
-                    >
+                      >复制
+                    </a-button>
                   </a-doption>
                   <a-doption>
                     <a-button
@@ -458,8 +458,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }
@@ -480,8 +480,8 @@
             Message.success(res.msg)
             selectedRowKeys.value = []
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }

@@ -88,8 +88,8 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button size="mini" type="text" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button
                 size="mini"
                 status="danger"
@@ -180,12 +180,14 @@
     drawerVisible: false,
     codeText: '',
   })
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
     doRefresh()
   }
+
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
@@ -197,8 +199,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }
@@ -277,6 +279,7 @@
       }
     })
   }
+
   onMounted(() => {
     nextTick(async () => {
       doRefresh()

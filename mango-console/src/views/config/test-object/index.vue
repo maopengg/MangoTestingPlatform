@@ -83,9 +83,9 @@
               {{ record?.project_product?.project?.name + '/' + record?.project_product?.name }}
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
-              <a-tag :color="enumStore.colors[record.auto_type]" size="small">{{
-                enumStore.auto_type[record.auto_type].title
-              }}</a-tag>
+              <a-tag :color="enumStore.colors[record.auto_type]" size="small"
+                >{{ enumStore.auto_type[record.auto_type].title }}
+              </a-tag>
             </template>
             <template v-else-if="item.key === 'executor_name'" #cell="{ record }">
               {{ record.executor_name ? record.executor_name.name : '-' }}
@@ -110,15 +110,15 @@
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-space>
                 <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                  >编辑</a-button
-                >
+                  >编辑
+                </a-button>
                 <a-button
                   type="text"
                   size="mini"
                   class="custom-mini-btn"
                   @click="clickNotice(record)"
-                  >通知配置</a-button
-                >
+                  >通知配置
+                </a-button>
 
                 <a-dropdown trigger="hover">
                   <a-button size="mini" type="text">···</a-button>
@@ -129,8 +129,8 @@
                         size="mini"
                         class="custom-mini-btn"
                         @click="clickDataBase(record)"
-                        >数据库配置</a-button
-                      >
+                        >数据库配置
+                      </a-button>
                     </a-doption>
                     <a-doption>
                       <a-button
@@ -139,8 +139,8 @@
                         class="custom-mini-btn"
                         size="mini"
                         @click="onDelete(record)"
-                        >删除</a-button
-                      >
+                        >删除
+                      </a-button>
                     </a-doption>
                   </template>
                 </a-dropdown>
@@ -283,8 +283,8 @@
           .then((res) => {
             Message.success(res.msg)
           })
-          .catch(console.log)            doRefresh()
-
+          .catch(console.log)
+        doRefresh()
       },
     })
   }
