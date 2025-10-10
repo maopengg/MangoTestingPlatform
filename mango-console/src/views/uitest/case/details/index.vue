@@ -257,21 +257,20 @@
 
                       <!-- 步骤详情数据 -->
                       <div class="step-details">
+                        <!-- 条件判断值 -->
+                        <div v-if="item.condition_value" class="condition-input">
+                          <span class="input-label">条件判断值：</span>
+                          <a-textarea
+                            v-model="item.condition_value.expect"
+                            :auto-size="{ minRows: 1, maxRows: 5 }"
+                            class="custom-textarea"
+                            @blur="onUpdate"
+                          />
+                        </div>
                         <template
                           v-for="(item1, idx) of item.page_step_details_data"
                           :key="item1.id || `${item.page_step_details_id}-${idx}`"
                         >
-                          <!-- 条件判断值 -->
-                          <div v-if="item.condition_value" class="condition-input">
-                            <span class="input-label">条件判断值：</span>
-                            <a-textarea
-                              v-model="item.condition_value.expect"
-                              :auto-size="{ minRows: 1, maxRows: 5 }"
-                              class="custom-textarea"
-                              @blur="onUpdate"
-                            />
-                          </div>
-
                           <!-- 操作类型 (type === 0) -->
                           <template v-if="item.type === 0">
                             <div v-if="item1.d" class="operation-input">
@@ -286,7 +285,7 @@
                           </template>
 
                           <!-- 断言类型 (type === 1) -->
-                          <template v-if="item.type === 1">
+                          <template v-else-if="item.type === 1">
                             <div v-if="item1.f !== 'actual'" class="assertion-input">
                               <span class="input-label">{{ item1.n }}：</span>
                               <a-textarea
