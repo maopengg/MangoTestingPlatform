@@ -338,7 +338,8 @@
   function upDataOpeValue(value: any) {
     const inputItem = useSelectValue.findItemByValue(value)
     for (let i = data.formItems.length - 1; i >= 0; i--) {
-      if (data.formItems[i].key !== 'ope_key') {
+      let key = data.formItems[i].key
+      if (!['condition_value', 'ope_key'].includes(key)) {
         data.formItems.splice(i, 1)
       }
     }
