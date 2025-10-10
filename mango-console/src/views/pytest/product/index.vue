@@ -196,10 +196,10 @@
         deletePytestProduct(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
-            project.projectPytestName()
           })
           .catch(console.log)
+        doRefresh()
+        projectInfo.projectPytestName()
       },
     })
   }

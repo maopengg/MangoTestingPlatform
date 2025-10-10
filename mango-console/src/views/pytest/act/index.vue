@@ -65,8 +65,8 @@
             </div>
             <div>
               <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
-            </div></a-space
-          >
+            </div>
+          </a-space>
         </template>
       </a-tabs>
       <a-table
@@ -120,11 +120,11 @@
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onUpdate(record)"
-                >编辑</a-button
-              >
+                >编辑
+              </a-button>
               <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                >文件</a-button
-              >
+                >文件
+              </a-button>
               <a-dropdown trigger="hover">
                 <a-button type="text" size="mini">···</a-button>
                 <template #content>
@@ -249,12 +249,14 @@
     codeText: '',
     moduleList: [],
   })
+
   function onResetSearch() {
     conditionItems.forEach((it) => {
       it.value = ''
     })
     doRefresh()
   }
+
   function onDelete(data: any) {
     Modal.confirm({
       title: '提示',
@@ -265,12 +267,13 @@
         deletePytestAct(data.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }
+
   function onDeleteItems() {
     if (selectedRowKeys.value.length === 0) {
       Message.error('请选择要删除的数据')
@@ -285,12 +288,13 @@
         deletePytestAct(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
           .catch(console.log)
+        doRefresh()
       },
     })
   }
+
   function clickUpdate() {
     Message.loading('文件更新中，请耐心等待10秒左右...')
     getPytestActUpdate()

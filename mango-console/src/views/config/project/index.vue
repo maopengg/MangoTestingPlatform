@@ -183,11 +183,11 @@
         deleteUserDepartmentList(data.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
-            project.getProject()
-            project.projectProductName()
           })
           .catch(console.log)
+        doRefresh()
+        project.getProject()
+        project.projectProductName()
       },
     })
   }

@@ -260,9 +260,9 @@
         deleteUiPublic(data.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }

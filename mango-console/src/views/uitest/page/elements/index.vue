@@ -322,9 +322,9 @@
         deleteUiElement(record.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }
@@ -343,9 +343,9 @@
         deleteUiElement(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }

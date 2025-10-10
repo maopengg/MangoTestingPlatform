@@ -241,9 +241,9 @@
         deleteApiPublic(data.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }
@@ -262,9 +262,9 @@
         deleteApiPublic(selectedRowKeys.value)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }

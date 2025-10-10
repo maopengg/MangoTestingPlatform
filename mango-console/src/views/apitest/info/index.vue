@@ -457,9 +457,9 @@
         deleteApiInfo(data.id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }
@@ -479,9 +479,9 @@
           .then((res) => {
             Message.success(res.msg)
             selectedRowKeys.value = []
-            doRefresh()
           })
-          .catch(console.log)
+          .catch(console.log)            doRefresh()
+
       },
     })
   }
