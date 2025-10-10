@@ -56,7 +56,7 @@ class TestCase:
             log=log,
             test_env_name=PytestSystemEnum.TEST_ENV.value,
             test_env=self.case_model.test_env,
-            file_path=self.case_model.file_path,
+            file_path=os.path.normpath(self.case_model.file_path),
             quiet=False,
         )
         await self.result_data(report_data)

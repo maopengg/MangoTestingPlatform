@@ -4,21 +4,18 @@
 # @Time   : 2025-02-18 17:05
 # @Author : 毛鹏
 import os
-from datetime import datetime
 
 from src.auto_test.auto_pytest.service.base import git_obj
 from src.models.pytest_model import FileModel, UpdateFileModel
+from mangotools.method import ensure_path_sep
 
 
 class UpdateFile:
 
     def __init__(self, file_type: str):
         self.file_type: str = file_type
-
+        self.warehouse_name = 'mango_pytest'
         self.repo = git_obj()
-
-    def get_git_update_time(self, file_path):
-        pass
 
     def list_files(self, directory, components=False, test_case=False, tools=False, is_upload=False) -> list[FileModel]:
         file_list = []
@@ -31,22 +28,19 @@ class UpdateFile:
                         if is_upload or tools:
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
-                                path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
+                                path=self.__path(abs_path),
                                 time=self.repo.get_file_last_commit_time(abs_path)
                             ))
                         if components and file != "__init__.py":
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
-                                path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
+                                path=self.__path(abs_path),
                                 time=self.repo.get_file_last_commit_time(abs_path)
                             ))
                         if test_case and (file.startswith('test') or file.endswith('test')):
                             file_list.append(FileModel(
                                 name=str(os.path.join(parent_dir, file)),
-                                path=os.path.join('mango_pytest',
-                                                  os.path.relpath(str(abs_path), self.repo.local_dir)),
+                                path=self.__path(abs_path),
                                 time=self.repo.get_file_last_commit_time(abs_path)
                             ))
 
@@ -74,15 +68,18 @@ class UpdateFile:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.join('mango_pytest', auto_test_dir, item, '__init__.py'),
+                        init_file_path=os.path.join(self.warehouse_name, auto_test_dir, item, '__init__.py'),
                         module_name=module_name
                     ))
                 else:
                     subdirectories.append(UpdateFileModel(
                         project_name=item,
                         auto_test=auto_test if auto_test else [],
-                        init_file_path=os.path.join('mango_pytest', auto_test_dir, item, '__init__.py'),
+                        init_file_path=os.path.join(self.warehouse_name, auto_test_dir, item, '__init__.py'),
                         module_name=module_name
 
                     ))
         return subdirectories
+
+    def __path(self, abs_path):
+        return os.path.join(self.warehouse_name, os.path.relpath(str(abs_path), self.repo.local_dir)).replace('\\', '/')

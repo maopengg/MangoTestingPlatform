@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2025-02-18 20:15
 # @Author : 毛鹏
-import os
 
 from rest_framework import serializers
 from rest_framework.decorators import action
@@ -18,7 +17,6 @@ from src.auto_test.auto_system.views.product_module import ProductModuleSerializ
 from src.auto_test.auto_user.views.user import UserSerializers
 from src.enums.pytest_enum import FileStatusEnum
 from src.enums.system_enum import CacheDataKeyEnum
-from src.tools import project_dir
 from src.tools.decorator.error_response import error_response
 from src.tools.view.model_crud import ModelCRUD
 from src.tools.view.response_data import ResponseData
