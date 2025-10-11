@@ -47,6 +47,8 @@ class TestCase:
         case.status = TaskEnum.PROCEED.value
         case.save()
         case_steps_detailed = UiCaseStepsDetailed.objects.filter(case=case.id).order_by('case_sort')
+        if not case_steps_detailed:
+            raise UiError(*ERROR_MSG_0042)
         case_model = CaseModel(
             send_user=send_case_user if send_case_user else self.send_user,
             test_suite_details=test_suite_details,
@@ -113,6 +115,9 @@ class TestCase:
                     case_steps_detailed: UiCaseStepsDetailed | None = None,
                     switch_step_open_url=False) -> PageStepsModel:
         page_steps = PageSteps.objects.get(id=page_steps_id)
+        page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id)
+        if not page_steps_element:
+            raise UiError(*ERROR_MSG_0041)
         page_steps.status = TaskEnum.PROCEED.value
         page_steps.save()
         page_steps_model = PageStepsModel(
@@ -138,7 +143,6 @@ class TestCase:
                 page_steps_model.case_data = [StepsDataModel(**i) for i in case_steps_detailed.case_data]
             except ValidationError:
                 raise UiError(401, f'请刷新这个用例步骤的数据，这个数据我之前在保存的时候，有一些问题，请刷新后重试')
-        page_steps_element = PageStepsDetailed.objects.filter(page_step=page_steps.id)
         page_steps_model.element_list = [self.element_model(i) for i in page_steps_element]
         return page_steps_model
 
