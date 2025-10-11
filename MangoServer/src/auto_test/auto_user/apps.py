@@ -22,7 +22,7 @@ class AutoUserConfig(AppConfig):
             self.check_version()
 
         def run():
-            time.sleep(3)
+            time.sleep(10)
             self.new_role()
             self.new_user()
 

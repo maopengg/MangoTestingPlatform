@@ -22,7 +22,7 @@ class AutoSystemConfig(AppConfig):
 
     def ready(self):
         def run():
-            time.sleep(3)
+            time.sleep(10)
             self.delayed_task()
             self.save_cache()
             self.populate_time_tasks()

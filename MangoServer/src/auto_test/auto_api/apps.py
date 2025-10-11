@@ -13,7 +13,7 @@ class AutoApiConfig(AppConfig):
 
     def ready(self):
         def run():
-            time.sleep(3)
+            time.sleep(10)
             self.test_case_consumption()
 
         task = Thread(target=run)

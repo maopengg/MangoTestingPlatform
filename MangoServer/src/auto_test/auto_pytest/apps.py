@@ -17,7 +17,7 @@ class AutoPytestConfig(AppConfig):
 
     def ready(self):
         def run():
-            time.sleep(3)
+            time.sleep(10)
             self.pull_code()
             self.start_consumer()
 
