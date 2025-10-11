@@ -14,7 +14,7 @@ from src.tools.decorator.retry import ensure_db_connection
 
 class ApiCaseFlow:
     queue = Queue()
-    max_tasks = 4
+    max_tasks = 5
 
     executor = ThreadPoolExecutor(max_workers=max_tasks)
     running = True
