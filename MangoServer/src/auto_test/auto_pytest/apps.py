@@ -17,7 +17,7 @@ class AutoPytestConfig(AppConfig):
 
     def ready(self):
         def run():
-            time.sleep(5)
+            time.sleep(10)
             self.pull_code()
             self.start_consumer()
 
@@ -37,9 +37,9 @@ class AutoPytestConfig(AppConfig):
         from src.auto_test.auto_pytest.service.base import git_obj
         try:
             git_obj()
-        except Exception:
+        except Exception as e:
             import traceback
-            log.pytest.debug(f'{traceback.format_exc()}')
+            log.pytest.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
             log.pytest.info(f'如果您的项目已经配置了pytest等相关配置则关注下这个异常，如果没有配置请忽略！')
 
     def start_consumer(self):
