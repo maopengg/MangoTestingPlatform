@@ -16,7 +16,7 @@ class AutoUiConfig(AppConfig):
 
     def ready(self):
         def run():
-            time.sleep(5)
+            time.sleep(3)
             # self.test_case_consumption()
             self.start_consumer()
 

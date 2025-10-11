@@ -9,6 +9,7 @@ import threading
 import time
 from django.apps import AppConfig
 
+from src.tools.log_collector import log
 from src.enums.system_enum import SocketEnum
 
 
@@ -21,7 +22,7 @@ class AutoUserConfig(AppConfig):
             self.check_version()
 
         def run():
-            time.sleep(5)
+            time.sleep(3)
             self.new_role()
             self.new_user()
 
@@ -30,32 +31,38 @@ class AutoUserConfig(AppConfig):
             task1.start()
 
     def new_role(self):
-        from src.auto_test.auto_user.models import Role
-        if not Role.objects.exists():
-            Role.objects.create(name="项目管理员", description="我是超管，嘻嘻~")
-            Role.objects.create(name="研发部经理", description="研发部经理")
-            Role.objects.create(name="开发经理", description="开发经理")
-            Role.objects.create(name="测试经理", description="测试经理")
-            Role.objects.create(name="产品经理", description="产品经理")
-            Role.objects.create(name="开发组长", description="开发组长")
-            Role.objects.create(name="测试组长", description="测试组长")
-            Role.objects.create(name="开发工程师", description="开发工程师")
-            Role.objects.create(name="测试开发工程师", description="测试开发工程师")
-            Role.objects.create(name="自动化工程师", description="自动化工程师")
-            Role.objects.create(name="测试工程师", description="测试工程师")
+        try:
+            from src.auto_test.auto_user.models import Role
+            if not Role.objects.exists():
+                Role.objects.create(name="项目管理员", description="我是超管，嘻嘻~")
+                Role.objects.create(name="研发部经理", description="研发部经理")
+                Role.objects.create(name="开发经理", description="开发经理")
+                Role.objects.create(name="测试经理", description="测试经理")
+                Role.objects.create(name="产品经理", description="产品经理")
+                Role.objects.create(name="开发组长", description="开发组长")
+                Role.objects.create(name="测试组长", description="测试组长")
+                Role.objects.create(name="开发工程师", description="开发工程师")
+                Role.objects.create(name="测试开发工程师", description="测试开发工程师")
+                Role.objects.create(name="自动化工程师", description="自动化工程师")
+                Role.objects.create(name="测试工程师", description="测试工程师")
+        except Exception as e:
+            log.user.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
 
     def new_user(self):
-        from src.auto_test.auto_user.models import User
-        from mangotools.data_processor import EncryptionTool
-        user, created = User.objects.get_or_create(
-            username=SocketEnum.OPEN.value,
-            defaults={
-                'name': SocketEnum.OPEN.value,
-                'password': EncryptionTool.md5_32_small('123456'),
-                'mailbox': [],
-                'config': {}
-            }
-        )
+        try:
+            from src.auto_test.auto_user.models import User
+            from mangotools.data_processor import EncryptionTool
+            user, created = User.objects.get_or_create(
+                username=SocketEnum.OPEN.value,
+                defaults={
+                    'name': SocketEnum.OPEN.value,
+                    'password': EncryptionTool.md5_32_small('123456'),
+                    'mailbox': [],
+                    'config': {}
+                }
+            )
+        except Exception as e:
+            log.user.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
 
     def check_version(self):
         import re

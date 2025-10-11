@@ -68,6 +68,8 @@ def ensure_db_connection(is_while=False, max_retries=5):
                     time.sleep(2)
                     close_old_connections()
                     connection.ensure_connection()
+                except Exception as e:
+                    log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
             else:
                 if is_while:
                     return func(*args, **kwargs)
