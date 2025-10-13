@@ -24,7 +24,6 @@ class APIBaseTestSetup(PublicBase):
                     test_env: int,
                     request_model: RequestModel = None,
                     is_merge_headers=False,
-                    is_error=False,
                     ) -> ResponseModel:
         api_info = ApiInfo.objects.get(id=api_info_id)
         log.api.debug(f'执行API接口-1->ID:{api_info_id},name:{api_info.name}')
@@ -59,8 +58,7 @@ class APIBaseTestSetup(PublicBase):
                 self.analytic_func(api_info.posterior_func)(self, response)
             return response
         except (MangoServerError, MangoToolsError) as error:
-            if is_error:
-                raise error
+            response.error_msg = error.msg
             return response
 
     def request_data_clean(self, request_data_model: RequestModel) -> RequestModel:

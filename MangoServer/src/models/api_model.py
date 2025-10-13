@@ -57,6 +57,7 @@ class ResponseModel(BaseModel):
     headers: dict
     json: dict | list | None = None
     text: str | None = None
+    error_msg: str | None = None
 
 
 class RecordingApiModel(BaseModel):

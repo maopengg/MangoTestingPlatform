@@ -559,7 +559,12 @@
     caseRunning.value = true
     try {
       const res = await getApiCaseInfoRun(param.id, userStore.selected_environment)
-      Message.success(res.msg)
+      if (res.data.error_msg) {
+        Message.error(res.data.error_msg)
+      } else {
+        Message.success(res.msg)
+      }
+
       doRefresh()
     } catch (e) {
     } finally {

@@ -4,6 +4,7 @@
 # @Time   : 2024-11-19 11:36
 # @Author : 毛鹏
 import os
+import traceback
 import uuid
 
 from mangotools.data_processor import DataProcessor
@@ -17,7 +18,7 @@ class ObtainTestData(DataProcessor):
     """自定义方法"""
 
     @classmethod
-    def random_demo(cls,demo1, demo2) -> str:
+    def random_demo(cls, demo1, demo2) -> str:
         """示例方法 参数：demo1， demo2"""
         # 1.必须写在这个类下面，如果需要给UI自动化使用，则执行器也需要写
         # 2.必须要写 """示例方法""" 这种注释
@@ -45,4 +46,5 @@ class ObtainTestData(DataProcessor):
         except FileData.DoesNotExist:
             raise ToolsError(*ERROR_MSG_0019, value=(file_name,))
         except IOError as e:
+            traceback.print_exc()
             raise ToolsError(*ERROR_MSG_0024, value=(file_name,))
