@@ -7,8 +7,8 @@ import traceback
 from datetime import datetime
 
 import time
-
 from mangotools.exceptions import MangoToolsError
+
 from src.auto_test.auto_api.models import ApiCaseDetailed, ApiCase, ApiInfo, ApiCaseDetailedParameter
 from src.auto_test.auto_api.service.base.api_base_test_setup import APIBaseTestSetup
 from src.auto_test.auto_system.service.update_test_suite import UpdateTestSuite
@@ -210,5 +210,7 @@ class TestCase:
     def update_test_case_detailed_parameter(cls, parameter_id, result_data: ApiCaseStepsResultModel):
         model = ApiCaseDetailedParameter.objects.get(id=parameter_id)
         model.status = result_data.status
+        if result_data.request.file:
+            result_data.request.file = str(result_data.request.file)
         model.result_data = result_data.model_dump()
         model.save()
