@@ -188,19 +188,21 @@
     doRefresh()
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '该删除只会删除数据库数据，不会影响git文件！是否要删除此数据？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deletePytestFile(data.id)
+        deletePytestFile(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

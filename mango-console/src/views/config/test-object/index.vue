@@ -272,19 +272,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此测试环境？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserTestObject(data.id)
+        deleteUserTestObject(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

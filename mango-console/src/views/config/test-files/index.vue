@@ -98,7 +98,9 @@
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

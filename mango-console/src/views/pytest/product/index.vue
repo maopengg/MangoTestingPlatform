@@ -198,8 +198,10 @@
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
-        projectInfo.projectPytestName()
+          .finally(() => {
+            doRefresh()
+            projectInfo.projectPytestName()
+          })
       },
     })
   }

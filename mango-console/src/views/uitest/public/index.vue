@@ -49,7 +49,6 @@
         <template #extra>
           <div>
             <a-button size="small" type="primary" @click="onAdd">新增</a-button>
-            <!--                <a-button status="danger" size="small" @click="onDeleteItems">批量删除</a-button>-->
           </div>
         </template>
       </a-tabs>
@@ -250,19 +249,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此参数？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUiPublic(data.id)
+        deleteUiPublic(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

@@ -41,7 +41,7 @@
               <a-button type="primary" size="small" @click="doAppend">单个新增</a-button>
             </div>
             <div>
-              <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+              <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
             </div>
           </a-space>
         </template>
@@ -313,39 +313,30 @@
   }
 
   function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此元素？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUiElement(record.id)
+        deleteUiElement(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
-      },
-    })
-  }
-
-  function onDeleteItems() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要删除的数据')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除此数据吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteUiElement(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
+          .finally(() => {
+            doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
-          .catch(console.log)
-        doRefresh()
       },
     })
   }

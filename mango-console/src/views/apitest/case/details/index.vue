@@ -1281,19 +1281,21 @@
     }
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiCaseDetailed(data.id, route.query.case_id)
+        deleteApiCaseDetailed(record.id, route.query.case_id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

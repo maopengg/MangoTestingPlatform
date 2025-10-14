@@ -221,20 +221,22 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此产品？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserProduct(data.id)
+        deleteUserProduct(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
-        project.projectProductName()
+          .finally(() => {
+            doRefresh()
+            project.projectProductName()
+          })
       },
     })
   }

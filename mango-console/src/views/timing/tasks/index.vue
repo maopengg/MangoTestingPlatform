@@ -302,19 +302,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此定时任务？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteSystemTasks(data.id)
+        deleteSystemTasks(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }

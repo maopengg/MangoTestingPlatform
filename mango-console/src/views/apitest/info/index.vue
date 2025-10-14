@@ -80,7 +80,7 @@
               >批量执行
             </a-button>
             <a-button size="small" status="warning" @click="setCase('设为调试')">设为调试</a-button>
-            <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
           </a-space>
           <a-space v-else-if="data.apiType === '1'">
             <a-button size="small" type="primary" @click="onAdd(0)">新增</a-button>
@@ -88,7 +88,7 @@
             <a-button size="small" status="success" :loading="caseRunning" @click="onConcurrency"
               >批量执行
             </a-button>
-            <a-button size="small" status="danger" @click="onDeleteItems">批量删除</a-button>
+            <a-button size="small" status="danger" @click="onDelete(null)">批量删除</a-button>
           </a-space>
         </template>
         <a-tab-pane key="0" title="批量生成" />
@@ -447,41 +447,31 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
+    const batch = record === null
+    if (batch) {
+      if (selectedRowKeys.value.length === 0) {
+        Message.error('请选择要删除的数据')
+        return
+      }
+    }
     Modal.confirm({
       title: '提示',
       content: '是否要删除此接口？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteApiInfo(data.id)
+        deleteApiInfo(batch ? selectedRowKeys.value : record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
-      },
-    })
-  }
-
-  function onDeleteItems() {
-    if (selectedRowKeys.value.length === 0) {
-      Message.error('请选择要删除的数据')
-      return
-    }
-    Modal.confirm({
-      title: '提示',
-      content: '确定要删除此数据吗？',
-      cancelText: '取消',
-      okText: '删除',
-      onOk: () => {
-        deleteApiInfo(selectedRowKeys.value)
-          .then((res) => {
-            Message.success(res.msg)
-            selectedRowKeys.value = []
+          .finally(() => {
+            doRefresh()
+            if (batch) {
+              selectedRowKeys.value = []
+            }
           })
-          .catch(console.log)
-        doRefresh()
       },
     })
   }

@@ -130,19 +130,21 @@
     })
   }
 
-  function onDelete(data: any) {
+  function onDelete(record: any) {
     Modal.confirm({
       title: '提示',
       content: '是否要删除此角色？',
       cancelText: '取消',
       okText: '删除',
       onOk: () => {
-        deleteUserRoleList(data.id)
+        deleteUserRoleList(record.id)
           .then((res) => {
             Message.success(res.msg)
           })
           .catch(console.log)
-        doRefresh()
+          .finally(() => {
+            doRefresh()
+          })
       },
     })
   }
