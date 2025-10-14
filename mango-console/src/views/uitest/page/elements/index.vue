@@ -55,6 +55,7 @@
         :row-selection="{ selectedRowKeys, showCheckedAll }"
         :rowKey="rowKey"
         @selection-change="onSelectionChange"
+        :scroll="{ x: 2000 }"
       >
         <template #columns>
           <a-table-column

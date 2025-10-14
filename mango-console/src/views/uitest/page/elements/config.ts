@@ -13,6 +13,7 @@ export const tableColumns = useTableColumn([
     key: 'name',
     dataIndex: 'name',
     align: 'left',
+    fixed: 'left',
     width: 250,
   },
   {
@@ -28,6 +29,7 @@ export const tableColumns = useTableColumn([
     align: 'left',
     ellipsis: true,
     tooltip: true,
+    width: 300,
   },
   {
     title: '下标-1',
@@ -79,6 +81,7 @@ export const tableColumns = useTableColumn([
     title: '等待时间(秒)',
     key: 'sleep',
     dataIndex: 'sleep',
+    fixed: 'right',
     width: 120,
   },
 
