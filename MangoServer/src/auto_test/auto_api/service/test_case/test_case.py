@@ -73,6 +73,10 @@ class TestCase:
                 self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
             else:
                 self.api_case_result.status, self.api_case_result.error_message = StatusEnum.SUCCESS.value, None
+        except (MangoToolsError, MangoServerError) as e:
+            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
+            traceback.print_exc()
+            self.api_case_result.error_message = e.msg
         except Exception as error:
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
