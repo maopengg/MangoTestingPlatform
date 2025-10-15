@@ -104,7 +104,7 @@ class PageSteps:
             try:
                 if not self.page_steps_model.flow_data:
                     for element_list in self.page_steps_model.element_list:
-                        element_result = await self._ope_steps(element_list[0], [])
+                        element_result = await self._ope_steps(element_list, [])
                         if element_result.status == StatusEnum.FAIL.value:
                             break
                 else:
