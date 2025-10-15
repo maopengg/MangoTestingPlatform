@@ -59,16 +59,22 @@ class TestCase:
 
     def test_case(self, case_sort: int | None = None) -> ApiCaseResultModel:
         log.api.debug(f'开始执行用例ID：{self.case_id}')
+        res = None
         try:
             self.test_setup.init_test_object(self.api_case.project_product_id, self.test_env)
             self.test_setup.init_public(self.api_case.project_product_id, self.test_env)
             self.case_base.case_front_main()
-            res = None
             if self.api_case.parametrize and isinstance(self.api_case.parametrize, list):
                 for i in self.api_case.parametrize:
                     res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort, i)
             else:
                 res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort)
+        except Exception as error:
+            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
+            traceback.print_exc()
+            log.api.error(f'API用例执行过程中发生异常：{error}')
+            self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
+        finally:
             self.case_base.case_posterior_main()
             if res and isinstance(res, tuple):
                 self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
@@ -85,12 +91,6 @@ class TestCase:
                     result_data=self.api_case_result
                 ))
             log.api.debug(f'用例测试完成：{self.api_case_result.model_dump_json()}')
-            return self.api_case_result
-        except Exception as error:
-            self.update_test_case(self.case_id, TaskEnum.FAIL.value)
-            traceback.print_exc()
-            log.api.error(f'API用例执行过程中发生异常：{error}')
-            self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
             return self.api_case_result
 
     def case_detailed(self,
