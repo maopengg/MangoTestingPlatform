@@ -4,6 +4,7 @@
 # @Time   : 2023/5/4 14:34
 # @Author : 毛鹏
 import asyncio
+import json
 import traceback
 from datetime import datetime
 from functools import partial
@@ -312,9 +313,9 @@ class PageSteps:
             client=ClientEnum.WEB.value,
             url=parsed_url.path,
             method=MethodEnum.get_key(request.method),
-            params=None if params == {} else params,
-            data=None if data == {} else data,
-            json=None if json_data == {} else json_data
+            params=None if params == {} else json.dumps(params, ensure_ascii=False),
+            data=None if data == {} else json.dumps(data, ensure_ascii=False),
+            json=None if json_data == {} else json.dumps(json_data, ensure_ascii=False)
         )
         await socket_conn.async_send(
             msg="发送录制接口",

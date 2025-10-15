@@ -71,10 +71,10 @@ class RecordingApiModel(BaseModel):
     url: str
     method: int
     header: dict | None = None
-    params: list | dict | None = None
-    data: list | dict | None = None
-    json: list | dict | None = None
-    file: str | None = None
+    params: str | None = None
+    data: str | None = None
+    json: str | None = None
+    file: list | dict | None = None
     status: int | None = None
 
 
