@@ -95,7 +95,7 @@ class ModelCRUD(GenericAPIView):
                           data=data,
                           log=log,
                           tools_error=ToolsError,
-                          m_0116=RESPONSE_MSG_0116
+                          m_0116=RESPONSE_MSG_0117
                           )
 
     @classmethod
