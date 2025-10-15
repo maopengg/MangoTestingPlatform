@@ -167,7 +167,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.status === 0">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -238,7 +238,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.status === 0">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -315,7 +315,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.status === 0">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
