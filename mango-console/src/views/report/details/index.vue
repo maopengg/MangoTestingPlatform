@@ -137,20 +137,20 @@
         <template #extra>
           <a-space>
             <a-button type="primary" size="small" :loading="caseRunning" @click="doCaseStatus(null)"
-              >全部</a-button
-            >
+              >全部
+            </a-button>
             <a-button status="danger" size="small" :loading="caseRunning" @click="doCaseStatus(0)"
-              >只看失败</a-button
-            >
+              >只看失败
+            </a-button>
             <a-button status="success" size="small" :loading="caseRunning" @click="doCaseStatus(1)"
-              >只看成功</a-button
-            >
+              >只看成功
+            </a-button>
             <a-button status="warning" size="small" :loading="caseRunning" @click="doCaseStatus(3)"
-              >只看进行中</a-button
-            >
+              >只看进行中
+            </a-button>
             <a-button status="normal" size="small" :loading="caseRunning" @click="doCaseStatus(2)"
-              >只看待开始</a-button
-            >
+              >只看待开始
+            </a-button>
           </a-space>
         </template>
         <a-tab-pane
@@ -167,6 +167,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -237,6 +238,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -313,6 +315,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
+                  <span v-if="item.status !== 1">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -466,6 +469,7 @@
       class: 'error',
     },
   ])
+
   function formatDateTime(timestamp) {
     if (!timestamp) return ''
     const date = new Date(timestamp)
@@ -478,6 +482,7 @@
 
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
+
   const showDetails = (record: any) => {
     data.selectedCase = record
     drawerVisible.value = true
@@ -814,6 +819,7 @@
   .report-card {
     margin-bottom: 12px;
   }
+
   .custom-header {
     display: flex;
     align-items: center;
