@@ -69,18 +69,17 @@ class TestCase:
                     res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort, i)
             else:
                 res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort)
+            if res and isinstance(res, tuple):
+                self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
+            else:
+                self.api_case_result.status, self.api_case_result.error_message = StatusEnum.SUCCESS.value, None
         except Exception as error:
-            self.api_case_result.status = StatusEnum.FAIL.value
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
             self.api_case_result.error_message = f'API用例执行过程中发生异常：{error}'
         finally:
             self.case_base.case_posterior_main()
-            if res and isinstance(res, tuple):
-                self.api_case_result.status, self.api_case_result.error_message = res[0], res[1]
-            else:
-                self.api_case_result.status, self.api_case_result.error_message = StatusEnum.SUCCESS.value, None
             self.update_test_case(self.case_id, self.api_case_result.status)
             if self.test_suite and self.test_suite_details:
                 UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(
