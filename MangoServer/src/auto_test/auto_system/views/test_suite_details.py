@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_system.models import TestSuiteDetails
+from src.auto_test.auto_system.models import TestSuiteDetails, TestSuite
 from src.auto_test.auto_system.views.project_product import ProjectProductSerializersC
 from src.auto_test.auto_system.views.test_suite import TestSuiteSerializers
 from src.enums.tools_enum import StatusEnum, TaskEnum, TestCaseTypeEnum
@@ -95,13 +95,16 @@ class TestSuiteDetailsViews(ViewSet):
             i.retry = 0
             i.status = TaskEnum.STAY_BEGIN.value
             i.save()
+        model = TestSuite.objects.get(id=request.query_params.get('test_suite_id'))
+        model.status = TaskEnum.STAY_BEGIN.value
+        model.save()
         return ResponseData.success(RESPONSE_MSG_0132)
 
     @action(methods=['get'], detail=False)
     @error_response('system')
     def get_retry(self, request: Request):
         test_suite_details = self.model.objects.get(id=request.query_params.get('id'))
-        test_suite_details.retry = test_suite_details.retry - 1
+        test_suite_details.retry = 0
         test_suite_details.status = TaskEnum.STAY_BEGIN.value
         test_suite_details.save()
         return ResponseData.success(RESPONSE_MSG_0133)
