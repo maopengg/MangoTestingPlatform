@@ -12,6 +12,7 @@ import time
 from django.db import connection, close_old_connections
 from django.db.utils import Error, InterfaceError, OperationalError
 from mangotools.mangos import Mango
+from mangotools.mangos.mangos import MangoToolsError
 
 from src.settings import IS_SEND_MAIL
 from src.tools.log_collector import log
@@ -45,13 +46,14 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
     return decorator
 
 
-def ensure_db_connection(is_while=False, max_retries=5):
+def ensure_db_connection(is_while=False, max_retries=3):
     def decorator(func):
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             try_count = 0
             while try_count < max_retries:
+                from src.exceptions import MangoServerError
                 try:
                     close_old_connections()
                     return func(*args, **kwargs)
@@ -68,8 +70,10 @@ def ensure_db_connection(is_while=False, max_retries=5):
                     time.sleep(2)
                     close_old_connections()
                     connection.ensure_connection()
+                except (MangoServerError, MangoToolsError) as e:
+                    log.system.error(f'异常提示-1:{e}')
                 except Exception as e:
-                    log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+                    log.system.error(f'异常提示:{e}, 如果是首次启动项目，请启动完成之后再重启一次！')
             else:
                 if is_while:
                     return func(*args, **kwargs)
