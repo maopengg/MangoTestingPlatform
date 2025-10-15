@@ -47,10 +47,7 @@
                 <a-tabs position="left" @tab-click="(key) => switchSonType(key)">
                   <a-tab-pane key="11" title="自定义变量">
                     <a-space direction="vertical">
-                      <a-space
-                        v-for="(item, index) of pageData.record.front_custom"
-                        :key="item.key"
-                      >
+                      <a-space v-for="(item, index) of pageData.record.front_custom" :key="index">
                         <span>key</span>
                         <a-input
                           v-model="item.key"
