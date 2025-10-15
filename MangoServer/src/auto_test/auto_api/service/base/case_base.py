@@ -30,7 +30,7 @@ class CaseBase:
 
     def case_parametrize(self, parametrize: dict):
         if parametrize:
-            for i in parametrize:
+            for i in parametrize.get('parametrize'):
                 key = i.get('key', None)
                 value = i.get('value', None)
                 if key is None or value is None:
