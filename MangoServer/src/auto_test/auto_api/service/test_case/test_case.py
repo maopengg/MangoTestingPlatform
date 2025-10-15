@@ -70,6 +70,7 @@ class TestCase:
             else:
                 res: tuple[int, str] | None = self.case_detailed(self.case_id, case_sort)
         except Exception as error:
+            self.api_case_result.status = StatusEnum.FAIL.value
             self.update_test_case(self.case_id, TaskEnum.FAIL.value)
             traceback.print_exc()
             log.api.error(f'API用例执行过程中发生异常：{error}')
