@@ -72,7 +72,7 @@ class TasksDetailsCRUD(ModelCRUD):
                 tasks_details = TasksDetails.objects.filter(task_id=task, api_case_id=request.data.get('api_case'))
             else:
                 model = PytestCase.objects.get(id=request.data.get('pytest_case'))
-                if not model.project_product and not model.project_product.project_product:
+                if not model.project_product or not model.project_product.project_product:
                     return ResponseData.fail(RESPONSE_MSG_0120)
                 tasks_details = TasksDetails.objects.filter(task_id=task,
                                                             pytest_case_id=request.data.get('pytest_case'))
