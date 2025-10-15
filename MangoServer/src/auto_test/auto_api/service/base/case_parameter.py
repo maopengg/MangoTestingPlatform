@@ -141,7 +141,7 @@ class CaseParameter:
                     'actual': self.test_setup.test_data.get_json_path_value(response_data, i['actual']),
                     'method': i.get('method')
                 }
-                mango_assertion = MangoAssertion()
+                mango_assertion = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
                 self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0005)
 
     def __ass_general(self, general: list[dict]):
@@ -153,7 +153,7 @@ class CaseParameter:
             }
             for p in i.get('value', {}).get('parameter', []):
                 ass_dict[p.get('f')] = p.get('v')
-            mango_assertion = MangoAssertion(self.mysql_connect)
+            mango_assertion = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
             self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_sql(self, sql_list: list[dict]):
@@ -164,7 +164,7 @@ class CaseParameter:
                     'actual': self.test_setup.test_data.replace(sql.get('actual')),
                     'method': sql.get('method')
                 }
-                mango_assertion = MangoAssertion()
+                mango_assertion = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data)
                 self.__ass_(mango_assertion, ass_dict, ERROR_MSG_0007)
 
     def __ass_json_all(self, actual: dict, expect: dict):
@@ -177,7 +177,8 @@ class CaseParameter:
         try:
             assert actual is not None, f'实际={actual}, 预期={ass_result.expect}'
             ass_result.actual = json.dumps(actual, ensure_ascii=False)
-            ass_result.ass_msg = MangoAssertion().p_in_dict(actual, expect)
+            ass_result.ass_msg = MangoAssertion(mysql_conn=self.mysql_connect, test_data=self.test_data).p_in_dict(
+                actual, expect)
             self.ass_result.append(ass_result)
         except AssertionError as error:
             ass_result.ass_msg = str(error.args[0]) if error.args else ''
