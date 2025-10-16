@@ -71,7 +71,7 @@ def ensure_db_connection(is_while=False, max_retries=3):
                     close_old_connections()
                     connection.ensure_connection()
                 except (MangoServerError, MangoToolsError) as e:
-                    log.system.error(f'异常提示-1:{e}')
+                    pass
                 except Exception as e:
                     log.system.error(f'异常提示:{e}, 如果是首次启动项目，请启动完成之后再重启一次！')
             else:
