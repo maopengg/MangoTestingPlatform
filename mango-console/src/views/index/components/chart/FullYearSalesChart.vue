@@ -115,6 +115,23 @@
                 color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#5470c6' }]),
               },
             },
+            {
+              type: 'line',
+              name: '单元用例执行数',
+              stack: '总量',
+              data: data.pytest_count,
+              symbolSize: 0,
+              smooth: true,
+              lineStyle: {
+                width: 5,
+                shadowColor: '#999', //设置折线阴影
+                shadowBlur: 10,
+                shadowOffsetY: 5,
+              },
+              itemStyle: {
+                color: new graphic.LinearGradient(1, 0, 0, 0, [{ offset: 1, color: '#FAC858' }]),
+              },
+            },
           ],
         }
         setTimeout(() => {
