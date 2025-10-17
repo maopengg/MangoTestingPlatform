@@ -6,7 +6,7 @@
 项目地址：[gitee](https://gitee.com/mao-peng/MangoTestingPlatform)    |    [github](https://github.com/maopengg/MangoTestingPlatform) 
 
 您的星星是对我最大的支持💖
-
+VERSION = 5.8.0
 ---
 
 ## 🚀 自动化功能介绍
