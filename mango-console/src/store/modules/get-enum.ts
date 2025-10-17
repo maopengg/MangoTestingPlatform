@@ -13,7 +13,6 @@ interface EnumState {
   drive_type: StateValueType
   browser_type: StateValueType
   element_exp: StateValueType
-  auto_test_type: StateValueType
   case_level: StateValueType
   ui_public: StateValueType
   element_ope: StateValueType
@@ -40,7 +39,6 @@ export const useEnum = defineStore('get-enum', {
     drive_type: [],
     browser_type: [],
     element_exp: [],
-    auto_test_type: [],
     case_level: [],
     ui_public: [],
     element_ope: [],
@@ -85,7 +83,6 @@ export const useEnum = defineStore('get-enum', {
             this.drive_type = res.data.drive_type
             this.browser_type = res.data.browser_type
             this.element_exp = res.data.element_exp
-            this.auto_test_type = res.data.auto_test_type
             this.case_level = res.data.case_level
             this.ui_public = res.data.ui_public
             this.element_ope = res.data.element_ope

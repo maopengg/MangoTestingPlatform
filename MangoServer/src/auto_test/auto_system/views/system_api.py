@@ -40,7 +40,6 @@ class SystemViews(ViewSet):
             'drive_type': DriveTypeEnum.get_option(),
             'browser_type': BrowserTypeEnum.get_option(),
             'element_exp': ElementExpEnum.get_option(),
-            'auto_test_type': AutoTestTypeEnum.get_option(),
             'case_level': CaseLevelEnum.get_option(),
             'ui_public': UiPublicTypeEnum.get_option(),
             'element_ope': ElementOperationEnum.get_option(),

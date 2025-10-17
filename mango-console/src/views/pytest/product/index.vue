@@ -62,7 +62,7 @@
             </template>
             <template v-else-if="item.key === 'auto_type'" #cell="{ record }">
               <a-tag :color="enumStore.colors[record?.auto_type]" size="small"
-                >{{ enumStore.auto_test_type[record?.auto_type].title }}
+                >{{ enumStore.test_case_type[record?.auto_type].title }}
               </a-tag>
             </template>
             <template v-else-if="item.key === 'actions'" #cell="{ record }">
@@ -134,7 +134,7 @@
             <a-select
               v-model="item.value"
               :field-names="fieldNames"
-              :options="enumStore.auto_test_type"
+              :options="enumStore.test_case_type"
               :placeholder="item.placeholder"
               allow-clear
               allow-search

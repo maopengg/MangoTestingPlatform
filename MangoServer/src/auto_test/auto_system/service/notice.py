@@ -11,11 +11,10 @@ from mangotools.exceptions import MangoToolsError
 from mangotools.models import TestReportModel, WeChatNoticeModel, EmailNoticeModel
 from mangotools.notice import EmailSend, WeChatSend
 
-from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuite, TestObject
-from src.auto_test.auto_system.service.testcounter import TestCounter
+from src.auto_test.auto_system.models import NoticeConfig, CacheData, TestSuite, TestObject, TestSuiteDetails
 from src.auto_test.auto_user.models import User
 from src.enums.system_enum import CacheDataKeyEnum
-from src.enums.tools_enum import StatusEnum, EnvironmentEnum
+from src.enums.tools_enum import StatusEnum, EnvironmentEnum, TestCaseTypeEnum
 from src.exceptions import *
 from src.tools.log_collector import log
 
@@ -107,18 +106,35 @@ class NoticeMain:
     def test_report(cls, test_suite_id: int) -> TestReportModel:
         test_suite = TestSuite.objects.get(id=test_suite_id)
         execution_duration = test_suite.update_time - test_suite.create_time
+        case_sum = 0
+        success = 0
+        fail = 0
+        warning = 0
 
-        # 获取API和UI的统计数据
-        api_counter = TestCounter.res_api(test_suite_id)
-        ui_counter = TestCounter.res_ui(test_suite_id)
-        pytest_counter = TestCounter.res_pytest(test_suite_id)
+        api_case_sum = 0
+        api_fail = 0
 
-        # 合计所有统计数据（只计算非None的值）
-        case_sum = api_counter.case_sum + ui_counter.case_sum + pytest_counter.case_sum
-        success = api_counter.success + ui_counter.success + pytest_counter.success
-        fail = api_counter.fail + ui_counter.fail + pytest_counter.fail
-        warning = api_counter.warning + ui_counter.warning + pytest_counter.warning
-        # 计算成功率
+        ui_fail = 0
+        ui_case_sum = 0
+
+        pytest_fail = 0
+        pytest_case_sum = 0
+        model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
+        for i in model:
+            case_sum += i.case_sum
+            success += i.success
+            fail += i.fail
+            warning += i.warning
+            if i.type == TestCaseTypeEnum.API.value:
+                api_case_sum += i.case_sum
+                api_fail += i.fail
+            elif model.type == TestCaseTypeEnum.UI.value:
+                ui_case_sum += i.case_sum
+                ui_fail += i.fail
+            else:
+                pytest_case_sum += i.case_sum
+                pytest_fail += i.fail
+
         success_rate = 100 if case_sum == 0 else round(success / case_sum * 100, 2)
 
         # 将秒数转换为HH:MM:SS格式
@@ -135,15 +151,16 @@ class NoticeMain:
             success_rate=success_rate,
             warning=warning,
             fail=fail,
-            api_case_sum=api_counter.case_sum,
-            api_fail=api_counter.fail,
-            ui_fail=ui_counter.fail,
-            pytest_fail=pytest_counter.fail,
-            ui_case_sum=ui_counter.case_sum,
-            pytest_case_sum=pytest_counter.case_sum,
-            api_call=api_counter.step_sum,
-            ui_step_call=ui_counter.step_sum,
-            pytest_func_call=pytest_counter.step_sum,
+
+            api_case_sum=api_case_sum,
+            api_fail=api_fail,
+
+            ui_fail=ui_fail,
+            ui_case_sum=ui_case_sum,
+
+            pytest_fail=pytest_fail,
+            pytest_case_sum=pytest_case_sum,
+
             execution_duration=execution_duration_str,
             test_time=localtime(test_suite.create_time).strftime("%Y-%m-%d %H:%M:%S"),
             test_environment=EnvironmentEnum.get_value(test_suite.test_env),

@@ -9,11 +9,12 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.viewsets import ViewSet
 
-from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter
+from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_system.models import TestSuiteDetails
 from src.auto_test.auto_ui.models import UiCase
 from src.auto_test.auto_user.models import UserLogs, User
-from src.enums.tools_enum import AutoTestTypeEnum
+from src.enums.tools_enum import TestCaseTypeEnum
 from src.tools.decorator.error_response import error_response
 from src.tools.view.response_data import ResponseData
 from src.tools.view.response_msg import *
@@ -128,9 +129,11 @@ class IndexViews(ViewSet):
         return ResponseData.success(RESPONSE_MSG_0093,
                                     [
                                         {'value': UiCase.objects.count(),
-                                         'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)},
-                                        {'value': ApiCase.objects.count(),
-                                         'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)}
+                                         'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.UI.value)},
+                                        {'value': ApiCaseDetailedParameter.objects.count(),
+                                         'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.API.value)},
+                                        {'value': PytestCase.objects.count(),
+                                         'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.PYTEST.value)},
                                     ])
 
     @action(methods=['get'], detail=False)
@@ -143,12 +146,16 @@ class IndexViews(ViewSet):
         """
         return ResponseData.success(RESPONSE_MSG_0094, [
             {
-                'value': TestSuiteDetails.objects.filter(type=AutoTestTypeEnum.UI.value).count(),
-                'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.UI.value)
+                'value': TestSuiteDetails.objects.filter(type=TestCaseTypeEnum.UI.value).count(),
+                'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.UI.value)
             },
             {
-                'value': TestSuiteDetails.objects.filter(type=AutoTestTypeEnum.API.value).count(),
-                'name': AutoTestTypeEnum.get_value(AutoTestTypeEnum.API.value)
+                'value': TestSuiteDetails.objects.filter(type=TestCaseTypeEnum.API.value).count(),
+                'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.API.value)
+            },
+            {
+                'value': TestSuiteDetails.objects.filter(type=TestCaseTypeEnum.PYTEST.value).count(),
+                'name': TestCaseTypeEnum.get_value(TestCaseTypeEnum.PYTEST.value)
             }
         ])
 

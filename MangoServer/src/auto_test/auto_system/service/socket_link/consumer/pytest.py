@@ -14,11 +14,11 @@ from src.tools.decorator.retry import ensure_db_connection
 class PytestConsumer:
 
     @classmethod
-    @ensure_db_connection()
+    # @ensure_db_connection()
     def p_test_suite_details(cls, data: dict):
         UpdateTestSuite.update_test_suite_details(TestSuiteDetailsResultModel(**data))
 
     @classmethod
-    @ensure_db_connection()
+    # @ensure_db_connection()
     def p_test_case(cls, data: dict):
         PtestTestReportWriting.update_pytest_test_case(PytestCaseResultModel(**data))

@@ -7,6 +7,7 @@
 from src.auto_test.auto_pytest.service.test_report_writing import PtestTestReportWriting
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails
 from src.auto_test.auto_system.service.notice import NoticeMain
+from src.auto_test.auto_system.service.testcounter import TestCounter
 from src.auto_test.auto_ui.service.test_report_writing import TestReportWriting
 from src.enums.system_enum import ClientTypeEnum
 from src.enums.tools_enum import TaskEnum, StatusEnum, TestCaseTypeEnum
@@ -40,7 +41,7 @@ class UpdateTestSuite:
             test_suite_detail.case_name = data.result_data.name
             PtestTestReportWriting.update_pytest_test_case(data.result_data)
         test_suite_detail.save()
-
+        TestCounter.res_main(test_suite_detail.id)
         test_suite_detail_list = TestSuiteDetails.objects.filter(
             test_suite=data.test_suite,
             status__in=[TaskEnum.STAY_BEGIN.value, TaskEnum.PROCEED.value]

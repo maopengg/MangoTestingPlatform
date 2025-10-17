@@ -3,7 +3,7 @@
 # @Description: 
 # @Time   : 2024-11-24 20:26
 # @Author : 毛鹏
-from src.auto_test.auto_api.models import ApiCase
+from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter
 from src.auto_test.auto_pytest.models import PytestCase
 from src.auto_test.auto_ui.models import UiCase
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
@@ -33,7 +33,7 @@ class AddTasks:
         })
 
     def add_test_suite_details(self, case_id: int, _type: TestCaseTypeEnum):
-        def set_task(case_id, case_name, project_product, parametrize=None):
+        def set_task(case_id, case_name, project_product, case_sum, parametrize=None):
             from src.auto_test.auto_system.views.test_suite_details import TestSuiteDetailsCRUD
             TestSuiteDetailsCRUD.inside_post({
                 'test_suite': self.test_suite_id,
@@ -47,22 +47,27 @@ class AddTasks:
                 'error_message': None,
                 'result': None,
                 'retry': 0 if self.tasks_id else 2,
+                'case_sum': case_sum,
             })
 
         if _type == TestCaseTypeEnum.UI:
             case = UiCase.objects.get(id=case_id)
             if case.parametrize:
                 for i in case.parametrize:
-                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, 1,
+                             i.get('parametrize'))
             else:
-                set_task(case.id, case.name, case.project_product.id)
+                set_task(case.id, case.name, case.project_product.id, 1)
         elif _type == TestCaseTypeEnum.API:
             case = ApiCase.objects.get(id=case_id)
+            _case_sum = ApiCaseDetailedParameter.objects.filter(
+                case_detailed=ApiCaseDetailed.objects.first(case_id=case_id))
             if case.parametrize:
                 for i in case.parametrize:
-                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, i.get('parametrize'))
+                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, _case_sum.count(),
+                             i.get('parametrize'))
             else:
-                set_task(case.id, case.name, case.project_product.id)
+                set_task(case.id, case.name, case.project_product.id, 1)
         else:
             case = PytestCase.objects.get(id=case_id)
-            set_task(case.id, case.name, case.project_product.project_product.id)
+            set_task(case.id, case.name, case.project_product.project_product.id, 1)

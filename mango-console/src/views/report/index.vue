@@ -26,19 +26,6 @@
                   allow-search
                 />
               </template>
-              <template v-else-if="item.type === 'select' && item.key === 'type'">
-                <a-select
-                  style="width: 150px"
-                  v-model="item.value"
-                  :placeholder="item.placeholder"
-                  :options="enumStore.auto_test_type"
-                  @change="doRefresh"
-                  :field-names="fieldNames"
-                  value-key="key"
-                  allow-clear
-                  allow-search
-                />
-              </template>
             </a-form-item>
           </a-form>
         </template>
@@ -106,13 +93,13 @@
               <template v-else-if="item.key === 'actions'" #cell="{ record }">
                 <a-space>
                   <a-button type="text" size="mini" class="custom-mini-btn" @click="onRetry(record)"
-                    >重试</a-button
-                  >
+                    >重试
+                  </a-button>
                 </a-space>
                 <a-space>
                   <a-button type="text" size="mini" class="custom-mini-btn" @click="onClick(record)"
-                    >查看结果</a-button
-                  >
+                    >查看结果
+                  </a-button>
                 </a-space>
               </template>
             </a-table-column>

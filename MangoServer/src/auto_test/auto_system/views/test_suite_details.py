@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2023-02-16 20:58
 # @Author : 毛鹏
+from typing import Any
 import django
 from django.db import OperationalError
 from rest_framework import serializers
@@ -205,11 +206,20 @@ class TestSuiteDetailsViews(ViewSet):
     @error_response('system')
     def get_summary(self, request: Request):
         test_suite_id = request.query_params.get('test_suite_id')
-        model = self.model.objects.filter(test_suite_id=test_suite_id)
+        model = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id)
+
+        # 使用聚合函数计算总和
+        from django.db.models import Sum
+        aggregates = model.aggregate(
+            total_case_sum=Sum('case_sum'),
+            total_fail=Sum('fail'),
+            total_success=Sum('success')
+        )
+
         return ResponseData.success(RESPONSE_MSG_0065, {
-            'count': model.count(),
-            'fail_count': model.filter(status=TaskEnum.FAIL.value).count(),
-            'success_count': model.filter(status=TaskEnum.SUCCESS.value).count(),
+            'count': aggregates['total_case_sum'] or model.count(),
+            'fail_count': aggregates['total_fail'] or model.filter(status=TaskEnum.FAIL.value).count(),
+            'success_count': aggregates['total_success'] or model.filter(status=TaskEnum.SUCCESS.value).count(),
             'stay_begin_count': model.filter(status=TaskEnum.STAY_BEGIN.value).count(),
             'proceed_count': model.filter(status=TaskEnum.PROCEED.value).count(),
             'api_count': model.filter(type=TestCaseTypeEnum.API.value).count(),

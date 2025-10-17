@@ -136,14 +136,12 @@ class AutoSystemConfig(AppConfig):
 
     @ensure_db_connection(max_retries=1)
     def set_case_status(self):
-        # 集中导入所有需要的模型
         from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
         from src.auto_test.auto_pytest.models import PytestCase
         from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
         
         ten_minutes_ago = timezone.now() - timedelta(minutes=10)
         
-        # 定义需要更新状态的模型列表
         models_to_update = [
             UiCase,
             UiCaseStepsDetailed,
@@ -154,7 +152,6 @@ class AutoSystemConfig(AppConfig):
             ApiCaseDetailed
         ]
         
-        # 批量更新所有模型的状态
         for model in models_to_update:
             model.objects.filter(
                 status=TaskEnum.PROCEED.value,

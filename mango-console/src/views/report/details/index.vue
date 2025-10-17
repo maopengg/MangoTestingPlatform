@@ -128,7 +128,7 @@
       </a-col>
     </a-row>
 
-    <a-card class="test-details" body-style="padding: 0 20px 20px 20px">
+    <a-card class="test-details" :body-style="{ padding: '0 20px 20px 20px' }">
       <template #title>
         <icon-unordered-list />
         <span>测试套用例列表</span>
@@ -403,7 +403,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { computed, onMounted, reactive, ref } from 'vue'
+  import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
   import { usePageData } from '@/store/page-data'
   import {
     getSystemTestSuiteDetails,
@@ -436,6 +436,9 @@
     caseStatus: null,
   })
   const caseRunning = ref(false)
+  // 添加轮询相关的响应式变量
+  const pollingTimer = ref(null)
+  const isPolling = ref(false)
 
   const summaryCards = computed(() => [
     {
@@ -539,8 +542,43 @@
       .then((res) => {
         data.summary = res.data
         doRefresh(null)
+
+        // 检查是否有正在进行的测试
+        const hasInProgress = res.data.stay_begin_count > 0 || res.data.proceed_count > 0
+
+        // 如果有正在进行的测试且未启动轮询，则启动轮询
+        if (hasInProgress && !isPolling.value) {
+          isPolling.value = true
+          startPolling()
+        }
+        // 如果没有正在进行的测试但已启动轮询，则停止轮询
+        else if (!hasInProgress && isPolling.value) {
+          stopPolling()
+        }
       })
       .catch(console.log)
+  }
+
+  // 启动轮询
+  function startPolling() {
+    // 先清除可能存在的定时器
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+    }
+
+    // 设置5秒轮询
+    pollingTimer.value = setInterval(() => {
+      doRefreshSummary()
+    }, 5000)
+  }
+
+  // 停止轮询
+  function stopPolling() {
+    if (pollingTimer.value) {
+      clearInterval(pollingTimer.value)
+      pollingTimer.value = null
+      isPolling.value = false
+    }
   }
 
   function onRetry(_id: any) {
@@ -553,15 +591,21 @@
         getSystemTestSuiteDetailsRetry(_id)
           .then((res) => {
             Message.success(res.msg)
-            doRefresh(data.caseStatus)
+            doRefreshSummary(data.caseStatus)
           })
           .catch(console.log)
       },
     })
   }
 
+  // 在组件卸载时清理定时器
   onMounted(() => {
     doRefreshSummary()
+  })
+
+  // 添加 onUnmounted 钩子来清理定时器
+  onUnmounted(() => {
+    stopPolling()
   })
 </script>
 <style lang="less" scoped>

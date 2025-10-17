@@ -11,19 +11,37 @@ from src.models.system_model import CaseCounterModel
 
 class TestCounter:
 
-    @staticmethod
-    def res_api(test_suite_id: int | None = None) -> CaseCounterModel:
-        if test_suite_id is None:
-            case_result = TestSuiteDetails.objects.all()
+    @classmethod
+    def res_main(cls, _id):
+        model = TestSuiteDetails.objects.get(id=_id)
+        if model.type == TestCaseTypeEnum.API.value:
+            res = cls.res_api(model)
+        elif model.type == TestCaseTypeEnum.UI.value:
+            res = cls.res_ui(model)
         else:
-            case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.API.value)
+            res = cls.res_pytest(model)
+            model.case_sum = res.case_sum
+        model.success = res.success
+        model.fail = res.fail
+        model.warning = res.warning
+        model.save()
+
+    @staticmethod
+    def res_api(test_suite_details) -> CaseCounterModel:
         case_counter = CaseCounterModel()
-        if not case_result.exists():
-            return case_counter
-        for i in case_result:
-            for r in i.result_data:
+        for r in test_suite_details.result_data:
+            if r.get('status') == StatusEnum.SUCCESS.value:
+                case_counter.success += 1
+            else:
+                case_counter.fail += 1
+        return case_counter
+
+    @staticmethod
+    def res_pytest(test_suite_details) -> CaseCounterModel:
+        case_counter = CaseCounterModel()
+        if test_suite_details:
+            for r in test_suite_details.result_data:
                 case_counter.case_sum += 1
-                case_counter.step_sum += 1
                 if r.get('status') == StatusEnum.SUCCESS.value:
                     case_counter.success += 1
                 else:
@@ -31,51 +49,10 @@ class TestCounter:
         return case_counter
 
     @staticmethod
-    def res_pytest(test_suite_id: int | None = None) -> CaseCounterModel:
-        if test_suite_id is None:
-            case_result = TestSuiteDetails.objects.all()
-        else:
-            case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id,
-                                                          type=TestCaseTypeEnum.PYTEST.value)
+    def res_ui(test_suite_details) -> CaseCounterModel:
         case_counter = CaseCounterModel()
-        if not case_result.exists():
-            return case_counter
-
-        for i in case_result:
-            if i.result_data:
-                for r in i.result_data:
-                    case_counter.case_sum += 1
-                    if r.get('status') == StatusEnum.SUCCESS.value:
-                        case_counter.success += 1
-                    else:
-                        case_counter.fail += 1
-        return case_counter
-
-    @staticmethod
-    def res_ui(test_suite_id: int | None = None) -> CaseCounterModel:
-        if test_suite_id is None:
-            case_result = TestSuiteDetails.objects.all()
+        if test_suite_details.status == StatusEnum.SUCCESS.value:
+            case_counter.success += 1
         else:
-            case_result = TestSuiteDetails.objects.filter(test_suite_id=test_suite_id, type=TestCaseTypeEnum.UI.value)
-        case_counter = CaseCounterModel()
-        if not case_result.exists():
-            return case_counter
-
-        case_counter.case_sum = case_result.count()
-        case_counter.success = case_result.filter(status=StatusEnum.SUCCESS.value).count()
-        case_counter.fail = case_result.filter(status=StatusEnum.FAIL.value).count()
-        for i in case_result:
-            case_counter.step_sum += len(i.result_data)
+            case_counter.fail += 1
         return case_counter
-
-    @staticmethod
-    def case_api() -> CaseCounterModel:
-        pass
-
-    @staticmethod
-    def case_ui() -> CaseCounterModel:
-        pass
-
-    @staticmethod
-    def case_pytest() -> CaseCounterModel:
-        pass
