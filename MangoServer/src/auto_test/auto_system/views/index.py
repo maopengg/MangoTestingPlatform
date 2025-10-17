@@ -105,15 +105,55 @@ class IndexViews(ViewSet):
     
                 """
             )
+            pytest_result = TestSuiteDetails.objects.raw(
+                """
+                    SELECT
+                        weeks.id,
+                        weeks.yearweek,
+                        COALESCE(api_counts.total_count, 0) AS total_count
+                    FROM (
+                        SELECT 'id'as id,YEARWEEK(DATE_SUB(NOW(), INTERVAL n WEEK)) AS yearweek
+                        FROM (
+                            SELECT 0 AS n UNION ALL
+                            SELECT 1 UNION ALL
+                            SELECT 2 UNION ALL
+                            SELECT 3 UNION ALL
+                            SELECT 4 UNION ALL
+                            SELECT 5 UNION ALL
+                            SELECT 6 UNION ALL
+                            SELECT 7 UNION ALL
+                            SELECT 8 UNION ALL
+                            SELECT 9 UNION ALL
+                            SELECT 10 UNION ALL
+                            SELECT 11
+                        ) weeks
+                    ) weeks
+                    LEFT JOIN (
+                        SELECT 
+                            MAX(test_suite_details.id) as id,
+                            YEARWEEK(create_time) AS yearweek, 
+                            COUNT(YEARWEEK(create_time)) AS total_count
+                        FROM test_suite_details
+                        WHERE create_time >= DATE_SUB(NOW(), INTERVAL 12 WEEK)
+                        AND type = 2
+                        GROUP BY YEARWEEK(create_time)
+                    ) api_counts ON weeks.yearweek = api_counts.yearweek
+                    ORDER BY weeks.yearweek;
+    
+                """
+            )
             result_dict = {
                 'api_count': [row.total_count for row in api_result],
-                'ui_count': [row.total_count for row in ui_result]
+                'ui_count': [row.total_count for row in ui_result],
+                'pytest_count': [row.total_count for row in pytest_result],
             }
             return ResponseData.success(RESPONSE_MSG_0092, result_dict)
         except django.db.utils.OperationalError:
             result_dict = {
                 'api_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                'ui_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                'pytest_count': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+
             }
             return ResponseData.success(RESPONSE_MSG_0129, result_dict)
 
