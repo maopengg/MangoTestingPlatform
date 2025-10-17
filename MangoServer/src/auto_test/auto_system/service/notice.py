@@ -114,10 +114,10 @@ class NoticeMain:
         pytest_counter = TestCounter.res_pytest(test_suite_id)
 
         # 合计所有统计数据（只计算非None的值）
-        case_sum = (api_counter.case_sum or 0) + (ui_counter.case_sum or 0) + (pytest_counter.case_sum or 0)
-        success = (api_counter.success or 0) + (ui_counter.success or 0) + (pytest_counter.success or 0)
-        fail = (api_counter.fail or 0) + (ui_counter.fail or 0) + (pytest_counter.fail or 0)
-        warning = (api_counter.warning or 0) + (ui_counter.warning or 0) + (pytest_counter.warning or 0)
+        case_sum = api_counter.case_sum + ui_counter.case_sum + pytest_counter.case_sum
+        success = api_counter.success + ui_counter.success + pytest_counter.success
+        fail = api_counter.fail + ui_counter.fail + pytest_counter.fail
+        warning = api_counter.warning + ui_counter.warning + pytest_counter.warning
         # 计算成功率
         success_rate = 100 if case_sum == 0 else round(success / case_sum * 100, 2)
 
