@@ -46,7 +46,7 @@ def orm_retry(func_name: str, max_retries=5, delay=2):
     return decorator
 
 
-def ensure_db_connection(is_while=False, max_retries=1):
+def ensure_db_connection(is_while=False, max_retries=3):
     def decorator(func):
 
         @wraps(func)

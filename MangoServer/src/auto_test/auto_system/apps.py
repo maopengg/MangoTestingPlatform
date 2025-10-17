@@ -5,14 +5,19 @@
 # @Author : 毛鹏
 import os
 import threading
+from datetime import timedelta
 
 import atexit
 import time
+from apscheduler.schedulers.background import BackgroundScheduler
 from django.apps import AppConfig
+from django.utils import timezone
 from mangotools.decorator import func_info
 from mangotools.enums import CacheValueTypeEnum
 
 from src.enums.system_enum import CacheDataKeyEnum
+from src.enums.tools_enum import TaskEnum
+from src.tools.decorator.retry import ensure_db_connection
 from src.tools.log_collector import log
 
 
@@ -28,6 +33,7 @@ class AutoSystemConfig(AppConfig):
             self.populate_time_tasks()
             self.run_tests()
             self.init_ass()
+            self.start_consumer()
 
         if os.environ.get('RUN_MAIN', None) == 'true':
             task1 = threading.Thread(target=run)
@@ -122,3 +128,35 @@ class AutoSystemConfig(AppConfig):
                 CacheDataCRUD.inside_put(cache_data.id, data)
         except Exception as e:
             log.system.error(f'异常提示:{e}, 首次启动项目，请启动完成之后再重启一次！')
+
+    def start_consumer(self):
+        scheduler = BackgroundScheduler()
+        scheduler.add_job(self.set_case_status, 'interval', minutes=5)
+        scheduler.start()
+
+    @ensure_db_connection(max_retries=1)
+    def set_case_status(self):
+        # 集中导入所有需要的模型
+        from src.auto_test.auto_ui.models import UiCase, UiCaseStepsDetailed, PageSteps
+        from src.auto_test.auto_pytest.models import PytestCase
+        from src.auto_test.auto_api.models import ApiInfo, ApiCase, ApiCaseDetailed
+        
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        
+        # 定义需要更新状态的模型列表
+        models_to_update = [
+            UiCase,
+            UiCaseStepsDetailed,
+            PageSteps,
+            PytestCase,
+            ApiInfo,
+            ApiCase,
+            ApiCaseDetailed
+        ]
+        
+        # 批量更新所有模型的状态
+        for model in models_to_update:
+            model.objects.filter(
+                status=TaskEnum.PROCEED.value,
+                update_time__lt=ten_minutes_ago
+            ).update(status=TaskEnum.FAIL.value)
