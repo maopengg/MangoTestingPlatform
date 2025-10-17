@@ -3,7 +3,6 @@
 # @Description: 
 # @Time   : 2024-11-25 15:04
 # @Author : 毛鹏
-from django.db import connection
 
 from src.auto_test.auto_pytest.service.test_report_writing import PtestTestReportWriting
 from src.auto_test.auto_system.models import TestSuite, TestSuiteDetails

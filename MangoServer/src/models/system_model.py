@@ -39,3 +39,11 @@ class SetUserOpenSatusModel(BaseModel):
 class GetTaskModel(BaseModel):
     type: TestCaseTypeEnum
     username: str
+
+
+class CaseCounterModel(BaseModel):
+    case_sum: int = 0
+    step_sum: int = 0
+    success: int = 0
+    fail: int = 0
+    warning: int = 0
