@@ -5,6 +5,7 @@
 # @Author : 毛鹏
 from src.auto_test.auto_api.models import ApiCase, ApiCaseDetailed, ApiCaseDetailedParameter
 from src.auto_test.auto_pytest.models import PytestCase
+from src.auto_test.auto_system.service.testcounter import TestCounter
 from src.auto_test.auto_ui.models import UiCase
 from src.enums.tools_enum import TaskEnum, TestCaseTypeEnum
 from src.tools.view import Snowflake
@@ -54,20 +55,25 @@ class AddTasks:
             case = UiCase.objects.get(id=case_id)
             if case.parametrize:
                 for i in case.parametrize:
-                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, 1,
+                    set_task(case.id,
+                             f'{case.name} - {i.get("name")}',
+                             case.project_product.id,
+                             TestCounter.case_ui(case_id),
                              i.get('parametrize'))
             else:
-                set_task(case.id, case.name, case.project_product.id, 1)
+                set_task(case.id, case.name, case.project_product.id, TestCounter.case_ui(case_id))
         elif _type == TestCaseTypeEnum.API:
             case = ApiCase.objects.get(id=case_id)
-            _case_sum = ApiCaseDetailedParameter.objects.filter(
-                case_detailed=ApiCaseDetailed.objects.first(case_id=case_id))
+
             if case.parametrize:
                 for i in case.parametrize:
-                    set_task(case.id, f'{case.name} - {i.get("name")}', case.project_product.id, _case_sum.count(),
+                    set_task(case.id,
+                             f'{case.name} - {i.get("name")}',
+                             case.project_product.id,
+                             TestCounter.case_api(case_id),
                              i.get('parametrize'))
             else:
-                set_task(case.id, case.name, case.project_product.id, 1)
+                set_task(case.id, case.name, case.project_product.id, TestCounter.case_api(case_id))
         else:
             case = PytestCase.objects.get(id=case_id)
-            set_task(case.id, case.name, case.project_product.project_product.id, 1)
+            set_task(case.id, case.name, case.project_product.project_product.id, TestCounter.case_pytest(case_id))

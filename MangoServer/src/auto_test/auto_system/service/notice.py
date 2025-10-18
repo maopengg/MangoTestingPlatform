@@ -128,7 +128,7 @@ class NoticeMain:
             if i.type == TestCaseTypeEnum.API.value:
                 api_case_sum += i.case_sum
                 api_fail += i.fail
-            elif model.type == TestCaseTypeEnum.UI.value:
+            elif i.type == TestCaseTypeEnum.UI.value:
                 ui_case_sum += i.case_sum
                 ui_fail += i.fail
             else:

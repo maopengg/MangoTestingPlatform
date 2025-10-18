@@ -3,6 +3,7 @@
 # @Description: 
 # @Time   : 2025-10-17 10:44
 # @Author : 毛鹏
+from src.auto_test.auto_api.models import ApiCaseDetailedParameter, ApiCaseDetailed
 from src.auto_test.auto_system.models import TestSuiteDetails
 from src.enums.tools_enum import StatusEnum
 from src.enums.tools_enum import TestCaseTypeEnum
@@ -56,3 +57,17 @@ class TestCounter:
         else:
             case_counter.fail += 1
         return case_counter
+
+    @staticmethod
+    def case_api(case_id):
+        case_sum = ApiCaseDetailedParameter.objects.filter(
+            case_detailed=ApiCaseDetailed.objects.first(case_id=case_id))
+        return case_sum
+
+    @staticmethod
+    def case_ui(case_id):
+        return 1
+
+    @staticmethod
+    def case_pytest(case_id):
+        return 1
