@@ -434,6 +434,7 @@
     summary: {},
     selectedCase: {},
     caseStatus: null,
+    caseType: null,
   })
   const caseRunning = ref(false)
   // 添加轮询相关的响应式变量
@@ -541,7 +542,7 @@
     getSystemTestSuiteDetailsSummary(pageData.record.id)
       .then((res) => {
         data.summary = res.data
-        doRefresh(null)
+        doRefresh(data.caseType)
 
         // 检查是否有正在进行的测试
         const hasInProgress = res.data.stay_begin_count > 0 || res.data.proceed_count > 0
@@ -591,7 +592,7 @@
         getSystemTestSuiteDetailsRetry(_id)
           .then((res) => {
             Message.success(res.msg)
-            doRefreshSummary(data.caseStatus)
+            doRefreshSummary()
           })
           .catch(console.log)
       },

@@ -8,6 +8,7 @@ from src.auto_test.auto_system.models import TestSuiteDetails
 from src.enums.tools_enum import StatusEnum
 from src.enums.tools_enum import TestCaseTypeEnum
 from src.models.system_model import CaseCounterModel
+from src.auto_test.auto_pytest.models import PytestCase
 
 
 class TestCounter:
@@ -61,8 +62,8 @@ class TestCounter:
     @staticmethod
     def case_api(case_id):
         case_sum = ApiCaseDetailedParameter.objects.filter(
-            case_detailed=ApiCaseDetailed.objects.first(case_id=case_id))
-        return case_sum
+            case_detailed=ApiCaseDetailed.objects.filter(case_id=case_id).first())
+        return case_sum.count()
 
     @staticmethod
     def case_ui(case_id):
@@ -70,4 +71,18 @@ class TestCounter:
 
     @staticmethod
     def case_pytest(case_id):
-        return 1
+        model = PytestCase.objects.get(id=case_id)
+        file_path = model.file_path
+        test_count = 0
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    # 去除空白字符并检查是否以def test开头
+                    stripped_line = line.strip()
+                    if stripped_line.startswith('def test'):
+                        test_count += 1
+        except FileNotFoundError:
+            return 1
+        except Exception:
+            return 1
+        return test_count
