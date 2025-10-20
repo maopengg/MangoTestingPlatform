@@ -92,3 +92,19 @@ export function postApiCopyInfo(id: number) {
     },
   })
 }
+
+export function postApiUploadApi(type: number, file?: File) {
+  const formData = new FormData()
+  formData.append('type', type.toString())
+  if (file) {
+    formData.append('file', file)
+  }
+  
+  return post({
+    url: '/api/upload/api',
+    data: () => formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
