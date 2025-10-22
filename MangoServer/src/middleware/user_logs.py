@@ -9,9 +9,10 @@ import threading
 
 from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
+from django.core.exceptions import ObjectDoesNotExist
 
-from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
 from src.auto_test.auto_user.models import User
+from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
 
 
 class UserLogsMiddleWare(MiddlewareMixin):
@@ -31,7 +32,9 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def _process_logs_async(self, request, response):
         """异步处理所有日志逻辑"""
         try:
-            source_type = int(request.headers['Source-Type'])
+            if 'login' in request.path:
+                pass
+            source_type = int(request.headers.get('Source-Type', 1))
             request_data = self._capture_request_data(request)
             formatted_request_data = self._format_request_data(request_data)
             response_content = self._capture_response_data(response)
@@ -41,8 +44,11 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 user_id = request.user.get('id')
             if user_id is None and formatted_request_data.get('post', {}).get('username'):
                 try:
-                    user_id = User.objects.get(username=formatted_request_data.get('post', {}).get('username')).id
-                except User.DoesNotExist:
+                    # 使用更安全的方式访问 User.objects
+                    user_obj = User._default_manager.get(
+                        username=formatted_request_data.get('post', {}).get('username'))
+                    user_id = user_obj.id
+                except ObjectDoesNotExist:
                     pass
             log_entry = {
                 "user": user_id,
@@ -81,28 +87,17 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 }
         except Exception as e:
             data['error'] = f"Data capture failed: {str(e)}"
+            print(e)
         return data
 
     def _format_request_data(self, request_data):
-        """格式化请求数据，去除headers，处理GET参数格式"""
         formatted_data = {}
-        if 'get' in request_data and isinstance(request_data['get'], dict):
-            formatted_data['get'] = {}
+        if ('get' in request_data or 'delete' in request_data) and isinstance(request_data['get'], dict):
             for key, value in request_data['get'].items():
                 if isinstance(value, list) and len(value) == 1:
-                    formatted_data['get'][key] = value[0]
+                    formatted_data[key] = value[0]
                 else:
-                    formatted_data['get'][key] = value
-        if 'post' in request_data and isinstance(request_data['post'], dict):
-            formatted_data['post'] = {}
-            for key, value in request_data['post'].items():
-                if isinstance(value, list) and len(value) == 1:
-                    formatted_data['post'][key] = value[0]
-                else:
-                    formatted_data['post'][key] = value
-        if 'body' in request_data:
-            formatted_data['body'] = request_data['body']
-
+                    formatted_data[key] = value
         return formatted_data
 
     def _capture_response_data(self, response):
