@@ -6,21 +6,21 @@
 
 import json
 import threading
+import traceback
 
-from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
-from django.core.exceptions import ObjectDoesNotExist
-
+from django.core.handlers.asgi import ASGIRequest
+from rest_framework.response import Response
 from src.auto_test.auto_user.models import User
 from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
 
 
 class UserLogsMiddleWare(MiddlewareMixin):
 
-    def process_request(self, request: HttpRequest):
+    def process_request(self, request: ASGIRequest):
         pass
 
-    def process_response(self, request, response):
+    def process_response(self, request: ASGIRequest, response: Response):
         thread = threading.Thread(
             target=self._process_logs_async,
             args=(request, response,)
@@ -29,26 +29,20 @@ class UserLogsMiddleWare(MiddlewareMixin):
         thread.start()
         return response
 
-    def _process_logs_async(self, request, response):
+    def _process_logs_async(self, request: ASGIRequest, response: Response) -> None:
         """异步处理所有日志逻辑"""
         try:
-            if 'login' in request.path:
-                pass
             source_type = int(request.headers.get('Source-Type', 1))
-            request_data = self._capture_request_data(request)
-            formatted_request_data = self._format_request_data(request_data)
+            request_data = self._capture_request_data(request, response)
             response_content = self._capture_response_data(response)
 
             user_id = None
             if hasattr(request, 'user') and request.user and isinstance(request.user, dict):
                 user_id = request.user.get('id')
-            if user_id is None and formatted_request_data.get('post', {}).get('username'):
+            if user_id is None and request_data.get('username'):
                 try:
-                    # 使用更安全的方式访问 User.objects
-                    user_obj = User._default_manager.get(
-                        username=formatted_request_data.get('post', {}).get('username'))
-                    user_id = user_obj.id
-                except ObjectDoesNotExist:
+                    user_id = User._default_manager.get(username=request_data.get('username')).id
+                except User.DoesNotExist:
                     pass
             log_entry = {
                 "user": user_id,
@@ -57,50 +51,29 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 "url": request.path,
                 "method": request.method,
                 "status_code": response.status_code,
-                "request_data": json.dumps(formatted_request_data, ensure_ascii=False),
+                "request_data": json.dumps(request_data, ensure_ascii=False),
                 "response_data": response_content
             }
+            print(json.dumps(log_entry, ensure_ascii=False))
             self._save_user_logs_async(log_entry)
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
 
-    def _capture_request_data(self, request):
-        """安全获取请求数据"""
-        data = {}
-        try:
-            if request.GET:
-                data['get'] = dict(request.GET)
-            if request.POST:
-                data['post'] = dict(request.POST)
-            if hasattr(request, 'body') and request.body:
-                content_type = getattr(request, 'content_type', '')
-                if 'json' in content_type:
-                    try:
-                        data['body'] = json.loads(request.body.decode('utf-8'))
-                    except:
-                        data['body'] = request.body.decode('utf-8')
+    def _capture_request_data(self, request: ASGIRequest, response: Response) -> dict:
+        if request.method == 'POST' or request.method == 'PUT':
+            data = response.renderer_context['request'].data
+            if 'password' in data:
+                data['password'] = None
+        else:
+            data = dict(response.renderer_context['request'].query_params)
+            for key, value in data.items():
+                if isinstance(value, list) and len(value) == 1:
+                    data[key] = value[0]
                 else:
-                    data['body'] = request.body.decode('utf-8')
-            if hasattr(request, 'META'):
-                data['headers'] = {
-                    'source_type': request.META.get('HTTP_SOURCE_TYPE') or request.META.get('SOURCE_TYPE')
-                }
-        except Exception as e:
-            data['error'] = f"Data capture failed: {str(e)}"
-            print(e)
+                    data[key] = value
         return data
 
-    def _format_request_data(self, request_data):
-        formatted_data = {}
-        if ('get' in request_data or 'delete' in request_data) and isinstance(request_data['get'], dict):
-            for key, value in request_data['get'].items():
-                if isinstance(value, list) and len(value) == 1:
-                    formatted_data[key] = value[0]
-                else:
-                    formatted_data[key] = value
-        return formatted_data
-
-    def _capture_response_data(self, response):
+    def _capture_response_data(self, response: Response) -> str:
         """安全获取响应数据"""
         try:
             if hasattr(response, 'data'):
@@ -119,10 +92,10 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 return json.dumps(filtered_data, ensure_ascii=False)
             else:
                 return json.dumps(response_data, ensure_ascii=False)[:2000]
-        except Exception as e:
+        except Exception:
             return str(response)[:2000]
 
-    def _get_client_ip(self, request):
+    def _get_client_ip(self, request: ASGIRequest) -> str:
         """获取真实IP（考虑代理情况）"""
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
@@ -131,7 +104,7 @@ class UserLogsMiddleWare(MiddlewareMixin):
             ip = request.META.get('REMOTE_ADDR')
         return ip
 
-    def _save_user_logs_async(self, log_entry: dict):
+    def _save_user_logs_async(self, log_entry: dict) -> None:
         """异步保存用户日志到数据库"""
         try:
             UserLogsCRUD.inside_post(log_entry)
