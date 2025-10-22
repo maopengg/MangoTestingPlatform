@@ -43,7 +43,7 @@ export const tableColumns = useTableColumn([
     title: 'method',
     key: 'method',
     dataIndex: 'method',
-    width: 70,
+    width: 100,
   },
   {
     title: '请求数据',
