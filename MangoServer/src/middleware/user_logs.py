@@ -11,6 +11,7 @@ from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
 
 from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
+from src.auto_test.auto_user.models import User
 
 
 class UserLogsMiddleWare(MiddlewareMixin):
@@ -30,22 +31,16 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def _process_logs_async(self, request, response):
         """异步处理所有日志逻辑"""
         try:
-            user_id = None
-            if hasattr(request, 'user') and request.user and isinstance(request.user, dict):
-                user_id = request.user.get('id')
-
-            source_type = 1
-            source_type_header = request.META.get('Source-Type')
-            if source_type_header:
-                try:
-                    source_type = int(source_type_header)
-                except (ValueError, TypeError):
-                    pass
+            # 直接从headers中获取source_type，假设headers中一定会有Source-Type的值
+            source_type = int(request.headers.get('Source-Type', 1))
             request_data = self._capture_request_data(request)
             formatted_request_data = self._format_request_data(request_data)
             response_content = self._capture_response_data(response)
+
+            user_id = None
+            if hasattr(request, 'user') and request.user and isinstance(request.user, dict):
+                user_id = request.user.get('id')
             if user_id is None and formatted_request_data.get('post', {}).get('username'):
-                from src.auto_test.auto_user.models import User
                 try:
                     user_id = User.objects.get(username=formatted_request_data.get('post', {}).get('username')).id
                 except User.DoesNotExist:
