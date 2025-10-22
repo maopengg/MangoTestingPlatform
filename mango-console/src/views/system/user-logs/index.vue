@@ -73,8 +73,10 @@
             :key="item.key"
             :align="item.align"
             :data-index="item.key"
+            :ellipsis="item.ellipsis"
             :fixed="item.fixed"
             :title="item.title"
+            :tooltip="item.tooltip"
             :width="item.width"
           >
             <template v-if="item.key === 'index'" #cell="{ record }">
