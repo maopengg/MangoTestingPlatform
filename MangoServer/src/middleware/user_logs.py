@@ -41,7 +41,10 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 user_id = request.user.get('id')
             if user_id is None and request_data.get('username'):
                 try:
-                    user_id = User._default_manager.get(username=request_data.get('username')).id
+                    user_name = request_data.get('username')
+                    if isinstance(user_name, list):
+                        user_name = user_name[0]
+                    user_id = User._default_manager.get(username=user_name).id
                 except User.DoesNotExist:
                     pass
             log_entry = {
@@ -54,14 +57,13 @@ class UserLogsMiddleWare(MiddlewareMixin):
                 "request_data": json.dumps(request_data, ensure_ascii=False),
                 "response_data": response_content
             }
-            print(json.dumps(log_entry, ensure_ascii=False))
             self._save_user_logs_async(log_entry)
         except Exception:
             traceback.print_exc()
 
     def _capture_request_data(self, request: ASGIRequest, response: Response) -> dict:
         if request.method == 'POST' or request.method == 'PUT':
-            data = response.renderer_context['request'].data
+            data = dict(response.renderer_context['request'].data)
             if 'password' in data:
                 data['password'] = None
         else:
@@ -107,6 +109,7 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def _save_user_logs_async(self, log_entry: dict) -> None:
         """异步保存用户日志到数据库"""
         try:
+            print(log_entry)
             UserLogsCRUD.inside_post(log_entry)
         except Exception as e:
             print(e)
