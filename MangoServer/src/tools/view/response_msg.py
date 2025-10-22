@@ -4,7 +4,7 @@
 # @Time   : 2024-02-01 10:00
 # @Author : 毛鹏
 RESPONSE_MSG_0001 = (200, '获取数据成功')
-RESPONSE_MSG_0002 = (200, '新增一条成功')
+RESPONSE_MSG_0002 = (200, '新增成功')
 RESPONSE_MSG_0003 = (300, '保存数据时报错，请检查数据')
 RESPONSE_MSG_0004 = (300, '修改数据时报错，请检查数据')
 RESPONSE_MSG_0005 = (200, '删除成功')
@@ -84,7 +84,7 @@ RESPONSE_MSG_0078 = (200, '更新项目成功，请手动绑定一下新增文�
 RESPONSE_MSG_0079 = (200, '修改元素iframe状态成功')
 RESPONSE_MSG_0080 = (200, '获取元素名称成功')
 RESPONSE_MSG_0081 = (200, '{}已收到元素，正在定位中...')
-RESPONSE_MSG_0082 = (200, '编辑一条信息成功')
+RESPONSE_MSG_0082 = (200, '编辑成功')
 RESPONSE_MSG_0083 = (200, '批量增加元素成功')
 RESPONSE_MSG_0084 = (200, '读取文件成功')
 RESPONSE_MSG_0085 = (200, '文件更新完成')
