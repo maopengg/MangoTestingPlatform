@@ -39,6 +39,22 @@
                   @change="doRefresh"
                 />
               </template>
+              <template v-else-if="item.type === 'select' && item.key === 'status_code'">
+                <a-select
+                  v-model="item.value"
+                  :field-names="fieldNames"
+                  :options="[
+                    { key: '等于200', title: '等于200' },
+                    { key: '不等于200', title: '不等于200' },
+                  ]"
+                  :placeholder="item.placeholder"
+                  allow-clear
+                  allow-search
+                  style="width: 150px"
+                  value-key="key"
+                  @change="doRefresh"
+                />
+              </template>
               <template v-if="item.type === 'date'">
                 <a-date-picker v-model="item.value" />
               </template>
@@ -123,6 +139,12 @@
     let value = getFormItems(conditionItems)
     value['page'] = pagination.page
     value['pageSize'] = pagination.pageSize
+    if (value?.status_code && value?.status_code === '不等于200') {
+      value['status_code__in'] = ['200']
+      delete value['status_code']
+    } else if (value?.status_code) {
+      value['status_code'] = '200'
+    }
     getUserLogs(value)
       .then((res) => {
         table.handleSuccess(res)

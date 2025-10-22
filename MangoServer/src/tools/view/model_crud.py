@@ -3,12 +3,13 @@
 # @Description: 封装了分页查询，单条查询和增删改查
 # @Time   : 2023-02-08 8:30
 # @Author : 毛鹏
+import traceback
 from threading import Thread
 
 from django.core.exceptions import FieldError, FieldDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models.query import QuerySet
-from mangotools.mangos import get, post, put, delete, inside_post, inside_put, inside_delete
+from mangotools.mangos import post, put, delete, inside_post, inside_put, inside_delete
 from minio.error import S3Error
 from rest_framework.generics import GenericAPIView
 from rest_framework.request import Request
@@ -19,6 +20,65 @@ from src.tools.log_collector import log
 from src.tools.view import *
 
 
+def get(self, **kwargs):
+    query_dict = {}
+    for k, v in dict(kwargs.get('request').query_params.lists()).items():
+        if k and isinstance(v[0], str) and k not in self.not_matching_str and 'id' not in k:
+            query_dict[f'{k}__contains'] = v[0]
+        else:
+            query_dict[k] = v[0]
+    project_id = kwargs.get('request').headers.get('Project', None)
+    if query_dict.get('project_product') is None and project_id and hasattr(self.model, 'project_product'):
+        project_product = kwargs.get('project_product') \
+            .objects. \
+            filter(project_id=project_id)
+        if self.model.__name__ in self.pytest_model:
+            product = kwargs.get('pytest_product') \
+                .objects \
+                .filter(project_product_id__in=project_product.values_list('id', flat=True))
+            query_dict['project_product_id__in'] = product.values_list('id', flat=True)
+        else:
+            query_dict['project_product_id__in'] = project_product.values_list('id', flat=True)
+    try:
+        if kwargs.get('request').query_params.get("pageSize") and kwargs.get('request').query_params.get("page"):
+            del query_dict['pageSize'], query_dict['page']
+            try:
+                self.model._meta.get_field('case_sort')
+                books = self.model.objects.filter(**query_dict).order_by('case_sort')
+            except kwargs.get('field_does_note_xist'):
+                books = self.model.objects.filter(**query_dict)
+            data_list, count = self.paging_list(
+                kwargs.get('request').query_params.get("pageSize"),
+                kwargs.get('request').query_params.get("page"),
+                books,
+                self.get_serializer_class()
+            )
+            return kwargs.get('response_data').success(kwargs.get('m_0001'), data_list, count)
+        else:
+            try:
+                self.model._meta.get_field('case_sort')
+                books = self.model.objects.filter(**query_dict).order_by('case_sort')
+            except kwargs.get('field_does_note_xist'):
+                books = self.model.objects.filter(**query_dict)
+            serializer = self.get_serializer_class()
+            try:
+                books = serializer.setup_eager_loading(books)
+            except kwargs.get('field_error'):
+                pass
+            return kwargs.get('response_data') \
+                .success(
+                kwargs.get('m_0001'),
+                serializer(instance=books, many=True).data,
+                books.count()
+            )
+    except kwargs.get('s3_error') as error:
+        kwargs.get('log').system.error(f'GET请求发送异常，请排查问题：{error}, error:{traceback.print_exc()}')
+        return kwargs.get('response_data').fail(kwargs.get('m_0026'), )
+    except Exception as error:
+        kwargs.get('log').system.error(f'GET请求发送异常，请排查问题：{error}, error:{traceback.print_exc()}')
+        return kwargs.get('response_data').fail(kwargs.get('m_0027'), )
+
+
 class ModelCRUD(GenericAPIView):
     model = None
     project_model = None
@@ -26,7 +86,7 @@ class ModelCRUD(GenericAPIView):
     not_matching_str = [
         'pageSize', 'page',
         'type', 'status',
-        'module', 'project_product', 'case_people', 'test_object', 'project', 'user',
+        'module', 'project_product', 'case_people', 'test_object', 'project', 'user', 'status_code__in[]'
     ]
     pytest_model = ['PytestAct', 'PytestCase', 'PytestTools', 'PytestTestFile']
 

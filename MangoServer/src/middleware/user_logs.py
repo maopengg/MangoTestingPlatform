@@ -109,7 +109,6 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def _save_user_logs_async(self, log_entry: dict) -> None:
         """异步保存用户日志到数据库"""
         try:
-            print(log_entry)
             UserLogsCRUD.inside_post(log_entry)
         except Exception as e:
             print(e)
