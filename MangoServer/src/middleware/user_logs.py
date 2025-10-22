@@ -33,6 +33,7 @@ class UserLogsMiddleWare(MiddlewareMixin):
             user_id = None
             if hasattr(request, 'user') and request.user and isinstance(request.user, dict):
                 user_id = request.user.get('id')
+
             source_type = 1
             source_type_header = request.META.get('Source-Type')
             if source_type_header:
@@ -43,6 +44,12 @@ class UserLogsMiddleWare(MiddlewareMixin):
             request_data = self._capture_request_data(request)
             formatted_request_data = self._format_request_data(request_data)
             response_content = self._capture_response_data(response)
+            if user_id is None and formatted_request_data.get('post', {}).get('username'):
+                from src.auto_test.auto_user.models import User
+                try:
+                    user_id = User.objects.get(username=formatted_request_data.get('post', {}).get('username')).id
+                except User.DoesNotExist:
+                    pass
             log_entry = {
                 "user": user_id,
                 "source_type": source_type,
