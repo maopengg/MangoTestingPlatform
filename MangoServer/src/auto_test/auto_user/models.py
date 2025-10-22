@@ -66,7 +66,7 @@ class User(models.Model):
 class UserLogs(models.Model):
     """用户登录日志表"""
     create_time = models.DateTimeField(verbose_name="创建时间", auto_now_add=True)
-    user = models.ForeignKey(to=User, to_field="id", on_delete=models.PROTECT)
+    user = models.ForeignKey(to=User, to_field="id", on_delete=models.SET_NULL, null=True)
     source_type = models.CharField(verbose_name="来源类型", max_length=64, null=True)
     ip = models.CharField(verbose_name="IP", max_length=64, null=True)
 

@@ -17,7 +17,7 @@ from src.tools.set_config import SetConfig
 class HttpBase:
     headers = {
         'Authorization': '',
-        'source_type': str(ClientTypeEnum.ACTUATOR.value),
+        'Source-Type': str(ClientTypeEnum.ACTUATOR.value),
 
     }
 
