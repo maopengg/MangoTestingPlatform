@@ -33,7 +33,7 @@ class APIBaseTestSetup(PublicBase):
         if request_model is None:
             if is_merge_headers and api_info.headers:
                 headers = self.init_headers(api_info.project_product_id)
-                self.update_dict_case_insensitive(headers, api_info.headers)
+                self.update_dict_case_insensitive(headers, api_info.headers if api_info.headers else {})
             elif api_info.headers is not None:
                 headers = api_info.headers
             else:
