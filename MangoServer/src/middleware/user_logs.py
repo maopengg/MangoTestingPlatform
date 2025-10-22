@@ -31,8 +31,8 @@ class UserLogsMiddleWare(MiddlewareMixin):
     def _process_logs_async(self, request, response):
         """异步处理所有日志逻辑"""
         try:
-            # 直接从headers中获取source_type，假设headers中一定会有Source-Type的值
-            source_type = int(request.headers.get('Source-Type', 1))
+            # 直接从headers中获取source_type，headers中一定会有Source-Type的值
+            source_type = int(request.headers['Source-Type'])
             request_data = self._capture_request_data(request)
             formatted_request_data = self._format_request_data(request_data)
             response_content = self._capture_response_data(response)
