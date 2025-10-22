@@ -127,12 +127,10 @@ class PageSteps:
 
     async def test_flow_data(self, flow_data: dict) -> ElementResultModel:
         async def search_element_model(_id) -> ElementModel:
-            print(_id)
             element_model = next((i for i in self.page_steps_model.element_list if i.id == _id), None)
-            element_model = await self._update_element_data(_id, element_model)
             if not element_model:
-                traceback.print_exc()
                 raise UiError(*ERROR_MSG_0001)
+            element_model = await self._update_element_data(_id, element_model)
             return element_model
 
         element_model = await search_element_model(flow_data.get('id'))
