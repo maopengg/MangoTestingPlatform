@@ -18,7 +18,7 @@ export const tableColumns = useTableColumn([
     key: 'ip',
     dataIndex: 'ip',
     align: 'left',
-    width: 100,
+    width: 150,
   },
   {
     title: '来源',
