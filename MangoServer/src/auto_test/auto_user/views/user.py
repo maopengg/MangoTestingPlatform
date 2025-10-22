@@ -141,7 +141,7 @@ class LoginViews(ViewSet):
     def login(self, request: Request):
         username = request.data.get('username')
         password = request.data.get('password')
-        source_type = int(request.headers.get('Source-Type'))
+        source_type = int(request.headers.get('Source-Type', 1))
         try:
             user_info = User.objects.get(username=username, password=password)
         except User.DoesNotExist:
