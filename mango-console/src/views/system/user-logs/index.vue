@@ -3,7 +3,7 @@
     <template #header>
       <TableHeader
         :show-filter="true"
-        title="登录日志"
+        title="操作日志"
         @search="doRefresh"
         @reset-search="onResetSearch"
       >

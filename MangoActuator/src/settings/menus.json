@@ -162,8 +162,8 @@
         },
         {
           "btn_id": "user_log",
-          "btn_text": "登录日志",
-          "btn_tooltip": "登录日志",
+          "btn_text": "操作日志",
+          "btn_tooltip": "操作日志",
           "show_top": true,
           "is_active": false
         }

@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 'src.middleware.log_collector.LogMiddleWare',
+    'src.middleware.user_logs.UserLogsMiddleWare',
     # 'src.middleware.operation_log.OperationLogMiddleware',
     'src.middleware.is_delete.IsDeleteMiddleWare',
 ]

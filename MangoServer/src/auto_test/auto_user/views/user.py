@@ -159,7 +159,6 @@ class LoginViews(ViewSet):
         user_info.save()
         from src.auto_test.auto_user.views.user_logs import UserLogsCRUD
         UserLogsCRUD().inside_post({
-            "user": user_info.id,
             "source_type": source_type,
             "ip": ip
         })
