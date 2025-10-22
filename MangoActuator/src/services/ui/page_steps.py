@@ -117,7 +117,7 @@ class PageSteps:
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = error.msg
             except Exception as error:
-                log.debug(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
+                log.error(f'步骤发生未知失败-2，类型：{error}，详情：{traceback.format_exc()}')
                 self.page_step_result_model.status = StatusEnum.FAIL.value
                 self.page_step_result_model.error_message = str(error)
         self.page_step_result_model.cache_data = self.base_data.test_data.get_all()
@@ -127,6 +127,7 @@ class PageSteps:
 
     async def test_flow_data(self, flow_data: dict) -> ElementResultModel:
         async def search_element_model(_id) -> ElementModel:
+            print(_id)
             element_model = next((i for i in self.page_steps_model.element_list if i.id == _id), None)
             element_model = await self._update_element_data(_id, element_model)
             if not element_model:
@@ -168,7 +169,6 @@ class PageSteps:
         )
         if element_data is None:
             raise UiError(*ERROR_MSG_0025)
-
         match element_model.type:
             case ElementOperationEnum.OPE | ElementOperationEnum.ASS | ElementOperationEnum.CONDITION:
                 element_model.ope_value = [MethodModel(**i) for i in element_data.page_step_details_data]
