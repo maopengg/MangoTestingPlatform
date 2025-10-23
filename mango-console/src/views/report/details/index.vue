@@ -238,7 +238,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.status === 0">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -315,7 +315,7 @@
                   <a-tag :color="enumStore.status_colors[item.status]"
                     >{{ enumStore.task_status[item.status].title }}
                   </a-tag>
-                  <span v-if="item.status === 0">失败提示：{{ item.error_message }}</span>
+                  <span v-if="item.error_message">失败提示：{{ item.error_message }}</span>
                 </div>
               </template>
               <template #extra>
@@ -352,6 +352,9 @@
                     </template>
                     <template v-else-if="itemRow.key === 'stop'" #cell="{ record }">
                       <span>{{ formatDateTime(record.stop) }}</span>
+                    </template>
+                    <template v-else-if="itemRow.key === 'error_message'" #cell="{ record }">
+                      <span>{{ record?.statusDetails?.message }}</span>
                     </template>
                     <template v-else-if="itemRow.key === 'actions'" #cell="{ record }">
                       <a-space>
